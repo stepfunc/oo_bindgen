@@ -1,0 +1,12 @@
+[package]
+name = "dnp3-ffi"
+version = "0.1.0"
+authors = ["Émile Grégoire <emile@automatak.com>"]
+edition = "2018"
+
+[lib]
+crate-type=["cdylib"]
+
+[dependencies]
+dnp3 = { path = "../dnp3" }
+tokio = { version = "^0.2.11", features = ["rt-threaded"]}

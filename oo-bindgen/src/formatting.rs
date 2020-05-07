@@ -43,21 +43,17 @@ impl Printer for FilePrinter {
     }
 }
 
-pub struct IndentedPrinter<'a, T: Printer> {
-    inner: &'a mut T,
+struct IndentedPrinter<'a> {
+    inner: &'a mut dyn Printer,
 }
 
-impl<'a, T: Printer> IndentedPrinter<'a, T> {
-    pub fn new(printer: &'a mut T) -> Self {
+impl<'a> IndentedPrinter<'a> {
+    fn new(printer: &'a mut dyn Printer) -> Self {
         Self { inner: printer }
     }
-
-    pub fn close(self) -> &'a mut T {
-        self.inner
-    }
 }
 
-impl<'a, T: Printer> Printer for IndentedPrinter<'a, T> {
+impl<'a> Printer for IndentedPrinter<'a> {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
         self.inner.write(s)
     }
@@ -66,4 +62,10 @@ impl<'a, T: Printer> Printer for IndentedPrinter<'a, T> {
         self.inner.newline()?;
         self.inner.write("    ")
     }
+}
+
+pub fn indented<'a, F, T>(f: &'a mut dyn Printer, cb: F) -> FormattingResult<T>
+where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+    let mut printer = IndentedPrinter::new(f);
+    cb(&mut printer)
 }

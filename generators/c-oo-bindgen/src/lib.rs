@@ -22,64 +22,65 @@ pub fn generate_c_header(lib: &Library, config: &CBindgenConfig) -> FormattingRe
     let mut f = FilePrinter::new(filename)?;
 
     // Print license
-    let mut f = CommentedPrinter::new(&mut f);
-    for line in lib.license.iter() {
-        f.writeln(line)?;
-    }
-    let f = f.close();
+    commented(&mut f, |f| {
+        for line in lib.license.iter() {
+            f.writeln(line)?;
+        }
+        Ok(())
+    })?;
 
     // Header guard
     f.writeln("#pragma once")?;
     f.newline()?;
 
     // C++ guard
-    let mut f = CppGuardPrinter::new(f)?;
-    f.newline()?;
-
-    // Version number
-    f.writeln(&format!("#define {}_VERSION_MAJOR {}", uppercase_name, lib.version.major))?;
-    f.writeln(&format!("#define {}_VERSION_MINOR {}", uppercase_name, lib.version.minor))?;
-    f.writeln(&format!("#define {}_VERSION_PATCH {}", uppercase_name, lib.version.patch))?;
-    f.writeln(&format!("#define {}_VERSION_STRING \"{}\"", uppercase_name, lib.version.to_string()))?;
-    f.newline()?;
-
-    // Standard includes needed
-    f.writeln("#include <stdint.h>")?;
-    f.newline()?;
-
-    // Iterate through each statement and print them
-    for statement in lib.into_iter() {
-        match statement {
-            Statement::StructDeclaration(handle) => {
-                f.writeln(&format!("struct {};", handle.name))?;
-            },
-            Statement::StructDefinition(handle) => write_struct_definition(&mut f, handle)?,
-            Statement::ClassDeclaration(handle) => {
-                f.writeln(&format!("struct {};", handle.name))?;
-            }
-            Statement::NativeFunctionDeclaration(handle) => write_function(&mut f, handle)?,
-            _ => (),
-        }
+    cpp_guard(&mut f, |f| {
         f.newline()?;
-    }
 
-    Ok(())
+        // Version number
+        f.writeln(&format!("#define {}_VERSION_MAJOR {}", uppercase_name, lib.version.major))?;
+        f.writeln(&format!("#define {}_VERSION_MINOR {}", uppercase_name, lib.version.minor))?;
+        f.writeln(&format!("#define {}_VERSION_PATCH {}", uppercase_name, lib.version.patch))?;
+        f.writeln(&format!("#define {}_VERSION_STRING \"{}\"", uppercase_name, lib.version.to_string()))?;
+        f.newline()?;
+
+        // Standard includes needed
+        f.writeln("#include <stdint.h>")?;
+        f.newline()?;
+
+        // Iterate through each statement and print them
+        for statement in lib.into_iter() {
+            match statement {
+                Statement::StructDeclaration(handle) => {
+                    f.writeln(&format!("struct {};", handle.name))?;
+                },
+                Statement::StructDefinition(handle) => write_struct_definition(f, handle)?,
+                Statement::ClassDeclaration(handle) => {
+                    f.writeln(&format!("struct {};", handle.name))?;
+                }
+                Statement::NativeFunctionDeclaration(handle) => write_function(f, handle)?,
+                _ => (),
+            }
+            f.newline()?;
+        }
+
+        Ok(())
+    })
 }
 
-fn write_struct_definition(f: &mut impl Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
+fn write_struct_definition(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
     f.writeln(&format!("typedef struct {}", handle.name()))?;
     f.writeln("{")?;
-
-    let mut file = IndentedPrinter::new(f);
-    for element in &handle.elements {
-        file.writeln(&format!("{} {};", CType(&element.element_type), element.name))?;
-    }
-    let file = file.close();
-
-    file.writeln(&format!("}} {};", handle.name()))
+    indented(f, |f| {
+        for element in &handle.elements {
+            f.writeln(&format!("{} {};", CType(&element.element_type), element.name))?;
+        }
+        Ok(())
+    })?;
+    f.writeln(&format!("}} {};", handle.name()))
 }
 
-fn write_function(f: &mut impl Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
+fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
     f.newline()?;
     f.write(&format!("{} {}(", CReturnType(&handle.return_type), handle.name))?;
     

@@ -1,20 +1,16 @@
 use oo_bindgen::formatting::*;
 
-pub struct CommentedPrinter<'a, T: Printer> {
-    inner: &'a mut T,
+struct CommentedPrinter<'a> {
+    inner: &'a mut dyn Printer,
 }
 
-impl<'a, T: Printer> CommentedPrinter<'a, T> {
-    pub fn new(printer: &'a mut T) -> Self {
+impl<'a> CommentedPrinter<'a> {
+    fn new(printer: &'a mut dyn Printer) -> Self {
         Self { inner: printer }
     }
-
-    pub fn close(self) -> &'a mut T {
-        self.inner
-    }
 }
 
-impl<'a, T: Printer> Printer for CommentedPrinter<'a, T> {
+impl<'a> Printer for CommentedPrinter<'a> {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
         self.inner.write(s)
     }
@@ -25,34 +21,23 @@ impl<'a, T: Printer> Printer for CommentedPrinter<'a, T> {
     }
 }
 
-pub struct CppGuardPrinter<'a, T: Printer> {
-    inner: &'a mut T,
+pub fn commented<'a, F, T>(f: &'a mut dyn Printer, cb: F) -> FormattingResult<T>
+where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+    let mut printer = CommentedPrinter::new(f);
+    cb(&mut printer)
 }
 
-impl<'a, T: Printer> CppGuardPrinter<'a, T> {
-    pub fn new(printer: &'a mut T) -> FormattingResult<Self> {
-        printer.writeln("#ifdef __cplusplus")?;
-        printer.writeln("extern \"C\" {")?;
-        printer.writeln("#endif")?;
+pub fn cpp_guard<'a, F, T>(f: &'a mut dyn Printer, cb: F) -> FormattingResult<T>
+where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+    f.writeln("#ifdef __cplusplus")?;
+    f.writeln("extern \"C\" {")?;
+    f.writeln("#endif")?;
 
-        Ok(Self { inner: printer })
-    }
-}
+    let result = cb(f)?;
 
-impl<'a, T: Printer> Drop for CppGuardPrinter<'a, T> {
-    fn drop(&mut self) {
-        self.inner.writeln("#ifdef __cplusplus").unwrap();
-        self.inner.writeln("}").unwrap();
-        self.inner.writeln("#endif").unwrap();
-    }
-}
+    f.writeln("#ifdef __cplusplus")?;
+    f.writeln("}")?;
+    f.writeln("#endif")?;
 
-impl<'a, T: Printer> Printer for CppGuardPrinter<'a, T> {
-    fn write(&mut self, s: &str) -> FormattingResult<()> {
-        self.inner.write(s)
-    }
-
-    fn newline(&mut self) -> FormattingResult<()> {
-        self.inner.newline()
-    }
+    Ok(result)
 }

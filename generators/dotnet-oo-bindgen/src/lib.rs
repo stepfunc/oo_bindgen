@@ -58,27 +58,28 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
     f.writeln("using System.Runtime.InteropServices;")?;
     f.newline()?;
 
-    let mut f = NamespacedPrinter::new(&mut f, &lib.name)?;
-    let mut f = ClassPrinter::new(&mut f, "NativeFunctions")?;
-
-    for handle in lib.native_functions() {
-        f.writeln(&format!("[DllImport(\"{}\")]", config.ffi_name))?;
-        f.newline()?;
-        f.write(&format!("static extern {} {}(", DotnetReturnType(&handle.return_type), handle.name))?;
+    namespaced(&mut f, &lib.name, |f| {
+        class(f, "NativeFunctions", |f| {
+            for handle in lib.native_functions() {
+                f.writeln(&format!("[DllImport(\"{}\")]", config.ffi_name))?;
+                f.newline()?;
+                f.write(&format!("static extern {} {}(", DotnetReturnType(&handle.return_type), handle.name))?;
+                
+                f.write(
+                    &handle.parameters.iter()
+                        .map(|param| format!("{} {}", DotnetType(&param.param_type), param.name))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )?;
         
-        f.write(
-            &handle.parameters.iter()
-                .map(|param| format!("{} {}", DotnetType(&param.param_type), param.name))
-                .collect::<Vec<String>>()
-                .join(", ")
-        )?;
-
-        f.write(");")?;
-
-        f.newline()?;
-    }
-
-    Ok(())
+                f.write(");")?;
+        
+                f.newline()?;
+            }
+        
+            Ok(())
+        })
+    })
 }
 
 fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
@@ -102,53 +103,36 @@ fn generate_class(f: &mut impl Printer, class: &ClassHandle, lib: &Library) -> F
     f.writeln("using System.Runtime.InteropServices;")?;
     f.newline()?;
 
-    let mut f = NamespacedPrinter::new(f, &lib.name)?;
-    let mut f = ClassPrinter::new(&mut f, class.name())?;
+    namespaced(f, &lib.name, |f| {
+        formatting::class(f, class.name(), |f| {
+            f.writeln("private IntPtr self;")?;
+            f.newline()?;
 
-    f.writeln("private IntPtr self;")?;
-    f.newline()?;
+            f.writeln(&format!("internal {}(IntPtr self)", class.name()))?;
+            f.writeln("{")?;
+            f.writeln("    this.self = self;")?;
+            f.writeln("}")?;
+            f.newline()?;
 
-    f.writeln(&format!("internal {}(IntPtr self)", class.name()))?;
-    f.writeln("{")?;
-    f.writeln("    this.self = self;")?;
-    f.writeln("}")?;
-    f.newline()?;
+            if let Some(constructor) = &class.constructor {
+                f.writeln(&format!("public {}()", class.name()))?;
+                f.writeln("{")?;
+                f.writeln(&format!("    {}(NativeFunction.{}());", class.name(), constructor.name))?;
+                f.writeln("}")?;
+            }
 
-    if let Some(constructor) = &class.constructor {
-        f.writeln(&format!("public {}()", class.name()))?;
-        f.writeln("{")?;
-        f.writeln(&format!("    {}(NativeFunction.{}());", class.name(), constructor.name))?;
-        f.writeln("}")?;
-    }
-
-    /*for handle in lib.native_functions() {
-        f.writeln(&format!("[DllImport(\"{}\")]", config.ffi_name))?;
-        f.newline()?;
-        f.write(&format!("static extern {} {}(", DotnetReturnType(&handle.return_type), handle.name))?;
-        
-        f.write(
-            &handle.parameters.iter()
-                .map(|param| format!("{} {}", DotnetType(&param.param_type), param.name))
-                .collect::<Vec<String>>()
-                .join(", ")
-        )?;
-
-        f.write(");")?;
-
-        f.newline()?;
-    }*/
-
-    Ok(())
+            Ok(())
+        })
+    })
 }
 
-fn print_license(f: &mut impl Printer, license: &Vec<String>) -> FormattingResult<()> {
-    let mut f = CommentedPrinter::new(f);
-    for line in license.iter() {
-        f.writeln(line)?;
-    }
-    f.close();
-
-    Ok(())
+fn print_license(f: &mut dyn Printer, license: &Vec<String>) -> FormattingResult<()> {
+    commented(f, |f| {
+        for line in license.iter() {
+            f.writeln(line)?;
+        }
+        Ok(())
+    })
 }
 
 struct DotnetReturnType<'a>(&'a ReturnType);

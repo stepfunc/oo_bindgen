@@ -141,6 +141,12 @@ impl Library {
         }
     }
 
+    pub fn native_structs(&self) -> NativeStructIterator {
+        NativeStructIterator {
+            iter: self.into_iter()
+        }
+    }
+
     pub fn classes(&self) -> ClassIterator {
         ClassIterator {
             iter: self.into_iter()
@@ -167,6 +173,25 @@ impl<'a> Iterator for NativeFunctionIterator<'a> {
         while let Some(statement) = self.iter.next() {
             match statement {
                 Statement::NativeFunctionDeclaration(handle) => return Some(handle),
+                _ => (),
+            }
+        }
+
+        None
+    }
+}
+
+pub struct NativeStructIterator<'a> {
+    iter: std::slice::Iter<'a, Statement>,
+}
+
+impl<'a> Iterator for NativeStructIterator<'a> {
+    type Item = &'a NativeStructHandle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(statement) = self.iter.next() {
+            match statement {
+                Statement::StructDefinition(handle) => return Some(handle),
                 _ => (),
             }
         }

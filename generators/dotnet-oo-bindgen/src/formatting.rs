@@ -30,16 +30,11 @@ where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
 pub fn namespaced<'a, F, T>(f: &'a mut dyn Printer, namespace: &str, cb: F) -> FormattingResult<T>
 where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
     f.writeln(&format!("namespace {}", namespace))?;
-    f.writeln("{")?;
-    let result = indented(f, |f| cb(f))?;
-    f.writeln("}")?;
-
-    Ok(result)
+    blocked(f, |f| cb(f))
 }
 
-pub fn class<'a, F, T>(f: &'a mut dyn Printer, classname: &str, cb: F) -> FormattingResult<T>
+pub fn blocked<'a, F, T>(f: &'a mut dyn Printer, cb: F) -> FormattingResult<T>
 where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
-    f.writeln(&format!("class {}", classname))?;
     f.writeln("{")?;
     let result = indented(f, |f| cb(f))?;
     f.writeln("}")?;

@@ -12,6 +12,14 @@ pub fn define_runtime(lib: &mut LibraryBuilder) -> Result<ClassHandle, BindingEr
         .add("num_core_threads", Type::Uint16)?
         .build();
 
+    // Define the C-style enums
+    let _decode_log_level_enum = lib.define_native_enum("DecodeLogLevel")?
+        .variant("Nothing")?
+        .variant("Header")?
+        .variant("ObjectHeaders")?
+        .variant("ObjectValues")?
+        .build();
+
     // Declare the native functions
     let new_fn = lib.declare_native_function("runtime_new")?
         .param("config", Type::StructRef(config_struct.declaration()))?

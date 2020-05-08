@@ -16,6 +16,7 @@ pub enum Type {
     String,
     Struct(NativeStructHandle),
     StructRef(NativeStructDeclarationHandle),
+    Enum(NativeEnumHandle),
     ClassRef(ClassDeclarationHandle),
 }
 

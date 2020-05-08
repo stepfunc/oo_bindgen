@@ -32,10 +32,12 @@ pub fn generate_class(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -
 
             if let Some(constructor) = &class.constructor {
                 generate_constructor(f, class.name(), constructor)?;
+                f.newline()?;
             }
 
             if let Some(destructor) = &class.destructor {
                 generate_destructor(f, class.name(), destructor)?;
+                f.newline()?;
             }
 
             Ok(())
@@ -115,6 +117,7 @@ impl<'a> DotnetParameter<'a> {
             Type::String => unimplemented!(),
             Type::Struct(_) => self.0.name.to_string(),
             Type::StructRef(_) => format!("ref {}", self.0.name.to_string()),
+            Type::Enum(_) => self.0.name.to_string(),
             Type::ClassRef(_) => format!("{}.self", self.0.name.to_string()),
         }
     }

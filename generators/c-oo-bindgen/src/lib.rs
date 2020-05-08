@@ -1,5 +1,6 @@
 use oo_bindgen::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use std::fmt::{Display};
@@ -55,6 +56,7 @@ pub fn generate_c_header(lib: &Library, config: &CBindgenConfig) -> FormattingRe
                     f.writeln(&format!("struct {};", handle.name))?;
                 },
                 Statement::StructDefinition(handle) => write_struct_definition(f, handle)?,
+                Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
                 Statement::ClassDeclaration(handle) => {
                     f.writeln(&format!("struct {};", handle.name))?;
                 }
@@ -78,6 +80,18 @@ fn write_struct_definition(f: &mut dyn Printer, handle: &NativeStructHandle) -> 
         Ok(())
     })?;
     f.writeln(&format!("}} {};", handle.name()))
+}
+
+fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> FormattingResult<()> {
+    f.writeln(&format!("typedef enum {}", handle.name))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        for variant in &handle.variants {
+            f.writeln(&format!("{},", variant))?;
+        }
+        Ok(())
+    })?;
+    f.writeln(&format!("}} {};", handle.name))
 }
 
 fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
@@ -124,6 +138,7 @@ impl<'a> Display for CType<'a> {
             Type::String => unimplemented!(),
             Type::Struct(handle) => write!(f, "{}", handle.name()),
             Type::StructRef(handle) => write!(f, "{}*", handle.name),
+            Type::Enum(handle) => write!(f, "{}", handle.name),
             Type::ClassRef(handle) => write!(f, "{}*", handle.name),
         }
     }

@@ -1,5 +1,6 @@
 use oo_bindgen::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use std::fmt::{Display};
@@ -24,6 +25,7 @@ pub fn generate_dotnet_bindings(lib: &Library, config: &DotnetBindgenConfig) -> 
     generate_native_func_class(lib, config)?;
 
     generate_structs(lib, config)?;
+    generate_enums(lib, config)?;
     generate_classes(lib, config)?;
 
     Ok(())
@@ -44,6 +46,16 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
+    /*f.writeln("  <PropertyGroup>")?;
+    f.writeln(&format!("    <Product>{}</Product>", lib.name))?;
+    f.writeln("  </PropertyGroup>")?;
+    f.newline()?;
+    f.writeln("  <PropertyGroup>")?;
+    f.writeln(&format!("    <VersionMajor>{}</VersionMajor>", lib.version.major))?;
+    f.writeln(&format!("    <VersionMinor>{}</VersionMinor>", lib.version.minor))?;
+    f.writeln(&format!("    <VersionPatch>{}</VersionPatch>", lib.version.patch))?;
+    f.writeln("  </PropertyGroup>")?;
+    f.newline()?;*/
     f.writeln("  <ItemGroup>")?;
     f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/win-x64/native\" CopyToOutputDirectory=\"PreserveNewest\" />", binary_path.canonicalize()?.to_string_lossy(), binary_filename))?;
     f.writeln("  </ItemGroup>")?;
@@ -119,6 +131,38 @@ fn generate_struct(f: &mut impl Printer, native_struct: &NativeStructHandle, lib
     })
 }
 
+fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for native_enum in lib.native_enums() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&native_enum.name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+    
+        generate_enum(&mut f, native_enum, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_enum(f: &mut impl Printer, native_enum: &NativeEnumHandle, lib: &Library) -> FormattingResult<()> {
+    print_license(f, &lib.license)?;
+
+    f.writeln("using System;")?;
+    f.writeln("using System.Runtime.InteropServices;")?;
+    f.newline()?;
+
+    namespaced(f, &lib.name, |f| {
+        f.writeln(&format!("public enum {}", native_enum.name))?;
+        blocked(f, |f| {
+            for variant in &native_enum.variants {
+                f.writeln(&format!("{},", variant))?;
+            }
+            Ok(())
+        })
+    })
+}
+
 fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     for class in lib.classes() {
         // Open file
@@ -172,6 +216,7 @@ impl<'a> DotnetType<'a> {
             Type::String => unimplemented!(),
             Type::Struct(handle) => format!("{}", handle.name()),
             Type::StructRef(handle) => format!("{}", handle.name),
+            Type::Enum(handle) => format!("{}", handle.name),
             Type::ClassRef(handle) => format!("{}", handle.name),
         }
     }
@@ -192,6 +237,7 @@ impl<'a> DotnetType<'a> {
             Type::String => unimplemented!(),
             Type::Struct(handle) => format!("{}", handle.name()),
             Type::StructRef(handle) => format!("ref {}", handle.name),
+            Type::Enum(handle) => format!("{}", handle.name),
             Type::ClassRef(_) => "IntPtr".to_string(),
         }
     }

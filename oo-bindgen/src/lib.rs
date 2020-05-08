@@ -1,4 +1,5 @@
 use crate::class::*;
+use crate::native_enum::*;
 use crate::native_function::*;
 use crate::native_struct::*;
 use thiserror::Error;
@@ -12,6 +13,7 @@ use std::rc::Rc;
 
 pub mod class;
 pub mod formatting;
+pub mod native_enum;
 pub mod native_function;
 pub mod native_struct;
 
@@ -35,6 +37,17 @@ pub enum BindingError {
     },
     #[error("Return type of native function '{}' was not defined", native_func_name)]
     ReturnTypeNotDefined{native_func_name: String},
+
+    // Native enum errors
+    #[error("Native enum '{}' is not part of this library", handle.name)]
+    NativeEnumNotPartOfThisLib{
+        handle: NativeEnumHandle,
+    },
+    #[error("Native enum '{}' already contains a variant with name '{}'", name, variant_name)]
+    NativeEnumAlreadyContainsVariantWithSameName{
+        name: String,
+        variant_name: String,
+    },
 
     // Structure errors
     #[error("Native struct '{}' was already defined", handle.name)]
@@ -119,6 +132,7 @@ impl<T> Deref for Handle<T> {
 pub enum Statement {
     StructDeclaration(NativeStructDeclarationHandle),
     StructDefinition(NativeStructHandle),
+    EnumDefinition(NativeEnumHandle),
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(ClassHandle),
     NativeFunctionDeclaration(NativeFunctionHandle),
@@ -143,6 +157,12 @@ impl Library {
 
     pub fn native_structs(&self) -> NativeStructIterator {
         NativeStructIterator {
+            iter: self.into_iter()
+        }
+    }
+
+    pub fn native_enums(&self) -> NativeEnumIterator {
+        NativeEnumIterator {
             iter: self.into_iter()
         }
     }
@@ -200,6 +220,25 @@ impl<'a> Iterator for NativeStructIterator<'a> {
     }
 }
 
+pub struct NativeEnumIterator<'a> {
+    iter: std::slice::Iter<'a, Statement>,
+}
+
+impl<'a> Iterator for NativeEnumIterator<'a> {
+    type Item = &'a NativeEnumHandle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(statement) = self.iter.next() {
+            match statement {
+                Statement::EnumDefinition(handle) => return Some(handle),
+                _ => (),
+            }
+        }
+
+        None
+    }
+}
+
 pub struct ClassIterator<'a> {
     iter: std::slice::Iter<'a, Statement>,
 }
@@ -231,6 +270,8 @@ pub struct LibraryBuilder {
     native_structs_declarations: HashSet<NativeStructDeclarationHandle>,
     native_structs: HashMap<NativeStructDeclarationHandle, NativeStructHandle>,
 
+    native_enums: HashSet<NativeEnumHandle>,
+
     class_declarations: HashSet<ClassDeclarationHandle>,
     classes: HashMap<ClassDeclarationHandle, ClassHandle>,
 
@@ -250,6 +291,8 @@ impl LibraryBuilder {
 
             native_structs_declarations: HashSet::new(),
             native_structs: HashMap::new(),
+
+            native_enums: HashSet::new(),
 
             class_declarations: HashSet::new(),
             classes: HashMap::new(),
@@ -305,6 +348,12 @@ impl LibraryBuilder {
         }
     }
 
+    /// Define an enumeration
+    pub fn define_native_enum(&mut self, name: &str) -> Result<NativeEnumBuilder> {
+        self.check_unique_symbol(name)?;
+        Ok(NativeEnumBuilder::new(self, name.to_string()))
+    }
+
     pub fn declare_native_function(&mut self, name: &str) -> Result<NativeFunctionBuilder> {
         self.check_unique_symbol(name)?;
         Ok(NativeFunctionBuilder::new(self, name.to_string()))
@@ -347,6 +396,7 @@ impl LibraryBuilder {
         match type_to_validate {
             Type::StructRef(native_struct) => self.validate_native_struct_declaration(native_struct),
             Type::Struct(native_struct) => self.validate_native_struct(&native_struct),
+            Type::Enum(native_enum) => self.validate_native_enum(&native_enum),
             Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
             _ => Ok(())
         }
@@ -365,6 +415,14 @@ impl LibraryBuilder {
             Ok(())
         } else {
             Err(BindingError::NativeStructNotPartOfThisLib{handle: native_struct.declaration.clone()})
+        }
+    }
+
+    fn validate_native_enum(&self, native_enum: &NativeEnumHandle) -> Result<()> {
+        if self.native_enums.contains(native_enum) {
+            Ok(())
+        } else {
+            Err(BindingError::NativeEnumNotPartOfThisLib{handle: native_enum.clone()})
         }
     }
 

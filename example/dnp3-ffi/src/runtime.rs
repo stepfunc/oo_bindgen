@@ -19,7 +19,10 @@ pub unsafe extern "C" fn runtime_new(
 ) -> *mut tokio::runtime::Runtime {
     let result = match config.as_ref() {
         None => build_runtime(|r| r),
-        Some(x) => build_runtime(|r| r.core_threads(x.num_core_threads as usize)),
+        Some(x) => {
+            println!("Constructor called with {} threads", x.num_core_threads);
+            build_runtime(|r| r.core_threads(x.num_core_threads as usize))
+        },
     };
 
     match result {
@@ -33,6 +36,7 @@ pub unsafe extern "C" fn runtime_new(
 
 #[no_mangle]
 pub unsafe extern "C" fn runtime_destroy(runtime: *mut tokio::runtime::Runtime) {
+    println!("Destructor called");
     if !runtime.is_null() {
         Box::from_raw(runtime);
     };

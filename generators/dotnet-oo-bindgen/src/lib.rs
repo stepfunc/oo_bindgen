@@ -1,12 +1,13 @@
 use oo_bindgen::*;
-use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use std::fmt::{Display};
 use std::path::PathBuf;
 use crate::formatting::*;
+use crate::class::generate_class;
 
+mod class;
 mod formatting;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &'static str = "NativeFunctions";
@@ -72,7 +73,7 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
                 
                 f.write(
                     &handle.parameters.iter()
-                        .map(|param| format!("{} {}", DotnetType(&param.param_type), param.name))
+                        .map(|param| format!("{} {}", DotnetType(&param.param_type).native_parameter(), param.name))
                         .collect::<Vec<String>>()
                         .join(", ")
                 )?;
@@ -111,7 +112,7 @@ fn generate_struct(f: &mut impl Printer, native_struct: &NativeStructHandle, lib
         f.writeln(&format!("public struct {}", native_struct.name()))?;
         blocked(f, |f| {
             for el in &native_struct.elements {
-                f.writeln(&format!("public {} {};", DotnetType(&el.element_type), el.name))?;
+                f.writeln(&format!("public {} {};", DotnetType(&el.element_type).dotnet_parameter(), el.name))?;
             }
             Ok(())
         })
@@ -132,53 +133,6 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     Ok(())
 }
 
-fn generate_class(f: &mut impl Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
-    f.newline()?;
-
-    namespaced(f, &lib.name, |f| {
-        f.writeln(&format!("public class {}", class.name()))?;
-        blocked(f, |f| {
-            f.writeln("private IntPtr self;")?;
-            f.newline()?;
-
-            f.writeln(&format!("internal {}(IntPtr self)", class.name()))?;
-            blocked(f, |f| {
-                f.writeln("this.self = self;")
-            })?;
-            f.newline()?;
-
-            if let Some(constructor) = &class.constructor {
-                f.writeln(&format!("public {}(", class.name()))?;
-                f.write(
-                    &constructor.parameters.iter()
-                        .map(|param| format!("{} {}", DotnetType(&param.param_type), param.name))
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                )?;
-                f.write(")")?;
-
-                blocked(f, |f| {
-                    f.writeln(&format!("this.self = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, constructor.name))?;
-
-                    f.write(
-                        &constructor.parameters.iter()
-                            .map(|param| format!("{}", param.name))
-                            .collect::<Vec<String>>()
-                            .join(", ")
-                    )?;
-                    f.write(");")
-                })?;
-            }
-
-            Ok(())
-        })
-    })
-}
-
 fn print_license(f: &mut dyn Printer, license: &Vec<String>) -> FormattingResult<()> {
     commented(f, |f| {
         for line in license.iter() {
@@ -194,31 +148,51 @@ impl <'a> Display for DotnetReturnType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
             ReturnType::Void => write!(f, "void"),
-            ReturnType::Type(return_type) => write!(f, "{}", DotnetType(&return_type)),
+            ReturnType::Type(return_type) => write!(f, "{}", DotnetType(&return_type).native_parameter()),
         }
     }
 }
 
 struct DotnetType<'a>(&'a Type);
 
-impl<'a> Display for DotnetType<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl<'a> DotnetType<'a> {
+    fn dotnet_parameter(&self) -> String {
         match self.0 {
-            Type::Bool => write!(f, "bool"),
-            Type::Uint8 => write!(f, "byte"),
-            Type::Sint8 => write!(f, "sbyte"),
-            Type::Uint16 => write!(f, "ushort"),
-            Type::Sint16 => write!(f, "short"),
-            Type::Uint32 => write!(f, "uint"),
-            Type::Sint32 => write!(f, "int"),
-            Type::Uint64 => write!(f, "ulong"),
-            Type::Sint64 => write!(f, "long"),
-            Type::Float => write!(f, "float"),
-            Type::Double => write!(f, "double"),
+            Type::Bool => "bool".to_string(),
+            Type::Uint8 => "byte".to_string(),
+            Type::Sint8 => "sbyte".to_string(),
+            Type::Uint16 => "ushort".to_string(),
+            Type::Sint16 => "short".to_string(),
+            Type::Uint32 => "uint".to_string(),
+            Type::Sint32 => "int".to_string(),
+            Type::Uint64 => "ulong".to_string(),
+            Type::Sint64 => "long".to_string(),
+            Type::Float => unimplemented!(),
+            Type::Double => unimplemented!(),
             Type::String => unimplemented!(),
-            Type::Struct(handle) => write!(f, "{}", handle.name()),
-            Type::StructRef(handle) => write!(f, "{}", handle.name),
-            Type::ClassRef(_) => write!(f, "IntPtr"),
+            Type::Struct(handle) => format!("{}", handle.name()),
+            Type::StructRef(handle) => format!("{}", handle.name),
+            Type::ClassRef(handle) => format!("{}", handle.name),
+        }
+    }
+
+    fn native_parameter(&self) -> String {
+        match self.0 {
+            Type::Bool => "bool".to_string(),
+            Type::Uint8 => "byte".to_string(),
+            Type::Sint8 => "sbyte".to_string(),
+            Type::Uint16 => "ushort".to_string(),
+            Type::Sint16 => "short".to_string(),
+            Type::Uint32 => "uint".to_string(),
+            Type::Sint32 => "int".to_string(),
+            Type::Uint64 => "ulong".to_string(),
+            Type::Sint64 => "long".to_string(),
+            Type::Float => unimplemented!(),
+            Type::Double => unimplemented!(),
+            Type::String => unimplemented!(),
+            Type::Struct(handle) => format!("{}", handle.name()),
+            Type::StructRef(handle) => format!("ref {}", handle.name),
+            Type::ClassRef(_) => "IntPtr".to_string(),
         }
     }
 }

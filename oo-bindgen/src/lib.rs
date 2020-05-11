@@ -13,6 +13,7 @@ use std::rc::Rc;
 
 pub mod class;
 pub mod formatting;
+pub mod platforms;
 pub mod native_enum;
 pub mod native_function;
 pub mod native_struct;

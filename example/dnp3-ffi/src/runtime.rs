@@ -41,3 +41,15 @@ pub unsafe extern "C" fn runtime_destroy(runtime: *mut tokio::runtime::Runtime) 
         Box::from_raw(runtime);
     };
 }
+
+/*#[no_mangle]
+pub unsafe extern "C" fn runtime_add_master_tcp(
+    runtime: *mut tokio::runtime::Runtime,
+    address: u16,
+    level: DecodeLogLevel,
+    strategy: ReconnectStrategy,
+    response_timeout: Timeout,
+    endpoint: SocketAddr,
+    listener: Listener<ClientState>) {
+    
+}*/

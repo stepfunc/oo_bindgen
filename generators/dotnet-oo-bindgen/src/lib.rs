@@ -4,6 +4,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use std::fmt::{Display};
+use std::fs;
 use std::path::PathBuf;
 use crate::formatting::*;
 use crate::class::generate_class;
@@ -20,6 +21,7 @@ pub struct DotnetBindgenConfig {
 }
 
 pub fn generate_dotnet_bindings(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    fs::create_dir_all(&config.output_dir)?;
     generate_csproj(lib, config)?;
 
     generate_native_func_class(lib, config)?;
@@ -46,16 +48,6 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
-    /*f.writeln("  <PropertyGroup>")?;
-    f.writeln(&format!("    <Product>{}</Product>", lib.name))?;
-    f.writeln("  </PropertyGroup>")?;
-    f.newline()?;
-    f.writeln("  <PropertyGroup>")?;
-    f.writeln(&format!("    <VersionMajor>{}</VersionMajor>", lib.version.major))?;
-    f.writeln(&format!("    <VersionMinor>{}</VersionMinor>", lib.version.minor))?;
-    f.writeln(&format!("    <VersionPatch>{}</VersionPatch>", lib.version.patch))?;
-    f.writeln("  </PropertyGroup>")?;
-    f.newline()?;*/
     f.writeln("  <ItemGroup>")?;
     f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/win-x64/native\" CopyToOutputDirectory=\"PreserveNewest\" />", binary_path.canonicalize()?.to_string_lossy(), binary_filename))?;
     f.writeln("  </ItemGroup>")?;

@@ -3,23 +3,58 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use std::fmt::{Display};
-use std::path::PathBuf;
+use oo_bindgen::platforms::*;
+use std::fmt::Display;
+use std::fs;
+use std::path::{Path, PathBuf};
 use crate::formatting::*;
 
 mod formatting;
 
 pub struct CBindgenConfig {
     pub output_dir: PathBuf,
+    pub ffi_name: String,
+    pub platforms: PlatformLocations,
 }
 
-pub fn generate_c_header(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+    // Create header file
+    let mut include_path = config.output_dir.clone();
+    include_path.push("include");
+    generate_c_header(lib, include_path)?;
+
+    // Generate CMake config file
+    generate_cmake_config(lib, config)?;
+
+    // Copy lib files (lib and DLL on Windows, so on Linux)
+    let lib_path = config.output_dir.join("lib");
+    fs::create_dir_all(&lib_path)?;
+    for p in config.platforms.iter() {
+        let lib_filename = p.lib_filename(&config.ffi_name);
+
+        let destination_path = lib_path.join(p.platform.to_string());
+        fs::create_dir_all(&destination_path)?;
+
+        fs::copy(p.location.join(&lib_filename), destination_path.join(&lib_filename))?;
+
+        // Copy DLL on Windows
+        if let Some(bin_filename) = p.bin_filename(&config.ffi_name) {
+            let destination_path = lib_path.join(p.platform.to_string());
+            fs::create_dir_all(&destination_path)?;
+
+            fs::copy(p.location.join(&bin_filename), destination_path.join(&bin_filename))?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult<()> {
     let uppercase_name = lib.name.to_uppercase();
 
     // Open file
-    let mut filename = config.output_dir.clone();
-    filename.push("test");
-    filename.set_extension("h");
+    fs::create_dir_all(&path)?;
+    let filename = path.as_ref().join(format!("{}.h", lib.name));
     let mut f = FilePrinter::new(filename)?;
 
     // Print license
@@ -106,6 +141,58 @@ fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> Formatt
     )?;
 
     f.write(");")
+}
+
+fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+    // Create file
+    let cmake_path = config.output_dir.join("cmake");
+    fs::create_dir_all(&cmake_path)?;
+    let filename = cmake_path.join(format!("{}-config.cmake", lib.name));
+    let mut f = FilePrinter::new(filename)?;
+
+    // Prefix used everywhere else
+    f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/../\")")?;
+    f.newline()?;
+
+    // Write each platform variation
+    let mut is_first_if = true;
+    for p in config.platforms.iter() {
+        let platform_check = match p.platform {
+            Platform::Win64 => "WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8",
+            Platform::Win32 => "WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4",
+            Platform::Linux => "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8",
+        };
+
+        if is_first_if {
+            f.writeln(&format!("if({})", platform_check))?;
+            is_first_if = false;
+        } else {
+            f.writeln(&format!("elseif({})", platform_check))?;
+        }
+
+        indented(&mut f, |f| {
+            f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
+            f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
+            indented(f, |f| {
+                if p.platform == Platform::Win64 || p.platform == Platform::Win32 {
+                    f.writeln(&format!("IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}.dll\"", p.platform.to_string(), config.ffi_name))?;
+                    f.writeln(&format!("IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}.dll.lib\"", p.platform.to_string(), config.ffi_name))?;
+                } else {
+                    f.writeln(&format!("IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}.so\"", p.platform.to_string(), config.ffi_name))?;
+                }
+
+                f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
+            })?;
+            f.writeln(")")
+        })?;
+    }
+
+    // Write error message if platform not found
+    f.writeln("else()")?;
+    indented(&mut f, |f| {
+        f.writeln("message(FATAL_ERROR \"Platform not supported\")")
+    })?;
+    f.writeln("endif()")
 }
 
 struct CReturnType<'a>(&'a ReturnType);

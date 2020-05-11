@@ -6,10 +6,10 @@ members = [
     "generators/c-oo-bindgen",
     "generators/dotnet-oo-bindgen",
 
+    "tests/foo-ffi",
+    "tests/foo-bindings",
+
     "example/dnp3",
     "example/dnp3-ffi",
     "example/dnp3-bindings",
-
-    #"example/foo",
-    #"example/foo-ffi",
 ]

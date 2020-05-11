@@ -3,6 +3,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::platforms::*;
 use std::fmt::{Display};
 use std::fs;
 use std::path::PathBuf;
@@ -17,7 +18,7 @@ const NATIVE_FUNCTIONS_CLASSNAME: &'static str = "NativeFunctions";
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
-    pub compiled_ffi_dir: PathBuf,
+    pub platforms: PlatformLocations,
 }
 
 pub fn generate_dotnet_bindings(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
@@ -34,9 +35,6 @@ pub fn generate_dotnet_bindings(lib: &Library, config: &DotnetBindgenConfig) -> 
 }
 
 fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-    let binary_filename = &format!("{}.dll", config.ffi_name);
-    let binary_path = config.compiled_ffi_dir.join(binary_filename);
-
     // Open file
     let mut filename = config.output_dir.clone();
     filename.push(lib.name.clone());
@@ -49,7 +47,13 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
     f.writeln("  <ItemGroup>")?;
-    f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/win-x64/native\" CopyToOutputDirectory=\"PreserveNewest\" />", binary_path.canonicalize()?.to_string_lossy(), binary_filename))?;
+
+    for p in config.platforms.iter() {
+        let filename = p.bin_filename(&config.ffi_name);
+        let filepath = p.location.join(&filename);
+        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.canonicalize()?.to_string_lossy(), filename, p.platform.to_string()))?;
+    }
+
     f.writeln("  </ItemGroup>")?;
     f.writeln("</Project>")
 }

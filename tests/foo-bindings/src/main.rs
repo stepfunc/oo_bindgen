@@ -19,7 +19,7 @@ fn test_c_lib(lib: &Library) {
 
 fn generate_c_lib(lib: &Library) {
     let mut platforms = PlatformLocations::new();
-    platforms.add(Platform::current(), PathBuf::from("./target/debug"));
+    platforms.add(Platform::current(), PathBuf::from("./target/debug/deps"));
 
     let config = c_oo_bindgen::CBindgenConfig {
         output_dir: PathBuf::from("tests/bindings/c/generated"),
@@ -69,10 +69,13 @@ fn test_dotnet_lib(lib: &Library) {
 }
 
 fn generate_dotnet_lib(lib: &Library) {
+    let mut platforms = PlatformLocations::new();
+    platforms.add(Platform::current(), PathBuf::from("./target/debug/deps"));
+
     let config = dotnet_oo_bindgen::DotnetBindgenConfig {
         output_dir: PathBuf::from("tests/bindings/dotnet/foo"),
         ffi_name: "foo_ffi".to_string(),
-        compiled_ffi_dir: PathBuf::from("./target/debug")
+        platforms,
     };
 
     dotnet_oo_bindgen::generate_dotnet_bindings(&lib, &config).unwrap();

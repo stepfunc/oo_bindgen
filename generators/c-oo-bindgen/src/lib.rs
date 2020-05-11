@@ -31,19 +31,15 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     fs::create_dir_all(&lib_path)?;
     for p in config.platforms.iter() {
         let lib_filename = p.lib_filename(&config.ffi_name);
-
         let destination_path = lib_path.join(p.platform.to_string());
         fs::create_dir_all(&destination_path)?;
-
         fs::copy(p.location.join(&lib_filename), destination_path.join(&lib_filename))?;
 
         // Copy DLL on Windows
-        if let Some(bin_filename) = p.bin_filename(&config.ffi_name) {
-            let destination_path = lib_path.join(p.platform.to_string());
-            fs::create_dir_all(&destination_path)?;
-
-            fs::copy(p.location.join(&bin_filename), destination_path.join(&bin_filename))?;
-        }
+        let bin_filename = p.bin_filename(&config.ffi_name);
+        let destination_path = lib_path.join(p.platform.to_string());
+        fs::create_dir_all(&destination_path)?;
+        fs::copy(p.location.join(&bin_filename), destination_path.join(&bin_filename))?;
     }
 
     Ok(())
@@ -174,13 +170,8 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
             f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
             f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
             indented(f, |f| {
-                if p.platform == Platform::Win64 || p.platform == Platform::Win32 {
-                    f.writeln(&format!("IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}.dll\"", p.platform.to_string(), config.ffi_name))?;
-                    f.writeln(&format!("IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}.dll.lib\"", p.platform.to_string(), config.ffi_name))?;
-                } else {
-                    f.writeln(&format!("IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}.so\"", p.platform.to_string(), config.ffi_name))?;
-                }
-
+                f.writeln(&format!("IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"", p.platform.to_string(), p.bin_filename(&config.ffi_name)))?;
+                f.writeln(&format!("IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"", p.platform.to_string(), p.lib_filename(&config.ffi_name)))?;
                 f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
             })?;
             f.writeln(")")

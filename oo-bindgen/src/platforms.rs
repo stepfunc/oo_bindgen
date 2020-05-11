@@ -51,18 +51,18 @@ impl PlatformLocation {
                 format!("{}.dll.lib", libname)
             },
             Platform::Linux => {
-                format!("{}.so", libname)
+                format!("lib{}.so", libname)
             },
         }
     }
 
-    pub fn bin_filename(&self, libname: &str) -> Option<String> {
+    pub fn bin_filename(&self, libname: &str) -> String {
         match self.platform {
             Platform::Win64|Platform::Win32 => {
-                Some(format!("{}.dll", libname))
+                format!("{}.dll", libname)
             },
             Platform::Linux => {
-                None
+                format!("lib{}.so", libname)
             },
         }
     }

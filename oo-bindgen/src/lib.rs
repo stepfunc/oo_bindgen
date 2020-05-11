@@ -49,6 +49,11 @@ pub enum BindingError {
         name: String,
         variant_name: String,
     },
+    #[error("Native enum '{}' already contains a variant with value '{}'", name, variant_value)]
+    NativeEnumAlreadyContainsVariantWithSameValue{
+        name: String,
+        variant_value: i32,
+    },
 
     // Structure errors
     #[error("Native struct '{}' was already defined", handle.name)]

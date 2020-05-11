@@ -30,6 +30,10 @@ pub fn generate_class(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -
             })?;
             f.newline()?;
 
+            for method in &class.static_methods {
+                generate_static_method(f, method)?;
+            }
+
             if let Some(constructor) = &class.constructor {
                 generate_constructor(f, class.name(), constructor)?;
                 f.newline()?;
@@ -95,6 +99,33 @@ fn generate_destructor(f: &mut dyn Printer, classname: &str, destructor: &Native
         f.writeln(&format!("{}.{}(this.self);", NATIVE_FUNCTIONS_CLASSNAME, destructor.name))?;
         f.newline()?;
         f.writeln("this.disposed = true;")
+    })
+}
+
+fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+    f.writeln(&format!("public static {} {}(", DotnetReturnType(&method.native_function.return_type), method.name))?;
+    f.write(
+        &method.native_function.parameters.iter()
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).dotnet_parameter(), param.name))
+            .collect::<Vec<String>>()
+            .join(", ")
+    )?;
+    f.write(")")?;
+
+    blocked(f, |f| {
+        f.newline()?;
+        if let ReturnType::Type(_) = method.native_function.return_type {
+            f.write("return ")?;
+        }
+        f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.native_function.name))?;
+
+        f.write(
+            &method.native_function.parameters.iter()
+                .map(|param| DotnetParameter(param).arg())
+                .collect::<Vec<String>>()
+                .join(", ")
+        )?;
+        f.write(");")
     })
 }
 

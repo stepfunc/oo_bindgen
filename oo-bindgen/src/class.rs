@@ -27,6 +27,7 @@ pub struct Class {
     pub constructor: Option<NativeFunctionHandle>,
     pub destructor: Option<NativeFunctionHandle>,
     pub methods: Vec<Method>,
+    pub static_methods: Vec<Method>,
 }
 
 impl Class {
@@ -47,6 +48,7 @@ pub struct ClassBuilder<'a> {
     constructor: Option<NativeFunctionHandle>,
     destructor: Option<NativeFunctionHandle>,
     methods: Vec<Method>,
+    static_methods: Vec<Method>,
 }
 
 impl<'a> ClassBuilder<'a> {
@@ -57,6 +59,7 @@ impl<'a> ClassBuilder<'a> {
             constructor: None,
             destructor: None,
             methods: Vec::new(),
+            static_methods: Vec::new(),
         }
     }
 
@@ -110,12 +113,24 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
+    pub fn static_method(mut self, name: &str, native_function: &NativeFunctionHandle) -> Result<Self> {
+        self.lib.validate_native_function(native_function)?;
+
+        self.static_methods.push(Method {
+            name: name.to_string(),
+            native_function: native_function.clone(),
+        });
+
+        Ok(self)
+    }
+
     pub fn build(self) -> ClassHandle {
         let handle = ClassHandle::new(Class {
             declaration: self.declaration.clone(),
             constructor: self.constructor,
             destructor: self.destructor,
             methods: self.methods,
+            static_methods: self.static_methods,
         });
 
         self.lib.classes.insert(handle.declaration.clone(), handle.clone());

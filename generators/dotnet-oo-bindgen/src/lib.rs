@@ -152,7 +152,7 @@ fn generate_enum(f: &mut impl Printer, native_enum: &NativeEnumHandle, lib: &Lib
         f.writeln(&format!("public enum {}", native_enum.name))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
-                f.writeln(&format!("{},", variant))?;
+                f.writeln(&format!("{} =  {},", variant.name, variant.value))?;
             }
             Ok(())
         })

@@ -14,10 +14,10 @@ pub fn define_runtime(lib: &mut LibraryBuilder) -> Result<ClassHandle, BindingEr
 
     // Define the C-style enums
     let _decode_log_level_enum = lib.define_native_enum("DecodeLogLevel")?
-        .variant("Nothing")?
-        .variant("Header")?
-        .variant("ObjectHeaders")?
-        .variant("ObjectValues")?
+        .push("Nothing")?
+        .push("Header")?
+        .push("ObjectHeaders")?
+        .push("ObjectValues")?
         .build();
 
     // Declare the native functions

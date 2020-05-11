@@ -118,7 +118,7 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> Form
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
-            f.writeln(&format!("{},", variant))?;
+            f.writeln(&format!("{}_{} = {},", handle.name, variant.name, variant.value))?;
         }
         Ok(())
     })?;

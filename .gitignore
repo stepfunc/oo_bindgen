@@ -1,4 +1,5 @@
 /target
+/.vscode
 
 # Generated C lib
 tests/bindings/c/build
@@ -6,8 +7,8 @@ tests/bindings/c/generated
 
 # Generated .NET lib
 tests/bindings/dotnet/foo
-tests/bindings/dotnet/*/bin/
-tests/bindings/dotnet/*/obj/
+tests/bindings/dotnet/*/bin
+tests/bindings/dotnet/*/obj
 
 # Test stuff that should disappear
 /result

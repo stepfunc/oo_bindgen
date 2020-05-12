@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <string.h>
 
 #include "foo.h"
 
@@ -102,9 +101,18 @@ static void test_enum_disjoint()
     assert(result == 2);
 }
 
+static void test_enum_single()
+{
+    EnumSingle value = EnumSingle_Single;
+    EnumDisjoint result = enum_single_echo(value);
+    assert(result == value);
+    assert(result == 0);
+}
+
 void enum_tests()
 {
     test_enum_zero_to_five();
     test_enum_one_to_six();
     test_enum_disjoint();
+    test_enum_single();
 }

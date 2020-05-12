@@ -107,5 +107,14 @@ namespace foo.Tests
             Assert.Equal(value, result);
             Assert.Equal(2, (int)result);
         }
+
+        [Fact]
+        public void EnumSingleEchoTest()
+        {
+            var value = EnumSingle.Single;
+            var result = EnumEchoFunctions.EnumSingleEcho(value);
+            Assert.Equal(value, result);
+            Assert.Equal(0, (int)result);
+        }
     }
 }

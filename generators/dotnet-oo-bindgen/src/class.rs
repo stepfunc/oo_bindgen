@@ -2,9 +2,8 @@ use oo_bindgen::*;
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use crate::*;
-use crate::conversion::*;
 
-pub fn generate_class(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
+pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
     print_license(f, &lib.license)?;
 
     f.writeln("using System;")?;

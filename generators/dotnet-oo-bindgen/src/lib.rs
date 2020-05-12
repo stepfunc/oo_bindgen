@@ -2,17 +2,16 @@ use oo_bindgen::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
 use std::fs;
 use std::path::PathBuf;
 use crate::conversion::*;
 use crate::formatting::*;
-use crate::class::generate_class;
 
 mod class;
 mod conversion;
 mod formatting;
+mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &'static str = "NativeFunctions";
 
@@ -102,30 +101,11 @@ fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
         filename.push(native_struct.name());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
-    
-        generate_struct(&mut f, native_struct, lib)?;
+
+        structure::generate(&mut f, native_struct, lib)?;
     }
 
     Ok(())
-}
-
-fn generate_struct(f: &mut impl Printer, native_struct: &NativeStructHandle, lib: &Library) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
-    f.newline()?;
-
-    namespaced(f, &lib.name, |f| {
-        f.writeln("[StructLayout(LayoutKind.Sequential)]")?;
-        f.writeln(&format!("public struct {}", native_struct.name()))?;
-        blocked(f, |f| {
-            for el in &native_struct.elements {
-                f.writeln(&format!("public {} {};", DotnetType(&el.element_type).as_dotnet_type(), el.name))?;
-            }
-            Ok(())
-        })
-    })
 }
 
 fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
@@ -167,8 +147,8 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
         filename.push(class.name());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
-    
-        generate_class(&mut f, class, lib)?;
+
+        class::generate(&mut f, class, lib)?;
     }
 
     Ok(())

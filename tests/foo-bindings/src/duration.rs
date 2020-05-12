@@ -18,6 +18,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .return_type(ReturnType::Type(Type::Duration(DurationMapping::SecondsFloat)))?
         .build()?;
 
+    // Declare static class
     let class = lib.declare_class("DurationEchoFunctions")?;
     lib.define_class(&class)?
         .static_method("MillisecondsEcho", &duration_ms_echo_func)?

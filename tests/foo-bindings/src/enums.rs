@@ -30,6 +30,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .variant("Two", 2)?
         .build();
 
+    let enum_single = lib.define_native_enum("EnumSingle")?
+        .push("Single")?
+        .build();
+
     // Declare each echo function
     let enum_zero_to_five_echo_function = lib.declare_native_function("enum_zero_to_five_echo")?
         .param("value", Type::Enum(enum_zero_to_five.clone()))?
@@ -46,11 +50,18 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .return_type(ReturnType::Type(Type::Enum(enum_disjoint.clone())))?
         .build()?;
 
+    let enum_single_echo_function = lib.declare_native_function("enum_single_echo")?
+        .param("value", Type::Enum(enum_single.clone()))?
+        .return_type(ReturnType::Type(Type::Enum(enum_single.clone())))?
+        .build()?;
+
+    // Declare static class
     let class = lib.declare_class("EnumEchoFunctions")?;
     lib.define_class(&class)?
         .static_method("EnumZeroToFiveEcho", &enum_zero_to_five_echo_function)?
         .static_method("EnumOneToSixEcho", &enum_one_to_six_echo_function)?
         .static_method("EnumDisjointEcho", &enum_disjoint_echo_function)?
+        .static_method("EnumSingleEcho", &enum_single_echo_function)?
         .build();
 
     Ok(())

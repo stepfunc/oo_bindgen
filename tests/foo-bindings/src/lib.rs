@@ -2,6 +2,7 @@ use oo_bindgen::*;
 
 mod duration;
 mod enums;
+mod structure;
 
 pub fn build_lib() -> Result<Library, BindingError> {
     let mut builder = LibraryBuilder::new(
@@ -20,6 +21,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
 
     duration::define(&mut builder)?;
     enums::define(&mut builder)?;
+    structure::define(&mut builder)?;
 
     Ok(builder.build())
 }

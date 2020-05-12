@@ -30,7 +30,7 @@ impl<'a> DotnetType<'a> {
     /// Return the .NET representation of the native C type
     pub fn as_native_type(&self) -> String {
         match self.0 {
-            Type::Bool => "bool".to_string(),
+            Type::Bool => "byte".to_string(),
             Type::Uint8 => "byte".to_string(),
             Type::Sint8 => "sbyte".to_string(),
             Type::Uint16 => "ushort".to_string(),
@@ -55,7 +55,7 @@ impl<'a> DotnetType<'a> {
 
     pub fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self.0 {
-            Type::Bool => None,
+            Type::Bool => Some(Box::new(BoolConverter)),
             Type::Uint8 => None,
             Type::Sint8 => None,
             Type::Uint16 => None,
@@ -83,6 +83,18 @@ impl<'a> DotnetType<'a> {
 pub trait TypeConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
+}
+
+// By default, PInvoke transforms "bool" into a weird 4-bit value
+struct BoolConverter;
+impl TypeConverter for BoolConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}Convert.ToByte({});", to, from))
+    }
+
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}Convert.ToBoolean({});", to, from))
+    }
 }
 
 struct DurationMillisecondsConverter;

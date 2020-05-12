@@ -10,6 +10,7 @@ set(tests
     ./version_tests.c
     ./enum_tests.c
     ./duration_tests.c
+    ./structure_tests.c
 )
 
 add_executable(foo_c main.c ${tests})

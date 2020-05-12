@@ -1,3 +1,5 @@
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum EnumZeroToFive {
     Zero,
     One,
@@ -7,6 +9,8 @@ pub enum EnumZeroToFive {
     Five,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum EnumOneToSix {
     One = 1,
     Two,
@@ -16,6 +20,8 @@ pub enum EnumOneToSix {
     Six,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum EnumDisjoint {
     Five = 5,
     One = 1,
@@ -23,6 +29,12 @@ pub enum EnumDisjoint {
     Four = 4,
     Seven = 7,
     Two = 2,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+pub enum EnumSingle {
+    Single,
 }
 
 #[no_mangle]
@@ -37,5 +49,10 @@ pub unsafe extern "C" fn enum_one_to_six_echo(value: EnumOneToSix) -> EnumOneToS
 
 #[no_mangle]
 pub unsafe extern "C" fn enum_disjoint_echo(value: EnumDisjoint) -> EnumDisjoint {
+    value
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn enum_single_echo(value: EnumSingle) -> EnumSingle {
     value
 }

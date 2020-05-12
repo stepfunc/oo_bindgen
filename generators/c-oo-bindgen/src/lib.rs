@@ -77,6 +77,7 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
         f.newline()?;
 
         // Standard includes needed
+        f.writeln("#include <stdbool.h>")?;
         f.writeln("#include <stdint.h>")?;
         f.newline()?;
 

@@ -1,5 +1,6 @@
 /target
 /.vscode
+.vs
 
 # Generated C lib
 tests/bindings/c/build

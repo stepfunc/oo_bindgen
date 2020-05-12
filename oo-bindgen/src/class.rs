@@ -38,6 +38,12 @@ impl Class {
     pub fn declaration(&self) -> ClassDeclarationHandle {
         self.declaration.clone()
     }
+
+    pub fn is_static(&self) -> bool {
+        self.constructor.is_none() &&
+        self.destructor.is_none() &&
+        self.methods.is_empty()
+    }
 }
 
 pub type ClassHandle = Handle<Class>;

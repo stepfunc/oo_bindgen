@@ -218,6 +218,10 @@ impl<'a> Display for CType<'a> {
             Type::StructRef(handle) => write!(f, "{}*", handle.name),
             Type::Enum(handle) => write!(f, "{}", handle.name),
             Type::ClassRef(handle) => write!(f, "{}*", handle.name),
+            Type::Duration(mapping) => match mapping {
+                DurationMapping::Milliseconds|DurationMapping::Seconds => write!(f, "uint64_t"),
+                DurationMapping::SecondsFloat => write!(f, "float"),
+            }
         }
     }
 }

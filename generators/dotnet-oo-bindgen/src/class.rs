@@ -2,6 +2,7 @@ use oo_bindgen::*;
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use crate::*;
+use crate::conversion::*;
 
 pub fn generate_class(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
     print_license(f, &lib.license)?;
@@ -15,23 +16,25 @@ pub fn generate_class(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -
         if class.destructor.is_some() {
             f.write(": IDisposable")?;
         }
-        f.newline()?;
 
         blocked(f, |f| {
-            f.writeln("private IntPtr self;")?;
-            if class.destructor.is_some() {
-                f.writeln("private bool disposed = false;")?;
-            }
-            f.newline()?;
+            if !class.is_static() {
+                f.writeln("private IntPtr self;")?;
+                if class.destructor.is_some() {
+                    f.writeln("private bool disposed = false;")?;
+                }
+                f.newline()?;
 
-            f.writeln(&format!("internal {}(IntPtr self)", class.name()))?;
-            blocked(f, |f| {
-                f.writeln("this.self = self;")
-            })?;
-            f.newline()?;
+                f.writeln(&format!("internal {}(IntPtr self)", class.name()))?;
+                blocked(f, |f| {
+                    f.writeln("this.self = self;")
+                })?;
+                f.newline()?;
+            }
 
             for method in &class.static_methods {
                 generate_static_method(f, method)?;
+                f.newline()?;
             }
 
             if let Some(constructor) = &class.constructor {
@@ -53,22 +56,14 @@ fn generate_constructor(f: &mut dyn Printer, classname: &str, constructor: &Nati
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor.parameters.iter()
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).dotnet_parameter(), param.name))
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name))
             .collect::<Vec<String>>()
             .join(", ")
     )?;
     f.write(")")?;
 
     blocked(f, |f| {
-        f.writeln(&format!("this.self = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, constructor.name))?;
-
-        f.write(
-            &constructor.parameters.iter()
-                .map(|param| DotnetParameter(param).arg())
-                .collect::<Vec<String>>()
-                .join(", ")
-        )?;
-        f.write(");")
+        call_native_function(f, &constructor, "this.self = ")
     })
 }
 
@@ -103,33 +98,56 @@ fn generate_destructor(f: &mut dyn Printer, classname: &str, destructor: &Native
 }
 
 fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    f.writeln(&format!("public static {} {}(", DotnetReturnType(&method.native_function.return_type), method.name))?;
+    f.writeln(&format!("public static {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name))?;
     f.write(
         &method.native_function.parameters.iter()
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).dotnet_parameter(), param.name))
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name))
             .collect::<Vec<String>>()
             .join(", ")
     )?;
     f.write(")")?;
 
     blocked(f, |f| {
-        f.newline()?;
-        if let ReturnType::Type(_) = method.native_function.return_type {
-            f.write("return ")?;
-        }
-        f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.native_function.name))?;
-
-        f.write(
-            &method.native_function.parameters.iter()
-                .map(|param| DotnetParameter(param).arg())
-                .collect::<Vec<String>>()
-                .join(", ")
-        )?;
-        f.write(");")
+        call_native_function(f, &method.native_function, "return ")
     })
 }
 
-struct DotnetParameter<'a>(&'a Parameter);
+fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str) -> FormattingResult<()> {
+    // Write the type conversions
+    &method.parameters.iter()
+        .map(|param| {
+            if let Some(converter) = DotnetType(&param.param_type).conversion() {
+                return converter.convert_to_native(f, &param.name, &format!("var {}Native = ", param.name));
+            }
+            Ok(())
+        }).collect::<FormattingResult<()>>()?;
+
+    // Call the native function
+    f.newline()?;
+    f.write(&format!("var nativeResult = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+
+    f.write(
+        &method.parameters.iter()
+            .map(|param| DotnetParameter(param).arg())
+            .collect::<Vec<String>>()
+            .join(", ")
+    )?;
+    f.write(");")?;
+
+    // Convert the result (if required)
+    if let ReturnType::Type(return_type) = &method.return_type {
+        if let Some(converter) = DotnetType(&return_type).conversion() {
+            converter.convert_from_native(f, "nativeResult", return_destination)
+        } else {
+            f.writeln(&format!("{}nativeResult;", return_destination))
+        }
+    } else {
+        Ok(())
+    }
+    
+}
+
+pub struct DotnetParameter<'a>(&'a Parameter);
 
 impl<'a> DotnetParameter<'a> {
     fn arg(&self) -> String {
@@ -150,6 +168,11 @@ impl<'a> DotnetParameter<'a> {
             Type::StructRef(_) => format!("ref {}", self.0.name.to_string()),
             Type::Enum(_) => self.0.name.to_string(),
             Type::ClassRef(_) => format!("{}.self", self.0.name.to_string()),
+            Type::Duration(mapping) => match mapping {
+                DurationMapping::Milliseconds => format!("{}Native", self.0.name),
+                DurationMapping::Seconds => format!("{}Native", self.0.name),
+                DurationMapping::SecondsFloat => format!("{}Native", self.0.name),
+            }
         }
     }
 }

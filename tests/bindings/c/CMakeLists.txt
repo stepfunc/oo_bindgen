@@ -9,6 +9,7 @@ find_package(foo REQUIRED)
 set(tests
     ./version_tests.c
     ./enum_tests.c
+    ./duration_tests.c
 )
 
 add_executable(foo_c main.c ${tests})

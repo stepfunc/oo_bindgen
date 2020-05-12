@@ -18,6 +18,19 @@ pub enum Type {
     StructRef(NativeStructDeclarationHandle),
     Enum(NativeEnumHandle),
     ClassRef(ClassDeclarationHandle),
+
+    // Not native types
+    Duration(DurationMapping),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+pub enum DurationMapping {
+    // Duration is the number of milliseconds in a u64 value
+    Milliseconds,
+    // Duration is the number of seconds in a u64 value
+    Seconds,
+    // Duration is the number of seconds and fractional part in a f32 value
+    SecondsFloat,
 }
 
 #[derive(Debug)]

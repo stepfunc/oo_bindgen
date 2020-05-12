@@ -4,13 +4,14 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
-use std::fmt::{Display};
 use std::fs;
 use std::path::PathBuf;
+use crate::conversion::*;
 use crate::formatting::*;
 use crate::class::generate_class;
 
 mod class;
+mod conversion;
 mod formatting;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &'static str = "NativeFunctions";
@@ -77,11 +78,11 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
             for handle in lib.native_functions() {
                 f.writeln(&format!("[DllImport(\"{}\")]", config.ffi_name))?;
                 f.newline()?;
-                f.write(&format!("internal static extern {} {}(", DotnetReturnType(&handle.return_type), handle.name))?;
+                f.write(&format!("internal static extern {} {}(", DotnetReturnType(&handle.return_type).as_native_type(), handle.name))?;
                 
                 f.write(
                     &handle.parameters.iter()
-                        .map(|param| format!("{} {}", DotnetType(&param.param_type).native_parameter(), param.name))
+                        .map(|param| format!("{} {}", DotnetType(&param.param_type).as_native_type(), param.name))
                         .collect::<Vec<String>>()
                         .join(", ")
                 )?;
@@ -120,7 +121,7 @@ fn generate_struct(f: &mut impl Printer, native_struct: &NativeStructHandle, lib
         f.writeln(&format!("public struct {}", native_struct.name()))?;
         blocked(f, |f| {
             for el in &native_struct.elements {
-                f.writeln(&format!("public {} {};", DotnetType(&el.element_type).dotnet_parameter(), el.name))?;
+                f.writeln(&format!("public {} {};", DotnetType(&el.element_type).as_dotnet_type(), el.name))?;
             }
             Ok(())
         })
@@ -180,61 +181,4 @@ fn print_license(f: &mut dyn Printer, license: &Vec<String>) -> FormattingResult
         }
         Ok(())
     })
-}
-
-struct DotnetReturnType<'a>(&'a ReturnType);
-
-impl <'a> Display for DotnetReturnType<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self.0 {
-            ReturnType::Void => write!(f, "void"),
-            ReturnType::Type(return_type) => write!(f, "{}", DotnetType(&return_type).native_parameter()),
-        }
-    }
-}
-
-struct DotnetType<'a>(&'a Type);
-
-impl<'a> DotnetType<'a> {
-    fn dotnet_parameter(&self) -> String {
-        match self.0 {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "byte".to_string(),
-            Type::Sint8 => "sbyte".to_string(),
-            Type::Uint16 => "ushort".to_string(),
-            Type::Sint16 => "short".to_string(),
-            Type::Uint32 => "uint".to_string(),
-            Type::Sint32 => "int".to_string(),
-            Type::Uint64 => "ulong".to_string(),
-            Type::Sint64 => "long".to_string(),
-            Type::Float => unimplemented!(),
-            Type::Double => unimplemented!(),
-            Type::String => unimplemented!(),
-            Type::Struct(handle) => format!("{}", handle.name()),
-            Type::StructRef(handle) => format!("{}", handle.name),
-            Type::Enum(handle) => format!("{}", handle.name),
-            Type::ClassRef(handle) => format!("{}", handle.name),
-        }
-    }
-
-    fn native_parameter(&self) -> String {
-        match self.0 {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "byte".to_string(),
-            Type::Sint8 => "sbyte".to_string(),
-            Type::Uint16 => "ushort".to_string(),
-            Type::Sint16 => "short".to_string(),
-            Type::Uint32 => "uint".to_string(),
-            Type::Sint32 => "int".to_string(),
-            Type::Uint64 => "ulong".to_string(),
-            Type::Sint64 => "long".to_string(),
-            Type::Float => unimplemented!(),
-            Type::Double => unimplemented!(),
-            Type::String => unimplemented!(),
-            Type::Struct(handle) => format!("{}", handle.name()),
-            Type::StructRef(handle) => format!("ref {}", handle.name),
-            Type::Enum(handle) => format!("{}", handle.name),
-            Type::ClassRef(_) => "IntPtr".to_string(),
-        }
-    }
 }

@@ -85,12 +85,12 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
         for statement in lib.into_iter() {
             match statement {
                 Statement::StructDeclaration(handle) => {
-                    f.writeln(&format!("struct {};", handle.name))?;
+                    f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;
                 },
                 Statement::StructDefinition(handle) => write_struct_definition(f, handle)?,
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
                 Statement::ClassDeclaration(handle) => {
-                    f.writeln(&format!("struct {};", handle.name))?;
+                    f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;
                 }
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle)?,
                 _ => (),

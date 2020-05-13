@@ -11,7 +11,8 @@ pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> Form
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
-        f.writeln(&format!("public class {}", class.name()))?;
+        let static_specifier = if class.is_static() { "static " } else { "" };
+        f.writeln(&format!("public {}class {}", static_specifier, class.name()))?;
         if class.destructor.is_some() {
             f.write(": IDisposable")?;
         }
@@ -31,11 +32,6 @@ pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> Form
                 f.newline()?;
             }
 
-            for method in &class.static_methods {
-                generate_static_method(f, method)?;
-                f.newline()?;
-            }
-
             if let Some(constructor) = &class.constructor {
                 generate_constructor(f, class.name(), constructor)?;
                 f.newline()?;
@@ -43,6 +39,16 @@ pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> Form
 
             if let Some(destructor) = &class.destructor {
                 generate_destructor(f, class.name(), destructor)?;
+                f.newline()?;
+            }
+
+            for method in &class.methods {
+                generate_method(f, method)?;
+                f.newline()?;
+            }
+
+            for method in &class.static_methods {
+                generate_static_method(f, method)?;
                 f.newline()?;
             }
 
@@ -62,7 +68,7 @@ fn generate_constructor(f: &mut dyn Printer, classname: &str, constructor: &Nati
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &constructor, "this.self = ")
+        call_native_function(f, &constructor, "this.self = ", false)
     })
 }
 
@@ -96,6 +102,21 @@ fn generate_destructor(f: &mut dyn Printer, classname: &str, destructor: &Native
     })
 }
 
+fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+    f.writeln(&format!("public {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name))?;
+    f.write(
+        &method.native_function.parameters.iter().skip(1)
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name))
+            .collect::<Vec<String>>()
+            .join(", ")
+    )?;
+    f.write(")")?;
+
+    blocked(f, |f| {
+        call_native_function(f, &method.native_function, "return ", true)
+    })
+}
+
 fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
     f.writeln(&format!("public static {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name))?;
     f.write(
@@ -107,11 +128,11 @@ fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingRes
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &method.native_function, "return ")
+        call_native_function(f, &method.native_function, "return ", false)
     })
 }
 
-fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str) -> FormattingResult<()> {
+fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str, first_param_is_self: bool) -> FormattingResult<()> {
     // Write the type conversions
     &method.parameters.iter()
         .map(|param| {
@@ -123,11 +144,25 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
 
     // Call the native function
     f.newline()?;
-    f.write(&format!("var nativeResult = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+    if let ReturnType::Type(return_type) = &method.return_type {
+        if let Some(_) = DotnetType(&return_type).conversion() {
+            f.write(&format!("var _nativeResult = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+        } else {
+            f.write(&format!("{}{}.{}(", return_destination, NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+        }
+    } else {
+        f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+    }
 
     f.write(
-        &method.parameters.iter()
-            .map(|param| DotnetParameter(param).arg())
+        &method.parameters.iter().enumerate()
+            .map(|(idx, param)| {
+                if idx == 0 && first_param_is_self {
+                    "this.self".to_string()
+                } else{
+                    DotnetParameter(param).arg()
+                }
+            })
             .collect::<Vec<String>>()
             .join(", ")
     )?;
@@ -136,14 +171,11 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
     // Convert the result (if required)
     if let ReturnType::Type(return_type) = &method.return_type {
         if let Some(converter) = DotnetType(&return_type).conversion() {
-            converter.convert_from_native(f, "nativeResult", return_destination)
-        } else {
-            f.writeln(&format!("{}nativeResult;", return_destination))
+            converter.convert_from_native(f, "_nativeResult", return_destination)?;
         }
-    } else {
-        Ok(())
     }
-    
+
+    Ok(())
 }
 
 pub struct DotnetParameter<'a>(&'a Parameter);

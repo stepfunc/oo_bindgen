@@ -1,5 +1,6 @@
 use oo_bindgen::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::interface::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
@@ -93,6 +94,7 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
                     f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;
                 }
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle)?,
+                Statement::InterfaceDefinition(handle) => write_interface(f, handle)?,
                 _ => (),
             }
             f.newline()?;
@@ -138,6 +140,41 @@ fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> Formatt
     )?;
 
     f.write(");")
+}
+
+fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
+    f.writeln(&format!("typedef struct {}", handle.name))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        for element in &handle.elements {
+            match element {
+                InterfaceElement::Arg(name) => f.writeln(&format!("void* {};", name))?,
+                InterfaceElement::CallbackFunction(handle) => {
+                    f.newline()?;
+                    f.write(&format!("{} (*{})(", CReturnType(&handle.return_type), handle.name))?;
+                    
+                    f.write(
+                        &handle.parameters.iter()
+                            .map(|param| {
+                                match param {
+                                    CallbackParameter::Arg(_) => "void*".to_string(),
+                                    CallbackParameter::Parameter(param) => format!("{}", CType(&param.param_type)),
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    )?;
+
+                    f.write(");")?;
+                },
+                InterfaceElement::DestroyFunction(name) => {
+                    f.writeln(&format!("void (*{})(void* arg);", name))?;
+                }
+            }
+        }
+        Ok(())
+    })?;
+    f.writeln(&format!("}} {};", handle.name))
 }
 
 fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
@@ -219,6 +256,7 @@ impl<'a> Display for CType<'a> {
             Type::StructRef(handle) => write!(f, "{}*", handle.name),
             Type::Enum(handle) => write!(f, "{}", handle.name),
             Type::ClassRef(handle) => write!(f, "{}*", handle.name),
+            Type::Interface(handle) => write!(f, "{}", handle.name),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),

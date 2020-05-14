@@ -1,4 +1,5 @@
 use oo_bindgen::formatting::*;
+use oo_bindgen::interface::*;
 use oo_bindgen::native_function::*;
 
 pub struct DotnetType<'a>(pub &'a Type);
@@ -23,6 +24,7 @@ impl<'a> DotnetType<'a> {
             Type::StructRef(handle) => format!("{}", handle.name),
             Type::Enum(handle) => format!("{}", handle.name),
             Type::ClassRef(handle) => format!("{}", handle.name),
+            Type::Interface(handle) => format!("{}", handle.name),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
@@ -46,6 +48,7 @@ impl<'a> DotnetType<'a> {
             Type::StructRef(handle) => format!("ref {}", handle.name),
             Type::Enum(handle) => format!("{}", handle.name),
             Type::ClassRef(_) => "IntPtr".to_string(),
+            Type::Interface(handle) => format!("{}NativeAdapter", handle.name),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => "ulong".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),
@@ -71,6 +74,7 @@ impl<'a> DotnetType<'a> {
             Type::StructRef(_) => None,
             Type::Enum(_) => None,
             Type::ClassRef(_) => None,
+            Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(Box::new(DurationMillisecondsConverter)),
                 DurationMapping::Seconds => Some(Box::new(DurationSecondsConverter)),
@@ -94,6 +98,17 @@ impl TypeConverter for BoolConverter {
 
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}Convert.ToBoolean({});", to, from))
+    }
+}
+
+struct InterfaceConverter(InterfaceHandle);
+impl TypeConverter for InterfaceConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name, from))
+    }
+
+    fn convert_from_native(&self, _: &mut dyn Printer, _: &str, _: &str) -> FormattingResult<()> {
+        unimplemented!("cannot return interfaces");
     }
 }
 

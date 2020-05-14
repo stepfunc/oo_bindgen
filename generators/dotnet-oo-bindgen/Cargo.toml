@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 oo-bindgen = { path = "../../oo-bindgen" }
+dunce = "1.0"

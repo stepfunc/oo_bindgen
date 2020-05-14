@@ -16,24 +16,24 @@ pub enum StructureEnum {
 #[derive(Clone)]
 pub struct Structure {
     // Native types
-    pub booleanValue: bool,
-    pub uint8Value: u8,
-    pub int8Value: i8,
-    pub uint16Value: u16,
-    pub int16Value: i16,
-    pub uint32Value: u32,
-    pub int32Value: i32,
-    pub uint64Value: u64,
-    pub int64Value: i64,
+    pub boolean_value: bool,
+    pub uint8_value: u8,
+    pub int8_value: i8,
+    pub uint16_value: u16,
+    pub int16_value: i16,
+    pub uint32_value: u32,
+    pub int32_value: i32,
+    pub uint64_value: u64,
+    pub int64_value: i64,
 
     // Complex types
-    pub structureValue: OtherStructure,
-    pub enumValue: StructureEnum,
+    pub structure_value: OtherStructure,
+    pub enum_value: StructureEnum,
 
     // Duration types
-    pub durationMillis: u64,
-    pub durationSeconds: u64,
-    pub durationSecondsFloat: f32,
+    pub duration_millis: u64,
+    pub duration_seconds: u64,
+    pub duration_seconds_float: f32,
 }
 
 #[no_mangle]

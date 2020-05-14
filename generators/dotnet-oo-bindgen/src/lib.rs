@@ -11,6 +11,7 @@ use crate::formatting::*;
 mod class;
 mod conversion;
 mod formatting;
+mod interface;
 mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &'static str = "NativeFunctions";
@@ -30,6 +31,7 @@ pub fn generate_dotnet_bindings(lib: &Library, config: &DotnetBindgenConfig) -> 
     generate_structs(lib, config)?;
     generate_enums(lib, config)?;
     generate_classes(lib, config)?;
+    generate_interfaces(lib, config)?;
 
     Ok(())
 }
@@ -50,8 +52,8 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
 
     for p in config.platforms.iter() {
         let filename = p.bin_filename(&config.ffi_name);
-        let filepath = p.location.join(&filename);
-        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.canonicalize()?.to_string_lossy(), filename, p.platform.to_string()))?;
+        let filepath = dunce::canonicalize(p.location.join(&filename))?;
+        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, p.platform.to_string()))?;
     }
 
     f.writeln("  </ItemGroup>")?;
@@ -149,6 +151,20 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
         let mut f = FilePrinter::new(filename)?;
 
         class::generate(&mut f, class, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for interface in lib.interfaces() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&interface.name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        interface::generate(&mut f, interface, lib)?;
     }
 
     Ok(())

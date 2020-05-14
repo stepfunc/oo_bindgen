@@ -14,10 +14,13 @@ pub enum Type {
     Float,
     Double,
     String,
+
+    // Complex types
     Struct(NativeStructHandle),
     StructRef(NativeStructDeclarationHandle),
     Enum(NativeEnumHandle),
     ClassRef(ClassDeclarationHandle),
+    Interface(InterfaceHandle),
 
     // Not native types
     Duration(DurationMapping),

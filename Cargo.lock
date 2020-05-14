@@ -126,8 +126,15 @@ dependencies = [
 name = "dotnet-oo-bindgen"
 version = "0.1.0"
 dependencies = [
+ "dunce",
  "oo-bindgen",
 ]
+
+[[package]]
+name = "dunce"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0ad6bf6a88548d1126045c413548df1453d9be094a8ab9fd59bf1fdd338da4f"
 
 [[package]]
 name = "env_logger"

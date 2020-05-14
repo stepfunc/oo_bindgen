@@ -1,4 +1,5 @@
 use crate::class::*;
+use crate::interface::*;
 use crate::native_enum::*;
 use crate::native_function::*;
 use crate::native_struct::*;
@@ -13,6 +14,7 @@ use std::rc::Rc;
 
 pub mod class;
 pub mod formatting;
+pub mod interface;
 pub mod platforms;
 pub mod native_enum;
 pub mod native_function;
@@ -89,7 +91,22 @@ pub enum BindingError {
     DestructorTakesMoreThanOneParameter{
         handle: ClassDeclarationHandle,
         native_func: NativeFunctionHandle,
-    }
+    },
+
+    // Interface errors
+    #[error("Interface '{}' already has element with the name '{}'", interface_name, element_name)]
+    InterfaceHasElementWithSameName{
+        interface_name: String,
+        element_name: String,
+    },
+    #[error("Interface '{}' does not have a void* arg defined", interface_name)]
+    InterfaceArgNameNotDefined{interface_name: String},
+    #[error("Interface '{}' already has void* arg defined", interface_name)]
+    InterfaceArgNameAlreadyDefined{interface_name: String},
+    #[error("Interface '{}' does not have a destroy callback defined", interface_name)]
+    InterfaceDestroyCallbackNotDefined{interface_name: String},
+    #[error("Interface '{}' already has a destroy callback defined", interface_name)]
+    InterfaceDestroyCallbackAlreadyDefined{interface_name: String},
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -141,6 +158,7 @@ pub enum Statement {
     EnumDefinition(NativeEnumHandle),
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(ClassHandle),
+    InterfaceDefinition(InterfaceHandle),
     NativeFunctionDeclaration(NativeFunctionHandle),
 }
 
@@ -155,28 +173,49 @@ pub struct Library {
 }
 
 impl Library {
-    pub fn native_functions(&self) -> NativeFunctionIterator {
-        NativeFunctionIterator {
-            iter: self.into_iter()
-        }
+    pub fn native_functions(&self) -> impl Iterator<Item = &NativeFunctionHandle> {
+        self.into_iter().filter_map(|statement| {
+            match statement {
+                Statement::NativeFunctionDeclaration(handle) => Some(handle),
+                _ => None,
+            }
+        })
     }
 
-    pub fn native_structs(&self) -> NativeStructIterator {
-        NativeStructIterator {
-            iter: self.into_iter()
-        }
+    pub fn native_structs(&self) -> impl Iterator<Item = &NativeStructHandle> {
+        self.into_iter().filter_map(|statement| {
+            match statement {
+                Statement::StructDefinition(handle) => Some(handle),
+                _ => None,
+            }
+        })
     }
 
-    pub fn native_enums(&self) -> NativeEnumIterator {
-        NativeEnumIterator {
-            iter: self.into_iter()
-        }
+    pub fn native_enums(&self) -> impl Iterator<Item = &NativeEnumHandle> {
+        self.into_iter().filter_map(|statement| {
+            match statement {
+                Statement::EnumDefinition(handle) => Some(handle),
+                _ => None,
+            }
+        })
     }
 
-    pub fn classes(&self) -> ClassIterator {
-        ClassIterator {
-            iter: self.into_iter()
-        }
+    pub fn classes(&self) -> impl Iterator<Item = &ClassHandle> {
+        self.into_iter().filter_map(|statement| {
+            match statement {
+                Statement::ClassDefinition(handle) => Some(handle),
+                _ => None,
+            }
+        })
+    }
+
+    pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
+        self.into_iter().filter_map(|statement| {
+            match statement {
+                Statement::InterfaceDefinition(handle) => Some(handle),
+                _ => None,
+            }
+        })
     }
 }
 
@@ -185,82 +224,6 @@ impl<'a> IntoIterator for &'a Library {
     type IntoIter = std::slice::Iter<'a, Statement>;
     fn into_iter(self) -> Self::IntoIter {
         self.statements.iter()
-    }
-}
-
-pub struct NativeFunctionIterator<'a> {
-    iter: std::slice::Iter<'a, Statement>,
-}
-
-impl<'a> Iterator for NativeFunctionIterator<'a> {
-    type Item = &'a NativeFunctionHandle;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(statement) = self.iter.next() {
-            match statement {
-                Statement::NativeFunctionDeclaration(handle) => return Some(handle),
-                _ => (),
-            }
-        }
-
-        None
-    }
-}
-
-pub struct NativeStructIterator<'a> {
-    iter: std::slice::Iter<'a, Statement>,
-}
-
-impl<'a> Iterator for NativeStructIterator<'a> {
-    type Item = &'a NativeStructHandle;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(statement) = self.iter.next() {
-            match statement {
-                Statement::StructDefinition(handle) => return Some(handle),
-                _ => (),
-            }
-        }
-
-        None
-    }
-}
-
-pub struct NativeEnumIterator<'a> {
-    iter: std::slice::Iter<'a, Statement>,
-}
-
-impl<'a> Iterator for NativeEnumIterator<'a> {
-    type Item = &'a NativeEnumHandle;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(statement) = self.iter.next() {
-            match statement {
-                Statement::EnumDefinition(handle) => return Some(handle),
-                _ => (),
-            }
-        }
-
-        None
-    }
-}
-
-pub struct ClassIterator<'a> {
-    iter: std::slice::Iter<'a, Statement>,
-}
-
-impl<'a> Iterator for ClassIterator<'a> {
-    type Item = &'a ClassHandle;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some(statement) = self.iter.next() {
-            match statement {
-                Statement::ClassDefinition(handle) => return Some(handle),
-                _ => (),
-            }
-        }
-
-        None
     }
 }
 
@@ -280,6 +243,8 @@ pub struct LibraryBuilder {
 
     class_declarations: HashSet<ClassDeclarationHandle>,
     classes: HashMap<ClassDeclarationHandle, ClassHandle>,
+
+    interfaces: HashSet<InterfaceHandle>,
 
     native_functions: HashSet<NativeFunctionHandle>,
 }
@@ -302,6 +267,8 @@ impl LibraryBuilder {
 
             class_declarations: HashSet::new(),
             classes: HashMap::new(),
+
+            interfaces: HashSet::new(),
 
             native_functions: HashSet::new(),
         }
@@ -380,6 +347,11 @@ impl LibraryBuilder {
         } else {
             Err(BindingError::ClassAlreadyDefined{handle: declaration.clone()})
         }
+    }
+
+    pub fn define_interface(&mut self, name: &str) -> Result<InterfaceBuilder> {
+        self.check_unique_symbol(name)?;
+        Ok(InterfaceBuilder::new(self, name.to_string()))
     }
 
     fn check_unique_symbol(&mut self, name: &str) -> Result<()> {

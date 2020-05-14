@@ -31,7 +31,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     // Define the class
-    let testclass = lib.define_class(&testclass)?
+    let _testclass = lib.define_class(&testclass)?
         .constructor(&testclass_new_func)?
         .destructor(&testclass_destroy_func)?
         .method("GetValue", &testclass_get_value_func)?

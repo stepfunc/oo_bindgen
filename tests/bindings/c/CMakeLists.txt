@@ -11,6 +11,7 @@ set(tests
     ./enum_tests.c
     ./duration_tests.c
     ./structure_tests.c
+    ./callback_tests.c
 )
 
 add_executable(foo_c main.c ${tests})

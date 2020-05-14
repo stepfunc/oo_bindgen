@@ -1,5 +1,6 @@
 use oo_bindgen::*;
 
+mod callback;
 mod class;
 mod duration;
 mod enums;
@@ -20,6 +21,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
         "  - Frumious Scadateer (@scadateer)",
     ].iter().map(|s| s.to_string()).collect())?;
 
+    callback::define(&mut builder)?;
     class::define(&mut builder)?;
     duration::define(&mut builder)?;
     enums::define(&mut builder)?;

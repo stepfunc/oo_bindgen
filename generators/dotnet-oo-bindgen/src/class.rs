@@ -199,6 +199,7 @@ impl<'a> DotnetParameter<'a> {
             Type::StructRef(_) => format!("ref {}", self.0.name.to_string()),
             Type::Enum(_) => self.0.name.to_string(),
             Type::ClassRef(_) => format!("{}.self", self.0.name.to_string()),
+            Type::Interface(_) => format!("{}Native", self.0.name),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => format!("{}Native", self.0.name),
                 DurationMapping::Seconds => format!("{}Native", self.0.name),

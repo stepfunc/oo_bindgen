@@ -82,6 +82,33 @@ impl<'a> DotnetType<'a> {
             }
         }
     }
+
+    pub fn as_dotnet_arg(&self, param_name: &str) -> String {
+        match self.0 {
+            Type::Bool => param_name.to_string(),
+            Type::Uint8 => param_name.to_string(),
+            Type::Sint8 => param_name.to_string(),
+            Type::Uint16 => param_name.to_string(),
+            Type::Sint16 => param_name.to_string(),
+            Type::Uint32 => param_name.to_string(),
+            Type::Sint32 => param_name.to_string(),
+            Type::Uint64 => param_name.to_string(),
+            Type::Sint64 => param_name.to_string(),
+            Type::Float => unimplemented!(),
+            Type::Double => unimplemented!(),
+            Type::String => unimplemented!(),
+            Type::Struct(_) => param_name.to_string(),
+            Type::StructRef(_) => format!("ref {}", param_name.to_string()),
+            Type::Enum(_) => param_name.to_string(),
+            Type::ClassRef(_) => format!("{}.self", param_name.to_string()),
+            Type::Interface(_) => format!("_{}", param_name),
+            Type::Duration(mapping) => match mapping {
+                DurationMapping::Milliseconds => format!("_{}", param_name),
+                DurationMapping::Seconds => format!("_{}", param_name),
+                DurationMapping::SecondsFloat => format!("_{}", param_name),
+            }
+        }
+    }
 }
 
 pub trait TypeConverter {

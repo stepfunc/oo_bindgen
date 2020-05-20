@@ -183,7 +183,9 @@ fn call_dotnet_function(f: &mut dyn Printer, method: &CallbackFunction, return_d
 
     f.write(
         &method.params()
-            .map(|param| param.name.to_string())
+            .map(|param| {
+                DotnetType(&param.param_type).as_dotnet_arg(&param.name)
+            })
             .collect::<Vec<String>>()
             .join(", ")
     )?;

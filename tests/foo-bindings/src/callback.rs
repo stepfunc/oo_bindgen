@@ -9,6 +9,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             .arg("data")?
             .return_type(ReturnType::Void)?
             .build()?
+        .callback("on_duration")?
+            .param("value", Type::Duration(DurationMapping::Milliseconds))?
+            .arg("data")?
+            .return_type(ReturnType::Void)?
+            .build()?
         .destroy_callback("on_destroy")?
         .arg("data")?
         .build()?;
@@ -38,12 +43,19 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .return_type(ReturnType::Void)?
         .build()?;
 
+    let cbsource_set_duration_func = lib.declare_native_function("cbsource_set_duration")?
+        .param("cbsource", Type::ClassRef(cbsource.clone()))?
+        .param("value", Type::Duration(DurationMapping::Milliseconds))?
+        .return_type(ReturnType::Void)?
+        .build()?;
+
     // Define the class
     let _cbsource = lib.define_class(&cbsource)?
         .constructor(&cbsource_new_func)?
         .destructor(&cbsource_destroy_func)?
         .method("AddFunc", &cbsource_add_func)?
         .method("SetValue", &cbsource_set_value_func)?
+        .method("SetDuration", &cbsource_set_duration_func)?
         .build();
 
     Ok(())

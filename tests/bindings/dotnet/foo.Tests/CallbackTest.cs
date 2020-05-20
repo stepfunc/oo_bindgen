@@ -1,36 +1,48 @@
 using System;
 using Xunit;
 using foo;
-using System.Threading;
 
 namespace foo.Tests
 {
     class CallbackImpl : CallbackInterface
     {
         public uint lastValue = 0;
+        public TimeSpan lastDuration = TimeSpan.MinValue;
 
         public void on_value(uint value)
         {
             lastValue = value;
         }
+
+        public void on_duration(TimeSpan value)
+        {
+            lastDuration = value;
+        }
     }
 
     class CallbackFinalizerCounterImpl : CallbackInterface
     {
-        public static int numConstructorsCalled = 0;
-        public static int numFinalizersCalled = 0;
+        private Counters counters;
 
         public void on_value(uint value) {}
+        public void on_duration(TimeSpan value) {}
 
-        public CallbackFinalizerCounterImpl()
+        public CallbackFinalizerCounterImpl(Counters counters)
         {
-            CallbackFinalizerCounterImpl.numConstructorsCalled++;
+            this.counters = counters;
+            this.counters.numConstructorsCalled++;
         }
 
         ~CallbackFinalizerCounterImpl()
         {
-            CallbackFinalizerCounterImpl.numFinalizersCalled++;
+            this.counters.numFinalizersCalled++;
         }
+    }
+
+    class Counters
+    {
+        public int numConstructorsCalled = 0;
+        public int numFinalizersCalled = 0;
     }
 
     public class CallbackTests
@@ -46,28 +58,39 @@ namespace foo.Tests
                 Assert.Equal(0u, cb.lastValue);
                 cbSource.SetValue(76);
                 Assert.Equal(76u, cb.lastValue);
+
+                Assert.Equal(TimeSpan.MinValue, cb.lastDuration);
+                cbSource.SetDuration(TimeSpan.FromSeconds(76));
+                Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
+            }
+        }
+
+        private void singleRun(Counters counters)
+        {
+            using (var cbSource = new CallbackSource())
+            {
+                cbSource.AddFunc(new CallbackFinalizerCounterImpl(counters));
+                cbSource.SetValue(76);
             }
         }
 
         [Fact]
         public void CallbackMemoryLeakTest()
         {
+            var counters = new Counters();
             var numRuns = 1000;
 
             for (int i = 0; i < numRuns; i++)
             {
-                using (var cbSource = new CallbackSource())
-                {
-                    cbSource.AddFunc(new CallbackFinalizerCounterImpl());
-                    cbSource.SetValue(76);
-                }
+                singleRun(counters);
             }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
 
-            Assert.Equal(numRuns, CallbackFinalizerCounterImpl.numConstructorsCalled);
-            Assert.Equal(numRuns, CallbackFinalizerCounterImpl.numFinalizersCalled);
+            Assert.Equal(numRuns, counters.numConstructorsCalled);
+            Assert.Equal(numRuns, counters.numFinalizersCalled);
         }
     }
 }

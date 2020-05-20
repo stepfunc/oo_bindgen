@@ -137,7 +137,7 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
     &method.parameters.iter()
         .map(|param| {
             if let Some(converter) = DotnetType(&param.param_type).conversion() {
-                return converter.convert_to_native(f, &param.name, &format!("var {}Native = ", param.name));
+                return converter.convert_to_native(f, &param.name, &format!("var _{} = ", param.name));
             }
             Ok(())
         }).collect::<FormattingResult<()>>()?;
@@ -160,7 +160,7 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
                 if idx == 0 && first_param_is_self {
                     "this.self".to_string()
                 } else{
-                    DotnetParameter(param).arg()
+                    DotnetType(&param.param_type).as_dotnet_arg(&param.name)
                 }
             })
             .collect::<Vec<String>>()
@@ -176,35 +176,4 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
     }
 
     Ok(())
-}
-
-pub struct DotnetParameter<'a>(&'a Parameter);
-
-impl<'a> DotnetParameter<'a> {
-    fn arg(&self) -> String {
-        match &self.0.param_type {
-            Type::Bool => self.0.name.to_string(),
-            Type::Uint8 => self.0.name.to_string(),
-            Type::Sint8 => self.0.name.to_string(),
-            Type::Uint16 => self.0.name.to_string(),
-            Type::Sint16 => self.0.name.to_string(),
-            Type::Uint32 => self.0.name.to_string(),
-            Type::Sint32 => self.0.name.to_string(),
-            Type::Uint64 => self.0.name.to_string(),
-            Type::Sint64 => self.0.name.to_string(),
-            Type::Float => unimplemented!(),
-            Type::Double => unimplemented!(),
-            Type::String => unimplemented!(),
-            Type::Struct(_) => self.0.name.to_string(),
-            Type::StructRef(_) => format!("ref {}", self.0.name.to_string()),
-            Type::Enum(_) => self.0.name.to_string(),
-            Type::ClassRef(_) => format!("{}.self", self.0.name.to_string()),
-            Type::Interface(_) => format!("{}Native", self.0.name),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds => format!("{}Native", self.0.name),
-                DurationMapping::Seconds => format!("{}Native", self.0.name),
-                DurationMapping::SecondsFloat => format!("{}Native", self.0.name),
-            }
-        }
-    }
 }

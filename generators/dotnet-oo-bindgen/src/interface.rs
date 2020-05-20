@@ -87,8 +87,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
             // Define the constructor
             f.writeln(&format!("internal {}NativeAdapter({} impl)", interface.name, interface.name))?;
             blocked(f, |f| {
-                f.writeln("var inner = new InnerData();")?;
-                f.writeln("inner.impl = impl;")?;
+                f.writeln("var _handle = GCHandle.Alloc(impl);")?;
                 f.newline()?;
 
                 for el in &interface.elements {
@@ -100,8 +99,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                             f.writeln(&format!("this.{} = {}NativeAdapter.{}_cb;", name, interface.name, name))?;
                         }
                         InterfaceElement::Arg(name) => {
-                            f.writeln(&format!("this.{} = Marshal.AllocHGlobal(Marshal.SizeOf(inner));", name))?;
-                            f.writeln(&format!("Marshal.StructureToPtr(inner, this.{}, false);", name))?;
+                            f.writeln(&format!("this.{} = GCHandle.ToIntPtr(_handle);", name))?;
                         },
                     }
     
@@ -129,7 +127,8 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                         f.write(")")?;
 
                         blocked(f, |f| {
-                            f.writeln(&format!("var _inner = Marshal.PtrToStructure<InnerData>({});", func.arg_name))?;
+                            f.writeln(&format!("var _handle = GCHandle.FromIntPtr({});", func.arg_name))?;
+                            f.writeln(&format!("var _impl = ({})_handle.Target;", interface.name))?;
                             call_dotnet_function(f, func, "return ")
                         })?;
 
@@ -139,8 +138,8 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                         f.writeln(&format!("internal static void {}_cb(IntPtr arg)", name))?;
 
                         blocked(f, |f| {
-                            f.writeln("Marshal.DestroyStructure<InnerData>(arg);")?;
-                            f.writeln("Marshal.FreeHGlobal(arg);")
+                            f.writeln("var _handle = GCHandle.FromIntPtr(arg);")?;
+                            f.writeln("_handle.Free();")
                         })?;
 
                         f.newline()?;
@@ -149,12 +148,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                 }
             }
 
-            // Inner data definition
-            f.writeln("[StructLayout(LayoutKind.Sequential)]")?;
-            f.writeln("internal struct InnerData")?;
-            blocked(f, |f| {
-                f.writeln("public CallbackInterface impl;")
-            })
+            Ok(())
         })
     })
 }
@@ -173,12 +167,12 @@ fn call_dotnet_function(f: &mut dyn Printer, method: &CallbackFunction, return_d
     f.newline()?;
     if let ReturnType::Type(return_type) = &method.return_type {
         if let Some(_) = DotnetType(&return_type).conversion() {
-            f.write(&format!("var _result = _inner.impl.{}(", method.name))?;
+            f.write(&format!("var _result = _impl.{}(", method.name))?;
         } else {
-            f.write(&format!("{}_inner.impl.{}(", return_destination, method.name))?;
+            f.write(&format!("{}_impl.{}(", return_destination, method.name))?;
         }
     } else {
-        f.write(&format!("_inner.impl.{}(", method.name))?;
+        f.write(&format!("_impl.{}(", method.name))?;
     }
 
     f.write(

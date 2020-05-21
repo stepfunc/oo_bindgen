@@ -168,6 +168,15 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
     )?;
     f.write(");")?;
 
+    //Cleanup type conversions
+    &method.parameters.iter()
+        .map(|param| {
+            if let Some(converter) = DotnetType(&param.param_type).conversion() {
+                return converter.convert_to_native_cleanup(f, &format!("_{}", param.name));
+            }
+            Ok(())
+        }).collect::<FormattingResult<()>>()?;
+
     // Convert the result (if required)
     if let ReturnType::Type(return_type) = &method.return_type {
         if let Some(converter) = DotnetType(&return_type).conversion() {

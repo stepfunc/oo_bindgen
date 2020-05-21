@@ -77,7 +77,7 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
         f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
         blocked(f, |f| {
             for handle in lib.native_functions() {
-                f.writeln(&format!("[DllImport(\"{}\")]", config.ffi_name))?;
+                f.writeln(&format!("[DllImport(\"{}\", CallingConvention = CallingConvention.Cdecl)]", config.ffi_name))?;
                 f.newline()?;
                 f.write(&format!("internal static extern {} {}(", DotnetReturnType(&handle.return_type).as_native_type(), handle.name))?;
                 

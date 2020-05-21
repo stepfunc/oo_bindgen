@@ -251,7 +251,7 @@ impl<'a> Display for CType<'a> {
             Type::Sint64 => write!(f, "int64_t"),
             Type::Float => write!(f, "float"),
             Type::Double => write!(f, "double"),
-            Type::String => unimplemented!(),
+            Type::String => write!(f, "char*"),
             Type::Struct(handle) => write!(f, "{}", handle.name()),
             Type::StructRef(handle) => write!(f, "{}*", handle.name),
             Type::Enum(handle) => write!(f, "{}", handle.name),

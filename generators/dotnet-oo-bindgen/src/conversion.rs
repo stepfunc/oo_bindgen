@@ -19,7 +19,7 @@ impl<'a> DotnetType<'a> {
             Type::Sint64 => "long".to_string(),
             Type::Float => unimplemented!(),
             Type::Double => unimplemented!(),
-            Type::String => unimplemented!(),
+            Type::String => "string".to_string(),
             Type::Struct(handle) => format!("{}", handle.name()),
             Type::StructRef(handle) => format!("{}", handle.name),
             Type::Enum(handle) => format!("{}", handle.name),
@@ -43,7 +43,7 @@ impl<'a> DotnetType<'a> {
             Type::Sint64 => "long".to_string(),
             Type::Float => unimplemented!(),
             Type::Double => unimplemented!(),
-            Type::String => unimplemented!(),
+            Type::String => "IntPtr".to_string(),
             Type::Struct(handle) => format!("{}", handle.name()),
             Type::StructRef(handle) => format!("ref {}", handle.name),
             Type::Enum(handle) => format!("{}", handle.name),
@@ -69,7 +69,7 @@ impl<'a> DotnetType<'a> {
             Type::Sint64 => None,
             Type::Float => unimplemented!(),
             Type::Double => unimplemented!(),
-            Type::String => unimplemented!(),
+            Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(_) => None,
             Type::Enum(_) => None,
@@ -96,7 +96,7 @@ impl<'a> DotnetType<'a> {
             Type::Sint64 => param_name.to_string(),
             Type::Float => unimplemented!(),
             Type::Double => unimplemented!(),
-            Type::String => unimplemented!(),
+            Type::String => format!("_{}", param_name),
             Type::Struct(_) => param_name.to_string(),
             Type::StructRef(_) => format!("ref {}", param_name.to_string()),
             Type::Enum(_) => param_name.to_string(),
@@ -114,6 +114,10 @@ impl<'a> DotnetType<'a> {
 pub trait TypeConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
+    
+    fn convert_to_native_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
+        Ok(())
+    }
 }
 
 // By default, PInvoke transforms "bool" into a weird 4-bit value
@@ -125,6 +129,21 @@ impl TypeConverter for BoolConverter {
 
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}Convert.ToBoolean({});", to, from))
+    }
+}
+
+struct StringConverter;
+impl TypeConverter for StringConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}Marshal.StringToHGlobalAnsi({});", to, from))
+    }
+
+    fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+        f.writeln(&format!("Marshal.FreeHGlobal({});", name))
+    }
+
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}Marshal.PtrToStringAnsi({});", to, from))
     }
 }
 

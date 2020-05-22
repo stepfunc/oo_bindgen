@@ -3,9 +3,11 @@
 members = [
     "oo-bindgen",
 
+    "generators/rust-oo-bindgen",
     "generators/c-oo-bindgen",
     "generators/dotnet-oo-bindgen",
 
+    "tests/foo-schema",
     "tests/foo-ffi",
     "tests/foo-bindings",
 

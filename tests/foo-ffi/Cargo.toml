@@ -8,3 +8,7 @@ edition = "2018"
 crate-type=["cdylib"]
 
 [dependencies]
+
+[build-dependencies]
+foo-schema = { path = "../foo-schema" }
+rust-oo-bindgen = { path = "../../generators/rust-oo-bindgen" }

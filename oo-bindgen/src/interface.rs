@@ -205,3 +205,8 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self.interface)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+}

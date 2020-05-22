@@ -1,0 +1,9 @@
+[package]
+name = "foo-schema"
+version = "0.1.0"
+authors = ["Émile Grégoire <emile@automatak.com>"]
+edition = "2018"
+
+[dependencies]
+semver = "0.9"
+oo-bindgen = { path = "../../oo-bindgen" }

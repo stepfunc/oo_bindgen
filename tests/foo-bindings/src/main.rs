@@ -1,4 +1,4 @@
-use foo_bindings::build_lib;
+use foo_schema::build_lib;
 use oo_bindgen::Library;
 use oo_bindgen::platforms::*;
 use std::fs;

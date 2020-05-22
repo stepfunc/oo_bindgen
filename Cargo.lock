@@ -162,13 +162,25 @@ dependencies = [
  "c-oo-bindgen",
  "dotnet-oo-bindgen",
  "foo-ffi",
+ "foo-schema",
  "oo-bindgen",
- "semver",
 ]
 
 [[package]]
 name = "foo-ffi"
 version = "0.1.0"
+dependencies = [
+ "foo-schema",
+ "rust-oo-bindgen",
+]
+
+[[package]]
+name = "foo-schema"
+version = "0.1.0"
+dependencies = [
+ "oo-bindgen",
+ "semver",
+]
 
 [[package]]
 name = "fuchsia-zircon"
@@ -388,6 +400,13 @@ name = "regex-syntax"
 version = "0.6.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fe5bd57d1d7414c6b5ed48563a2c855d995ff777729dcd91c369ec7fea395ae"
+
+[[package]]
+name = "rust-oo-bindgen"
+version = "0.1.0"
+dependencies = [
+ "oo-bindgen",
+]
 
 [[package]]
 name = "semver"

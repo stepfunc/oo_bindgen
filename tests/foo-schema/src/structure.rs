@@ -15,20 +15,20 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let structure = lib.declare_native_struct("Structure")?;
     let structure = lib.define_native_struct(&structure)?
-        .add("booleanValue", Type::Bool)?
-        .add("uint8Value", Type::Uint8)?
-        .add("int8Value", Type::Sint8)?
-        .add("uint16Value", Type::Uint16)?
-        .add("int16Value", Type::Sint16)?
-        .add("uint32Value", Type::Uint32)?
-        .add("int32Value", Type::Sint32)?
-        .add("uint64Value", Type::Uint64)?
-        .add("int64Value", Type::Sint64)?
-        .add("structureValue", Type::Struct(other_structure.clone()))?
-        .add("enumValue", Type::Enum(structure_enum.clone()))?
-        .add("durationMillis", Type::Duration(DurationMapping::Milliseconds))?
-        .add("durationSeconds", Type::Duration(DurationMapping::Seconds))?
-        .add("durationSecondsFloat", Type::Duration(DurationMapping::SecondsFloat))?
+        .add("boolean_value", Type::Bool)?
+        .add("uint8_value", Type::Uint8)?
+        .add("int8_value", Type::Sint8)?
+        .add("uint16_value", Type::Uint16)?
+        .add("int16_value", Type::Sint16)?
+        .add("uint32_value", Type::Uint32)?
+        .add("int32_value", Type::Sint32)?
+        .add("uint64_value", Type::Uint64)?
+        .add("int64_value", Type::Sint64)?
+        .add("structure_value", Type::Struct(other_structure.clone()))?
+        .add("enum_value", Type::Enum(structure_enum.clone()))?
+        .add("duration_millis", Type::Duration(DurationMapping::Milliseconds))?
+        .add("duration_seconds", Type::Duration(DurationMapping::Seconds))?
+        .add("duration_seconds_float", Type::Duration(DurationMapping::SecondsFloat))?
         .build();
 
     // Declare each echo function

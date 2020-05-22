@@ -1,25 +1,15 @@
-use std::ffi::c_void;
 use std::time::Duration;
-
-#[repr(C)]
-pub struct NativeCallbackInterface {
-    on_value: extern "C" fn(value: u32, data: *mut c_void),
-    on_duration: extern "C" fn(value: u64, data: *mut c_void),
-    on_destroy: extern "C" fn(data: *mut c_void),
-    data: *mut c_void,
-}
+use crate::ffi::CallbackInterface;
 
 struct CallbackAdapter {
-    native_cb: NativeCallbackInterface,
+    native_cb: CallbackInterface,
 }
 
 impl CallbackAdapter {
-    fn new(native_cb: NativeCallbackInterface) -> Self {
+    fn new(native_cb: CallbackInterface) -> Self {
         Self { native_cb }
     }
-}
 
-impl CallbackInterface for CallbackAdapter {
     fn on_value(&self, value: u32) {
         (self.native_cb.on_value)(value, self.native_cb.data);
     }
@@ -35,13 +25,8 @@ impl Drop for CallbackAdapter {
     }
 }
 
-trait CallbackInterface {
-    fn on_value(&self, value: u32);
-    fn on_duration(&self, value: Duration);
-}
-
 pub struct CallbackSource {
-    callbacks: Vec<Box<dyn CallbackInterface>>,
+    callbacks: Vec<CallbackAdapter>,
 }
 
 impl CallbackSource {
@@ -51,7 +36,7 @@ impl CallbackSource {
         }
     }
 
-    fn add(&mut self, cb: Box<dyn CallbackInterface>) {
+    fn add(&mut self, cb: CallbackAdapter) {
         self.callbacks.push(cb);
     }
 
@@ -68,35 +53,30 @@ impl CallbackSource {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn cbsource_new() -> *mut CallbackSource {
+pub unsafe fn cbsource_new() -> *mut CallbackSource {
     let cb_source = Box::new(CallbackSource::new());
     Box::into_raw(cb_source)
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn cbsource_destroy(cb_source: *mut CallbackSource) {
+pub unsafe fn cbsource_destroy(cb_source: *mut CallbackSource) {
     if !cb_source.is_null() {
         Box::from_raw(cb_source);
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn cbsource_add(cb_source: *mut CallbackSource, cb: NativeCallbackInterface) {
-    let cb_adapter = Box::new(CallbackAdapter::new(cb));
+pub unsafe fn cbsource_add(cb_source: *mut CallbackSource, cb: CallbackInterface) {
+    let cb_adapter = CallbackAdapter::new(cb);
 
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.add(cb_adapter);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) {
+pub unsafe fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set_value(value);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn cbsource_set_duration(cb_source: *mut CallbackSource, value: u64) {
+pub unsafe fn cbsource_set_duration(cb_source: *mut CallbackSource, value: u64) {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set_duration(Duration::from_millis(value));
 }

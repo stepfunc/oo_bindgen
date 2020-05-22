@@ -57,9 +57,11 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                                 .join(", ")
                         )?;
                         f.write(");")?;
+                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", func.name, func.name, interface.name, func.name))?;
                     },
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!("private delegate void {}_delegate(IntPtr arg);", name))?;
+                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", name, name, interface.name, name))?;
                     }
                     _ => (),
                 }
@@ -93,10 +95,10 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                 for el in &interface.elements {
                     match el {
                         InterfaceElement::CallbackFunction(func) => {
-                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_cb;", func.name, interface.name, func.name))?;
+                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_static_delegate;", func.name, interface.name, func.name))?;
                         },
                         InterfaceElement::DestroyFunction(name) => {
-                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_cb;", name, interface.name, name))?;
+                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_static_delegate;", name, interface.name, name))?;
                         }
                         InterfaceElement::Arg(name) => {
                             f.writeln(&format!("this.{} = GCHandle.ToIntPtr(_handle);", name))?;

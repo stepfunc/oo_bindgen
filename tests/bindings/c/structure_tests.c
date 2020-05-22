@@ -7,25 +7,25 @@ static Structure create_struct()
 {
     Structure result =
     {
-        .booleanValue = true,
-        .uint8Value = 1,
-        .int8Value = -1,
-        .uint16Value = 2,
-        .int16Value = -2,
-        .uint32Value = 3,
-        .int32Value = -3,
-        .uint64Value = 4,
-        .int64Value = -4,
+        .boolean_value = true,
+        .uint8_value = 1,
+        .int8_value = -1,
+        .uint16_value = 2,
+        .int16_value = -2,
+        .uint32_value = 3,
+        .int32_value = -3,
+        .uint64_value = 4,
+        .int64_value = -4,
 
-        .structureValue =
+        .structure_value =
         {
             .test = 41
         },
-        .enumValue = StructureEnum_Var2,
+        .enum_value = StructureEnum_Var2,
 
-        .durationMillis = 4200,
-        .durationSeconds = 76,
-        .durationSecondsFloat = 15.25f,
+        .duration_millis = 4200,
+        .duration_seconds = 76,
+        .duration_seconds_float = 15.25f,
     };
 
     return result;
@@ -33,22 +33,22 @@ static Structure create_struct()
 
 static void check_struct(Structure* structure)
 {
-    assert(structure->booleanValue == true);
-    assert(structure->uint8Value == 1);
-    assert(structure->int8Value == -1);
-    assert(structure->uint16Value == 2);
-    assert(structure->int16Value == -2);
-    assert(structure->uint32Value == 3);
-    assert(structure->int32Value == -3);
-    assert(structure->uint64Value == 4);
-    assert(structure->int64Value == -4);
+    assert(structure->boolean_value == true);
+    assert(structure->uint8_value == 1);
+    assert(structure->int8_value == -1);
+    assert(structure->uint16_value == 2);
+    assert(structure->int16_value == -2);
+    assert(structure->uint32_value == 3);
+    assert(structure->int32_value == -3);
+    assert(structure->uint64_value == 4);
+    assert(structure->int64_value == -4);
 
-    assert(structure->structureValue.test == 41);
-    assert(structure->enumValue == StructureEnum_Var2);
+    assert(structure->structure_value.test == 41);
+    assert(structure->enum_value == StructureEnum_Var2);
 
-    assert(structure->durationMillis == 4200);
-    assert(structure->durationSeconds == 76);
-    assert(fabs(structure->durationSecondsFloat - 15.25f) < 0.001f);
+    assert(structure->duration_millis == 4200);
+    assert(structure->duration_seconds == 76);
+    assert(fabs(structure->duration_seconds_float - 15.25f) < 0.001f);
 }
 
 static void test_struct_by_value()

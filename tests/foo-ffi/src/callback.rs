@@ -11,17 +11,23 @@ impl CallbackAdapter {
     }
 
     fn on_value(&self, value: u32) {
-        (self.native_cb.on_value)(value, self.native_cb.data);
+        if let Some(cb) = self.native_cb.on_value {
+            (cb)(value, self.native_cb.data);
+        }
     }
 
     fn on_duration(&self, value: Duration) {
-        (self.native_cb.on_duration)(value.as_millis() as u64, self.native_cb.data);
+        if let Some(cb) = self.native_cb.on_duration {
+            (cb)(value.as_millis() as u64, self.native_cb.data);
+        }
     }
 }
 
 impl Drop for CallbackAdapter {
     fn drop(&mut self) {
-        (self.native_cb.on_destroy)(self.native_cb.data);
+        if let Some(cb) = self.native_cb.on_destroy {
+            (cb)(self.native_cb.data);
+        }
     }
 }
 

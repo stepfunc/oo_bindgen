@@ -79,7 +79,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                         f.writeln(&format!("private {}_delegate {};", name, name))?;
                     }
                     InterfaceElement::Arg(name) => {
-                        f.writeln(&format!("private IntPtr {};", name))?;
+                        f.writeln(&format!("public IntPtr {};", name))?;
                     }
                 }
             }

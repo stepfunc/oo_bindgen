@@ -1,6 +1,9 @@
 use oo_bindgen::*;
-use crate::runtime::define_runtime;
 
+mod association;
+mod handler;
+mod logging;
+mod master;
 mod runtime;
 
 pub fn build_lib() -> Result<Library, BindingError> {
@@ -27,7 +30,11 @@ pub fn build_lib() -> Result<Library, BindingError> {
         "along with this program.  If not, see <https://www.gnu.org/licenses/>.",
     ].iter().map(|s| s.to_string()).collect())?;
 
-    define_runtime(&mut builder)?;
+    logging::define(&mut builder)?;
+    let read_handler = handler::define(&mut builder)?;
+    let master_class = runtime::define(&mut builder)?;
+    let association_class = master::define(&mut builder, master_class, read_handler)?;
+    association::define(&mut builder, association_class)?;
 
     Ok(builder.build())
 }

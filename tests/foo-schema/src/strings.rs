@@ -21,11 +21,17 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .return_type(ReturnType::Type(Type::String))?
         .build()?;
 
+    let stringclass_length_func = lib.declare_native_function("string_length")?
+        .param("value", Type::String)?
+        .return_type(ReturnType::Type(Type::Uint32))?
+        .build()?;
+
     // Define the class
     let _testclass = lib.define_class(&stringclass)?
         .constructor(&stringclass_new_func)?
         .destructor(&stringclass_destroy_func)?
         .method("Echo", &stringclass_echo_func)?
+        .static_method("GetLength", &stringclass_length_func)?
         .build();
 
     Ok(())

@@ -68,7 +68,7 @@ fn generate_constructor(f: &mut dyn Printer, classname: &str, constructor: &Nati
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &constructor, "this.self = ", false)
+        call_native_function(f, &constructor, "this.self = ", false, true)
     })
 }
 
@@ -113,7 +113,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()>
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &method.native_function, "return ", true)
+        call_native_function(f, &method.native_function, "return ", true, false)
     })
 }
 
@@ -128,40 +128,36 @@ fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingRes
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &method.native_function, "return ", false)
+        call_native_function(f, &method.native_function, "return ", false, false)
     })
 }
 
-fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str, first_param_is_self: bool) -> FormattingResult<()> {
+fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str, first_param_is_self: bool, is_constructor: bool) -> FormattingResult<()> {
     // Write the type conversions
-    &method.parameters.iter()
-        .map(|param| {
+    &method.parameters.iter().enumerate()
+        .map(|(idx, param)| {
             if let Some(converter) = DotnetType(&param.param_type).conversion() {
-                return converter.convert_to_native(f, &param.name, &format!("var _{} = ", param.name));
+                if idx == 0 && first_param_is_self {
+                    converter.convert_to_native(f, "this", &format!("var _{} = ", param.name))?;
+                } else {
+                    converter.convert_to_native(f, &param.name, &format!("var _{} = ", param.name))?;
+                }
             }
             Ok(())
         }).collect::<FormattingResult<()>>()?;
 
     // Call the native function
     f.newline()?;
-    if let ReturnType::Type(return_type) = &method.return_type {
-        if let Some(_) = DotnetType(&return_type).conversion() {
-            f.write(&format!("var _nativeResult = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
-        } else {
-            f.write(&format!("{}{}.{}(", return_destination, NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
-        }
+    if let ReturnType::Type(_) = &method.return_type {
+        f.write(&format!("var _result = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
     } else {
         f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
     }
 
     f.write(
-        &method.parameters.iter().enumerate()
-            .map(|(idx, param)| {
-                if idx == 0 && first_param_is_self {
-                    "this.self".to_string()
-                } else{
-                    DotnetType(&param.param_type).as_dotnet_arg(&param.name)
-                }
+        &method.parameters.iter()
+            .map(|param| {
+                DotnetType(&param.param_type).as_dotnet_arg(&param.name)
             })
             .collect::<Vec<String>>()
             .join(", ")
@@ -177,11 +173,15 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
             Ok(())
         }).collect::<FormattingResult<()>>()?;
 
-    // Convert the result (if required)
+    // Convert the result (if required) and return
     if let ReturnType::Type(return_type) = &method.return_type {
         if let Some(converter) = DotnetType(&return_type).conversion() {
-            converter.convert_from_native(f, "_nativeResult", return_destination)?;
+            if !is_constructor {
+                return converter.convert_from_native(f, "_result", return_destination)
+            }
         }
+
+        f.writeln(&format!("{}_result;", return_destination))?;
     }
 
     Ok(())

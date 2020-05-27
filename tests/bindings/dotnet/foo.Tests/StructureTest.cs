@@ -4,6 +4,11 @@ using foo;
 
 namespace foo.Tests
 {
+    class TestInterface : StructureInterface
+    {
+
+    }
+
     public class StructureTests
     {
         [Fact]
@@ -20,6 +25,17 @@ namespace foo.Tests
             var value = CreateStructure();
             var result = StructEchoFunctions.StructByReferenceEcho(value);
             CheckStructure(ref result);
+        }
+
+        [Fact]
+        public void GetSetInterfaceInStructure()
+        {
+            var value = CreateStructure();
+            Assert.Null(value.interface_value);
+
+            var testInterface = new TestInterface();
+            value.interface_value = testInterface;
+            Assert.Equal(testInterface, value.interface_value);
         }
 
         private Structure CreateStructure()

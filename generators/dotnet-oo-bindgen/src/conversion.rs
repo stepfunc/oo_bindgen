@@ -1,6 +1,8 @@
+use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::native_function::*;
+use crate::formatting::blocked;
 
 pub struct DotnetType<'a>(pub &'a Type);
 
@@ -73,7 +75,7 @@ impl<'a> DotnetType<'a> {
             Type::Struct(_) => None,
             Type::StructRef(_) => None,
             Type::Enum(_) => None,
-            Type::ClassRef(_) => None,
+            Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(Box::new(DurationMillisecondsConverter)),
@@ -100,7 +102,7 @@ impl<'a> DotnetType<'a> {
             Type::Struct(_) => param_name.to_string(),
             Type::StructRef(_) => format!("ref {}", param_name.to_string()),
             Type::Enum(_) => param_name.to_string(),
-            Type::ClassRef(_) => format!("{}.self", param_name.to_string()),
+            Type::ClassRef(_) => format!("_{}", param_name),
             Type::Interface(_) => format!("_{}", param_name),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => format!("_{}", param_name),
@@ -114,7 +116,7 @@ impl<'a> DotnetType<'a> {
 pub trait TypeConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
-    
+
     fn convert_to_native_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
         Ok(())
     }
@@ -153,8 +155,28 @@ impl TypeConverter for InterfaceConverter {
         f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name, from))
     }
 
-    fn convert_from_native(&self, _: &mut dyn Printer, _: &str, _: &str) -> FormattingResult<()> {
-        unimplemented!("cannot return interfaces");
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        let handle_name = format!("{}_handle", from);
+        f.writeln(&format!("if ({}.{} != IntPtr.Zero)", from, self.0.arg_name))?;
+        blocked(f, |f| {
+            f.writeln(&format!("var {} = GCHandle.FromIntPtr({}.{});", handle_name, from, self.0.arg_name))?;
+            f.writeln(&format!("{}({}){}.Target;", to, self.0.name, handle_name))
+        })?;
+        f.writeln("else")?;
+        blocked(f, |f| {
+            f.writeln(&format!("{}null;", to))
+        })
+    }
+}
+
+struct ClassConverter(ClassDeclarationHandle);
+impl TypeConverter for ClassConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.self;", to, from))
+    }
+
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}new {}({});", to, self.0.name, from))
     }
 }
 

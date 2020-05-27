@@ -6,15 +6,17 @@ namespace foo.Tests
 {
     public class StringTests
     {
+        const string ENGLISH_SENTENCE_1 = "I like to be home with my monkey and my dog";
+        const string ENGLISH_SENTENCE_2 = "Don't care, shut up, play the record!";
+        const string FRENCH_SENTENCE_1 = "Devant mon miroir j'ai rÃªvÃ© d'Ãªtre une star, j'ai rÃªvÃ© d'Ãªtre immortellement belle";
+        const string FRENCH_SENTENCE_2 = "Ce soir j'irai voir Ã  travers le miroir, si la vie est Ã©ternelle";
+
         [Fact]
         public void EnglishTest()
         {
             using(var stringclass = new StringClass())
             {
-                const string ENGLISH_SENTENCE_1 = "I like to be home with my monkey and my dog";
                 Assert.Equal(ENGLISH_SENTENCE_1, stringclass.Echo(ENGLISH_SENTENCE_1));
-
-                const string ENGLISH_SENTENCE_2 = "Don't care, shut up, play the record!";
                 Assert.Equal(ENGLISH_SENTENCE_2, stringclass.Echo(ENGLISH_SENTENCE_2));
             }
         }
@@ -24,16 +26,22 @@ namespace foo.Tests
         {
             using (var stringclass = new StringClass())
             {
-                const string FRENCH_SENTENCE_1 = "Devant mon miroir j'ai rêvé d'être une star, j'ai rêvé d'être immortellement belle";
                 Assert.Equal(FRENCH_SENTENCE_1, stringclass.Echo(FRENCH_SENTENCE_1));
-
-                const string FRENCH_SENTENCE_2 = "Ce soir j'irai voir à travers le miroir, si la vie est éternelle";
                 Assert.Equal(FRENCH_SENTENCE_2, stringclass.Echo(FRENCH_SENTENCE_2));
             }
         }
 
         [Fact]
-        public void MemoryLeakTtest()
+        public void LengthTest()
+        {
+            Assert.Equal(ENGLISH_SENTENCE_1.Length, (int)StringClass.GetLength(ENGLISH_SENTENCE_1));
+            Assert.Equal(ENGLISH_SENTENCE_2.Length, (int)StringClass.GetLength(ENGLISH_SENTENCE_2));
+            Assert.Equal(FRENCH_SENTENCE_1.Length, (int)StringClass.GetLength(FRENCH_SENTENCE_1));
+            Assert.Equal(FRENCH_SENTENCE_2.Length, (int)StringClass.GetLength(FRENCH_SENTENCE_2));
+        }
+
+        [Fact]
+        public void MemoryLeakTest()
         {
             const int NUM_ITERATIONS = 100000;
 
@@ -41,7 +49,6 @@ namespace foo.Tests
             {
                 for (int i = 0; i < NUM_ITERATIONS; i++)
                 {
-                    const string FRENCH_SENTENCE_1 = "Devant mon miroir j'ai rêvé d'être une star, j'ai rêvé d'être immortellement belle";
                     Assert.Equal(FRENCH_SENTENCE_1, stringclass.Echo(FRENCH_SENTENCE_1));
                 }
             }

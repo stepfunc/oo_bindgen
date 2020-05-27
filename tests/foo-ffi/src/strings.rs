@@ -27,3 +27,7 @@ pub unsafe fn string_echo(string_class: *mut StringClass, value: *const c_char) 
     string_class.value = CStr::from_ptr(value).to_owned();
     string_class.value.as_ptr()
 }
+
+pub unsafe fn string_length(value: *const c_char) -> u32 {
+    CStr::from_ptr(value).to_bytes().len() as u32
+}

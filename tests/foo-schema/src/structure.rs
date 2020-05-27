@@ -13,6 +13,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .push("Var3")?
         .build();
 
+    let structure_interface = lib.define_interface("StructureInterface")?
+        .destroy_callback("on_destroy")?
+        .arg("arg")?
+        .build()?;
+
     let structure = lib.declare_native_struct("Structure")?;
     let structure = lib.define_native_struct(&structure)?
         .add("boolean_value", Type::Bool)?
@@ -26,6 +31,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add("int64_value", Type::Sint64)?
         .add("structure_value", Type::Struct(other_structure.clone()))?
         .add("enum_value", Type::Enum(structure_enum.clone()))?
+        .add("interface_value", Type::Interface(structure_interface.clone()))?
         .add("duration_millis", Type::Duration(DurationMapping::Milliseconds))?
         .add("duration_seconds", Type::Duration(DurationMapping::Seconds))?
         .add("duration_seconds_float", Type::Duration(DurationMapping::SecondsFloat))?

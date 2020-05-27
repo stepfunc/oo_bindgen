@@ -8,5 +8,10 @@ edition = "2018"
 crate-type=["cdylib"]
 
 [dependencies]
+log = "0.4"
 dnp3 = { path = "../dnp3" }
 tokio = { version = "^0.2.11", features = ["rt-threaded"]}
+
+[build-dependencies]
+dnp3-schema = { path = "../dnp3-schema" }
+rust-oo-bindgen = { path = "../../generators/rust-oo-bindgen" }

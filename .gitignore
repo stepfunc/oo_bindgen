@@ -2,6 +2,10 @@
 /.vscode
 .vs
 
+# ====================
+# Generated test files
+# ====================
+
 # Generated C lib
 tests/bindings/c/build
 tests/bindings/c/generated
@@ -11,7 +15,15 @@ tests/bindings/dotnet/foo
 tests/bindings/dotnet/*/bin
 tests/bindings/dotnet/*/obj
 
-# Test stuff that should disappear
-/result
-/test
-/test2
+# =======================
+# Generated example files
+# =======================
+
+# Generated C lib
+example/bindings/c/build
+example/bindings/c/generated
+
+# Generated .NET lib
+example/bindings/dotnet/dnp3rs
+example/bindings/dotnet/*/bin
+example/bindings/dotnet/*/obj

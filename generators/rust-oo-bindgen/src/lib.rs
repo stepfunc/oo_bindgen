@@ -104,6 +104,7 @@ impl<'a> RustCodegen<'a> {
 
     fn write_interface(&self, f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
+        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {
@@ -111,7 +112,7 @@ impl<'a> RustCodegen<'a> {
                     InterfaceElement::Arg(name) => f.writeln(&format!("pub {}: *mut c_void,", name))?,
                     InterfaceElement::CallbackFunction(handle) => {
                         f.newline()?;
-                        f.write(&format!("pub {}: extern \"C\" fn(", handle.name))?;
+                        f.write(&format!("pub {}: Option<extern \"C\" fn(", handle.name))?;
                         
                         f.write(
                             &handle.parameters.iter()
@@ -125,10 +126,10 @@ impl<'a> RustCodegen<'a> {
                                 .join(", ")
                         )?;
     
-                        f.write(&format!(") -> {},", RustReturnType(&handle.return_type)))?;
+                        f.write(&format!(") -> {}>,", RustReturnType(&handle.return_type)))?;
                     },
                     InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!("pub {}: extern \"C\" fn(data: *mut c_void),", name))?;
+                        f.writeln(&format!("pub {}: Option<extern \"C\" fn(data: *mut c_void)>,", name))?;
                     }
                 }
             }

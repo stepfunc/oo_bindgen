@@ -12,6 +12,7 @@ members = [
     "tests/foo-bindings",
 
     "example/dnp3",
+    "example/dnp3-schema",
     "example/dnp3-ffi",
     "example/dnp3-bindings",
 ]

@@ -2,6 +2,7 @@ use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::native_struct::*;
 use crate::formatting::blocked;
 
 pub struct DotnetType<'a>(pub &'a Type);
@@ -22,11 +23,11 @@ impl<'a> DotnetType<'a> {
             Type::Float => unimplemented!(),
             Type::Double => unimplemented!(),
             Type::String => "string".to_string(),
-            Type::Struct(handle) => format!("{}", handle.name()),
-            Type::StructRef(handle) => format!("{}", handle.name),
-            Type::Enum(handle) => format!("{}", handle.name),
-            Type::ClassRef(handle) => format!("{}", handle.name),
-            Type::Interface(handle) => format!("{}", handle.name),
+            Type::Struct(handle) => handle.name().to_string(),
+            Type::StructRef(handle) => format!("{}?", handle.name),
+            Type::Enum(handle) => handle.name.to_string(),
+            Type::ClassRef(handle) => handle.name.to_string(),
+            Type::Interface(handle) => handle.name.to_string(),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
@@ -46,9 +47,9 @@ impl<'a> DotnetType<'a> {
             Type::Float => unimplemented!(),
             Type::Double => unimplemented!(),
             Type::String => "IntPtr".to_string(),
-            Type::Struct(handle) => format!("{}", handle.name()),
-            Type::StructRef(handle) => format!("ref {}", handle.name),
-            Type::Enum(handle) => format!("{}", handle.name),
+            Type::Struct(handle) => handle.name().to_string(),
+            Type::StructRef(_) => "IntPtr".to_string(),
+            Type::Enum(handle) => handle.name.to_string(),
             Type::ClassRef(_) => "IntPtr".to_string(),
             Type::Interface(handle) => format!("{}NativeAdapter", handle.name),
             Type::Duration(mapping) => match mapping {
@@ -73,7 +74,7 @@ impl<'a> DotnetType<'a> {
             Type::Double => unimplemented!(),
             Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
-            Type::StructRef(_) => None,
+            Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
             Type::Enum(_) => None,
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
@@ -100,7 +101,7 @@ impl<'a> DotnetType<'a> {
             Type::Double => unimplemented!(),
             Type::String => format!("_{}", param_name),
             Type::Struct(_) => param_name.to_string(),
-            Type::StructRef(_) => format!("ref {}", param_name.to_string()),
+            Type::StructRef(_) => format!("_{}", param_name.to_string()),
             Type::Enum(_) => param_name.to_string(),
             Type::ClassRef(_) => format!("_{}", param_name),
             Type::Interface(_) => format!("_{}", param_name),
@@ -169,6 +170,36 @@ impl TypeConverter for InterfaceConverter {
     }
 }
 
+struct StructRefConverter(NativeStructDeclarationHandle);
+impl TypeConverter for StructRefConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        let handle_name = format!("_{}_handle", from);
+        f.writeln(&format!("var {} = IntPtr.Zero;", handle_name))?;
+        f.writeln(&format!("if ({} != null)", from))?;
+        blocked(f, |f| {
+            let value_name = format!("_{}_value", from);
+            f.writeln(&format!("var {} = ({}){};", value_name, self.0.name, from))?;
+            f.writeln(&format!("{} = Marshal.AllocHGlobal(Marshal.SizeOf({}));", handle_name, value_name))?;
+            f.writeln(&format!("Marshal.StructureToPtr({}, {}, false);", value_name, handle_name))
+        })?;
+        f.writeln(&format!("{}{};", to, handle_name))
+    }
+
+    fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+        f.writeln(&format!("Marshal.FreeHGlobal({});", name))
+    }
+
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        let handle_name = format!("_{}_handle", from);
+        f.writeln(&format!("{}? {} = null;", self.0.name, handle_name))?;
+        f.writeln(&format!("if ({} != IntPtr.Zero)", from))?;
+        blocked(f, |f| {
+            f.writeln(&format!("{} = Marshal.PtrToStructure<{}>({});", handle_name, self.0.name, from))
+        })?;
+        f.writeln(&format!("{}{};", to, handle_name))
+    }
+}
+
 struct ClassConverter(ClassDeclarationHandle);
 impl TypeConverter for ClassConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
@@ -176,7 +207,13 @@ impl TypeConverter for ClassConverter {
     }
 
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}new {}({});", to, self.0.name, from))
+        let handle_name = format!("_{}_handle", from);
+        f.writeln(&format!("{} {} = null;", self.0.name, handle_name))?;
+        f.writeln(&format!("if ({} != IntPtr.Zero)", from))?;
+        blocked(f, |f| {
+            f.writeln(&format!("{} = new {}({});", handle_name, self.0.name, from))
+        })?;
+        f.writeln(&format!("{}{};", to, handle_name))
     }
 }
 

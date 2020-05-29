@@ -7,7 +7,7 @@ class MainClass
     {
         public void on_message(LogLevel level, string message)
         {
-            Console.WriteLine(level + ": " + message);
+            //Console.WriteLine($"{level}: {message}");
         }
     }
 
@@ -29,6 +29,19 @@ class MainClass
         public void end_fragment(ResponseHeader header)
         {
             Console.WriteLine("End fragment");
+        }
+
+        public void handle_binary(HeaderInfo info, BinaryIterator it)
+        {
+            Console.WriteLine("Binaries:");
+            Console.WriteLine("Qualifier: " + info.qualifier);
+            Console.WriteLine("Variation: " + info.variation);
+
+            for (Binary? binary = it.next(); binary != null; binary = it.next())
+            {
+                var bin = (Binary)binary;
+                Console.WriteLine($"BI {bin.index}: Value={bin.value} Time={bin.time.value} ({bin.time.quality})");
+            }
         }
     }
 

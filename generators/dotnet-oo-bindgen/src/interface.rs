@@ -1,9 +1,12 @@
 use oo_bindgen::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::interface::*;
+use heck::{CamelCase, MixedCase};
 use crate::*;
 
 pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library) -> FormattingResult<()> {
+    let interface_name = interface.name.to_camel_case();
+
     print_license(f, &lib.license)?;
 
     f.writeln("using System;")?;
@@ -11,19 +14,19 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
-        f.writeln(&format!("public interface {}", interface.name))?;
+        f.writeln(&format!("public interface {}", interface_name))?;
 
         blocked(f, |f| {
             // Write each required method
             interface.callbacks()
                 .filter(|func| { func.name != interface.destroy_name })
                 .map(|func| {
-                    f.writeln(&format!("{} {}(", DotnetReturnType(&func.return_type).as_dotnet_type(), func.name))?;
+                    f.writeln(&format!("{} {}(", DotnetReturnType(&func.return_type).as_dotnet_type(), func.name.to_camel_case()))?;
                     f.write(
                         &func.parameters.iter()
                             .filter_map(|param| {
                                 match param {
-                                    CallbackParameter::Parameter(param) => Some(format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name)),
+                                    CallbackParameter::Parameter(param) => Some(format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case())),
                                     _ => None
                                 }
                             })
@@ -38,7 +41,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
 
         // Create the native adapter
         f.writeln("[StructLayout(LayoutKind.Sequential)]")?;
-        f.writeln(&format!("internal struct {}NativeAdapter", interface.name))?;
+        f.writeln(&format!("internal struct {}NativeAdapter", interface_name))?;
         blocked(f, |f| {
             // Define each delegate type
             for el in &interface.elements {
@@ -49,7 +52,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                             &func.parameters.iter()
                                 .map(|param| {
                                     match param {
-                                        CallbackParameter::Parameter(param) => format!("{} {}", DotnetType(&param.param_type).as_native_type(), param.name),
+                                        CallbackParameter::Parameter(param) => format!("{} {}", DotnetType(&param.param_type).as_native_type(), param.name.to_mixed_case()),
                                         CallbackParameter::Arg(name) => format!("IntPtr {}", name),
                                     }
                                 })
@@ -57,11 +60,11 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                                 .join(", ")
                         )?;
                         f.write(");")?;
-                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", func.name, func.name, interface.name, func.name))?;
+                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", func.name, func.name, interface_name, func.name))?;
                     },
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!("private delegate void {}_delegate(IntPtr arg);", name))?;
-                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", name, name, interface.name, name))?;
+                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", name, name, interface_name, name))?;
                     }
                     _ => (),
                 }
@@ -87,7 +90,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
             f.newline()?;
 
             // Define the constructor
-            f.writeln(&format!("internal {}NativeAdapter({} impl)", interface.name, interface.name))?;
+            f.writeln(&format!("internal {}NativeAdapter({} impl)", interface_name, interface_name))?;
             blocked(f, |f| {
                 f.writeln("var _handle = GCHandle.Alloc(impl);")?;
                 f.newline()?;
@@ -95,10 +98,10 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                 for el in &interface.elements {
                     match el {
                         InterfaceElement::CallbackFunction(func) => {
-                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_static_delegate;", func.name, interface.name, func.name))?;
+                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_static_delegate;", func.name, interface_name, func.name))?;
                         },
                         InterfaceElement::DestroyFunction(name) => {
-                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_static_delegate;", name, interface.name, name))?;
+                            f.writeln(&format!("this.{} = {}NativeAdapter.{}_static_delegate;", name, interface_name, name))?;
                         }
                         InterfaceElement::Arg(name) => {
                             f.writeln(&format!("this.{} = GCHandle.ToIntPtr(_handle);", name))?;
@@ -119,7 +122,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
                             &func.parameters.iter()
                                 .map(|param| {
                                     match param {
-                                        CallbackParameter::Parameter(param) => format!("{} {}", DotnetType(&param.param_type).as_native_type(), param.name),
+                                        CallbackParameter::Parameter(param) => format!("{} {}", DotnetType(&param.param_type).as_native_type(), param.name.to_mixed_case()),
                                         CallbackParameter::Arg(name) => format!("IntPtr {}", name),
                                     }
                                 })
@@ -130,7 +133,7 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
 
                         blocked(f, |f| {
                             f.writeln(&format!("var _handle = GCHandle.FromIntPtr({});", func.arg_name))?;
-                            f.writeln(&format!("var _impl = ({})_handle.Target;", interface.name))?;
+                            f.writeln(&format!("var _impl = ({})_handle.Target;", interface_name))?;
                             call_dotnet_function(f, func, "return ")
                         })?;
 
@@ -160,21 +163,22 @@ fn call_dotnet_function(f: &mut dyn Printer, method: &CallbackFunction, return_d
     &method.params()
         .map(|param| {
             if let Some(converter) = DotnetType(&param.param_type).conversion() {
-                return converter.convert_from_native(f, &param.name, &format!("var _{} = ", param.name));
+                return converter.convert_from_native(f, &param.name, &format!("var _{} = ", param.name.to_mixed_case()));
             }
             Ok(())
         }).collect::<FormattingResult<()>>()?;
 
     // Call the .NET function
     f.newline()?;
+    let method_name = method.name.to_camel_case();
     if let ReturnType::Type(return_type) = &method.return_type {
         if let Some(_) = DotnetType(&return_type).conversion() {
-            f.write(&format!("var _result = _impl.{}(", method.name))?;
+            f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
-            f.write(&format!("{}_impl.{}(", return_destination, method.name))?;
+            f.write(&format!("{}_impl.{}(", return_destination, method_name))?;
         }
     } else {
-        f.write(&format!("_impl.{}(", method.name))?;
+        f.write(&format!("_impl.{}(", method_name))?;
     }
 
     f.write(

@@ -2,7 +2,8 @@ use crate::ffi;
 use dnp3::app::enums::QualifierCode;
 use dnp3::app::flags::Flags;
 use dnp3::app::header::{ResponseFunction, ResponseHeader};
-use dnp3::app::measurement::Time;
+use dnp3::app::measurement::*;
+use dnp3::app::types::DoubleBit;
 use dnp3::app::variations::Variation;
 use dnp3::master::handle::{HeaderInfo, ReadHandler};
 
@@ -34,56 +35,60 @@ impl ReadHandler for ReadHandlerAdapter {
         }
     }
 
-    fn handle_binary(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (dnp3::app::measurement::Binary, u16)>) {
+    fn handle_binary(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (Binary, u16)>) {
         if let Some(cb) = self.native_cb.handle_binary {
             let info = info.into();
-            let iterator = Box::new(BinaryIterator::new(iter));
-            unsafe {
-                let iterator_ptr = Box::into_raw(iterator);
-                (cb)(info, iterator_ptr, self.native_cb.arg);
-                Box::from_raw(iterator_ptr);
-            }
+            let mut iterator = BinaryIterator::new(iter);
+            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
         }
     }
 
-    fn handle_double_bit_binary(
-        &mut self,
-        _info: HeaderInfo,
-        _iter: &mut dyn Iterator<Item = (dnp3::app::measurement::DoubleBitBinary, u16)>,
-    ) {
-        // TODO: implement this
+    fn handle_double_bit_binary(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (DoubleBitBinary, u16)>) {
+        if let Some(cb) = self.native_cb.handle_double_bit_binary {
+            let info = info.into();
+            let mut iterator = DoubleBitBinaryIterator::new(iter);
+            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
+        }
     }
 
-    fn handle_binary_output_status(
-        &mut self,
-        _info: HeaderInfo,
-        _iter: &mut dyn Iterator<Item = (dnp3::app::measurement::BinaryOutputStatus, u16)>,
-    ) {
-        // TODO: implement this
+    fn handle_binary_output_status(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (BinaryOutputStatus, u16)>) {
+        if let Some(cb) = self.native_cb.handle_binary_output_status {
+            let info = info.into();
+            let mut iterator = BinaryOutputStatusIterator::new(iter);
+            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
+        }
     }
 
-    fn handle_counter(&mut self, _info: HeaderInfo, _iter: &mut dyn Iterator<Item = (dnp3::app::measurement::Counter, u16)>) {
-        // TODO: implement this
+    fn handle_counter(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (Counter, u16)>) {
+        if let Some(cb) = self.native_cb.handle_counter {
+            let info = info.into();
+            let mut iterator = CounterIterator::new(iter);
+            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
+        }
     }
 
-    fn handle_frozen_counter(
-        &mut self,
-        _info: HeaderInfo,
-        _iter: &mut dyn Iterator<Item = (dnp3::app::measurement::FrozenCounter, u16)>,
-    ) {
-        // TODO: implement this
+    fn handle_frozen_counter(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (FrozenCounter, u16)>) {
+        if let Some(cb) = self.native_cb.handle_frozen_counter {
+            let info = info.into();
+            let mut iterator = FrozenCounterIterator::new(iter);
+            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
+        }
     }
 
-    fn handle_analog(&mut self, _info: HeaderInfo, _iter: &mut dyn Iterator<Item = (dnp3::app::measurement::Analog, u16)>) {
-        // TODO: implement this
+    fn handle_analog(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (Analog, u16)>) {
+        if let Some(cb) = self.native_cb.handle_analog {
+            let info = info.into();
+            let mut iterator = AnalogIterator::new(iter);
+            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
+        }
     }
 
-    fn handle_analog_output_status(
-        &mut self,
-        _info: HeaderInfo,
-        _iter: &mut dyn Iterator<Item = (dnp3::app::measurement::AnalogOutputStatus, u16)>,
-    ) {
-        // TODO: implement this
+    fn handle_analog_output_status(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (AnalogOutputStatus, u16)>) {
+        if let Some(cb) = self.native_cb.handle_analog_output_status {
+            let info = info.into();
+            let mut iterator = AnalogOutputStatusIterator::new(iter);
+            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
+        }
     }
 
     fn handle_octet_string<'a>(
@@ -241,42 +246,134 @@ impl From<HeaderInfo> for ffi::HeaderInfo {
     }
 }
 
-pub struct BinaryIterator<'a> {
-    inner: &'a mut dyn Iterator<Item = (dnp3::app::measurement::Binary, u16)>,
-    next: Option<ffi::Binary>,
-}
-
-impl<'a> BinaryIterator<'a> {
-    fn new(inner: &'a mut dyn Iterator<Item = (dnp3::app::measurement::Binary, u16)>) -> Self {
-        Self { 
-            inner,
-            next: None,
+macro_rules! implement_iterator {
+    ($it_name:ident, $ffi_func_name:ident, $lib_type:ty, $ffi_type:ty) => {
+        pub struct $it_name<'a> {
+            inner: &'a mut dyn Iterator<Item = ($lib_type, u16)>,
+            next: Option<$ffi_type>,
         }
-    }
-
-    fn next(&mut self) {
-        self.next = self.inner.next().map(|(b, idx)| {
-            ffi::Binary {
-                index: idx,
-                value: b.value,
-                flags: b.flags.into(),
-                time: b.time.into(),
+        
+        impl<'a> $it_name<'a> {
+            fn new(inner: &'a mut dyn Iterator<Item = ($lib_type, u16)>) -> Self {
+                Self { 
+                    inner,
+                    next: None,
+                }
             }
-        })
-    }
-}
-
-pub unsafe fn binary_next(it: *mut BinaryIterator) -> *const ffi::Binary {
-    let it = it.as_mut();
-    match it {
-        Some(it) => {
-            it.next();
-            match &it.next {
-                Some(value) => value as *const _,
+        
+            fn next(&mut self) {
+                self.next = self.inner.next().map(|(value, idx)| {
+                    <$ffi_type>::new(
+                        idx,
+                        value,
+                    )
+                })
+            }
+        }
+        
+        pub unsafe fn $ffi_func_name(it: *mut $it_name) -> *const $ffi_type {
+            let it = it.as_mut();
+            match it {
+                Some(it) => {
+                    it.next();
+                    match &it.next {
+                        Some(value) => value as *const _,
+                        None => std::ptr::null(),
+                    }
+                },
                 None => std::ptr::null(),
             }
-        },
-        None => std::ptr::null(),
+        }
+    }
+}
+
+implement_iterator!(BinaryIterator, binary_next, Binary, ffi::Binary);
+implement_iterator!(DoubleBitBinaryIterator, doublebitbinary_next, DoubleBitBinary, ffi::DoubleBitBinary);
+implement_iterator!(BinaryOutputStatusIterator, binaryoutputstatus_next, BinaryOutputStatus, ffi::BinaryOutputStatus);
+implement_iterator!(CounterIterator, counter_next, Counter, ffi::Counter);
+implement_iterator!(FrozenCounterIterator, frozencounter_next, FrozenCounter, ffi::FrozenCounter);
+implement_iterator!(AnalogIterator, analog_next, Analog, ffi::Analog);
+implement_iterator!(AnalogOutputStatusIterator, analogoutputstatus_next, AnalogOutputStatus, ffi::AnalogOutputStatus);
+
+impl ffi::Binary {
+    fn new(idx: u16, value: Binary) -> Self {
+        Self {
+            index: idx,
+            value: value.value,
+            flags: value.flags.into(),
+            time: value.time.into(),
+        }
+    }
+}
+
+impl ffi::DoubleBitBinary {
+    fn new(idx: u16, value: DoubleBitBinary) -> Self {
+        Self {
+            index: idx,
+            value: match value.value {
+                DoubleBit::Intermediate => ffi::DoubleBit::Intermediate,
+                DoubleBit::DeterminedOff => ffi::DoubleBit::DeterminedOff,
+                DoubleBit::DeterminedOn => ffi::DoubleBit::DeterminedOn,
+                DoubleBit::Indeterminate => ffi::DoubleBit::Indeterminate,
+            },
+            flags: value.flags.into(),
+            time: value.time.into(),
+        }
+    }
+}
+
+impl ffi::BinaryOutputStatus {
+    fn new(idx: u16, value: BinaryOutputStatus) -> Self {
+        Self {
+            index: idx,
+            value: value.value,
+            flags: value.flags.into(),
+            time: value.time.into(),
+        }
+    }
+}
+
+impl ffi::Counter {
+    fn new(idx: u16, value: Counter) -> Self {
+        Self {
+            index: idx,
+            value: value.value,
+            flags: value.flags.into(),
+            time: value.time.into(),
+        }
+    }
+}
+
+impl ffi::FrozenCounter {
+    fn new(idx: u16, value: FrozenCounter) -> Self {
+        Self {
+            index: idx,
+            value: value.value,
+            flags: value.flags.into(),
+            time: value.time.into(),
+        }
+    }
+}
+
+impl ffi::Analog {
+    fn new(idx: u16, value: Analog) -> Self {
+        Self {
+            index: idx,
+            value: value.value,
+            flags: value.flags.into(),
+            time: value.time.into(),
+        }
+    }
+}
+
+impl ffi::AnalogOutputStatus {
+    fn new(idx: u16, value: AnalogOutputStatus) -> Self {
+        Self {
+            index: idx,
+            value: value.value,
+            flags: value.flags.into(),
+            time: value.time.into(),
+        }
     }
 }
 

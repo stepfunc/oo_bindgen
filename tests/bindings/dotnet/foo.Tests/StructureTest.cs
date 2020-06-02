@@ -31,56 +31,60 @@ namespace foo.Tests
         public void GetSetInterfaceInStructure()
         {
             var value = CreateStructure();
-            Assert.Null(value.interface_value);
+            Assert.Null(value.InterfaceValue);
 
             var testInterface = new TestInterface();
-            value.interface_value = testInterface;
-            Assert.Equal(testInterface, value.interface_value);
+            value.InterfaceValue = testInterface;
+            Assert.Equal(testInterface, value.InterfaceValue);
         }
 
         private Structure CreateStructure()
         {
             var structure = new Structure();
 
-            structure.boolean_value = true;
-            structure.uint8_value = 1;
-            structure.int8_value = -1;
-            structure.uint16_value = 2;
-            structure.int16_value = -2;
-            structure.uint32_value = 3;
-            structure.int32_value = -3;
-            structure.uint64_value = 4;
-            structure.int64_value = -4;
+            structure.BooleanValue = true;
+            structure.Uint8Value = 1;
+            structure.Int8Value = -1;
+            structure.Uint16Value = 2;
+            structure.Int16Value = -2;
+            structure.Uint32Value = 3;
+            structure.Int32Value = -3;
+            structure.Uint64Value = 4;
+            structure.Int64Value = -4;
+            structure.FloatValue = 12.34f;
+            structure.DoubleValue = -56.78;
 
-            structure.structure_value.test = 41;
+            structure.StructureValue.Test = 41;
 
-            structure.enum_value = StructureEnum.Var2;
+            structure.EnumValue = StructureEnum.Var2;
 
-            structure.duration_millis = TimeSpan.FromMilliseconds(4200);
-            structure.duration_seconds = TimeSpan.FromSeconds(76);
-            structure.duration_seconds_float = TimeSpan.FromSeconds(15.25f);
+            structure.DurationMillis = TimeSpan.FromMilliseconds(4200);
+            structure.DurationSeconds = TimeSpan.FromSeconds(76);
+            structure.DurationSecondsFloat = TimeSpan.FromSeconds(15.25f);
 
             return structure;
         }
 
         private void CheckStructure(ref Structure structure)
         {
-            Assert.True(structure.boolean_value);
-            Assert.Equal(1u, structure.uint8_value);
-            Assert.Equal(-1, structure.int8_value);
-            Assert.Equal(2u, structure.uint16_value);
-            Assert.Equal(-2, structure.int16_value);
-            Assert.Equal(3u, structure.uint32_value);
-            Assert.Equal(-3, structure.int32_value);
-            Assert.Equal(4u, structure.uint64_value);
-            Assert.Equal(-4, structure.int64_value);
+            Assert.True(structure.BooleanValue);
+            Assert.Equal(1u, structure.Uint8Value);
+            Assert.Equal(-1, structure.Int8Value);
+            Assert.Equal(2u, structure.Uint16Value);
+            Assert.Equal(-2, structure.Int16Value);
+            Assert.Equal(3u, structure.Uint32Value);
+            Assert.Equal(-3, structure.Int32Value);
+            Assert.Equal(4u, structure.Uint64Value);
+            Assert.Equal(-4, structure.Int64Value);
+            Assert.Equal(12.34f, structure.FloatValue);
+            Assert.Equal(-56.78, structure.DoubleValue);
 
-            Assert.Equal(41, structure.structure_value.test);
-            Assert.Equal(StructureEnum.Var2, structure.enum_value);
+            Assert.Equal(41, structure.StructureValue.Test);
+            Assert.Equal(StructureEnum.Var2, structure.EnumValue);
 
-            Assert.Equal(TimeSpan.FromMilliseconds(4200), structure.duration_millis);
-            Assert.Equal(TimeSpan.FromSeconds(76), structure.duration_seconds);
-            Assert.Equal(TimeSpan.FromSeconds(15.25f), structure.duration_seconds_float);
+            Assert.Equal(TimeSpan.FromMilliseconds(4200), structure.DurationMillis);
+            Assert.Equal(TimeSpan.FromSeconds(76), structure.DurationSeconds);
+            Assert.Equal(TimeSpan.FromSeconds(15.25f), structure.DurationSecondsFloat);
         }
     }
 }

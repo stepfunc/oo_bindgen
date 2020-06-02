@@ -9,12 +9,12 @@ namespace foo.Tests
         public uint lastValue = 0;
         public TimeSpan lastDuration = TimeSpan.MinValue;
 
-        public void on_value(uint value)
+        public void OnValue(uint value)
         {
             lastValue = value;
         }
 
-        public void on_duration(TimeSpan value)
+        public void OnDuration(TimeSpan value)
         {
             lastDuration = value;
         }
@@ -24,8 +24,8 @@ namespace foo.Tests
     {
         private Counters counters;
 
-        public void on_value(uint value) {}
-        public void on_duration(TimeSpan value) {}
+        public void OnValue(uint value) {}
+        public void OnDuration(TimeSpan value) {}
 
         public CallbackFinalizerCounterImpl(Counters counters)
         {

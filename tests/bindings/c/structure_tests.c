@@ -16,6 +16,8 @@ static Structure create_struct()
         .int32_value = -3,
         .uint64_value = 4,
         .int64_value = -4,
+        .float_value = 12.34f,
+        .double_value = -56.78,
 
         .structure_value =
         {
@@ -42,6 +44,8 @@ static void check_struct(Structure* structure)
     assert(structure->int32_value == -3);
     assert(structure->uint64_value == 4);
     assert(structure->int64_value == -4);
+    assert(fabs(structure->float_value - 12.34f) < 0.001f);
+    assert(fabs(structure->double_value + 56.78) < 0.001);
 
     assert(structure->structure_value.test == 41);
     assert(structure->enum_value == StructureEnum_Var2);

@@ -1,9 +1,12 @@
 use oo_bindgen::*;
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
+use heck::{CamelCase, MixedCase};
 use crate::*;
 
 pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
+    let classname = class.name().to_camel_case();
+
     print_license(f, &lib.license)?;
 
     f.writeln("using System;")?;
@@ -12,7 +15,7 @@ pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> Form
 
     namespaced(f, &lib.name, |f| {
         let static_specifier = if class.is_static() { "static " } else { "" };
-        f.writeln(&format!("public {}class {}", static_specifier, class.name()))?;
+        f.writeln(&format!("public {}class {}", static_specifier, classname))?;
         if class.destructor.is_some() {
             f.write(": IDisposable")?;
         }
@@ -25,7 +28,7 @@ pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> Form
                 }
                 f.newline()?;
 
-                f.writeln(&format!("internal {}(IntPtr self)", class.name()))?;
+                f.writeln(&format!("internal {}(IntPtr self)", classname))?;
                 blocked(f, |f| {
                     f.writeln("this.self = self;")
                 })?;
@@ -33,12 +36,12 @@ pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> Form
             }
 
             if let Some(constructor) = &class.constructor {
-                generate_constructor(f, class.name(), constructor)?;
+                generate_constructor(f, &classname, constructor)?;
                 f.newline()?;
             }
 
             if let Some(destructor) = &class.destructor {
-                generate_destructor(f, class.name(), destructor)?;
+                generate_destructor(f, &classname, destructor)?;
                 f.newline()?;
             }
 
@@ -61,7 +64,7 @@ fn generate_constructor(f: &mut dyn Printer, classname: &str, constructor: &Nati
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor.parameters.iter()
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name))
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
             .collect::<Vec<String>>()
             .join(", ")
     )?;
@@ -103,10 +106,10 @@ fn generate_destructor(f: &mut dyn Printer, classname: &str, destructor: &Native
 }
 
 fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    f.writeln(&format!("public {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name))?;
+    f.writeln(&format!("public {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name.to_camel_case()))?;
     f.write(
         &method.native_function.parameters.iter().skip(1)
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name))
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
             .collect::<Vec<String>>()
             .join(", ")
     )?;
@@ -118,10 +121,10 @@ fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()>
 }
 
 fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    f.writeln(&format!("public static {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name))?;
+    f.writeln(&format!("public static {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name.to_camel_case()))?;
     f.write(
         &method.native_function.parameters.iter()
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name))
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
             .collect::<Vec<String>>()
             .join(", ")
     )?;
@@ -138,9 +141,9 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
         .map(|(idx, param)| {
             if let Some(converter) = DotnetType(&param.param_type).conversion() {
                 if idx == 0 && first_param_is_self {
-                    converter.convert_to_native(f, "this", &format!("var _{} = ", param.name))?;
+                    converter.convert_to_native(f, "this", &format!("var _{} = ", param.name.to_mixed_case()))?;
                 } else {
-                    converter.convert_to_native(f, &param.name, &format!("var _{} = ", param.name))?;
+                    converter.convert_to_native(f, &param.name.to_mixed_case(), &format!("var _{} = ", param.name.to_mixed_case()))?;
                 }
             }
             Ok(())
@@ -157,7 +160,7 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
     f.write(
         &method.parameters.iter()
             .map(|param| {
-                DotnetType(&param.param_type).as_dotnet_arg(&param.name)
+                DotnetType(&param.param_type).as_dotnet_arg(&param.name.to_mixed_case())
             })
             .collect::<Vec<String>>()
             .join(", ")
@@ -168,7 +171,7 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
     &method.parameters.iter()
         .map(|param| {
             if let Some(converter) = DotnetType(&param.param_type).conversion() {
-                return converter.convert_to_native_cleanup(f, &format!("_{}", param.name));
+                return converter.convert_to_native_cleanup(f, &format!("_{}", param.name.to_mixed_case()));
             }
             Ok(())
         }).collect::<FormattingResult<()>>()?;

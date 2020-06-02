@@ -1,6 +1,7 @@
 use oo_bindgen::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::formatting::*;
+use heck::CamelCase;
 use crate::*;
 
 pub fn generate(f: &mut impl Printer, native_struct: &NativeStructHandle, lib: &Library) -> FormattingResult<()> {
@@ -12,19 +13,19 @@ pub fn generate(f: &mut impl Printer, native_struct: &NativeStructHandle, lib: &
 
     namespaced(f, &lib.name, |f| {
         f.writeln("[StructLayout(LayoutKind.Sequential)]")?;
-        f.writeln(&format!("public struct {}", native_struct.name()))?;
+        f.writeln(&format!("public struct {}", native_struct.name().to_camel_case()))?;
         blocked(f, |f| {
             for el in &native_struct.elements {
                 let dotnet_type = DotnetType(&el.element_type);
                 
-                // If there is conversion to do, hide the native type under a properties
+                // If there is conversion to do, hide the native type under a property
                 if let Some(converter) = dotnet_type.conversion() {
                     // Define backing type in C
-                    let native_name = format!("_{}", el.name);
+                    let native_name = format!("_{}", el.name.to_camel_case());
                     f.writeln(&format!("private {} {};", dotnet_type.as_native_type(), native_name))?;
                     
                     // Define property accessors
-                    f.writeln(&format!("public {} {}", dotnet_type.as_dotnet_type(), el.name))?;
+                    f.writeln(&format!("public {} {}", dotnet_type.as_dotnet_type(), el.name.to_camel_case()))?;
                     blocked(f, |f| {
                         f.writeln("get")?;
                         blocked(f, |f| {
@@ -36,7 +37,7 @@ pub fn generate(f: &mut impl Printer, native_struct: &NativeStructHandle, lib: &
                         })
                     })?;
                 } else {
-                    f.writeln(&format!("public {} {};", dotnet_type.as_native_type(), el.name))?;
+                    f.writeln(&format!("public {} {};", dotnet_type.as_native_type(), el.name.to_camel_case()))?;
                 }
                 f.newline()?;
             }

@@ -1,5 +1,7 @@
 use oo_bindgen::*;
+use oo_bindgen::class::ClassHandle;
 use oo_bindgen::native_function::*;
+use oo_bindgen::native_struct::NativeStructHandle;
 use oo_bindgen::interface::InterfaceHandle;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError> {
@@ -183,23 +185,20 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
         .add("quality", Type::Enum(time_quality_enum.clone()))?
         .build();
 
-    let binary_struct = lib.declare_native_struct("Binary")?;
-    let binary_struct = lib.define_native_struct(&binary_struct)?
-        .add("index", Type::Uint16)?
-        .add("value", Type::Bool)?
-        .add("flags", Type::Struct(flags_struct.clone()))?
-        .add("time", Type::Struct(time_struct))?
+    let double_bit_enum = lib.define_native_enum("DoubleBit")?
+        .push("Intermediate")?
+        .push("DeterminedOff")?
+        .push("DeterminedOn")?
+        .push("Indeterminate")?
         .build();
 
-    let binary_iterator = lib.declare_class("BinaryIterator")?;
-    let binary_next_fn = lib.declare_native_function("binary_next")?
-        .param("it", Type::ClassRef(binary_iterator.clone()))?
-        .return_type(ReturnType::Type(Type::StructRef(binary_struct.declaration())))?
-        .build()?;
-
-    let binary_iterator = lib.define_class(&binary_iterator)?
-        .method("next", &binary_next_fn)?
-        .build();
+    let binary_it = build_iterator("Binary", Type::Bool, lib, &flags_struct, &time_struct)?;
+    let double_bit_binary_it = build_iterator("DoubleBitBinary", Type::Enum(double_bit_enum), lib, &flags_struct, &time_struct)?;
+    let bos_it = build_iterator("BinaryOutputStatus", Type::Bool, lib, &flags_struct, &time_struct)?;
+    let counter_it = build_iterator("Counter", Type::Uint32, lib, &flags_struct, &time_struct)?;
+    let frozen_counter_it = build_iterator("FrozenCounter", Type::Uint32, lib, &flags_struct, &time_struct)?;
+    let analog_it = build_iterator("Analog", Type::Double, lib, &flags_struct, &time_struct)?;
+    let aos_it = build_iterator("AnalogOutputStatus", Type::Double, lib, &flags_struct, &time_struct)?;
 
     let read_handler_interface = lib.define_interface("ReadHandler")?
         .callback("begin_fragment")?
@@ -214,7 +213,43 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
             .build()?
         .callback("handle_binary")?
             .param("info", Type::Struct(header_info.clone()))?
-            .param("iter", Type::ClassRef(binary_iterator.declaration()))?
+            .param("it", Type::ClassRef(binary_it.declaration()))?
+            .arg("arg")?
+            .return_type(ReturnType::Void)?
+            .build()?
+        .callback("handle_double_bit_binary")?
+            .param("info", Type::Struct(header_info.clone()))?
+            .param("it", Type::ClassRef(double_bit_binary_it.declaration()))?
+            .arg("arg")?
+            .return_type(ReturnType::Void)?
+            .build()?
+        .callback("handle_binary_output_status")?
+            .param("info", Type::Struct(header_info.clone()))?
+            .param("it", Type::ClassRef(bos_it.declaration()))?
+            .arg("arg")?
+            .return_type(ReturnType::Void)?
+            .build()?
+        .callback("handle_counter")?
+            .param("info", Type::Struct(header_info.clone()))?
+            .param("it", Type::ClassRef(counter_it.declaration()))?
+            .arg("arg")?
+            .return_type(ReturnType::Void)?
+            .build()?
+        .callback("handle_frozen_counter")?
+            .param("info", Type::Struct(header_info.clone()))?
+            .param("it", Type::ClassRef(frozen_counter_it.declaration()))?
+            .arg("arg")?
+            .return_type(ReturnType::Void)?
+            .build()?
+        .callback("handle_analog")?
+            .param("info", Type::Struct(header_info.clone()))?
+            .param("it", Type::ClassRef(analog_it.declaration()))?
+            .arg("arg")?
+            .return_type(ReturnType::Void)?
+            .build()?
+        .callback("handle_analog_output_status")?
+            .param("info", Type::Struct(header_info.clone()))?
+            .param("it", Type::ClassRef(aos_it.declaration()))?
             .arg("arg")?
             .return_type(ReturnType::Void)?
             .build()?
@@ -223,4 +258,26 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
         .build()?;
 
     Ok(read_handler_interface)
+}
+
+fn build_iterator(name: &str, value_type: Type, lib: &mut LibraryBuilder, flags_struct: &NativeStructHandle, time_struct: &NativeStructHandle) -> Result<ClassHandle, BindingError> {
+    let value_struct = lib.declare_native_struct(name)?;
+    let value_struct = lib.define_native_struct(&value_struct)?
+        .add("index", Type::Uint16)?
+        .add("value", value_type)?
+        .add("flags", Type::Struct(flags_struct.clone()))?
+        .add("time", Type::Struct(time_struct.clone()))?
+        .build();
+
+    let value_iterator = lib.declare_class(&format!("{}Iterator", name))?;
+    let iterator_next_fn = lib.declare_native_function(&format!("{}_next", name.to_lowercase()))?
+        .param("it", Type::ClassRef(value_iterator.clone()))?
+        .return_type(ReturnType::Type(Type::StructRef(value_struct.declaration())))?
+        .build()?;
+
+    let value_iterator = lib.define_class(&value_iterator)?
+        .method("next", &iterator_next_fn)?
+        .build();
+
+    Ok(value_iterator)
 }

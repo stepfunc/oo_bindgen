@@ -5,7 +5,7 @@ class MainClass
 {
     class TestLogger : Logger
     {
-        public void on_message(LogLevel level, string message)
+        public void OnMessage(LogLevel level, string message)
         {
             //Console.WriteLine($"{level}: {message}");
         }
@@ -13,7 +13,7 @@ class MainClass
 
     class TestListener : ClientStateListener
     {
-        public void on_change(ClientState state)
+        public void OnChange(ClientState state)
         {
             Console.WriteLine(state);
         }
@@ -21,26 +21,104 @@ class MainClass
 
     class TestReadHandler : ReadHandler
     {
-        public void begin_fragment(ResponseHeader header)
+        public void BeginFragment(ResponseHeader header)
         {
             Console.WriteLine("Beginning fragment");
         }
 
-        public void end_fragment(ResponseHeader header)
+        public void EndFragment(ResponseHeader header)
         {
             Console.WriteLine("End fragment");
         }
 
-        public void handle_binary(HeaderInfo info, BinaryIterator it)
+        public void HandleBinary(HeaderInfo info, BinaryIterator it)
         {
             Console.WriteLine("Binaries:");
-            Console.WriteLine("Qualifier: " + info.qualifier);
-            Console.WriteLine("Variation: " + info.variation);
+            Console.WriteLine("Qualifier: " + info.Qualifier);
+            Console.WriteLine("Variation: " + info.Variation);
 
-            for (Binary? binary = it.next(); binary != null; binary = it.next())
+            for (Binary? value = it.Next(); value != null; value = it.Next())
             {
-                var bin = (Binary)binary;
-                Console.WriteLine($"BI {bin.index}: Value={bin.value} Time={bin.time.value} ({bin.time.quality})");
+                var val = (Binary)value;
+                Console.WriteLine($"BI {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+            }
+        }
+
+        public void HandleDoubleBitBinary(HeaderInfo info, DoubleBitBinaryIterator it)
+        {
+            Console.WriteLine("Double Bit Binaries:");
+            Console.WriteLine("Qualifier: " + info.Qualifier);
+            Console.WriteLine("Variation: " + info.Variation);
+
+            for (DoubleBitBinary? value = it.Next(); value != null; value = it.Next())
+            {
+                var val = (DoubleBitBinary)value;
+                Console.WriteLine($"DBBI {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+            }
+        }
+
+        public void HandleBinaryOutputStatus(HeaderInfo info, BinaryOutputStatusIterator it)
+        {
+            Console.WriteLine("Binary Output Statuses:");
+            Console.WriteLine("Qualifier: " + info.Qualifier);
+            Console.WriteLine("Variation: " + info.Variation);
+
+            for (BinaryOutputStatus? value = it.Next(); value != null; value = it.Next())
+            {
+                var val = (BinaryOutputStatus)value;
+                Console.WriteLine($"BOS {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+            }
+        }
+
+        public void HandleCounter(HeaderInfo info, CounterIterator it)
+        {
+            Console.WriteLine("Counters:");
+            Console.WriteLine("Qualifier: " + info.Qualifier);
+            Console.WriteLine("Variation: " + info.Variation);
+
+            for (Counter? value = it.Next(); value != null; value = it.Next())
+            {
+                var val = (Counter)value;
+                Console.WriteLine($"Counter {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+            }
+        }
+
+        public void HandleFrozenCounter(HeaderInfo info, FrozenCounterIterator it)
+        {
+            Console.WriteLine("Frozen Counters:");
+            Console.WriteLine("Qualifier: " + info.Qualifier);
+            Console.WriteLine("Variation: " + info.Variation);
+
+            for (FrozenCounter? value = it.Next(); value != null; value = it.Next())
+            {
+                var val = (FrozenCounter)value;
+                Console.WriteLine($"Frozen Counter {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+            }
+        }
+
+        public void HandleAnalog(HeaderInfo info, AnalogIterator it)
+        {
+            Console.WriteLine("Analogs:");
+            Console.WriteLine("Qualifier: " + info.Qualifier);
+            Console.WriteLine("Variation: " + info.Variation);
+
+            for (Analog? value = it.Next(); value != null; value = it.Next())
+            {
+                var val = (Analog)value;
+                Console.WriteLine($"AI {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+            }
+        }
+
+        public void HandleAnalogOutputStatus(HeaderInfo info, AnalogOutputStatusIterator it)
+        {
+            Console.WriteLine("Analog Output Statuses:");
+            Console.WriteLine("Qualifier: " + info.Qualifier);
+            Console.WriteLine("Variation: " + info.Variation);
+
+            for (AnalogOutputStatus? value = it.Next(); value != null; value = it.Next())
+            {
+                var val = (AnalogOutputStatus)value;
+                Console.WriteLine($"AOS {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
     }
@@ -50,15 +128,15 @@ class MainClass
         Logging.SetLogLevel(LogLevel.Info);
         Logging.SetHandler(new TestLogger());
 
-        using (var runtime = new Runtime(new RuntimeConfig { num_core_threads = 2 }))
+        using (var runtime = new Runtime(new RuntimeConfig { NumCoreThreads = 2 }))
         {
-            var master = runtime.add_master_tcp(
+            var master = runtime.AddMasterTcp(
                 1,
                 DecodeLogLevel.ObjectValues,
                 new ReconnectStrategy
                 {
-                    min_delay = TimeSpan.FromMilliseconds(100),
-                    max_delay = TimeSpan.FromSeconds(5),
+                    MinDelay = TimeSpan.FromMilliseconds(100),
+                    MaxDelay = TimeSpan.FromSeconds(5),
                 },
                 TimeSpan.FromSeconds(5),
                 "127.0.0.1:20000",
@@ -70,25 +148,25 @@ class MainClass
                 1024,
                 new AssociationConfiguration
                 {
-                    disable_unsol_classes = new EventClasses
+                    DisableUnsolClasses = new EventClasses
                     {
-                        class1 = true,
-                        class2 = true,
-                        class3 = true,
+                        Class1 = true,
+                        Class2 = true,
+                        Class3 = true,
                     },
-                    enable_unsol_classes = new EventClasses
+                    EnableUnsolClasses = new EventClasses
                     {
-                        class1 = true,
-                        class2 = true,
-                        class3 = true,
+                        Class1 = true,
+                        Class2 = true,
+                        Class3 = true,
                     },
-                    auto_time_sync = AutoTimeSync.LAN,
+                    AutoTimeSync = AutoTimeSync.Lan,
                 },
                 new AssociationHandlers
                 {
-                    integrity_handler = readHandler,
-                    unsolicited_handler = readHandler,
-                    default_poll_handler = readHandler,
+                    IntegrityHandler = readHandler,
+                    UnsolicitedHandler = readHandler,
+                    DefaultPollHandler = readHandler,
                 }
             );
 

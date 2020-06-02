@@ -3,6 +3,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::platforms::*;
+use heck::CamelCase;
 use std::fs;
 use std::path::PathBuf;
 use crate::conversion::*;
@@ -132,10 +133,10 @@ fn generate_enum(f: &mut impl Printer, native_enum: &NativeEnumHandle, lib: &Lib
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
-        f.writeln(&format!("public enum {}", native_enum.name))?;
+        f.writeln(&format!("public enum {}", native_enum.name.to_camel_case()))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
-                f.writeln(&format!("{} =  {},", variant.name, variant.value))?;
+                f.writeln(&format!("{} =  {},", variant.name.to_camel_case(), variant.value))?;
             }
             Ok(())
         })

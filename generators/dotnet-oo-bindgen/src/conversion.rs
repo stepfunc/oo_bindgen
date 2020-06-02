@@ -3,6 +3,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
+use heck::{CamelCase, MixedCase};
 use crate::formatting::blocked;
 
 pub struct DotnetType<'a>(pub &'a Type);
@@ -20,14 +21,14 @@ impl<'a> DotnetType<'a> {
             Type::Sint32 => "int".to_string(),
             Type::Uint64 => "ulong".to_string(),
             Type::Sint64 => "long".to_string(),
-            Type::Float => unimplemented!(),
-            Type::Double => unimplemented!(),
+            Type::Float => "float".to_string(),
+            Type::Double => "double".to_string(),
             Type::String => "string".to_string(),
-            Type::Struct(handle) => handle.name().to_string(),
-            Type::StructRef(handle) => format!("{}?", handle.name),
-            Type::Enum(handle) => handle.name.to_string(),
-            Type::ClassRef(handle) => handle.name.to_string(),
-            Type::Interface(handle) => handle.name.to_string(),
+            Type::Struct(handle) => handle.name().to_camel_case(),
+            Type::StructRef(handle) => format!("{}?", handle.name.to_camel_case()),
+            Type::Enum(handle) => handle.name.to_camel_case(),
+            Type::ClassRef(handle) => handle.name.to_camel_case(),
+            Type::Interface(handle) => handle.name.to_camel_case(),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
@@ -44,14 +45,14 @@ impl<'a> DotnetType<'a> {
             Type::Sint32 => "int".to_string(),
             Type::Uint64 => "ulong".to_string(),
             Type::Sint64 => "long".to_string(),
-            Type::Float => unimplemented!(),
-            Type::Double => unimplemented!(),
+            Type::Float => "float".to_string(),
+            Type::Double => "double".to_string(),
             Type::String => "IntPtr".to_string(),
-            Type::Struct(handle) => handle.name().to_string(),
+            Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(_) => "IntPtr".to_string(),
-            Type::Enum(handle) => handle.name.to_string(),
+            Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(_) => "IntPtr".to_string(),
-            Type::Interface(handle) => format!("{}NativeAdapter", handle.name),
+            Type::Interface(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => "ulong".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),
@@ -70,8 +71,8 @@ impl<'a> DotnetType<'a> {
             Type::Sint32 => None,
             Type::Uint64 => None,
             Type::Sint64 => None,
-            Type::Float => unimplemented!(),
-            Type::Double => unimplemented!(),
+            Type::Float => None,
+            Type::Double => None,
             Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
@@ -88,27 +89,27 @@ impl<'a> DotnetType<'a> {
 
     pub fn as_dotnet_arg(&self, param_name: &str) -> String {
         match self.0 {
-            Type::Bool => param_name.to_string(),
-            Type::Uint8 => param_name.to_string(),
-            Type::Sint8 => param_name.to_string(),
-            Type::Uint16 => param_name.to_string(),
-            Type::Sint16 => param_name.to_string(),
-            Type::Uint32 => param_name.to_string(),
-            Type::Sint32 => param_name.to_string(),
-            Type::Uint64 => param_name.to_string(),
-            Type::Sint64 => param_name.to_string(),
-            Type::Float => unimplemented!(),
-            Type::Double => unimplemented!(),
-            Type::String => format!("_{}", param_name),
-            Type::Struct(_) => param_name.to_string(),
-            Type::StructRef(_) => format!("_{}", param_name.to_string()),
-            Type::Enum(_) => param_name.to_string(),
-            Type::ClassRef(_) => format!("_{}", param_name),
-            Type::Interface(_) => format!("_{}", param_name),
+            Type::Bool => param_name.to_mixed_case(),
+            Type::Uint8 => param_name.to_mixed_case(),
+            Type::Sint8 => param_name.to_mixed_case(),
+            Type::Uint16 => param_name.to_mixed_case(),
+            Type::Sint16 => param_name.to_mixed_case(),
+            Type::Uint32 => param_name.to_mixed_case(),
+            Type::Sint32 => param_name.to_mixed_case(),
+            Type::Uint64 => param_name.to_mixed_case(),
+            Type::Sint64 => param_name.to_mixed_case(),
+            Type::Float => param_name.to_mixed_case(),
+            Type::Double => param_name.to_mixed_case(),
+            Type::String => format!("_{}", param_name.to_mixed_case()),
+            Type::Struct(_) => param_name.to_mixed_case(),
+            Type::StructRef(_) => format!("_{}", param_name.to_mixed_case()),
+            Type::Enum(_) => param_name.to_mixed_case(),
+            Type::ClassRef(_) => format!("_{}", param_name.to_mixed_case()),
+            Type::Interface(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds => format!("_{}", param_name),
-                DurationMapping::Seconds => format!("_{}", param_name),
-                DurationMapping::SecondsFloat => format!("_{}", param_name),
+                DurationMapping::Milliseconds => format!("_{}", param_name.to_mixed_case()),
+                DurationMapping::Seconds => format!("_{}", param_name.to_mixed_case()),
+                DurationMapping::SecondsFloat => format!("_{}", param_name.to_mixed_case()),
             }
         }
     }
@@ -153,15 +154,15 @@ impl TypeConverter for StringConverter {
 struct InterfaceConverter(InterfaceHandle);
 impl TypeConverter for InterfaceConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name, from))
+        f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name.to_camel_case(), from))
     }
 
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let handle_name = format!("{}_handle", from);
-        f.writeln(&format!("if ({}.{} != IntPtr.Zero)", from, self.0.arg_name))?;
+        f.writeln(&format!("if ({}.{} != IntPtr.Zero)", from, self.0.arg_name.to_mixed_case()))?;
         blocked(f, |f| {
-            f.writeln(&format!("var {} = GCHandle.FromIntPtr({}.{});", handle_name, from, self.0.arg_name))?;
-            f.writeln(&format!("{}({}){}.Target;", to, self.0.name, handle_name))
+            f.writeln(&format!("var {} = GCHandle.FromIntPtr({}.{});", handle_name, from, self.0.arg_name.to_mixed_case()))?;
+            f.writeln(&format!("{}({}){}.Target;", to, self.0.name.to_camel_case(), handle_name))
         })?;
         f.writeln("else")?;
         blocked(f, |f| {
@@ -173,12 +174,12 @@ impl TypeConverter for InterfaceConverter {
 struct StructRefConverter(NativeStructDeclarationHandle);
 impl TypeConverter for StructRefConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        let handle_name = format!("_{}_handle", from);
+        let handle_name = format!("_{}Handle", from);
         f.writeln(&format!("var {} = IntPtr.Zero;", handle_name))?;
         f.writeln(&format!("if ({} != null)", from))?;
         blocked(f, |f| {
             let value_name = format!("_{}_value", from);
-            f.writeln(&format!("var {} = ({}){};", value_name, self.0.name, from))?;
+            f.writeln(&format!("var {} = ({}){};", value_name, self.0.name.to_camel_case(), from))?;
             f.writeln(&format!("{} = Marshal.AllocHGlobal(Marshal.SizeOf({}));", handle_name, value_name))?;
             f.writeln(&format!("Marshal.StructureToPtr({}, {}, false);", value_name, handle_name))
         })?;
@@ -190,11 +191,11 @@ impl TypeConverter for StructRefConverter {
     }
 
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        let handle_name = format!("_{}_handle", from);
-        f.writeln(&format!("{}? {} = null;", self.0.name, handle_name))?;
+        let handle_name = format!("_{}Handle", from);
+        f.writeln(&format!("{}? {} = null;", self.0.name.to_camel_case(), handle_name))?;
         f.writeln(&format!("if ({} != IntPtr.Zero)", from))?;
         blocked(f, |f| {
-            f.writeln(&format!("{} = Marshal.PtrToStructure<{}>({});", handle_name, self.0.name, from))
+            f.writeln(&format!("{} = Marshal.PtrToStructure<{}>({});", handle_name, self.0.name.to_camel_case(), from))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
     }
@@ -208,10 +209,10 @@ impl TypeConverter for ClassConverter {
 
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let handle_name = format!("_{}_handle", from);
-        f.writeln(&format!("{} {} = null;", self.0.name, handle_name))?;
+        f.writeln(&format!("{} {} = null;", self.0.name.to_camel_case(), handle_name))?;
         f.writeln(&format!("if ({} != IntPtr.Zero)", from))?;
         blocked(f, |f| {
-            f.writeln(&format!("{} = new {}({});", handle_name, self.0.name, from))
+            f.writeln(&format!("{} = new {}({});", handle_name, self.0.name.to_camel_case(), from))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
     }

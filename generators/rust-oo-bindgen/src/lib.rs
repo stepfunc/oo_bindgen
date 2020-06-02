@@ -134,8 +134,14 @@ impl<'a> RustCodegen<'a> {
                 .collect::<Vec<String>>()
                 .join(", ")
         )?;
-    
-        f.write(&format!(") -> {}", RustReturnType(&handle.return_type)))?;
+
+        if handle.return_type.is_void() {
+            f.write(")")?;
+        }
+        else {
+            f.write(&format!(") -> {}", RustReturnType(&handle.return_type)))?;
+        }
+
 
         blocked(f, |f| {
             f.writeln(&format!("crate::{}(", handle.name))?;

@@ -42,6 +42,15 @@ pub enum ReturnType {
     Type(Type),
 }
 
+impl ReturnType {
+    pub fn is_void(&self) -> bool {
+        if let Self::Void = self {
+            return true
+        }
+        false
+    }
+}
+
 #[derive(Debug)]
 pub struct Parameter {
     pub name: String,

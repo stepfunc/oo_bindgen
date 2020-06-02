@@ -37,7 +37,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare each echo function
     let enum_zero_to_five_echo_function = lib.declare_native_function("enum_zero_to_five_echo")?
         .param("value", Type::Enum(enum_zero_to_five.clone()))?
-        .return_type(ReturnType::Type(Type::Enum(enum_zero_to_five.clone())))?
+        .return_type(ReturnType::Type(Type::Enum(enum_zero_to_five)))?
         .build()?;
 
     let enum_one_to_six_echo_function = lib.declare_native_function("enum_one_to_six_echo")?

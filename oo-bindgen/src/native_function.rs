@@ -79,7 +79,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         self.lib.validate_type(&param_type)?;
         self.params.push(Parameter {
             name: name.to_string(),
-            param_type: param_type.clone()
+            param_type
         });
         Ok(self)
     }
@@ -92,7 +92,7 @@ impl<'a> NativeFunctionBuilder<'a> {
             }
             Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined{
                 native_func_name: self.name,
-                return_type: return_type,
+                return_type,
             }),
         }
     }
@@ -101,7 +101,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         if let Some(return_type) = self.return_type {
             let handle = NativeFunctionHandle::new(NativeFunction {
                 name: self.name,
-                return_type: return_type,
+                return_type,
                 parameters: self.params,
             });
 

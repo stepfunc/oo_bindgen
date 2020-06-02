@@ -1,5 +1,4 @@
 use dnp3::prelude::master::*;
-use tokio;
 use std::ffi::CStr;
 use std::net::SocketAddr;
 use std::os::raw::c_char;
@@ -18,7 +17,7 @@ where
     f(tokio::runtime::Builder::new().enable_all().threaded_scheduler()).build()
 }
 
-pub unsafe fn runtime_new(config: *const ffi::RuntimeConfig) -> *mut tokio::runtime::Runtime {
+pub(crate) unsafe fn runtime_new(config: *const ffi::RuntimeConfig) -> *mut tokio::runtime::Runtime {
     let result = match config.as_ref() {
         None => build_runtime(|r| r),
         Some(x) => {
@@ -35,13 +34,13 @@ pub unsafe fn runtime_new(config: *const ffi::RuntimeConfig) -> *mut tokio::runt
     }
 }
 
-pub unsafe fn runtime_destroy(runtime: *mut tokio::runtime::Runtime) {
+pub(crate) unsafe fn runtime_destroy(runtime: *mut tokio::runtime::Runtime) {
     if !runtime.is_null() {
         Box::from_raw(runtime);
     };
 }
 
-pub unsafe fn runtime_add_master_tcp(
+pub(crate) unsafe fn runtime_add_master_tcp(
     runtime: *mut tokio::runtime::Runtime,
     address: u16,
     level: ffi::DecodeLogLevel,

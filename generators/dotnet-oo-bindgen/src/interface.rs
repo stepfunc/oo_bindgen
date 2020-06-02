@@ -4,7 +4,7 @@ use oo_bindgen::interface::*;
 use heck::{CamelCase, MixedCase};
 use crate::*;
 
-pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library) -> FormattingResult<()> {
+pub(crate) fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library) -> FormattingResult<()> {
     let interface_name = interface.name.to_camel_case();
 
     print_license(f, &lib.license)?;
@@ -160,19 +160,17 @@ pub fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &Library)
 
 fn call_dotnet_function(f: &mut dyn Printer, method: &CallbackFunction, return_destination: &str) -> FormattingResult<()> {
     // Write the type conversions
-    &method.params()
-        .map(|param| {
-            if let Some(converter) = DotnetType(&param.param_type).conversion() {
-                return converter.convert_from_native(f, &param.name, &format!("var _{} = ", param.name.to_mixed_case()));
-            }
-            Ok(())
-        }).collect::<FormattingResult<()>>()?;
+    for param in method.params() {
+        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+            converter.convert_from_native(f, &param.name, &format!("var _{} = ", param.name.to_mixed_case()))?;
+        }
+    }
 
     // Call the .NET function
     f.newline()?;
     let method_name = method.name.to_camel_case();
     if let ReturnType::Type(return_type) = &method.return_type {
-        if let Some(_) = DotnetType(&return_type).conversion() {
+        if DotnetType(&return_type).conversion().is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
             f.write(&format!("{}_impl.{}(", return_destination, method_name))?;

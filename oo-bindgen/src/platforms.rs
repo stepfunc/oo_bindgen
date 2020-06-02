@@ -99,3 +99,9 @@ impl PlatformLocations {
         vec.into_iter()
     }
 }
+
+impl Default for PlatformLocations {
+    fn default() -> Self {
+        Self::new()
+    }
+}

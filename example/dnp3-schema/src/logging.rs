@@ -1,5 +1,4 @@
 use oo_bindgen::*;
-use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::native_function::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {

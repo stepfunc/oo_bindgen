@@ -4,7 +4,7 @@ use oo_bindgen::formatting::*;
 use heck::{CamelCase, MixedCase};
 use crate::*;
 
-pub fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
+pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
     let classname = class.name().to_camel_case();
 
     print_license(f, &lib.license)?;
@@ -137,17 +137,15 @@ fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingRes
 
 fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str, first_param_is_self: bool, is_constructor: bool) -> FormattingResult<()> {
     // Write the type conversions
-    &method.parameters.iter().enumerate()
-        .map(|(idx, param)| {
-            if let Some(converter) = DotnetType(&param.param_type).conversion() {
-                if idx == 0 && first_param_is_self {
-                    converter.convert_to_native(f, "this", &format!("var _{} = ", param.name.to_mixed_case()))?;
-                } else {
-                    converter.convert_to_native(f, &param.name.to_mixed_case(), &format!("var _{} = ", param.name.to_mixed_case()))?;
-                }
+    for (idx, param) in method.parameters.iter().enumerate() {
+        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+            if idx == 0 && first_param_is_self {
+                converter.convert_to_native(f, "this", &format!("var _{} = ", param.name.to_mixed_case()))?;
+            } else {
+                converter.convert_to_native(f, &param.name.to_mixed_case(), &format!("var _{} = ", param.name.to_mixed_case()))?;
             }
-            Ok(())
-        }).collect::<FormattingResult<()>>()?;
+        }
+    }
 
     // Call the native function
     f.newline()?;
@@ -168,13 +166,11 @@ fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_des
     f.write(");")?;
 
     //Cleanup type conversions
-    &method.parameters.iter()
-        .map(|param| {
-            if let Some(converter) = DotnetType(&param.param_type).conversion() {
-                return converter.convert_to_native_cleanup(f, &format!("_{}", param.name.to_mixed_case()));
-            }
-            Ok(())
-        }).collect::<FormattingResult<()>>()?;
+    for param in method.parameters.iter() {
+        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+            converter.convert_to_native_cleanup(f, &format!("_{}", param.name.to_mixed_case()))?;
+        }
+    }
 
     // Convert the result (if required) and return
     if let ReturnType::Type(return_type) = &method.return_type {

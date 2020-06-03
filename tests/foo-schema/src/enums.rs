@@ -42,17 +42,17 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let enum_one_to_six_echo_function = lib.declare_native_function("enum_one_to_six_echo")?
         .param("value", Type::Enum(enum_one_to_six.clone()))?
-        .return_type(ReturnType::Type(Type::Enum(enum_one_to_six.clone())))?
+        .return_type(ReturnType::Type(Type::Enum(enum_one_to_six)))?
         .build()?;
 
     let enum_disjoint_echo_function = lib.declare_native_function("enum_disjoint_echo")?
         .param("value", Type::Enum(enum_disjoint.clone()))?
-        .return_type(ReturnType::Type(Type::Enum(enum_disjoint.clone())))?
+        .return_type(ReturnType::Type(Type::Enum(enum_disjoint)))?
         .build()?;
 
     let enum_single_echo_function = lib.declare_native_function("enum_single_echo")?
         .param("value", Type::Enum(enum_single.clone()))?
-        .return_type(ReturnType::Type(Type::Enum(enum_single.clone())))?
+        .return_type(ReturnType::Type(Type::Enum(enum_single)))?
         .build()?;
 
     // Declare static class

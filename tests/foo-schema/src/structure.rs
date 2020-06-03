@@ -31,7 +31,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add("int64_value", Type::Sint64)?
         .add("float_value", Type::Float)?
         .add("double_value", Type::Double)?
-        .add("structure_value", Type::Struct(other_structure.clone()))?
+        .add("structure_value", Type::Struct(other_structure))?
         .add("enum_value", Type::Enum(structure_enum))?
         .add("interface_value", Type::Interface(structure_interface))?
         .add("duration_millis", Type::Duration(DurationMapping::Milliseconds))?

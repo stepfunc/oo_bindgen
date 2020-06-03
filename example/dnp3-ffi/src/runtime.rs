@@ -76,7 +76,7 @@ pub(crate) unsafe fn runtime_add_master_tcp(
         runtime_ref.spawn(future);
 
         let master = Master {
-            runtime: runtime,
+            runtime,
             handle,
         };
 

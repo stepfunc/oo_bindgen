@@ -28,22 +28,22 @@ pub fn define(lib: &mut LibraryBuilder, master_class: ClassDeclarationHandle, re
     let association_configuration = lib.declare_native_struct("AssociationConfiguration")?;
     let association_configuration = lib.define_native_struct(&association_configuration)?
         .add("disable_unsol_classes", Type::Struct(event_classes.clone()))?
-        .add("enable_unsol_classes", Type::Struct(event_classes.clone()))?
-        .add("auto_time_sync", Type::Enum(auto_time_sync_enum.clone()))?
+        .add("enable_unsol_classes", Type::Struct(event_classes))?
+        .add("auto_time_sync", Type::Enum(auto_time_sync_enum))?
         .build();
 
     let association_handlers = lib.declare_native_struct("AssociationHandlers")?;
     let association_handlers = lib.define_native_struct(&association_handlers)?
         .add("integrity_handler", Type::Interface(read_handler.clone()))?
         .add("unsolicited_handler", Type::Interface(read_handler.clone()))?
-        .add("default_poll_handler", Type::Interface(read_handler.clone()))?
+        .add("default_poll_handler", Type::Interface(read_handler))?
         .build();
 
     let add_association_fn = lib.declare_native_function("master_add_association")?
         .param("master", Type::ClassRef(master_class.clone()))?
         .param("address", Type::Uint16)?
-        .param("config", Type::Struct(association_configuration.clone()))?
-        .param("handlers", Type::Struct(association_handlers.clone()))?
+        .param("config", Type::Struct(association_configuration))?
+        .param("handlers", Type::Struct(association_handlers))?
         .return_type(ReturnType::Type(Type::ClassRef(association_class.clone())))?
         .build()?;
 

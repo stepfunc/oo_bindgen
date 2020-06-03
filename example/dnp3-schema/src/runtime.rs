@@ -46,7 +46,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<ClassDeclarationHandle, Bindin
 
     let client_state_listener = lib.define_interface("ClientStateListener")?
         .callback("on_change")?
-            .param("state", Type::Enum(client_state_enum.clone()))?
+            .param("state", Type::Enum(client_state_enum))?
             .arg("arg")?
             .return_type(ReturnType::Void)?
             .build()?
@@ -59,11 +59,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<ClassDeclarationHandle, Bindin
     let add_master_tcp_fn = lib.declare_native_function("runtime_add_master_tcp")?
         .param("runtime", Type::ClassRef(runtime_class.clone()))?
         .param("address", Type::Uint16)?
-        .param("level", Type::Enum(decode_log_level_enum.clone()))?
-        .param("strategy", Type::Struct(reconnect_strategy.clone()))?
+        .param("level", Type::Enum(decode_log_level_enum))?
+        .param("strategy", Type::Struct(reconnect_strategy))?
         .param("response_timeout", Type::Duration(DurationMapping::Milliseconds))?
         .param("endpoint", Type::String)?
-        .param("listener", Type::Interface(client_state_listener.clone()))?
+        .param("listener", Type::Interface(client_state_listener))?
         .return_type(ReturnType::Type(Type::ClassRef(master_class.clone())))?
         .build()?;
 

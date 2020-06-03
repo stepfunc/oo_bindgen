@@ -22,12 +22,12 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let set_callback_fn = lib.declare_native_function("logging_set_callback")?
-        .param("handler", Type::Interface(log_callback_interface.clone()))?
+        .param("handler", Type::Interface(log_callback_interface))?
         .return_type(ReturnType::Void)?
         .build()?;
 
     let set_log_level_fn = lib.declare_native_function("logging_set_log_level")?
-        .param("level", Type::Enum(log_level_enum.clone()))?
+        .param("level", Type::Enum(log_level_enum))?
         .return_type(ReturnType::Void)?
         .build()?;
 

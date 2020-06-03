@@ -23,7 +23,7 @@ fn generate_c_lib(lib: &Library) {
     let config = c_oo_bindgen::CBindgenConfig {
         output_dir: PathBuf::from("example/bindings/c/generated"),
         ffi_name: "dnp3_ffi".to_string(),
-        platforms: platforms,
+        platforms,
     };
 
     c_oo_bindgen::generate_c_package(&lib, &config).unwrap();

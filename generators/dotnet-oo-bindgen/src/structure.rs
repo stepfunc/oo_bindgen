@@ -4,7 +4,7 @@ use oo_bindgen::formatting::*;
 use heck::CamelCase;
 use crate::*;
 
-pub fn generate(f: &mut impl Printer, native_struct: &NativeStructHandle, lib: &Library) -> FormattingResult<()> {
+pub(crate) fn generate(f: &mut impl Printer, native_struct: &NativeStructHandle, lib: &Library) -> FormattingResult<()> {
     print_license(f, &lib.license)?;
 
     f.writeln("using System;")?;

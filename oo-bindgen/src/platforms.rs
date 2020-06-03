@@ -8,19 +8,19 @@ pub enum Platform {
 }
 
 impl Platform {
+
     pub fn current() -> Self {
+        if cfg!(target_os = "windows") && cfg!(target_pointer_width = "32") {
+            return Self::Win32
+        }
         if cfg!(target_os = "windows") && cfg!(target_pointer_width = "64") {
-            Self::Win64
+            return Self::Win64
         }
-        else if cfg!(target_os = "windows") && cfg!(target_pointer_width = "32") {
-            Self::Win32
+        if cfg!(target_os = "linux") && cfg!(target_pointer_width = "64") {
+            return Self::Linux
         }
-        else if cfg!(target_os = "linux") && cfg!(target_pointer_width = "64") {
-            Self::Linux
-        }
-        else {
-            unimplemented!("Current platform is not supported")
-        }
+
+        unimplemented!("Current platform is not supported")
     }
 
     pub fn to_string(&self) -> &'static str {
@@ -97,5 +97,11 @@ impl PlatformLocations {
         if let Some(loc) = &self.win32 { vec.push(PlatformLocation::new(Platform::Win32, loc.clone())) }
         if let Some(loc) = &self.linux { vec.push(PlatformLocation::new(Platform::Linux, loc.clone())) }
         vec.into_iter()
+    }
+}
+
+impl Default for PlatformLocations {
+    fn default() -> Self {
+        Self::new()
     }
 }

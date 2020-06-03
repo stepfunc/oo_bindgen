@@ -159,7 +159,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         self.interface.lib.validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.to_string(),
-            param_type: param_type.clone()
+            param_type
         }));
         Ok(self)
     }
@@ -185,7 +185,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
             }
             Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined{
                 native_func_name: self.name,
-                return_type: return_type,
+                return_type,
             }),
         }
     }
@@ -196,9 +196,9 @@ impl<'a> CallbackFunctionBuilder<'a> {
         
         let cb = CallbackFunction {
             name: self.name,
-            return_type: return_type,
+            return_type,
             parameters: self.params,
-            arg_name: arg_name,
+            arg_name,
         };
 
         self.interface.elements.push(InterfaceElement::CallbackFunction(cb));
@@ -208,5 +208,5 @@ impl<'a> CallbackFunctionBuilder<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    //use super::*;
 }

@@ -39,7 +39,7 @@ impl Printer for FilePrinter {
     }
 
     fn newline(&mut self) -> FormattingResult<()> {
-        writeln!(self.writer, "").map_err(|e| e.into())
+        writeln!(self.writer).map_err(|e| e.into())
     }
 }
 
@@ -64,7 +64,7 @@ impl<'a> Printer for IndentedPrinter<'a> {
     }
 }
 
-pub fn indented<'a, F, T>(f: &'a mut dyn Printer, cb: F) -> FormattingResult<T>
+pub fn indented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
     let mut printer = IndentedPrinter::new(f);
     cb(&mut printer)

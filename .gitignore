@@ -1,6 +1,7 @@
 /target
 /.vscode
 .vs
+.idea
 
 # ====================
 # Generated test files

@@ -6,11 +6,11 @@ use oo_bindgen::native_struct::*;
 use heck::{CamelCase, MixedCase};
 use crate::formatting::blocked;
 
-pub struct DotnetType<'a>(pub &'a Type);
+pub(crate) struct DotnetType<'a>(pub(crate) &'a Type);
 
 impl<'a> DotnetType<'a> {
     /// Returns the .NET natural type
-    pub fn as_dotnet_type(&self) -> String {
+    pub(crate) fn as_dotnet_type(&self) -> String {
         match self.0 {
             Type::Bool => "bool".to_string(),
             Type::Uint8 => "byte".to_string(),
@@ -34,7 +34,7 @@ impl<'a> DotnetType<'a> {
     }
 
     /// Return the .NET representation of the native C type
-    pub fn as_native_type(&self) -> String {
+    pub(crate) fn as_native_type(&self) -> String {
         match self.0 {
             Type::Bool => "byte".to_string(),
             Type::Uint8 => "byte".to_string(),
@@ -60,7 +60,7 @@ impl<'a> DotnetType<'a> {
         }
     }
 
-    pub fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+    pub(crate) fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self.0 {
             Type::Bool => Some(Box::new(BoolConverter)),
             Type::Uint8 => None,
@@ -87,7 +87,7 @@ impl<'a> DotnetType<'a> {
         }
     }
 
-    pub fn as_dotnet_arg(&self, param_name: &str) -> String {
+    pub(crate) fn as_dotnet_arg(&self, param_name: &str) -> String {
         match self.0 {
             Type::Bool => param_name.to_mixed_case(),
             Type::Uint8 => param_name.to_mixed_case(),
@@ -115,7 +115,7 @@ impl<'a> DotnetType<'a> {
     }
 }
 
-pub trait TypeConverter {
+pub(crate) trait TypeConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
 
@@ -251,17 +251,17 @@ impl TypeConverter for DurationSecondsFloatConverter {
     }
 }
 
-pub struct DotnetReturnType<'a>(pub &'a ReturnType);
+pub(crate) struct DotnetReturnType<'a>(pub(crate) &'a ReturnType);
 
 impl <'a> DotnetReturnType<'a> {
-    pub fn as_dotnet_type(&self) -> String {
+    pub(crate) fn as_dotnet_type(&self) -> String {
         match self.0 {
             ReturnType::Void => "void".to_string(),
             ReturnType::Type(return_type) => DotnetType(return_type).as_dotnet_type(),
         }
     }
 
-    pub fn as_native_type(&self) -> String {
+    pub(crate) fn as_native_type(&self) -> String {
         match self.0 {
             ReturnType::Void => "void".to_string(),
             ReturnType::Type(return_type) => DotnetType(return_type).as_native_type(),

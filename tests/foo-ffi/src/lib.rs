@@ -5,11 +5,11 @@ mod enums;
 mod strings;
 mod structure;
 
-pub use callback::*;
-pub use class::*;
-pub use duration::*;
-pub use enums::*;
-pub use strings::*;
-pub use structure::*;
+pub(crate) use callback::*;
+pub(crate) use class::*;
+pub(crate) use duration::*;
+pub(crate) use enums::*;
+pub(crate) use strings::*;
+pub(crate) use structure::*;
 
 pub mod ffi;

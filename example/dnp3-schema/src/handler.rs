@@ -32,15 +32,15 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
 
     let iin = lib.declare_native_struct("IIN")?;
     let iin = lib.define_native_struct(&iin)?
-        .add("iin1", Type::Struct(iin1.clone()))?
-        .add("iin2", Type::Struct(iin2.clone()))?
+        .add("iin1", Type::Struct(iin1))?
+        .add("iin2", Type::Struct(iin2))?
         .build();
 
     let response_header = lib.declare_native_struct("ResponseHeader")?;
     let response_header = lib.define_native_struct(&response_header)?
-        .add("control", Type::Struct(control.clone()))?
-        .add("func", Type::Enum(response_function.clone()))?
-        .add("iin", Type::Struct(iin.clone()))?
+        .add("control", Type::Struct(control))?
+        .add("func", Type::Enum(response_function))?
+        .add("iin", Type::Struct(iin))?
         .build();
 
     let variation_enum = lib.define_native_enum("Variation")?
@@ -164,8 +164,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
 
     let header_info = lib.declare_native_struct("HeaderInfo")?;
     let header_info = lib.define_native_struct(&header_info)?
-        .add("variation", Type::Enum(variation_enum.clone()))?
-        .add("qualifier", Type::Enum(qualifier_code_enum.clone()))?
+        .add("variation", Type::Enum(variation_enum))?
+        .add("qualifier", Type::Enum(qualifier_code_enum))?
         .build();
 
     let flags_struct = lib.declare_native_struct("Flags")?;
@@ -182,7 +182,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
     let time_struct = lib.declare_native_struct("Time")?;
     let time_struct = lib.define_native_struct(&time_struct)?
         .add("value", Type::Uint64)?
-        .add("quality", Type::Enum(time_quality_enum.clone()))?
+        .add("quality", Type::Enum(time_quality_enum))?
         .build();
 
     let double_bit_enum = lib.define_native_enum("DoubleBit")?
@@ -207,7 +207,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
             .return_type(ReturnType::Void)?
             .build()?
         .callback("end_fragment")?
-            .param("header", Type::Struct(response_header.clone()))?
+            .param("header", Type::Struct(response_header))?
             .arg("arg")?
             .return_type(ReturnType::Void)?
             .build()?
@@ -248,7 +248,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
             .return_type(ReturnType::Void)?
             .build()?
         .callback("handle_analog_output_status")?
-            .param("info", Type::Struct(header_info.clone()))?
+            .param("info", Type::Struct(header_info))?
             .param("it", Type::ClassRef(aos_it.declaration()))?
             .arg("arg")?
             .return_type(ReturnType::Void)?

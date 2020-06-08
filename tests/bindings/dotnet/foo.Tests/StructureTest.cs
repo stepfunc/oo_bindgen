@@ -6,7 +6,12 @@ namespace foo.Tests
 {
     class TestInterface : StructureInterface
     {
+        public Structure? lastValue = null;
 
+        public void OnValue(Structure? value)
+        {
+            this.lastValue = value;
+        }
     }
 
     public class StructureTests
@@ -15,7 +20,7 @@ namespace foo.Tests
         public void StructureByValueEchoTest()
         {
             var value = CreateStructure();
-            var result = StructEchoFunctions.StructByValueEcho(value);
+            var result = Structure.StructByValueEcho(value);
             CheckStructure(ref result);
         }
 
@@ -23,19 +28,33 @@ namespace foo.Tests
         public void StructureByReferenceEchoTest()
         {
             var value = CreateStructure();
-            var result = StructEchoFunctions.StructByReferenceEcho(value);
+            var result = value.StructByReferenceEcho();
             CheckStructure(ref result);
         }
 
         [Fact]
-        public void GetSetInterfaceInStructure()
+        public void InterfaceStruct()
         {
             var value = CreateStructure();
-            Assert.Null(value.InterfaceValue);
-
             var testInterface = new TestInterface();
             value.InterfaceValue = testInterface;
-            Assert.Equal(testInterface, value.InterfaceValue);
+
+            Structure.StructByValueEcho(value);
+
+            Assert.NotNull(testInterface.lastValue);
+            var lastValue = testInterface.lastValue.Value;
+            CheckStructure(ref lastValue);
+        }
+
+        [Fact]
+        public void StructureMemoryLeakTest()
+        {
+            var numRuns = 1000;
+
+            for (int i = 0; i < numRuns; i++)
+            {
+                CreateStructure();
+            }
         }
 
         private Structure CreateStructure()
@@ -53,10 +72,13 @@ namespace foo.Tests
             structure.Int64Value = -4;
             structure.FloatValue = 12.34f;
             structure.DoubleValue = -56.78;
+            structure.StringValue = "Hello from C#!";
 
             structure.StructureValue.Test = 41;
 
             structure.EnumValue = StructureEnum.Var2;
+
+            structure.InterfaceValue = new TestInterface();
 
             structure.DurationMillis = TimeSpan.FromMilliseconds(4200);
             structure.DurationSeconds = TimeSpan.FromSeconds(76);

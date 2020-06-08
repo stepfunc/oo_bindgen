@@ -13,12 +13,18 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .push("Var3")?
         .build();
 
+    let structure = lib.declare_native_struct("Structure")?;
+
     let structure_interface = lib.define_interface("StructureInterface")?
+        .callback("on_value")?
+            .param("value", Type::StructRef(structure.clone()))?
+            .arg("arg")?
+            .return_type(ReturnType::Void)?
+            .build()?
         .destroy_callback("on_destroy")?
         .arg("arg")?
         .build()?;
 
-    let structure = lib.declare_native_struct("Structure")?;
     let structure = lib.define_native_struct(&structure)?
         .add("boolean_value", Type::Bool)?
         .add("uint8_value", Type::Uint8)?
@@ -31,6 +37,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add("int64_value", Type::Sint64)?
         .add("float_value", Type::Float)?
         .add("double_value", Type::Double)?
+        .add("string_value", Type::String)?
         .add("structure_value", Type::Struct(other_structure))?
         .add("enum_value", Type::Enum(structure_enum))?
         .add("interface_value", Type::Interface(structure_interface))?
@@ -50,11 +57,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .return_type(ReturnType::Type(Type::Struct(structure.clone())))?
         .build()?;
 
-    // Declare static class
-    let class = lib.declare_class("StructEchoFunctions")?;
-    lib.define_class(&class)?
+    // Declare structs methods
+    lib.define_struct(&structure)?
         .static_method("StructByValueEcho", &struct_by_value_echo_func)?
-        .static_method("StructByReferenceEcho", &struct_by_reference_echo_func)?
+        .method("StructByReferenceEcho", &struct_by_reference_echo_func)?
         .build();
 
     Ok(())

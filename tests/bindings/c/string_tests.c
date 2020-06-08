@@ -9,7 +9,6 @@ static void test_english_string()
     StringClass* string_class = string_new();
 
     #define ENGLISH_STRING_1 "I like to be home with my monkey and my dog"
-    printf(string_echo(string_class, ENGLISH_STRING_1));
     assert(strcmp(ENGLISH_STRING_1, string_echo(string_class, ENGLISH_STRING_1)) == 0);
     assert(strlen(ENGLISH_STRING_1) == string_length(ENGLISH_STRING_1));
 
@@ -25,7 +24,6 @@ static void test_french_string()
     StringClass* string_class = string_new();
 
     #define FRENCH_STRING_1 "Devant mon miroir j'ai rêvé d'être une star, j'ai rêvé d'être immortellement belle"
-    printf(string_echo(string_class, FRENCH_STRING_1));
     assert(strcmp(FRENCH_STRING_1, string_echo(string_class, FRENCH_STRING_1)) == 0);
     assert(strlen(FRENCH_STRING_1) == string_length(FRENCH_STRING_1));
 

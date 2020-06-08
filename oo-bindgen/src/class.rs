@@ -154,7 +154,7 @@ impl<'a> ClassBuilder<'a> {
             }
         }
 
-        Err(BindingError::FirstMethodParameterIsNotProperType{
+        Err(BindingError::FirstMethodParameterIsNotClassType{
             handle: self.declaration.clone(),
             native_func: native_function.clone(),
         })

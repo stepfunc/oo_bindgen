@@ -85,7 +85,7 @@ impl<'a> RustCodegen<'a> {
 
         for statement in self.library.into_iter() {
             match statement {
-                Statement::StructDefinition(handle) => self.write_struct_definition(&mut f, handle)?,
+                Statement::NativeStructDefinition(handle) => self.write_struct_definition(&mut f, handle)?,
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::NativeFunctionDeclaration(handle) => self.write_function(&mut f, handle)?,
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
@@ -233,4 +233,3 @@ impl<'a> Display for RustType<'a> {
         }
     }
 }
-

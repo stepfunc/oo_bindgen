@@ -1,7 +1,7 @@
 use crate::ffi;
 use dnp3::app::enums::QualifierCode;
 use dnp3::app::flags::Flags;
-use dnp3::app::header::{ResponseFunction, ResponseHeader};
+use dnp3::app::header::{IIN1, IIN2, ResponseFunction, ResponseHeader};
 use dnp3::app::measurement::*;
 use dnp3::app::types::DoubleBit;
 use dnp3::app::variations::Variation;
@@ -382,6 +382,60 @@ impl From<Flags> for ffi::Flags {
         ffi::Flags {
             value: flags.value
         }
+    }
+}
+
+pub unsafe fn iin1_is_set(iin1: *const ffi::IIN1, flag: ffi::IIN1Flag) -> bool {
+    if let Some(iin1) = iin1.as_ref() {
+        let iin1 = IIN1::new(iin1.value);
+        match flag {
+            ffi::IIN1Flag::Broadcast => iin1.get_broadcast(),
+            ffi::IIN1Flag::Class1Events => iin1.get_class_1_events(),
+            ffi::IIN1Flag::Class2Events => iin1.get_class_2_events(),
+            ffi::IIN1Flag::Class3Events => iin1.get_class_3_events(),
+            ffi::IIN1Flag::NeedTime => iin1.get_need_time(),
+            ffi::IIN1Flag::LocalControl => iin1.get_local_control(),
+            ffi::IIN1Flag::DeviceTrouble => iin1.get_device_trouble(),
+            ffi::IIN1Flag::DeviceRestart => iin1.get_device_restart(),
+        }
+    } else {
+        false
+    }
+}
+
+pub unsafe fn iin2_is_set(iin2: *const ffi::IIN2, flag: ffi::IIN2Flag) -> bool {
+    if let Some(iin1) = iin2.as_ref() {
+        let iin1 = IIN2::new(iin1.value);
+        match flag {
+            ffi::IIN2Flag::NoFuncCodeSupport => iin1.get_no_func_code_support(),
+            ffi::IIN2Flag::ObjectUnknown => iin1.get_object_unknown(),
+            ffi::IIN2Flag::ParameterError => iin1.get_parameter_error(),
+            ffi::IIN2Flag::EventBufferOverflow => iin1.get_event_buffer_overflow(),
+            ffi::IIN2Flag::AlreadyExecuting => iin1.get_already_executing(),
+            ffi::IIN2Flag::ConfigCorrupt => iin1.get_config_corrupt(),
+        }
+    } else {
+        false
+    }
+}
+
+pub unsafe fn flags_is_set(flags: *const ffi::Flags, flag: ffi::Flag) -> bool {
+    if let Some(flags) = flags.as_ref() {
+        let flags = Flags::new(flags.value);
+        match flag {
+            ffi::Flag::Online => flags.online(),
+            ffi::Flag::Restart => flags.restart(),
+            ffi::Flag::CommLost => flags.comm_lost(),
+            ffi::Flag::RemoteForced => flags.remote_forced(),
+            ffi::Flag::LocalForced => flags.local_forced(),
+            ffi::Flag::ChatterFilter => flags.chatter_filter(),
+            ffi::Flag::Rollover => flags.rollover(),
+            ffi::Flag::Discontinuity => flags.discontinuity(),
+            ffi::Flag::OverRange => flags.over_range(),
+            ffi::Flag::ReferenceErr => flags.reference_err(),
+        }
+    } else {
+        false
     }
 }
 

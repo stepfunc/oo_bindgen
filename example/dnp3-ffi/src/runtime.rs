@@ -59,7 +59,11 @@ pub(crate) unsafe fn runtime_add_master_tcp(
             Duration::from_millis(strategy.max_delay)
         );
         let response_timeout = Duration::from_millis(response_timeout);
-        let endpoint = SocketAddr::from_str(&CStr::from_ptr(endpoint).to_string_lossy()).unwrap();
+        let endpoint = if let Ok(endpoint) = SocketAddr::from_str(&CStr::from_ptr(endpoint).to_string_lossy()) {
+            endpoint
+        } else {
+            return std::ptr::null_mut()
+        };
         let listener = ClientStateListenerAdapter::new(listener);
 
         let (future, handle) = create_master_tcp_client(
@@ -71,7 +75,6 @@ pub(crate) unsafe fn runtime_add_master_tcp(
             listener.into_listener(),
         );
 
-        
         let runtime_ref = runtime.as_ref().unwrap();
         runtime_ref.spawn(future);
 

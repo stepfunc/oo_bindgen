@@ -69,11 +69,18 @@ fn test_dotnet_lib(lib: &Library) {
 }
 
 fn generate_dotnet_lib(lib: &Library) {
+    // Clear/create generated files
+    let build_dir = PathBuf::from("tests/bindings/dotnet/foo");
+    if build_dir.exists() {
+        fs::remove_dir_all(&build_dir).unwrap();
+    }
+    fs::create_dir_all(&build_dir).unwrap();
+
     let mut platforms = PlatformLocations::new();
     platforms.add(Platform::current(), PathBuf::from("./target/debug/deps"));
 
     let config = dotnet_oo_bindgen::DotnetBindgenConfig {
-        output_dir: PathBuf::from("tests/bindings/dotnet/foo"),
+        output_dir: build_dir,
         ffi_name: "foo_ffi".to_string(),
         platforms,
     };

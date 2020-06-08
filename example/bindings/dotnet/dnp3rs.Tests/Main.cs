@@ -24,6 +24,7 @@ class MainClass
         public void BeginFragment(ResponseHeader header)
         {
             Console.WriteLine("Beginning fragment");
+            Console.WriteLine($"Is broadcast: {header.Iin.Iin1.IsSet(Iin1Flag.Broadcast)}");
         }
 
         public void EndFragment(ResponseHeader header)
@@ -40,7 +41,8 @@ class MainClass
             for (Binary? value = it.Next(); value != null; value = it.Next())
             {
                 var val = (Binary)value;
-                Console.WriteLine($"BI {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"BI {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"IsRestart: {val.Flags.IsSet(Flag.Restart)}");
             }
         }
 
@@ -53,7 +55,7 @@ class MainClass
             for (DoubleBitBinary? value = it.Next(); value != null; value = it.Next())
             {
                 var val = (DoubleBitBinary)value;
-                Console.WriteLine($"DBBI {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"DBBI {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
@@ -66,7 +68,7 @@ class MainClass
             for (BinaryOutputStatus? value = it.Next(); value != null; value = it.Next())
             {
                 var val = (BinaryOutputStatus)value;
-                Console.WriteLine($"BOS {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"BOS {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
@@ -79,7 +81,7 @@ class MainClass
             for (Counter? value = it.Next(); value != null; value = it.Next())
             {
                 var val = (Counter)value;
-                Console.WriteLine($"Counter {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"Counter {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
@@ -92,7 +94,7 @@ class MainClass
             for (FrozenCounter? value = it.Next(); value != null; value = it.Next())
             {
                 var val = (FrozenCounter)value;
-                Console.WriteLine($"Frozen Counter {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"Frozen Counter {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
@@ -105,7 +107,7 @@ class MainClass
             for (Analog? value = it.Next(); value != null; value = it.Next())
             {
                 var val = (Analog)value;
-                Console.WriteLine($"AI {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"AI {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
@@ -118,7 +120,7 @@ class MainClass
             for (AnalogOutputStatus? value = it.Next(); value != null; value = it.Next())
             {
                 var val = (AnalogOutputStatus)value;
-                Console.WriteLine($"AOS {val.Index}: Value={val.Value} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"AOS {val.Index}: Value={val.Value} Flags={val.Flags} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
     }

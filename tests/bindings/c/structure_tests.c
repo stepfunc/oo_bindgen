@@ -1,7 +1,10 @@
 #include <assert.h>
 #include <math.h>
+#include <string.h>
 
 #include "foo.h"
+
+#define ENGLISH_STRING_1 "I like to be home with my monkey and my dog"
 
 static Structure create_struct()
 {
@@ -18,6 +21,7 @@ static Structure create_struct()
         .int64_value = -4,
         .float_value = 12.34f,
         .double_value = -56.78,
+        .string_value = ENGLISH_STRING_1,
 
         .structure_value =
         {
@@ -44,6 +48,7 @@ static void check_struct(Structure* structure)
     assert(structure->int32_value == -3);
     assert(structure->uint64_value == 4);
     assert(structure->int64_value == -4);
+    assert(strcmp(ENGLISH_STRING_1, structure->string_value) == 0);
     assert(fabs(structure->float_value - 12.34f) < 0.001f);
     assert(fabs(structure->double_value + 56.78) < 0.001);
 

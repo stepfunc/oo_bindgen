@@ -71,7 +71,7 @@ fn generate_constructor(f: &mut dyn Printer, classname: &str, constructor: &Nati
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &constructor, "this.self = ", false, true)
+        call_native_function(f, &constructor, "this.self = ", None, true)
     })
 }
 
@@ -116,7 +116,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()>
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &method.native_function, "return ", true, false)
+        call_native_function(f, &method.native_function, "return ", Some("this".to_string()), false)
     })
 }
 
@@ -131,57 +131,6 @@ fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingRes
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &method.native_function, "return ", false, false)
+        call_native_function(f, &method.native_function, "return ", None, false)
     })
-}
-
-fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str, first_param_is_self: bool, is_constructor: bool) -> FormattingResult<()> {
-    // Write the type conversions
-    for (idx, param) in method.parameters.iter().enumerate() {
-        if let Some(converter) = DotnetType(&param.param_type).conversion() {
-            if idx == 0 && first_param_is_self {
-                converter.convert_to_native(f, "this", &format!("var _{} = ", param.name.to_mixed_case()))?;
-            } else {
-                converter.convert_to_native(f, &param.name.to_mixed_case(), &format!("var _{} = ", param.name.to_mixed_case()))?;
-            }
-        }
-    }
-
-    // Call the native function
-    f.newline()?;
-    if let ReturnType::Type(_) = &method.return_type {
-        f.write(&format!("var _result = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
-    } else {
-        f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
-    }
-
-    f.write(
-        &method.parameters.iter()
-            .map(|param| {
-                DotnetType(&param.param_type).as_dotnet_arg(&param.name.to_mixed_case())
-            })
-            .collect::<Vec<String>>()
-            .join(", ")
-    )?;
-    f.write(");")?;
-
-    //Cleanup type conversions
-    for param in method.parameters.iter() {
-        if let Some(converter) = DotnetType(&param.param_type).conversion() {
-            converter.convert_to_native_cleanup(f, &format!("_{}", param.name.to_mixed_case()))?;
-        }
-    }
-
-    // Convert the result (if required) and return
-    if let ReturnType::Type(return_type) = &method.return_type {
-        if let Some(converter) = DotnetType(&return_type).conversion() {
-            if !is_constructor {
-                return converter.convert_from_native(f, "_result", return_destination)
-            }
-        }
-
-        f.writeln(&format!("{}_result;", return_destination))?;
-    }
-
-    Ok(())
 }

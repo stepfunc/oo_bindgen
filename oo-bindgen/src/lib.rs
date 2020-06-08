@@ -114,14 +114,28 @@ pub enum BindingError {
         handle: NativeStructDeclarationHandle,
         element_name: String,
     },
+    #[error("First parameter of native function '{}' is not of type '{}' as expected for a method of a struct", native_func.name, handle.name)]
+    FirstMethodParameterIsNotStructType{
+        handle: NativeStructDeclarationHandle,
+        native_func: NativeFunctionHandle,
+    },
+    #[error("Struct '{}' was already defined", handle.name)]
+    StructAlreadyDefined{
+        handle: NativeStructDeclarationHandle,
+    },
+    #[error("Struct '{}' already contains element or method with name '{}'", handle.name, element_name)]
+    StructAlreadyContainsElementWithSameName{
+        handle: NativeStructDeclarationHandle,
+        element_name: String,
+    },
 
     // Class errors
     #[error("Class '{}' was already defined", handle.name)]
     ClassAlreadyDefined{handle: ClassDeclarationHandle},
     #[error("Class '{}' is not part of this library", handle.name)]
     ClassNotPartOfThisLib{handle: ClassDeclarationHandle},
-    #[error("First parameter of native function '{}' is not of type '{}' as expected for a method", native_func.name, handle.name)]
-    FirstMethodParameterIsNotProperType{
+    #[error("First parameter of native function '{}' is not of type '{}' as expected for a method of a class", native_func.name, handle.name)]
+    FirstMethodParameterIsNotClassType{
         handle: ClassDeclarationHandle,
         native_func: NativeFunctionHandle,
     },
@@ -200,8 +214,9 @@ impl<T> Deref for Handle<T> {
 
 #[derive(Debug)]
 pub enum Statement {
-    StructDeclaration(NativeStructDeclarationHandle),
-    StructDefinition(NativeStructHandle),
+    NativeStructDeclaration(NativeStructDeclarationHandle),
+    NativeStructDefinition(NativeStructHandle),
+    StructDefinition(StructHandle),
     EnumDefinition(NativeEnumHandle),
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(ClassHandle),
@@ -215,7 +230,7 @@ pub struct Library {
     pub description: Option<String>,
     pub license: Vec<String>,
     statements: Vec<Statement>,
-    native_structs: HashMap<NativeStructDeclarationHandle, NativeStructHandle>,
+    structs: HashMap<NativeStructDeclarationHandle, StructHandle>,
     classes: HashMap<ClassDeclarationHandle, ClassHandle>,
 }
 
@@ -232,10 +247,14 @@ impl Library {
     pub fn native_structs(&self) -> impl Iterator<Item = &NativeStructHandle> {
         self.into_iter().filter_map(|statement| {
             match statement {
-                Statement::StructDefinition(handle) => Some(handle),
+                Statement::NativeStructDefinition(handle) => Some(handle),
                 _ => None,
             }
         })
+    }
+
+    pub fn structs(&self) -> impl Iterator<Item = &StructHandle> {
+        self.structs.values()
     }
 
     pub fn native_enums(&self) -> impl Iterator<Item = &NativeEnumHandle> {
@@ -285,6 +304,7 @@ pub struct LibraryBuilder {
 
     native_structs_declarations: HashSet<NativeStructDeclarationHandle>,
     native_structs: HashMap<NativeStructDeclarationHandle, NativeStructHandle>,
+    defined_structs: HashMap<NativeStructHandle, StructHandle>,
 
     native_enums: HashSet<NativeEnumHandle>,
 
@@ -309,6 +329,7 @@ impl LibraryBuilder {
 
             native_structs_declarations: HashSet::new(),
             native_structs: HashMap::new(),
+            defined_structs: HashMap::new(),
 
             native_enums: HashSet::new(),
 
@@ -322,6 +343,16 @@ impl LibraryBuilder {
     }
 
     pub fn build(self) -> Library {
+        let mut structs = HashMap::with_capacity(self.defined_structs.len());
+        for structure in self.defined_structs.values() {
+            structs.insert(structure.declaration(), structure.clone());
+        }
+        for native_struct in self.native_structs.values() {
+            if !self.defined_structs.contains_key(&native_struct) {
+                structs.insert(native_struct.declaration(), StructHandle::new(Struct::new(native_struct.clone())));
+            }
+        }
+
         Library{
             name: self.name,
             version: self.version,
@@ -329,7 +360,7 @@ impl LibraryBuilder {
             license: self.license,
 
             statements: self.statements,
-            native_structs: self.native_structs,
+            structs,
             classes: self.classes,
         }
     }
@@ -354,7 +385,7 @@ impl LibraryBuilder {
         self.check_unique_symbol(name)?;
         let handle = NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name.to_string()));
         self.native_structs_declarations.insert(handle.clone());
-        self.statements.push(Statement::StructDeclaration(handle.clone()));
+        self.statements.push(Statement::NativeStructDeclaration(handle.clone()));
         Ok(handle)
     }
 
@@ -365,6 +396,15 @@ impl LibraryBuilder {
             Ok(NativeStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::NativeStructAlreadyDefined{handle: declaration.clone()})
+        }
+    }
+
+    pub fn define_struct(&mut self, definition: &NativeStructHandle) -> Result<StructBuilder> {
+        self.validate_native_struct(definition)?;
+        if !self.defined_structs.contains_key(&definition) {
+            Ok(StructBuilder::new(self, definition.clone()))
+        } else {
+            Err(BindingError::StructAlreadyDefined{handle: definition.declaration()})
         }
     }
 

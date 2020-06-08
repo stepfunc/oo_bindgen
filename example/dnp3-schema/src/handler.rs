@@ -19,22 +19,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
         .push("UnsolicitedResponse")?
         .build();
 
-    // TODO: add struct methods to isolate bits
-    let iin1 = lib.declare_native_struct("IIN1")?;
-    let iin1 = lib.define_native_struct(&iin1)?
-        .add("value", Type::Uint8)?
-        .build();
-
-    let iin2 = lib.declare_native_struct("IIN2")?;
-    let iin2 = lib.define_native_struct(&iin2)?
-        .add("value", Type::Uint8)?
-        .build();
-
-    let iin = lib.declare_native_struct("IIN")?;
-    let iin = lib.define_native_struct(&iin)?
-        .add("iin1", Type::Struct(iin1))?
-        .add("iin2", Type::Struct(iin2))?
-        .build();
+    let iin = declare_iin_struct(lib)?;
 
     let response_header = lib.declare_native_struct("ResponseHeader")?;
     let response_header = lib.define_native_struct(&response_header)?
@@ -168,10 +153,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
         .add("qualifier", Type::Enum(qualifier_code_enum))?
         .build();
 
-    let flags_struct = lib.declare_native_struct("Flags")?;
-    let flags_struct = lib.define_native_struct(&flags_struct)?
-        .add("value", Type::Uint8)?
-        .build();
+    let flags_struct = declare_flags_struct(lib)?;
 
     let time_quality_enum = lib.define_native_enum("TimeQuality")?
         .push("Synchronized")?
@@ -258,6 +240,98 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError>
         .build()?;
 
     Ok(read_handler_interface)
+}
+
+fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {
+    let iin1 = lib.declare_native_struct("IIN1")?;
+    let iin1 = lib.define_native_struct(&iin1)?
+        .add("value", Type::Uint8)?
+        .build();
+
+    let iin1_flag = lib.define_native_enum("IIN1Flag")?
+        .push("Broadcast")?
+        .push("Class1Events")?
+        .push("Class2Events")?
+        .push("Class3Events")?
+        .push("NeedTime")?
+        .push("LocalControl")?
+        .push("DeviceTrouble")?
+        .push("DeviceRestart")?
+        .build();
+
+    let iin1_is_set_fn = lib.declare_native_function("iin1_is_set")?
+        .param("iin1", Type::StructRef(iin1.declaration()))?
+        .param("flag", Type::Enum(iin1_flag))?
+        .return_type(ReturnType::Type(Type::Bool))?
+        .build()?;
+
+    lib.define_struct(&iin1)?
+        .method("IsSet", &iin1_is_set_fn)?
+        .build();
+
+    let iin2 = lib.declare_native_struct("IIN2")?;
+    let iin2 = lib.define_native_struct(&iin2)?
+        .add("value", Type::Uint8)?
+        .build();
+
+    let iin2_flag = lib.define_native_enum("IIN2Flag")?
+        .push("NoFuncCodeSupport")?
+        .push("ObjectUnknown")?
+        .push("ParameterError")?
+        .push("EventBufferOverflow")?
+        .push("AlreadyExecuting")?
+        .push("ConfigCorrupt")?
+        .build();
+
+    let iin2_is_set_fn = lib.declare_native_function("iin2_is_set")?
+        .param("iin2", Type::StructRef(iin2.declaration()))?
+        .param("flag", Type::Enum(iin2_flag))?
+        .return_type(ReturnType::Type(Type::Bool))?
+        .build()?;
+
+    lib.define_struct(&iin2)?
+        .method("IsSet", &iin2_is_set_fn)?
+        .build();
+
+    let iin = lib.declare_native_struct("IIN")?;
+    let iin = lib.define_native_struct(&iin)?
+        .add("iin1", Type::Struct(iin1))?
+        .add("iin2", Type::Struct(iin2))?
+        .build();
+
+    Ok(iin)
+}
+
+fn declare_flags_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {
+    let flags_struct = lib.declare_native_struct("Flags")?;
+    let flags_struct = lib.define_native_struct(&flags_struct)?
+        .add("value", Type::Uint8)?
+        .build();
+
+    let flag_enum = lib.define_native_enum("Flag")?
+        .push("Online")?
+        .push("Restart")?
+        .push("CommLost")?
+        .push("RemoteForced")?
+        .push("LocalForced")?
+        .push("ChatterFilter")?
+        .push("Rollover")?
+        .push("Discontinuity")?
+        .push("OverRange")?
+        .push("ReferenceErr")?
+        .build();
+
+    let flags_is_set_fn = lib.declare_native_function("flags_is_set")?
+        .param("flags", Type::StructRef(flags_struct.declaration()))?
+        .param("flag", Type::Enum(flag_enum))?
+        .return_type(ReturnType::Type(Type::Bool))?
+        .build()?;
+
+    lib.define_struct(&flags_struct)?
+        .method("IsSet", &flags_is_set_fn)?
+        .build();
+
+    Ok(flags_struct)
 }
 
 fn build_iterator(name: &str, value_type: Type, lib: &mut LibraryBuilder, flags_struct: &NativeStructHandle, time_struct: &NativeStructHandle) -> Result<ClassHandle, BindingError> {

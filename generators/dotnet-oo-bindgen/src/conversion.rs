@@ -4,6 +4,7 @@ use oo_bindgen::interface::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use heck::{CamelCase, MixedCase};
+use crate::NATIVE_FUNCTIONS_CLASSNAME;
 use crate::formatting::blocked;
 
 pub(crate) struct DotnetType<'a>(pub(crate) &'a Type);
@@ -48,7 +49,7 @@ impl<'a> DotnetType<'a> {
             Type::Float => "float".to_string(),
             Type::Double => "double".to_string(),
             Type::String => "IntPtr".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
+            Type::Struct(handle) => format!("{}Native", handle.name().to_camel_case()),
             Type::StructRef(_) => "IntPtr".to_string(),
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(_) => "IntPtr".to_string(),
@@ -74,7 +75,7 @@ impl<'a> DotnetType<'a> {
             Type::Float => None,
             Type::Double => None,
             Type::String => Some(Box::new(StringConverter)),
-            Type::Struct(_) => None,
+            Type::Struct(handle) => Some(Box::new(StructConverter(handle.clone()))),
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
             Type::Enum(_) => None,
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
@@ -101,7 +102,7 @@ impl<'a> DotnetType<'a> {
             Type::Float => param_name.to_mixed_case(),
             Type::Double => param_name.to_mixed_case(),
             Type::String => format!("_{}", param_name.to_mixed_case()),
-            Type::Struct(_) => param_name.to_mixed_case(),
+            Type::Struct(_) => format!("_{}", param_name.to_mixed_case()),
             Type::StructRef(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Enum(_) => param_name.to_mixed_case(),
             Type::ClassRef(_) => format!("_{}", param_name.to_mixed_case()),
@@ -158,16 +159,30 @@ impl TypeConverter for InterfaceConverter {
     }
 
     fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        let handle_name = format!("{}_handle", from);
         f.writeln(&format!("if ({}.{} != IntPtr.Zero)", from, self.0.arg_name.to_mixed_case()))?;
         blocked(f, |f| {
-            f.writeln(&format!("var {} = GCHandle.FromIntPtr({}.{});", handle_name, from, self.0.arg_name.to_mixed_case()))?;
-            f.writeln(&format!("{}({}){}.Target;", to, self.0.name.to_camel_case(), handle_name))
+            f.writeln(&format!("var _handle = GCHandle.FromIntPtr({}.{});", from, self.0.arg_name.to_mixed_case()))?;
+            f.writeln(&format!("{}({})_handle.Target;", to, self.0.name.to_camel_case()))
         })?;
         f.writeln("else")?;
         blocked(f, |f| {
             f.writeln(&format!("{}null;", to))
         })
+    }
+}
+
+struct StructConverter(NativeStructHandle);
+impl TypeConverter for StructConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}Native.ToNative({});", to, self.0.name().to_camel_case(), from))
+    }
+
+    fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}.Dispose();", name))
+    }
+
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}Native.FromNative({});", to, self.0.name().to_camel_case(), from))
     }
 }
 
@@ -178,10 +193,12 @@ impl TypeConverter for StructRefConverter {
         f.writeln(&format!("var {} = IntPtr.Zero;", handle_name))?;
         f.writeln(&format!("if ({} != null)", from))?;
         blocked(f, |f| {
-            let value_name = format!("_{}_value", from);
-            f.writeln(&format!("var {} = ({}){};", value_name, self.0.name.to_camel_case(), from))?;
-            f.writeln(&format!("{} = Marshal.AllocHGlobal(Marshal.SizeOf({}));", handle_name, value_name))?;
-            f.writeln(&format!("Marshal.StructureToPtr({}, {}, false);", value_name, handle_name))
+            let struct_name = self.0.name.to_camel_case();
+            let native_name = format!("_{}Native", from);
+            f.writeln(&format!("var {} = {}Native.ToNative(({}){});", native_name, struct_name, struct_name, from))?;
+            f.writeln(&format!("{} = Marshal.AllocHGlobal(Marshal.SizeOf({}));", handle_name, native_name))?;
+            f.writeln(&format!("Marshal.StructureToPtr({}, {}, false);", native_name, handle_name))?;
+            f.writeln(&format!("{}.Dispose();", native_name))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
     }
@@ -195,7 +212,9 @@ impl TypeConverter for StructRefConverter {
         f.writeln(&format!("{}? {} = null;", self.0.name.to_camel_case(), handle_name))?;
         f.writeln(&format!("if ({} != IntPtr.Zero)", from))?;
         blocked(f, |f| {
-            f.writeln(&format!("{} = Marshal.PtrToStructure<{}>({});", handle_name, self.0.name.to_camel_case(), from))
+            let native_name = format!("_{}Native", from);
+            f.writeln(&format!("var {} = Marshal.PtrToStructure<{}Native>({});", native_name, self.0.name.to_camel_case(), from))?;
+            f.writeln(&format!("{} = {}Native.FromNative({});", handle_name, self.0.name.to_camel_case(), native_name))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
     }
@@ -267,4 +286,57 @@ impl <'a> DotnetReturnType<'a> {
             ReturnType::Type(return_type) => DotnetType(return_type).as_native_type(),
         }
     }
+}
+
+pub(crate) fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str, first_param_is_self: Option<String>, is_constructor: bool) -> FormattingResult<()> {
+    // Write the type conversions
+    for (idx, param) in method.parameters.iter().enumerate() {
+        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+            let mut param_name = param.name.to_mixed_case();
+            if idx == 0 {
+                if let Some(first_param) = first_param_is_self.clone() {
+                    param_name = first_param;
+                }
+            }
+            converter.convert_to_native(f, &param_name, &format!("var _{} = ", param.name.to_mixed_case()))?;
+        }
+    }
+
+    // Call the native function
+    f.newline()?;
+    if let ReturnType::Type(_) = &method.return_type {
+        f.write(&format!("var _result = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+    } else {
+        f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+    }
+
+    f.write(
+        &method.parameters.iter()
+            .map(|param| {
+                DotnetType(&param.param_type).as_dotnet_arg(&param.name.to_mixed_case())
+            })
+            .collect::<Vec<String>>()
+            .join(", ")
+    )?;
+    f.write(");")?;
+
+    //Cleanup type conversions
+    for param in method.parameters.iter() {
+        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+            converter.convert_to_native_cleanup(f, &format!("_{}", param.name.to_mixed_case()))?;
+        }
+    }
+
+    // Convert the result (if required) and return
+    if let ReturnType::Type(return_type) = &method.return_type {
+        if let Some(converter) = DotnetType(&return_type).conversion() {
+            if !is_constructor {
+                return converter.convert_from_native(f, "_result", return_destination)
+            }
+        }
+
+        f.writeln(&format!("{}_result;", return_destination))?;
+    }
+
+    Ok(())
 }

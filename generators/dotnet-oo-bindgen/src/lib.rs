@@ -144,7 +144,7 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
 }
 
 fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-    for native_struct in lib.native_structs() {
+    for native_struct in lib.structs() {
         // Open file
         let mut filename = config.output_dir.clone();
         filename.push(native_struct.name());

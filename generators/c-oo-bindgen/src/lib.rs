@@ -131,10 +131,10 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
         // Iterate through each statement and print them
         for statement in lib.into_iter() {
             match statement {
-                Statement::StructDeclaration(handle) => {
+                Statement::NativeStructDeclaration(handle) => {
                     f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;
                 },
-                Statement::StructDefinition(handle) => write_struct_definition(f, handle)?,
+                Statement::NativeStructDefinition(handle) => write_struct_definition(f, handle)?,
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
                 Statement::ClassDeclaration(handle) => {
                     f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;

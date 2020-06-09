@@ -45,8 +45,8 @@ bare_trait_objects
 )]
 
 use oo_bindgen::*;
+use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::interface::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
@@ -89,6 +89,7 @@ impl<'a> RustCodegen<'a> {
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::NativeFunctionDeclaration(handle) => self.write_function(&mut f, handle)?,
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
+                Statement::OneTimeCallbackDefinition(handle) => self.write_one_time_callback(&mut f, handle)?,
                 _ => (),
             }
             f.newline()?;
@@ -191,6 +192,38 @@ impl<'a> RustCodegen<'a> {
             Ok(())
         })
     }
+
+    fn write_one_time_callback(&self, f: &mut dyn Printer, handle: &OneTimeCallbackHandle) -> FormattingResult<()> {
+        f.writeln("#[repr(C)]")?;
+        f.writeln("#[derive(Clone)]")?;
+        f.writeln(&format!("pub struct {}", handle.name))?;
+        blocked(f, |f| {
+            for element in &handle.elements {
+                match element {
+                    OneTimeCallbackElement::Arg(name) => f.writeln(&format!("pub {}: *mut c_void,", name))?,
+                    OneTimeCallbackElement::CallbackFunction(handle) => {
+                        f.newline()?;
+                        f.write(&format!("pub {}: Option<extern \"C\" fn(", handle.name))?;
+                        
+                        f.write(
+                            &handle.parameters.iter()
+                                .map(|param| {
+                                    match param {
+                                        CallbackParameter::Arg(name) => format!("{}: *mut c_void", name),
+                                        CallbackParameter::Parameter(param) => format!("{}: {}", param.name, RustType(&param.param_type)),
+                                    }
+                                })
+                                .collect::<Vec<String>>()
+                                .join(", ")
+                        )?;
+    
+                        f.write(&format!(") -> {}>,", RustReturnType(&handle.return_type)))?;
+                    },
+                }
+            }
+            Ok(())
+        })
+    }
 }
 
 struct RustReturnType<'a>(&'a ReturnType);
@@ -226,6 +259,7 @@ impl<'a> Display for RustType<'a> {
             Type::Enum(handle) => write!(f, "{}", handle.name),
             Type::ClassRef(handle) => write!(f, "*mut crate::{}", handle.name),
             Type::Interface(handle) => write!(f, "{}", handle.name),
+            Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => write!(f, "u64"),
                 DurationMapping::SecondsFloat => write!(f, "f32"),

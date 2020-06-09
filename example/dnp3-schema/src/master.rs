@@ -1,6 +1,6 @@
 use oo_bindgen::*;
+use oo_bindgen::callback::InterfaceHandle;
 use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::native_function::*;
 
 pub fn define(lib: &mut LibraryBuilder, master_class: ClassDeclarationHandle, read_handler: InterfaceHandle) -> Result<ClassDeclarationHandle, BindingError> {

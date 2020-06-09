@@ -45,8 +45,8 @@ bare_trait_objects
 )]
 
 
+use crate::callback::*;
 use crate::class::*;
-use crate::interface::*;
 use crate::native_enum::*;
 use crate::native_function::*;
 use crate::native_struct::*;
@@ -59,9 +59,9 @@ use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
 
+pub mod callback;
 pub mod class;
 pub mod formatting;
-pub mod interface;
 pub mod platforms;
 pub mod native_enum;
 pub mod native_function;
@@ -154,6 +154,18 @@ pub enum BindingError {
         native_func: NativeFunctionHandle,
     },
 
+    // Async errors
+    #[error("Native function '{}' cannot be used as an async method because it doesn't have a OneTimeCallback parameter", handle.name)]
+    AsyncNativeMethodNoOneTimeCallback{handle: NativeFunctionHandle},
+    #[error("Native function '{}' cannot be used as an async method because it has too many OneTimeCallback parameters", handle.name)]
+    AsyncNativeMethodTooManyOneTimeCallback{handle: NativeFunctionHandle},
+    #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter doesn't have a single callback", handle.name)]
+    AsyncOneTimeCallbackNotSingleCallback{handle: NativeFunctionHandle},
+    #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter single callback does not have a single parameter (other than the arg param)", handle.name)]
+    AsyncCallbackNotSingleParam{handle: NativeFunctionHandle},
+    #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter single callback does not return void", handle.name)]
+    AsyncCallbackReturnTypeNotVoid{handle: NativeFunctionHandle},
+
     // Interface errors
     #[error("Interface '{}' already has element with the name '{}'", interface_name, element_name)]
     InterfaceHasElementWithSameName{
@@ -168,6 +180,10 @@ pub enum BindingError {
     InterfaceDestroyCallbackNotDefined{interface_name: String},
     #[error("Interface '{}' already has a destroy callback defined", interface_name)]
     InterfaceDestroyCallbackAlreadyDefined{interface_name: String},
+    #[error("Interface '{}' is not part of this library", handle.name)]
+    InterfaceNotPartOfThisLib{handle: InterfaceHandle},
+    #[error("One-time callback '{}' is not part of this library", handle.name)]
+    OneTimeCallbackNotPartOfThisLib{handle: OneTimeCallbackHandle},
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -221,6 +237,7 @@ pub enum Statement {
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(ClassHandle),
     InterfaceDefinition(InterfaceHandle),
+    OneTimeCallbackDefinition(OneTimeCallbackHandle),
     NativeFunctionDeclaration(NativeFunctionHandle),
 }
 
@@ -231,7 +248,7 @@ pub struct Library {
     pub license: Vec<String>,
     statements: Vec<Statement>,
     structs: HashMap<NativeStructDeclarationHandle, StructHandle>,
-    classes: HashMap<ClassDeclarationHandle, ClassHandle>,
+    _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
 }
 
 impl Library {
@@ -283,6 +300,15 @@ impl Library {
             }
         })
     }
+
+    pub fn one_time_callbacks(&self) -> impl Iterator<Item = &OneTimeCallbackHandle> {
+        self.into_iter().filter_map(|statement| {
+            match statement {
+                Statement::OneTimeCallbackDefinition(handle) => Some(handle),
+                _ => None,
+            }
+        })
+    }
 }
 
 impl<'a> IntoIterator for &'a Library {
@@ -312,6 +338,7 @@ pub struct LibraryBuilder {
     classes: HashMap<ClassDeclarationHandle, ClassHandle>,
 
     interfaces: HashSet<InterfaceHandle>,
+    one_time_callbacks: HashSet<OneTimeCallbackHandle>,
 
     native_functions: HashSet<NativeFunctionHandle>,
 }
@@ -337,6 +364,7 @@ impl LibraryBuilder {
             classes: HashMap::new(),
 
             interfaces: HashSet::new(),
+            one_time_callbacks: HashSet::new(),
 
             native_functions: HashSet::new(),
         }
@@ -361,7 +389,7 @@ impl LibraryBuilder {
 
             statements: self.statements,
             structs,
-            classes: self.classes,
+            _classes: self.classes,
         }
     }
 
@@ -441,6 +469,11 @@ impl LibraryBuilder {
         Ok(InterfaceBuilder::new(self, name.to_string()))
     }
 
+    pub fn define_one_time_callback(&mut self, name: &str) -> Result<OneTimeCallbackBuilder> {
+        self.check_unique_symbol(name)?;
+        Ok(OneTimeCallbackBuilder::new(self, name.to_string()))
+    }
+
     fn check_unique_symbol(&mut self, name: &str) -> Result<()> {
         if self.symbol_names.insert(name.to_string()) {
             Ok(())
@@ -462,6 +495,8 @@ impl LibraryBuilder {
             Type::StructRef(native_struct) => self.validate_native_struct_declaration(native_struct),
             Type::Struct(native_struct) => self.validate_native_struct(&native_struct),
             Type::Enum(native_enum) => self.validate_native_enum(&native_enum),
+            Type::Interface(interface) => self.validate_interface(&interface),
+            Type::OneTimeCallback(cb) => self.validate_one_time_callback(&cb),
             Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
             _ => Ok(())
         }
@@ -488,6 +523,22 @@ impl LibraryBuilder {
             Ok(())
         } else {
             Err(BindingError::NativeEnumNotPartOfThisLib{handle: native_enum.clone()})
+        }
+    }
+
+    fn validate_interface(&self, interface: &InterfaceHandle) -> Result<()> {
+        if self.interfaces.contains(interface) {
+            Ok(())
+        } else {
+            Err(BindingError::InterfaceNotPartOfThisLib{handle: interface.clone()})
+        }
+    }
+
+    fn validate_one_time_callback(&self, cb: &OneTimeCallbackHandle) -> Result<()> {
+        if self.one_time_callbacks.contains(cb) {
+            Ok(())
+        } else {
+            Err(BindingError::OneTimeCallbackNotPartOfThisLib{handle: cb.clone()})
         }
     }
 

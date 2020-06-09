@@ -20,6 +20,17 @@ pub struct Method {
     pub native_function: NativeFunctionHandle,
 }
 
+#[derive(Debug)]
+pub struct AsyncMethod {
+    pub name: String,
+    pub native_function: NativeFunctionHandle,
+    pub return_type: Type,
+    pub one_time_callback_name: String,
+    pub one_time_callback_param_name: String,
+    pub callback_name: String,
+    pub callback_param_name: String,
+}
+
 /// Object-oriented class definition
 #[derive(Debug)]
 pub struct Class {
@@ -28,6 +39,7 @@ pub struct Class {
     pub destructor: Option<NativeFunctionHandle>,
     pub methods: Vec<Method>,
     pub static_methods: Vec<Method>,
+    pub async_methods: Vec<AsyncMethod>,
 }
 
 impl Class {
@@ -55,6 +67,7 @@ pub struct ClassBuilder<'a> {
     destructor: Option<NativeFunctionHandle>,
     methods: Vec<Method>,
     static_methods: Vec<Method>,
+    async_methods: Vec<AsyncMethod>,
 }
 
 impl<'a> ClassBuilder<'a> {
@@ -66,6 +79,7 @@ impl<'a> ClassBuilder<'a> {
             destructor: None,
             methods: Vec::new(),
             static_methods: Vec::new(),
+            async_methods: Vec::new(),
         }
     }
 
@@ -130,6 +144,63 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
+    pub fn async_method(mut self, name: &str, native_function: &NativeFunctionHandle) -> Result<Self> {
+        self.lib.validate_native_function(native_function)?;
+        self.validate_first_param(native_function)?;
+        
+        // Check that native method has a single callback with a single method,
+        // with a single argument
+
+        let mut async_method = None;
+        for param in &native_function.parameters {
+            if let Type::OneTimeCallback(ot_cb) = &param.param_type {
+                if async_method.is_some() {
+                    return Err(BindingError::AsyncNativeMethodTooManyOneTimeCallback{handle: native_function.clone()});
+                }
+
+                let mut cb_iter = ot_cb.callbacks();
+                if let Some(cb) = cb_iter.next() {
+                    if !cb.return_type.is_void() {
+                        return Err(BindingError::AsyncCallbackReturnTypeNotVoid{handle: native_function.clone()});
+                    }
+
+                    let mut iter = cb.params();
+                    if let Some(cb_param) = iter.next() {
+                        async_method = Some(AsyncMethod {
+                            name: name.to_string(),
+                            native_function: native_function.clone(),
+                            return_type: cb_param.param_type.clone(),
+                            one_time_callback_name: ot_cb.name.clone(),
+                            one_time_callback_param_name: param.name.clone(),
+                            callback_name: cb.name.clone(),
+                            callback_param_name: cb_param.name.clone(),
+                        });
+
+                        if iter.next().is_some() {
+                            return Err(BindingError::AsyncCallbackNotSingleParam{handle: native_function.clone()});
+                        }
+                    } else {
+                        return Err(BindingError::AsyncCallbackNotSingleParam{handle: native_function.clone()});
+                    }
+
+                    if cb_iter.next().is_some() {
+                        return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback{handle: native_function.clone()});
+                    }
+                } else {
+                    return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback{handle: native_function.clone()});
+                }
+            }
+        }
+
+        if let Some(method) = async_method {
+            self.async_methods.push(method);
+        } else {
+            return Err(BindingError::AsyncNativeMethodNoOneTimeCallback{handle: native_function.clone()});
+        }
+
+        Ok(self)
+    }
+
     pub fn build(self) -> ClassHandle {
         let handle = ClassHandle::new(Class {
             declaration: self.declaration.clone(),
@@ -137,6 +208,7 @@ impl<'a> ClassBuilder<'a> {
             destructor: self.destructor,
             methods: self.methods,
             static_methods: self.static_methods,
+            async_methods: self.async_methods,
         });
 
         self.lib.classes.insert(handle.declaration.clone(), handle.clone());

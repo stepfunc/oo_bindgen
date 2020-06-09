@@ -11,6 +11,7 @@ pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) 
 
     f.writeln("using System;")?;
     f.writeln("using System.Runtime.InteropServices;")?;
+    f.writeln("using System.Threading.Tasks;")?;
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
@@ -47,6 +48,11 @@ pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) 
 
             for method in &class.methods {
                 generate_method(f, method)?;
+                f.newline()?;
+            }
+
+            for method in &class.async_methods {
+                generate_async_method(f, method)?;
                 f.newline()?;
             }
 
@@ -132,5 +138,49 @@ fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingRes
 
     blocked(f, |f| {
         call_native_function(f, &method.native_function, "return ", None, false)
+    })
+}
+
+fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
+    let method_name = method.name.to_camel_case();
+    let async_handler_name = format!("{}Handler", method_name);
+    let return_type = DotnetType(&method.return_type).as_dotnet_type();
+    let one_time_callback_name = method.one_time_callback_name.to_camel_case();
+    let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
+    let callback_name = method.callback_name.to_camel_case();
+    let callback_param_name = method.callback_param_name.to_mixed_case();
+
+    // Write the task completion handler
+    f.writeln(&format!("internal class {} : {}", async_handler_name, one_time_callback_name))?;
+    blocked(f, |f| {
+        f.writeln(&format!("internal TaskCompletionSource<{}> tcs = new TaskCompletionSource<{}>();", return_type, return_type))?;
+
+        f.newline()?;
+
+        f.writeln(&format!("public void {}({} {})", callback_name, return_type, callback_param_name))?;
+        blocked(f, |f| {
+            f.writeln(&format!("tcs.SetResult({});", callback_param_name))
+        })
+    })?;
+
+    f.newline()?;
+    
+    f.writeln(&format!("public Task<{}> {}(", return_type, method.name.to_camel_case()))?;
+    f.write(
+        &method.native_function.parameters.iter().skip(1)
+            .filter(|param| match param.param_type {
+                Type::OneTimeCallback(_) => false,
+                _ => true,
+            })
+            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
+            .collect::<Vec<String>>()
+            .join(", ")
+    )?;
+    f.write(")")?;
+
+    blocked(f, |f| {
+        f.writeln(&format!("var {} = new {}();", one_time_callback_param_name, async_handler_name))?;
+        call_native_function(f, &method.native_function, "return ", Some("this".to_string()), false)?;
+        f.writeln(&format!("return {}.tcs.Task;", one_time_callback_param_name))
     })
 }

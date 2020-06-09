@@ -1,8 +1,8 @@
 use oo_bindgen::*;
+use oo_bindgen::callback::InterfaceHandle;
 use oo_bindgen::class::ClassHandle;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::NativeStructHandle;
-use oo_bindgen::interface::InterfaceHandle;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<InterfaceHandle, BindingError> {
     let control = lib.declare_native_struct("Control")?;

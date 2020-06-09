@@ -55,6 +55,7 @@ use std::path::PathBuf;
 use crate::conversion::*;
 use crate::formatting::*;
 
+mod callback;
 mod class;
 mod conversion;
 mod formatting;
@@ -79,6 +80,7 @@ pub fn generate_dotnet_bindings(lib: &Library, config: &DotnetBindgenConfig) -> 
     generate_enums(lib, config)?;
     generate_classes(lib, config)?;
     generate_interfaces(lib, config)?;
+    generate_one_time_callbacks(lib, config)?;
 
     Ok(())
 }
@@ -212,6 +214,20 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
         let mut f = FilePrinter::new(filename)?;
 
         interface::generate(&mut f, interface, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_one_time_callbacks(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for cb in lib.one_time_callbacks() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&cb.name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        callback::generate(&mut f, cb, lib)?;
     }
 
     Ok(())

@@ -1,6 +1,6 @@
+use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::interface::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use heck::{CamelCase, MixedCase};
@@ -30,6 +30,7 @@ impl<'a> DotnetType<'a> {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => handle.name.to_camel_case(),
+            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
@@ -54,6 +55,7 @@ impl<'a> DotnetType<'a> {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(_) => "IntPtr".to_string(),
             Type::Interface(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
+            Type::OneTimeCallback(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => "ulong".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),
@@ -80,6 +82,7 @@ impl<'a> DotnetType<'a> {
             Type::Enum(_) => None,
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
+            Type::OneTimeCallback(handle) => Some(Box::new(OneTimeCallbackConverter(handle.clone()))),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(Box::new(DurationMillisecondsConverter)),
                 DurationMapping::Seconds => Some(Box::new(DurationSecondsConverter)),
@@ -107,6 +110,7 @@ impl<'a> DotnetType<'a> {
             Type::Enum(_) => param_name.to_mixed_case(),
             Type::ClassRef(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Interface(_) => format!("_{}", param_name.to_mixed_case()),
+            Type::OneTimeCallback(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => format!("_{}", param_name.to_mixed_case()),
                 DurationMapping::Seconds => format!("_{}", param_name.to_mixed_case()),
@@ -154,6 +158,25 @@ impl TypeConverter for StringConverter {
 
 struct InterfaceConverter(InterfaceHandle);
 impl TypeConverter for InterfaceConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name.to_camel_case(), from))
+    }
+
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("if ({}.{} != IntPtr.Zero)", from, self.0.arg_name.to_mixed_case()))?;
+        blocked(f, |f| {
+            f.writeln(&format!("var _handle = GCHandle.FromIntPtr({}.{});", from, self.0.arg_name.to_mixed_case()))?;
+            f.writeln(&format!("{}({})_handle.Target;", to, self.0.name.to_camel_case()))
+        })?;
+        f.writeln("else")?;
+        blocked(f, |f| {
+            f.writeln(&format!("{}null;", to))
+        })
+    }
+}
+
+struct OneTimeCallbackConverter(OneTimeCallbackHandle);
+impl TypeConverter for OneTimeCallbackConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name.to_camel_case(), from))
     }
@@ -336,6 +359,47 @@ pub(crate) fn call_native_function(f: &mut dyn Printer, method: &NativeFunction,
         }
 
         f.writeln(&format!("{}_result;", return_destination))?;
+    }
+
+    Ok(())
+}
+
+pub(crate) fn call_dotnet_function(f: &mut dyn Printer, method: &CallbackFunction, return_destination: &str) -> FormattingResult<()> {
+    // Write the type conversions
+    for param in method.params() {
+        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+            converter.convert_from_native(f, &param.name, &format!("var _{} = ", param.name.to_mixed_case()))?;
+        }
+    }
+
+    // Call the .NET function
+    f.newline()?;
+    let method_name = method.name.to_camel_case();
+    if let ReturnType::Type(return_type) = &method.return_type {
+        if DotnetType(&return_type).conversion().is_some() {
+            f.write(&format!("var _result = _impl.{}(", method_name))?;
+        } else {
+            f.write(&format!("{}_impl.{}(", return_destination, method_name))?;
+        }
+    } else {
+        f.write(&format!("_impl.{}(", method_name))?;
+    }
+
+    f.write(
+        &method.params()
+            .map(|param| {
+                DotnetType(&param.param_type).as_dotnet_arg(&param.name)
+            })
+            .collect::<Vec<String>>()
+            .join(", ")
+    )?;
+    f.write(");")?;
+
+    // Convert the result (if required)
+    if let ReturnType::Type(return_type) = &method.return_type {
+        if let Some(converter) = DotnetType(&return_type).conversion() {
+            converter.convert_to_native(f, "_result", return_destination)?;
+        }
     }
 
     Ok(())

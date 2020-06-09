@@ -21,6 +21,7 @@ pub enum Type {
     Enum(NativeEnumHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
+    OneTimeCallback(OneTimeCallbackHandle),
 
     // Not native types
     Duration(DurationMapping),

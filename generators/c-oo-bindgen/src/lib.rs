@@ -45,8 +45,8 @@ bare_trait_objects
 )]
 
 use oo_bindgen::*;
+use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::interface::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
@@ -141,6 +141,7 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
                 }
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle)?,
+                Statement::OneTimeCallbackDefinition(handle) => write_one_time_callback(f, handle)?,
                 _ => (),
             }
             f.newline()?;
@@ -216,6 +217,38 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<
                 InterfaceElement::DestroyFunction(name) => {
                     f.writeln(&format!("void (*{})(void* arg);", name))?;
                 }
+            }
+        }
+        Ok(())
+    })?;
+    f.writeln(&format!("}} {};", handle.name))
+}
+
+fn write_one_time_callback(f: &mut dyn Printer, handle: &OneTimeCallbackHandle) -> FormattingResult<()> {
+    f.writeln(&format!("typedef struct {}", handle.name))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        for element in &handle.elements {
+            match element {
+                OneTimeCallbackElement::Arg(name) => f.writeln(&format!("void* {};", name))?,
+                OneTimeCallbackElement::CallbackFunction(handle) => {
+                    f.newline()?;
+                    f.write(&format!("{} (*{})(", CReturnType(&handle.return_type), handle.name))?;
+                    
+                    f.write(
+                        &handle.parameters.iter()
+                            .map(|param| {
+                                match param {
+                                    CallbackParameter::Arg(_) => "void*".to_string(),
+                                    CallbackParameter::Parameter(param) => format!("{}", CType(&param.param_type)),
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    )?;
+
+                    f.write(");")?;
+                },
             }
         }
         Ok(())
@@ -303,6 +336,7 @@ impl<'a> Display for CType<'a> {
             Type::Enum(handle) => write!(f, "{}", handle.name),
             Type::ClassRef(handle) => write!(f, "{}*", handle.name),
             Type::Interface(handle) => write!(f, "{}", handle.name),
+            Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),

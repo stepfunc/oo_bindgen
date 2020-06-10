@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using dnp3rs;
 
 class MainClass
@@ -125,7 +126,12 @@ class MainClass
         }
     }
 
-    static void Main(string[] args)
+    public static void Main(string[] args)
+    {
+        MainAsync().GetAwaiter().GetResult();
+    }
+
+    private static async Task MainAsync()
     {
         Logging.SetLogLevel(LogLevel.Info);
         Logging.SetHandler(new TestLogger());
@@ -178,6 +184,24 @@ class MainClass
                 {
                     case "x":
                         return;
+                    case "lts":
+                        {
+                            var result = await association.PerformTimeSync(TimeSyncMode.Lan);
+                            if (result != TimeSyncResult.Success)
+                            {
+                                Console.WriteLine($"Error: {result}");
+                            }
+                            break;
+                        }
+                    case "nts":
+                        {
+                            var result = await association.PerformTimeSync(TimeSyncMode.NonLan);
+                            if (result != TimeSyncResult.Success)
+                            {
+                                Console.WriteLine($"Error: {result}");
+                            }
+                            break;
+                        }
                     default:
                         break;
                 }

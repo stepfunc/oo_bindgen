@@ -8,10 +8,7 @@ pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) 
     let classname = class.name().to_camel_case();
 
     print_license(f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
-    f.writeln("using System.Threading.Tasks;")?;
+    print_imports(f)?;
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
@@ -159,12 +156,12 @@ fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> Formattin
 
         f.writeln(&format!("public void {}({} {})", callback_name, return_type, callback_param_name))?;
         blocked(f, |f| {
-            f.writeln(&format!("tcs.SetResult({});", callback_param_name))
+            f.writeln(&format!("Task.Run(() => tcs.SetResult({}));", callback_param_name))
         })
     })?;
 
     f.newline()?;
-    
+
     f.writeln(&format!("public Task<{}> {}(", return_type, method.name.to_camel_case()))?;
     f.write(
         &method.native_function.parameters.iter().skip(1)

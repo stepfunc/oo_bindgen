@@ -8,9 +8,7 @@ pub(crate) fn generate(f: &mut dyn Printer, interface: &InterfaceHandle, lib: &L
     let interface_name = interface.name.to_camel_case();
 
     print_license(f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
+    print_imports(f)?;
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {

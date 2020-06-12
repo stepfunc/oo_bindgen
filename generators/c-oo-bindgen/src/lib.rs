@@ -198,7 +198,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<
                 InterfaceElement::Arg(name) => f.writeln(&format!("void* {};", name))?,
                 InterfaceElement::CallbackFunction(handle) => {
                     f.newline()?;
-                    f.write(&format!("{} (*{})(", CReturnType(&handle.return_type), handle.name))?;
+                    f.write(&format!("void (*{})(", handle.name))?;
                     
                     f.write(
                         &handle.parameters.iter()
@@ -233,7 +233,7 @@ fn write_one_time_callback(f: &mut dyn Printer, handle: &OneTimeCallbackHandle) 
                 OneTimeCallbackElement::Arg(name) => f.writeln(&format!("void* {};", name))?,
                 OneTimeCallbackElement::CallbackFunction(handle) => {
                     f.newline()?;
-                    f.write(&format!("{} (*{})(", CReturnType(&handle.return_type), handle.name))?;
+                    f.write(&format!("void (*{})(", handle.name))?;
                     
                     f.write(
                         &handle.parameters.iter()
@@ -337,6 +337,7 @@ impl<'a> Display for CType<'a> {
             Type::ClassRef(handle) => write!(f, "{}*", handle.name),
             Type::Interface(handle) => write!(f, "{}", handle.name),
             Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
+            Type::Iterator(handle) => write!(f, "{}", handle.name()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),

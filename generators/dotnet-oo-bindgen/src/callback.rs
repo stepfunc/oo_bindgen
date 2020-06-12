@@ -8,9 +8,7 @@ pub(crate) fn generate(f: &mut dyn Printer, cb: &OneTimeCallbackHandle, lib: &Li
     let cb_name = cb.name.to_camel_case();
 
     print_license(f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
+    print_imports(f)?;
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
@@ -46,7 +44,7 @@ pub(crate) fn generate(f: &mut dyn Printer, cb: &OneTimeCallbackHandle, lib: &Li
             for el in &cb.elements {
                 match el {
                     OneTimeCallbackElement::CallbackFunction(func) => {
-                        f.writeln(&format!("private delegate {} {}_delegate(", DotnetReturnType(&func.return_type).as_native_type(), func.name))?;
+                        f.writeln(&format!("private delegate void {}_delegate(", func.name))?;
                         f.write(
                             &func.parameters.iter()
                                 .map(|param| {
@@ -106,7 +104,7 @@ pub(crate) fn generate(f: &mut dyn Printer, cb: &OneTimeCallbackHandle, lib: &Li
             for el in &cb.elements {
                 match el {
                     OneTimeCallbackElement::CallbackFunction(func) => {
-                        f.writeln(&format!("internal static {} {}_cb(", DotnetReturnType(&func.return_type).as_native_type(), func.name))?;
+                        f.writeln(&format!("internal static {} {}_cb(", DotnetReturnType(&func.return_type).as_dotnet_type(), func.name))?;
                         f.write(
                             &func.parameters.iter()
                                 .map(|param| {

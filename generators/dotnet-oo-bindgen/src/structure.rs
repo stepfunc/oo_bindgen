@@ -9,9 +9,7 @@ pub(crate) fn generate(f: &mut impl Printer, native_struct: &StructHandle, lib: 
     let struct_native_name = format!("{}Native", struct_name);
 
     print_license(f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
+    print_imports(f)?;
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {

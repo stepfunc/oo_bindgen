@@ -106,6 +106,11 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     }
 
     f.writeln("  </ItemGroup>")?;
+
+    f.writeln("  <ItemGroup>")?;
+    f.writeln("    <PackageReference Include=\"System.Collections.Immutable\" Version=\"1.7.1\" />")?;
+    f.writeln("  </ItemGroup>")?;
+
     f.writeln("</Project>")
 }
 
@@ -117,9 +122,7 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
     let mut f = FilePrinter::new(filename)?;
 
     print_license(&mut f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
+    print_imports(&mut f)?;
     f.newline()?;
 
     namespaced(&mut f, &lib.name, |f| {
@@ -175,9 +178,7 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
 
 fn generate_enum(f: &mut impl Printer, native_enum: &NativeEnumHandle, lib: &Library) -> FormattingResult<()> {
     print_license(f, &lib.license)?;
-
-    f.writeln("using System;")?;
-    f.writeln("using System.Runtime.InteropServices;")?;
+    print_imports(f)?;
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
@@ -240,4 +241,11 @@ fn print_license(f: &mut dyn Printer, license: &[String]) -> FormattingResult<()
         }
         Ok(())
     })
+}
+
+fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
+    f.writeln("using System;")?;
+    f.writeln("using System.Runtime.InteropServices;")?;
+    f.writeln("using System.Threading.Tasks;")?;
+    f.writeln("using System.Collections.Immutable;")
 }

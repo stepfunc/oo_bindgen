@@ -1,6 +1,7 @@
 use crate::*;
+use crate::iterator::IteratorHandle;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Bool,
     Uint8,
@@ -22,6 +23,7 @@ pub enum Type {
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     OneTimeCallback(OneTimeCallbackHandle),
+    Iterator(IteratorHandle),
 
     // Not native types
     Duration(DurationMapping),
@@ -37,7 +39,7 @@ pub enum DurationMapping {
     SecondsFloat,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ReturnType {
     Void,
     Type(Type),

@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Immutable;
 using dnp3rs;
 
 class MainClass
@@ -33,102 +34,95 @@ class MainClass
             Console.WriteLine("End fragment");
         }
 
-        public void HandleBinary(HeaderInfo info, BinaryIterator it)
+        public void HandleBinary(HeaderInfo info, ImmutableArray<Binary> values)
         {
             Console.WriteLine("Binaries:");
             Console.WriteLine("Qualifier: " + info.Qualifier);
             Console.WriteLine("Variation: " + info.Variation);
 
-            for (Binary? value = it.Next(); value != null; value = it.Next())
+            foreach (var val in values)
             {
-                var val = (Binary)value;
                 Console.WriteLine($"BI {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
                 Console.WriteLine($"IsRestart: {val.Flags.IsSet(Flag.Restart)}");
             }
         }
 
-        public void HandleDoubleBitBinary(HeaderInfo info, DoubleBitBinaryIterator it)
+        public void HandleDoubleBitBinary(HeaderInfo info, ImmutableArray<DoubleBitBinary> values)
         {
             Console.WriteLine("Double Bit Binaries:");
             Console.WriteLine("Qualifier: " + info.Qualifier);
             Console.WriteLine("Variation: " + info.Variation);
 
-            for (DoubleBitBinary? value = it.Next(); value != null; value = it.Next())
+            foreach (var val in values)
             {
-                var val = (DoubleBitBinary)value;
                 Console.WriteLine($"DBBI {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
-        public void HandleBinaryOutputStatus(HeaderInfo info, BinaryOutputStatusIterator it)
+        public void HandleBinaryOutputStatus(HeaderInfo info, ImmutableArray<BinaryOutputStatus> values)
         {
             Console.WriteLine("Binary Output Statuses:");
             Console.WriteLine("Qualifier: " + info.Qualifier);
             Console.WriteLine("Variation: " + info.Variation);
 
-            for (BinaryOutputStatus? value = it.Next(); value != null; value = it.Next())
+            foreach (var val in values)
             {
-                var val = (BinaryOutputStatus)value;
                 Console.WriteLine($"BOS {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
-        public void HandleCounter(HeaderInfo info, CounterIterator it)
+        public void HandleCounter(HeaderInfo info, ImmutableArray<Counter> values)
         {
             Console.WriteLine("Counters:");
             Console.WriteLine("Qualifier: " + info.Qualifier);
             Console.WriteLine("Variation: " + info.Variation);
 
-            for (Counter? value = it.Next(); value != null; value = it.Next())
+            foreach (var val in values)
             {
-                var val = (Counter)value;
                 Console.WriteLine($"Counter {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
-        public void HandleFrozenCounter(HeaderInfo info, FrozenCounterIterator it)
+        public void HandleFrozenCounter(HeaderInfo info, ImmutableArray<FrozenCounter> values)
         {
             Console.WriteLine("Frozen Counters:");
             Console.WriteLine("Qualifier: " + info.Qualifier);
             Console.WriteLine("Variation: " + info.Variation);
 
-            for (FrozenCounter? value = it.Next(); value != null; value = it.Next())
+            foreach (var val in values)
             {
-                var val = (FrozenCounter)value;
                 Console.WriteLine($"Frozen Counter {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
-        public void HandleAnalog(HeaderInfo info, AnalogIterator it)
+        public void HandleAnalog(HeaderInfo info, ImmutableArray<Analog> values)
         {
             Console.WriteLine("Analogs:");
             Console.WriteLine("Qualifier: " + info.Qualifier);
             Console.WriteLine("Variation: " + info.Variation);
 
-            for (Analog? value = it.Next(); value != null; value = it.Next())
+            foreach (var val in values)
             {
-                var val = (Analog)value;
                 Console.WriteLine($"AI {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
 
-        public void HandleAnalogOutputStatus(HeaderInfo info, AnalogOutputStatusIterator it)
+        public void HandleAnalogOutputStatus(HeaderInfo info, ImmutableArray<AnalogOutputStatus> values)
         {
             Console.WriteLine("Analog Output Statuses:");
             Console.WriteLine("Qualifier: " + info.Qualifier);
             Console.WriteLine("Variation: " + info.Variation);
 
-            for (AnalogOutputStatus? value = it.Next(); value != null; value = it.Next())
+            foreach (var val in values)
             {
-                var val = (AnalogOutputStatus)value;
                 Console.WriteLine($"AOS {val.Index}: Value={val.Value} Flags={val.Flags} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
     }
 
     public static void Main(string[] args)
-    {
-        MainAsync().GetAwaiter().GetResult();
+    {   
+            MainAsync().GetAwaiter().GetResult();
     }
 
     private static async Task MainAsync()
@@ -136,7 +130,7 @@ class MainClass
         Logging.SetLogLevel(LogLevel.Info);
         Logging.SetHandler(new TestLogger());
 
-        using (var runtime = new Runtime(new RuntimeConfig { NumCoreThreads = 2 }))
+        using (var runtime = new Runtime(new RuntimeConfig { NumCoreThreads = 4 }))
         {
             var master = runtime.AddMasterTcp(
                 1,
@@ -180,7 +174,7 @@ class MainClass
 
             while (true)
             {
-                switch (Console.ReadLine())
+                switch (await GetInputAsync())
                 {
                     case "x":
                         return;
@@ -207,5 +201,10 @@ class MainClass
                 }
             }
         }
+    }
+
+    private static Task<string> GetInputAsync()
+    {
+        return Task.Run(() => Console.ReadLine());
     }
 }

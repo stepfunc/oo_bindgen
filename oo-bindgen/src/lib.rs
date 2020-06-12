@@ -62,6 +62,7 @@ use std::rc::Rc;
 pub mod callback;
 pub mod class;
 pub mod formatting;
+pub mod iterator;
 pub mod platforms;
 pub mod native_enum;
 pub mod native_function;
@@ -184,6 +185,14 @@ pub enum BindingError {
     InterfaceNotPartOfThisLib{handle: InterfaceHandle},
     #[error("One-time callback '{}' is not part of this library", handle.name)]
     OneTimeCallbackNotPartOfThisLib{handle: OneTimeCallbackHandle},
+
+    // Iterator errors
+    #[error("Iterator native function '{}' does not take a single class ref parameter", handle.name)]
+    IteratorNotSingleClassRefParam{handle: NativeFunctionHandle},
+    #[error("Iterator native function '{}' does not return a struct ref value", handle.name)]
+    IteratorReturnTypeNotStructRef{handle: NativeFunctionHandle},
+    #[error("Iterator '{}' is not part of this library", handle.name())]
+    IteratorNotPartOfThisLib{handle: iterator::IteratorHandle},
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -238,6 +247,7 @@ pub enum Statement {
     ClassDefinition(ClassHandle),
     InterfaceDefinition(InterfaceHandle),
     OneTimeCallbackDefinition(OneTimeCallbackHandle),
+    IteratorDeclaration(iterator::IteratorHandle),
     NativeFunctionDeclaration(NativeFunctionHandle),
 }
 
@@ -340,6 +350,8 @@ pub struct LibraryBuilder {
     interfaces: HashSet<InterfaceHandle>,
     one_time_callbacks: HashSet<OneTimeCallbackHandle>,
 
+    iterators: HashSet<iterator::IteratorHandle>,
+
     native_functions: HashSet<NativeFunctionHandle>,
 }
 
@@ -365,6 +377,8 @@ impl LibraryBuilder {
 
             interfaces: HashSet::new(),
             one_time_callbacks: HashSet::new(),
+
+            iterators: HashSet::new(),
 
             native_functions: HashSet::new(),
         }
@@ -474,6 +488,13 @@ impl LibraryBuilder {
         Ok(OneTimeCallbackBuilder::new(self, name.to_string()))
     }
 
+    pub fn define_iterator(&mut self, native_func: &NativeFunctionHandle, item_type: &NativeStructHandle) -> Result<iterator::IteratorHandle> {
+        let iter = iterator::IteratorHandle::new(iterator::Iterator::new(native_func, item_type)?);
+        self.iterators.insert(iter.clone());
+        self.statements.push(Statement::IteratorDeclaration(iter.clone()));
+        Ok(iter)
+    }
+
     fn check_unique_symbol(&mut self, name: &str) -> Result<()> {
         if self.symbol_names.insert(name.to_string()) {
             Ok(())
@@ -493,11 +514,12 @@ impl LibraryBuilder {
     fn validate_type(&self, type_to_validate: &Type) -> Result<()> {
         match type_to_validate {
             Type::StructRef(native_struct) => self.validate_native_struct_declaration(native_struct),
-            Type::Struct(native_struct) => self.validate_native_struct(&native_struct),
-            Type::Enum(native_enum) => self.validate_native_enum(&native_enum),
-            Type::Interface(interface) => self.validate_interface(&interface),
-            Type::OneTimeCallback(cb) => self.validate_one_time_callback(&cb),
+            Type::Struct(native_struct) => self.validate_native_struct(native_struct),
+            Type::Enum(native_enum) => self.validate_native_enum(native_enum),
+            Type::Interface(interface) => self.validate_interface(interface),
+            Type::OneTimeCallback(cb) => self.validate_one_time_callback(cb),
             Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
+            Type::Iterator(iter) => self.validate_iterator(iter),
             _ => Ok(())
         }
     }
@@ -547,6 +569,14 @@ impl LibraryBuilder {
             Ok(())
         } else {
             Err(BindingError::ClassNotPartOfThisLib{handle: class_declaration.clone()})
+        }
+    }
+
+    fn validate_iterator(&self, iter: &iterator::IteratorHandle) -> Result<()> {
+        if self.iterators.contains(iter) {
+            Ok(())
+        } else {
+            Err(BindingError::IteratorNotPartOfThisLib{handle: iter.clone()})
         }
     }
 }

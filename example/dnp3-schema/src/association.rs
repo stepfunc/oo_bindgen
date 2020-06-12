@@ -1,5 +1,4 @@
 use oo_bindgen::*;
-use oo_bindgen::callback::*;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::native_function::*;
 

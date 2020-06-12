@@ -46,7 +46,3 @@ pub unsafe fn association_perform_time_sync(association: *mut Association, mode:
         }
     }
 }
-
-async fn perform_time_sync(association: &mut Association, mode: TimeSyncProcedure, callback: ffi::TimeSyncTaskCallback) {
-
-}

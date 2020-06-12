@@ -1,6 +1,7 @@
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::iterator::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use heck::{CamelCase, MixedCase};
@@ -31,6 +32,7 @@ impl<'a> DotnetType<'a> {
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
+            Type::Iterator(handle) => format!("ImmutableArray<{}>", handle.item_type.name().to_camel_case()),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
@@ -56,6 +58,7 @@ impl<'a> DotnetType<'a> {
             Type::ClassRef(_) => "IntPtr".to_string(),
             Type::Interface(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
             Type::OneTimeCallback(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
+            Type::Iterator(handle) => "IntPtr".to_string(),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => "ulong".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),
@@ -83,6 +86,7 @@ impl<'a> DotnetType<'a> {
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
             Type::OneTimeCallback(handle) => Some(Box::new(OneTimeCallbackConverter(handle.clone()))),
+            Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone()))),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(Box::new(DurationMillisecondsConverter)),
                 DurationMapping::Seconds => Some(Box::new(DurationSecondsConverter)),
@@ -111,6 +115,7 @@ impl<'a> DotnetType<'a> {
             Type::ClassRef(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Interface(_) => format!("_{}", param_name.to_mixed_case()),
             Type::OneTimeCallback(_) => format!("_{}", param_name.to_mixed_case()),
+            Type::Iterator(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => format!("_{}", param_name.to_mixed_case()),
                 DurationMapping::Seconds => format!("_{}", param_name.to_mixed_case()),
@@ -257,6 +262,27 @@ impl TypeConverter for ClassConverter {
             f.writeln(&format!("{} = new {}({});", handle_name, self.0.name.to_camel_case(), from))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
+    }
+}
+
+struct IteratorConverter(IteratorHandle);
+impl TypeConverter for IteratorConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}IntPtr.Zero;", to))
+    }
+
+    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        let builder_name = format!("_{}Builder", from);
+        let next_call = format!("{}.{}({})", NATIVE_FUNCTIONS_CLASSNAME, self.0.native_func.name, from);
+
+        f.writeln(&format!("var {} = ImmutableArray.CreateBuilder<{}>();", builder_name, self.0.item_type.name().to_camel_case()))?;
+        f.writeln(&format!("for (var _itRawValue = {}; _itRawValue != IntPtr.Zero; _itRawValue = {})", next_call, next_call))?;
+        blocked(f, |f| {
+            f.writeln(&format!("{}? _itValue = null;", self.0.item_type.name().to_camel_case()))?;
+            StructRefConverter(self.0.item_type.declaration()).convert_from_native(f, "_itRawValue", "_itValue = ")?;
+            f.writeln(&format!("{}.Add(_itValue.Value);", builder_name))
+        })?;
+        f.writeln(&format!("{}{}.ToImmutable();", to, builder_name))
     }
 }
 

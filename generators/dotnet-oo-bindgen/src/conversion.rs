@@ -58,7 +58,7 @@ impl<'a> DotnetType<'a> {
             Type::ClassRef(_) => "IntPtr".to_string(),
             Type::Interface(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
             Type::OneTimeCallback(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
-            Type::Iterator(handle) => "IntPtr".to_string(),
+            Type::Iterator(_) => "IntPtr".to_string(),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds|DurationMapping::Seconds => "ulong".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),

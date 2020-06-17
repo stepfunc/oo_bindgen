@@ -115,7 +115,7 @@ class MainClass
 
             foreach (var val in values)
             {
-                Console.WriteLine($"AOS {val.Index}: Value={val.Value} Flags={val.Flags} Time={val.Time.Value} ({val.Time.Quality})");
+                Console.WriteLine($"AOS {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
             }
         }
     }

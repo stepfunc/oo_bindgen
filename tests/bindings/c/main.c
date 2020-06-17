@@ -4,6 +4,7 @@ void duration_tests();
 void string_tests();
 void structure_tests();
 void callback_tests();
+void iterator_tests();
 
 int main()
 {
@@ -13,6 +14,7 @@ int main()
     string_tests();
     structure_tests();
     callback_tests();
+    iterator_tests();
 
     return 0;
 }

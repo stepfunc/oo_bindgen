@@ -75,15 +75,18 @@ pub(crate) unsafe fn runtime_add_master_tcp(
             listener.into_listener(),
         );
 
-        let runtime_ref = runtime.as_ref().unwrap();
-        runtime_ref.spawn(future);
+        if let Some(runtime) = runtime.as_ref() {
+            runtime.spawn(future);
 
-        let master = Master {
-            runtime,
-            handle,
-        };
+            let master = Master {
+                runtime: runtime.handle().clone(),
+                handle,
+            };
 
-        Box::into_raw(Box::new(master))
+            Box::into_raw(Box::new(master))
+        } else {
+            std::ptr::null_mut()
+        }
 }
 
 unsafe impl Send for ffi::ClientStateListener {}

@@ -4,6 +4,7 @@ mod callback;
 mod class;
 mod duration;
 mod enums;
+mod iterator;
 mod strings;
 mod structure;
 
@@ -26,6 +27,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     class::define(&mut builder)?;
     duration::define(&mut builder)?;
     enums::define(&mut builder)?;
+    iterator::define(&mut builder)?;
     strings::define(&mut builder)?;
     structure::define(&mut builder)?;
 

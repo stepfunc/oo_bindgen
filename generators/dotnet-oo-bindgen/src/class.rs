@@ -156,7 +156,7 @@ fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> Formattin
 
         f.writeln(&format!("public void {}({} {})", callback_name, return_type, callback_param_name))?;
         blocked(f, |f| {
-            f.writeln(&format!("Task.Run(() => tcs.SetResult({}));", callback_param_name))
+            f.writeln(&format!("tcs.SetResult({});", callback_param_name))
         })
     })?;
 

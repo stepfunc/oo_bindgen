@@ -13,6 +13,7 @@ set(tests
     ./string_tests.c
     ./structure_tests.c
     ./callback_tests.c
+    ./iterator_tests.c
 )
 
 add_executable(foo_c main.c ${tests})

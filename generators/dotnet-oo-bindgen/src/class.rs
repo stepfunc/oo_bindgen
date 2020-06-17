@@ -20,7 +20,7 @@ pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) 
 
         blocked(f, |f| {
             if !class.is_static() {
-                f.writeln("private IntPtr self;")?;
+                f.writeln("internal IntPtr self;")?;
                 if class.destructor.is_some() {
                     f.writeln("private bool disposed = false;")?;
                 }

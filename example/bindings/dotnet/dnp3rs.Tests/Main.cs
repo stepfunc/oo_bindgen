@@ -173,30 +173,46 @@ class MainClass
             );
 
             while (true)
-            {
+            {              
                 switch (await GetInputAsync())
                 {
                     case "x":
                         return;
+                    case "cmd":
+                        {
+                            var command = new Command();
+                            command.AddU16g12v1(3,
+                                new G12v1 {
+                                    Code = new ControlCode
+                                    {
+                                        Tcc = TripCloseCode.Nul,
+                                        Clear = false,
+                                        Queue = false,
+                                        OpType = OpType.LatchOn,
+                                    },
+                                    Count = 1,
+                                    OnTime = 1000,
+                                    OffTime = 1000,
+                                }
+                            );
+                            var result = await association.Operate(CommandMode.SelectBeforeOperate, command);
+                            Console.WriteLine($"Error: {result}");
+                            break;
+                        }
                     case "lts":
                         {
                             var result = await association.PerformTimeSync(TimeSyncMode.Lan);
-                            if (result != TimeSyncResult.Success)
-                            {
-                                Console.WriteLine($"Error: {result}");
-                            }
+                            Console.WriteLine($"Error: {result}");
                             break;
                         }
                     case "nts":
                         {
                             var result = await association.PerformTimeSync(TimeSyncMode.NonLan);
-                            if (result != TimeSyncResult.Success)
-                            {
-                                Console.WriteLine($"Error: {result}");
-                            }
+                            Console.WriteLine($"Error: {result}");
                             break;
                         }
                     default:
+                        Console.WriteLine("Unknown command");
                         break;
                 }
             }

@@ -1,6 +1,6 @@
 use foo_schema::build_lib;
-use oo_bindgen::Library;
 use oo_bindgen::platforms::*;
+use oo_bindgen::Library;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -49,7 +49,7 @@ fn build_and_test_c_lib() {
     // CMake build
     let result = Command::new("cmake")
         .current_dir(&build_dir)
-        .args(&["--build", ".", ])
+        .args(&["--build", "."])
         .status()
         .unwrap();
     assert!(result.success());

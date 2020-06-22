@@ -17,11 +17,9 @@ pub struct CallbackFunction {
 
 impl CallbackFunction {
     pub fn params(&self) -> impl Iterator<Item = &Parameter> {
-        self.parameters.iter().filter_map(|param| {
-            match param {
-                CallbackParameter::Parameter(param) => Some(param),
-                _ => None,
-            }
+        self.parameters.iter().filter_map(|param| match param {
+            CallbackParameter::Parameter(param) => Some(param),
+            _ => None,
         })
     }
 }
@@ -43,11 +41,9 @@ pub struct Interface {
 
 impl Interface {
     pub fn callbacks(&self) -> impl Iterator<Item = &CallbackFunction> {
-        self.elements.iter().filter_map(|el| {
-            match el {
-                InterfaceElement::CallbackFunction(cb) => Some(cb),
-                _ => None,
-            }
+        self.elements.iter().filter_map(|el| match el {
+            InterfaceElement::CallbackFunction(cb) => Some(cb),
+            _ => None,
         })
     }
 }
@@ -85,10 +81,11 @@ impl<'a> InterfaceBuilder<'a> {
             None => {
                 self.check_unique_name(name)?;
                 self.destroy_name = Some(name.to_string());
-                self.elements.push(InterfaceElement::DestroyFunction(name.to_string()));
+                self.elements
+                    .push(InterfaceElement::DestroyFunction(name.to_string()));
                 Ok(self)
             }
-            Some(_) => Err(BindingError::InterfaceDestroyCallbackAlreadyDefined{
+            Some(_) => Err(BindingError::InterfaceDestroyCallbackAlreadyDefined {
                 interface_name: self.name,
             }),
         }
@@ -102,15 +99,23 @@ impl<'a> InterfaceBuilder<'a> {
                 self.elements.push(InterfaceElement::Arg(name.to_string()));
                 Ok(self)
             }
-            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined{
+            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
                 interface_name: self.name,
             }),
         }
     }
 
     pub fn build(self) -> Result<InterfaceHandle> {
-        let arg_name = self.arg_name.ok_or(BindingError::InterfaceArgNameNotDefined{interface_name: self.name.clone()})?;
-        let destroy_name = self.destroy_name.ok_or(BindingError::InterfaceDestroyCallbackNotDefined{interface_name: self.name.clone()})?;
+        let arg_name = self
+            .arg_name
+            .ok_or(BindingError::InterfaceArgNameNotDefined {
+                interface_name: self.name.clone(),
+            })?;
+        let destroy_name =
+            self.destroy_name
+                .ok_or(BindingError::InterfaceDestroyCallbackNotDefined {
+                    interface_name: self.name.clone(),
+                })?;
         let handle = InterfaceHandle::new(Interface {
             name: self.name,
             elements: self.elements,
@@ -119,7 +124,9 @@ impl<'a> InterfaceBuilder<'a> {
         });
 
         self.lib.interfaces.insert(handle.clone());
-        self.lib.statements.push(Statement::InterfaceDefinition(handle.clone()));
+        self.lib
+            .statements
+            .push(Statement::InterfaceDefinition(handle.clone()));
 
         Ok(handle)
     }
@@ -128,7 +135,7 @@ impl<'a> InterfaceBuilder<'a> {
         if self.element_names.insert(name.to_string()) {
             Ok(())
         } else {
-            Err(BindingError::InterfaceHasElementWithSameName{
+            Err(BindingError::InterfaceHasElementWithSameName {
                 interface_name: self.name.clone(),
                 element_name: name.to_string(),
             })
@@ -151,11 +158,9 @@ pub struct OneTimeCallback {
 
 impl OneTimeCallback {
     pub fn callbacks(&self) -> impl Iterator<Item = &CallbackFunction> {
-        self.elements.iter().filter_map(|el| {
-            match el {
-                OneTimeCallbackElement::CallbackFunction(cb) => Some(cb),
-                _ => None,
-            }
+        self.elements.iter().filter_map(|el| match el {
+            OneTimeCallbackElement::CallbackFunction(cb) => Some(cb),
+            _ => None,
         })
     }
 }
@@ -191,17 +196,22 @@ impl<'a> OneTimeCallbackBuilder<'a> {
             None => {
                 self.check_unique_name(name)?;
                 self.arg_name = Some(name.to_string());
-                self.elements.push(OneTimeCallbackElement::Arg(name.to_string()));
+                self.elements
+                    .push(OneTimeCallbackElement::Arg(name.to_string()));
                 Ok(self)
             }
-            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined{
+            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
                 interface_name: self.name,
             }),
         }
     }
 
     pub fn build(self) -> Result<OneTimeCallbackHandle> {
-        let arg_name = self.arg_name.ok_or(BindingError::InterfaceArgNameNotDefined{interface_name: self.name.clone()})?;
+        let arg_name = self
+            .arg_name
+            .ok_or(BindingError::InterfaceArgNameNotDefined {
+                interface_name: self.name.clone(),
+            })?;
         let handle = OneTimeCallbackHandle::new(OneTimeCallback {
             name: self.name,
             elements: self.elements,
@@ -209,7 +219,9 @@ impl<'a> OneTimeCallbackBuilder<'a> {
         });
 
         self.lib.one_time_callbacks.insert(handle.clone());
-        self.lib.statements.push(Statement::OneTimeCallbackDefinition(handle.clone()));
+        self.lib
+            .statements
+            .push(Statement::OneTimeCallbackDefinition(handle.clone()));
 
         Ok(handle)
     }
@@ -218,7 +230,7 @@ impl<'a> OneTimeCallbackBuilder<'a> {
         if self.element_names.insert(name.to_string()) {
             Ok(())
         } else {
-            Err(BindingError::InterfaceHasElementWithSameName{
+            Err(BindingError::InterfaceHasElementWithSameName {
                 interface_name: self.name.clone(),
                 element_name: name.to_string(),
             })
@@ -247,7 +259,8 @@ impl<'a> CallbackFunctionBuilderTarget for OneTimeCallbackBuilder<'a> {
     }
 
     fn push_callback(&mut self, cb: CallbackFunction) {
-        self.elements.push(OneTimeCallbackElement::CallbackFunction(cb));
+        self.elements
+            .push(OneTimeCallbackElement::CallbackFunction(cb));
     }
 }
 
@@ -274,7 +287,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
         self.target.lib().validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.to_string(),
-            param_type
+            param_type,
         }));
         Ok(self)
     }
@@ -286,7 +299,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
                 self.params.push(CallbackParameter::Arg(name.to_string()));
                 Ok(self)
             }
-            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined{
+            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
                 interface_name: self.name,
             }),
         }
@@ -298,7 +311,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
                 self.return_type = Some(return_type);
                 Ok(self)
             }
-            Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined{
+            Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined {
                 native_func_name: self.name,
                 return_type,
             }),
@@ -306,9 +319,15 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
     }
 
     pub fn build(mut self) -> Result<T> {
-        let return_type = self.return_type.ok_or(BindingError::ReturnTypeNotDefined{native_func_name: self.name.clone()})?;
-        let arg_name = self.arg_name.ok_or(BindingError::InterfaceArgNameNotDefined{interface_name: self.name.clone()})?;
-        
+        let return_type = self.return_type.ok_or(BindingError::ReturnTypeNotDefined {
+            native_func_name: self.name.clone(),
+        })?;
+        let arg_name = self
+            .arg_name
+            .ok_or(BindingError::InterfaceArgNameNotDefined {
+                interface_name: self.name.clone(),
+            })?;
+
         let cb = CallbackFunction {
             name: self.name,
             return_type,

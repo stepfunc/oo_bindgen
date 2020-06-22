@@ -1,9 +1,10 @@
-use oo_bindgen::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define each enum
-    let enum_zero_to_five = lib.define_native_enum("EnumZeroToFive")?
+    let enum_zero_to_five = lib
+        .define_native_enum("EnumZeroToFive")?
         .push("Zero")?
         .push("One")?
         .push("Two")?
@@ -12,7 +13,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .push("Five")?
         .build();
 
-    let enum_one_to_six = lib.define_native_enum("EnumOneToSix")?
+    let enum_one_to_six = lib
+        .define_native_enum("EnumOneToSix")?
         .variant("One", 1)?
         .push("Two")?
         .push("Three")?
@@ -21,7 +23,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .push("Six")?
         .build();
 
-    let enum_disjoint = lib.define_native_enum("EnumDisjoint")?
+    let enum_disjoint = lib
+        .define_native_enum("EnumDisjoint")?
         .variant("Five", 5)?
         .variant("One", 1)?
         .variant("Twenty", 20)?
@@ -30,27 +33,32 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .variant("Two", 2)?
         .build();
 
-    let enum_single = lib.define_native_enum("EnumSingle")?
+    let enum_single = lib
+        .define_native_enum("EnumSingle")?
         .push("Single")?
         .build();
 
     // Declare each echo function
-    let enum_zero_to_five_echo_function = lib.declare_native_function("enum_zero_to_five_echo")?
+    let enum_zero_to_five_echo_function = lib
+        .declare_native_function("enum_zero_to_five_echo")?
         .param("value", Type::Enum(enum_zero_to_five.clone()))?
         .return_type(ReturnType::Type(Type::Enum(enum_zero_to_five)))?
         .build()?;
 
-    let enum_one_to_six_echo_function = lib.declare_native_function("enum_one_to_six_echo")?
+    let enum_one_to_six_echo_function = lib
+        .declare_native_function("enum_one_to_six_echo")?
         .param("value", Type::Enum(enum_one_to_six.clone()))?
         .return_type(ReturnType::Type(Type::Enum(enum_one_to_six)))?
         .build()?;
 
-    let enum_disjoint_echo_function = lib.declare_native_function("enum_disjoint_echo")?
+    let enum_disjoint_echo_function = lib
+        .declare_native_function("enum_disjoint_echo")?
         .param("value", Type::Enum(enum_disjoint.clone()))?
         .return_type(ReturnType::Type(Type::Enum(enum_disjoint)))?
         .build()?;
 
-    let enum_single_echo_function = lib.declare_native_function("enum_single_echo")?
+    let enum_single_echo_function = lib
+        .declare_native_function("enum_single_echo")?
         .param("value", Type::Enum(enum_single.clone()))?
         .return_type(ReturnType::Type(Type::Enum(enum_single)))?
         .build()?;

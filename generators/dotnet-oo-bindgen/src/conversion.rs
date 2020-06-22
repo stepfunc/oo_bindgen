@@ -1,12 +1,12 @@
+use crate::formatting::blocked;
+use crate::NATIVE_FUNCTIONS_CLASSNAME;
+use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use heck::{CamelCase, MixedCase};
-use crate::NATIVE_FUNCTIONS_CLASSNAME;
-use crate::formatting::blocked;
 
 pub(crate) struct DotnetType<'a>(pub(crate) &'a Type);
 
@@ -32,7 +32,10 @@ impl<'a> DotnetType<'a> {
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => format!("ImmutableArray<{}>", handle.item_type.name().to_camel_case()),
+            Type::Iterator(handle) => format!(
+                "ImmutableArray<{}>",
+                handle.item_type.name().to_camel_case()
+            ),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
@@ -57,12 +60,14 @@ impl<'a> DotnetType<'a> {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(_) => "IntPtr".to_string(),
             Type::Interface(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
-            Type::OneTimeCallback(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
+            Type::OneTimeCallback(handle) => {
+                format!("{}NativeAdapter", handle.name.to_camel_case())
+            }
             Type::Iterator(_) => "IntPtr".to_string(),
             Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds|DurationMapping::Seconds => "ulong".to_string(),
+                DurationMapping::Milliseconds | DurationMapping::Seconds => "ulong".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),
-            }
+            },
         }
     }
 
@@ -85,19 +90,21 @@ impl<'a> DotnetType<'a> {
             Type::Enum(_) => None,
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
-            Type::OneTimeCallback(handle) => Some(Box::new(OneTimeCallbackConverter(handle.clone()))),
+            Type::OneTimeCallback(handle) => {
+                Some(Box::new(OneTimeCallbackConverter(handle.clone())))
+            }
             Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone()))),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(Box::new(DurationMillisecondsConverter)),
                 DurationMapping::Seconds => Some(Box::new(DurationSecondsConverter)),
                 DurationMapping::SecondsFloat => Some(Box::new(DurationSecondsFloatConverter)),
-            }
+            },
         }
     }
 
     pub(crate) fn as_dotnet_arg(&self, param_name: &str) -> String {
         match self.0 {
-            Type::Bool => param_name.to_mixed_case(),
+            Type::Bool => format!("_{}", param_name.to_mixed_case()),
             Type::Uint8 => param_name.to_mixed_case(),
             Type::Sint8 => param_name.to_mixed_case(),
             Type::Uint16 => param_name.to_mixed_case(),
@@ -120,14 +127,19 @@ impl<'a> DotnetType<'a> {
                 DurationMapping::Milliseconds => format!("_{}", param_name.to_mixed_case()),
                 DurationMapping::Seconds => format!("_{}", param_name.to_mixed_case()),
                 DurationMapping::SecondsFloat => format!("_{}", param_name.to_mixed_case()),
-            }
+            },
         }
     }
 }
 
 pub(crate) trait TypeConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()>;
 
     fn convert_to_native_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
         Ok(())
@@ -141,7 +153,12 @@ impl TypeConverter for BoolConverter {
         f.writeln(&format!("{}Convert.ToByte({});", to, from))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         f.writeln(&format!("{}Convert.ToBoolean({});", to, from))
     }
 }
@@ -156,7 +173,12 @@ impl TypeConverter for StringConverter {
         f.writeln(&format!("Marshal.FreeHGlobal({});", name))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         f.writeln(&format!("{}Marshal.PtrToStringAnsi({});", to, from))
     }
 }
@@ -164,53 +186,108 @@ impl TypeConverter for StringConverter {
 struct InterfaceConverter(InterfaceHandle);
 impl TypeConverter for InterfaceConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name.to_camel_case(), from))
+        f.writeln(&format!(
+            "{}new {}NativeAdapter({});",
+            to,
+            self.0.name.to_camel_case(),
+            from
+        ))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("if ({}.{} != IntPtr.Zero)", from, self.0.arg_name.to_mixed_case()))?;
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "if ({}.{} != IntPtr.Zero)",
+            from,
+            self.0.arg_name.to_mixed_case()
+        ))?;
         blocked(f, |f| {
-            f.writeln(&format!("var _handle = GCHandle.FromIntPtr({}.{});", from, self.0.arg_name.to_mixed_case()))?;
-            f.writeln(&format!("{}({})_handle.Target;", to, self.0.name.to_camel_case()))
+            f.writeln(&format!(
+                "var _handle = GCHandle.FromIntPtr({}.{});",
+                from,
+                self.0.arg_name.to_mixed_case()
+            ))?;
+            f.writeln(&format!(
+                "{}({})_handle.Target;",
+                to,
+                self.0.name.to_camel_case()
+            ))
         })?;
         f.writeln("else")?;
-        blocked(f, |f| {
-            f.writeln(&format!("{}null;", to))
-        })
+        blocked(f, |f| f.writeln(&format!("{}null;", to)))
     }
 }
 
 struct OneTimeCallbackConverter(OneTimeCallbackHandle);
 impl TypeConverter for OneTimeCallbackConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}new {}NativeAdapter({});", to, self.0.name.to_camel_case(), from))
+        f.writeln(&format!(
+            "{}new {}NativeAdapter({});",
+            to,
+            self.0.name.to_camel_case(),
+            from
+        ))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("if ({}.{} != IntPtr.Zero)", from, self.0.arg_name.to_mixed_case()))?;
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "if ({}.{} != IntPtr.Zero)",
+            from,
+            self.0.arg_name.to_mixed_case()
+        ))?;
         blocked(f, |f| {
-            f.writeln(&format!("var _handle = GCHandle.FromIntPtr({}.{});", from, self.0.arg_name.to_mixed_case()))?;
-            f.writeln(&format!("{}({})_handle.Target;", to, self.0.name.to_camel_case()))
+            f.writeln(&format!(
+                "var _handle = GCHandle.FromIntPtr({}.{});",
+                from,
+                self.0.arg_name.to_mixed_case()
+            ))?;
+            f.writeln(&format!(
+                "{}({})_handle.Target;",
+                to,
+                self.0.name.to_camel_case()
+            ))
         })?;
         f.writeln("else")?;
-        blocked(f, |f| {
-            f.writeln(&format!("{}null;", to))
-        })
+        blocked(f, |f| f.writeln(&format!("{}null;", to)))
     }
 }
 
 struct StructConverter(NativeStructHandle);
 impl TypeConverter for StructConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}Native.ToNative({});", to, self.0.name().to_camel_case(), from))
+        f.writeln(&format!(
+            "{}{}Native.ToNative({});",
+            to,
+            self.0.name().to_camel_case(),
+            from
+        ))
     }
 
     fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}.Dispose();", name))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}Native.FromNative({});", to, self.0.name().to_camel_case(), from))
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}{}Native.FromNative({});",
+            to,
+            self.0.name().to_camel_case(),
+            from
+        ))
     }
 }
 
@@ -223,9 +300,18 @@ impl TypeConverter for StructRefConverter {
         blocked(f, |f| {
             let struct_name = self.0.name.to_camel_case();
             let native_name = format!("_{}Native", from);
-            f.writeln(&format!("var {} = {}Native.ToNative(({}){});", native_name, struct_name, struct_name, from))?;
-            f.writeln(&format!("{} = Marshal.AllocHGlobal(Marshal.SizeOf({}));", handle_name, native_name))?;
-            f.writeln(&format!("Marshal.StructureToPtr({}, {}, false);", native_name, handle_name))?;
+            f.writeln(&format!(
+                "var {} = {}Native.ToNative(({}){});",
+                native_name, struct_name, struct_name, from
+            ))?;
+            f.writeln(&format!(
+                "{} = Marshal.AllocHGlobal(Marshal.SizeOf({}));",
+                handle_name, native_name
+            ))?;
+            f.writeln(&format!(
+                "Marshal.StructureToPtr({}, {}, false);",
+                native_name, handle_name
+            ))?;
             f.writeln(&format!("{}.Dispose();", native_name))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
@@ -235,14 +321,33 @@ impl TypeConverter for StructRefConverter {
         f.writeln(&format!("Marshal.FreeHGlobal({});", name))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         let handle_name = format!("_{}Handle", from);
-        f.writeln(&format!("{}? {} = null;", self.0.name.to_camel_case(), handle_name))?;
+        f.writeln(&format!(
+            "{}? {} = null;",
+            self.0.name.to_camel_case(),
+            handle_name
+        ))?;
         f.writeln(&format!("if ({} != IntPtr.Zero)", from))?;
         blocked(f, |f| {
             let native_name = format!("_{}Native", from);
-            f.writeln(&format!("var {} = Marshal.PtrToStructure<{}Native>({});", native_name, self.0.name.to_camel_case(), from))?;
-            f.writeln(&format!("{} = {}Native.FromNative({});", handle_name, self.0.name.to_camel_case(), native_name))
+            f.writeln(&format!(
+                "var {} = Marshal.PtrToStructure<{}Native>({});",
+                native_name,
+                self.0.name.to_camel_case(),
+                from
+            ))?;
+            f.writeln(&format!(
+                "{} = {}Native.FromNative({});",
+                handle_name,
+                self.0.name.to_camel_case(),
+                native_name
+            ))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
     }
@@ -254,12 +359,26 @@ impl TypeConverter for ClassConverter {
         f.writeln(&format!("{}{}.self;", to, from))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         let handle_name = format!("_{}_handle", from);
-        f.writeln(&format!("{} {} = null;", self.0.name.to_camel_case(), handle_name))?;
+        f.writeln(&format!(
+            "{} {} = null;",
+            self.0.name.to_camel_case(),
+            handle_name
+        ))?;
         f.writeln(&format!("if ({} != IntPtr.Zero)", from))?;
         blocked(f, |f| {
-            f.writeln(&format!("{} = new {}({});", handle_name, self.0.name.to_camel_case(), from))
+            f.writeln(&format!(
+                "{} = new {}({});",
+                handle_name,
+                self.0.name.to_camel_case(),
+                from
+            ))
         })?;
         f.writeln(&format!("{}{};", to, handle_name))
     }
@@ -267,19 +386,46 @@ impl TypeConverter for ClassConverter {
 
 struct IteratorConverter(IteratorHandle);
 impl TypeConverter for IteratorConverter {
-    fn convert_to_native(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_to_native(
+        &self,
+        f: &mut dyn Printer,
+        _from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         f.writeln(&format!("{}IntPtr.Zero;", to))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         let builder_name = format!("_{}Builder", from);
-        let next_call = format!("{}.{}({})", NATIVE_FUNCTIONS_CLASSNAME, self.0.native_func.name, from);
+        let next_call = format!(
+            "{}.{}({})",
+            NATIVE_FUNCTIONS_CLASSNAME, self.0.native_func.name, from
+        );
 
-        f.writeln(&format!("var {} = ImmutableArray.CreateBuilder<{}>();", builder_name, self.0.item_type.name().to_camel_case()))?;
-        f.writeln(&format!("for (var _itRawValue = {}; _itRawValue != IntPtr.Zero; _itRawValue = {})", next_call, next_call))?;
+        f.writeln(&format!(
+            "var {} = ImmutableArray.CreateBuilder<{}>();",
+            builder_name,
+            self.0.item_type.name().to_camel_case()
+        ))?;
+        f.writeln(&format!(
+            "for (var _itRawValue = {}; _itRawValue != IntPtr.Zero; _itRawValue = {})",
+            next_call, next_call
+        ))?;
         blocked(f, |f| {
-            f.writeln(&format!("{}? _itValue = null;", self.0.item_type.name().to_camel_case()))?;
-            StructRefConverter(self.0.item_type.declaration()).convert_from_native(f, "_itRawValue", "_itValue = ")?;
+            f.writeln(&format!(
+                "{}? _itValue = null;",
+                self.0.item_type.name().to_camel_case()
+            ))?;
+            StructRefConverter(self.0.item_type.declaration()).convert_from_native(
+                f,
+                "_itRawValue",
+                "_itValue = ",
+            )?;
             f.writeln(&format!("{}.Add(_itValue.Value);", builder_name))
         })?;
         f.writeln(&format!("{}{}.ToImmutable();", to, builder_name))
@@ -292,7 +438,12 @@ impl TypeConverter for DurationMillisecondsConverter {
         f.writeln(&format!("{}(ulong){}.TotalMilliseconds;", to, from))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         f.writeln(&format!("{}TimeSpan.FromMilliseconds({});", to, from))
     }
 }
@@ -303,7 +454,12 @@ impl TypeConverter for DurationSecondsConverter {
         f.writeln(&format!("{}(ulong){}.TotalSeconds;", to, from))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         f.writeln(&format!("{}TimeSpan.FromSeconds({});", to, from))
     }
 }
@@ -314,14 +470,19 @@ impl TypeConverter for DurationSecondsFloatConverter {
         f.writeln(&format!("{}(float){}.TotalSeconds;", to, from))
     }
 
-    fn convert_from_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         f.writeln(&format!("{}TimeSpan.FromSeconds({});", to, from))
     }
 }
 
 pub(crate) struct DotnetReturnType<'a>(pub(crate) &'a ReturnType);
 
-impl <'a> DotnetReturnType<'a> {
+impl<'a> DotnetReturnType<'a> {
     pub(crate) fn as_dotnet_type(&self) -> String {
         match self.0 {
             ReturnType::Void => "void".to_string(),
@@ -337,7 +498,13 @@ impl <'a> DotnetReturnType<'a> {
     }
 }
 
-pub(crate) fn call_native_function(f: &mut dyn Printer, method: &NativeFunction, return_destination: &str, first_param_is_self: Option<String>, is_constructor: bool) -> FormattingResult<()> {
+pub(crate) fn call_native_function(
+    f: &mut dyn Printer,
+    method: &NativeFunction,
+    return_destination: &str,
+    first_param_is_self: Option<String>,
+    is_constructor: bool,
+) -> FormattingResult<()> {
     // Write the type conversions
     for (idx, param) in method.parameters.iter().enumerate() {
         if let Some(converter) = DotnetType(&param.param_type).conversion() {
@@ -347,25 +514,32 @@ pub(crate) fn call_native_function(f: &mut dyn Printer, method: &NativeFunction,
                     param_name = first_param;
                 }
             }
-            converter.convert_to_native(f, &param_name, &format!("var _{} = ", param.name.to_mixed_case()))?;
+            converter.convert_to_native(
+                f,
+                &param_name,
+                &format!("var _{} = ", param.name.to_mixed_case()),
+            )?;
         }
     }
 
     // Call the native function
     f.newline()?;
     if let ReturnType::Type(_) = &method.return_type {
-        f.write(&format!("var _result = {}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+        f.write(&format!(
+            "var _result = {}.{}(",
+            NATIVE_FUNCTIONS_CLASSNAME, method.name
+        ))?;
     } else {
         f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
     }
 
     f.write(
-        &method.parameters.iter()
-            .map(|param| {
-                DotnetType(&param.param_type).as_dotnet_arg(&param.name.to_mixed_case())
-            })
+        &method
+            .parameters
+            .iter()
+            .map(|param| DotnetType(&param.param_type).as_dotnet_arg(&param.name.to_mixed_case()))
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(", "),
     )?;
     f.write(");")?;
 
@@ -380,7 +554,7 @@ pub(crate) fn call_native_function(f: &mut dyn Printer, method: &NativeFunction,
     if let ReturnType::Type(return_type) = &method.return_type {
         if let Some(converter) = DotnetType(&return_type).conversion() {
             if !is_constructor {
-                return converter.convert_from_native(f, "_result", return_destination)
+                return converter.convert_from_native(f, "_result", return_destination);
             }
         }
 
@@ -390,11 +564,19 @@ pub(crate) fn call_native_function(f: &mut dyn Printer, method: &NativeFunction,
     Ok(())
 }
 
-pub(crate) fn call_dotnet_function(f: &mut dyn Printer, method: &CallbackFunction, return_destination: &str) -> FormattingResult<()> {
+pub(crate) fn call_dotnet_function(
+    f: &mut dyn Printer,
+    method: &CallbackFunction,
+    return_destination: &str,
+) -> FormattingResult<()> {
     // Write the type conversions
     for param in method.params() {
         if let Some(converter) = DotnetType(&param.param_type).conversion() {
-            converter.convert_from_native(f, &param.name, &format!("var _{} = ", param.name.to_mixed_case()))?;
+            converter.convert_from_native(
+                f,
+                &param.name,
+                &format!("var _{} = ", param.name.to_mixed_case()),
+            )?;
         }
     }
 
@@ -412,12 +594,11 @@ pub(crate) fn call_dotnet_function(f: &mut dyn Printer, method: &CallbackFunctio
     }
 
     f.write(
-        &method.params()
-            .map(|param| {
-                DotnetType(&param.param_type).as_dotnet_arg(&param.name)
-            })
+        &method
+            .params()
+            .map(|param| DotnetType(&param.param_type).as_dotnet_arg(&param.name))
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(", "),
     )?;
     f.write(");")?;
 

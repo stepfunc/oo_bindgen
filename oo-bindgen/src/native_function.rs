@@ -1,5 +1,5 @@
-use crate::*;
 use crate::iterator::IteratorHandle;
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
@@ -48,7 +48,7 @@ pub enum ReturnType {
 impl ReturnType {
     pub fn is_void(&self) -> bool {
         if let Self::Void = self {
-            return true
+            return true;
         }
         false
     }
@@ -91,7 +91,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         self.lib.validate_type(&param_type)?;
         self.params.push(Parameter {
             name: name.to_string(),
-            param_type
+            param_type,
         });
         Ok(self)
     }
@@ -102,7 +102,7 @@ impl<'a> NativeFunctionBuilder<'a> {
                 self.return_type = Some(return_type);
                 Ok(self)
             }
-            Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined{
+            Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined {
                 native_func_name: self.name,
                 return_type,
             }),
@@ -118,11 +118,15 @@ impl<'a> NativeFunctionBuilder<'a> {
             });
 
             self.lib.native_functions.insert(handle.clone());
-            self.lib.statements.push(Statement::NativeFunctionDeclaration(handle.clone()));
+            self.lib
+                .statements
+                .push(Statement::NativeFunctionDeclaration(handle.clone()));
 
             Ok(handle)
         } else {
-            Err(BindingError::ReturnTypeNotDefined{native_func_name: self.name})
+            Err(BindingError::ReturnTypeNotDefined {
+                native_func_name: self.name,
+            })
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::ffi;
-use dnp3::app::variations::{Group12Var1, Group41Var1, Group41Var2, Group41Var3, Group41Var4};
-use dnp3::app::types::ControlCode;
 use dnp3::app::enums::{OpType, TripCloseCode};
+use dnp3::app::types::ControlCode;
+use dnp3::app::variations::{Group12Var1, Group41Var1, Group41Var2, Group41Var3, Group41Var4};
 
 #[derive(Clone)]
 enum CommandHeaderElement {
@@ -29,14 +29,19 @@ impl From<&ffi::ControlCode> for ControlCode {
                 ffi::OpType::PulseOff => OpType::PulseOff,
                 ffi::OpType::LatchOn => OpType::LatchOn,
                 ffi::OpType::LatchOff => OpType::LatchOff,
-            }
+            },
         }
     }
 }
 
 impl From<ffi::G12V1> for CommandHeaderElement {
     fn from(from: ffi::G12V1) -> Self {
-        Self::G12V1(Group12Var1::new((&from.code).into(), from.count, from.on_time, from.off_time))
+        Self::G12V1(Group12Var1::new(
+            (&from.code).into(),
+            from.count,
+            from.on_time,
+            from.off_time,
+        ))
     }
 }
 

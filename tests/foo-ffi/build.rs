@@ -4,6 +4,5 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
     let lib = foo_schema::build_lib().unwrap();
-    RustCodegen::new(&lib)
-        .generate().unwrap();
+    RustCodegen::new(&lib).generate().unwrap();
 }

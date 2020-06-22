@@ -22,19 +22,25 @@ impl<'a> Printer for CommentedPrinter<'a> {
 }
 
 pub(crate) fn commented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
     let mut printer = CommentedPrinter::new(f);
     cb(&mut printer)
 }
 
 pub(crate) fn namespaced<F, T>(f: &mut dyn Printer, namespace: &str, cb: F) -> FormattingResult<T>
-where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
     f.writeln(&format!("namespace {}", namespace))?;
     blocked(f, |f| cb(f))
 }
 
 pub(crate) fn blocked<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
     f.writeln("{")?;
     let result = indented(f, |f| cb(f))?;
     f.writeln("}")?;

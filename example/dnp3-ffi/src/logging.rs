@@ -1,6 +1,7 @@
-use std::ffi::CString;
 use crate::ffi;
+use dnp3::prelude::master::*;
 use log::{Level, LevelFilter, Log, Metadata, Record};
+use std::ffi::CString;
 
 pub fn logging_set_callback(handler: ffi::Logger) {
     log::set_boxed_logger(Box::new(LoggerAdapter { handler })).unwrap();
@@ -53,6 +54,17 @@ impl Drop for LoggerAdapter {
     fn drop(&mut self) {
         if let Some(cb) = self.handler.on_destroy {
             (cb)(self.handler.arg)
+        }
+    }
+}
+
+impl From<ffi::DecodeLogLevel> for DecodeLogLevel {
+    fn from(from: ffi::DecodeLogLevel) -> Self {
+        match from {
+            ffi::DecodeLogLevel::Nothing => DecodeLogLevel::Nothing,
+            ffi::DecodeLogLevel::Header => DecodeLogLevel::Header,
+            ffi::DecodeLogLevel::ObjectHeaders => DecodeLogLevel::ObjectHeaders,
+            ffi::DecodeLogLevel::ObjectValues => DecodeLogLevel::ObjectValues,
         }
     }
 }

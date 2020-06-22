@@ -37,23 +37,23 @@ unused_qualifications,
 clippy::all
 )]
 #![forbid(
-unsafe_code,
-intra_doc_link_resolution_failure,
-safe_packed_borrows,
-while_true,
-bare_trait_objects
+    unsafe_code,
+    intra_doc_link_resolution_failure,
+    safe_packed_borrows,
+    while_true,
+    bare_trait_objects
 )]
 
-use oo_bindgen::*;
+use formatting::*;
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::*;
 use std::env;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use formatting::*;
 
 mod formatting;
 
@@ -80,16 +80,22 @@ impl<'a> RustCodegen<'a> {
 
         // Some standard includes
         f.writeln("use std::os::raw::{c_char, c_void};")?;
-        
+
         f.newline()?;
 
         for statement in self.library.into_iter() {
             match statement {
-                Statement::NativeStructDefinition(handle) => self.write_struct_definition(&mut f, handle)?,
+                Statement::NativeStructDefinition(handle) => {
+                    self.write_struct_definition(&mut f, handle)?
+                }
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
-                Statement::NativeFunctionDeclaration(handle) => self.write_function(&mut f, handle)?,
+                Statement::NativeFunctionDeclaration(handle) => {
+                    self.write_function(&mut f, handle)?
+                }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
-                Statement::OneTimeCallbackDefinition(handle) => self.write_one_time_callback(&mut f, handle)?,
+                Statement::OneTimeCallbackDefinition(handle) => {
+                    self.write_one_time_callback(&mut f, handle)?
+                }
                 _ => (),
             }
             f.newline()?;
@@ -98,19 +104,31 @@ impl<'a> RustCodegen<'a> {
         Ok(())
     }
 
-    fn write_struct_definition(&self, f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
+    fn write_struct_definition(
+        &self,
+        f: &mut dyn Printer,
+        handle: &NativeStructHandle,
+    ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name()))?;
         blocked(f, |f| {
             for element in &handle.elements {
-                f.writeln(&format!("pub {}: {},", element.name, RustType(&element.element_type)))?;
+                f.writeln(&format!(
+                    "pub {}: {},",
+                    element.name,
+                    RustType(&element.element_type)
+                ))?;
             }
             Ok(())
         })
     }
 
-    fn write_enum_definition(&self, f: &mut dyn Printer, handle: &NativeEnumHandle) -> FormattingResult<()> {
+    fn write_enum_definition(
+        &self,
+        f: &mut dyn Printer,
+        handle: &NativeEnumHandle,
+    ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]")?;
         f.writeln(&format!("pub enum {}", handle.name))?;
@@ -122,36 +140,42 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_function(&self, f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
+    fn write_function(
+        &self,
+        f: &mut dyn Printer,
+        handle: &NativeFunctionHandle,
+    ) -> FormattingResult<()> {
         f.writeln("/// # Safety")?;
         f.writeln("///")?;
         f.writeln("/// Clippy requires safety documentation for public unsafe functions")?;
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub unsafe extern \"C\" fn {}(", handle.name))?;
-        
+
         f.write(
-            &handle.parameters.iter()
+            &handle
+                .parameters
+                .iter()
                 .map(|param| format!("{}: {}", param.name, RustType(&param.param_type)))
                 .collect::<Vec<String>>()
-                .join(", ")
+                .join(", "),
         )?;
 
         if handle.return_type.is_void() {
             f.write(")")?;
-        }
-        else {
+        } else {
             f.write(&format!(") -> {}", RustReturnType(&handle.return_type)))?;
         }
-
 
         blocked(f, |f| {
             f.writeln(&format!("crate::{}(", handle.name))?;
 
             f.write(
-                &handle.parameters.iter()
+                &handle
+                    .parameters
+                    .iter()
                     .map(|param| param.name.to_string())
                     .collect::<Vec<String>>()
-                    .join(", ")
+                    .join(", "),
             )?;
 
             f.write(")")
@@ -165,27 +189,36 @@ impl<'a> RustCodegen<'a> {
         blocked(f, |f| {
             for element in &handle.elements {
                 match element {
-                    InterfaceElement::Arg(name) => f.writeln(&format!("pub {}: *mut c_void,", name))?,
+                    InterfaceElement::Arg(name) => {
+                        f.writeln(&format!("pub {}: *mut c_void,", name))?
+                    }
                     InterfaceElement::CallbackFunction(handle) => {
                         f.newline()?;
                         f.write(&format!("pub {}: Option<extern \"C\" fn(", handle.name))?;
-                        
+
                         f.write(
-                            &handle.parameters.iter()
-                                .map(|param| {
-                                    match param {
-                                        CallbackParameter::Arg(name) => format!("{}: *mut c_void", name),
-                                        CallbackParameter::Parameter(param) => format!("{}: {}", param.name, RustType(&param.param_type)),
+                            &handle
+                                .parameters
+                                .iter()
+                                .map(|param| match param {
+                                    CallbackParameter::Arg(name) => {
+                                        format!("{}: *mut c_void", name)
+                                    }
+                                    CallbackParameter::Parameter(param) => {
+                                        format!("{}: {}", param.name, RustType(&param.param_type))
                                     }
                                 })
                                 .collect::<Vec<String>>()
-                                .join(", ")
+                                .join(", "),
                         )?;
-    
+
                         f.write(&format!(") -> {}>,", RustReturnType(&handle.return_type)))?;
-                    },
+                    }
                     InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!("pub {}: Option<extern \"C\" fn(data: *mut c_void)>,", name))?;
+                        f.writeln(&format!(
+                            "pub {}: Option<extern \"C\" fn(data: *mut c_void)>,",
+                            name
+                        ))?;
                     }
                 }
             }
@@ -193,32 +226,42 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_one_time_callback(&self, f: &mut dyn Printer, handle: &OneTimeCallbackHandle) -> FormattingResult<()> {
+    fn write_one_time_callback(
+        &self,
+        f: &mut dyn Printer,
+        handle: &OneTimeCallbackHandle,
+    ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {
                 match element {
-                    OneTimeCallbackElement::Arg(name) => f.writeln(&format!("pub {}: *mut c_void,", name))?,
+                    OneTimeCallbackElement::Arg(name) => {
+                        f.writeln(&format!("pub {}: *mut c_void,", name))?
+                    }
                     OneTimeCallbackElement::CallbackFunction(handle) => {
                         f.newline()?;
                         f.write(&format!("pub {}: Option<extern \"C\" fn(", handle.name))?;
-                        
+
                         f.write(
-                            &handle.parameters.iter()
-                                .map(|param| {
-                                    match param {
-                                        CallbackParameter::Arg(name) => format!("{}: *mut c_void", name),
-                                        CallbackParameter::Parameter(param) => format!("{}: {}", param.name, RustType(&param.param_type)),
+                            &handle
+                                .parameters
+                                .iter()
+                                .map(|param| match param {
+                                    CallbackParameter::Arg(name) => {
+                                        format!("{}: *mut c_void", name)
+                                    }
+                                    CallbackParameter::Parameter(param) => {
+                                        format!("{}: {}", param.name, RustType(&param.param_type))
                                     }
                                 })
                                 .collect::<Vec<String>>()
-                                .join(", ")
+                                .join(", "),
                         )?;
-    
+
                         f.write(&format!(") -> {}>,", RustReturnType(&handle.return_type)))?;
-                    },
+                    }
                 }
             }
             Ok(())
@@ -228,7 +271,7 @@ impl<'a> RustCodegen<'a> {
 
 struct RustReturnType<'a>(&'a ReturnType);
 
-impl <'a> Display for RustReturnType<'a> {
+impl<'a> Display for RustReturnType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
             ReturnType::Void => write!(f, "()"),
@@ -262,9 +305,9 @@ impl<'a> Display for RustType<'a> {
             Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
             Type::Iterator(handle) => write!(f, "*mut crate::{}", handle.name()),
             Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds|DurationMapping::Seconds => write!(f, "u64"),
+                DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "u64"),
                 DurationMapping::SecondsFloat => write!(f, "f32"),
-            }
+            },
         }
     }
 }

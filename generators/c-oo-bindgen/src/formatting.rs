@@ -22,13 +22,17 @@ impl<'a> Printer for CommentedPrinter<'a> {
 }
 
 pub(crate) fn commented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
     let mut printer = CommentedPrinter::new(f);
     cb(&mut printer)
 }
 
 pub(crate) fn cpp_guard<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
     f.writeln("#ifdef __cplusplus")?;
     f.writeln("extern \"C\" {")?;
     f.writeln("#endif")?;

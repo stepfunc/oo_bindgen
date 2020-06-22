@@ -9,7 +9,7 @@ class MainClass
     {
         public void OnMessage(LogLevel level, string message)
         {
-            //Console.WriteLine($"{level}: {message}");
+            Console.WriteLine($"{level}: {message}");
         }
     }
 
@@ -25,8 +25,7 @@ class MainClass
     {
         public void BeginFragment(ResponseHeader header)
         {
-            Console.WriteLine("Beginning fragment");
-            Console.WriteLine($"Is broadcast: {header.Iin.Iin1.IsSet(Iin1Flag.Broadcast)}");
+            Console.WriteLine($"Beginning fragment (broadcast: {header.Iin.Iin1.IsSet(Iin1Flag.Broadcast)})");
         }
 
         public void EndFragment(ResponseHeader header)
@@ -43,7 +42,6 @@ class MainClass
             foreach (var val in values)
             {
                 Console.WriteLine($"BI {val.Index}: Value={val.Value} Flags={val.Flags.Value} Time={val.Time.Value} ({val.Time.Quality})");
-                Console.WriteLine($"IsRestart: {val.Flags.IsSet(Flag.Restart)}");
             }
         }
 
@@ -172,12 +170,42 @@ class MainClass
                 }
             );
 
+            var pollRequest = Request.ClassRequest(false, true, true, true);
+            var poll = association.AddPoll(pollRequest, TimeSpan.FromSeconds(5));
+
             while (true)
             {              
                 switch (await GetInputAsync())
                 {
                     case "x":
                         return;
+                    case "dln":
+                        {
+                            master.SetDecodeLogLevel(DecodeLogLevel.Nothing);
+                            break;
+                        }
+                    case "dlv":
+                        {
+                            master.SetDecodeLogLevel(DecodeLogLevel.ObjectValues);
+                            break;
+                        }
+                    case "rao":
+                        {
+                            var request = new Request();
+                            request.AddAllObjectsHeader(Variation.Group40Var0);
+                            var result = await association.Read(request);
+                            Console.WriteLine($"Result: {result}");
+                            break;
+                        }
+                    case "rmo":
+                        {
+                            var request = new Request();
+                            request.AddAllObjectsHeader(Variation.Group10Var0);
+                            request.AddAllObjectsHeader(Variation.Group40Var0);
+                            var result = await association.Read(request);
+                            Console.WriteLine($"Result: {result}");
+                            break;
+                        }
                     case "cmd":
                         {
                             var command = new Command();
@@ -196,19 +224,24 @@ class MainClass
                                 }
                             );
                             var result = await association.Operate(CommandMode.SelectBeforeOperate, command);
-                            Console.WriteLine($"Error: {result}");
+                            Console.WriteLine($"Result: {result}");
+                            break;
+                        }
+                    case "evt":
+                        {
+                            poll.Demand();
                             break;
                         }
                     case "lts":
                         {
                             var result = await association.PerformTimeSync(TimeSyncMode.Lan);
-                            Console.WriteLine($"Error: {result}");
+                            Console.WriteLine($"Result: {result}");
                             break;
                         }
                     case "nts":
                         {
                             var result = await association.PerformTimeSync(TimeSyncMode.NonLan);
-                            Console.WriteLine($"Error: {result}");
+                            Console.WriteLine($"Result: {result}");
                             break;
                         }
                     default:

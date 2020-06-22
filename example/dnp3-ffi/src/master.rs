@@ -1,5 +1,5 @@
-use crate::ffi;
 use crate::association::Association;
+use crate::ffi;
 use crate::handler::ReadHandlerAdapter;
 
 use dnp3::master::association::Configuration;
@@ -17,42 +17,67 @@ pub unsafe fn master_destroy(master: *mut Master) {
     }
 }
 
-pub unsafe fn master_add_association(master: *mut Master, address: u16, config: ffi::AssociationConfiguration, handlers: ffi::AssociationHandlers) -> *mut Association {
-    if let Some(master) = master.as_mut() {
-        let config = Configuration::new(
-            convert_event_classes(&config.disable_unsol_classes),
-            convert_event_classes(&config.enable_unsol_classes),
-            convert_auto_time_sync(&config.auto_time_sync),
-        );
-    
-        let handler = AssociationHandlerAdapter {
-            integrity_handler: ReadHandlerAdapter::new(handlers.integrity_handler),
-            unsolicited_handler: ReadHandlerAdapter::new(handlers.unsolicited_handler),
-            default_poll_handler: ReadHandlerAdapter::new(handlers.default_poll_handler),
-        };
+pub unsafe fn master_add_association(
+    master: *mut Master,
+    address: u16,
+    config: ffi::AssociationConfiguration,
+    handlers: ffi::AssociationHandlers,
+) -> *mut Association {
+    let master = match master.as_mut() {
+        Some(master) => master,
+        None => return std::ptr::null_mut(),
+    };
 
-        if tokio::runtime::Handle::try_current().is_err() {
-            let handle = master.runtime.block_on(master.handle.add_association(address, config, Box::new(handler))).unwrap();
+    let config = Configuration::new(
+        convert_event_classes(&config.disable_unsol_classes),
+        convert_event_classes(&config.enable_unsol_classes),
+        convert_auto_time_sync(&config.auto_time_sync),
+    );
+
+    let handler = AssociationHandlerAdapter {
+        integrity_handler: ReadHandlerAdapter::new(handlers.integrity_handler),
+        unsolicited_handler: ReadHandlerAdapter::new(handlers.unsolicited_handler),
+        default_poll_handler: ReadHandlerAdapter::new(handlers.default_poll_handler),
+    };
+
+    if tokio::runtime::Handle::try_current().is_err() {
+        if let Ok(handle) = master.runtime.block_on(master.handle.add_association(
+            address,
+            config,
+            Box::new(handler),
+        )) {
             let association = Association {
                 runtime: master.runtime.clone(),
-                handle
+                handle,
             };
             Box::into_raw(Box::new(association))
         } else {
-            log::warn!("Tried calling 'master_add_association' from within a tokio thread");
+            log::warn!("Associate creation failure");
             std::ptr::null_mut()
         }
     } else {
+        log::warn!("Tried calling 'master_add_association' from within a tokio thread");
         std::ptr::null_mut()
     }
 }
 
+pub unsafe fn master_set_decode_log_level(master: *mut Master, level: ffi::DecodeLogLevel) {
+    let master = match master.as_mut() {
+        Some(master) => master,
+        None => return,
+    };
+
+    if tokio::runtime::Handle::try_current().is_err() {
+        master
+            .runtime
+            .block_on(master.handle.set_decode_log_level(level.into()));
+    } else {
+        log::warn!("Tried calling 'master_set_decode_log_level' from within a tokio thread");
+    }
+}
+
 fn convert_event_classes(config: &ffi::EventClasses) -> EventClasses {
-    EventClasses::new(
-        config.class1,
-        config.class2,
-        config.class3,
-    )
+    EventClasses::new(config.class1, config.class2, config.class3)
 }
 
 fn convert_auto_time_sync(config: &ffi::AutoTimeSync) -> Option<TimeSyncProcedure> {

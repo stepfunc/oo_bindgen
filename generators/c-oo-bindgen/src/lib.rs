@@ -37,24 +37,24 @@ unused_qualifications,
 clippy::all
 )]
 #![forbid(
-unsafe_code,
-intra_doc_link_resolution_failure,
-safe_packed_borrows,
-while_true,
-bare_trait_objects
+    unsafe_code,
+    intra_doc_link_resolution_failure,
+    safe_packed_borrows,
+    while_true,
+    bare_trait_objects
 )]
 
-use oo_bindgen::*;
+use crate::formatting::*;
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
+use oo_bindgen::*;
 use std::fmt::Display;
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::formatting::*;
 
 mod formatting;
 
@@ -80,13 +80,19 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         let lib_filename = p.lib_filename(&config.ffi_name);
         let destination_path = lib_path.join(p.platform.to_string());
         fs::create_dir_all(&destination_path)?;
-        fs::copy(p.location.join(&lib_filename), destination_path.join(&lib_filename))?;
+        fs::copy(
+            p.location.join(&lib_filename),
+            destination_path.join(&lib_filename),
+        )?;
 
         // Copy DLL on Windows
         let bin_filename = p.bin_filename(&config.ffi_name);
         let destination_path = lib_path.join(p.platform.to_string());
         fs::create_dir_all(&destination_path)?;
-        fs::copy(p.location.join(&bin_filename), destination_path.join(&bin_filename))?;
+        fs::copy(
+            p.location.join(&bin_filename),
+            destination_path.join(&bin_filename),
+        )?;
     }
 
     Ok(())
@@ -117,10 +123,23 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
         f.newline()?;
 
         // Version number
-        f.writeln(&format!("#define {}_VERSION_MAJOR {}", uppercase_name, lib.version.major))?;
-        f.writeln(&format!("#define {}_VERSION_MINOR {}", uppercase_name, lib.version.minor))?;
-        f.writeln(&format!("#define {}_VERSION_PATCH {}", uppercase_name, lib.version.patch))?;
-        f.writeln(&format!("#define {}_VERSION_STRING \"{}\"", uppercase_name, lib.version.to_string()))?;
+        f.writeln(&format!(
+            "#define {}_VERSION_MAJOR {}",
+            uppercase_name, lib.version.major
+        ))?;
+        f.writeln(&format!(
+            "#define {}_VERSION_MINOR {}",
+            uppercase_name, lib.version.minor
+        ))?;
+        f.writeln(&format!(
+            "#define {}_VERSION_PATCH {}",
+            uppercase_name, lib.version.patch
+        ))?;
+        f.writeln(&format!(
+            "#define {}_VERSION_STRING \"{}\"",
+            uppercase_name,
+            lib.version.to_string()
+        ))?;
         f.newline()?;
 
         // Standard includes needed
@@ -133,7 +152,7 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
             match statement {
                 Statement::NativeStructDeclaration(handle) => {
                     f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;
-                },
+                }
                 Statement::NativeStructDefinition(handle) => write_struct_definition(f, handle)?,
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
                 Statement::ClassDeclaration(handle) => {
@@ -151,12 +170,19 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
     })
 }
 
-fn write_struct_definition(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
+fn write_struct_definition(
+    f: &mut dyn Printer,
+    handle: &NativeStructHandle,
+) -> FormattingResult<()> {
     f.writeln(&format!("typedef struct {}", handle.name()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
-            f.writeln(&format!("{} {};", CType(&element.element_type), element.name))?;
+            f.writeln(&format!(
+                "{} {};",
+                CType(&element.element_type),
+                element.name
+            ))?;
         }
         Ok(())
     })?;
@@ -168,7 +194,10 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> Form
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
-            f.writeln(&format!("{}_{} = {},", handle.name, variant.name, variant.value))?;
+            f.writeln(&format!(
+                "{}_{} = {},",
+                handle.name, variant.name, variant.value
+            ))?;
         }
         Ok(())
     })?;
@@ -177,13 +206,19 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> Form
 
 fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
     f.newline()?;
-    f.write(&format!("{} {}(", CReturnType(&handle.return_type), handle.name))?;
-    
+    f.write(&format!(
+        "{} {}(",
+        CReturnType(&handle.return_type),
+        handle.name
+    ))?;
+
     f.write(
-        &handle.parameters.iter()
+        &handle
+            .parameters
+            .iter()
             .map(|param| format!("{} {}", CType(&param.param_type), param.name))
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(", "),
     )?;
 
     f.write(");")
@@ -199,21 +234,23 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<
                 InterfaceElement::CallbackFunction(handle) => {
                     f.newline()?;
                     f.write(&format!("void (*{})(", handle.name))?;
-                    
+
                     f.write(
-                        &handle.parameters.iter()
-                            .map(|param| {
-                                match param {
-                                    CallbackParameter::Arg(_) => "void*".to_string(),
-                                    CallbackParameter::Parameter(param) => format!("{}", CType(&param.param_type)),
+                        &handle
+                            .parameters
+                            .iter()
+                            .map(|param| match param {
+                                CallbackParameter::Arg(_) => "void*".to_string(),
+                                CallbackParameter::Parameter(param) => {
+                                    format!("{}", CType(&param.param_type))
                                 }
                             })
                             .collect::<Vec<String>>()
-                            .join(", ")
+                            .join(", "),
                     )?;
 
                     f.write(");")?;
-                },
+                }
                 InterfaceElement::DestroyFunction(name) => {
                     f.writeln(&format!("void (*{})(void* arg);", name))?;
                 }
@@ -224,7 +261,10 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<
     f.writeln(&format!("}} {};", handle.name))
 }
 
-fn write_one_time_callback(f: &mut dyn Printer, handle: &OneTimeCallbackHandle) -> FormattingResult<()> {
+fn write_one_time_callback(
+    f: &mut dyn Printer,
+    handle: &OneTimeCallbackHandle,
+) -> FormattingResult<()> {
     f.writeln(&format!("typedef struct {}", handle.name))?;
     f.writeln("{")?;
     indented(f, |f| {
@@ -234,21 +274,23 @@ fn write_one_time_callback(f: &mut dyn Printer, handle: &OneTimeCallbackHandle) 
                 OneTimeCallbackElement::CallbackFunction(handle) => {
                     f.newline()?;
                     f.write(&format!("void (*{})(", handle.name))?;
-                    
+
                     f.write(
-                        &handle.parameters.iter()
-                            .map(|param| {
-                                match param {
-                                    CallbackParameter::Arg(_) => "void*".to_string(),
-                                    CallbackParameter::Parameter(param) => format!("{}", CType(&param.param_type)),
+                        &handle
+                            .parameters
+                            .iter()
+                            .map(|param| match param {
+                                CallbackParameter::Arg(_) => "void*".to_string(),
+                                CallbackParameter::Parameter(param) => {
+                                    format!("{}", CType(&param.param_type))
                                 }
                             })
                             .collect::<Vec<String>>()
-                            .join(", ")
+                            .join(", "),
                     )?;
 
                     f.write(");")?;
-                },
+                }
             }
         }
         Ok(())
@@ -287,8 +329,16 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
             f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
             f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
             indented(f, |f| {
-                f.writeln(&format!("IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"", p.platform.to_string(), p.bin_filename(&config.ffi_name)))?;
-                f.writeln(&format!("IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"", p.platform.to_string(), p.lib_filename(&config.ffi_name)))?;
+                f.writeln(&format!(
+                    "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
+                    p.platform.to_string(),
+                    p.bin_filename(&config.ffi_name)
+                ))?;
+                f.writeln(&format!(
+                    "IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"",
+                    p.platform.to_string(),
+                    p.lib_filename(&config.ffi_name)
+                ))?;
                 f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
             })?;
             f.writeln(")")
@@ -305,7 +355,7 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
 
 struct CReturnType<'a>(&'a ReturnType);
 
-impl <'a> Display for CReturnType<'a> {
+impl<'a> Display for CReturnType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
             ReturnType::Void => write!(f, "void"),
@@ -339,9 +389,9 @@ impl<'a> Display for CType<'a> {
             Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
             Type::Iterator(handle) => write!(f, "{}*", handle.name()),
             Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds|DurationMapping::Seconds => write!(f, "uint64_t"),
+                DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),
-            }
+            },
         }
     }
 }

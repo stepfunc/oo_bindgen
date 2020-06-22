@@ -8,16 +8,15 @@ pub enum Platform {
 }
 
 impl Platform {
-
     pub fn current() -> Self {
         if cfg!(target_os = "windows") && cfg!(target_pointer_width = "32") {
-            return Self::Win32
+            return Self::Win32;
         }
         if cfg!(target_os = "windows") && cfg!(target_pointer_width = "64") {
-            return Self::Win64
+            return Self::Win64;
         }
         if cfg!(target_os = "linux") && cfg!(target_pointer_width = "64") {
-            return Self::Linux
+            return Self::Linux;
         }
 
         unimplemented!("Current platform is not supported")
@@ -39,31 +38,20 @@ pub struct PlatformLocation {
 
 impl PlatformLocation {
     pub fn new(platform: Platform, location: PathBuf) -> Self {
-        Self {
-            platform,
-            location,
-        }
+        Self { platform, location }
     }
 
     pub fn lib_filename(&self, libname: &str) -> String {
         match self.platform {
-            Platform::Win64|Platform::Win32 => {
-                format!("{}.dll.lib", libname)
-            },
-            Platform::Linux => {
-                format!("lib{}.so", libname)
-            },
+            Platform::Win64 | Platform::Win32 => format!("{}.dll.lib", libname),
+            Platform::Linux => format!("lib{}.so", libname),
         }
     }
 
     pub fn bin_filename(&self, libname: &str) -> String {
         match self.platform {
-            Platform::Win64|Platform::Win32 => {
-                format!("{}.dll", libname)
-            },
-            Platform::Linux => {
-                format!("lib{}.so", libname)
-            },
+            Platform::Win64 | Platform::Win32 => format!("{}.dll", libname),
+            Platform::Linux => format!("lib{}.so", libname),
         }
     }
 }
@@ -93,9 +81,15 @@ impl PlatformLocations {
 
     pub fn iter(&self) -> impl Iterator<Item = PlatformLocation> {
         let mut vec = Vec::new();
-        if let Some(loc) = &self.win64 { vec.push(PlatformLocation::new(Platform::Win64, loc.clone())) }
-        if let Some(loc) = &self.win32 { vec.push(PlatformLocation::new(Platform::Win32, loc.clone())) }
-        if let Some(loc) = &self.linux { vec.push(PlatformLocation::new(Platform::Linux, loc.clone())) }
+        if let Some(loc) = &self.win64 {
+            vec.push(PlatformLocation::new(Platform::Win64, loc.clone()))
+        }
+        if let Some(loc) = &self.win32 {
+            vec.push(PlatformLocation::new(Platform::Win32, loc.clone()))
+        }
+        if let Some(loc) = &self.linux {
+            vec.push(PlatformLocation::new(Platform::Linux, loc.clone()))
+        }
         vec.into_iter()
     }
 }

@@ -1,5 +1,5 @@
-use std::time::Duration;
 use crate::ffi::{CallbackInterface, OneTimeCallbackInterface};
+use std::time::Duration;
 
 struct CallbackAdapter {
     native_cb: CallbackInterface,
@@ -77,7 +77,10 @@ pub unsafe fn cbsource_add(cb_source: *mut CallbackSource, cb: CallbackInterface
     cb_source.add(cb_adapter);
 }
 
-pub unsafe fn cbsource_add_one_time(cb_source: *mut CallbackSource, cb: OneTimeCallbackInterface) {
+pub unsafe fn cbsource_add_one_time(
+    _cb_source: *mut CallbackSource,
+    _cb: OneTimeCallbackInterface,
+) {
     // TODO: implement this and its tests
 }
 

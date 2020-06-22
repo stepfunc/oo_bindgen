@@ -1,5 +1,5 @@
-use crate::*;
 use crate::Result;
+use crate::*;
 
 /// C-style structure definition
 #[derive(Debug)]
@@ -10,16 +10,23 @@ pub struct Iterator {
 }
 
 impl Iterator {
-    pub(crate) fn new(native_func: &NativeFunctionHandle, item_type: &NativeStructHandle) -> Result<Iterator> {
+    pub(crate) fn new(
+        native_func: &NativeFunctionHandle,
+        item_type: &NativeStructHandle,
+    ) -> Result<Iterator> {
         if native_func.return_type != ReturnType::Type(Type::StructRef(item_type.declaration())) {
-            return Err(BindingError::IteratorReturnTypeNotStructRef{handle: native_func.clone()});
+            return Err(BindingError::IteratorReturnTypeNotStructRef {
+                handle: native_func.clone(),
+            });
         }
 
         let mut iter = native_func.parameters.iter();
         if let Some(param) = iter.next() {
             if let Type::ClassRef(iter_type) = &param.param_type {
                 if iter.next().is_some() {
-                    return Err(BindingError::IteratorNotSingleClassRefParam{handle: native_func.clone()});
+                    return Err(BindingError::IteratorNotSingleClassRefParam {
+                        handle: native_func.clone(),
+                    });
                 }
 
                 Ok(Iterator {
@@ -28,10 +35,14 @@ impl Iterator {
                     item_type: item_type.clone(),
                 })
             } else {
-                Err(BindingError::IteratorNotSingleClassRefParam{handle: native_func.clone()})
+                Err(BindingError::IteratorNotSingleClassRefParam {
+                    handle: native_func.clone(),
+                })
             }
         } else {
-            Err(BindingError::IteratorNotSingleClassRefParam{handle: native_func.clone()})
+            Err(BindingError::IteratorNotSingleClassRefParam {
+                handle: native_func.clone(),
+            })
         }
     }
 

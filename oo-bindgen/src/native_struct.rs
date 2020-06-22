@@ -48,7 +48,10 @@ pub struct NativeStructBuilder<'a> {
 }
 
 impl<'a> NativeStructBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, declaration: NativeStructDeclarationHandle) -> Self {
+    pub(crate) fn new(
+        lib: &'a mut LibraryBuilder,
+        declaration: NativeStructDeclarationHandle,
+    ) -> Self {
         Self {
             lib,
             declaration,
@@ -60,16 +63,18 @@ impl<'a> NativeStructBuilder<'a> {
     pub fn add(mut self, name: &str, element_type: Type) -> Result<Self> {
         self.lib.validate_type(&element_type)?;
         if self.element_names_set.insert(name.to_string()) {
-            self.elements.push(NativeStructElement{
+            self.elements.push(NativeStructElement {
                 name: name.to_string(),
                 element_type,
             });
             Ok(self)
         } else {
-            Err(BindingError::NativeStructAlreadyContainsElementWithSameName{
-                handle: self.declaration,
-                element_name: name.to_string(),
-            })
+            Err(
+                BindingError::NativeStructAlreadyContainsElementWithSameName {
+                    handle: self.declaration,
+                    element_name: name.to_string(),
+                },
+            )
         }
     }
 
@@ -79,8 +84,12 @@ impl<'a> NativeStructBuilder<'a> {
             elements: self.elements,
         });
 
-        self.lib.native_structs.insert(handle.declaration.clone(), handle.clone());
-        self.lib.statements.push(Statement::NativeStructDefinition(handle.clone()));
+        self.lib
+            .native_structs
+            .insert(handle.declaration.clone(), handle.clone());
+        self.lib
+            .statements
+            .push(Statement::NativeStructDefinition(handle.clone()));
 
         handle
     }
@@ -157,14 +166,18 @@ impl<'a> StructBuilder<'a> {
             });
             Ok(self)
         } else {
-            Err(BindingError::StructAlreadyContainsElementWithSameName{
+            Err(BindingError::StructAlreadyContainsElementWithSameName {
                 handle: self.definition.declaration(),
                 element_name: name.to_string(),
             })
         }
     }
 
-    pub fn static_method(mut self, name: &str, native_function: &NativeFunctionHandle) -> Result<Self> {
+    pub fn static_method(
+        mut self,
+        name: &str,
+        native_function: &NativeFunctionHandle,
+    ) -> Result<Self> {
         self.lib.validate_native_function(native_function)?;
 
         if self.element_names_set.insert(name.to_string()) {
@@ -174,7 +187,7 @@ impl<'a> StructBuilder<'a> {
             });
             Ok(self)
         } else {
-            Err(BindingError::StructAlreadyContainsElementWithSameName{
+            Err(BindingError::StructAlreadyContainsElementWithSameName {
                 handle: self.definition.declaration(),
                 element_name: name.to_string(),
             })
@@ -188,8 +201,12 @@ impl<'a> StructBuilder<'a> {
             static_methods: self.static_methods,
         });
 
-        self.lib.defined_structs.insert(handle.definition.clone(), handle.clone());
-        self.lib.statements.push(Statement::StructDefinition(handle.clone()));
+        self.lib
+            .defined_structs
+            .insert(handle.definition.clone(), handle.clone());
+        self.lib
+            .statements
+            .push(Statement::StructDefinition(handle.clone()));
 
         handle
     }
@@ -198,12 +215,12 @@ impl<'a> StructBuilder<'a> {
         if let Some(first_param) = native_function.parameters.first() {
             if let Type::StructRef(first_param_type) = &first_param.param_type {
                 if first_param_type == &self.definition.declaration() {
-                    return Ok(())
+                    return Ok(());
                 }
             }
         }
 
-        Err(BindingError::FirstMethodParameterIsNotStructType{
+        Err(BindingError::FirstMethodParameterIsNotStructType {
             handle: self.definition.declaration.clone(),
             native_func: native_function.clone(),
         })

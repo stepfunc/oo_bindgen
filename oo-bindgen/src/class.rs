@@ -52,9 +52,7 @@ impl Class {
     }
 
     pub fn is_static(&self) -> bool {
-        self.constructor.is_none() &&
-        self.destructor.is_none() &&
-        self.methods.is_empty()
+        self.constructor.is_none() && self.destructor.is_none() && self.methods.is_empty()
     }
 }
 
@@ -85,18 +83,20 @@ impl<'a> ClassBuilder<'a> {
 
     pub fn constructor(mut self, native_function: &NativeFunctionHandle) -> Result<Self> {
         if self.constructor.is_some() {
-            return Err(BindingError::ConstructorAlreadyDefined{handle: self.declaration})
+            return Err(BindingError::ConstructorAlreadyDefined {
+                handle: self.declaration,
+            });
         }
         self.lib.validate_native_function(native_function)?;
 
         if let ReturnType::Type(Type::ClassRef(return_type)) = &native_function.return_type {
             if return_type == &self.declaration {
                 self.constructor = Some(native_function.clone());
-                return Ok(self)
+                return Ok(self);
             }
         }
 
-        Err(BindingError::ConstructorReturnTypeDoesNotMatch{
+        Err(BindingError::ConstructorReturnTypeDoesNotMatch {
             handle: self.declaration,
             native_func: native_function.clone(),
         })
@@ -104,16 +104,18 @@ impl<'a> ClassBuilder<'a> {
 
     pub fn destructor(mut self, native_function: &NativeFunctionHandle) -> Result<Self> {
         if self.destructor.is_some() {
-            return Err(BindingError::DestructorAlreadyDefined{handle: self.declaration})
+            return Err(BindingError::DestructorAlreadyDefined {
+                handle: self.declaration,
+            });
         }
         self.lib.validate_native_function(native_function)?;
         self.validate_first_param(native_function)?;
 
         if native_function.parameters.len() != 1 {
-            return Err(BindingError::DestructorTakesMoreThanOneParameter{
+            return Err(BindingError::DestructorTakesMoreThanOneParameter {
                 handle: self.declaration,
                 native_func: native_function.clone(),
-            })
+            });
         }
 
         self.destructor = Some(native_function.clone());
@@ -133,7 +135,11 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn static_method(mut self, name: &str, native_function: &NativeFunctionHandle) -> Result<Self> {
+    pub fn static_method(
+        mut self,
+        name: &str,
+        native_function: &NativeFunctionHandle,
+    ) -> Result<Self> {
         self.lib.validate_native_function(native_function)?;
 
         self.static_methods.push(Method {
@@ -144,10 +150,14 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn async_method(mut self, name: &str, native_function: &NativeFunctionHandle) -> Result<Self> {
+    pub fn async_method(
+        mut self,
+        name: &str,
+        native_function: &NativeFunctionHandle,
+    ) -> Result<Self> {
         self.lib.validate_native_function(native_function)?;
         self.validate_first_param(native_function)?;
-        
+
         // Check that native method has a single callback with a single method,
         // with a single argument
 
@@ -155,13 +165,17 @@ impl<'a> ClassBuilder<'a> {
         for param in &native_function.parameters {
             if let Type::OneTimeCallback(ot_cb) = &param.param_type {
                 if async_method.is_some() {
-                    return Err(BindingError::AsyncNativeMethodTooManyOneTimeCallback{handle: native_function.clone()});
+                    return Err(BindingError::AsyncNativeMethodTooManyOneTimeCallback {
+                        handle: native_function.clone(),
+                    });
                 }
 
                 let mut cb_iter = ot_cb.callbacks();
                 if let Some(cb) = cb_iter.next() {
                     if !cb.return_type.is_void() {
-                        return Err(BindingError::AsyncCallbackReturnTypeNotVoid{handle: native_function.clone()});
+                        return Err(BindingError::AsyncCallbackReturnTypeNotVoid {
+                            handle: native_function.clone(),
+                        });
                     }
 
                     let mut iter = cb.params();
@@ -177,17 +191,25 @@ impl<'a> ClassBuilder<'a> {
                         });
 
                         if iter.next().is_some() {
-                            return Err(BindingError::AsyncCallbackNotSingleParam{handle: native_function.clone()});
+                            return Err(BindingError::AsyncCallbackNotSingleParam {
+                                handle: native_function.clone(),
+                            });
                         }
                     } else {
-                        return Err(BindingError::AsyncCallbackNotSingleParam{handle: native_function.clone()});
+                        return Err(BindingError::AsyncCallbackNotSingleParam {
+                            handle: native_function.clone(),
+                        });
                     }
 
                     if cb_iter.next().is_some() {
-                        return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback{handle: native_function.clone()});
+                        return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback {
+                            handle: native_function.clone(),
+                        });
                     }
                 } else {
-                    return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback{handle: native_function.clone()});
+                    return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback {
+                        handle: native_function.clone(),
+                    });
                 }
             }
         }
@@ -195,7 +217,9 @@ impl<'a> ClassBuilder<'a> {
         if let Some(method) = async_method {
             self.async_methods.push(method);
         } else {
-            return Err(BindingError::AsyncNativeMethodNoOneTimeCallback{handle: native_function.clone()});
+            return Err(BindingError::AsyncNativeMethodNoOneTimeCallback {
+                handle: native_function.clone(),
+            });
         }
 
         Ok(self)
@@ -211,8 +235,12 @@ impl<'a> ClassBuilder<'a> {
             async_methods: self.async_methods,
         });
 
-        self.lib.classes.insert(handle.declaration.clone(), handle.clone());
-        self.lib.statements.push(Statement::ClassDefinition(handle.clone()));
+        self.lib
+            .classes
+            .insert(handle.declaration.clone(), handle.clone());
+        self.lib
+            .statements
+            .push(Statement::ClassDefinition(handle.clone()));
 
         handle
     }
@@ -221,12 +249,12 @@ impl<'a> ClassBuilder<'a> {
         if let Some(first_param) = native_function.parameters.first() {
             if let Type::ClassRef(first_param_type) = &first_param.param_type {
                 if first_param_type == &self.declaration {
-                    return Ok(())
+                    return Ok(());
                 }
             }
         }
 
-        Err(BindingError::FirstMethodParameterIsNotClassType{
+        Err(BindingError::FirstMethodParameterIsNotClassType {
             handle: self.declaration.clone(),
             native_func: native_function.clone(),
         })

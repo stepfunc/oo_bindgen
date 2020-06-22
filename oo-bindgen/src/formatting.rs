@@ -35,7 +35,10 @@ impl Drop for FilePrinter {
 
 impl Printer for FilePrinter {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
-        self.writer.write(s.as_bytes()).map(|_| {}).map_err(|e| e.into())
+        self.writer
+            .write(s.as_bytes())
+            .map(|_| {})
+            .map_err(|e| e.into())
     }
 
     fn newline(&mut self) -> FormattingResult<()> {
@@ -65,7 +68,9 @@ impl<'a> Printer for IndentedPrinter<'a> {
 }
 
 pub fn indented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where F: FnOnce(&mut dyn Printer) -> FormattingResult<T> {
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
     let mut printer = IndentedPrinter::new(f);
     cb(&mut printer)
 }

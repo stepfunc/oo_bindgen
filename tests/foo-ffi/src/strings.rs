@@ -7,7 +7,9 @@ pub struct StringClass {
 
 impl StringClass {
     fn new() -> Self {
-        Self{ value: CString::new("").unwrap() }
+        Self {
+            value: CString::new("").unwrap(),
+        }
     }
 }
 

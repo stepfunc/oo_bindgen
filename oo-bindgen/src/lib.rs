@@ -37,20 +37,18 @@ unused_qualifications,
 clippy::all
 )]
 #![forbid(
-unsafe_code,
-intra_doc_link_resolution_failure,
-safe_packed_borrows,
-while_true,
-bare_trait_objects
+    unsafe_code,
+    intra_doc_link_resolution_failure,
+    safe_packed_borrows,
+    while_true,
+    bare_trait_objects
 )]
-
 
 use crate::callback::*;
 use crate::class::*;
 use crate::native_enum::*;
 use crate::native_function::*;
 use crate::native_struct::*;
-use thiserror::Error;
 use semver::Version;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -58,15 +56,16 @@ use std::hash::Hash;
 use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
+use thiserror::Error;
 
 pub mod callback;
 pub mod class;
 pub mod formatting;
 pub mod iterator;
-pub mod platforms;
 pub mod native_enum;
 pub mod native_function;
 pub mod native_struct;
+pub mod platforms;
 
 type Result<T> = std::result::Result<T, BindingError>;
 
@@ -74,125 +73,146 @@ type Result<T> = std::result::Result<T, BindingError>;
 pub enum BindingError {
     // Global errors
     #[error("Symbol '{}' already used in the library", name)]
-    SymbolAlreadyUsed{name: String},
+    SymbolAlreadyUsed { name: String },
     #[error("Description already set")]
     DescriptionAlreadySet,
 
     // Native function errors
     #[error("Native struct '{}' is not part of this library", handle.name)]
-    NativeFunctionNotPartOfThisLib{handle: NativeFunctionHandle},
-    #[error("Return type of native function '{}' was already defined to '{:?}'", native_func_name, return_type)]
-    ReturnTypeAlreadyDefined{
+    NativeFunctionNotPartOfThisLib { handle: NativeFunctionHandle },
+    #[error(
+        "Return type of native function '{}' was already defined to '{:?}'",
+        native_func_name,
+        return_type
+    )]
+    ReturnTypeAlreadyDefined {
         native_func_name: String,
         return_type: ReturnType,
     },
-    #[error("Return type of native function '{}' was not defined", native_func_name)]
-    ReturnTypeNotDefined{native_func_name: String},
+    #[error(
+        "Return type of native function '{}' was not defined",
+        native_func_name
+    )]
+    ReturnTypeNotDefined { native_func_name: String },
 
     // Native enum errors
     #[error("Native enum '{}' is not part of this library", handle.name)]
-    NativeEnumNotPartOfThisLib{
-        handle: NativeEnumHandle,
-    },
-    #[error("Native enum '{}' already contains a variant with name '{}'", name, variant_name)]
-    NativeEnumAlreadyContainsVariantWithSameName{
-        name: String,
-        variant_name: String,
-    },
-    #[error("Native enum '{}' already contains a variant with value '{}'", name, variant_value)]
-    NativeEnumAlreadyContainsVariantWithSameValue{
-        name: String,
-        variant_value: i32,
-    },
+    NativeEnumNotPartOfThisLib { handle: NativeEnumHandle },
+    #[error(
+        "Native enum '{}' already contains a variant with name '{}'",
+        name,
+        variant_name
+    )]
+    NativeEnumAlreadyContainsVariantWithSameName { name: String, variant_name: String },
+    #[error(
+        "Native enum '{}' already contains a variant with value '{}'",
+        name,
+        variant_value
+    )]
+    NativeEnumAlreadyContainsVariantWithSameValue { name: String, variant_value: i32 },
 
     // Structure errors
     #[error("Native struct '{}' was already defined", handle.name)]
-    NativeStructAlreadyDefined{handle: NativeStructDeclarationHandle},
+    NativeStructAlreadyDefined {
+        handle: NativeStructDeclarationHandle,
+    },
     #[error("Native struct '{}' is not part of this library", handle.name)]
-    NativeStructNotPartOfThisLib{handle: NativeStructDeclarationHandle},
+    NativeStructNotPartOfThisLib {
+        handle: NativeStructDeclarationHandle,
+    },
     #[error("Native struct '{}' already contains element with name '{}'", handle.name, element_name)]
-    NativeStructAlreadyContainsElementWithSameName{
+    NativeStructAlreadyContainsElementWithSameName {
         handle: NativeStructDeclarationHandle,
         element_name: String,
     },
     #[error("First parameter of native function '{}' is not of type '{}' as expected for a method of a struct", native_func.name, handle.name)]
-    FirstMethodParameterIsNotStructType{
+    FirstMethodParameterIsNotStructType {
         handle: NativeStructDeclarationHandle,
         native_func: NativeFunctionHandle,
     },
     #[error("Struct '{}' was already defined", handle.name)]
-    StructAlreadyDefined{
+    StructAlreadyDefined {
         handle: NativeStructDeclarationHandle,
     },
     #[error("Struct '{}' already contains element or method with name '{}'", handle.name, element_name)]
-    StructAlreadyContainsElementWithSameName{
+    StructAlreadyContainsElementWithSameName {
         handle: NativeStructDeclarationHandle,
         element_name: String,
     },
 
     // Class errors
     #[error("Class '{}' was already defined", handle.name)]
-    ClassAlreadyDefined{handle: ClassDeclarationHandle},
+    ClassAlreadyDefined { handle: ClassDeclarationHandle },
     #[error("Class '{}' is not part of this library", handle.name)]
-    ClassNotPartOfThisLib{handle: ClassDeclarationHandle},
+    ClassNotPartOfThisLib { handle: ClassDeclarationHandle },
     #[error("First parameter of native function '{}' is not of type '{}' as expected for a method of a class", native_func.name, handle.name)]
-    FirstMethodParameterIsNotClassType{
+    FirstMethodParameterIsNotClassType {
         handle: ClassDeclarationHandle,
         native_func: NativeFunctionHandle,
     },
     #[error("Constructor for class '{}' was already defined", handle.name)]
-    ConstructorAlreadyDefined{handle: ClassDeclarationHandle},
+    ConstructorAlreadyDefined { handle: ClassDeclarationHandle },
     #[error("Native function '{}' does not return '{}' as expected for a constructor", native_func.name, handle.name)]
-    ConstructorReturnTypeDoesNotMatch{
+    ConstructorReturnTypeDoesNotMatch {
         handle: ClassDeclarationHandle,
         native_func: NativeFunctionHandle,
     },
     #[error("Destructor for class '{}' was already defined", handle.name)]
-    DestructorAlreadyDefined{handle: ClassDeclarationHandle},
+    DestructorAlreadyDefined { handle: ClassDeclarationHandle },
     #[error("Native function '{}' does not take a single '{}' parameter as expected for a destructor", native_func.name, handle.name)]
-    DestructorTakesMoreThanOneParameter{
+    DestructorTakesMoreThanOneParameter {
         handle: ClassDeclarationHandle,
         native_func: NativeFunctionHandle,
     },
 
     // Async errors
     #[error("Native function '{}' cannot be used as an async method because it doesn't have a OneTimeCallback parameter", handle.name)]
-    AsyncNativeMethodNoOneTimeCallback{handle: NativeFunctionHandle},
+    AsyncNativeMethodNoOneTimeCallback { handle: NativeFunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because it has too many OneTimeCallback parameters", handle.name)]
-    AsyncNativeMethodTooManyOneTimeCallback{handle: NativeFunctionHandle},
+    AsyncNativeMethodTooManyOneTimeCallback { handle: NativeFunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter doesn't have a single callback", handle.name)]
-    AsyncOneTimeCallbackNotSingleCallback{handle: NativeFunctionHandle},
+    AsyncOneTimeCallbackNotSingleCallback { handle: NativeFunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter single callback does not have a single parameter (other than the arg param)", handle.name)]
-    AsyncCallbackNotSingleParam{handle: NativeFunctionHandle},
+    AsyncCallbackNotSingleParam { handle: NativeFunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter single callback does not return void", handle.name)]
-    AsyncCallbackReturnTypeNotVoid{handle: NativeFunctionHandle},
+    AsyncCallbackReturnTypeNotVoid { handle: NativeFunctionHandle },
 
     // Interface errors
-    #[error("Interface '{}' already has element with the name '{}'", interface_name, element_name)]
-    InterfaceHasElementWithSameName{
+    #[error(
+        "Interface '{}' already has element with the name '{}'",
+        interface_name,
+        element_name
+    )]
+    InterfaceHasElementWithSameName {
         interface_name: String,
         element_name: String,
     },
     #[error("Interface '{}' does not have a void* arg defined", interface_name)]
-    InterfaceArgNameNotDefined{interface_name: String},
+    InterfaceArgNameNotDefined { interface_name: String },
     #[error("Interface '{}' already has void* arg defined", interface_name)]
-    InterfaceArgNameAlreadyDefined{interface_name: String},
-    #[error("Interface '{}' does not have a destroy callback defined", interface_name)]
-    InterfaceDestroyCallbackNotDefined{interface_name: String},
-    #[error("Interface '{}' already has a destroy callback defined", interface_name)]
-    InterfaceDestroyCallbackAlreadyDefined{interface_name: String},
+    InterfaceArgNameAlreadyDefined { interface_name: String },
+    #[error(
+        "Interface '{}' does not have a destroy callback defined",
+        interface_name
+    )]
+    InterfaceDestroyCallbackNotDefined { interface_name: String },
+    #[error(
+        "Interface '{}' already has a destroy callback defined",
+        interface_name
+    )]
+    InterfaceDestroyCallbackAlreadyDefined { interface_name: String },
     #[error("Interface '{}' is not part of this library", handle.name)]
-    InterfaceNotPartOfThisLib{handle: InterfaceHandle},
+    InterfaceNotPartOfThisLib { handle: InterfaceHandle },
     #[error("One-time callback '{}' is not part of this library", handle.name)]
-    OneTimeCallbackNotPartOfThisLib{handle: OneTimeCallbackHandle},
+    OneTimeCallbackNotPartOfThisLib { handle: OneTimeCallbackHandle },
 
     // Iterator errors
     #[error("Iterator native function '{}' does not take a single class ref parameter", handle.name)]
-    IteratorNotSingleClassRefParam{handle: NativeFunctionHandle},
+    IteratorNotSingleClassRefParam { handle: NativeFunctionHandle },
     #[error("Iterator native function '{}' does not return a struct ref value", handle.name)]
-    IteratorReturnTypeNotStructRef{handle: NativeFunctionHandle},
+    IteratorReturnTypeNotStructRef { handle: NativeFunctionHandle },
     #[error("Iterator '{}' is not part of this library", handle.name())]
-    IteratorNotPartOfThisLib{handle: iterator::IteratorHandle},
+    IteratorNotPartOfThisLib { handle: iterator::IteratorHandle },
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -263,20 +283,16 @@ pub struct Library {
 
 impl Library {
     pub fn native_functions(&self) -> impl Iterator<Item = &NativeFunctionHandle> {
-        self.into_iter().filter_map(|statement| {
-            match statement {
-                Statement::NativeFunctionDeclaration(handle) => Some(handle),
-                _ => None,
-            }
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::NativeFunctionDeclaration(handle) => Some(handle),
+            _ => None,
         })
     }
 
     pub fn native_structs(&self) -> impl Iterator<Item = &NativeStructHandle> {
-        self.into_iter().filter_map(|statement| {
-            match statement {
-                Statement::NativeStructDefinition(handle) => Some(handle),
-                _ => None,
-            }
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::NativeStructDefinition(handle) => Some(handle),
+            _ => None,
         })
     }
 
@@ -285,38 +301,30 @@ impl Library {
     }
 
     pub fn native_enums(&self) -> impl Iterator<Item = &NativeEnumHandle> {
-        self.into_iter().filter_map(|statement| {
-            match statement {
-                Statement::EnumDefinition(handle) => Some(handle),
-                _ => None,
-            }
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::EnumDefinition(handle) => Some(handle),
+            _ => None,
         })
     }
 
     pub fn classes(&self) -> impl Iterator<Item = &ClassHandle> {
-        self.into_iter().filter_map(|statement| {
-            match statement {
-                Statement::ClassDefinition(handle) => Some(handle),
-                _ => None,
-            }
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::ClassDefinition(handle) => Some(handle),
+            _ => None,
         })
     }
 
     pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
-        self.into_iter().filter_map(|statement| {
-            match statement {
-                Statement::InterfaceDefinition(handle) => Some(handle),
-                _ => None,
-            }
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::InterfaceDefinition(handle) => Some(handle),
+            _ => None,
         })
     }
 
     pub fn one_time_callbacks(&self) -> impl Iterator<Item = &OneTimeCallbackHandle> {
-        self.into_iter().filter_map(|statement| {
-            match statement {
-                Statement::OneTimeCallbackDefinition(handle) => Some(handle),
-                _ => None,
-            }
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::OneTimeCallbackDefinition(handle) => Some(handle),
+            _ => None,
         })
     }
 }
@@ -391,11 +399,14 @@ impl LibraryBuilder {
         }
         for native_struct in self.native_structs.values() {
             if !self.defined_structs.contains_key(&native_struct) {
-                structs.insert(native_struct.declaration(), StructHandle::new(Struct::new(native_struct.clone())));
+                structs.insert(
+                    native_struct.declaration(),
+                    StructHandle::new(Struct::new(native_struct.clone())),
+                );
             }
         }
 
-        Library{
+        Library {
             name: self.name,
             version: self.version,
             description: self.description,
@@ -425,19 +436,26 @@ impl LibraryBuilder {
     /// Forward declare a native structure
     pub fn declare_native_struct(&mut self, name: &str) -> Result<NativeStructDeclarationHandle> {
         self.check_unique_symbol(name)?;
-        let handle = NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name.to_string()));
+        let handle =
+            NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name.to_string()));
         self.native_structs_declarations.insert(handle.clone());
-        self.statements.push(Statement::NativeStructDeclaration(handle.clone()));
+        self.statements
+            .push(Statement::NativeStructDeclaration(handle.clone()));
         Ok(handle)
     }
 
     /// Define a native structure
-    pub fn define_native_struct(&mut self, declaration: &NativeStructDeclarationHandle) -> Result<NativeStructBuilder> {
+    pub fn define_native_struct(
+        &mut self,
+        declaration: &NativeStructDeclarationHandle,
+    ) -> Result<NativeStructBuilder> {
         self.validate_native_struct_declaration(declaration)?;
         if !self.native_structs.contains_key(&declaration) {
             Ok(NativeStructBuilder::new(self, declaration.clone()))
         } else {
-            Err(BindingError::NativeStructAlreadyDefined{handle: declaration.clone()})
+            Err(BindingError::NativeStructAlreadyDefined {
+                handle: declaration.clone(),
+            })
         }
     }
 
@@ -446,7 +464,9 @@ impl LibraryBuilder {
         if !self.defined_structs.contains_key(&definition) {
             Ok(StructBuilder::new(self, definition.clone()))
         } else {
-            Err(BindingError::StructAlreadyDefined{handle: definition.declaration()})
+            Err(BindingError::StructAlreadyDefined {
+                handle: definition.declaration(),
+            })
         }
     }
 
@@ -465,7 +485,8 @@ impl LibraryBuilder {
         self.check_unique_symbol(name)?;
         let handle = ClassDeclarationHandle::new(ClassDeclaration::new(name.to_string()));
         self.class_declarations.insert(handle.clone());
-        self.statements.push(Statement::ClassDeclaration(handle.clone()));
+        self.statements
+            .push(Statement::ClassDeclaration(handle.clone()));
         Ok(handle)
     }
 
@@ -474,7 +495,9 @@ impl LibraryBuilder {
         if !self.classes.contains_key(&declaration) {
             Ok(ClassBuilder::new(self, declaration.clone()))
         } else {
-            Err(BindingError::ClassAlreadyDefined{handle: declaration.clone()})
+            Err(BindingError::ClassAlreadyDefined {
+                handle: declaration.clone(),
+            })
         }
     }
 
@@ -488,10 +511,15 @@ impl LibraryBuilder {
         Ok(OneTimeCallbackBuilder::new(self, name.to_string()))
     }
 
-    pub fn define_iterator(&mut self, native_func: &NativeFunctionHandle, item_type: &NativeStructHandle) -> Result<iterator::IteratorHandle> {
+    pub fn define_iterator(
+        &mut self,
+        native_func: &NativeFunctionHandle,
+        item_type: &NativeStructHandle,
+    ) -> Result<iterator::IteratorHandle> {
         let iter = iterator::IteratorHandle::new(iterator::Iterator::new(native_func, item_type)?);
         self.iterators.insert(iter.clone());
-        self.statements.push(Statement::IteratorDeclaration(iter.clone()));
+        self.statements
+            .push(Statement::IteratorDeclaration(iter.clone()));
         Ok(iter)
     }
 
@@ -499,7 +527,9 @@ impl LibraryBuilder {
         if self.symbol_names.insert(name.to_string()) {
             Ok(())
         } else {
-            Err(BindingError::SymbolAlreadyUsed{name: name.to_string()})
+            Err(BindingError::SymbolAlreadyUsed {
+                name: name.to_string(),
+            })
         }
     }
 
@@ -507,28 +537,37 @@ impl LibraryBuilder {
         if self.native_functions.contains(native_function) {
             Ok(())
         } else {
-            Err(BindingError::NativeFunctionNotPartOfThisLib{handle: native_function.clone()})
+            Err(BindingError::NativeFunctionNotPartOfThisLib {
+                handle: native_function.clone(),
+            })
         }
     }
 
     fn validate_type(&self, type_to_validate: &Type) -> Result<()> {
         match type_to_validate {
-            Type::StructRef(native_struct) => self.validate_native_struct_declaration(native_struct),
+            Type::StructRef(native_struct) => {
+                self.validate_native_struct_declaration(native_struct)
+            }
             Type::Struct(native_struct) => self.validate_native_struct(native_struct),
             Type::Enum(native_enum) => self.validate_native_enum(native_enum),
             Type::Interface(interface) => self.validate_interface(interface),
             Type::OneTimeCallback(cb) => self.validate_one_time_callback(cb),
             Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
             Type::Iterator(iter) => self.validate_iterator(iter),
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
-    fn validate_native_struct_declaration(&self, native_struct: &NativeStructDeclarationHandle) -> Result<()> {
+    fn validate_native_struct_declaration(
+        &self,
+        native_struct: &NativeStructDeclarationHandle,
+    ) -> Result<()> {
         if self.native_structs_declarations.contains(native_struct) {
             Ok(())
         } else {
-            Err(BindingError::NativeStructNotPartOfThisLib{handle: native_struct.clone()})
+            Err(BindingError::NativeStructNotPartOfThisLib {
+                handle: native_struct.clone(),
+            })
         }
     }
 
@@ -536,7 +575,9 @@ impl LibraryBuilder {
         if self.native_structs.contains_key(&native_struct.declaration) {
             Ok(())
         } else {
-            Err(BindingError::NativeStructNotPartOfThisLib{handle: native_struct.declaration.clone()})
+            Err(BindingError::NativeStructNotPartOfThisLib {
+                handle: native_struct.declaration.clone(),
+            })
         }
     }
 
@@ -544,7 +585,9 @@ impl LibraryBuilder {
         if self.native_enums.contains(native_enum) {
             Ok(())
         } else {
-            Err(BindingError::NativeEnumNotPartOfThisLib{handle: native_enum.clone()})
+            Err(BindingError::NativeEnumNotPartOfThisLib {
+                handle: native_enum.clone(),
+            })
         }
     }
 
@@ -552,7 +595,9 @@ impl LibraryBuilder {
         if self.interfaces.contains(interface) {
             Ok(())
         } else {
-            Err(BindingError::InterfaceNotPartOfThisLib{handle: interface.clone()})
+            Err(BindingError::InterfaceNotPartOfThisLib {
+                handle: interface.clone(),
+            })
         }
     }
 
@@ -560,7 +605,7 @@ impl LibraryBuilder {
         if self.one_time_callbacks.contains(cb) {
             Ok(())
         } else {
-            Err(BindingError::OneTimeCallbackNotPartOfThisLib{handle: cb.clone()})
+            Err(BindingError::OneTimeCallbackNotPartOfThisLib { handle: cb.clone() })
         }
     }
 
@@ -568,7 +613,9 @@ impl LibraryBuilder {
         if self.class_declarations.contains(class_declaration) {
             Ok(())
         } else {
-            Err(BindingError::ClassNotPartOfThisLib{handle: class_declaration.clone()})
+            Err(BindingError::ClassNotPartOfThisLib {
+                handle: class_declaration.clone(),
+            })
         }
     }
 
@@ -576,7 +623,9 @@ impl LibraryBuilder {
         if self.iterators.contains(iter) {
             Ok(())
         } else {
-            Err(BindingError::IteratorNotPartOfThisLib{handle: iter.clone()})
+            Err(BindingError::IteratorNotPartOfThisLib {
+                handle: iter.clone(),
+            })
         }
     }
 }

@@ -37,23 +37,23 @@ unused_qualifications,
 clippy::all
 )]
 #![forbid(
-unsafe_code,
-intra_doc_link_resolution_failure,
-safe_packed_borrows,
-while_true,
-bare_trait_objects
+    unsafe_code,
+    intra_doc_link_resolution_failure,
+    safe_packed_borrows,
+    while_true,
+    bare_trait_objects
 )]
 
-use oo_bindgen::*;
+use crate::conversion::*;
+use crate::formatting::*;
+use heck::CamelCase;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::platforms::*;
-use heck::CamelCase;
+use oo_bindgen::*;
 use std::fs;
 use std::path::PathBuf;
-use crate::conversion::*;
-use crate::formatting::*;
 
 mod callback;
 mod class;
@@ -70,7 +70,10 @@ pub struct DotnetBindgenConfig {
     pub platforms: PlatformLocations,
 }
 
-pub fn generate_dotnet_bindings(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+pub fn generate_dotnet_bindings(
+    lib: &Library,
+    config: &DotnetBindgenConfig,
+) -> FormattingResult<()> {
     fs::create_dir_all(&config.output_dir)?;
     generate_csproj(lib, config)?;
 
@@ -108,7 +111,9 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("  </ItemGroup>")?;
 
     f.writeln("  <ItemGroup>")?;
-    f.writeln("    <PackageReference Include=\"System.Collections.Immutable\" Version=\"1.7.1\" />")?;
+    f.writeln(
+        "    <PackageReference Include=\"System.Collections.Immutable\" Version=\"1.7.1\" />",
+    )?;
     f.writeln("  </ItemGroup>")?;
 
     f.writeln("</Project>")
@@ -129,20 +134,35 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
         f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
         blocked(f, |f| {
             for handle in lib.native_functions() {
-                f.writeln(&format!("[DllImport(\"{}\", CallingConvention = CallingConvention.Cdecl)]", config.ffi_name))?;
+                f.writeln(&format!(
+                    "[DllImport(\"{}\", CallingConvention = CallingConvention.Cdecl)]",
+                    config.ffi_name
+                ))?;
                 f.newline()?;
-                f.write(&format!("internal static extern {} {}(", DotnetReturnType(&handle.return_type).as_native_type(), handle.name))?;
-                
+                f.write(&format!(
+                    "internal static extern {} {}(",
+                    DotnetReturnType(&handle.return_type).as_native_type(),
+                    handle.name
+                ))?;
+
                 f.write(
-                    &handle.parameters.iter()
-                        .map(|param| format!("{} {}", DotnetType(&param.param_type).as_native_type(), param.name))
+                    &handle
+                        .parameters
+                        .iter()
+                        .map(|param| {
+                            format!(
+                                "{} {}",
+                                DotnetType(&param.param_type).as_native_type(),
+                                param.name
+                            )
+                        })
                         .collect::<Vec<String>>()
-                        .join(", ")
+                        .join(", "),
                 )?;
                 f.write(");")?;
                 f.newline()?;
             }
-        
+
             Ok(())
         })
     })
@@ -169,14 +189,18 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
         filename.push(&native_enum.name);
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
-    
+
         generate_enum(&mut f, native_enum, lib)?;
     }
 
     Ok(())
 }
 
-fn generate_enum(f: &mut impl Printer, native_enum: &NativeEnumHandle, lib: &Library) -> FormattingResult<()> {
+fn generate_enum(
+    f: &mut impl Printer,
+    native_enum: &NativeEnumHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
     print_license(f, &lib.license)?;
     print_imports(f)?;
     f.newline()?;
@@ -185,7 +209,11 @@ fn generate_enum(f: &mut impl Printer, native_enum: &NativeEnumHandle, lib: &Lib
         f.writeln(&format!("public enum {}", native_enum.name.to_camel_case()))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
-                f.writeln(&format!("{} =  {},", variant.name.to_camel_case(), variant.value))?;
+                f.writeln(&format!(
+                    "{} =  {},",
+                    variant.name.to_camel_case(),
+                    variant.value
+                ))?;
             }
             Ok(())
         })
@@ -220,7 +248,10 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     Ok(())
 }
 
-fn generate_one_time_callbacks(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+fn generate_one_time_callbacks(
+    lib: &Library,
+    config: &DotnetBindgenConfig,
+) -> FormattingResult<()> {
     for cb in lib.one_time_callbacks() {
         // Open file
         let mut filename = config.output_dir.clone();

@@ -1,5 +1,5 @@
-use oo_bindgen::Library;
 use oo_bindgen::platforms::*;
+use oo_bindgen::Library;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -11,8 +11,8 @@ fn main() {
             generate_c_lib(&lib);
             generate_dotnet_lib(&lib);
             build_and_test_dotnet_lib();
-        },
-        Err(err) => println!("Failed: {}", err.to_string())
+        }
+        Err(err) => println!("Failed: {}", err.to_string()),
     }
 }
 

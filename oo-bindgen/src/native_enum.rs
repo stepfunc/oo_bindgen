@@ -46,15 +46,17 @@ impl<'a> NativeEnumBuilder<'a> {
             self.next_value = value + 1;
             Ok(self)
         } else if !unique_name {
-            Err(BindingError::NativeEnumAlreadyContainsVariantWithSameName{
+            Err(BindingError::NativeEnumAlreadyContainsVariantWithSameName {
                 name: self.name,
                 variant_name: name.to_string(),
             })
         } else {
-            Err(BindingError::NativeEnumAlreadyContainsVariantWithSameValue{
-                name: self.name,
-                variant_value: value,
-            })
+            Err(
+                BindingError::NativeEnumAlreadyContainsVariantWithSameValue {
+                    name: self.name,
+                    variant_value: value,
+                },
+            )
         }
     }
 
@@ -70,7 +72,9 @@ impl<'a> NativeEnumBuilder<'a> {
         });
 
         self.lib.native_enums.insert(handle.clone());
-        self.lib.statements.push(Statement::EnumDefinition(handle.clone()));
+        self.lib
+            .statements
+            .push(Statement::EnumDefinition(handle.clone()));
 
         handle
     }

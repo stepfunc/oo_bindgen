@@ -1,6 +1,6 @@
+use crate::ffi;
 use std::ffi::CStr;
 use std::os::raw::c_char;
-use crate::ffi;
 
 pub struct StringIterator {
     iter: std::vec::IntoIter<u8>,
@@ -17,7 +17,7 @@ impl StringIterator {
 
     fn next(&mut self) {
         match self.iter.next() {
-            Some(val) => self.current = Some(ffi::StringIteratorItem{value: val}),
+            Some(val) => self.current = Some(ffi::StringIteratorItem { value: val }),
             None => self.current = None,
         }
     }

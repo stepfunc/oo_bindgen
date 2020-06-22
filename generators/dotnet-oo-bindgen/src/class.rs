@@ -1,10 +1,12 @@
-use oo_bindgen::*;
-use oo_bindgen::class::*;
-use oo_bindgen::formatting::*;
-use heck::{CamelCase, MixedCase};
 use crate::*;
+use heck::{CamelCase, MixedCase};
+use oo_bindgen::class::*;
 
-pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) -> FormattingResult<()> {
+pub(crate) fn generate(
+    f: &mut dyn Printer,
+    class: &ClassHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
     let classname = class.name().to_camel_case();
 
     print_license(f, &lib.license)?;
@@ -27,9 +29,7 @@ pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) 
                 f.newline()?;
 
                 f.writeln(&format!("internal {}(IntPtr self)", classname))?;
-                blocked(f, |f| {
-                    f.writeln("this.self = self;")
-                })?;
+                blocked(f, |f| f.writeln("this.self = self;"))?;
                 f.newline()?;
             }
 
@@ -63,13 +63,25 @@ pub(crate) fn generate(f: &mut dyn Printer, class: &ClassHandle, lib: &Library) 
     })
 }
 
-fn generate_constructor(f: &mut dyn Printer, classname: &str, constructor: &NativeFunctionHandle) -> FormattingResult<()> {
+fn generate_constructor(
+    f: &mut dyn Printer,
+    classname: &str,
+    constructor: &NativeFunctionHandle,
+) -> FormattingResult<()> {
     f.writeln(&format!("public {}(", classname))?;
     f.write(
-        &constructor.parameters.iter()
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
+        &constructor
+            .parameters
+            .iter()
+            .map(|param| {
+                format!(
+                    "{} {}",
+                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.name.to_mixed_case()
+                )
+            })
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(", "),
     )?;
     f.write(")")?;
 
@@ -78,7 +90,11 @@ fn generate_constructor(f: &mut dyn Printer, classname: &str, constructor: &Nati
     })
 }
 
-fn generate_destructor(f: &mut dyn Printer, classname: &str, destructor: &NativeFunctionHandle) -> FormattingResult<()> {
+fn generate_destructor(
+    f: &mut dyn Printer,
+    classname: &str,
+    destructor: &NativeFunctionHandle,
+) -> FormattingResult<()> {
     // Public Dispose method
     f.writeln("public void Dispose()")?;
     blocked(f, |f| {
@@ -90,9 +106,7 @@ fn generate_destructor(f: &mut dyn Printer, classname: &str, destructor: &Native
 
     // Finalizer
     f.writeln(&format!("~{}()", classname))?;
-    blocked(f, |f| {
-        f.writeln("Dispose(false);")
-    })?;
+    blocked(f, |f| f.writeln("Dispose(false);"))?;
 
     f.newline()?;
 
@@ -102,34 +116,70 @@ fn generate_destructor(f: &mut dyn Printer, classname: &str, destructor: &Native
         f.writeln("if (this.disposed)")?;
         f.writeln("    return;")?;
         f.newline()?;
-        f.writeln(&format!("{}.{}(this.self);", NATIVE_FUNCTIONS_CLASSNAME, destructor.name))?;
+        f.writeln(&format!(
+            "{}.{}(this.self);",
+            NATIVE_FUNCTIONS_CLASSNAME, destructor.name
+        ))?;
         f.newline()?;
         f.writeln("this.disposed = true;")
     })
 }
 
 fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    f.writeln(&format!("public {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name.to_camel_case()))?;
+    f.writeln(&format!(
+        "public {} {}(",
+        DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),
+        method.name.to_camel_case()
+    ))?;
     f.write(
-        &method.native_function.parameters.iter().skip(1)
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
+        &method
+            .native_function
+            .parameters
+            .iter()
+            .skip(1)
+            .map(|param| {
+                format!(
+                    "{} {}",
+                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.name.to_mixed_case()
+                )
+            })
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(", "),
     )?;
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &method.native_function, "return ", Some("this".to_string()), false)
+        call_native_function(
+            f,
+            &method.native_function,
+            "return ",
+            Some("this".to_string()),
+            false,
+        )
     })
 }
 
 fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    f.writeln(&format!("public static {} {}(", DotnetReturnType(&method.native_function.return_type).as_dotnet_type(), method.name.to_camel_case()))?;
+    f.writeln(&format!(
+        "public static {} {}(",
+        DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),
+        method.name.to_camel_case()
+    ))?;
     f.write(
-        &method.native_function.parameters.iter()
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
+        &method
+            .native_function
+            .parameters
+            .iter()
+            .map(|param| {
+                format!(
+                    "{} {}",
+                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.name.to_mixed_case()
+                )
+            })
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(", "),
     )?;
     f.write(")")?;
 
@@ -148,13 +198,22 @@ fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> Formattin
     let callback_param_name = method.callback_param_name.to_mixed_case();
 
     // Write the task completion handler
-    f.writeln(&format!("internal class {} : {}", async_handler_name, one_time_callback_name))?;
+    f.writeln(&format!(
+        "internal class {} : {}",
+        async_handler_name, one_time_callback_name
+    ))?;
     blocked(f, |f| {
-        f.writeln(&format!("internal TaskCompletionSource<{}> tcs = new TaskCompletionSource<{}>();", return_type, return_type))?;
+        f.writeln(&format!(
+            "internal TaskCompletionSource<{}> tcs = new TaskCompletionSource<{}>();",
+            return_type, return_type
+        ))?;
 
         f.newline()?;
 
-        f.writeln(&format!("public void {}({} {})", callback_name, return_type, callback_param_name))?;
+        f.writeln(&format!(
+            "public void {}({} {})",
+            callback_name, return_type, callback_param_name
+        ))?;
         blocked(f, |f| {
             f.writeln(&format!("tcs.SetResult({});", callback_param_name))
         })
@@ -162,22 +221,48 @@ fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> Formattin
 
     f.newline()?;
 
-    f.writeln(&format!("public Task<{}> {}(", return_type, method.name.to_camel_case()))?;
+    f.writeln(&format!(
+        "public Task<{}> {}(",
+        return_type,
+        method.name.to_camel_case()
+    ))?;
     f.write(
-        &method.native_function.parameters.iter().skip(1)
+        &method
+            .native_function
+            .parameters
+            .iter()
+            .skip(1)
             .filter(|param| match param.param_type {
                 Type::OneTimeCallback(_) => false,
                 _ => true,
             })
-            .map(|param| format!("{} {}", DotnetType(&param.param_type).as_dotnet_type(), param.name.to_mixed_case()))
+            .map(|param| {
+                format!(
+                    "{} {}",
+                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.name.to_mixed_case()
+                )
+            })
             .collect::<Vec<String>>()
-            .join(", ")
+            .join(", "),
     )?;
     f.write(")")?;
 
     blocked(f, |f| {
-        f.writeln(&format!("var {} = new {}();", one_time_callback_param_name, async_handler_name))?;
-        call_native_function(f, &method.native_function, "return ", Some("this".to_string()), false)?;
-        f.writeln(&format!("return {}.tcs.Task;", one_time_callback_param_name))
+        f.writeln(&format!(
+            "var {} = new {}();",
+            one_time_callback_param_name, async_handler_name
+        ))?;
+        call_native_function(
+            f,
+            &method.native_function,
+            "return ",
+            Some("this".to_string()),
+            false,
+        )?;
+        f.writeln(&format!(
+            "return {}.tcs.Task;",
+            one_time_callback_param_name
+        ))
     })
 }

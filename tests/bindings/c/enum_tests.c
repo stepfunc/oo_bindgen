@@ -4,8 +4,8 @@
 
 static void test_enum_zero_to_five()
 {
-    EnumZeroToFive value = EnumZeroToFive_Zero;
-    EnumZeroToFive result = enum_zero_to_five_echo(value);
+    enum_zero_to_five_t value = EnumZeroToFive_Zero;
+    enum_zero_to_five_t result = enum_zero_to_five_echo(value);
     assert(result == value);
     assert(result == 0);
 
@@ -37,8 +37,8 @@ static void test_enum_zero_to_five()
 
 static void test_enum_one_to_six()
 {
-    EnumOneToSix value = EnumOneToSix_One;
-    EnumOneToSix result = enum_one_to_six_echo(value);
+    enum_one_to_six_t value = EnumOneToSix_One;
+    enum_one_to_six_t result = enum_one_to_six_echo(value);
     assert(result == value);
     assert(result == 1);
 
@@ -70,8 +70,8 @@ static void test_enum_one_to_six()
 
 static void test_enum_disjoint()
 {
-    EnumDisjoint value = EnumDisjoint_Five;
-    EnumDisjoint result = enum_disjoint_echo(value);
+    enum_disjoint_t value = EnumDisjoint_Five;
+    enum_disjoint_t result = enum_disjoint_echo(value);
     assert(result == value);
     assert(result == 5);
 
@@ -103,8 +103,8 @@ static void test_enum_disjoint()
 
 static void test_enum_single()
 {
-    EnumSingle value = EnumSingle_Single;
-    EnumDisjoint result = enum_single_echo(value);
+    enum_single_t value = EnumSingle_Single;
+    enum_single_t result = enum_single_echo(value);
     assert(result == value);
     assert(result == 0);
 }

@@ -46,17 +46,59 @@ clippy::all
 
 use crate::formatting::*;
 use oo_bindgen::callback::*;
+use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
 use oo_bindgen::*;
+use heck::SnakeCase;
 use std::fmt::Display;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 mod formatting;
+
+trait CFormatting {
+    fn to_type(&self) -> String;
+}
+
+impl CFormatting for NativeStructDeclarationHandle {
+    fn to_type(&self) -> String {
+        format!("{}_t", self.name.to_snake_case())
+    }
+}
+
+impl CFormatting for NativeStructHandle {
+    fn to_type(&self) -> String {
+        format!("{}_t", self.name().to_snake_case())
+    }
+}
+
+impl CFormatting for NativeEnumHandle {
+    fn to_type(&self) -> String {
+        format!("{}_t", self.name.to_snake_case())
+    }
+}
+
+impl CFormatting for ClassDeclarationHandle {
+    fn to_type(&self) -> String {
+        format!("{}_t", self.name.to_snake_case())
+    }
+}
+
+impl CFormatting for Interface {
+    fn to_type(&self) -> String {
+        format!("{}_t", self.name.to_snake_case())
+    }
+}
+
+impl CFormatting for OneTimeCallbackHandle {
+    fn to_type(&self) -> String {
+        format!("{}_t", self.name.to_snake_case())
+    }
+}
 
 pub struct CBindgenConfig {
     pub output_dir: PathBuf,
@@ -151,12 +193,12 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
         for statement in lib.into_iter() {
             match statement {
                 Statement::NativeStructDeclaration(handle) => {
-                    f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;
+                    f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
                 }
                 Statement::NativeStructDefinition(handle) => write_struct_definition(f, handle)?,
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
                 Statement::ClassDeclaration(handle) => {
-                    f.writeln(&format!("typedef struct {} {};", handle.name, handle.name))?;
+                    f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
                 }
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle)?,
@@ -174,7 +216,7 @@ fn write_struct_definition(
     f: &mut dyn Printer,
     handle: &NativeStructHandle,
 ) -> FormattingResult<()> {
-    f.writeln(&format!("typedef struct {}", handle.name()))?;
+    f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
@@ -186,11 +228,11 @@ fn write_struct_definition(
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.name()))
+    f.writeln(&format!("}} {};", handle.to_type()))
 }
 
 fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> FormattingResult<()> {
-    f.writeln(&format!("typedef enum {}", handle.name))?;
+    f.writeln(&format!("typedef enum {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
@@ -201,7 +243,7 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> Form
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.name))
+    f.writeln(&format!("}} {};", handle.to_type()))
 }
 
 fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
@@ -225,7 +267,7 @@ fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> Formatt
 }
 
 fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
-    f.writeln(&format!("typedef struct {}", handle.name))?;
+    f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
@@ -258,14 +300,14 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.name))
+    f.writeln(&format!("}} {};", handle.to_type()))
 }
 
 fn write_one_time_callback(
     f: &mut dyn Printer,
     handle: &OneTimeCallbackHandle,
 ) -> FormattingResult<()> {
-    f.writeln(&format!("typedef struct {}", handle.name))?;
+    f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
@@ -295,7 +337,7 @@ fn write_one_time_callback(
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.name))
+    f.writeln(&format!("}} {};", handle.to_type()))
 }
 
 fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
@@ -381,13 +423,13 @@ impl<'a> Display for CType<'a> {
             Type::Float => write!(f, "float"),
             Type::Double => write!(f, "double"),
             Type::String => write!(f, "char*"),
-            Type::Struct(handle) => write!(f, "{}", handle.name()),
-            Type::StructRef(handle) => write!(f, "{}*", handle.name),
-            Type::Enum(handle) => write!(f, "{}", handle.name),
-            Type::ClassRef(handle) => write!(f, "{}*", handle.name),
-            Type::Interface(handle) => write!(f, "{}", handle.name),
-            Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
-            Type::Iterator(handle) => write!(f, "{}*", handle.name()),
+            Type::Struct(handle) => write!(f, "{}", handle.to_type()),
+            Type::StructRef(handle) => write!(f, "{}*", handle.to_type()),
+            Type::Enum(handle) => write!(f, "{}", handle.to_type()),
+            Type::ClassRef(handle) => write!(f, "{}*", handle.to_type()),
+            Type::Interface(handle) => write!(f, "{}", handle.to_type()),
+            Type::OneTimeCallback(handle) => write!(f, "{}", handle.to_type()),
+            Type::Iterator(handle) => write!(f, "{}*", handle.iter_type.to_type()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),

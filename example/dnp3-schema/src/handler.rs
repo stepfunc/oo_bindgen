@@ -60,9 +60,9 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
         .push("Invalid")?
         .build();
 
-    let time_struct = lib.declare_native_struct("Time")?;
-    let time_struct = lib
-        .define_native_struct(&time_struct)?
+    let timestamp_struct = lib.declare_native_struct("Timestamp")?;
+    let timestamp_struct = lib
+        .define_native_struct(&timestamp_struct)?
         .add("value", Type::Uint64)?
         .add("quality", Type::Enum(time_quality_enum))?
         .build();
@@ -75,36 +75,36 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
         .push("Indeterminate")?
         .build();
 
-    let binary_it = build_iterator("Binary", Type::Bool, lib, &flags_struct, &time_struct)?;
+    let binary_it = build_iterator("Binary", Type::Bool, lib, &flags_struct, &timestamp_struct)?;
     let double_bit_binary_it = build_iterator(
         "DoubleBitBinary",
         Type::Enum(double_bit_enum),
         lib,
         &flags_struct,
-        &time_struct,
+        &timestamp_struct,
     )?;
     let bos_it = build_iterator(
         "BinaryOutputStatus",
         Type::Bool,
         lib,
         &flags_struct,
-        &time_struct,
+        &timestamp_struct,
     )?;
-    let counter_it = build_iterator("Counter", Type::Uint32, lib, &flags_struct, &time_struct)?;
+    let counter_it = build_iterator("Counter", Type::Uint32, lib, &flags_struct, &timestamp_struct)?;
     let frozen_counter_it = build_iterator(
         "FrozenCounter",
         Type::Uint32,
         lib,
         &flags_struct,
-        &time_struct,
+        &timestamp_struct,
     )?;
-    let analog_it = build_iterator("Analog", Type::Double, lib, &flags_struct, &time_struct)?;
+    let analog_it = build_iterator("Analog", Type::Double, lib, &flags_struct, &timestamp_struct)?;
     let aos_it = build_iterator(
         "AnalogOutputStatus",
         Type::Double,
         lib,
         &flags_struct,
-        &time_struct,
+        &timestamp_struct,
     )?;
 
     let read_handler_interface = lib
@@ -275,7 +275,7 @@ fn build_iterator(
     value_type: Type,
     lib: &mut LibraryBuilder,
     flags_struct: &NativeStructHandle,
-    time_struct: &NativeStructHandle,
+    timestamp_struct: &NativeStructHandle,
 ) -> Result<IteratorHandle, BindingError> {
     let value_struct = lib.declare_native_struct(name)?;
     let value_struct = lib
@@ -283,7 +283,7 @@ fn build_iterator(
         .add("index", Type::Uint16)?
         .add("value", value_type)?
         .add("flags", Type::Struct(flags_struct.clone()))?
-        .add("time", Type::Struct(time_struct.clone()))?
+        .add("time", Type::Struct(timestamp_struct.clone()))?
         .build();
 
     let value_iterator = lib.declare_class(&format!("{}Iterator", name))?;

@@ -365,9 +365,9 @@ pub unsafe fn flags_is_set(flags: *const ffi::Flags, flag: ffi::Flag) -> bool {
     }
 }
 
-impl From<Time> for ffi::Time {
-    fn from(time: Time) -> ffi::Time {
-        ffi::Time {
+impl From<Time> for ffi::Timestamp {
+    fn from(time: Time) -> ffi::Timestamp {
+        ffi::Timestamp {
             value: match time {
                 Time::Synchronized(value) => value.raw_value(),
                 Time::NotSynchronized(value) => value.raw_value(),

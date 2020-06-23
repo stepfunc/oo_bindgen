@@ -1,11 +1,12 @@
 #include <assert.h>
+#include <stdlib.h>
 
 #include "foo.h"
 
 static void test_next()
 {
     #define SOME_STRING "ABCDE"
-    StringIterator* it = iterator_create(SOME_STRING);
+    string_iterator_t* it = iterator_create(SOME_STRING);
 
     assert(iterator_next(it)->value == 65);
     assert(iterator_next(it)->value == 66);

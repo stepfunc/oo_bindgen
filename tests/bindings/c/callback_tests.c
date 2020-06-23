@@ -3,40 +3,41 @@
 
 #include "foo.h"
 
-typedef struct Data {
+typedef struct data {
     uint32_t last_value;
     uint64_t last_duration;
     bool destroy_called;
-} Data;
+} data_t;
 
 static void on_value(uint32_t value, void* context)
 {
-    Data* data = (Data*)context;
+    data_t* data = (data_t*)context;
     data->last_value = value;
 }
 
 static void on_duration(uint64_t value, void* context)
 {
-    Data* data = (Data*)context;
+    data_t* data = (data_t*)context;
     data->last_duration = value;
 }
 
-static void on_destroy(Data* data)
+static void on_destroy(void* context)
 {
+    data_t* data = (data_t*)context;
     data->destroy_called = true;
 }
 
 static void simple_callback_test()
 {
-    CallbackSource* cb_source = cbsource_new();
+    callback_source_t* cb_source = cbsource_new();
 
-    Data data =
+    data_t data =
     {
         .last_value = 0,
         .destroy_called = false,
     };
 
-    CallbackInterface interface =
+    callback_interface_t interface =
     {
         .on_value = &on_value,
         .on_duration = &on_duration,
@@ -61,9 +62,9 @@ static void simple_callback_test()
 
 static void optional_callback_test()
 {
-    CallbackSource* cb_source = cbsource_new();
+    callback_source_t* cb_source = cbsource_new();
 
-    CallbackInterface interface =
+    callback_interface_t interface =
     {
         .on_value = NULL,
         .on_duration = NULL,

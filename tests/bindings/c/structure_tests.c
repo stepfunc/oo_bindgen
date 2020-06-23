@@ -6,9 +6,9 @@
 
 #define ENGLISH_STRING_1 "I like to be home with my monkey and my dog"
 
-static Structure create_struct()
+static structure_t create_struct()
 {
-    Structure result =
+    structure_t result =
     {
         .boolean_value = true,
         .uint8_value = 1,
@@ -37,7 +37,7 @@ static Structure create_struct()
     return result;
 }
 
-static void check_struct(Structure* structure)
+static void check_struct(structure_t* structure)
 {
     assert(structure->boolean_value == true);
     assert(structure->uint8_value == 1);
@@ -62,15 +62,15 @@ static void check_struct(Structure* structure)
 
 static void test_struct_by_value()
 {
-    Structure test = create_struct();
-    Structure result = struct_by_value_echo(test);
+    structure_t test = create_struct();
+    structure_t result = struct_by_value_echo(test);
     check_struct(&result);
 }
 
 static void test_struct_by_reference()
 {
-    Structure test = create_struct();
-    Structure result = struct_by_reference_echo(&test);
+    structure_t test = create_struct();
+    structure_t result = struct_by_reference_echo(&test);
     check_struct(&result);
 }
 

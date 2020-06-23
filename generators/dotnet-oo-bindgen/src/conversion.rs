@@ -167,6 +167,16 @@ struct StringConverter;
 impl TypeConverter for StringConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}Marshal.StringToHGlobalAnsi({});", to, from))
+
+        // TODO: UTF-8 conversion
+        // Probably wait for "Marshal.PtrToStringUTF8" to be supported on target .NET Core
+        /*let bytes_name = format!("{}Bytes", from.replace(".", "_"));
+        let handle_name = format!("{}Handle", from.replace(".", "_"));
+        f.writeln(&format!("var {} = System.Text.Encoding.UTF8.GetBytes({});", bytes_name, from))?;
+        f.writeln(&format!("var {} = Marshal.AllocHGlobal({}.Length + 1);", handle_name, bytes_name))?;
+        f.writeln(&format!("Marshal.Copy({}, 0, {}, {}.Length);", bytes_name, handle_name, bytes_name))?;
+        f.writeln(&format!("Marshal.WriteByte({}, {}.Length, 0);", handle_name, bytes_name))?;
+        f.writeln(&format!("{}{};", to, handle_name))*/
     }
 
     fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
@@ -180,6 +190,10 @@ impl TypeConverter for StringConverter {
         to: &str,
     ) -> FormattingResult<()> {
         f.writeln(&format!("{}Marshal.PtrToStringAnsi({});", to, from))
+
+        // TODO: UTF-8 conversion
+        // Probably wait for "Marshal.PtrToStringUTF8" to be supported on target .NET Core
+        //f.writeln(&format!("{}Marshal.PtrToStringUTF8({});", to, from))
     }
 }
 
@@ -327,7 +341,7 @@ impl TypeConverter for StructRefConverter {
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        let handle_name = format!("_{}Handle", from);
+        let handle_name = format!("_{}Handle", from.replace(".", "_"));
         f.writeln(&format!(
             "{}? {} = null;",
             self.0.name.to_camel_case(),

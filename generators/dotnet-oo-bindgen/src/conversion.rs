@@ -226,7 +226,7 @@ impl TypeConverter for InterfaceConverter {
                 self.0.arg_name.to_mixed_case()
             ))?;
             f.writeln(&format!(
-                "{}({})_handle.Target;",
+                "{}_handle.Target as {};",
                 to,
                 self.0.name.to_camel_case()
             ))

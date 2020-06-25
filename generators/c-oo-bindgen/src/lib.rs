@@ -243,7 +243,22 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> Form
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_type()))
+    f.writeln(&format!("}} {};", handle.to_type()))?;
+
+    f.newline()?;
+
+    f.writeln(&format!("static const char* {}_to_string({} value)", handle.name, handle.to_type()))?;
+    blocked(f, |f| {
+        f.writeln("switch (value)")?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for variant in &handle.variants {
+                f.writeln(&format!("case {}_{}: return \"{}\";", handle.name, variant.name, variant.name))?;
+            }
+            f.writeln("default: return \"\";")
+        })?;
+        f.writeln("}")
+    })
 }
 
 fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {

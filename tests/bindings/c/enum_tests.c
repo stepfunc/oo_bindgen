@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <string.h>
 
 #include "foo.h"
 
@@ -109,10 +110,19 @@ static void test_enum_single()
     assert(result == 0);
 }
 
+static void test_enum_to_string()
+{
+    assert(strcmp("Two", EnumZeroToFive_to_string(EnumZeroToFive_Two)) == 0);
+    assert(strcmp("Five", EnumDisjoint_to_string(EnumDisjoint_Five)) == 0);
+    assert(strcmp("Single", EnumSingle_to_string(EnumSingle_Single)) == 0);
+    assert(strcmp("", EnumSingle_to_string((enum_single_t)EnumZeroToFive_Four)) == 0);
+}
+
 void enum_tests()
 {
     test_enum_zero_to_five();
     test_enum_one_to_six();
     test_enum_disjoint();
     test_enum_single();
+    test_enum_to_string();
 }

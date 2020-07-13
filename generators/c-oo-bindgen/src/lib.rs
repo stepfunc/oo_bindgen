@@ -231,7 +231,7 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
                 Statement::NativeStructDeclaration(handle) => {
                     f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
                 }
-                Statement::NativeStructDefinition(handle) => write_struct_definition(f, handle)?,
+                Statement::NativeStructDefinition(handle) => write_struct_definition(f, handle, lib)?,
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
                 Statement::ClassDeclaration(handle) => {
                     f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
@@ -251,11 +251,26 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
 fn write_struct_definition(
     f: &mut dyn Printer,
     handle: &NativeStructHandle,
+    lib: &Library,
 ) -> FormattingResult<()> {
+    if !handle.doc.is_empty() {
+        doxygen(f, |f| {
+            f.newline()?;
+            doxygen_print(f, &handle.doc, lib)?;
+            Ok(())
+        })?;
+        f.newline()?;
+    }
+
     f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
+            doxygen(f, |f| {
+                f.newline()?;
+                doxygen_print(f, &element.doc, lib)?;
+                Ok(())
+            })?;
             f.writeln(&format!(
                 "{} {};",
                 CType(&element.element_type),

@@ -15,10 +15,22 @@ pub(crate) fn generate(
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &native_struct.doc(), lib)?;
+            f.write("</summary>")
+        })?;
         f.writeln(&format!("public struct {}", struct_name))?;
         blocked(f, |f| {
             // Write .NET structure elements
             for el in native_struct.elements() {
+                documentation(f, |f| {
+                    // Print top-level documentation
+                    f.writeln("<summary>")?;
+                    doc_print(f, &el.doc, lib)?;
+                    f.write("</summary>")
+                })?;
                 let dotnet_type = DotnetType(&el.element_type);
                 f.writeln(&format!(
                     "public {} {};",
@@ -31,6 +43,28 @@ pub(crate) fn generate(
 
             // Write methods
             for method in &native_struct.methods {
+                documentation(f, |f| {
+                    // Print top-level documentation
+                    f.writeln("<summary>")?;
+                    doc_print(f, &method.native_function.doc, lib)?;
+                    f.write("</summary>")?;
+        
+                    // Print each parameter value
+                    for param in method.native_function.parameters.iter().skip(1) {
+                        f.writeln(&format!("<param name=\"{}\">", param.name))?;
+                        doc_print(f, &param.doc, lib)?;
+                        f.write("</param>")?;
+                    }
+        
+                    // Print return value
+                    if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+                        f.writeln("<returns>")?;
+                        doc_print(f, doc, lib)?;
+                        f.write("</returns>")?;
+                    }
+                    Ok(())
+                })?;
+
                 f.writeln(&format!(
                     "public {} {}(",
                     DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),

@@ -9,12 +9,13 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     let control = lib.declare_native_struct("Control")?;
     let control = lib
         .define_native_struct(&control)?
-        .add("fir", Type::Bool)?
-        .add("fin", Type::Bool)?
-        .add("con", Type::Bool)?
-        .add("uns", Type::Bool)?
-        .add("seq", Type::Uint8)?
-        .build();
+        .add("fir", Type::Bool, "First fragment in the message")?
+        .add("fin", Type::Bool, "Final fragment of the message")?
+        .add("con", Type::Bool, "Requires confirmation")?
+        .add("uns", Type::Bool, "Unsolicited response")?
+        .add("seq", Type::Uint8, "Sequence number")?
+        .doc("APDU Control field")?
+        .build()?;
 
     let response_function = lib
         .define_native_enum("ResponseFunction")?
@@ -28,10 +29,11 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     let response_header = lib.declare_native_struct("ResponseHeader")?;
     let response_header = lib
         .define_native_struct(&response_header)?
-        .add("control", Type::Struct(control))?
-        .add("func", Type::Enum(response_function))?
-        .add("iin", Type::Struct(iin))?
-        .build();
+        .add("control", Type::Struct(control), "Application control field")?
+        .add("func", Type::Enum(response_function), "Response type")?
+        .add("iin", Type::Struct(iin), "IIN bytes")?
+        .doc("Response header information")?
+        .build()?;
 
     let qualifier_code_enum = lib
         .define_native_enum("QualifierCode")?
@@ -49,9 +51,10 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     let header_info = lib.declare_native_struct("HeaderInfo")?;
     let header_info = lib
         .define_native_struct(&header_info)?
-        .add("variation", Type::Enum(variation_enum))?
-        .add("qualifier", Type::Enum(qualifier_code_enum))?
-        .build();
+        .add("variation", Type::Enum(variation_enum), "Group/Variation used in the response")?
+        .add("qualifier", Type::Enum(qualifier_code_enum), "Qualitifer used in the response")?
+        .doc("Object header information")?
+        .build()?;
 
     let flags_struct = declare_flags_struct(lib)?;
 
@@ -66,9 +69,10 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     let timestamp_struct = lib.declare_native_struct("Timestamp")?;
     let timestamp_struct = lib
         .define_native_struct(&timestamp_struct)?
-        .add("value", Type::Uint64)?
-        .add("quality", Type::Enum(time_quality_enum))?
-        .build();
+        .add("value", Type::Uint64, "Timestamp value")?
+        .add("quality", Type::Enum(time_quality_enum), "Timestamp quality")?
+        .doc("Timestamp value")?
+        .build()?;
 
     let double_bit_enum = lib
         .define_native_enum("DoubleBit")?
@@ -176,8 +180,9 @@ fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, Bi
     let iin1 = lib.declare_native_struct("IIN1")?;
     let iin1 = lib
         .define_native_struct(&iin1)?
-        .add("value", Type::Uint8)?
-        .build();
+        .add("value", Type::Uint8, "Byte value")?
+        .doc("First IIN byte")?
+        .build()?;
 
     let iin1_flag = lib
         .define_native_enum("IIN1Flag")?
@@ -207,8 +212,9 @@ fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, Bi
     let iin2 = lib.declare_native_struct("IIN2")?;
     let iin2 = lib
         .define_native_struct(&iin2)?
-        .add("value", Type::Uint8)?
-        .build();
+        .add("value", Type::Uint8, "Byte value")?
+        .doc("Second IIN byte")?
+        .build()?;
 
     let iin2_flag = lib
         .define_native_enum("IIN2Flag")?
@@ -236,9 +242,10 @@ fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, Bi
     let iin = lib.declare_native_struct("IIN")?;
     let iin = lib
         .define_native_struct(&iin)?
-        .add("iin1", Type::Struct(iin1))?
-        .add("iin2", Type::Struct(iin2))?
-        .build();
+        .add("iin1", Type::Struct(iin1), "First IIN byte")?
+        .add("iin2", Type::Struct(iin2), "Second IIN byte")?
+        .doc("Pair of IIN bytes")?
+        .build()?;
 
     Ok(iin)
 }
@@ -247,8 +254,9 @@ fn declare_flags_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, 
     let flags_struct = lib.declare_native_struct("Flags")?;
     let flags_struct = lib
         .define_native_struct(&flags_struct)?
-        .add("value", Type::Uint8)?
-        .build();
+        .add("value", Type::Uint8, "Flag byte")?
+        .doc("Point flag")?
+        .build()?;
 
     let flag_enum = lib
         .define_native_enum("Flag")?
@@ -290,11 +298,12 @@ fn build_iterator(
     let value_struct = lib.declare_native_struct(name)?;
     let value_struct = lib
         .define_native_struct(&value_struct)?
-        .add("index", Type::Uint16)?
-        .add("value", value_type)?
-        .add("flags", Type::Struct(flags_struct.clone()))?
-        .add("time", Type::Struct(timestamp_struct.clone()))?
-        .build();
+        .add("index", Type::Uint16, "Point index")?
+        .add("value", value_type, "Point value")?
+        .add("flags", Type::Struct(flags_struct.clone()), "Point flags")?
+        .add("time", Type::Struct(timestamp_struct.clone()), "Point timestamp")?
+        .doc(format!("{} point", name).as_ref())?
+        .build()?;
 
     let value_iterator = lib.declare_class(&format!("{}Iterator", name))?;
     let iterator_next_fn = lib

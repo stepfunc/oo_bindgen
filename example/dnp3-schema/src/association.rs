@@ -104,20 +104,26 @@ pub fn define(
     let control_code = lib.declare_native_struct("ControlCode")?;
     let control_code = lib
         .define_native_struct(&control_code)?
-        .add("tcc", Type::Enum(trip_close_code.clone()))?
-        .add("clear", Type::Bool)?
-        .add("queue", Type::Bool)?
-        .add("op_type", Type::Enum(op_type.clone()))?
-        .build();
+        .add("tcc", Type::Enum(trip_close_code.clone()), "This field is used in conjunction with the `op_type` field to specify a control operation")?
+        .add("clear", Type::Bool, DocBuilder::new()
+            .text("Support for this field is optional. ")
+            .text("When the clear bit is set, the device shall remove pending control commands for that index and stop any control operation that is in progress for that index. ")
+            .text("The indexed point shall go to the state that it would have if the command were allowed to complete normally.")
+        )?
+        .add("queue", Type::Bool, "This field is obsolete and should always be 0")?
+        .add("op_type", Type::Enum(op_type.clone()), "This field is used in conjunction with the `tcc` field to specify a control operation")?
+        .doc(DocBuilder::new().text("CROB (").reference("G12V1").text(") control code"))?
+        .build()?;
 
     let g12v1_struct = lib.declare_native_struct("G12V1")?;
     let g12v1_struct = lib
         .define_native_struct(&g12v1_struct)?
-        .add("code", Type::Struct(control_code.clone()))?
-        .add("count", Type::Uint8)?
-        .add("on_time", Type::Uint32)?
-        .add("off_time", Type::Uint32)?
-        .build();
+        .add("code", Type::Struct(control_code.clone()), "Control code")?
+        .add("count", Type::Uint8, "Count")?
+        .add("on_time", Type::Uint32, "Duration the output drive remains active (in milliseconds)")?
+        .add("off_time", Type::Uint32, "Duration the output drive remains non-active (in milliseconds)")?
+        .doc("Control Relay Output Block")?
+        .build()?;
 
     let command = lib.declare_class("Command")?;
 

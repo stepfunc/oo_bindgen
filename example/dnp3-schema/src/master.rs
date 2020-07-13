@@ -24,10 +24,11 @@ pub fn define(
     let event_classes = lib.declare_native_struct("EventClasses")?;
     let event_classes = lib
         .define_native_struct(&event_classes)?
-        .add("class1", Type::Bool)?
-        .add("class2", Type::Bool)?
-        .add("class3", Type::Bool)?
-        .build();
+        .add("class1", Type::Bool, "Class 1 events")?
+        .add("class2", Type::Bool, "Class 2 events")?
+        .add("class3", Type::Bool, "Class 3 events")?
+        .doc("Event classes")?
+        .build()?;
 
     let auto_time_sync_enum = lib
         .define_native_enum("AutoTimeSync")?
@@ -40,18 +41,20 @@ pub fn define(
     let association_configuration = lib.declare_native_struct("AssociationConfiguration")?;
     let association_configuration = lib
         .define_native_struct(&association_configuration)?
-        .add("disable_unsol_classes", Type::Struct(event_classes.clone()))?
-        .add("enable_unsol_classes", Type::Struct(event_classes))?
-        .add("auto_time_sync", Type::Enum(auto_time_sync_enum))?
-        .build();
+        .add("disable_unsol_classes", Type::Struct(event_classes.clone()), "Classes to disable unsolicited responses at startup")?
+        .add("enable_unsol_classes", Type::Struct(event_classes), "Classes to enable unsolicited responses at startup")?
+        .add("auto_time_sync", Type::Enum(auto_time_sync_enum), "Automatic time sychronization configuration")?
+        .doc("Association configuration")?
+        .build()?;
 
     let association_handlers = lib.declare_native_struct("AssociationHandlers")?;
     let association_handlers = lib
         .define_native_struct(&association_handlers)?
-        .add("integrity_handler", Type::Interface(read_handler.clone()))?
-        .add("unsolicited_handler", Type::Interface(read_handler.clone()))?
-        .add("default_poll_handler", Type::Interface(read_handler))?
-        .build();
+        .add("integrity_handler", Type::Interface(read_handler.clone()), "Handler for the initial integrity scan")?
+        .add("unsolicited_handler", Type::Interface(read_handler.clone()), "Handler for unsolicited responses")?
+        .add("default_poll_handler", Type::Interface(read_handler), "Handler for all other responses")?
+        .doc("Handlers that will receive readings. You can set all handlers to the same handler if knowing what type of event generated the value is not required.")?
+        .build()?;
 
     let add_association_fn = lib
         .declare_native_function("master_add_association")?

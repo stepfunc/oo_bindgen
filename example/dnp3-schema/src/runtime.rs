@@ -15,8 +15,9 @@ pub fn define(
     let config_struct = lib.declare_native_struct("RuntimeConfig")?;
     let config_struct = lib
         .define_native_struct(&config_struct)?
-        .add("num_core_threads", Type::Uint16)?
-        .build();
+        .add("num_core_threads", Type::Uint16, "Number of runtime threads to spawn. For a guess of the number of CPUs, use 0.")?
+        .doc("Runtime configuration")?
+        .build()?;
 
     // Declare the native functions
     let new_fn = lib
@@ -36,9 +37,10 @@ pub fn define(
     let reconnect_strategy = lib.declare_native_struct("ReconnectStrategy")?;
     let reconnect_strategy = lib
         .define_native_struct(&reconnect_strategy)?
-        .add("min_delay", Type::Duration(DurationMapping::Milliseconds))?
-        .add("max_delay", Type::Duration(DurationMapping::Milliseconds))?
-        .build();
+        .add("min_delay", Type::Duration(DurationMapping::Milliseconds), "Minimum delay between two retries")?
+        .add("max_delay", Type::Duration(DurationMapping::Milliseconds), "Maximum delay between two retries")?
+        .doc("Reconnection strategy configuration. The strategy uses an exponential back-off with a minimum and maximum value.")?
+        .build()?;
 
     let client_state_enum = lib
         .define_native_enum("ClientState")?

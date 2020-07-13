@@ -1,4 +1,5 @@
 use crate::*;
+use crate::doc::Doc;
 use std::collections::HashSet;
 
 /// C-style structure forward declaration
@@ -19,6 +20,7 @@ pub type NativeStructDeclarationHandle = Handle<NativeStructDeclaration>;
 pub struct NativeStructElement {
     pub name: String,
     pub element_type: Type,
+    pub doc: Doc,
 }
 
 /// C-style structure definition
@@ -26,6 +28,7 @@ pub struct NativeStructElement {
 pub struct NativeStruct {
     pub declaration: NativeStructDeclarationHandle,
     pub elements: Vec<NativeStructElement>,
+    pub doc: Doc,
 }
 
 impl NativeStruct {
@@ -45,6 +48,7 @@ pub struct NativeStructBuilder<'a> {
     declaration: NativeStructDeclarationHandle,
     elements: Vec<NativeStructElement>,
     element_names_set: HashSet<String>,
+    doc: Option<Doc>,
 }
 
 impl<'a> NativeStructBuilder<'a> {
@@ -57,15 +61,17 @@ impl<'a> NativeStructBuilder<'a> {
             declaration,
             elements: Vec::new(),
             element_names_set: HashSet::new(),
+            doc: None,
         }
     }
 
-    pub fn add(mut self, name: &str, element_type: Type) -> Result<Self> {
+    pub fn add<D: Into<Doc>>(mut self, name: &str, element_type: Type, doc: D) -> Result<Self> {
         self.lib.validate_type(&element_type)?;
         if self.element_names_set.insert(name.to_string()) {
             self.elements.push(NativeStructElement {
                 name: name.to_string(),
                 element_type,
+                doc: doc.into(),
             });
             Ok(self)
         } else {
@@ -78,10 +84,30 @@ impl<'a> NativeStructBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> NativeStructHandle {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+        match self.doc {
+            None => {
+                self.doc = Some(doc.into());
+                Ok(self)
+            }
+            Some(_) => Err(BindingError::DocAlreadyDefined {
+                symbol_name: self.declaration.name.clone(),
+            })
+        }
+    }
+
+    pub fn build(self) -> Result<NativeStructHandle> {
+        let doc = match self.doc {
+            Some(doc) => doc,
+            None => return Err(BindingError::DocNotDefined {
+                symbol_name: self.declaration.name.clone(),
+            })
+        };
+
         let handle = NativeStructHandle::new(NativeStruct {
             declaration: self.declaration.clone(),
             elements: self.elements,
+            doc,
         });
 
         self.lib
@@ -91,7 +117,7 @@ impl<'a> NativeStructBuilder<'a> {
             .statements
             .push(Statement::NativeStructDefinition(handle.clone()));
 
-        handle
+        Ok(handle)
     }
 }
 
@@ -126,6 +152,10 @@ impl Struct {
 
     pub fn elements(&self) -> impl Iterator<Item = &NativeStructElement> {
         self.definition.elements.iter()
+    }
+
+    pub fn doc(&self) -> &Doc {
+        &self.definition.doc
     }
 }
 

@@ -2,6 +2,7 @@ use dnp3_schema::build_lib;
 use oo_bindgen::platforms::*;
 use oo_bindgen::Library;
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -18,16 +19,41 @@ fn test_c_lib(lib: &Library) {
 }
 
 fn generate_c_lib(lib: &Library) {
+    // Clear/create output directory
+    let output_dir = PathBuf::from("example/bindings/c/generated");
+    if output_dir.exists() {
+        fs::remove_dir_all(&output_dir).unwrap();
+    }
+    fs::create_dir_all(&output_dir).unwrap();
+
     let mut platforms = PlatformLocations::new();
     platforms.add(Platform::current(), PathBuf::from("./target/debug/deps"));
 
     let config = c_oo_bindgen::CBindgenConfig {
-        output_dir: PathBuf::from("example/bindings/c/generated"),
+        output_dir: output_dir.clone(),
         ffi_name: "dnp3_ffi".to_string(),
         platforms,
     };
 
     c_oo_bindgen::generate_c_package(&lib, &config).expect("failed to package C lib");
+
+    // Build documentation
+    let mut command = Command::new("doxygen")
+        .current_dir(output_dir)
+        .arg("-")
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .expect("failed to spawn doxygen");
+
+    {
+        let stdin = command.stdin.as_mut().unwrap();
+        stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
+        stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
+        stdin.write_all(b"INPUT = include\n").unwrap();
+    }
+
+    let result = command.wait().unwrap();
+    assert!(result.success());
 }
 
 fn build_c_lib() {

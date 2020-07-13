@@ -1,4 +1,5 @@
 use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::doc::DocBuilder;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::*;
@@ -20,14 +21,16 @@ pub fn define(
     // Declare the native functions
     let new_fn = lib
         .declare_native_function("runtime_new")?
-        .param("config", Type::StructRef(config_struct.declaration()))?
-        .return_type(ReturnType::Type(Type::ClassRef(runtime_class.clone())))?
+        .param("config", Type::StructRef(config_struct.declaration()), "Runtime configuration")?
+        .return_type(ReturnType::new(Type::ClassRef(runtime_class.clone()), "Handle to the created runtime, NULL if an error occured"))?
+        .doc("Create a new runtime")?
         .build()?;
 
     let destroy_fn = lib
         .declare_native_function("runtime_destroy")?
-        .param("runtime", Type::ClassRef(runtime_class.clone()))?
-        .return_type(ReturnType::Void)?
+        .param("runtime", Type::ClassRef(runtime_class.clone()), "Runtime to destroy")?
+        .return_type(ReturnType::void())?
+        .doc("Destroy a runtime. This method will gracefully wait for all asynchronous operation to end before returning")?
         .build()?;
 
     let reconnect_strategy = lib.declare_native_struct("ReconnectStrategy")?;
@@ -39,19 +42,20 @@ pub fn define(
 
     let client_state_enum = lib
         .define_native_enum("ClientState")?
-        .push("Connecting")?
-        .push("Connected")?
-        .push("WaitAfterFailedConnect")?
-        .push("WaitAfterDisconnect")?
-        .push("Shutdown")?
-        .build();
+        .push("Connecting", "Client is trying to establish a connection to the remote device")?
+        .push("Connected", "Client is connected to the remote device")?
+        .push("WaitAfterFailedConnect", "Failed to establish a connection, waiting before retrying")?
+        .push("WaitAfterDisconnect", "Client was disconnected, waiting before retrying")?
+        .push("Shutdown", "Client is shutting down")?
+        .doc("State of the client connection")?
+        .build()?;
 
     let client_state_listener = lib
         .define_interface("ClientStateListener")?
         .callback("on_change")?
         .param("state", Type::Enum(client_state_enum))?
         .arg("arg")?
-        .return_type(ReturnType::Void)?
+        .return_type(ReturnType::void())?
         .build()?
         .destroy_callback("on_destroy")?
         .arg("arg")?
@@ -61,17 +65,19 @@ pub fn define(
 
     let add_master_tcp_fn = lib
         .declare_native_function("runtime_add_master_tcp")?
-        .param("runtime", Type::ClassRef(runtime_class.clone()))?
-        .param("address", Type::Uint16)?
-        .param("level", Type::Enum(decode_log_level_enum))?
-        .param("strategy", Type::Struct(reconnect_strategy))?
+        .param("runtime", Type::ClassRef(runtime_class.clone()), "Runtime to use to drive asynchronous operations of the master")?
+        .param("address", Type::Uint16, "Local DNP3 data-link address")?
+        .param("level", Type::Enum(decode_log_level_enum), DocBuilder::new().text("Decoding log-level for this master. You can modify this later on with ").reference("master_set_decode_log_level").text("."))?
+        .param("strategy", Type::Struct(reconnect_strategy), "Reconnection strategy to use")?
         .param(
             "response_timeout",
             Type::Duration(DurationMapping::Milliseconds),
+            "Timeout for receiving response"
         )?
-        .param("endpoint", Type::String)?
-        .param("listener", Type::Interface(client_state_listener))?
-        .return_type(ReturnType::Type(Type::ClassRef(master_class.clone())))?
+        .param("endpoint", Type::String, "IP address or DNS name and the port to connect to. e.g. \"127.0.0.1:20000\" or \"dnp3.myorg.com:20000\".")?
+        .param("listener", Type::Interface(client_state_listener), "Client connection listener to receive updates on the status of the connection")?
+        .return_type(ReturnType::new(Type::ClassRef(master_class.clone()), "Handle to the master created, NULL if an error occured"))?
+        .doc("Add a master TCP connection")?
         .build()?;
 
     // Declare the object-oriented class

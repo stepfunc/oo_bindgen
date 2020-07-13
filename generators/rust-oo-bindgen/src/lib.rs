@@ -275,7 +275,7 @@ impl<'a> Display for RustReturnType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
             ReturnType::Void => write!(f, "()"),
-            ReturnType::Type(return_type) => write!(f, "{}", RustType(&return_type)),
+            ReturnType::Type(return_type, _) => write!(f, "{}", RustType(&return_type)),
         }
     }
 }

@@ -89,7 +89,7 @@ impl<'a> ClassBuilder<'a> {
         }
         self.lib.validate_native_function(native_function)?;
 
-        if let ReturnType::Type(Type::ClassRef(return_type)) = &native_function.return_type {
+        if let ReturnType::Type(Type::ClassRef(return_type), _) = &native_function.return_type {
             if return_type == &self.declaration {
                 self.constructor = Some(native_function.clone());
                 return Ok(self);

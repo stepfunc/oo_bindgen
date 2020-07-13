@@ -60,6 +60,7 @@ use thiserror::Error;
 
 pub mod callback;
 pub mod class;
+pub mod doc;
 pub mod formatting;
 pub mod iterator;
 pub mod native_enum;
@@ -94,6 +95,10 @@ pub enum BindingError {
         native_func_name
     )]
     ReturnTypeNotDefined { native_func_name: String },
+    #[error("Documentation of '{}' was already defined", symbol_name)]
+    DocAlreadyDefined { symbol_name: String },
+    #[error("Documentation of '{}' was not defined", symbol_name)]
+    DocNotDefined { symbol_name: String },
 
     // Native enum errors
     #[error("Native enum '{}' is not part of this library", handle.name)]
@@ -257,6 +262,17 @@ impl<T> Deref for Handle<T> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum Symbol {
+    NativeFunction(NativeFunctionHandle),
+    Struct(StructHandle),
+    Enum(NativeEnumHandle),
+    Class(ClassHandle),
+    Interface(InterfaceHandle),
+    OneTimeCallback(OneTimeCallbackHandle),
+    Iterator(iterator::IteratorHandle),
+}
+
 #[derive(Debug)]
 pub enum Statement {
     NativeStructDeclaration(NativeStructDeclarationHandle),
@@ -279,6 +295,7 @@ pub struct Library {
     statements: Vec<Statement>,
     structs: HashMap<NativeStructDeclarationHandle, StructHandle>,
     _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
+    symbols: HashMap<String, Symbol>,
 }
 
 impl Library {
@@ -326,6 +343,10 @@ impl Library {
             Statement::OneTimeCallbackDefinition(handle) => Some(handle),
             _ => None,
         })
+    }
+
+    pub fn symbol(&self, symbol_name: &str) -> Option<&Symbol> {
+        self.symbols.get(symbol_name)
     }
 }
 
@@ -393,6 +414,7 @@ impl LibraryBuilder {
     }
 
     pub fn build(self) -> Library {
+        // Update all native structs to full structs
         let mut structs = HashMap::with_capacity(self.defined_structs.len());
         for structure in self.defined_structs.values() {
             structs.insert(structure.declaration(), structure.clone());
@@ -406,6 +428,39 @@ impl LibraryBuilder {
             }
         }
 
+        // Build symbols map
+        let mut symbols = HashMap::new();
+        for statement in &self.statements {
+            match statement {
+                Statement::NativeStructDeclaration(handle) => {
+                    symbols.insert(handle.name.clone(), Symbol::Struct(structs.get(&handle).unwrap().clone()));
+                },
+                Statement::NativeStructDefinition(_) => (),
+                Statement::StructDefinition(_) => (),
+                Statement::EnumDefinition(handle) => {
+                    symbols.insert(handle.name.clone(), Symbol::Enum(handle.clone()));
+                },
+                Statement::ClassDeclaration(_) => (),
+                Statement::ClassDefinition(handle) => {
+                    symbols.insert(handle.name().to_string(), Symbol::Class(handle.clone()));
+                },
+                Statement::InterfaceDefinition(handle) => {
+                    symbols.insert(handle.name.clone(), Symbol::Interface(handle.clone()));
+                },
+                Statement::OneTimeCallbackDefinition(handle) => {
+                    symbols.insert(handle.name.clone(), Symbol::OneTimeCallback(handle.clone()));
+                },
+                Statement::IteratorDeclaration(handle) => {
+                    symbols.insert(handle.name().to_string(), Symbol::Iterator(handle.clone()));
+                },
+                Statement::NativeFunctionDeclaration(handle) => {
+                    symbols.insert(handle.name.clone(), Symbol::NativeFunction(handle.clone()));
+                },
+            }
+        }
+
+        // TODO: validate all documentation nodes with the symbols map
+
         Library {
             name: self.name,
             version: self.version,
@@ -415,6 +470,7 @@ impl LibraryBuilder {
             statements: self.statements,
             structs,
             _classes: self.classes,
+            symbols
         }
     }
 

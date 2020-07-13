@@ -500,14 +500,14 @@ impl<'a> DotnetReturnType<'a> {
     pub(crate) fn as_dotnet_type(&self) -> String {
         match self.0 {
             ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type) => DotnetType(return_type).as_dotnet_type(),
+            ReturnType::Type(return_type, _) => DotnetType(return_type).as_dotnet_type(),
         }
     }
 
     pub(crate) fn as_native_type(&self) -> String {
         match self.0 {
             ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type) => DotnetType(return_type).as_native_type(),
+            ReturnType::Type(return_type, _) => DotnetType(return_type).as_native_type(),
         }
     }
 }
@@ -538,7 +538,7 @@ pub(crate) fn call_native_function(
 
     // Call the native function
     f.newline()?;
-    if let ReturnType::Type(_) = &method.return_type {
+    if !method.return_type.is_void() {
         f.write(&format!(
             "var _result = {}.{}(",
             NATIVE_FUNCTIONS_CLASSNAME, method.name
@@ -565,7 +565,7 @@ pub(crate) fn call_native_function(
     }
 
     // Convert the result (if required) and return
-    if let ReturnType::Type(return_type) = &method.return_type {
+    if let ReturnType::Type(return_type, _) = &method.return_type {
         if let Some(converter) = DotnetType(&return_type).conversion() {
             if !is_constructor {
                 return converter.convert_from_native(f, "_result", return_destination);
@@ -597,7 +597,7 @@ pub(crate) fn call_dotnet_function(
     // Call the .NET function
     f.newline()?;
     let method_name = method.name.to_camel_case();
-    if let ReturnType::Type(return_type) = &method.return_type {
+    if let ReturnType::Type(return_type, _) = &method.return_type {
         if DotnetType(&return_type).conversion().is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
@@ -617,7 +617,7 @@ pub(crate) fn call_dotnet_function(
     f.write(");")?;
 
     // Convert the result (if required)
-    if let ReturnType::Type(return_type) = &method.return_type {
+    if let ReturnType::Type(return_type, _) = &method.return_type {
         if let Some(converter) = DotnetType(&return_type).conversion() {
             converter.convert_to_native(f, "_result", return_destination)?;
         }

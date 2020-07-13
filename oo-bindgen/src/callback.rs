@@ -1,4 +1,5 @@
 use crate::*;
+use crate::doc::Doc;
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -288,6 +289,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.to_string(),
             param_type,
+            doc: Doc::empty(), //TODO: take documentation as parameter
         }));
         Ok(self)
     }

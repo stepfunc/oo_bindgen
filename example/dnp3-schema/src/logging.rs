@@ -1,16 +1,17 @@
+use oo_bindgen::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError> {
     let log_level_enum = lib
         .define_native_enum("LogLevel")?
-        .push("Error")?
-        .push("Warn")?
-        .push("Info")?
-        .push("Debug")?
-        .push("Trace")?
-        .build();
+        .push("Error", "Error log level")?
+        .push("Warn", "Warning log level")?
+        .push("Info", "Information log level")?
+        .push("Debug", "Debugging log level")?
+        .push("Trace", "Trace log level")?
+        .doc("Log level")?
+        .build()?;
 
     let log_callback_interface = lib
         .define_interface("Logger")?
@@ -18,7 +19,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
         .param("level", Type::Enum(log_level_enum.clone()))?
         .param("message", Type::String)?
         .arg("arg")?
-        .return_type(ReturnType::Void)?
+        .return_type(ReturnType::void())?
         .build()?
         .destroy_callback("on_destroy")?
         .arg("arg")?
@@ -26,14 +27,16 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
 
     let set_callback_fn = lib
         .declare_native_function("logging_set_callback")?
-        .param("handler", Type::Interface(log_callback_interface))?
-        .return_type(ReturnType::Void)?
+        .param("handler", Type::Interface(log_callback_interface), "Handler that will receive each logged message")?
+        .return_type(ReturnType::void())?
+        .doc("Set the callback that will receive all the log messages")?
         .build()?;
 
     let set_log_level_fn = lib
         .declare_native_function("logging_set_log_level")?
-        .param("level", Type::Enum(log_level_enum))?
-        .return_type(ReturnType::Void)?
+        .param("level", Type::Enum(log_level_enum), "Maximum log level")?
+        .return_type(ReturnType::void())?
+        .doc("Set the current log level")?
         .build()?;
 
     let logging_class = lib.declare_class("Logging")?;
@@ -45,11 +48,12 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
 
     let decode_log_level_enum = lib
         .define_native_enum("DecodeLogLevel")?
-        .push("Nothing")?
-        .push("Header")?
-        .push("ObjectHeaders")?
-        .push("ObjectValues")?
-        .build();
+        .push("Nothing", "Decode nothing")?
+        .push("Header", "Decode only the application layer header")?
+        .push("ObjectHeaders", "Decode down to the object header values")?
+        .push("ObjectValues", "Decode down to the object values")?
+        .doc("Master decoding log level")?
+        .build()?;
 
     Ok(decode_log_level_enum)
 }

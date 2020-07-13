@@ -21,6 +21,27 @@ impl<'a> Printer for CommentedPrinter<'a> {
     }
 }
 
+struct DoxygenPrinter<'a> {
+    inner: &'a mut dyn Printer,
+}
+
+impl<'a> DoxygenPrinter<'a> {
+    fn new(printer: &'a mut dyn Printer) -> Self {
+        Self { inner: printer }
+    }
+}
+
+impl<'a> Printer for DoxygenPrinter<'a> {
+    fn write(&mut self, s: &str) -> FormattingResult<()> {
+        self.inner.write(s)
+    }
+
+    fn newline(&mut self) -> FormattingResult<()> {
+        self.inner.newline()?;
+        self.inner.write("/// ")
+    }
+}
+
 pub(crate) fn blocked<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
@@ -37,6 +58,14 @@ where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {
     let mut printer = CommentedPrinter::new(f);
+    cb(&mut printer)
+}
+
+pub(crate) fn doxygen<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
+    let mut printer = DoxygenPrinter::new(f);
     cb(&mut printer)
 }
 

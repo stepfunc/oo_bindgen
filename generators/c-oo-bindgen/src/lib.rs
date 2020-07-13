@@ -47,6 +47,7 @@ clippy::all
 use crate::formatting::*;
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
+use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -98,6 +99,37 @@ impl CFormatting for OneTimeCallbackHandle {
     fn to_type(&self) -> String {
         format!("{}_t", self.name.to_snake_case())
     }
+}
+
+impl CFormatting for Symbol {
+    fn to_type(&self) -> String {
+        match self {
+            Symbol::NativeFunction(handle) => handle.name.to_owned(),
+            Symbol::Struct(handle) => handle.declaration().to_type(),
+            Symbol::Enum(handle) => handle.to_type(),
+            Symbol::Class(handle) => handle.declaration().to_type(),
+            Symbol::Interface(handle) => handle.to_type(),
+            Symbol::OneTimeCallback(handle) => handle.to_type(),
+            Symbol::Iterator(handle) => handle.iter_type.to_type(),
+        }
+    }
+}
+
+pub fn doxygen_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
+    for doc in doc {
+        match doc {
+            DocElement::Text(text) => f.write(text)?,
+            DocElement::Reference(typename) => {
+                let symbol = lib.symbol(typename).unwrap();
+                f.write(&format!("@ref {}", symbol.to_type()))?;
+            },
+            DocElement::Warning(text) => {
+                f.writeln(&format!("@warning {}", text))?;
+                f.newline()?;
+            },
+        }
+    }
+    Ok(())
 }
 
 pub struct CBindgenConfig {
@@ -189,6 +221,10 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
         f.writeln("#include <stdint.h>")?;
         f.newline()?;
 
+        // Doxygen needs this
+        f.writeln("/// @file")?;
+        f.newline()?;
+
         // Iterate through each statement and print them
         for statement in lib.into_iter() {
             match statement {
@@ -196,11 +232,11 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
                     f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
                 }
                 Statement::NativeStructDefinition(handle) => write_struct_definition(f, handle)?,
-                Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
+                Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
                 Statement::ClassDeclaration(handle) => {
                     f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
                 }
-                Statement::NativeFunctionDeclaration(handle) => write_function(f, handle)?,
+                Statement::NativeFunctionDeclaration(handle) => write_function(f, handle, lib)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle)?,
                 Statement::OneTimeCallbackDefinition(handle) => write_one_time_callback(f, handle)?,
                 _ => (),
@@ -231,11 +267,25 @@ fn write_struct_definition(
     f.writeln(&format!("}} {};", handle.to_type()))
 }
 
-fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> FormattingResult<()> {
+fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle, lib: &Library) -> FormattingResult<()> {
+    if !handle.doc.is_empty() {
+        doxygen(f, |f| {
+            f.newline()?;
+            doxygen_print(f, &handle.doc, lib)?;
+            Ok(())
+        })?;
+        f.newline()?;
+    }
+
     f.writeln(&format!("typedef enum {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
+            doxygen(f, |f| {
+                f.newline()?;
+                doxygen_print(f, &variant.doc, lib)?;
+                Ok(())
+            })?;
             f.writeln(&format!(
                 "{}_{} = {},",
                 handle.name, variant.name, variant.value
@@ -261,8 +311,32 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle) -> Form
     })
 }
 
-fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
+fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle, lib: &Library) -> FormattingResult<()> {
     f.newline()?;
+
+    if !handle.doc.is_empty() {
+        doxygen(f, |f| {
+            f.newline()?;
+            // Print top-level documentation
+            doxygen_print(f, &handle.doc, lib)?;
+
+            // Print each parameter value
+            for param in &handle.parameters {
+                f.writeln(&format!("@param {} ", param.name))?;
+                doxygen_print(f, &param.doc, lib)?;
+            }
+
+            // Print return documentation
+            if let ReturnType::Type(_, doc) = &handle.return_type {
+                f.writeln("@return ")?;
+                doxygen_print(f, doc, lib)?;
+            }
+
+            Ok(())
+        })?;
+        f.newline()?;
+    }
+
     f.write(&format!(
         "{} {}(",
         CReturnType(&handle.return_type),
@@ -416,7 +490,7 @@ impl<'a> Display for CReturnType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
             ReturnType::Void => write!(f, "void"),
-            ReturnType::Type(return_type) => write!(f, "{}", CType(&return_type)),
+            ReturnType::Type(return_type, _) => write!(f, "{}", CType(&return_type)),
         }
     }
 }

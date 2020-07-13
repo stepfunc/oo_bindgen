@@ -47,6 +47,7 @@ clippy::all
 use crate::conversion::*;
 use crate::formatting::*;
 use heck::CamelCase;
+use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -68,6 +69,24 @@ pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
     pub platforms: PlatformLocations,
+}
+
+pub fn doc_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
+    for doc in doc {
+        match doc {
+            DocElement::Text(text) => f.write(text)?,
+            DocElement::Reference(typename) => {
+                // TODO: do this properly
+                f.write(&format!("<see cref=\"{}\"/>", typename))?;
+                //let symbol = lib.symbol(typename).unwrap();
+                //f.write(&format!("@ref {}", symbol.to_type()))?;
+            },
+            DocElement::Warning(text) => {
+                f.write(&format!("<remarks>{}</remarks>", text))?;
+            },
+        }
+    }
+    Ok(())
 }
 
 pub fn generate_dotnet_bindings(
@@ -206,9 +225,20 @@ fn generate_enum(
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &native_enum.doc, lib)?;
+            f.write("</summary>")
+        })?;
         f.writeln(&format!("public enum {}", native_enum.name.to_camel_case()))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
+                documentation(f, |f| {
+                    f.writeln("<summary>")?;
+                    doc_print(f, &variant.doc, lib)?;
+                    f.write("</summary>")
+                })?;
                 f.writeln(&format!(
                     "{} =  {},",
                     variant.name.to_camel_case(),

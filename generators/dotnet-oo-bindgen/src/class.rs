@@ -34,17 +34,17 @@ pub(crate) fn generate(
             }
 
             if let Some(constructor) = &class.constructor {
-                generate_constructor(f, &classname, constructor)?;
+                generate_constructor(f, &classname, constructor, lib)?;
                 f.newline()?;
             }
 
             if let Some(destructor) = &class.destructor {
-                generate_destructor(f, &classname, destructor)?;
+                generate_destructor(f, &classname, destructor, lib)?;
                 f.newline()?;
             }
 
             for method in &class.methods {
-                generate_method(f, method)?;
+                generate_method(f, method, lib)?;
                 f.newline()?;
             }
 
@@ -54,7 +54,7 @@ pub(crate) fn generate(
             }
 
             for method in &class.static_methods {
-                generate_static_method(f, method)?;
+                generate_static_method(f, method, lib)?;
                 f.newline()?;
             }
 
@@ -67,7 +67,31 @@ fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
     constructor: &NativeFunctionHandle,
+    lib: &Library,
 ) -> FormattingResult<()> {
+    if !constructor.doc.is_empty() {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &constructor.doc, lib)?;
+            f.write("</summary>")?;
+
+            // Print each parameter value
+            for param in &constructor.parameters {
+                f.writeln(&format!("<param name=\"{}\">", param.name))?;
+                doc_print(f, &param.doc, lib)?;
+                f.write("</param>")?;
+            }
+
+            // Print return value
+            if let ReturnType::Type(_, doc) = &constructor.return_type {
+                f.writeln("<returns>")?;
+                doc_print(f, doc, lib)?;
+                f.write("</returns>")?;
+            }
+            Ok(())
+        })?;
+    }
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor
@@ -94,8 +118,16 @@ fn generate_destructor(
     f: &mut dyn Printer,
     classname: &str,
     destructor: &NativeFunctionHandle,
+    lib: &Library
 ) -> FormattingResult<()> {
     // Public Dispose method
+    if !destructor.doc.is_empty() {
+        documentation(f, |f| {
+            f.writeln("<summary>")?;
+            doc_print(f, &destructor.doc, lib)?;
+            f.write("</summary>")
+        })?;
+    }
     f.writeln("public void Dispose()")?;
     blocked(f, |f| {
         f.writeln("Dispose(true);")?;
@@ -125,7 +157,31 @@ fn generate_destructor(
     })
 }
 
-fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
+    if !method.native_function.doc.is_empty() {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &method.native_function.doc, lib)?;
+            f.write("</summary>")?;
+
+            // Print each parameter value
+            for param in method.native_function.parameters.iter().skip(1) {
+                f.writeln(&format!("<param name=\"{}\">", param.name))?;
+                doc_print(f, &param.doc, lib)?;
+                f.write("</param>")?;
+            }
+
+            // Print return value
+            if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+                f.writeln("<returns>")?;
+                doc_print(f, doc, lib)?;
+                f.write("</returns>")?;
+            }
+            Ok(())
+        })?;
+    }
+
     f.writeln(&format!(
         "public {} {}(",
         DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),
@@ -160,7 +216,30 @@ fn generate_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()>
     })
 }
 
-fn generate_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+fn generate_static_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
+    if !method.native_function.doc.is_empty() {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &method.native_function.doc, lib)?;
+            f.write("</summary>")?;
+
+            // Print each parameter value
+            for param in &method.native_function.parameters {
+                f.writeln(&format!("<param name=\"{}\">", param.name))?;
+                doc_print(f, &param.doc, lib)?;
+                f.write("</param>")?;
+            }
+
+            // Print return value
+            if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+                f.writeln("<returns>")?;
+                doc_print(f, doc, lib)?;
+                f.write("</returns>")?;
+            }
+            Ok(())
+        })?;
+    }
     f.writeln(&format!(
         "public static {} {}(",
         DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),

@@ -53,9 +53,9 @@ pub fn define(
         .build()?;
 
     let client_state_listener = lib
-        .define_interface("ClientStateListener")?
-        .callback("on_change")?
-        .param("state", Type::Enum(client_state_enum))?
+        .define_interface("ClientStateListener", "Callback for monitoring the client connection state")?
+        .callback("on_change", "Called when the client state changed")?
+        .param("state", Type::Enum(client_state_enum), "New state")?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?

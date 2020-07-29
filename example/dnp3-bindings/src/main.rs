@@ -47,6 +47,8 @@ fn generate_c_lib(lib: &Library) {
 
     {
         let stdin = command.stdin.as_mut().unwrap();
+        stdin.write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes()).unwrap();
+        stdin.write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes()).unwrap();
         stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
         stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
         stdin.write_all(b"INPUT = include\n").unwrap();

@@ -14,6 +14,7 @@ pub struct CallbackFunction {
     pub return_type: ReturnType,
     pub parameters: Vec<CallbackParameter>,
     pub arg_name: String,
+    pub doc: Doc,
 }
 
 impl CallbackFunction {
@@ -38,6 +39,7 @@ pub struct Interface {
     pub elements: Vec<InterfaceElement>,
     pub arg_name: String,
     pub destroy_name: String,
+    pub doc: Doc,
 }
 
 impl Interface {
@@ -58,10 +60,11 @@ pub struct InterfaceBuilder<'a> {
     element_names: HashSet<String>,
     arg_name: Option<String>,
     destroy_name: Option<String>,
+    doc: Doc,
 }
 
 impl<'a> InterfaceBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String, doc: Doc) -> Self {
         Self {
             lib,
             name,
@@ -69,12 +72,13 @@ impl<'a> InterfaceBuilder<'a> {
             element_names: HashSet::new(),
             arg_name: None,
             destroy_name: None,
+            doc,
         }
     }
 
-    pub fn callback(mut self, name: &str) -> Result<CallbackFunctionBuilder<Self>> {
+    pub fn callback<D: Into<Doc>>(mut self, name: &str, doc: D) -> Result<CallbackFunctionBuilder<Self>> {
         self.check_unique_name(name)?;
-        Ok(CallbackFunctionBuilder::new(self, name.to_string()))
+        Ok(CallbackFunctionBuilder::new(self, name.to_string(), doc.into()))
     }
 
     pub fn destroy_callback(mut self, name: &str) -> Result<Self> {
@@ -112,16 +116,19 @@ impl<'a> InterfaceBuilder<'a> {
             .ok_or(BindingError::InterfaceArgNameNotDefined {
                 interface_name: self.name.clone(),
             })?;
+
         let destroy_name =
             self.destroy_name
                 .ok_or(BindingError::InterfaceDestroyCallbackNotDefined {
                     interface_name: self.name.clone(),
                 })?;
+
         let handle = InterfaceHandle::new(Interface {
             name: self.name,
             elements: self.elements,
             arg_name,
             destroy_name,
+            doc: self.doc,
         });
 
         self.lib.interfaces.insert(handle.clone());
@@ -155,6 +162,7 @@ pub struct OneTimeCallback {
     pub name: String,
     pub elements: Vec<OneTimeCallbackElement>,
     pub arg_name: String,
+    pub doc: Doc,
 }
 
 impl OneTimeCallback {
@@ -174,22 +182,24 @@ pub struct OneTimeCallbackBuilder<'a> {
     elements: Vec<OneTimeCallbackElement>,
     element_names: HashSet<String>,
     arg_name: Option<String>,
+    doc: Doc,
 }
 
 impl<'a> OneTimeCallbackBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String, doc: Doc) -> Self {
         Self {
             lib,
             name,
             elements: Vec::new(),
             element_names: HashSet::new(),
             arg_name: None,
+            doc,
         }
     }
 
-    pub fn callback(mut self, name: &str) -> Result<CallbackFunctionBuilder<Self>> {
+    pub fn callback<D: Into<Doc>>(mut self, name: &str, doc: D) -> Result<CallbackFunctionBuilder<Self>> {
         self.check_unique_name(name)?;
-        Ok(CallbackFunctionBuilder::new(self, name.to_string()))
+        Ok(CallbackFunctionBuilder::new(self, name.to_string(), doc.into()))
     }
 
     pub fn arg(mut self, name: &str) -> Result<Self> {
@@ -213,10 +223,12 @@ impl<'a> OneTimeCallbackBuilder<'a> {
             .ok_or(BindingError::InterfaceArgNameNotDefined {
                 interface_name: self.name.clone(),
             })?;
+
         let handle = OneTimeCallbackHandle::new(OneTimeCallback {
             name: self.name,
             elements: self.elements,
             arg_name,
+            doc: self.doc,
         });
 
         self.lib.one_time_callbacks.insert(handle.clone());
@@ -271,25 +283,27 @@ pub struct CallbackFunctionBuilder<T: CallbackFunctionBuilderTarget> {
     return_type: Option<ReturnType>,
     params: Vec<CallbackParameter>,
     arg_name: Option<String>,
+    doc: Doc,
 }
 
 impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
-    pub(crate) fn new(target: T, name: String) -> Self {
+    pub(crate) fn new(target: T, name: String, doc: Doc) -> Self {
         Self {
             target,
             name,
             return_type: None,
             params: Vec::new(),
             arg_name: None,
+            doc,
         }
     }
 
-    pub fn param(mut self, name: &str, param_type: Type) -> Result<Self> {
+    pub fn param<D: Into<Doc>>(mut self, name: &str, param_type: Type, doc: D) -> Result<Self> {
         self.target.lib().validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.to_string(),
             param_type,
-            doc: Doc::empty(), //TODO: take documentation as parameter
+            doc: doc.into(),
         }));
         Ok(self)
     }
@@ -335,6 +349,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
             return_type,
             parameters: self.params,
             arg_name,
+            doc: self.doc,
         };
 
         self.target.push_callback(cb);

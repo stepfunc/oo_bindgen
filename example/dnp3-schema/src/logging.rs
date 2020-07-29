@@ -14,10 +14,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
         .build()?;
 
     let log_callback_interface = lib
-        .define_interface("Logger")?
-        .callback("on_message")?
-        .param("level", Type::Enum(log_level_enum.clone()))?
-        .param("message", Type::String)?
+        .define_interface("Logger", "Logging interface")?
+        .callback("on_message", "Called when a message should be logged")?
+        .param("level", Type::Enum(log_level_enum.clone()), "Level of the message")?
+        .param("message", Type::String, "Actual formatted message")?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?

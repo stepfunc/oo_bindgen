@@ -46,6 +46,7 @@ clippy::all
 
 use crate::callback::*;
 use crate::class::*;
+use crate::doc::Doc;
 use crate::native_enum::*;
 use crate::native_function::*;
 use crate::native_struct::*;
@@ -557,14 +558,14 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn define_interface(&mut self, name: &str) -> Result<InterfaceBuilder> {
+    pub fn define_interface<D: Into<Doc>>(&mut self, name: &str, doc: D) -> Result<InterfaceBuilder> {
         self.check_unique_symbol(name)?;
-        Ok(InterfaceBuilder::new(self, name.to_string()))
+        Ok(InterfaceBuilder::new(self, name.to_string(), doc.into()))
     }
 
-    pub fn define_one_time_callback(&mut self, name: &str) -> Result<OneTimeCallbackBuilder> {
+    pub fn define_one_time_callback<D: Into<Doc>>(&mut self, name: &str, doc: D) -> Result<OneTimeCallbackBuilder> {
         self.check_unique_symbol(name)?;
-        Ok(OneTimeCallbackBuilder::new(self, name.to_string()))
+        Ok(OneTimeCallbackBuilder::new(self, name.to_string(), doc.into()))
     }
 
     pub fn define_iterator(

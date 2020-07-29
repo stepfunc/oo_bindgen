@@ -54,9 +54,9 @@ pub fn define(
         .build()?;
 
     let read_cb = lib
-        .define_one_time_callback("ReadTaskCallback")?
-        .callback("on_complete")?
-        .param("result", Type::Enum(read_result.clone()))?
+        .define_one_time_callback("ReadTaskCallback", "Handler for read tasks")?
+        .callback("on_complete", "Called when the read task reached completion or failed")?
+        .param("result", Type::Enum(read_result.clone()), "Result of the read task")?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
@@ -259,9 +259,9 @@ pub fn define(
         .build()?;
 
     let command_cb = lib
-        .define_one_time_callback("CommandTaskCallback")?
-        .callback("on_complete")?
-        .param("result", Type::Enum(command_result.clone()))?
+        .define_one_time_callback("CommandTaskCallback", "Handler for command tasks")?
+        .callback("on_complete", "Called when the command task reached completion or failed")?
+        .param("result", Type::Enum(command_result.clone()), "Result of the command task")?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
@@ -300,9 +300,9 @@ pub fn define(
         .build()?;
 
     let timesync_cb = lib
-        .define_one_time_callback("TimeSyncTaskCallback")?
-        .callback("on_complete")?
-        .param("result", Type::Enum(timesync_result.clone()))?
+        .define_one_time_callback("TimeSyncTaskCallback", "Handler for command tasks")?
+        .callback("on_complete", "Called when the timesync task reached completion or failed")?
+        .param("result", Type::Enum(timesync_result.clone()), "Result of the command task")?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?

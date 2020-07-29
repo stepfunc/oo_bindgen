@@ -1,4 +1,5 @@
 use oo_bindgen::callback::InterfaceHandle;
+use oo_bindgen::doc::DocBuilder;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -116,56 +117,56 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     )?;
 
     let read_handler_interface = lib
-        .define_interface("ReadHandler")?
-        .callback("begin_fragment")?
-        .param("header", Type::Struct(response_header.clone()))?
+        .define_interface("ReadHandler", "General handler that will receive all values read from the outstation.")?
+        .callback("begin_fragment", "Marks the beginning of a fragment")?
+        .param("header", Type::Struct(response_header.clone()), "Header of the fragment")?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("end_fragment")?
-        .param("header", Type::Struct(response_header))?
+        .callback("end_fragment", "Marks the end of a fragment")?
+        .param("header", Type::Struct(response_header), "Header of the fragment")?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_binary")?
-        .param("info", Type::Struct(header_info.clone()))?
-        .param("it", Type::Iterator(binary_it))?
+        .callback("handle_binary", "Handle binary input data")?
+        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
+        .param("it", Type::Iterator(binary_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_double_bit_binary")?
-        .param("info", Type::Struct(header_info.clone()))?
-        .param("it", Type::Iterator(double_bit_binary_it))?
+        .callback("handle_double_bit_binary", "Handle double-bit binary input data")?
+        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
+        .param("it", Type::Iterator(double_bit_binary_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_binary_output_status")?
-        .param("info", Type::Struct(header_info.clone()))?
-        .param("it", Type::Iterator(bos_it))?
+        .callback("handle_binary_output_status", "Handle binary output status data")?
+        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
+        .param("it", Type::Iterator(bos_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_counter")?
-        .param("info", Type::Struct(header_info.clone()))?
-        .param("it", Type::Iterator(counter_it))?
+        .callback("handle_counter", "Handle counter data")?
+        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
+        .param("it", Type::Iterator(counter_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_frozen_counter")?
-        .param("info", Type::Struct(header_info.clone()))?
-        .param("it", Type::Iterator(frozen_counter_it))?
+        .callback("handle_frozen_counter", "Handle frozen counter input data")?
+        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
+        .param("it", Type::Iterator(frozen_counter_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_analog")?
-        .param("info", Type::Struct(header_info.clone()))?
-        .param("it", Type::Iterator(analog_it))?
+        .callback("handle_analog", "Handle analog input data")?
+        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
+        .param("it", Type::Iterator(analog_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_analog_output_status")?
-        .param("info", Type::Struct(header_info))?
-        .param("it", Type::Iterator(aos_it))?
+        .callback("handle_analog_output_status", "Handle analog output status data")?
+        .param("info", Type::Struct(header_info), "Group/variation and qualifier information")?
+        .param("it", Type::Iterator(aos_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?

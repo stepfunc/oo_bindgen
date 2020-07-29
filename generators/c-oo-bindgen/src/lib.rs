@@ -237,8 +237,8 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
                     f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
                 }
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle, lib)?,
-                Statement::InterfaceDefinition(handle) => write_interface(f, handle)?,
-                Statement::OneTimeCallbackDefinition(handle) => write_one_time_callback(f, handle)?,
+                Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
+                Statement::OneTimeCallbackDefinition(handle) => write_one_time_callback(f, handle, lib)?,
                 _ => (),
             }
             f.newline()?;
@@ -333,6 +333,7 @@ fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle, lib: &Libr
         doxygen(f, |f| {
             f.newline()?;
             // Print top-level documentation
+            f.writeln("@brief ")?;
             doxygen_print(f, &handle.doc, lib)?;
 
             // Print each parameter value
@@ -370,15 +371,63 @@ fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle, lib: &Libr
     f.write(");")
 }
 
-fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
+fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> FormattingResult<()> {
+    if !handle.doc.is_empty() {
+        doxygen(f, |f| {
+            f.newline()?;
+            doxygen_print(f, &handle.doc, lib)?;
+            Ok(())
+        })?;
+        f.newline()?;
+    }
+
     f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
             match element {
-                InterfaceElement::Arg(name) => f.writeln(&format!("void* {};", name))?,
+                InterfaceElement::Arg(name) => {
+                    doxygen(f, |f| {
+                        f.writeln("@brief Context data")
+                    })?;
+                    f.writeln(&format!("void* {};", name))?
+                },
                 InterfaceElement::CallbackFunction(handle) => {
                     f.newline()?;
+
+                    // Print the documentation
+                    if !handle.doc.is_empty() {
+                        doxygen(f, |f| {
+                            // Print top-level documentation
+                            f.writeln("@brief ")?;
+                            doxygen_print(f, &handle.doc, lib)?;
+
+                            // Print each parameter value
+                            for param in &handle.parameters {
+                                match param {
+                                    CallbackParameter::Arg(name) => {
+                                        f.writeln(&format!("@param {} ", name))?;
+                                        doxygen_print(f, &DocBuilder::new().text("Context data").build(), lib)?;
+                                    }
+                                    CallbackParameter::Parameter(param) => {
+                                        f.writeln(&format!("@param {} ", param.name))?;
+                                        doxygen_print(f, &param.doc, lib)?;
+                                    }
+                                }
+                            }
+                
+                            // Print return documentation
+                            if let ReturnType::Type(_, doc) = &handle.return_type {
+                                f.writeln("@return ")?;
+                                doxygen_print(f, doc, lib)?;
+                            }
+
+                            Ok(())
+                        })?;
+                        f.newline()?;
+                    }
+
+                    // Print function signature
                     f.write(&format!("void (*{})(", handle.name))?;
 
                     f.write(
@@ -398,6 +447,10 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<
                     f.write(");")?;
                 }
                 InterfaceElement::DestroyFunction(name) => {
+                    doxygen(f, |f| {
+                        f.writeln("@brief Callback when the underlying owner doesn't need the callback anymore")?;
+                        f.writeln("@param arg Context data")
+                    })?;
                     f.writeln(&format!("void (*{})(void* arg);", name))?;
                 }
             }
@@ -410,15 +463,64 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface) -> FormattingResult<
 fn write_one_time_callback(
     f: &mut dyn Printer,
     handle: &OneTimeCallbackHandle,
+    lib: &Library,
 ) -> FormattingResult<()> {
+    if !handle.doc.is_empty() {
+        doxygen(f, |f| {
+            f.newline()?;
+            doxygen_print(f, &handle.doc, lib)?;
+            Ok(())
+        })?;
+        f.newline()?;
+    }
+
     f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
             match element {
-                OneTimeCallbackElement::Arg(name) => f.writeln(&format!("void* {};", name))?,
+                OneTimeCallbackElement::Arg(name) => {
+                    doxygen(f, |f| {
+                        f.writeln("@brief Context data")
+                    })?;
+                    f.writeln(&format!("void* {};", name))?
+                },
                 OneTimeCallbackElement::CallbackFunction(handle) => {
                     f.newline()?;
+
+                    // Print the documentation
+                    if !handle.doc.is_empty() {
+                        doxygen(f, |f| {
+                            // Print top-level documentation
+                            f.writeln("@brief ")?;
+                            doxygen_print(f, &handle.doc, lib)?;
+
+                            // Print each parameter value
+                            for param in &handle.parameters {
+                                match param {
+                                    CallbackParameter::Arg(name) => {
+                                        f.writeln(&format!("@param {} ", name))?;
+                                        doxygen_print(f, &DocBuilder::new().text("Context data").build(), lib)?;
+                                    }
+                                    CallbackParameter::Parameter(param) => {
+                                        f.writeln(&format!("@param {} ", param.name))?;
+                                        doxygen_print(f, &param.doc, lib)?;
+                                    }
+                                }
+                            }
+                
+                            // Print return documentation
+                            if let ReturnType::Type(_, doc) = &handle.return_type {
+                                f.writeln("@return ")?;
+                                doxygen_print(f, doc, lib)?;
+                            }
+
+                            Ok(())
+                        })?;
+                        f.newline()?;
+                    }
+
+                    // Print function signature
                     f.write(&format!("void (*{})(", handle.name))?;
 
                     f.write(

@@ -14,6 +14,12 @@ pub(crate) fn generate(
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &interface.doc, lib)?;
+            f.write("</summary>")
+        })?;
         f.writeln(&format!("public interface {}", interface_name))?;
 
         blocked(f, |f| {
@@ -22,6 +28,26 @@ pub(crate) fn generate(
                 .callbacks()
                 .filter(|func| func.name != interface.destroy_name)
                 .map(|func| {
+                    // Documentation
+                    documentation(f, |f| {
+                        // Print top-level documentation
+                        f.writeln("<summary>")?;
+                        doc_print(f, &func.doc, lib)?;
+                        f.write("</summary>")?;
+
+                        // Print each parameter value
+                        for param in &func.parameters {
+                            if let CallbackParameter::Parameter(param) = param {
+                                f.writeln(&format!("<param name=\"{}\">", param.name))?;
+                                doc_print(f, &param.doc, lib)?;
+                                f.write("</param>")?;
+                            }
+                        }
+
+                        Ok(())
+                    })?;
+                
+                    // Callback signature
                     f.writeln(&format!(
                         "{} {}(",
                         DotnetReturnType(&func.return_type).as_dotnet_type(),

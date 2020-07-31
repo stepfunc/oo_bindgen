@@ -78,7 +78,8 @@ pub fn define(
         .destructor(&destroy_fn)?
         .method("AddAssociation", &add_association_fn)?
         .method("SetDecodeLogLevel", &set_decode_log_level_fn)?
-        .build();
+        .doc("Master channel of communication")?
+        .build()?;
 
     Ok(association_class)
 }

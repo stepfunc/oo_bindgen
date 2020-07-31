@@ -14,6 +14,13 @@ pub(crate) fn generate(
     f.newline()?;
 
     namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &class.doc, lib)?;
+            f.write("</summary>")
+        })?;
+
         let static_specifier = if class.is_static() { "static " } else { "" };
         f.writeln(&format!("public {}class {}", static_specifier, classname))?;
         if class.destructor.is_some() {
@@ -49,7 +56,7 @@ pub(crate) fn generate(
             }
 
             for method in &class.async_methods {
-                generate_async_method(f, method)?;
+                generate_async_method(f, method, lib)?;
                 f.newline()?;
             }
 
@@ -267,7 +274,7 @@ fn generate_static_method(f: &mut dyn Printer, method: &Method, lib: &Library) -
     })
 }
 
-fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
+fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod, lib: &Library) -> FormattingResult<()> {
     let method_name = method.name.to_camel_case();
     let async_handler_name = format!("{}Handler", method_name);
     let return_type = DotnetType(&method.return_type).as_dotnet_type();
@@ -299,6 +306,36 @@ fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> Formattin
     })?;
 
     f.newline()?;
+
+    // Documentation
+    if !method.native_function.doc.is_empty() {
+        documentation(f, |f| {
+            // Print top-level documentation
+            f.writeln("<summary>")?;
+            doc_print(f, &method.native_function.doc, lib)?;
+            f.write("</summary>")?;
+
+            // Print each parameter value
+            for param in method.native_function.parameters
+                .iter()
+                .skip(1)
+                .filter(|param| match param.param_type {
+                    Type::OneTimeCallback(_) => false,
+                    _ => true,
+                })
+            {
+                f.writeln(&format!("<param name=\"{}\">", param.name))?;
+                doc_print(f, &param.doc, lib)?;
+                f.write("</param>")?;
+            }
+
+            // Print return value
+            f.writeln("<returns>")?;
+            doc_print(f, &method.return_type_doc, lib)?;
+            f.write("</returns>")?;
+            Ok(())
+        })?;
+    }
 
     f.writeln(&format!(
         "public Task<{}> {}(",

@@ -71,7 +71,7 @@ pub struct DotnetBindgenConfig {
     pub platforms: PlatformLocations,
 }
 
-pub fn doc_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
+pub fn doc_print(f: &mut dyn Printer, doc: &Doc, _lib: &Library) -> FormattingResult<()> {
     for doc in doc {
         match doc {
             DocElement::Text(text) => f.write(text)?,

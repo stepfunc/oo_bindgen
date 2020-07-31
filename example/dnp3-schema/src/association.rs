@@ -35,7 +35,8 @@ pub fn define(
     let poll = lib.define_class(&poll)?
         .destructor(&poll_destroy_fn)?
         .method("Demand", &poll_demand_fn)?
-        .build();
+        .doc("Poll handle to demand executions of polls")?
+        .build()?;
 
     let add_poll_fn = lib.declare_native_function("association_add_poll")?
         .param("association", Type::ClassRef(association_class.clone()), "Association to add the poll to ")?
@@ -244,7 +245,8 @@ pub fn define(
         .method("AddU16G41V3", &command_add_u16_g41v3_fn)?
         .method("AddU8G41V4", &command_add_u8_g41v4_fn)?
         .method("AddU16G41V4", &command_add_u16_g41v4_fn)?
-        .build();
+        .doc("Command handle used to send SBO or DO commands")?
+        .build()?;
 
     let command_result = lib
         .define_native_enum("CommandResult")?
@@ -324,7 +326,8 @@ pub fn define(
         .async_method("Read", &read_fn)?
         .async_method("Operate", &operate_fn)?
         .async_method("PerformTimeSync", &perform_time_sync_fn)?
-        .build();
+        .doc("Master-outstation association to interact with")?
+        .build()?;
 
     Ok(())
 }

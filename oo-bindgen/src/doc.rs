@@ -1,11 +1,11 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DocElement {
     Text(String),
     Reference(String),
     Warning(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Doc {
     content: Vec<DocElement>,
 }

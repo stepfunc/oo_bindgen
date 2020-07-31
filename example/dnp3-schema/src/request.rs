@@ -169,7 +169,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(ClassHandle, NativeEnumHandle
         .method("AddOneByteHeader", &request_add_one_byte_header_fn)?
         .method("AddTwoByteHeader", &request_add_two_byte_header_fn)?
         .method("AddAllObjectsHeader", &request_add_all_objects_header_fn)?
-        .build();
+        .doc("Custom request")?
+        .build()?;
 
     Ok((request, variation_enum))
 }

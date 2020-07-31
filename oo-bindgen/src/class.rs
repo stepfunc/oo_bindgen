@@ -25,6 +25,7 @@ pub struct AsyncMethod {
     pub name: String,
     pub native_function: NativeFunctionHandle,
     pub return_type: Type,
+    pub return_type_doc: Doc,
     pub one_time_callback_name: String,
     pub one_time_callback_param_name: String,
     pub callback_name: String,
@@ -40,6 +41,7 @@ pub struct Class {
     pub methods: Vec<Method>,
     pub static_methods: Vec<Method>,
     pub async_methods: Vec<AsyncMethod>,
+    pub doc: Doc,
 }
 
 impl Class {
@@ -66,6 +68,7 @@ pub struct ClassBuilder<'a> {
     methods: Vec<Method>,
     static_methods: Vec<Method>,
     async_methods: Vec<AsyncMethod>,
+    doc: Option<Doc>,
 }
 
 impl<'a> ClassBuilder<'a> {
@@ -78,6 +81,19 @@ impl<'a> ClassBuilder<'a> {
             methods: Vec::new(),
             static_methods: Vec::new(),
             async_methods: Vec::new(),
+            doc: None,
+        }
+    }
+
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+        match self.doc {
+            None => {
+                self.doc = Some(doc.into());
+                Ok(self)
+            }
+            Some(_) => Err(BindingError::DocAlreadyDefined {
+                symbol_name: self.declaration.name.clone(),
+            })
         }
     }
 
@@ -184,6 +200,7 @@ impl<'a> ClassBuilder<'a> {
                             name: name.to_string(),
                             native_function: native_function.clone(),
                             return_type: cb_param.param_type.clone(),
+                            return_type_doc: cb_param.doc.clone(),
                             one_time_callback_name: ot_cb.name.clone(),
                             one_time_callback_param_name: param.name.clone(),
                             callback_name: cb.name.clone(),
@@ -225,7 +242,14 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn build(self) -> ClassHandle {
+    pub fn build(self) -> Result<ClassHandle> {
+        let doc = match self.doc {
+            Some(doc) => doc,
+            None => return Err(BindingError::DocNotDefined {
+                symbol_name: self.declaration.name.clone(),
+            })
+        };
+
         let handle = ClassHandle::new(Class {
             declaration: self.declaration.clone(),
             constructor: self.constructor,
@@ -233,6 +257,7 @@ impl<'a> ClassBuilder<'a> {
             methods: self.methods,
             static_methods: self.static_methods,
             async_methods: self.async_methods,
+            doc,
         });
 
         self.lib
@@ -242,7 +267,7 @@ impl<'a> ClassBuilder<'a> {
             .statements
             .push(Statement::ClassDefinition(handle.clone()));
 
-        handle
+        Ok(handle)
     }
 
     fn validate_first_param(&self, native_function: &NativeFunctionHandle) -> Result<()> {

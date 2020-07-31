@@ -44,7 +44,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
         .define_class(&logging_class)?
         .static_method("SetHandler", &set_callback_fn)?
         .static_method("SetLogLevel", &set_log_level_fn)?
-        .build();
+        .doc("Helper functions for logging")?
+        .build()?;
 
     let decode_log_level_enum = lib
         .define_native_enum("DecodeLogLevel")?

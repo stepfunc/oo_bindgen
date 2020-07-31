@@ -88,7 +88,8 @@ pub fn define(
         .constructor(&new_fn)?
         .destructor(&destroy_fn)?
         .method("add_master_tcp", &add_master_tcp_fn)?
-        .build();
+        .doc("Event-queue based runtime handle")?
+        .build()?;
 
     Ok(master_class)
 }

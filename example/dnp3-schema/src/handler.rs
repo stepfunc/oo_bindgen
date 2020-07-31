@@ -6,7 +6,10 @@ use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::NativeStructHandle;
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Result<InterfaceHandle, BindingError> {
+pub fn define(
+    lib: &mut LibraryBuilder,
+    variation_enum: NativeEnumHandle,
+) -> Result<InterfaceHandle, BindingError> {
     let control = lib.declare_native_struct("Control")?;
     let control = lib
         .define_native_struct(&control)?
@@ -30,7 +33,11 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     let response_header = lib.declare_native_struct("ResponseHeader")?;
     let response_header = lib
         .define_native_struct(&response_header)?
-        .add("control", Type::Struct(control), "Application control field")?
+        .add(
+            "control",
+            Type::Struct(control),
+            "Application control field",
+        )?
         .add("func", Type::Enum(response_function), "Response type")?
         .add("iin", Type::Struct(iin), "IIN bytes")?
         .doc("Response header information")?
@@ -52,8 +59,16 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     let header_info = lib.declare_native_struct("HeaderInfo")?;
     let header_info = lib
         .define_native_struct(&header_info)?
-        .add("variation", Type::Enum(variation_enum), "Group/Variation used in the response")?
-        .add("qualifier", Type::Enum(qualifier_code_enum), "Qualitifer used in the response")?
+        .add(
+            "variation",
+            Type::Enum(variation_enum),
+            "Group/Variation used in the response",
+        )?
+        .add(
+            "qualifier",
+            Type::Enum(qualifier_code_enum),
+            "Qualitifer used in the response",
+        )?
         .doc("Object header information")?
         .build()?;
 
@@ -61,9 +76,18 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
 
     let time_quality_enum = lib
         .define_native_enum("TimeQuality")?
-        .push("Synchronized", "The timestamp is UTC synchronized at the remote device")?
-        .push("NotSynchronized", "The device indicates the timestamp may be not be synchronized")?
-        .push("Invalid", "Timestamp is not valid, ignore the value and use a local timestamp")?
+        .push(
+            "Synchronized",
+            "The timestamp is UTC synchronized at the remote device",
+        )?
+        .push(
+            "NotSynchronized",
+            "The device indicates the timestamp may be not be synchronized",
+        )?
+        .push(
+            "Invalid",
+            "Timestamp is not valid, ignore the value and use a local timestamp",
+        )?
         .doc("Timestamp quality")?
         .build()?;
 
@@ -71,7 +95,11 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     let timestamp_struct = lib
         .define_native_struct(&timestamp_struct)?
         .add("value", Type::Uint64, "Timestamp value")?
-        .add("quality", Type::Enum(time_quality_enum), "Timestamp quality")?
+        .add(
+            "quality",
+            Type::Enum(time_quality_enum),
+            "Timestamp quality",
+        )?
         .doc("Timestamp value")?
         .build()?;
 
@@ -99,7 +127,13 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
         &flags_struct,
         &timestamp_struct,
     )?;
-    let counter_it = build_iterator("Counter", Type::Uint32, lib, &flags_struct, &timestamp_struct)?;
+    let counter_it = build_iterator(
+        "Counter",
+        Type::Uint32,
+        lib,
+        &flags_struct,
+        &timestamp_struct,
+    )?;
     let frozen_counter_it = build_iterator(
         "FrozenCounter",
         Type::Uint32,
@@ -107,7 +141,13 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
         &flags_struct,
         &timestamp_struct,
     )?;
-    let analog_it = build_iterator("Analog", Type::Double, lib, &flags_struct, &timestamp_struct)?;
+    let analog_it = build_iterator(
+        "Analog",
+        Type::Double,
+        lib,
+        &flags_struct,
+        &timestamp_struct,
+    )?;
     let aos_it = build_iterator(
         "AnalogOutputStatus",
         Type::Double,
@@ -117,56 +157,146 @@ pub fn define(lib: &mut LibraryBuilder, variation_enum: NativeEnumHandle) -> Res
     )?;
 
     let read_handler_interface = lib
-        .define_interface("ReadHandler", "General handler that will receive all values read from the outstation.")?
+        .define_interface(
+            "ReadHandler",
+            "General handler that will receive all values read from the outstation.",
+        )?
         .callback("begin_fragment", "Marks the beginning of a fragment")?
-        .param("header", Type::Struct(response_header.clone()), "Header of the fragment")?
+        .param(
+            "header",
+            Type::Struct(response_header.clone()),
+            "Header of the fragment",
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("end_fragment", "Marks the end of a fragment")?
-        .param("header", Type::Struct(response_header), "Header of the fragment")?
+        .param(
+            "header",
+            Type::Struct(response_header),
+            "Header of the fragment",
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_binary", "Handle binary input data")?
-        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
-        .param("it", Type::Iterator(binary_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
+        .param(
+            "info",
+            Type::Struct(header_info.clone()),
+            "Group/variation and qualifier information",
+        )?
+        .param(
+            "it",
+            Type::Iterator(binary_it),
+            DocBuilder::new()
+                .text("Iterator of point values in the response.")
+                .warn("This iterator is valid only within this call. Do not copy it."),
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_double_bit_binary", "Handle double-bit binary input data")?
-        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
-        .param("it", Type::Iterator(double_bit_binary_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
+        .callback(
+            "handle_double_bit_binary",
+            "Handle double-bit binary input data",
+        )?
+        .param(
+            "info",
+            Type::Struct(header_info.clone()),
+            "Group/variation and qualifier information",
+        )?
+        .param(
+            "it",
+            Type::Iterator(double_bit_binary_it),
+            DocBuilder::new()
+                .text("Iterator of point values in the response.")
+                .warn("This iterator is valid only within this call. Do not copy it."),
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_binary_output_status", "Handle binary output status data")?
-        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
-        .param("it", Type::Iterator(bos_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
+        .callback(
+            "handle_binary_output_status",
+            "Handle binary output status data",
+        )?
+        .param(
+            "info",
+            Type::Struct(header_info.clone()),
+            "Group/variation and qualifier information",
+        )?
+        .param(
+            "it",
+            Type::Iterator(bos_it),
+            DocBuilder::new()
+                .text("Iterator of point values in the response.")
+                .warn("This iterator is valid only within this call. Do not copy it."),
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_counter", "Handle counter data")?
-        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
-        .param("it", Type::Iterator(counter_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
+        .param(
+            "info",
+            Type::Struct(header_info.clone()),
+            "Group/variation and qualifier information",
+        )?
+        .param(
+            "it",
+            Type::Iterator(counter_it),
+            DocBuilder::new()
+                .text("Iterator of point values in the response.")
+                .warn("This iterator is valid only within this call. Do not copy it."),
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_frozen_counter", "Handle frozen counter input data")?
-        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
-        .param("it", Type::Iterator(frozen_counter_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
+        .param(
+            "info",
+            Type::Struct(header_info.clone()),
+            "Group/variation and qualifier information",
+        )?
+        .param(
+            "it",
+            Type::Iterator(frozen_counter_it),
+            DocBuilder::new()
+                .text("Iterator of point values in the response.")
+                .warn("This iterator is valid only within this call. Do not copy it."),
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_analog", "Handle analog input data")?
-        .param("info", Type::Struct(header_info.clone()), "Group/variation and qualifier information")?
-        .param("it", Type::Iterator(analog_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
+        .param(
+            "info",
+            Type::Struct(header_info.clone()),
+            "Group/variation and qualifier information",
+        )?
+        .param(
+            "it",
+            Type::Iterator(analog_it),
+            DocBuilder::new()
+                .text("Iterator of point values in the response.")
+                .warn("This iterator is valid only within this call. Do not copy it."),
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .callback("handle_analog_output_status", "Handle analog output status data")?
-        .param("info", Type::Struct(header_info), "Group/variation and qualifier information")?
-        .param("it", Type::Iterator(aos_it), DocBuilder::new().text("Iterator of point values in the response.").warn("This iterator is valid only within this call. Do not copy it."))?
+        .callback(
+            "handle_analog_output_status",
+            "Handle analog output status data",
+        )?
+        .param(
+            "info",
+            Type::Struct(header_info),
+            "Group/variation and qualifier information",
+        )?
+        .param(
+            "it",
+            Type::Iterator(aos_it),
+            DocBuilder::new()
+                .text("Iterator of point values in the response.")
+                .warn("This iterator is valid only within this call. Do not copy it."),
+        )?
         .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
@@ -188,11 +318,26 @@ fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, Bi
     let iin1_flag = lib
         .define_native_enum("IIN1Flag")?
         .push("Broadcast", "Indicate that the message was broadcasted")?
-        .push("Class1Events", "Outstation has Class 1 events not reported yet")?
-        .push("Class2Events", "Outstation has Class 2 events not reported yet")?
-        .push("Class3Events", "Outstation has Class 3 events not reported yet")?
-        .push("NeedTime", "Outstation indicates it requires time synchronization from the master")?
-        .push("LocalControl", "At least one point of the outstation is in the local operation mode")?
+        .push(
+            "Class1Events",
+            "Outstation has Class 1 events not reported yet",
+        )?
+        .push(
+            "Class2Events",
+            "Outstation has Class 2 events not reported yet",
+        )?
+        .push(
+            "Class3Events",
+            "Outstation has Class 3 events not reported yet",
+        )?
+        .push(
+            "NeedTime",
+            "Outstation indicates it requires time synchronization from the master",
+        )?
+        .push(
+            "LocalControl",
+            "At least one point of the outstation is in the local operation mode",
+        )?
         .push("DeviceTrouble", "Outstation reports abnormal condition")?
         .push("DeviceRestart", "Outstation has restarted")?
         .doc("First IIN bit flags")?
@@ -202,7 +347,10 @@ fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, Bi
         .declare_native_function("iin1_is_set")?
         .param("iin1", Type::StructRef(iin1.declaration()), "IIN1 to check")?
         .param("flag", Type::Enum(iin1_flag), "Flag to check")?
-        .return_type(ReturnType::new(Type::Bool, "true if the flag is set, false otherwise"))?
+        .return_type(ReturnType::new(
+            Type::Bool,
+            "true if the flag is set, false otherwise",
+        ))?
         .doc("Check if a particular flag is set in the IIN1 byte")?
         .build()?;
 
@@ -219,12 +367,27 @@ fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, Bi
 
     let iin2_flag = lib
         .define_native_enum("IIN2Flag")?
-        .push("NoFuncCodeSupport", "Function code is not supported by the outstation")?
+        .push(
+            "NoFuncCodeSupport",
+            "Function code is not supported by the outstation",
+        )?
         .push("ObjectUnknown", "Request contains an unknown point")?
-        .push("ParameterError", "Unable to parse request or invalid qualifier code")?
-        .push("EventBufferOverflow", "Event buffer overflow, at least one event was lost")?
-        .push("AlreadyExecuting", "Cannot perform operation because an execution is already in progress")?
-        .push("ConfigCorrupt", "Outstation reports a configuration corruption")?
+        .push(
+            "ParameterError",
+            "Unable to parse request or invalid qualifier code",
+        )?
+        .push(
+            "EventBufferOverflow",
+            "Event buffer overflow, at least one event was lost",
+        )?
+        .push(
+            "AlreadyExecuting",
+            "Cannot perform operation because an execution is already in progress",
+        )?
+        .push(
+            "ConfigCorrupt",
+            "Outstation reports a configuration corruption",
+        )?
         .doc("Second IIN bit flags")?
         .build()?;
 
@@ -232,7 +395,10 @@ fn declare_iin_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, Bi
         .declare_native_function("iin2_is_set")?
         .param("iin2", Type::StructRef(iin2.declaration()), "IIN2 to check")?
         .param("flag", Type::Enum(iin2_flag), "Flag to check")?
-        .return_type(ReturnType::new(Type::Bool, "true if the flag is set, false otherwise"))?
+        .return_type(ReturnType::new(
+            Type::Bool,
+            "true if the flag is set, false otherwise",
+        ))?
         .doc("Check if a particular flag is set in the IIN2 byte")?
         .build()?;
 
@@ -276,9 +442,16 @@ fn declare_flags_struct(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, 
 
     let flags_is_set_fn = lib
         .declare_native_function("flags_is_set")?
-        .param("flags", Type::StructRef(flags_struct.declaration()), "Flags byte to check")?
+        .param(
+            "flags",
+            Type::StructRef(flags_struct.declaration()),
+            "Flags byte to check",
+        )?
         .param("flag", Type::Enum(flag_enum), "Flag to check")?
-        .return_type(ReturnType::new(Type::Bool, "true if flag is set, false otherwise"))?
+        .return_type(ReturnType::new(
+            Type::Bool,
+            "true if flag is set, false otherwise",
+        ))?
         .doc("Check if a particular flag is set in the flags byte")?
         .build()?;
 
@@ -302,17 +475,22 @@ fn build_iterator(
         .add("index", Type::Uint16, "Point index")?
         .add("value", value_type, "Point value")?
         .add("flags", Type::Struct(flags_struct.clone()), "Point flags")?
-        .add("time", Type::Struct(timestamp_struct.clone()), "Point timestamp")?
+        .add(
+            "time",
+            Type::Struct(timestamp_struct.clone()),
+            "Point timestamp",
+        )?
         .doc(format!("{} point", name).as_ref())?
         .build()?;
 
     let value_iterator = lib.declare_class(&format!("{}Iterator", name))?;
     let iterator_next_fn = lib
         .declare_native_function(&format!("{}_next", name.to_lowercase()))?
-        .param("it", Type::ClassRef(value_iterator.clone()), "Iterator")?
-        .return_type(ReturnType::new(Type::StructRef(
-            value_struct.declaration(),
-        ), "Next value of the iterator or NULL if the iterator reached the end"))?
+        .param("it", Type::ClassRef(value_iterator), "Iterator")?
+        .return_type(ReturnType::new(
+            Type::StructRef(value_struct.declaration()),
+            "Next value of the iterator or NULL if the iterator reached the end",
+        ))?
         .doc("Get the next value of the iterator")?
         .build()?;
 

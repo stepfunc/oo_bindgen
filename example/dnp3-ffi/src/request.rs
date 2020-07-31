@@ -27,7 +27,12 @@ pub unsafe fn request_new() -> *mut Request {
     Box::into_raw(request)
 }
 
-pub unsafe fn request_new_class(class0: bool, class1: bool, class2: bool, class3: bool) -> *mut Request {
+pub unsafe fn request_new_class(
+    class0: bool,
+    class1: bool,
+    class2: bool,
+    class3: bool,
+) -> *mut Request {
     let mut request = Request::new();
     if class1 {
         request.add(ReadHeader::all_objects(Variation::Group60Var2));
@@ -52,13 +57,23 @@ pub unsafe fn request_destroy(request: *mut Request) {
     }
 }
 
-pub unsafe fn request_add_one_byte_header(request: *mut Request, variation: ffi::Variation, start: u8, stop: u8) {
+pub unsafe fn request_add_one_byte_header(
+    request: *mut Request,
+    variation: ffi::Variation,
+    start: u8,
+    stop: u8,
+) {
     if let Some(request) = request.as_mut() {
         request.add(ReadHeader::one_byte_range(variation.into(), start, stop));
     }
 }
 
-pub unsafe fn request_add_two_byte_header(request: *mut Request, variation: ffi::Variation, start: u16, stop: u16) {
+pub unsafe fn request_add_two_byte_header(
+    request: *mut Request,
+    variation: ffi::Variation,
+    start: u16,
+    stop: u16,
+) {
     if let Some(request) = request.as_mut() {
         request.add(ReadHeader::two_byte_range(variation.into(), start, stop));
     }

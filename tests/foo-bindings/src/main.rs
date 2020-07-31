@@ -25,6 +25,7 @@ fn generate_c_lib(lib: &Library) {
         output_dir: PathBuf::from("tests/bindings/c/generated"),
         ffi_name: "foo_ffi".to_string(),
         platforms,
+        generate_doc: true,
     };
 
     c_oo_bindgen::generate_c_package(&lib, &config).expect("failed to package C lib");

@@ -1,6 +1,6 @@
 use crate::command::Command;
-use crate::request::Request;
 use crate::ffi;
+use crate::request::Request;
 use dnp3::master::association::PollHandle;
 use dnp3::master::error::{CommandError, CommandResponseError, TimeSyncError};
 use dnp3::master::handle::AssociationHandle;
@@ -30,10 +30,7 @@ pub struct Poll {
 
 impl Poll {
     fn new(runtime: tokio::runtime::Handle, handle: PollHandle) -> Self {
-        Self {
-            runtime,
-            handle,
-        }
+        Self { runtime, handle }
     }
 }
 
@@ -58,7 +55,11 @@ pub unsafe fn poll_destroy(poll: *mut Poll) {
     }
 }
 
-pub unsafe fn association_add_poll(association: *mut Association, request: *const Request, period: u64) -> *mut Poll {
+pub unsafe fn association_add_poll(
+    association: *mut Association,
+    request: *const Request,
+    period: u64,
+) -> *mut Poll {
     let association = match association.as_mut() {
         Some(association) => association,
         None => return std::ptr::null_mut(),
@@ -72,7 +73,10 @@ pub unsafe fn association_add_poll(association: *mut Association, request: *cons
     let period = Duration::from_millis(period);
 
     if tokio::runtime::Handle::try_current().is_err() {
-        if let Ok(handle) = association.runtime.block_on(association.handle.add_poll(request.build(), period)) {
+        if let Ok(handle) = association
+            .runtime
+            .block_on(association.handle.add_poll(request.build(), period))
+        {
             let poll = Box::new(Poll::new(association.runtime.clone(), handle));
             Box::into_raw(poll)
         } else {

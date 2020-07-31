@@ -9,15 +9,20 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_item = lib.declare_native_struct("StringIteratorItem")?;
     let iterator_next_fn = lib
         .declare_native_function("iterator_next")?
-        .param("it", Type::ClassRef(iterator_class.clone()))?
-        .return_type(ReturnType::Type(Type::StructRef(iterator_item.clone())))?
+        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
+        .return_type(ReturnType::new(
+            Type::StructRef(iterator_item.clone()),
+            "Iterator value",
+        ))?
+        .doc("Get the next value, or NULL if the iterator reached the end")?
         .build()?;
 
     // Define the iterator item structure
     let iterator_item = lib
         .define_native_struct(&iterator_item)?
-        .add("value", Type::Uint8)?
-        .build();
+        .add("value", Type::Uint8, "Charater value")?
+        .doc("Single iterator item")?
+        .build()?;
 
     // Define the actual iterator
     let iterator = lib.define_iterator(&iterator_next_fn, &iterator_item)?;
@@ -25,18 +30,21 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define test method
     let iterate_string_fn = lib
         .declare_native_function("iterator_create")?
-        .param("value", Type::String)?
-        .return_type(ReturnType::Type(Type::Iterator(iterator)))?
+        .param("value", Type::String, "String to iterate on")?
+        .return_type(ReturnType::new(Type::Iterator(iterator), "New iterator"))?
+        .doc("Create an iterator")?
         .build()?;
     let iterator_destroy_fn = lib
         .declare_native_function("iterator_destroy")?
-        .param("it", Type::ClassRef(iterator_class.clone()))?
+        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
         .return_type(ReturnType::Void)?
+        .doc("Destroy an iterator")?
         .build()?;
     lib.define_class(&iterator_class)?
         .static_method("IterateString", &iterate_string_fn)?
         .destructor(&iterator_destroy_fn)?
-        .build();
+        .doc("IterateString functions")?
+        .build()?;
 
     Ok(())
 }

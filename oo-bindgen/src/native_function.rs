@@ -1,6 +1,6 @@
-use crate::*;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
@@ -138,16 +138,20 @@ impl<'a> NativeFunctionBuilder<'a> {
     pub fn build(self) -> Result<NativeFunctionHandle> {
         let return_type = match self.return_type {
             Some(return_type) => return_type,
-            None => return Err(BindingError::ReturnTypeNotDefined {
-                native_func_name: self.name
-            })
+            None => {
+                return Err(BindingError::ReturnTypeNotDefined {
+                    native_func_name: self.name,
+                })
+            }
         };
 
         let doc = match self.doc {
             Some(doc) => doc,
-            None => return Err(BindingError::DocNotDefined {
-                symbol_name: self.name
-            })
+            None => {
+                return Err(BindingError::DocNotDefined {
+                    symbol_name: self.name,
+                })
+            }
         };
 
         let handle = NativeFunctionHandle::new(NativeFunction {

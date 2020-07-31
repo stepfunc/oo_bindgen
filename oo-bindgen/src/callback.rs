@@ -1,5 +1,5 @@
-use crate::*;
 use crate::doc::Doc;
+use crate::*;
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -76,9 +76,17 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn callback<D: Into<Doc>>(mut self, name: &str, doc: D) -> Result<CallbackFunctionBuilder<Self>> {
+    pub fn callback<D: Into<Doc>>(
+        mut self,
+        name: &str,
+        doc: D,
+    ) -> Result<CallbackFunctionBuilder<Self>> {
         self.check_unique_name(name)?;
-        Ok(CallbackFunctionBuilder::new(self, name.to_string(), doc.into()))
+        Ok(CallbackFunctionBuilder::new(
+            self,
+            name.to_string(),
+            doc.into(),
+        ))
     }
 
     pub fn destroy_callback(mut self, name: &str) -> Result<Self> {
@@ -197,9 +205,17 @@ impl<'a> OneTimeCallbackBuilder<'a> {
         }
     }
 
-    pub fn callback<D: Into<Doc>>(mut self, name: &str, doc: D) -> Result<CallbackFunctionBuilder<Self>> {
+    pub fn callback<D: Into<Doc>>(
+        mut self,
+        name: &str,
+        doc: D,
+    ) -> Result<CallbackFunctionBuilder<Self>> {
         self.check_unique_name(name)?;
-        Ok(CallbackFunctionBuilder::new(self, name.to_string(), doc.into()))
+        Ok(CallbackFunctionBuilder::new(
+            self,
+            name.to_string(),
+            doc.into(),
+        ))
     }
 
     pub fn arg(mut self, name: &str) -> Result<Self> {

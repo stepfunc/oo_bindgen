@@ -15,15 +15,26 @@ pub fn define(
     let config_struct = lib.declare_native_struct("RuntimeConfig")?;
     let config_struct = lib
         .define_native_struct(&config_struct)?
-        .add("num_core_threads", Type::Uint16, "Number of runtime threads to spawn. For a guess of the number of CPUs, use 0.")?
+        .add(
+            "num_core_threads",
+            Type::Uint16,
+            "Number of runtime threads to spawn. For a guess of the number of CPUs, use 0.",
+        )?
         .doc("Runtime configuration")?
         .build()?;
 
     // Declare the native functions
     let new_fn = lib
         .declare_native_function("runtime_new")?
-        .param("config", Type::StructRef(config_struct.declaration()), "Runtime configuration")?
-        .return_type(ReturnType::new(Type::ClassRef(runtime_class.clone()), "Handle to the created runtime, NULL if an error occured"))?
+        .param(
+            "config",
+            Type::StructRef(config_struct.declaration()),
+            "Runtime configuration",
+        )?
+        .return_type(ReturnType::new(
+            Type::ClassRef(runtime_class.clone()),
+            "Handle to the created runtime, NULL if an error occured",
+        ))?
         .doc("Create a new runtime")?
         .build()?;
 
@@ -44,16 +55,28 @@ pub fn define(
 
     let client_state_enum = lib
         .define_native_enum("ClientState")?
-        .push("Connecting", "Client is trying to establish a connection to the remote device")?
+        .push(
+            "Connecting",
+            "Client is trying to establish a connection to the remote device",
+        )?
         .push("Connected", "Client is connected to the remote device")?
-        .push("WaitAfterFailedConnect", "Failed to establish a connection, waiting before retrying")?
-        .push("WaitAfterDisconnect", "Client was disconnected, waiting before retrying")?
+        .push(
+            "WaitAfterFailedConnect",
+            "Failed to establish a connection, waiting before retrying",
+        )?
+        .push(
+            "WaitAfterDisconnect",
+            "Client was disconnected, waiting before retrying",
+        )?
         .push("Shutdown", "Client is shutting down")?
         .doc("State of the client connection")?
         .build()?;
 
     let client_state_listener = lib
-        .define_interface("ClientStateListener", "Callback for monitoring the client connection state")?
+        .define_interface(
+            "ClientStateListener",
+            "Callback for monitoring the client connection state",
+        )?
         .callback("on_change", "Called when the client state changed")?
         .param("state", Type::Enum(client_state_enum), "New state")?
         .arg("arg")?

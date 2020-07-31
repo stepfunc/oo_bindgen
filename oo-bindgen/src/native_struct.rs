@@ -1,5 +1,5 @@
-use crate::*;
 use crate::doc::Doc;
+use crate::*;
 use std::collections::HashSet;
 
 /// C-style structure forward declaration
@@ -92,16 +92,18 @@ impl<'a> NativeStructBuilder<'a> {
             }
             Some(_) => Err(BindingError::DocAlreadyDefined {
                 symbol_name: self.declaration.name.clone(),
-            })
+            }),
         }
     }
 
     pub fn build(self) -> Result<NativeStructHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
-            None => return Err(BindingError::DocNotDefined {
-                symbol_name: self.declaration.name.clone(),
-            })
+            None => {
+                return Err(BindingError::DocNotDefined {
+                    symbol_name: self.declaration.name.clone(),
+                })
+            }
         };
 
         let handle = NativeStructHandle::new(NativeStruct {

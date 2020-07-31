@@ -15,9 +15,11 @@ impl Iterator {
         item_type: &NativeStructHandle,
     ) -> Result<Iterator> {
         match &native_func.return_type {
-            ReturnType::Void => return Err(BindingError::IteratorReturnTypeNotStructRef {
-                handle: native_func.clone(),
-            }),
+            ReturnType::Void => {
+                return Err(BindingError::IteratorReturnTypeNotStructRef {
+                    handle: native_func.clone(),
+                })
+            }
             ReturnType::Type(return_type, _) => {
                 if *return_type != Type::StructRef(item_type.declaration()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {

@@ -434,29 +434,32 @@ impl LibraryBuilder {
         for statement in &self.statements {
             match statement {
                 Statement::NativeStructDeclaration(handle) => {
-                    symbols.insert(handle.name.clone(), Symbol::Struct(structs.get(&handle).unwrap().clone()));
-                },
+                    symbols.insert(
+                        handle.name.clone(),
+                        Symbol::Struct(structs.get(&handle).unwrap().clone()),
+                    );
+                }
                 Statement::NativeStructDefinition(_) => (),
                 Statement::StructDefinition(_) => (),
                 Statement::EnumDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::Enum(handle.clone()));
-                },
+                }
                 Statement::ClassDeclaration(_) => (),
                 Statement::ClassDefinition(handle) => {
                     symbols.insert(handle.name().to_string(), Symbol::Class(handle.clone()));
-                },
+                }
                 Statement::InterfaceDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::Interface(handle.clone()));
-                },
+                }
                 Statement::OneTimeCallbackDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::OneTimeCallback(handle.clone()));
-                },
+                }
                 Statement::IteratorDeclaration(handle) => {
                     symbols.insert(handle.name().to_string(), Symbol::Iterator(handle.clone()));
-                },
+                }
                 Statement::NativeFunctionDeclaration(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::NativeFunction(handle.clone()));
-                },
+                }
             }
         }
 
@@ -471,7 +474,7 @@ impl LibraryBuilder {
             statements: self.statements,
             structs,
             _classes: self.classes,
-            symbols
+            symbols,
         }
     }
 
@@ -558,14 +561,26 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn define_interface<D: Into<Doc>>(&mut self, name: &str, doc: D) -> Result<InterfaceBuilder> {
+    pub fn define_interface<D: Into<Doc>>(
+        &mut self,
+        name: &str,
+        doc: D,
+    ) -> Result<InterfaceBuilder> {
         self.check_unique_symbol(name)?;
         Ok(InterfaceBuilder::new(self, name.to_string(), doc.into()))
     }
 
-    pub fn define_one_time_callback<D: Into<Doc>>(&mut self, name: &str, doc: D) -> Result<OneTimeCallbackBuilder> {
+    pub fn define_one_time_callback<D: Into<Doc>>(
+        &mut self,
+        name: &str,
+        doc: D,
+    ) -> Result<OneTimeCallbackBuilder> {
         self.check_unique_symbol(name)?;
-        Ok(OneTimeCallbackBuilder::new(self, name.to_string(), doc.into()))
+        Ok(OneTimeCallbackBuilder::new(
+            self,
+            name.to_string(),
+            doc.into(),
+        ))
     }
 
     pub fn define_iterator(

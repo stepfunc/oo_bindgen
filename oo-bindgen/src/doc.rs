@@ -12,20 +12,18 @@ pub struct Doc {
 
 impl Doc {
     pub fn new(elements: Vec<DocElement>) -> Self {
-        Self {
-            content: elements,
-        }
+        Self { content: elements }
     }
 
     pub fn empty() -> Self {
         Self {
-            content: Vec::new()
+            content: Vec::new(),
         }
     }
 
     pub fn text(content: &str) -> Self {
         Self {
-            content: vec![DocElement::Text(content.to_owned())]
+            content: vec![DocElement::Text(content.to_owned())],
         }
     }
 
@@ -75,7 +73,8 @@ impl DocBuilder {
     }
 
     pub fn reference(mut self, typename: &str) -> Self {
-        self.elements.push(DocElement::Reference(typename.to_owned()));
+        self.elements
+            .push(DocElement::Reference(typename.to_owned()));
         self
     }
 

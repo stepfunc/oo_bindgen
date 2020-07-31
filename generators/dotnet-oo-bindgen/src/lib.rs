@@ -80,10 +80,10 @@ pub fn doc_print(f: &mut dyn Printer, doc: &Doc, _lib: &Library) -> FormattingRe
                 f.write(&format!("<see cref=\"{}\"/>", typename.to_camel_case()))?;
                 //let symbol = lib.symbol(typename).unwrap();
                 //f.write(&format!("@ref {}", symbol.to_type()))?;
-            },
+            }
             DocElement::Warning(text) => {
                 f.write(&format!("<remarks>{}</remarks>", text))?;
-            },
+            }
         }
     }
     Ok(())

@@ -1,6 +1,6 @@
-use oo_bindgen::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError> {
     let log_level_enum = lib
@@ -16,7 +16,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
     let log_callback_interface = lib
         .define_interface("Logger", "Logging interface")?
         .callback("on_message", "Called when a message should be logged")?
-        .param("level", Type::Enum(log_level_enum.clone()), "Level of the message")?
+        .param(
+            "level",
+            Type::Enum(log_level_enum.clone()),
+            "Level of the message",
+        )?
         .param("message", Type::String, "Actual formatted message")?
         .arg("arg")?
         .return_type(ReturnType::void())?
@@ -27,7 +31,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
 
     let set_callback_fn = lib
         .declare_native_function("logging_set_callback")?
-        .param("handler", Type::Interface(log_callback_interface), "Handler that will receive each logged message")?
+        .param(
+            "handler",
+            Type::Interface(log_callback_interface),
+            "Handler that will receive each logged message",
+        )?
         .return_type(ReturnType::void())?
         .doc("Set the callback that will receive all the log messages")?
         .build()?;

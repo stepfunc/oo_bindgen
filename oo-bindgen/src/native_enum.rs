@@ -1,5 +1,5 @@
-use crate::*;
 use crate::doc::Doc;
+use crate::*;
 
 #[derive(Debug)]
 pub struct EnumVariant {
@@ -86,9 +86,11 @@ impl<'a> NativeEnumBuilder<'a> {
     pub fn build(self) -> Result<NativeEnumHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
-            None => return Err(BindingError::DocNotDefined {
-                symbol_name: self.name
-            })
+            None => {
+                return Err(BindingError::DocNotDefined {
+                    symbol_name: self.name,
+                })
+            }
         };
 
         let handle = NativeEnumHandle::new(NativeEnum {

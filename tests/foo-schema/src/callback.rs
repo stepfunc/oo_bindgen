@@ -4,27 +4,31 @@ use oo_bindgen::*;
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare interface
     let interface = lib
-        .define_interface("CallbackInterface")?
-        .callback("on_value")?
-        .param("value", Type::Uint32)?
+        .define_interface("CallbackInterface", "Test interface")?
+        .callback("on_value", "On value callback")?
+        .param("value", Type::Uint32, "Value")?
         .arg("data")?
-        .return_type(ReturnType::Void)?
+        .return_type(ReturnType::void())?
         .build()?
-        .callback("on_duration")?
-        .param("value", Type::Duration(DurationMapping::Milliseconds))?
+        .callback("on_duration", "On duration callback")?
+        .param(
+            "value",
+            Type::Duration(DurationMapping::Milliseconds),
+            "Value",
+        )?
         .arg("data")?
-        .return_type(ReturnType::Void)?
+        .return_type(ReturnType::void())?
         .build()?
         .destroy_callback("on_destroy")?
         .arg("data")?
         .build()?;
 
     let one_time_callback = lib
-        .define_one_time_callback("OneTimeCallbackInterface")?
-        .callback("on_value")?
-        .param("value", Type::Uint32)?
+        .define_one_time_callback("OneTimeCallbackInterface", "Test one-time-interface")?
+        .callback("on_value", "On value callback")?
+        .param("value", Type::Uint32, "Value")?
         .arg("data")?
-        .return_type(ReturnType::Void)?
+        .return_type(ReturnType::void())?
         .build()?
         .arg("data")?
         .build()?;
@@ -35,41 +39,78 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare each native function
     let cbsource_new_func = lib
         .declare_native_function("cbsource_new")?
-        .return_type(ReturnType::Type(Type::ClassRef(cbsource.clone())))?
+        .return_type(ReturnType::new(
+            Type::ClassRef(cbsource.clone()),
+            "Handle to a CallbackSource",
+        ))?
+        .doc("Create a new CallbackSource")?
         .build()?;
 
     let cbsource_destroy_func = lib
         .declare_native_function("cbsource_destroy")?
-        .param("cbsource", Type::ClassRef(cbsource.clone()))?
-        .return_type(ReturnType::Void)?
+        .param(
+            "cbsource",
+            Type::ClassRef(cbsource.clone()),
+            "Callback source",
+        )?
+        .return_type(ReturnType::void())?
+        .doc("Destroy a callback source")?
         .build()?;
 
     let cbsource_add_func = lib
         .declare_native_function("cbsource_add")?
-        .param("cbsource", Type::ClassRef(cbsource.clone()))?
-        .param("cb", Type::Interface(interface))?
-        .return_type(ReturnType::Void)?
+        .param(
+            "cbsource",
+            Type::ClassRef(cbsource.clone()),
+            "Callback source",
+        )?
+        .param("cb", Type::Interface(interface), "Callback to add")?
+        .return_type(ReturnType::void())?
+        .doc("Add a callback")?
         .build()?;
 
     let cbsource_add_one_time_func = lib
         .declare_native_function("cbsource_add_one_time")?
-        .param("cbsource", Type::ClassRef(cbsource.clone()))?
-        .param("cb", Type::OneTimeCallback(one_time_callback.clone()))?
-        .return_type(ReturnType::Void)?
+        .param(
+            "cbsource",
+            Type::ClassRef(cbsource.clone()),
+            "Callback source",
+        )?
+        .param(
+            "cb",
+            Type::OneTimeCallback(one_time_callback.clone()),
+            "Callback to add",
+        )?
+        .return_type(ReturnType::void())?
+        .doc("Add a one-time callback")?
         .build()?;
 
     let cbsource_set_value_func = lib
         .declare_native_function("cbsource_set_value")?
-        .param("cbsource", Type::ClassRef(cbsource.clone()))?
-        .param("value", Type::Uint32)?
-        .return_type(ReturnType::Void)?
+        .param(
+            "cbsource",
+            Type::ClassRef(cbsource.clone()),
+            "Callback source",
+        )?
+        .param("value", Type::Uint32, "New value")?
+        .return_type(ReturnType::void())?
+        .doc("Set the value and call all the callbacks")?
         .build()?;
 
     let cbsource_set_duration_func = lib
         .declare_native_function("cbsource_set_duration")?
-        .param("cbsource", Type::ClassRef(cbsource.clone()))?
-        .param("value", Type::Duration(DurationMapping::Milliseconds))?
-        .return_type(ReturnType::Void)?
+        .param(
+            "cbsource",
+            Type::ClassRef(cbsource.clone()),
+            "Callback source",
+        )?
+        .param(
+            "value",
+            Type::Duration(DurationMapping::Milliseconds),
+            "New duration",
+        )?
+        .return_type(ReturnType::void())?
+        .doc("Set the duration and call all the callbacks")?
         .build()?;
 
     // Define the class
@@ -81,7 +122,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .method("AddOneTimeFunc", &cbsource_add_one_time_func)?
         .method("SetValue", &cbsource_set_value_func)?
         .method("SetDuration", &cbsource_set_duration_func)?
-        .build();
+        .doc("CallbackSource class")?
+        .build()?;
 
     Ok(())
 }

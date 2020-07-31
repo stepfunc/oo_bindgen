@@ -125,7 +125,7 @@ fn generate_destructor(
     f: &mut dyn Printer,
     classname: &str,
     destructor: &NativeFunctionHandle,
-    lib: &Library
+    lib: &Library,
 ) -> FormattingResult<()> {
     // Public Dispose method
     if !destructor.doc.is_empty() {
@@ -223,7 +223,11 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
     })
 }
 
-fn generate_static_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
+fn generate_static_method(
+    f: &mut dyn Printer,
+    method: &Method,
+    lib: &Library,
+) -> FormattingResult<()> {
     if !method.native_function.doc.is_empty() {
         documentation(f, |f| {
             // Print top-level documentation
@@ -274,7 +278,11 @@ fn generate_static_method(f: &mut dyn Printer, method: &Method, lib: &Library) -
     })
 }
 
-fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod, lib: &Library) -> FormattingResult<()> {
+fn generate_async_method(
+    f: &mut dyn Printer,
+    method: &AsyncMethod,
+    lib: &Library,
+) -> FormattingResult<()> {
     let method_name = method.name.to_camel_case();
     let async_handler_name = format!("{}Handler", method_name);
     let return_type = DotnetType(&method.return_type).as_dotnet_type();
@@ -316,13 +324,16 @@ fn generate_async_method(f: &mut dyn Printer, method: &AsyncMethod, lib: &Librar
             f.write("</summary>")?;
 
             // Print each parameter value
-            for param in method.native_function.parameters
-                .iter()
-                .skip(1)
-                .filter(|param| match param.param_type {
-                    Type::OneTimeCallback(_) => false,
-                    _ => true,
-                })
+            for param in
+                method
+                    .native_function
+                    .parameters
+                    .iter()
+                    .skip(1)
+                    .filter(|param| match param.param_type {
+                        Type::OneTimeCallback(_) => false,
+                        _ => true,
+                    })
             {
                 f.writeln(&format!("<param name=\"{}\">", param.name))?;
                 doc_print(f, &param.doc, lib)?;

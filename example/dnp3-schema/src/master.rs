@@ -13,9 +13,17 @@ pub fn define(
 ) -> Result<ClassDeclarationHandle, BindingError> {
     let destroy_fn = lib
         .declare_native_function("master_destroy")?
-        .param("master", Type::ClassRef(master_class.clone()), "Master to destroy")?
+        .param(
+            "master",
+            Type::ClassRef(master_class.clone()),
+            "Master to destroy",
+        )?
         .return_type(ReturnType::void())?
-        .doc(DocBuilder::new().text("Remove and destroy a master.").warn("This method must NOT be called from within the tokio runtime"))?
+        .doc(
+            DocBuilder::new()
+                .text("Remove and destroy a master.")
+                .warn("This method must NOT be called from within the tokio runtime"),
+        )?
         .build()?;
 
     // Association creation
@@ -33,17 +41,35 @@ pub fn define(
     let auto_time_sync_enum = lib
         .define_native_enum("AutoTimeSync")?
         .push("None", "Do not perform automatic timesync")?
-        .push("LAN", "Perform automatic timesync with Record Current Time (0x18) function code")?
-        .push("NonLAN", "Perform automatic timesync with Delay Measurement (0x17) function code")?
+        .push(
+            "LAN",
+            "Perform automatic timesync with Record Current Time (0x18) function code",
+        )?
+        .push(
+            "NonLAN",
+            "Perform automatic timesync with Delay Measurement (0x17) function code",
+        )?
         .doc("Automatic time synchronization configuration")?
         .build()?;
 
     let association_configuration = lib.declare_native_struct("AssociationConfiguration")?;
     let association_configuration = lib
         .define_native_struct(&association_configuration)?
-        .add("disable_unsol_classes", Type::Struct(event_classes.clone()), "Classes to disable unsolicited responses at startup")?
-        .add("enable_unsol_classes", Type::Struct(event_classes), "Classes to enable unsolicited responses at startup")?
-        .add("auto_time_sync", Type::Enum(auto_time_sync_enum), "Automatic time sychronization configuration")?
+        .add(
+            "disable_unsol_classes",
+            Type::Struct(event_classes.clone()),
+            "Classes to disable unsolicited responses at startup",
+        )?
+        .add(
+            "enable_unsol_classes",
+            Type::Struct(event_classes),
+            "Classes to enable unsolicited responses at startup",
+        )?
+        .add(
+            "auto_time_sync",
+            Type::Enum(auto_time_sync_enum),
+            "Automatic time sychronization configuration",
+        )?
         .doc("Association configuration")?
         .build()?;
 
@@ -58,18 +84,45 @@ pub fn define(
 
     let add_association_fn = lib
         .declare_native_function("master_add_association")?
-        .param("master", Type::ClassRef(master_class.clone()), "Master to add the association to")?
-        .param("address", Type::Uint16, "DNP3 data-link address of the remote outstation")?
-        .param("config", Type::Struct(association_configuration), "Association configuration")?
-        .param("handlers", Type::Struct(association_handlers), "Handlers to call when receiving point data")?
-        .return_type(ReturnType::new(Type::ClassRef(association_class.clone()), "Handle to the created association or NULL if an error occured"))?
+        .param(
+            "master",
+            Type::ClassRef(master_class.clone()),
+            "Master to add the association to",
+        )?
+        .param(
+            "address",
+            Type::Uint16,
+            "DNP3 data-link address of the remote outstation",
+        )?
+        .param(
+            "config",
+            Type::Struct(association_configuration),
+            "Association configuration",
+        )?
+        .param(
+            "handlers",
+            Type::Struct(association_handlers),
+            "Handlers to call when receiving point data",
+        )?
+        .return_type(ReturnType::new(
+            Type::ClassRef(association_class.clone()),
+            "Handle to the created association or NULL if an error occured",
+        ))?
         .doc("Add an association to the master")?
         .build()?;
 
     let set_decode_log_level_fn = lib
         .declare_native_function("master_set_decode_log_level")?
-        .param("master", Type::ClassRef(master_class.clone()), "Master to modify")?
-        .param("level", Type::Enum(decode_log_level_enum), "Decode log level")?
+        .param(
+            "master",
+            Type::ClassRef(master_class.clone()),
+            "Master to modify",
+        )?
+        .param(
+            "level",
+            Type::Enum(decode_log_level_enum),
+            "Decode log level",
+        )?
         .return_type(ReturnType::void())?
         .doc("Set the master decoding level for log messages")?
         .build()?;

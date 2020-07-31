@@ -46,7 +46,7 @@ pub(crate) fn generate(
 
                         Ok(())
                     })?;
-                
+
                     // Callback signature
                     f.writeln(&format!(
                         "{} {}(",

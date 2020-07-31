@@ -1,7 +1,7 @@
-use oo_bindgen::native_enum::NativeEnumHandle;
-use oo_bindgen::native_function::*;
 use oo_bindgen::class::ClassHandle;
 use oo_bindgen::doc::DocBuilder;
+use oo_bindgen::native_enum::NativeEnumHandle;
+use oo_bindgen::native_function::*;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(ClassHandle, NativeEnumHandle), BindingError> {
@@ -17,18 +17,33 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(ClassHandle, NativeEnumHandle
         .push("Group3Var0", "Double-bit Binary Input - Default variation")?
         .push("Group3Var1", "Double-bit Binary Input - Packed format")?
         .push("Group3Var2", "Double-bit Binary Input - With flags")?
-        .push("Group4Var0", "Double-bit Binary Input Event - Default variation")?
+        .push(
+            "Group4Var0",
+            "Double-bit Binary Input Event - Default variation",
+        )?
         .push("Group4Var1", "Double-bit Binary Input Event - Without time")?
-        .push("Group4Var2", "Double-bit Binary Input Event - With absolute time")?
-        .push("Group4Var3", "Double-bit Binary Input Event - With relative time")?
+        .push(
+            "Group4Var2",
+            "Double-bit Binary Input Event - With absolute time",
+        )?
+        .push(
+            "Group4Var3",
+            "Double-bit Binary Input Event - With relative time",
+        )?
         .push("Group10Var0", "Binary Output - Default variation")?
         .push("Group10Var1", "Binary Output - Packed format")?
         .push("Group10Var2", "Binary Output - With flags")?
         .push("Group11Var0", "Binary Output Event - Default variation")?
         .push("Group11Var1", "Binary Output Event - Without time")?
         .push("Group11Var2", "Binary Output Event - With time")?
-        .push("Group12Var0", "Binary Output Command - Control Relay Output Block")?
-        .push("Group12Var1", "Binary Output Command - Pattern Control Block")?
+        .push(
+            "Group12Var0",
+            "Binary Output Command - Control Relay Output Block",
+        )?
+        .push(
+            "Group12Var1",
+            "Binary Output Command - Pattern Control Block",
+        )?
         .push("Group13Var1", "Binary Output Command Event - Without time")?
         .push("Group13Var2", "Binary Output Command Event - With time")?
         .push("Group20Var0", "Counter - Default variation")?
@@ -51,56 +66,140 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(ClassHandle, NativeEnumHandle
         .push("Group23Var0", "Frozen Counter Event - Default variation")?
         .push("Group23Var1", "Frozen Counter Event - 32-bit with flags")?
         .push("Group23Var2", "Frozen Counter Event - 16-bit with flags")?
-        .push("Group23Var5", "Frozen Counter Event - 32-bit with flags and time")?
-        .push("Group23Var6", "Frozen Counter Event - 16-bit with flags and time")?
+        .push(
+            "Group23Var5",
+            "Frozen Counter Event - 32-bit with flags and time",
+        )?
+        .push(
+            "Group23Var6",
+            "Frozen Counter Event - 16-bit with flags and time",
+        )?
         .push("Group30Var0", "Analog Input - Default variation")?
         .push("Group30Var1", "Analog Input - 32-bit with flags")?
         .push("Group30Var2", "Analog Input - 16-bit with flags")?
         .push("Group30Var3", "Analog Input - 32-bit without flag")?
         .push("Group30Var4", "Analog Input - 16-bit without flag")?
-        .push("Group30Var5", "Analog Input - Single-precision floating point with flags")?
-        .push("Group30Var6", "Analog Input - Double-precision floating point with flags")?
+        .push(
+            "Group30Var5",
+            "Analog Input - Single-precision floating point with flags",
+        )?
+        .push(
+            "Group30Var6",
+            "Analog Input - Double-precision floating point with flags",
+        )?
         .push("Group32Var0", "Analog Input Event - Default variation")?
         .push("Group32Var1", "Analog Input Event - 32-bit without time")?
         .push("Group32Var2", "Analog Input Event - 16-bit without time")?
         .push("Group32Var3", "Analog Input Event - 32-bit with time")?
         .push("Group32Var4", "Analog Input Event - 16-bit with time")?
-        .push("Group32Var5", "Analog Input Event - Single-precision floating point without time")?
-        .push("Group32Var6", "Analog Input Event - Double-precision floating point without time")?
-        .push("Group32Var7", "Analog Input Event - Single-precision floating point with time")?
-        .push("Group32Var8", "Analog Input Event - Double-precision floating point with time")?
+        .push(
+            "Group32Var5",
+            "Analog Input Event - Single-precision floating point without time",
+        )?
+        .push(
+            "Group32Var6",
+            "Analog Input Event - Double-precision floating point without time",
+        )?
+        .push(
+            "Group32Var7",
+            "Analog Input Event - Single-precision floating point with time",
+        )?
+        .push(
+            "Group32Var8",
+            "Analog Input Event - Double-precision floating point with time",
+        )?
         .push("Group40Var0", "Analog Output Status - Default variation")?
         .push("Group40Var1", "Analog Output Status - 32-bit with flags")?
         .push("Group40Var2", "Analog Output Status - 16-bit with flags")?
-        .push("Group40Var3", "Analog Output Status - Single-precision floating point with flags")?
-        .push("Group40Var4", "Analog Output Status - Double-precision floating point with flags")?
+        .push(
+            "Group40Var3",
+            "Analog Output Status - Single-precision floating point with flags",
+        )?
+        .push(
+            "Group40Var4",
+            "Analog Output Status - Double-precision floating point with flags",
+        )?
         .push("Group41Var0", "Analog Output - Default variation")?
         .push("Group41Var1", "Analog Output - 32-bit")?
         .push("Group41Var2", "Analog Output - 16-bit")?
-        .push("Group41Var3", "Analog Output - Single-precision floating point")?
-        .push("Group41Var4", "Analog Output - Double-precision floating point")?
+        .push(
+            "Group41Var3",
+            "Analog Output - Single-precision floating point",
+        )?
+        .push(
+            "Group41Var4",
+            "Analog Output - Double-precision floating point",
+        )?
         .push("Group42Var0", "Analog Output Event - Default variation")?
         .push("Group42Var1", "Analog Output Event - 32-bit without time")?
         .push("Group42Var2", "Analog Output Event - 16-bit without time")?
         .push("Group42Var3", "Analog Output Event - 32-bit with time")?
         .push("Group42Var4", "Analog Output Event - 16-bit with time")?
-        .push("Group42Var5", "Analog Output Event - Single-precision floating point without time")?
-        .push("Group42Var6", "Analog Output Event - Double-precision floating point without time")?
-        .push("Group42Var7", "Analog Output Event - Single-preicions floating point with time")?
-        .push("Group42Var8", "Analog Output Event - Double-preicions floating point with time")?
-        .push("Group43Var1", "Analog Output Command Event - 32-bit without time")?
-        .push("Group43Var2", "Analog Output Command Event - 16-bit without time")?
-        .push("Group43Var3", "Analog Output Command Event - 32-bit with time")?
-        .push("Group43Var4", "Analog Output Command Event - 16-bit with time")?
-        .push("Group43Var5", "Analog Output Command Event - Single-precision floating point without time")?
-        .push("Group43Var6", "Analog Output Command Event - Double-precision floating point without time")?
-        .push("Group43Var7", "Analog Output Command Event - Single-precision floating point with time")?
-        .push("Group43Var8", "Analog Output Command Event - Double-precision floating point with time")?
+        .push(
+            "Group42Var5",
+            "Analog Output Event - Single-precision floating point without time",
+        )?
+        .push(
+            "Group42Var6",
+            "Analog Output Event - Double-precision floating point without time",
+        )?
+        .push(
+            "Group42Var7",
+            "Analog Output Event - Single-preicions floating point with time",
+        )?
+        .push(
+            "Group42Var8",
+            "Analog Output Event - Double-preicions floating point with time",
+        )?
+        .push(
+            "Group43Var1",
+            "Analog Output Command Event - 32-bit without time",
+        )?
+        .push(
+            "Group43Var2",
+            "Analog Output Command Event - 16-bit without time",
+        )?
+        .push(
+            "Group43Var3",
+            "Analog Output Command Event - 32-bit with time",
+        )?
+        .push(
+            "Group43Var4",
+            "Analog Output Command Event - 16-bit with time",
+        )?
+        .push(
+            "Group43Var5",
+            "Analog Output Command Event - Single-precision floating point without time",
+        )?
+        .push(
+            "Group43Var6",
+            "Analog Output Command Event - Double-precision floating point without time",
+        )?
+        .push(
+            "Group43Var7",
+            "Analog Output Command Event - Single-precision floating point with time",
+        )?
+        .push(
+            "Group43Var8",
+            "Analog Output Command Event - Double-precision floating point with time",
+        )?
         .push("Group50Var1", "Time and Date - Absolute time")?
-        .push("Group50Var3", "Time and Date - Absolute time at last recorded time")?
-        .push("Group50Var4", "Time and Date - Indexed absolute time and long interval")?
-        .push("Group51Var1", "Time and date CTO - Absolute time, synchronized")?
-        .push("Group51Var2", "Time and date CTO - Absolute time, unsynchronized")?
+        .push(
+            "Group50Var3",
+            "Time and Date - Absolute time at last recorded time",
+        )?
+        .push(
+            "Group50Var4",
+            "Time and Date - Indexed absolute time and long interval",
+        )?
+        .push(
+            "Group51Var1",
+            "Time and date CTO - Absolute time, synchronized",
+        )?
+        .push(
+            "Group51Var2",
+            "Time and date CTO - Absolute time, unsynchronized",
+        )?
         .push("Group52Var1", "Time delay - Coarse")?
         .push("Group52Var2", "Time delay - Fine")?
         .push("Group60Var1", "Class objects - Class 0 data")?
@@ -117,52 +216,99 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(ClassHandle, NativeEnumHandle
 
     let request = lib.declare_class("Request")?;
 
-    let request_new_fn = lib.declare_native_function("request_new")?
-        .return_type(ReturnType::new(Type::ClassRef(request.clone()), "Handle to the created request"))?
+    let request_new_fn = lib
+        .declare_native_function("request_new")?
+        .return_type(ReturnType::new(
+            Type::ClassRef(request.clone()),
+            "Handle to the created request",
+        ))?
         .doc("Create a new request")?
         .build()?;
 
-    let request_new_class_fn = lib.declare_native_function("request_new_class")?
+    let request_new_class_fn = lib
+        .declare_native_function("request_new_class")?
         .param("class0", Type::Bool, "Ask for class 0 (static data)")?
         .param("class1", Type::Bool, "Ask for class 1 events")?
         .param("class2", Type::Bool, "Ask for class 2 events")?
         .param("class3", Type::Bool, "Ask for class 3 events")?
-        .return_type(ReturnType::new(Type::ClassRef(request.clone()), "Handle to the created request"))?
+        .return_type(ReturnType::new(
+            Type::ClassRef(request.clone()),
+            "Handle to the created request",
+        ))?
         .doc("Create a new request asking for classes")?
         .build()?;
 
-    let request_destroy_fn = lib.declare_native_function("request_destroy")?
-        .param("request", Type::ClassRef(request.clone()), "Request to destroy")?
+    let request_destroy_fn = lib
+        .declare_native_function("request_destroy")?
+        .param(
+            "request",
+            Type::ClassRef(request.clone()),
+            "Request to destroy",
+        )?
         .return_type(ReturnType::void())?
-        .doc(DocBuilder::new().text("Destroy a request created with ").reference("request_new").text(" or ").reference("request_new_class"))?
+        .doc(
+            DocBuilder::new()
+                .text("Destroy a request created with ")
+                .reference("request_new")
+                .text(" or ")
+                .reference("request_new_class"),
+        )?
         .build()?;
 
-    let request_add_one_byte_header_fn = lib.declare_native_function("request_add_one_byte_header")?
-        .param("request", Type::ClassRef(request.clone()), "Request to modify")?
-        .param("variation", Type::Enum(variation_enum.clone()), "Variation to ask for")?
+    let request_add_one_byte_header_fn = lib
+        .declare_native_function("request_add_one_byte_header")?
+        .param(
+            "request",
+            Type::ClassRef(request.clone()),
+            "Request to modify",
+        )?
+        .param(
+            "variation",
+            Type::Enum(variation_enum.clone()),
+            "Variation to ask for",
+        )?
         .param("start", Type::Uint8, "Start index to ask")?
         .param("stop", Type::Uint8, "Stop index to ask (inclusive)")?
         .return_type(ReturnType::void())?
         .doc("Add a one-byte start/stop variation interrogation")?
         .build()?;
 
-    let request_add_two_byte_header_fn = lib.declare_native_function("request_add_two_byte_header")?
-        .param("request", Type::ClassRef(request.clone()), "Request to modify")?
-        .param("variation", Type::Enum(variation_enum.clone()), "Variation to ask for")?
+    let request_add_two_byte_header_fn = lib
+        .declare_native_function("request_add_two_byte_header")?
+        .param(
+            "request",
+            Type::ClassRef(request.clone()),
+            "Request to modify",
+        )?
+        .param(
+            "variation",
+            Type::Enum(variation_enum.clone()),
+            "Variation to ask for",
+        )?
         .param("start", Type::Uint16, "Start index to ask")?
         .param("stop", Type::Uint16, "Stop index to ask (inclusive)")?
         .return_type(ReturnType::void())?
         .doc("Add a two-byte start/stop variation interrogation")?
         .build()?;
 
-    let request_add_all_objects_header_fn = lib.declare_native_function("request_add_all_objects_header")?
-        .param("request", Type::ClassRef(request.clone()), "Request to modify")?
-        .param("variation", Type::Enum(variation_enum.clone()), "Variation to ask for")?
+    let request_add_all_objects_header_fn = lib
+        .declare_native_function("request_add_all_objects_header")?
+        .param(
+            "request",
+            Type::ClassRef(request.clone()),
+            "Request to modify",
+        )?
+        .param(
+            "variation",
+            Type::Enum(variation_enum.clone()),
+            "Variation to ask for",
+        )?
         .return_type(ReturnType::void())?
         .doc("Add a all objects variation interrogation")?
         .build()?;
 
-    let request = lib.define_class(&request)?
+    let request = lib
+        .define_class(&request)?
         .constructor(&request_new_fn)?
         .destructor(&request_destroy_fn)?
         .static_method("ClassRequest", &request_new_class_fn)?

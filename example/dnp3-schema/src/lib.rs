@@ -43,11 +43,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
         read_handler,
         decode_log_level_enum,
     )?;
-    association::define(
-        &mut builder,
-        association_class,
-        request
-    )?;
+    association::define(&mut builder, association_class, request)?;
 
     Ok(builder.build())
 }

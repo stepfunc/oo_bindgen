@@ -45,6 +45,7 @@ clippy::all
 )]
 
 use crate::formatting::*;
+use heck::SnakeCase;
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::doc::*;
@@ -54,7 +55,6 @@ use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
 use oo_bindgen::*;
-use heck::SnakeCase;
 use std::fmt::Display;
 use std::fs;
 use std::io::Write;
@@ -124,11 +124,11 @@ pub fn doxygen_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> Formattin
             DocElement::Reference(typename) => {
                 let symbol = lib.symbol(typename).unwrap();
                 f.write(&format!("@ref {}", symbol.to_type()))?;
-            },
+            }
             DocElement::Warning(text) => {
                 f.writeln(&format!("@warning {}", text))?;
                 f.newline()?;
-            },
+            }
         }
     }
     Ok(())
@@ -175,16 +175,20 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     if config.generate_doc {
         // Build documentation
         let mut command = Command::new("doxygen")
-        .current_dir(&config.output_dir)
-        .arg("-")
-        .stdin(std::process::Stdio::piped())
-        .spawn()
-        .expect("failed to spawn doxygen");
+            .current_dir(&config.output_dir)
+            .arg("-")
+            .stdin(std::process::Stdio::piped())
+            .spawn()
+            .expect("failed to spawn doxygen");
 
         {
             let stdin = command.stdin.as_mut().unwrap();
-            stdin.write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes()).unwrap();
-            stdin.write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes()).unwrap();
+            stdin
+                .write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes())
+                .unwrap();
+            stdin
+                .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
+                .unwrap();
             stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
             stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
             stdin.write_all(b"INPUT = include\n").unwrap();
@@ -253,16 +257,28 @@ pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingRe
         for statement in lib.into_iter() {
             match statement {
                 Statement::NativeStructDeclaration(handle) => {
-                    f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
+                    f.writeln(&format!(
+                        "typedef struct {} {};",
+                        handle.to_type(),
+                        handle.to_type()
+                    ))?;
                 }
-                Statement::NativeStructDefinition(handle) => write_struct_definition(f, handle, lib)?,
+                Statement::NativeStructDefinition(handle) => {
+                    write_struct_definition(f, handle, lib)?
+                }
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
                 Statement::ClassDeclaration(handle) => {
-                    f.writeln(&format!("typedef struct {} {};", handle.to_type(), handle.to_type()))?;
+                    f.writeln(&format!(
+                        "typedef struct {} {};",
+                        handle.to_type(),
+                        handle.to_type()
+                    ))?;
                 }
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle, lib)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
-                Statement::OneTimeCallbackDefinition(handle) => write_one_time_callback(f, handle, lib)?,
+                Statement::OneTimeCallbackDefinition(handle) => {
+                    write_one_time_callback(f, handle, lib)?
+                }
                 _ => (),
             }
             f.newline()?;
@@ -306,7 +322,11 @@ fn write_struct_definition(
     f.writeln(&format!("}} {};", handle.to_type()))
 }
 
-fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle, lib: &Library) -> FormattingResult<()> {
+fn write_enum_definition(
+    f: &mut dyn Printer,
+    handle: &NativeEnumHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
     if !handle.doc.is_empty() {
         doxygen(f, |f| {
             f.newline()?;
@@ -336,13 +356,20 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle, lib: &L
 
     f.newline()?;
 
-    f.writeln(&format!("static const char* {}_to_string({} value)", handle.name, handle.to_type()))?;
+    f.writeln(&format!(
+        "static const char* {}_to_string({} value)",
+        handle.name,
+        handle.to_type()
+    ))?;
     blocked(f, |f| {
         f.writeln("switch (value)")?;
         f.writeln("{")?;
         indented(f, |f| {
             for variant in &handle.variants {
-                f.writeln(&format!("case {}_{}: return \"{}\";", handle.name, variant.name, variant.name))?;
+                f.writeln(&format!(
+                    "case {}_{}: return \"{}\";",
+                    handle.name, variant.name, variant.name
+                ))?;
             }
             f.writeln("default: return \"\";")
         })?;
@@ -350,7 +377,11 @@ fn write_enum_definition(f: &mut dyn Printer, handle: &NativeEnumHandle, lib: &L
     })
 }
 
-fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle, lib: &Library) -> FormattingResult<()> {
+fn write_function(
+    f: &mut dyn Printer,
+    handle: &NativeFunctionHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
     f.newline()?;
 
     if !handle.doc.is_empty() {
@@ -411,11 +442,9 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
         for element in &handle.elements {
             match element {
                 InterfaceElement::Arg(name) => {
-                    doxygen(f, |f| {
-                        f.writeln("@brief Context data")
-                    })?;
+                    doxygen(f, |f| f.writeln("@brief Context data"))?;
                     f.writeln(&format!("void* {};", name))?
-                },
+                }
                 InterfaceElement::CallbackFunction(handle) => {
                     f.newline()?;
 
@@ -431,7 +460,11 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                                 match param {
                                     CallbackParameter::Arg(name) => {
                                         f.writeln(&format!("@param {} ", name))?;
-                                        doxygen_print(f, &DocBuilder::new().text("Context data").build(), lib)?;
+                                        doxygen_print(
+                                            f,
+                                            &DocBuilder::new().text("Context data").build(),
+                                            lib,
+                                        )?;
                                     }
                                     CallbackParameter::Parameter(param) => {
                                         f.writeln(&format!("@param {} ", param.name))?;
@@ -439,7 +472,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                                     }
                                 }
                             }
-                
+
                             // Print return documentation
                             if let ReturnType::Type(_, doc) = &handle.return_type {
                                 f.writeln("@return ")?;
@@ -504,11 +537,9 @@ fn write_one_time_callback(
         for element in &handle.elements {
             match element {
                 OneTimeCallbackElement::Arg(name) => {
-                    doxygen(f, |f| {
-                        f.writeln("@brief Context data")
-                    })?;
+                    doxygen(f, |f| f.writeln("@brief Context data"))?;
                     f.writeln(&format!("void* {};", name))?
-                },
+                }
                 OneTimeCallbackElement::CallbackFunction(handle) => {
                     f.newline()?;
 
@@ -524,7 +555,11 @@ fn write_one_time_callback(
                                 match param {
                                     CallbackParameter::Arg(name) => {
                                         f.writeln(&format!("@param {} ", name))?;
-                                        doxygen_print(f, &DocBuilder::new().text("Context data").build(), lib)?;
+                                        doxygen_print(
+                                            f,
+                                            &DocBuilder::new().text("Context data").build(),
+                                            lib,
+                                        )?;
                                     }
                                     CallbackParameter::Parameter(param) => {
                                         f.writeln(&format!("@param {} ", param.name))?;
@@ -532,7 +567,7 @@ fn write_one_time_callback(
                                     }
                                 }
                             }
-                
+
                             // Print return documentation
                             if let ReturnType::Type(_, doc) = &handle.return_type {
                                 f.writeln("@return ")?;

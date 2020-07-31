@@ -48,14 +48,14 @@ pub(crate) fn generate(
                     f.writeln("<summary>")?;
                     doc_print(f, &method.native_function.doc, lib)?;
                     f.write("</summary>")?;
-        
+
                     // Print each parameter value
                     for param in method.native_function.parameters.iter().skip(1) {
                         f.writeln(&format!("<param name=\"{}\">", param.name))?;
                         doc_print(f, &param.doc, lib)?;
                         f.write("</param>")?;
                     }
-        
+
                     // Print return value
                     if let ReturnType::Type(_, doc) = &method.native_function.return_type {
                         f.writeln("<returns>")?;

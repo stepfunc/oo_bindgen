@@ -8,26 +8,41 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare each native function
     let stringclass_new_func = lib
         .declare_native_function("string_new")?
-        .return_type(ReturnType::Type(Type::ClassRef(stringclass.clone())))?
+        .return_type(ReturnType::new(
+            Type::ClassRef(stringclass.clone()),
+            "New StringClass",
+        ))?
+        .doc("Create a new StringClass")?
         .build()?;
 
     let stringclass_destroy_func = lib
         .declare_native_function("string_destroy")?
-        .param("stringclass", Type::ClassRef(stringclass.clone()))?
-        .return_type(ReturnType::Void)?
+        .param(
+            "stringclass",
+            Type::ClassRef(stringclass.clone()),
+            "StringClass",
+        )?
+        .return_type(ReturnType::void())?
+        .doc("Destroy a StringClass")?
         .build()?;
 
     let stringclass_echo_func = lib
         .declare_native_function("string_echo")?
-        .param("stringclass", Type::ClassRef(stringclass.clone()))?
-        .param("value", Type::String)?
-        .return_type(ReturnType::Type(Type::String))?
+        .param(
+            "stringclass",
+            Type::ClassRef(stringclass.clone()),
+            "StringClass",
+        )?
+        .param("value", Type::String, "String to echo")?
+        .return_type(ReturnType::new(Type::String, "Echoed string"))?
+        .doc("Echo a string")?
         .build()?;
 
     let stringclass_length_func = lib
         .declare_native_function("string_length")?
-        .param("value", Type::String)?
-        .return_type(ReturnType::Type(Type::Uint32))?
+        .param("value", Type::String, "String")?
+        .return_type(ReturnType::new(Type::Uint32, "String length"))?
+        .doc("Get the string length")?
         .build()?;
 
     // Define the class
@@ -37,7 +52,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .destructor(&stringclass_destroy_func)?
         .method("Echo", &stringclass_echo_func)?
         .static_method("GetLength", &stringclass_length_func)?
-        .build();
+        .doc("StringClass")?
+        .build()?;
 
     Ok(())
 }

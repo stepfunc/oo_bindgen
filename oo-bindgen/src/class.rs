@@ -93,7 +93,7 @@ impl<'a> ClassBuilder<'a> {
             }
             Some(_) => Err(BindingError::DocAlreadyDefined {
                 symbol_name: self.declaration.name.clone(),
-            })
+            }),
         }
     }
 
@@ -245,9 +245,11 @@ impl<'a> ClassBuilder<'a> {
     pub fn build(self) -> Result<ClassHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
-            None => return Err(BindingError::DocNotDefined {
-                symbol_name: self.declaration.name.clone(),
-            })
+            None => {
+                return Err(BindingError::DocNotDefined {
+                    symbol_name: self.declaration.name.clone(),
+                })
+            }
         };
 
         let handle = ClassHandle::new(Class {

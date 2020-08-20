@@ -20,6 +20,7 @@ tests/bindings/dotnet/*/obj
 tests/bindings/java/.idea
 tests/bindings/java/foo
 tests/bindings/java/*/target
+tests/bindings/java/**/*.iml
 
 # =======================
 # Generated example files
@@ -37,4 +38,5 @@ example/bindings/dotnet/*/obj
 # Generated Java lib
 example/bindings/java/.idea
 example/bindings/java/dnp3rs
-tests/bindings/java/*/target
+example/bindings/java/*/target
+example/bindings/java/**/*.iml

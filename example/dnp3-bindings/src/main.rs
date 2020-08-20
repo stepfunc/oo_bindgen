@@ -10,6 +10,7 @@ fn main() {
 
     test_c_lib(&lib);
     test_dotnet_lib(&lib);
+    test_java_lib(&lib);
 }
 
 fn test_c_lib(lib: &Library) {
@@ -93,6 +94,51 @@ fn build_dotnet_lib() {
     let result = Command::new("dotnet")
         .current_dir(&build_dir)
         .arg("build")
+        .status()
+        .unwrap();
+    assert!(result.success());
+}
+
+fn test_java_lib(lib: &Library) {
+    generate_java_lib(lib);
+    build_and_test_java_lib();
+}
+
+fn generate_java_lib(lib: &Library) {
+    // Clear/create generated files
+    let build_dir = PathBuf::from("example/bindings/java/dnp3rs");
+    if build_dir.exists() {
+        fs::remove_dir_all(&build_dir).unwrap();
+    }
+    fs::create_dir_all(&build_dir).unwrap();
+
+    let mut platforms = PlatformLocations::new();
+    platforms.add(Platform::current(), PathBuf::from("./target/debug/deps"));
+
+    let config = java_oo_bindgen::JavaBindgenConfig {
+        output_dir: build_dir,
+        ffi_name: "dnp3_ffi".to_string(),
+        group_id: "io.stepfunc".to_string(),
+        platforms,
+    };
+
+    java_oo_bindgen::generate_java_bindings(&lib, &config).unwrap();
+}
+
+fn build_and_test_java_lib() {
+    let build_dir = PathBuf::from("example/bindings/java");
+
+    let mut command = if cfg!(windows) {
+        let mut command = Command::new("cmd");
+        command.args(&["/c", "mvn.cmd"]);
+        command
+    } else {
+        Command::new("mvn")
+    };
+
+    let result = command
+        .current_dir(&build_dir)
+        .arg("verify")
         .status()
         .unwrap();
     assert!(result.success());

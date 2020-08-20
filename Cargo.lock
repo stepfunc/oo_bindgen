@@ -99,7 +99,7 @@ dependencies = [
  "chrono",
  "colog",
  "log",
- "tokio 0.2.22",
+ "tokio",
  "tokio-test",
  "tokio-util",
 ]
@@ -112,6 +112,7 @@ dependencies = [
  "dnp3-ffi",
  "dnp3-schema",
  "dotnet-oo-bindgen",
+ "java-oo-bindgen",
  "oo-bindgen",
 ]
 
@@ -123,7 +124,7 @@ dependencies = [
  "dnp3-schema",
  "log",
  "rust-oo-bindgen",
- "tokio 0.2.21",
+ "tokio",
 ]
 
 [[package]]
@@ -522,19 +523,8 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.2.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d099fa27b9702bed751524694adbe393e18b36b204da91eb1cbbbbb4a5ee2d58"
-dependencies = [
- "bytes",
- "num_cpus",
- "pin-project-lite",
-]
-
-[[package]]
-name = "tokio"
-version = "0.2.22"
-source = "git+https://github.com/tokio-rs/tokio?rev=646fbae76535e397ef79dbcaacb945d4c829f666#646fbae76535e397ef79dbcaacb945d4c829f666"
+version = "0.3.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "bytes",
  "fnv",
@@ -551,8 +541,8 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "0.2.5"
-source = "git+https://github.com/tokio-rs/tokio?rev=646fbae76535e397ef79dbcaacb945d4c829f666#646fbae76535e397ef79dbcaacb945d4c829f666"
+version = "0.3.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -561,25 +551,25 @@ dependencies = [
 
 [[package]]
 name = "tokio-test"
-version = "0.2.1"
-source = "git+https://github.com/tokio-rs/tokio?rev=646fbae76535e397ef79dbcaacb945d4c829f666#646fbae76535e397ef79dbcaacb945d4c829f666"
+version = "0.3.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "bytes",
  "futures-core",
- "tokio 0.2.22",
+ "tokio",
 ]
 
 [[package]]
 name = "tokio-util"
-version = "0.3.1"
-source = "git+https://github.com/tokio-rs/tokio?rev=646fbae76535e397ef79dbcaacb945d4c829f666#646fbae76535e397ef79dbcaacb945d4c829f666"
+version = "0.4.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
  "log",
  "pin-project-lite",
- "tokio 0.2.22",
+ "tokio",
 ]
 
 [[package]]

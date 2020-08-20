@@ -4,7 +4,7 @@ using foo;
 
 namespace foo.Tests
 {
-    public class ClassTests
+    public class ClassTest
     {
         [Fact]
         public void ConstructionDestructionTest()

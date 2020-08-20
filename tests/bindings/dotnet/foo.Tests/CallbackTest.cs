@@ -39,6 +39,16 @@ namespace foo.Tests
         }
     }
 
+    class OneTimeCallbackImpl : OneTimeCallbackInterface
+    {
+        public uint lastValue = 0;
+
+        public void OnValue(uint value)
+        {
+            lastValue = value;
+        }
+    }
+
     class Counters
     {
         public int numConstructorsCalled = 0;
@@ -62,6 +72,10 @@ namespace foo.Tests
                 Assert.Equal(TimeSpan.MinValue, cb.lastDuration);
                 cbSource.SetDuration(TimeSpan.FromSeconds(76));
                 Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
+
+                var oneTimeCb = new OneTimeCallbackImpl();
+                cbSource.AddOneTimeFunc(oneTimeCb);
+                Assert.Equal(76u, oneTimeCb.lastValue);
             }
         }
 

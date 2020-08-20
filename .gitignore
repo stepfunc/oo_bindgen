@@ -16,6 +16,11 @@ tests/bindings/dotnet/foo
 tests/bindings/dotnet/*/bin
 tests/bindings/dotnet/*/obj
 
+# Generated Java lib
+tests/bindings/java/.idea
+tests/bindings/java/foo
+tests/bindings/java/*/target
+
 # =======================
 # Generated example files
 # =======================
@@ -28,3 +33,8 @@ example/bindings/c/generated
 example/bindings/dotnet/dnp3rs
 example/bindings/dotnet/*/bin
 example/bindings/dotnet/*/obj
+
+# Generated Java lib
+example/bindings/java/.idea
+example/bindings/java/dnp3rs
+tests/bindings/java/*/target

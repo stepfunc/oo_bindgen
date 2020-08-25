@@ -78,9 +78,6 @@ impl<'a> RustCodegen<'a> {
     pub fn generate(self) -> FormattingResult<()> {
         let mut f = FilePrinter::new(&self.dest_path)?;
 
-        // Some standard includes
-        f.writeln("use std::os::raw::{c_char, c_void};")?;
-
         f.newline()?;
 
         for statement in self.library.into_iter() {
@@ -190,7 +187,7 @@ impl<'a> RustCodegen<'a> {
             for element in &handle.elements {
                 match element {
                     InterfaceElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut c_void,", name))?
+                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
                     }
                     InterfaceElement::CallbackFunction(handle) => {
                         f.newline()?;
@@ -202,7 +199,7 @@ impl<'a> RustCodegen<'a> {
                                 .iter()
                                 .map(|param| match param {
                                     CallbackParameter::Arg(name) => {
-                                        format!("{}: *mut c_void", name)
+                                        format!("{}: *mut std::os::raw::c_void", name)
                                     }
                                     CallbackParameter::Parameter(param) => {
                                         format!("{}: {}", param.name, RustType(&param.param_type))
@@ -216,7 +213,7 @@ impl<'a> RustCodegen<'a> {
                     }
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!(
-                            "pub {}: Option<extern \"C\" fn(data: *mut c_void)>,",
+                            "pub {}: Option<extern \"C\" fn(data: *mut std::os::raw::c_void)>,",
                             name
                         ))?;
                     }
@@ -238,7 +235,7 @@ impl<'a> RustCodegen<'a> {
             for element in &handle.elements {
                 match element {
                     OneTimeCallbackElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut c_void,", name))?
+                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
                     }
                     OneTimeCallbackElement::CallbackFunction(handle) => {
                         f.newline()?;
@@ -250,7 +247,7 @@ impl<'a> RustCodegen<'a> {
                                 .iter()
                                 .map(|param| match param {
                                     CallbackParameter::Arg(name) => {
-                                        format!("{}: *mut c_void", name)
+                                        format!("{}: *mut std::os::raw::c_void", name)
                                     }
                                     CallbackParameter::Parameter(param) => {
                                         format!("{}: {}", param.name, RustType(&param.param_type))
@@ -296,7 +293,7 @@ impl<'a> Display for RustType<'a> {
             Type::Sint64 => write!(f, "i64"),
             Type::Float => write!(f, "f32"),
             Type::Double => write!(f, "f64"),
-            Type::String => write!(f, "*const c_char"),
+            Type::String => write!(f, "*const std::os::raw::c_char"),
             Type::Struct(handle) => write!(f, "{}", handle.name()),
             Type::StructRef(handle) => write!(f, "*const {}", handle.name),
             Type::Enum(handle) => write!(f, "{}", handle.name),

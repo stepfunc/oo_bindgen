@@ -493,7 +493,7 @@ impl LibraryBuilder {
         Ok(())
     }
 
-    /// Forward declare a native structure with a slice of hints
+    /// Forward declare a native structure
     pub fn declare_native_struct(&mut self, name: &str) -> Result<NativeStructDeclarationHandle> {
         self.check_unique_symbol(name)?;
         let handle = NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name.to_string()));

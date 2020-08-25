@@ -109,7 +109,6 @@ impl<'a> RustCodegen<'a> {
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;
 
-
         if Self::requires_lifetime_annotation(handle) {
             f.writeln(&format!("pub struct {}<'a>", handle.name()))?;
         } else {
@@ -130,11 +129,11 @@ impl<'a> RustCodegen<'a> {
 
     fn requires_lifetime_annotation(handle: &NativeStructHandle) -> bool {
         handle.elements.iter().any(|e| {
-           if let Type::Iterator(handle) = &e.element_type {
-               handle.has_lifetime_annotation
-           } else {
-               false
-           }
+            if let Type::Iterator(handle) = &e.element_type {
+                handle.has_lifetime_annotation
+            } else {
+                false
+            }
         })
     }
 
@@ -336,6 +335,6 @@ impl<'a> Display for StructField<'a> {
                 f.write_str("<'a>")?
             }
         }
-        return Ok(())
+        return Ok(());
     }
 }

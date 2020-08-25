@@ -108,16 +108,33 @@ impl<'a> RustCodegen<'a> {
     ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;
-        f.writeln(&format!("pub struct {}", handle.name()))?;
+
+
+        if Self::requires_lifetime_annotation(handle) {
+            f.writeln(&format!("pub struct {}<'a>", handle.name()))?;
+        } else {
+            f.writeln(&format!("pub struct {}", handle.name()))?;
+        }
+
         blocked(f, |f| {
             for element in &handle.elements {
                 f.writeln(&format!(
                     "pub {}: {},",
                     element.name,
-                    RustType(&element.element_type)
+                    StructField(RustType(&element.element_type))
                 ))?;
             }
             Ok(())
+        })
+    }
+
+    fn requires_lifetime_annotation(handle: &NativeStructHandle) -> bool {
+        handle.elements.iter().any(|e| {
+           if let Type::Iterator(handle) = &e.element_type {
+               handle.has_lifetime_annotation
+           } else {
+               false
+           }
         })
     }
 
@@ -279,6 +296,8 @@ impl<'a> Display for RustReturnType<'a> {
 
 struct RustType<'a>(&'a Type);
 
+struct StructField<'a>(RustType<'a>);
+
 impl<'a> Display for RustType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self.0 {
@@ -306,5 +325,17 @@ impl<'a> Display for RustType<'a> {
                 DurationMapping::SecondsFloat => write!(f, "f32"),
             },
         }
+    }
+}
+
+impl<'a> Display for StructField<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.0.fmt(f)?;
+        if let Type::Iterator(handle) = &self.0.0 {
+            if handle.has_lifetime_annotation {
+                f.write_str("<'a>")?
+            }
+        }
+        return Ok(())
     }
 }

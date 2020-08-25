@@ -493,14 +493,12 @@ impl LibraryBuilder {
         Ok(())
     }
 
-    /// Forward declare a native structure
+    /// Forward declare a native structure with a slice of hints
     pub fn declare_native_struct(&mut self, name: &str) -> Result<NativeStructDeclarationHandle> {
         self.check_unique_symbol(name)?;
-        let handle =
-            NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name.to_string()));
+        let handle = NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name.to_string()));
         self.native_structs_declarations.insert(handle.clone());
-        self.statements
-            .push(Statement::NativeStructDeclaration(handle.clone()));
+        self.statements.push(Statement::NativeStructDeclaration(handle.clone()));
         Ok(handle)
     }
 
@@ -588,7 +586,24 @@ impl LibraryBuilder {
         native_func: &NativeFunctionHandle,
         item_type: &NativeStructHandle,
     ) -> Result<iterator::IteratorHandle> {
-        let iter = iterator::IteratorHandle::new(iterator::Iterator::new(native_func, item_type)?);
+        self.define_iterator_impl(false, native_func, item_type)
+    }
+
+    pub fn define_iterator_with_lifetime(
+        &mut self,
+        native_func: &NativeFunctionHandle,
+        item_type: &NativeStructHandle,
+    ) -> Result<iterator::IteratorHandle> {
+        self.define_iterator_impl(true,native_func, item_type)
+    }
+
+    fn define_iterator_impl(
+        &mut self,
+        has_lifetime: bool,
+        native_func: &NativeFunctionHandle,
+        item_type: &NativeStructHandle,
+    ) -> Result<iterator::IteratorHandle> {
+        let iter = iterator::IteratorHandle::new(iterator::Iterator::new(has_lifetime, native_func, item_type)?);
         self.iterators.insert(iter.clone());
         self.statements
             .push(Statement::IteratorDeclaration(iter.clone()));

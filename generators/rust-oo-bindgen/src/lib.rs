@@ -121,7 +121,7 @@ impl<'a> RustCodegen<'a> {
                 f.writeln(&format!(
                     "pub {}: {},",
                     element.name,
-                    StructField(RustType(&element.element_type))
+                    StructField(&element.element_type)
                 ))?;
             }
             Ok(())
@@ -296,7 +296,7 @@ impl<'a> Display for RustReturnType<'a> {
 
 struct RustType<'a>(&'a Type);
 
-struct StructField<'a>(RustType<'a>);
+struct StructField<'a>(&'a Type);
 
 impl<'a> Display for RustType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -330,8 +330,8 @@ impl<'a> Display for RustType<'a> {
 
 impl<'a> Display for StructField<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.0.fmt(f)?;
-        if let Type::Iterator(handle) = &self.0.0 {
+        RustType(self.0).fmt(f)?;
+        if let Type::Iterator(handle) = &self.0 {
             if handle.has_lifetime_annotation {
                 f.write_str("<'a>")?
             }

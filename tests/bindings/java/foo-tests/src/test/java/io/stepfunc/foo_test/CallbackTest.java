@@ -4,19 +4,21 @@ import io.stepfunc.foo.CallbackInterface;
 import io.stepfunc.foo.CallbackSource;
 import io.stepfunc.foo.OneTimeCallbackInterface;
 import org.assertj.core.data.Percentage;
+import org.joou.UInteger;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.joou.Unsigned.uint;
 
 public class CallbackTest {
     static class CallbackImpl implements CallbackInterface {
-        public int lastValue = 0;
+        public UInteger lastValue = uint(0);
         public Duration lastDuration = null;
 
         @Override
-        public void onValue(Integer value) {
+        public void onValue(UInteger value) {
             this.lastValue = value;
         }
 
@@ -27,10 +29,10 @@ public class CallbackTest {
     }
 
     static class OneTimeCallbackImpl implements OneTimeCallbackInterface {
-        public int lastValue = 0;
+        public UInteger lastValue = uint(0);
 
         @Override
-        public void onValue(Integer value) {
+        public void onValue(UInteger value) {
             this.lastValue = value;
         }
     }
@@ -41,9 +43,9 @@ public class CallbackTest {
             CallbackImpl cb = new CallbackImpl();
             cbSource.addFunc(cb);
 
-            assertThat(cb.lastValue).isEqualTo(0);
-            cbSource.setValue(76);
-            assertThat(cb.lastValue).isEqualTo(76);
+            assertThat(cb.lastValue).isEqualTo(uint(0));
+            cbSource.setValue(uint(76));
+            assertThat(cb.lastValue).isEqualTo(uint(76));
 
             assertThat(cb.lastDuration).isNull();
             cbSource.setDuration(Duration.ofSeconds(76));
@@ -51,7 +53,7 @@ public class CallbackTest {
 
             OneTimeCallbackImpl oneTimeCb = new OneTimeCallbackImpl();
             cbSource.addOneTimeFunc(oneTimeCb);
-            assertThat(oneTimeCb.lastValue).isEqualTo(76);
+            assertThat(oneTimeCb.lastValue).isEqualTo(uint(76));
         }
     }
 
@@ -59,7 +61,7 @@ public class CallbackTest {
         private final Counters counters;
 
         @Override
-        public void onValue(Integer value) { }
+        public void onValue(UInteger value) { }
         @Override
         public void onDuration(Duration value) { }
 
@@ -87,7 +89,7 @@ public class CallbackTest {
         for(int i = 0; i < NUM_RUNS; i++) {
             try(CallbackSource cbSource = new CallbackSource()) {
                 cbSource.addFunc(new CallbackFinalizerCounterImpl(counters));
-                cbSource.setValue(76);
+                cbSource.setValue(uint(76));
             }
         }
 

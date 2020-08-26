@@ -1,6 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
+use oo_bindgen::native_function::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -13,6 +14,29 @@ pub(crate) fn generate(
     blocked(f, |f| {
         // Write each required method
         for func in callback.callbacks() {
+            // Documentation
+            documentation(f, |f| {
+                // Print top-level documentation
+                f.newline()?;
+                doc_print(f, &func.doc, lib)?;
+
+                // Print each parameter value
+                for param in &func.parameters {
+                    if let CallbackParameter::Parameter(param) = param {
+                        f.writeln(&format!("@param {} ", param.name))?;
+                        doc_print(f, &param.doc, lib)?;
+                    }
+                }
+
+                // Print return value
+                if let ReturnType::Type(_, doc) = &func.return_type {
+                    f.writeln("@return ")?;
+                    doc_print(f, doc, lib)?;
+                }
+
+                Ok(())
+            })?;
+
             // Callback signature
             f.writeln(&format!(
                 "{} {}(",
@@ -40,16 +64,21 @@ pub(crate) fn generate(
         f.newline()?;
 
         // Create the native adapter
-        let field_order = callback.elements.iter()
-            .map(|el| {
-                match el {
-                    OneTimeCallbackElement::CallbackFunction(func) => format!("\"{}\"", func.name.to_mixed_case()),
-                    OneTimeCallbackElement::Arg(name) => format!("\"{}\"", name.to_mixed_case()),
+        let field_order = callback
+            .elements
+            .iter()
+            .map(|el| match el {
+                OneTimeCallbackElement::CallbackFunction(func) => {
+                    format!("\"{}\"", func.name.to_mixed_case())
                 }
+                OneTimeCallbackElement::Arg(name) => format!("\"{}\"", name.to_mixed_case()),
             })
             .collect::<Vec<_>>()
             .join(", ");
-        f.writeln(&format!("@com.sun.jna.Structure.FieldOrder({{ {} }})", field_order))?;
+        f.writeln(&format!(
+            "@com.sun.jna.Structure.FieldOrder({{ {} }})",
+            field_order
+        ))?;
 
         f.writeln("class NativeAdapter extends com.sun.jna.Structure")?;
         blocked(f, |f| {
@@ -58,9 +87,7 @@ pub(crate) fn generate(
             blocked(f, |f| {
                 f.writeln("public ByValue() { }")?;
                 f.writeln(&format!("public ByValue({} impl)", callback_name))?;
-                blocked(f, |f| {
-                    f.writeln("super(impl);")
-                })
+                blocked(f, |f| f.writeln("super(impl);"))
             })?;
 
             // Define each callback
@@ -74,7 +101,10 @@ pub(crate) fn generate(
 
                         f.writeln("{")?;
                         indented(f, |f| {
-                            f.writeln(&format!("public {} callback(", JavaReturnType(&func.return_type).as_native_type()))?;
+                            f.writeln(&format!(
+                                "public {} callback(",
+                                JavaReturnType(&func.return_type).as_native_type()
+                            ))?;
                             f.write(
                                 &func
                                     .parameters
@@ -85,7 +115,9 @@ pub(crate) fn generate(
                                             JavaType(&param.param_type).as_native_type(),
                                             param.name.to_mixed_case()
                                         ),
-                                        CallbackParameter::Arg(name) => format!("com.sun.jna.Pointer {}", name.to_mixed_case()),
+                                        CallbackParameter::Arg(name) => {
+                                            format!("com.sun.jna.Pointer {}", name.to_mixed_case())
+                                        }
                                     })
                                     .collect::<Vec<String>>()
                                     .join(", "),
@@ -99,9 +131,11 @@ pub(crate) fn generate(
                                     func.arg_name.to_mixed_case(),
                                 ))?;
                                 f.writeln("if(_arg != null)")?;
-                                blocked(f, |f| {
-                                    call_java_function(f, func, "return ")
-                                })
+                                blocked(f, |f| call_java_function(f, func, "return "))?;
+                                f.writeln(&format!(
+                                    "NativeAdapter._impls.remove({});",
+                                    func.arg_name.to_mixed_case()
+                                ))
                             })
                         })?;
                         f.writeln("};")?;
@@ -111,7 +145,7 @@ pub(crate) fn generate(
                             "public com.sun.jna.Pointer {};",
                             name.to_mixed_case()
                         ))?;
-                    },
+                    }
                 }
             }
             f.writeln(&format!("{} _impl;", callback_name))?;
@@ -124,15 +158,18 @@ pub(crate) fn generate(
             f.newline()?;
 
             // Define the constructor
-            f.writeln(&format!(
-                "NativeAdapter({} impl)",
-                callback_name
-            ))?;
+            f.writeln(&format!("NativeAdapter({} impl)", callback_name))?;
             blocked(f, |f| {
                 f.writeln("long _id = NativeAdapter._nextId.incrementAndGet();")?;
-                f.writeln(&format!("this.{} = new com.sun.jna.Pointer(_id);", callback.arg_name.to_mixed_case()))?;
+                f.writeln(&format!(
+                    "this.{} = new com.sun.jna.Pointer(_id);",
+                    callback.arg_name.to_mixed_case()
+                ))?;
                 f.writeln("this._impl = impl;")?;
-                f.writeln(&format!("NativeAdapter._impls.put(this.{}, this);", callback.arg_name.to_mixed_case()))
+                f.writeln(&format!(
+                    "NativeAdapter._impls.put(this.{}, this);",
+                    callback.arg_name.to_mixed_case()
+                ))
             })?;
 
             f.newline()?;

@@ -80,10 +80,7 @@ pub unsafe fn cbsource_add(cb_source: *mut CallbackSource, cb: CallbackInterface
     cb_source.add(cb_adapter);
 }
 
-pub unsafe fn cbsource_add_one_time(
-    cb_source: *mut CallbackSource,
-    cb: OneTimeCallbackInterface,
-) {
+pub unsafe fn cbsource_add_one_time(cb_source: *mut CallbackSource, cb: OneTimeCallbackInterface) {
     if let Some(callback) = cb.on_value {
         let cb_source = cb_source.as_mut().unwrap();
         (callback)(cb_source.value, cb.data);

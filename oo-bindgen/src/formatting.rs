@@ -23,7 +23,10 @@ impl FilePrinter {
     pub fn new<T: AsRef<Path>>(filepath: T) -> FormattingResult<Self> {
         let file = File::create(filepath)?;
         let writer = BufWriter::new(file);
-        Ok(Self { writer, first_newline: false })
+        Ok(Self {
+            writer,
+            first_newline: false,
+        })
     }
 }
 

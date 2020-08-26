@@ -38,7 +38,7 @@ impl<'a> Printer for DocumentationPrinter<'a> {
 
     fn newline(&mut self) -> FormattingResult<()> {
         self.inner.newline()?;
-        self.inner.write("/// ")
+        self.inner.write(" * ")
     }
 }
 
@@ -54,8 +54,12 @@ pub(crate) fn documentation<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResul
 where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {
+    f.writeln("/**")?;
     let mut printer = DocumentationPrinter::new(f);
-    cb(&mut printer)
+    let result = cb(&mut printer)?;
+    f.writeln(" */")?;
+
+    Ok(result)
 }
 
 pub(crate) fn blocked<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>

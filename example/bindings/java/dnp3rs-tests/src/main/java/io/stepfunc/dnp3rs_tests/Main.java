@@ -4,10 +4,11 @@ import io.stepfunc.dnp3rs.*;
 import io.stepfunc.dnp3rs.Runtime;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.Duration;
 import java.util.List;
+
+import static org.joou.Unsigned.*;
 
 class TestLogger implements Logger {
 
@@ -123,14 +124,14 @@ public class Main {
 
         // Create the tokio runtime
         RuntimeConfig runtimeConfig = new RuntimeConfig();
-        runtimeConfig.numCoreThreads = 4;
+        runtimeConfig.numCoreThreads = ushort(4);
         try(Runtime runtime = new Runtime(runtimeConfig)) {
             // Create the master
             ReconnectStrategy reconnectStrategy = new ReconnectStrategy();
             reconnectStrategy.minDelay = Duration.ofMillis(100);
             reconnectStrategy.maxDelay = Duration.ofSeconds(5);
             Master master = runtime.addMasterTcp(
-                    (short)1,
+                    ushort(1),
                     DecodeLogLevel.OBJECT_VALUES,
                     reconnectStrategy,
                     Duration.ofSeconds(5),
@@ -155,7 +156,7 @@ public class Main {
             associationHandlers.unsolicitedHandler = readHandler;
             associationHandlers.defaultPollHandler = readHandler;
             Association association = master.addAssociation(
-                    (short)1024,
+                    ushort(1024),
                     associationConfiguration,
                     associationHandlers
             );
@@ -182,7 +183,7 @@ public class Main {
                         {
                             Request request = new Request();
                             request.addAllObjectsHeader(Variation.GROUP40_VAR0);
-                            ReadResult result = association.read(request).get();
+                            ReadResult result = association.read(request).toCompletableFuture().get();
                             System.out.println("Result: " + result);
                             break;
                         }
@@ -191,7 +192,7 @@ public class Main {
                             Request request = new Request();
                             request.addAllObjectsHeader(Variation.GROUP10_VAR0);
                             request.addAllObjectsHeader(Variation.GROUP40_VAR0);
-                            ReadResult result = association.read(request).get();
+                            ReadResult result = association.read(request).toCompletableFuture().get();
                             System.out.println("Result: " + result);
                             break;
                         }
@@ -205,11 +206,11 @@ public class Main {
                             code.queue = false;
                             code.opType = OpType.LATCH_ON;
                             g12v1.code = code;
-                            g12v1.count = 1;
-                            g12v1.onTime = 1000;
-                            g12v1.offTime = 1000;
-                            command.addU16g12v1((short)3, g12v1);
-                            CommandResult result = association.operate(CommandMode.SELECT_BEFORE_OPERATE, command).get();
+                            g12v1.count = ubyte(1);
+                            g12v1.onTime = uint(1000);
+                            g12v1.offTime = uint(1000);
+                            command.addU16g12v1(ushort(3), g12v1);
+                            CommandResult result = association.operate(CommandMode.SELECT_BEFORE_OPERATE, command).toCompletableFuture().get();
                             System.out.println("Result: " + result);
                             break;
                         }
@@ -218,13 +219,13 @@ public class Main {
                             break;
                         case "lts":
                         {
-                            TimeSyncResult result = association.performTimeSync(TimeSyncMode.LAN).get();
+                            TimeSyncResult result = association.performTimeSync(TimeSyncMode.LAN).toCompletableFuture().get();
                             System.out.println("Result: " + result);
                             break;
                         }
                         case "nts":
                         {
-                            TimeSyncResult result = association.performTimeSync(TimeSyncMode.NON_LAN).get();
+                            TimeSyncResult result = association.performTimeSync(TimeSyncMode.NON_LAN).toCompletableFuture().get();
                             System.out.println("Result: " + result);
                             break;
                         }

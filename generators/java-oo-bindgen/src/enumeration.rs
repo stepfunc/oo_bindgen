@@ -9,14 +9,26 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let enum_name = native_enum.name.to_camel_case();
 
+    // Documentation
+    if !native_enum.doc.is_empty() {
+        documentation(f, |f| {
+            f.newline()?;
+            doc_print(f, &native_enum.doc, lib)?;
+            Ok(())
+        })?;
+    }
+
+    // Enum definition
     f.writeln(&format!("public enum {}", enum_name))?;
     blocked(f, |f| {
         // Write the variants
         for variant in &native_enum.variants {
-            f.writeln(&format!(
-                "{},",
-                variant.name.to_shouty_snake_case()
-            ))?;
+            documentation(f, |f| {
+                f.newline()?;
+                doc_print(f, &variant.doc, lib)?;
+                Ok(())
+            })?;
+            f.writeln(&format!("{},", variant.name.to_shouty_snake_case()))?;
         }
         f.write(";")?;
 
@@ -28,9 +40,16 @@ pub(crate) fn generate(
             f.writeln("switch(value)")?;
             blocked(f, |f| {
                 for variant in &native_enum.variants {
-                    f.writeln(&format!("case {}: return {};", variant.name.to_shouty_snake_case(), variant.value))?;
+                    f.writeln(&format!(
+                        "case {}: return {};",
+                        variant.name.to_shouty_snake_case(),
+                        variant.value
+                    ))?;
                 }
-                f.writeln(&format!("default: throw new RuntimeException(\"Unknown {} value: \" + value);", enum_name))
+                f.writeln(&format!(
+                    "default: throw new RuntimeException(\"Unknown {} value: \" + value);",
+                    enum_name
+                ))
             })
         })?;
 
@@ -41,9 +60,16 @@ pub(crate) fn generate(
             f.writeln("switch(value)")?;
             blocked(f, |f| {
                 for variant in &native_enum.variants {
-                    f.writeln(&format!("case {}: return {};", variant.value, variant.name.to_shouty_snake_case()))?;
+                    f.writeln(&format!(
+                        "case {}: return {};",
+                        variant.value,
+                        variant.name.to_shouty_snake_case()
+                    ))?;
                 }
-                f.writeln(&format!("default: throw new RuntimeException(\"Unknown {} value: \" + value);", enum_name))
+                f.writeln(&format!(
+                    "default: throw new RuntimeException(\"Unknown {} value: \" + value);",
+                    enum_name
+                ))
             })
         })?;
 

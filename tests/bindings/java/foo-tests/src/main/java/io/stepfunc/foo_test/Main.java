@@ -3,13 +3,16 @@ package io.stepfunc.foo_test;
 import io.stepfunc.foo.CallbackInterface;
 import io.stepfunc.foo.CallbackSource;
 import io.stepfunc.foo.OneTimeCallbackInterface;
+import org.joou.UInteger;
 
 import java.time.Duration;
+
+import static org.joou.Unsigned.uint;
 
 class Asdf implements CallbackInterface {
 
     @Override
-    public void onValue(Integer value) {
+    public void onValue(UInteger value) {
         System.out.println(value);
     }
 
@@ -22,7 +25,7 @@ class Asdf implements CallbackInterface {
 class Qwerty implements OneTimeCallbackInterface {
 
     @Override
-    public void onValue(Integer value) {
+    public void onValue(UInteger value) {
         System.out.println(value);
     }
 }
@@ -32,9 +35,9 @@ public class Main {
         System.out.println("Hello world!");
         CallbackSource source = new CallbackSource();
         source.addFunc(new Asdf());
-        source.setValue(42);
-        source.setValue(43);
-        source.setValue(44);
+        source.setValue(uint(42));
+        source.setValue(uint(43));
+        source.setValue(uint(44));
         source.setDuration(Duration.ofSeconds(10));
 
         source.addOneTimeFunc(new Qwerty());

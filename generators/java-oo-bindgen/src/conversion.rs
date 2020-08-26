@@ -3,9 +3,9 @@ use crate::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
-use oo_bindgen::native_enum::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::iterator::*;
+use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 
@@ -16,13 +16,13 @@ impl<'a> JavaType<'a> {
     pub(crate) fn as_java_type(&self) -> String {
         match self.0 {
             Type::Bool => "Boolean".to_string(),
-            Type::Uint8 => "Byte".to_string(),
+            Type::Uint8 => "UByte".to_string(),
             Type::Sint8 => "Byte".to_string(),
-            Type::Uint16 => "Short".to_string(),
+            Type::Uint16 => "UShort".to_string(),
             Type::Sint16 => "Short".to_string(),
-            Type::Uint32 => "Integer".to_string(),
+            Type::Uint32 => "UInteger".to_string(),
             Type::Sint32 => "Integer".to_string(),
-            Type::Uint64 => "Long".to_string(),
+            Type::Uint64 => "ULong".to_string(),
             Type::Sint64 => "Long".to_string(),
             Type::Float => "Float".to_string(),
             Type::Double => "Double".to_string(),
@@ -57,10 +57,14 @@ impl<'a> JavaType<'a> {
             Type::Double => "double".to_string(),
             Type::String => "String".to_string(),
             Type::Struct(handle) => format!("{}.Native.ByValue", handle.name().to_camel_case()),
-            Type::StructRef(handle) => format!("{}.Native.ByReference", handle.name.to_camel_case()),
+            Type::StructRef(handle) => {
+                format!("{}.Native.ByReference", handle.name.to_camel_case())
+            }
             Type::Enum(_) => "int".to_string(),
             Type::ClassRef(_) => "com.sun.jna.Pointer".to_string(),
-            Type::Interface(handle) => format!("{}.NativeAdapter.ByValue", handle.name.to_camel_case()),
+            Type::Interface(handle) => {
+                format!("{}.NativeAdapter.ByValue", handle.name.to_camel_case())
+            }
             Type::OneTimeCallback(handle) => {
                 format!("{}.NativeAdapter.ByValue", handle.name.to_camel_case())
             }
@@ -75,13 +79,13 @@ impl<'a> JavaType<'a> {
     pub(crate) fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self.0 {
             Type::Bool => Some(Box::new(BoolConverter)),
-            Type::Uint8 => None,
+            Type::Uint8 => Some(Box::new(UByteConverter)),
             Type::Sint8 => None,
-            Type::Uint16 => None,
+            Type::Uint16 => Some(Box::new(UShortConverter)),
             Type::Sint16 => None,
-            Type::Uint32 => None,
+            Type::Uint32 => Some(Box::new(UIntegerConverter)),
             Type::Sint32 => None,
-            Type::Uint64 => None,
+            Type::Uint64 => Some(Box::new(ULongConverter)),
             Type::Sint64 => None,
             Type::Float => None,
             Type::Double => None,
@@ -106,13 +110,13 @@ impl<'a> JavaType<'a> {
     pub(crate) fn as_java_arg(&self, param_name: &str) -> String {
         match self.0 {
             Type::Bool => format!("_{}", param_name.to_mixed_case()),
-            Type::Uint8 => param_name.to_mixed_case(),
+            Type::Uint8 => format!("_{}", param_name.to_mixed_case()),
             Type::Sint8 => param_name.to_mixed_case(),
-            Type::Uint16 => param_name.to_mixed_case(),
+            Type::Uint16 => format!("_{}", param_name.to_mixed_case()),
             Type::Sint16 => param_name.to_mixed_case(),
-            Type::Uint32 => param_name.to_mixed_case(),
+            Type::Uint32 => format!("_{}", param_name.to_mixed_case()),
             Type::Sint32 => param_name.to_mixed_case(),
-            Type::Uint64 => param_name.to_mixed_case(),
+            Type::Uint64 => format!("_{}", param_name.to_mixed_case()),
             Type::Sint64 => param_name.to_mixed_case(),
             Type::Float => param_name.to_mixed_case(),
             Type::Double => param_name.to_mixed_case(),
@@ -150,11 +154,7 @@ pub(crate) trait TypeConverter {
 struct BoolConverter;
 impl TypeConverter for BoolConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}{} ? (byte)1 : 0;",
-            to,
-            from
-        ))
+        f.writeln(&format!("{}{} ? (byte)1 : 0;", to, from))
     }
 
     fn convert_from_native(
@@ -163,11 +163,71 @@ impl TypeConverter for BoolConverter {
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}{} != 0;",
-            to,
-            from
-        ))
+        f.writeln(&format!("{}{} != 0;", to, from))
+    }
+}
+
+struct UByteConverter;
+impl TypeConverter for UByteConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.byteValue();", to, from))
+    }
+
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}UByte.valueOf({});", to, from))
+    }
+}
+
+struct UShortConverter;
+impl TypeConverter for UShortConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.shortValue();", to, from))
+    }
+
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}UShort.valueOf({});", to, from))
+    }
+}
+
+struct UIntegerConverter;
+impl TypeConverter for UIntegerConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.intValue();", to, from))
+    }
+
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}UInteger.valueOf({});", to, from))
+    }
+}
+
+struct ULongConverter;
+impl TypeConverter for ULongConverter {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.longValue();", to, from))
+    }
+
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}ULong.valueOf({});", to, from))
     }
 }
 
@@ -235,7 +295,13 @@ impl TypeConverter for OneTimeCallbackConverter {
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}.NativeAdapter._impls.get({}.{})._impl;", to, self.0.name.to_camel_case(), from, self.0.arg_name.to_mixed_case()))
+        f.writeln(&format!(
+            "{}{}.NativeAdapter._impls.get({}.{})._impl;",
+            to,
+            self.0.name.to_camel_case(),
+            from,
+            self.0.arg_name.to_mixed_case()
+        ))
     }
 }
 
@@ -352,18 +418,14 @@ impl TypeConverter for IteratorConverter {
 
         f.writeln(&format!(
             "java.util.List<{}> {} = new java.util.ArrayList<>();",
-            item_type,
-            builder_name,
+            item_type, builder_name,
         ))?;
         f.writeln(&format!(
             "for ({}.Native _itRawValue = {}; _itRawValue != null; _itRawValue = {})",
             item_type, next_call, next_call
         ))?;
         blocked(f, |f| {
-            f.writeln(&format!(
-                "{} _itValue = null;",
-                item_type
-            ))?;
+            f.writeln(&format!("{} _itValue = null;", item_type))?;
             StructRefConverter(self.0.item_type.declaration()).convert_from_native(
                 f,
                 "_itRawValue",
@@ -371,7 +433,10 @@ impl TypeConverter for IteratorConverter {
             )?;
             f.writeln(&format!("{}.add(_itValue);", builder_name))
         })?;
-        f.writeln(&format!("{}java.util.Collections.unmodifiableList({});", to, builder_name))
+        f.writeln(&format!(
+            "{}java.util.Collections.unmodifiableList({});",
+            to, builder_name
+        ))
     }
 }
 
@@ -410,7 +475,10 @@ impl TypeConverter for DurationSecondsConverter {
 struct DurationSecondsFloatConverter;
 impl TypeConverter for DurationSecondsFloatConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}.getSeconds() + {}.getNano() / 1000000000.0f;", to, from, from))
+        f.writeln(&format!(
+            "{}{}.getSeconds() + {}.getNano() / 1000000000.0f;",
+            to, from, from
+        ))
     }
 
     fn convert_from_native(
@@ -460,7 +528,11 @@ pub(crate) fn call_native_function(
             converter.convert_to_native(
                 f,
                 &param_name,
-                &format!("{} _{} = ", JavaType(&param.param_type).as_native_type(), param.name.to_mixed_case()),
+                &format!(
+                    "{} _{} = ",
+                    JavaType(&param.param_type).as_native_type(),
+                    param.name.to_mixed_case()
+                ),
             )?;
         }
     }
@@ -471,7 +543,8 @@ pub(crate) fn call_native_function(
         f.write(&format!(
             "{} _result = {}.{}(",
             JavaType(return_type).as_native_type(),
-            NATIVE_FUNCTIONS_CLASSNAME, method.name
+            NATIVE_FUNCTIONS_CLASSNAME,
+            method.name
         ))?;
     } else {
         f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
@@ -519,7 +592,11 @@ pub(crate) fn call_java_function(
             converter.convert_from_native(
                 f,
                 &param.name,
-                &format!("{} _{} = ", JavaType(&param.param_type).as_java_type(), param.name.to_mixed_case()),
+                &format!(
+                    "{} _{} = ",
+                    JavaType(&param.param_type).as_java_type(),
+                    param.name.to_mixed_case()
+                ),
             )?;
         }
     }
@@ -529,9 +606,16 @@ pub(crate) fn call_java_function(
     let method_name = method.name.to_mixed_case();
     if let ReturnType::Type(return_type, _) = &method.return_type {
         if JavaType(&return_type).conversion().is_some() {
-            f.write(&format!("{} _result = _arg._impl.{}(", JavaType(&return_type).as_java_type(), method_name))?;
+            f.write(&format!(
+                "{} _result = _arg._impl.{}(",
+                JavaType(&return_type).as_java_type(),
+                method_name
+            ))?;
         } else {
-            f.write(&format!("{}_arg._impl.{}(", return_destination, method_name))?;
+            f.write(&format!(
+                "{}_arg._impl.{}(",
+                return_destination, method_name
+            ))?;
         }
     } else {
         f.write(&format!("_arg._impl.{}(", method_name))?;

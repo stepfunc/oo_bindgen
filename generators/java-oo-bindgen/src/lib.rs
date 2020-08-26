@@ -47,6 +47,7 @@ clippy::all
 use crate::conversion::*;
 use crate::formatting::*;
 use heck::{CamelCase, KebabCase};
+use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::platforms::*;
 use oo_bindgen::*;
@@ -70,6 +71,21 @@ pub struct JavaBindgenConfig {
     pub platforms: PlatformLocations,
 }
 
+pub(crate) fn doc_print(f: &mut dyn Printer, doc: &Doc, _lib: &Library) -> FormattingResult<()> {
+    for doc in doc {
+        match doc {
+            DocElement::Text(text) => f.write(text)?,
+            DocElement::Reference(typename) => {
+                f.write(&format!("{{@link {}}}", typename.to_camel_case()))?;
+            }
+            DocElement::Warning(text) => {
+                f.write(&format!("@warning {}", text))?;
+            }
+        }
+    }
+    Ok(())
+}
+
 impl JavaBindgenConfig {
     fn source_dir(&self, lib: &Library) -> PathBuf {
         let mut result = self.output_dir.clone();
@@ -88,10 +104,7 @@ impl JavaBindgenConfig {
     }
 }
 
-pub fn generate_java_bindings(
-    lib: &Library,
-    config: &JavaBindgenConfig,
-) -> FormattingResult<()> {
+pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.output_dir)?;
 
     // Create the pom.xml
@@ -146,14 +159,17 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln("<modelVersion>4.0.0</modelVersion>")?;
         f.newline()?;
         f.writeln(&format!("<groupId>{}</groupId>", config.group_id))?;
-        f.writeln(&format!("<artifactId>{}</artifactId>", lib.name.to_kebab_case()))?;
+        f.writeln(&format!(
+            "<artifactId>{}</artifactId>",
+            lib.name.to_kebab_case()
+        ))?;
         f.writeln(&format!("<version>{}</version>", lib.version.to_string()))?;
         f.newline()?;
         f.writeln("<properties>")?;
         f.writeln("    <project.java.version>1.8</project.java.version>")?;
         f.writeln("    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>")?;
         f.writeln("    <maven.compiler.target>1.8</maven.compiler.target>")?;
-	    f.writeln("    <maven.compiler.source>1.8</maven.compiler.source>")?;
+        f.writeln("    <maven.compiler.source>1.8</maven.compiler.source>")?;
         f.writeln("</properties>")?;
         f.newline()?;
         f.writeln("<dependencies>")?;
@@ -161,6 +177,11 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln("        <groupId>net.java.dev.jna</groupId>")?;
         f.writeln("        <artifactId>jna</artifactId>")?;
         f.writeln("        <version>5.5.0</version>")?;
+        f.writeln("    </dependency>")?;
+        f.writeln("    <dependency>")?;
+        f.writeln("        <groupId>org.jooq</groupId>")?;
+        f.writeln("        <artifactId>joou-java-6</artifactId>")?;
+        f.writeln("        <version>0.9.4</version>")?;
         f.writeln("    </dependency>")?;
         f.writeln("</dependencies>")?;
 
@@ -178,7 +199,10 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         f.writeln("static")?;
         blocked(f, |f| {
             f.writeln("System.setProperty(\"jna.encoding\", \"UTF-8\");")?;
-            f.writeln(&format!("com.sun.jna.Native.register(\"{}\");", config.ffi_name))
+            f.writeln(&format!(
+                "com.sun.jna.Native.register(\"{}\");",
+                config.ffi_name
+            ))
         })?;
 
         // Write each native functions
@@ -257,7 +281,11 @@ fn generate_callbacks(lib: &Library, config: &JavaBindgenConfig) -> FormattingRe
     Ok(())
 }
 
-fn create_file(name: &str, config: &JavaBindgenConfig, lib: &Library) -> FormattingResult<FilePrinter> {
+fn create_file(
+    name: &str,
+    config: &JavaBindgenConfig,
+    lib: &Library,
+) -> FormattingResult<FilePrinter> {
     // Open file
     let mut filename = config.source_dir(lib);
     filename.push(name);
@@ -280,6 +308,16 @@ fn print_license(f: &mut dyn Printer, license: &[String]) -> FormattingResult<()
     })
 }
 
-fn print_package(f: &mut dyn Printer, config: &JavaBindgenConfig, lib: &Library) -> FormattingResult<()> {
-    f.writeln(&format!("package {}.{};", config.group_id, lib.name.to_kebab_case()))
+fn print_package(
+    f: &mut dyn Printer,
+    config: &JavaBindgenConfig,
+    lib: &Library,
+) -> FormattingResult<()> {
+    f.writeln(&format!(
+        "package {}.{};",
+        config.group_id,
+        lib.name.to_kebab_case()
+    ))?;
+    f.newline()?;
+    f.writeln("import org.joou.*;")
 }

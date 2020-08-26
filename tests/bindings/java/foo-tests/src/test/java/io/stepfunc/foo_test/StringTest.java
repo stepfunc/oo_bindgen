@@ -32,9 +32,9 @@ public class StringTest {
 
     @Test
     public void LengthTest() throws UnsupportedEncodingException {
-        assertThat(StringClass.getLength(ENGLISH_SENTENCE_1)).isEqualTo(ENGLISH_SENTENCE_1.getBytes(StandardCharsets.UTF_8).length);
-        assertThat(StringClass.getLength(ENGLISH_SENTENCE_2)).isEqualTo(ENGLISH_SENTENCE_2.getBytes(StandardCharsets.UTF_8).length);
-        assertThat(StringClass.getLength(FRENCH_SENTENCE_1)).isEqualTo(FRENCH_SENTENCE_1.getBytes(StandardCharsets.UTF_8).length);
-        assertThat(StringClass.getLength(FRENCH_SENTENCE_2)).isEqualTo(FRENCH_SENTENCE_2.getBytes(StandardCharsets.UTF_8).length);
+        assertThat(StringClass.getLength(ENGLISH_SENTENCE_1).intValue()).isEqualTo(ENGLISH_SENTENCE_1.getBytes(StandardCharsets.UTF_8).length);
+        assertThat(StringClass.getLength(ENGLISH_SENTENCE_2).intValue()).isEqualTo(ENGLISH_SENTENCE_2.getBytes(StandardCharsets.UTF_8).length);
+        assertThat(StringClass.getLength(FRENCH_SENTENCE_1).intValue()).isEqualTo(FRENCH_SENTENCE_1.getBytes(StandardCharsets.UTF_8).length);
+        assertThat(StringClass.getLength(FRENCH_SENTENCE_2).intValue()).isEqualTo(FRENCH_SENTENCE_2.getBytes(StandardCharsets.UTF_8).length);
     }
 }

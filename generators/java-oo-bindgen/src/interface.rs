@@ -1,6 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
+use oo_bindgen::native_function::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -9,10 +10,42 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let interface_name = interface.name.to_camel_case();
 
+    documentation(f, |f| {
+        // Print top-level documentation
+        f.newline()?;
+        doc_print(f, &interface.doc, lib)
+    })?;
+
     f.writeln(&format!("public interface {}", interface_name))?;
     blocked(f, |f| {
         // Write each required method
-        for func in interface.callbacks().filter(|func| func.name != interface.destroy_name) {
+        for func in interface
+            .callbacks()
+            .filter(|func| func.name != interface.destroy_name)
+        {
+            // Documentation
+            documentation(f, |f| {
+                // Print top-level documentation
+                f.newline()?;
+                doc_print(f, &func.doc, lib)?;
+
+                // Print each parameter value
+                for param in &func.parameters {
+                    if let CallbackParameter::Parameter(param) = param {
+                        f.writeln(&format!("@param {} ", param.name))?;
+                        doc_print(f, &param.doc, lib)?;
+                    }
+                }
+
+                // Print return value
+                if let ReturnType::Type(_, doc) = &func.return_type {
+                    f.writeln("@return ")?;
+                    doc_print(f, doc, lib)?;
+                }
+
+                Ok(())
+            })?;
+
             // Callback signature
             f.writeln(&format!(
                 "{} {}(",
@@ -40,17 +73,22 @@ pub(crate) fn generate(
         f.newline()?;
 
         // Create the native adapter
-        let field_order = interface.elements.iter()
-            .map(|el| {
-                match el {
-                    InterfaceElement::CallbackFunction(func) => format!("\"{}\"", func.name.to_mixed_case()),
-                    InterfaceElement::DestroyFunction(name) => format!("\"{}\"", name.to_mixed_case()),
-                    InterfaceElement::Arg(name) => format!("\"{}\"", name.to_mixed_case()),
+        let field_order = interface
+            .elements
+            .iter()
+            .map(|el| match el {
+                InterfaceElement::CallbackFunction(func) => {
+                    format!("\"{}\"", func.name.to_mixed_case())
                 }
+                InterfaceElement::DestroyFunction(name) => format!("\"{}\"", name.to_mixed_case()),
+                InterfaceElement::Arg(name) => format!("\"{}\"", name.to_mixed_case()),
             })
             .collect::<Vec<_>>()
             .join(", ");
-        f.writeln(&format!("@com.sun.jna.Structure.FieldOrder({{ {} }})", field_order))?;
+        f.writeln(&format!(
+            "@com.sun.jna.Structure.FieldOrder({{ {} }})",
+            field_order
+        ))?;
 
         f.writeln("class NativeAdapter extends com.sun.jna.Structure")?;
         blocked(f, |f| {
@@ -59,9 +97,7 @@ pub(crate) fn generate(
             blocked(f, |f| {
                 f.writeln("public ByValue() { }")?;
                 f.writeln(&format!("public ByValue({} impl)", interface_name))?;
-                blocked(f, |f| {
-                    f.writeln("super(impl);")
-                })
+                blocked(f, |f| f.writeln("super(impl);"))
             })?;
 
             // Define each callback
@@ -75,7 +111,10 @@ pub(crate) fn generate(
 
                         f.writeln("{")?;
                         indented(f, |f| {
-                            f.writeln(&format!("public {} callback(", JavaReturnType(&func.return_type).as_native_type()))?;
+                            f.writeln(&format!(
+                                "public {} callback(",
+                                JavaReturnType(&func.return_type).as_native_type()
+                            ))?;
                             f.write(
                                 &func
                                     .parameters
@@ -86,7 +125,9 @@ pub(crate) fn generate(
                                             JavaType(&param.param_type).as_native_type(),
                                             param.name.to_mixed_case()
                                         ),
-                                        CallbackParameter::Arg(name) => format!("com.sun.jna.Pointer {}", name.to_mixed_case()),
+                                        CallbackParameter::Arg(name) => {
+                                            format!("com.sun.jna.Pointer {}", name.to_mixed_case())
+                                        }
                                     })
                                     .collect::<Vec<String>>()
                                     .join(", "),
@@ -100,22 +141,21 @@ pub(crate) fn generate(
                                     func.arg_name.to_mixed_case(),
                                 ))?;
                                 f.writeln("if(_arg != null)")?;
-                                blocked(f, |f| {
-                                    call_java_function(f, func, "return ")
-                                })
+                                blocked(f, |f| call_java_function(f, func, "return "))
                             })
                         })?;
                         f.writeln("};")?;
                     }
                     InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!("public com.sun.jna.Callback {} = new com.sun.jna.Callback()", name.to_mixed_case()))?;
+                        f.writeln(&format!(
+                            "public com.sun.jna.Callback {} = new com.sun.jna.Callback()",
+                            name.to_mixed_case()
+                        ))?;
                         f.writeln("{")?;
                         indented(f, |f| {
                             f.writeln("public void callback(com.sun.jna.Pointer data)")?;
 
-                            blocked(f, |f| {
-                                f.writeln("NativeAdapter._impls.remove(data);")
-                            })
+                            blocked(f, |f| f.writeln("NativeAdapter._impls.remove(data);"))
                         })?;
                         f.writeln("};")?;
                     }
@@ -124,7 +164,7 @@ pub(crate) fn generate(
                             "public com.sun.jna.Pointer {};",
                             name.to_mixed_case()
                         ))?;
-                    },
+                    }
                 }
             }
             f.writeln(&format!("{} _impl;", interface_name))?;
@@ -137,15 +177,18 @@ pub(crate) fn generate(
             f.newline()?;
 
             // Define the constructor
-            f.writeln(&format!(
-                "NativeAdapter({} impl)",
-                interface_name
-            ))?;
+            f.writeln(&format!("NativeAdapter({} impl)", interface_name))?;
             blocked(f, |f| {
                 f.writeln("long _id = NativeAdapter._nextId.incrementAndGet();")?;
-                f.writeln(&format!("this.{} = new com.sun.jna.Pointer(_id);", interface.arg_name.to_mixed_case()))?;
+                f.writeln(&format!(
+                    "this.{} = new com.sun.jna.Pointer(_id);",
+                    interface.arg_name.to_mixed_case()
+                ))?;
                 f.writeln("this._impl = impl;")?;
-                f.writeln(&format!("NativeAdapter._impls.put(this.{}, this);", interface.arg_name.to_mixed_case()))
+                f.writeln(&format!(
+                    "NativeAdapter._impls.put(this.{}, this);",
+                    interface.arg_name.to_mixed_case()
+                ))
             })?;
 
             f.newline()?;
@@ -157,15 +200,3 @@ pub(crate) fn generate(
         })
     })
 }
-
-/*
-public interface OnDestroyCallback extends Callback {
-    void callback(Structure.Native value, com.sun.jna.Pointer data);
-}
-public OnDestroyCallback onDestroy = new OnDestroyCallback() {
-    public void callback(Structure.Native value, com.sun.jna.Pointer data)
-    {
-        NativeAdapter._impls.remove(data);
-    }
-};
-*/

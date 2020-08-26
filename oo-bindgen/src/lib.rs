@@ -588,7 +588,28 @@ impl LibraryBuilder {
         native_func: &NativeFunctionHandle,
         item_type: &NativeStructHandle,
     ) -> Result<iterator::IteratorHandle> {
-        let iter = iterator::IteratorHandle::new(iterator::Iterator::new(native_func, item_type)?);
+        self.define_iterator_impl(false, native_func, item_type)
+    }
+
+    pub fn define_iterator_with_lifetime(
+        &mut self,
+        native_func: &NativeFunctionHandle,
+        item_type: &NativeStructHandle,
+    ) -> Result<iterator::IteratorHandle> {
+        self.define_iterator_impl(true, native_func, item_type)
+    }
+
+    fn define_iterator_impl(
+        &mut self,
+        has_lifetime: bool,
+        native_func: &NativeFunctionHandle,
+        item_type: &NativeStructHandle,
+    ) -> Result<iterator::IteratorHandle> {
+        let iter = iterator::IteratorHandle::new(iterator::Iterator::new(
+            has_lifetime,
+            native_func,
+            item_type,
+        )?);
         self.iterators.insert(iter.clone());
         self.statements
             .push(Statement::IteratorDeclaration(iter.clone()));

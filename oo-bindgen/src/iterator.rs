@@ -4,6 +4,7 @@ use crate::*;
 /// C-style structure definition
 #[derive(Debug)]
 pub struct Iterator {
+    pub has_lifetime_annotation: bool,
     pub native_func: NativeFunctionHandle,
     pub iter_type: ClassDeclarationHandle,
     pub item_type: NativeStructHandle,
@@ -11,6 +12,7 @@ pub struct Iterator {
 
 impl Iterator {
     pub(crate) fn new(
+        has_lifetime_annotation: bool,
         native_func: &NativeFunctionHandle,
         item_type: &NativeStructHandle,
     ) -> Result<Iterator> {
@@ -39,6 +41,7 @@ impl Iterator {
                 }
 
                 Ok(Iterator {
+                    has_lifetime_annotation,
                     native_func: native_func.clone(),
                     iter_type: iter_type.clone(),
                     item_type: item_type.clone(),

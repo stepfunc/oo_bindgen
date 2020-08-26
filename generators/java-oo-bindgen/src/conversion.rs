@@ -410,7 +410,7 @@ impl TypeConverter for IteratorConverter {
         to: &str,
     ) -> FormattingResult<()> {
         let item_type = self.0.item_type.name().to_camel_case();
-        let builder_name = format!("_{}Builder", from);
+        let builder_name = format!("_{}Builder", from.replace(".", "_"));
         let next_call = format!(
             "{}.{}({})",
             NATIVE_FUNCTIONS_CLASSNAME, self.0.native_func.name, from

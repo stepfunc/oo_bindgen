@@ -6,10 +6,10 @@ using System.Collections.Generic;
 
 namespace foo.Tests
 {
-    public class IteratorTests
+    public class IteratorTest
     {
         [Fact]
-        public void NextTest()
+        public void StringIteratorTest()
         {
             var characters = StringIterator.IterateString("ABCDE");
             Assert.Equal(new byte[] { 65, 66, 67, 68, 69 }, characters.Select(val => val.Value));

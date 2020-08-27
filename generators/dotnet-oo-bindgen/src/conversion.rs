@@ -415,7 +415,7 @@ impl TypeConverter for IteratorConverter {
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        let builder_name = format!("_{}Builder", from);
+        let builder_name = format!("_{}Builder", from.replace(".", "_"));
         let next_call = format!(
             "{}.{}({})",
             NATIVE_FUNCTIONS_CLASSNAME, self.0.native_func.name, from

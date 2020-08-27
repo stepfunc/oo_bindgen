@@ -33,12 +33,14 @@ impl Drop for CallbackAdapter {
 
 pub struct CallbackSource {
     callbacks: Vec<CallbackAdapter>,
+    value: u32,
 }
 
 impl CallbackSource {
     fn new() -> Self {
         Self {
             callbacks: Vec::new(),
+            value: 0,
         }
     }
 
@@ -47,6 +49,7 @@ impl CallbackSource {
     }
 
     fn set_value(&mut self, value: u32) {
+        self.value = value;
         self.callbacks.iter().for_each(|cb| {
             cb.on_value(value);
         });
@@ -77,11 +80,11 @@ pub unsafe fn cbsource_add(cb_source: *mut CallbackSource, cb: CallbackInterface
     cb_source.add(cb_adapter);
 }
 
-pub unsafe fn cbsource_add_one_time(
-    _cb_source: *mut CallbackSource,
-    _cb: OneTimeCallbackInterface,
-) {
-    // TODO: implement this and its tests
+pub unsafe fn cbsource_add_one_time(cb_source: *mut CallbackSource, cb: OneTimeCallbackInterface) {
+    if let Some(callback) = cb.on_value {
+        let cb_source = cb_source.as_mut().unwrap();
+        (callback)(cb_source.value, cb.data);
+    }
 }
 
 pub unsafe fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) {

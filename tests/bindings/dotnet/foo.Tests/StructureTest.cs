@@ -14,7 +14,7 @@ namespace foo.Tests
         }
     }
 
-    public class StructureTests
+    public class StructureTest
     {
         [Fact]
         public void StructureByValueEchoTest()

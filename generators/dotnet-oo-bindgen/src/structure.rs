@@ -102,6 +102,7 @@ pub(crate) fn generate(
 
             f.newline()?;
 
+            // Write static methods
             for method in &native_struct.static_methods {
                 f.writeln(&format!(
                     "public static {} {}(",

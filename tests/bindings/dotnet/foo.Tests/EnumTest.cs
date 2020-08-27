@@ -4,7 +4,7 @@ using foo;
 
 namespace foo.Tests
 {
-    public class EnumTests
+    public class EnumTest
     {
         [Fact]
         public void EnumZeroToFiveEchoTest()

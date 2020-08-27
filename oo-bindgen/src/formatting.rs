@@ -16,13 +16,17 @@ pub trait Printer {
 
 pub struct FilePrinter {
     writer: BufWriter<File>,
+    first_newline: bool,
 }
 
 impl FilePrinter {
     pub fn new<T: AsRef<Path>>(filepath: T) -> FormattingResult<Self> {
         let file = File::create(filepath)?;
         let writer = BufWriter::new(file);
-        Ok(Self { writer })
+        Ok(Self {
+            writer,
+            first_newline: false,
+        })
     }
 }
 
@@ -42,7 +46,12 @@ impl Printer for FilePrinter {
     }
 
     fn newline(&mut self) -> FormattingResult<()> {
-        writeln!(self.writer).map_err(|e| e.into())
+        if !self.first_newline {
+            self.first_newline = true;
+            Ok(())
+        } else {
+            writeln!(self.writer).map_err(|e| e.into())
+        }
     }
 }
 

@@ -5,7 +5,7 @@ using foo;
 
 namespace foo.Tests
 {
-    public class StringTests
+    public class StringTest
     {
         const string ENGLISH_SENTENCE_1 = "I like to be home with my monkey and my dog";
         const string ENGLISH_SENTENCE_2 = "Don't care, shut up, play the record!";

@@ -117,7 +117,7 @@ impl CFormatting for Symbol {
     }
 }
 
-pub fn doxygen_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
+pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
     for doc in doc {
         match doc {
             DocElement::Text(text) => f.write(text)?,
@@ -200,7 +200,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     Ok(())
 }
 
-pub fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult<()> {
+fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult<()> {
     let uppercase_name = lib.name.to_uppercase();
 
     // Open file

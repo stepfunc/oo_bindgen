@@ -112,6 +112,7 @@ dependencies = [
  "dnp3-ffi",
  "dnp3-schema",
  "dotnet-oo-bindgen",
+ "java-oo-bindgen",
  "oo-bindgen",
 ]
 
@@ -176,6 +177,7 @@ dependencies = [
  "dotnet-oo-bindgen",
  "foo-ffi",
  "foo-schema",
+ "java-oo-bindgen",
  "oo-bindgen",
 ]
 
@@ -257,6 +259,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2b3ea6ff95e175473f8ffe6a7eb7c00d054240321b84c57051175fe3c1e075e"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "java-oo-bindgen"
+version = "0.1.0"
+dependencies = [
+ "dunce",
+ "heck",
+ "oo-bindgen",
 ]
 
 [[package]]
@@ -512,9 +523,8 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.2.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d099fa27b9702bed751524694adbe393e18b36b204da91eb1cbbbbb4a5ee2d58"
+version = "0.3.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "bytes",
  "fnv",
@@ -531,9 +541,8 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
+version = "0.3.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -542,9 +551,8 @@ dependencies = [
 
 [[package]]
 name = "tokio-test"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed0049c119b6d505c4447f5c64873636c7af6c75ab0d45fd9f618d82acb8016d"
+version = "0.3.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "bytes",
  "futures-core",
@@ -553,9 +561,8 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be8242891f2b6cbef26a2d7e8605133c2c554cd35b3e4948ea892d6d68436499"
+version = "0.4.0"
+source = "git+https://github.com/tokio-rs/tokio?rev=138eef352671aadffca304d62c69cb2582e64f2a#138eef352671aadffca304d62c69cb2582e64f2a"
 dependencies = [
  "bytes",
  "futures-core",

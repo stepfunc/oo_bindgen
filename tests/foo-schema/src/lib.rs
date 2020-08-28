@@ -10,7 +10,7 @@ mod strings;
 mod structure;
 
 pub fn build_lib() -> Result<Library, BindingError> {
-    let mut builder = LibraryBuilder::new("foo", semver::Version::parse("1.2.3").unwrap());
+    let mut builder = LibraryBuilder::new("foo", oo_bindgen::Version::parse("1.2.3").unwrap());
     builder.description("Foo is an interesting lib")?;
     builder.license(
         [

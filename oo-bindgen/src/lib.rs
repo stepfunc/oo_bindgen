@@ -50,7 +50,6 @@ use crate::doc::Doc;
 use crate::native_enum::*;
 use crate::native_function::*;
 use crate::native_struct::*;
-use semver::Version;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -58,6 +57,8 @@ use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
 use thiserror::Error;
+
+pub use semver::Version;
 
 pub mod callback;
 pub mod class;

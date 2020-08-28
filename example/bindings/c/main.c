@@ -14,7 +14,7 @@ void print_variation(variation_t variation)
 }
 
 // Logger callback
-void on_log_message(log_level_t level, char* msg, void* arg)
+void on_log_message(log_level_t level, const char* msg, void* arg)
 {
     printf("%s: %s\n", LogLevel_to_string(level), msg);
 }
@@ -186,7 +186,7 @@ int main()
     logger_t logger =
     {
         .on_message = &on_log_message,
-        .arg = NULL,
+        .ctx = NULL,
     };
     logging_set_log_level(LogLevel_Info);
     logging_set_callback(logger);
@@ -207,7 +207,7 @@ int main()
     client_state_listener_t listener =
     {
         .on_change = &client_state_on_change,
-        .arg = NULL,
+        .ctx = NULL,
     };
     master_t* master = runtime_add_master_tcp(
         runtime,
@@ -231,7 +231,7 @@ int main()
         .handle_frozen_counter = &handle_frozen_counter,
         .handle_analog = &handle_analog,
         .handle_analog_output_status = &handle_analog_output_status,
-        .arg = NULL,
+        .ctx = NULL,
     };
     association_configuration_t association_config =
     {
@@ -292,7 +292,7 @@ int main()
             read_task_callback_t cb =
             {
                 .on_complete = &on_read_complete,
-                .arg = NULL,
+                .ctx = NULL,
             };
             association_read(association, request, cb);
 
@@ -307,7 +307,7 @@ int main()
             read_task_callback_t cb =
             {
                 .on_complete = &on_read_complete,
-                .arg = NULL,
+                .ctx = NULL,
             };
             association_read(association, request, cb);
 
@@ -334,7 +334,7 @@ int main()
             command_task_callback_t cb =
             {
                 .on_complete = &on_command_complete,
-                .arg = NULL,
+                .ctx = NULL,
             };
 
             association_operate(
@@ -355,7 +355,7 @@ int main()
             time_sync_task_callback_t cb =
             {
                 .on_complete = &on_timesync_complete,
-                .arg = NULL,
+                .ctx = NULL,
             };
             association_perform_time_sync(association, TimeSyncMode_LAN, cb);
         }
@@ -364,7 +364,7 @@ int main()
             time_sync_task_callback_t cb =
             {
                 .on_complete = &on_timesync_complete,
-                .arg = NULL,
+                .ctx = NULL,
             };
             association_perform_time_sync(association, TimeSyncMode_NonLAN, cb);
         }

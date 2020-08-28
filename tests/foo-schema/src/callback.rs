@@ -7,7 +7,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_interface("CallbackInterface", "Test interface")?
         .callback("on_value", "On value callback")?
         .param("value", Type::Uint32, "Value")?
-        .arg("data")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("on_duration", "On duration callback")?
@@ -16,21 +15,17 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::Duration(DurationMapping::Milliseconds),
             "Value",
         )?
-        .arg("data")?
         .return_type(ReturnType::void())?
         .build()?
         .destroy_callback("on_destroy")?
-        .arg("data")?
         .build()?;
 
     let one_time_callback = lib
         .define_one_time_callback("OneTimeCallbackInterface", "Test one-time-interface")?
         .callback("on_value", "On value callback")?
         .param("value", Type::Uint32, "Value")?
-        .arg("data")?
         .return_type(ReturnType::void())?
         .build()?
-        .arg("data")?
         .build()?;
 
     // Declare the class

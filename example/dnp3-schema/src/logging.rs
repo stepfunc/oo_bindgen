@@ -22,11 +22,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeEnumHandle, BindingError
             "Level of the message",
         )?
         .param("message", Type::String, "Actual formatted message")?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .destroy_callback("on_destroy")?
-        .arg("arg")?
         .build()?;
 
     let set_callback_fn = lib

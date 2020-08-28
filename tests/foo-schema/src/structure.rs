@@ -23,11 +23,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_interface("StructureInterface", "Interface within a structure")?
         .callback("on_value", "Callback on value")?
         .param("value", Type::StructRef(structure.clone()), "New value")?
-        .arg("arg")?
         .return_type(ReturnType::Void)?
         .build()?
         .destroy_callback("on_destroy")?
-        .arg("arg")?
         .build()?;
 
     let structure = lib

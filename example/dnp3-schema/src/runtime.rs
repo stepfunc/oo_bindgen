@@ -79,11 +79,9 @@ pub fn define(
         )?
         .callback("on_change", "Called when the client state changed")?
         .param("state", Type::Enum(client_state_enum), "New state")?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .destroy_callback("on_destroy")?
-        .arg("arg")?
         .build()?;
 
     let master_class = lib.declare_class("Master")?;

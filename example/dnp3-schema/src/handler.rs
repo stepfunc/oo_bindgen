@@ -167,7 +167,6 @@ pub fn define(
             Type::Struct(response_header.clone()),
             "Header of the fragment",
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("end_fragment", "Marks the end of a fragment")?
@@ -176,7 +175,6 @@ pub fn define(
             Type::Struct(response_header),
             "Header of the fragment",
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_binary", "Handle binary input data")?
@@ -192,7 +190,6 @@ pub fn define(
                 .text("Iterator of point values in the response.")
                 .warn("This iterator is valid only within this call. Do not copy it."),
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback(
@@ -211,7 +208,6 @@ pub fn define(
                 .text("Iterator of point values in the response.")
                 .warn("This iterator is valid only within this call. Do not copy it."),
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback(
@@ -230,7 +226,6 @@ pub fn define(
                 .text("Iterator of point values in the response.")
                 .warn("This iterator is valid only within this call. Do not copy it."),
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_counter", "Handle counter data")?
@@ -246,7 +241,6 @@ pub fn define(
                 .text("Iterator of point values in the response.")
                 .warn("This iterator is valid only within this call. Do not copy it."),
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_frozen_counter", "Handle frozen counter input data")?
@@ -262,7 +256,6 @@ pub fn define(
                 .text("Iterator of point values in the response.")
                 .warn("This iterator is valid only within this call. Do not copy it."),
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback("handle_analog", "Handle analog input data")?
@@ -278,7 +271,6 @@ pub fn define(
                 .text("Iterator of point values in the response.")
                 .warn("This iterator is valid only within this call. Do not copy it."),
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .callback(
@@ -297,11 +289,9 @@ pub fn define(
                 .text("Iterator of point values in the response.")
                 .warn("This iterator is valid only within this call. Do not copy it."),
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
         .destroy_callback("on_destroy")?
-        .arg("arg")?
         .build()?;
 
     Ok(read_handler_interface)

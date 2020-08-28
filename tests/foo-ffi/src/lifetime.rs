@@ -5,5 +5,5 @@ pub struct IteratorWithLifeTime<'a> {
 pub unsafe fn next_value_with_lifetime(
     _it: *mut crate::IteratorWithLifeTime,
 ) -> *const crate::ffi::IteratorItem {
-    return std::ptr::null();
+    std::ptr::null()
 }

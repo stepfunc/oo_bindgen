@@ -82,10 +82,8 @@ pub fn define(
             "Called when the read task reached completion or failed",
         )?
         .param("result", Type::Enum(read_result), "Result of the read task")?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .arg("arg")?
         .build()?;
 
     let read_fn = lib
@@ -418,10 +416,8 @@ pub fn define(
             Type::Enum(command_result),
             "Result of the command task",
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .arg("arg")?
         .build()?;
 
     let operate_fn = lib
@@ -493,10 +489,8 @@ pub fn define(
             Type::Enum(timesync_result),
             "Result of the command task",
         )?
-        .arg("arg")?
         .return_type(ReturnType::void())?
         .build()?
-        .arg("arg")?
         .build()?;
 
     let perform_time_sync_fn = lib

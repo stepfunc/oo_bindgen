@@ -42,7 +42,7 @@ static void simple_callback_test()
         .on_value = &on_value,
         .on_duration = &on_duration,
         .on_destroy = &on_destroy,
-        .data = &data,
+        .ctx = &data,
     };
 
     cbsource_add(cb_source, interface);
@@ -69,7 +69,7 @@ static void optional_callback_test()
         .on_value = NULL,
         .on_duration = NULL,
         .on_destroy = NULL,
-        .data = NULL,
+        .ctx = NULL,
     };
 
     cbsource_add(cb_source, interface);

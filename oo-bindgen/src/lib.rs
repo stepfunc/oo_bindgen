@@ -193,8 +193,6 @@ pub enum BindingError {
         interface_name: String,
         element_name: String,
     },
-    #[error("Interface '{}' does not have a void* arg defined", interface_name)]
-    InterfaceArgNameNotDefined { interface_name: String },
     #[error("Interface '{}' already has void* arg defined", interface_name)]
     InterfaceArgNameAlreadyDefined { interface_name: String },
     #[error(

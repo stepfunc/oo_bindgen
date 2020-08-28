@@ -2,6 +2,8 @@ use crate::doc::Doc;
 use crate::*;
 use std::collections::HashSet;
 
+const DEFAULT_CTX_NAME: &str = "ctx";
+
 #[derive(Debug)]
 pub enum CallbackParameter {
     Arg(String),
@@ -104,7 +106,7 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn arg(mut self, name: &str) -> Result<Self> {
+    pub fn ctx(mut self, name: &str) -> Result<Self> {
         match self.arg_name {
             None => {
                 self.check_unique_name(name)?;
@@ -118,12 +120,13 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<InterfaceHandle> {
-        let arg_name = self
-            .arg_name
-            .ok_or(BindingError::InterfaceArgNameNotDefined {
-                interface_name: self.name.clone(),
-            })?;
+    pub fn build(mut self) -> Result<InterfaceHandle> {
+        let arg_name = if let Some(arg_name) = self.arg_name {
+            arg_name
+        } else {
+            self = self.ctx(DEFAULT_CTX_NAME)?;
+            DEFAULT_CTX_NAME.to_string()
+        };
 
         let destroy_name =
             self.destroy_name
@@ -218,7 +221,7 @@ impl<'a> OneTimeCallbackBuilder<'a> {
         ))
     }
 
-    pub fn arg(mut self, name: &str) -> Result<Self> {
+    pub fn ctx(mut self, name: &str) -> Result<Self> {
         match self.arg_name {
             None => {
                 self.check_unique_name(name)?;
@@ -233,12 +236,13 @@ impl<'a> OneTimeCallbackBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<OneTimeCallbackHandle> {
-        let arg_name = self
-            .arg_name
-            .ok_or(BindingError::InterfaceArgNameNotDefined {
-                interface_name: self.name.clone(),
-            })?;
+    pub fn build(mut self) -> Result<OneTimeCallbackHandle> {
+        let arg_name = if let Some(arg_name) = self.arg_name {
+            arg_name
+        } else {
+            self = self.ctx(DEFAULT_CTX_NAME)?;
+            DEFAULT_CTX_NAME.to_string()
+        };
 
         let handle = OneTimeCallbackHandle::new(OneTimeCallback {
             name: self.name,
@@ -324,7 +328,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
         Ok(self)
     }
 
-    pub fn arg(mut self, name: &str) -> Result<Self> {
+    pub fn ctx(mut self, name: &str) -> Result<Self> {
         match self.arg_name {
             None => {
                 self.arg_name = Some(name.to_string());
@@ -351,14 +355,16 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
     }
 
     pub fn build(mut self) -> Result<T> {
+        let arg_name = if let Some(arg_name) = self.arg_name {
+            arg_name
+        } else {
+            self = self.ctx(DEFAULT_CTX_NAME)?;
+            DEFAULT_CTX_NAME.to_string()
+        };
+
         let return_type = self.return_type.ok_or(BindingError::ReturnTypeNotDefined {
             native_func_name: self.name.clone(),
         })?;
-        let arg_name = self
-            .arg_name
-            .ok_or(BindingError::InterfaceArgNameNotDefined {
-                interface_name: self.name.clone(),
-            })?;
 
         let cb = CallbackFunction {
             name: self.name,

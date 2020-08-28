@@ -687,7 +687,7 @@ impl<'a> Display for CType<'a> {
             Type::Sint64 => write!(f, "int64_t"),
             Type::Float => write!(f, "float"),
             Type::Double => write!(f, "double"),
-            Type::String => write!(f, "char*"),
+            Type::String => write!(f, "const char*"),
             Type::Struct(handle) => write!(f, "{}", handle.to_type()),
             Type::StructRef(handle) => write!(f, "{}*", handle.to_type()),
             Type::Enum(handle) => write!(f, "{}", handle.to_type()),

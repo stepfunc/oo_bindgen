@@ -1,6 +1,5 @@
 use crate::association::Association;
 use crate::ffi;
-use crate::handler::ReadHandlerAdapter;
 
 use dnp3::master::association::Configuration;
 use dnp3::master::handle::{AssociationHandler, MasterHandle, ReadHandler};
@@ -35,9 +34,9 @@ pub unsafe fn master_add_association(
     );
 
     let handler = AssociationHandlerAdapter {
-        integrity_handler: ReadHandlerAdapter::new(handlers.integrity_handler),
-        unsolicited_handler: ReadHandlerAdapter::new(handlers.unsolicited_handler),
-        default_poll_handler: ReadHandlerAdapter::new(handlers.default_poll_handler),
+        integrity_handler: handlers.integrity_handler,
+        unsolicited_handler: handlers.unsolicited_handler,
+        default_poll_handler: handlers.default_poll_handler,
     };
 
     if tokio::runtime::Handle::try_current().is_err() {
@@ -89,9 +88,9 @@ fn convert_auto_time_sync(config: &ffi::AutoTimeSync) -> Option<TimeSyncProcedur
 }
 
 struct AssociationHandlerAdapter {
-    integrity_handler: ReadHandlerAdapter,
-    unsolicited_handler: ReadHandlerAdapter,
-    default_poll_handler: ReadHandlerAdapter,
+    integrity_handler: ffi::ReadHandler,
+    unsolicited_handler: ffi::ReadHandler,
+    default_poll_handler: ffi::ReadHandler,
 }
 
 impl AssociationHandler for AssociationHandlerAdapter {

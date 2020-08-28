@@ -6,40 +6,19 @@ use dnp3::app::measurement::*;
 use dnp3::app::types::DoubleBit;
 use dnp3::master::handle::{HeaderInfo, ReadHandler};
 
-unsafe impl Send for ffi::ReadHandler {}
-unsafe impl Sync for ffi::ReadHandler {}
-
-pub struct ReadHandlerAdapter {
-    native_cb: ffi::ReadHandler,
-}
-
-impl ReadHandlerAdapter {
-    pub fn new(native_cb: ffi::ReadHandler) -> Self {
-        Self { native_cb }
-    }
-}
-
-impl ReadHandler for ReadHandlerAdapter {
+impl ReadHandler for ffi::ReadHandler {
     fn begin_fragment(&mut self, header: ResponseHeader) {
-        if let Some(cb) = self.native_cb.begin_fragment {
-            let header = header.into();
-            (cb)(header, self.native_cb.arg);
-        }
+        ffi::ReadHandler::begin_fragment(self, header.into());
     }
 
     fn end_fragment(&mut self, header: ResponseHeader) {
-        if let Some(cb) = self.native_cb.end_fragment {
-            let header = header.into();
-            (cb)(header, self.native_cb.arg);
-        }
+        ffi::ReadHandler::end_fragment(self, header.into());
     }
 
     fn handle_binary(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (Binary, u16)>) {
-        if let Some(cb) = self.native_cb.handle_binary {
-            let info = info.into();
-            let mut iterator = BinaryIterator::new(iter);
-            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
-        }
+        let info = info.into();
+        let mut iterator = BinaryIterator::new(iter);
+        ffi::ReadHandler::handle_binary(self, info, &mut iterator as *mut _);
     }
 
     fn handle_double_bit_binary(
@@ -47,11 +26,9 @@ impl ReadHandler for ReadHandlerAdapter {
         info: HeaderInfo,
         iter: &mut dyn Iterator<Item = (DoubleBitBinary, u16)>,
     ) {
-        if let Some(cb) = self.native_cb.handle_double_bit_binary {
-            let info = info.into();
-            let mut iterator = DoubleBitBinaryIterator::new(iter);
-            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
-        }
+        let info = info.into();
+        let mut iterator = DoubleBitBinaryIterator::new(iter);
+        ffi::ReadHandler::handle_double_bit_binary(self, info, &mut iterator as *mut _);
     }
 
     fn handle_binary_output_status(
@@ -59,19 +36,15 @@ impl ReadHandler for ReadHandlerAdapter {
         info: HeaderInfo,
         iter: &mut dyn Iterator<Item = (BinaryOutputStatus, u16)>,
     ) {
-        if let Some(cb) = self.native_cb.handle_binary_output_status {
-            let info = info.into();
-            let mut iterator = BinaryOutputStatusIterator::new(iter);
-            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
-        }
+        let info = info.into();
+        let mut iterator = BinaryOutputStatusIterator::new(iter);
+        ffi::ReadHandler::handle_binary_output_status(self, info, &mut iterator as *mut _);
     }
 
     fn handle_counter(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (Counter, u16)>) {
-        if let Some(cb) = self.native_cb.handle_counter {
-            let info = info.into();
-            let mut iterator = CounterIterator::new(iter);
-            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
-        }
+        let info = info.into();
+        let mut iterator = CounterIterator::new(iter);
+        ffi::ReadHandler::handle_counter(self, info, &mut iterator as *mut _);
     }
 
     fn handle_frozen_counter(
@@ -79,19 +52,15 @@ impl ReadHandler for ReadHandlerAdapter {
         info: HeaderInfo,
         iter: &mut dyn Iterator<Item = (FrozenCounter, u16)>,
     ) {
-        if let Some(cb) = self.native_cb.handle_frozen_counter {
-            let info = info.into();
-            let mut iterator = FrozenCounterIterator::new(iter);
-            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
-        }
+        let info = info.into();
+        let mut iterator = FrozenCounterIterator::new(iter);
+        ffi::ReadHandler::handle_frozen_counter(self, info, &mut iterator as *mut _);
     }
 
     fn handle_analog(&mut self, info: HeaderInfo, iter: &mut dyn Iterator<Item = (Analog, u16)>) {
-        if let Some(cb) = self.native_cb.handle_analog {
-            let info = info.into();
-            let mut iterator = AnalogIterator::new(iter);
-            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
-        }
+        let info = info.into();
+        let mut iterator = AnalogIterator::new(iter);
+        ffi::ReadHandler::handle_analog(self, info, &mut iterator as *mut _);
     }
 
     fn handle_analog_output_status(
@@ -99,11 +68,9 @@ impl ReadHandler for ReadHandlerAdapter {
         info: HeaderInfo,
         iter: &mut dyn Iterator<Item = (AnalogOutputStatus, u16)>,
     ) {
-        if let Some(cb) = self.native_cb.handle_analog_output_status {
-            let info = info.into();
-            let mut iterator = AnalogOutputStatusIterator::new(iter);
-            (cb)(info, &mut iterator as *mut _, self.native_cb.arg);
-        }
+        let info = info.into();
+        let mut iterator = AnalogOutputStatusIterator::new(iter);
+        ffi::ReadHandler::handle_analog_output_status(self, info, &mut iterator as *mut _);
     }
 
     fn handle_octet_string<'a>(

@@ -88,9 +88,6 @@ pub(crate) unsafe fn runtime_add_master_tcp(
     }
 }
 
-unsafe impl Send for ffi::ClientStateListener {}
-unsafe impl Sync for ffi::ClientStateListener {}
-
 struct ClientStateListenerAdapter {
     native_cb: ffi::ClientStateListener,
 }
@@ -101,29 +98,15 @@ impl ClientStateListenerAdapter {
     }
 
     fn into_listener(self) -> Listener<ClientState> {
-        if let Some(cb) = self.native_cb.on_change {
-            Listener::BoxedFn(Box::new(move |value| {
-                let value = match value {
-                    ClientState::Connecting => ffi::ClientState::Connecting,
-                    ClientState::Connected => ffi::ClientState::Connected,
-                    ClientState::WaitAfterFailedConnect(_) => {
-                        ffi::ClientState::WaitAfterFailedConnect
-                    }
-                    ClientState::WaitAfterDisconnect(_) => ffi::ClientState::WaitAfterDisconnect,
-                    ClientState::Shutdown => ffi::ClientState::Shutdown,
-                };
-                (cb)(value, self.native_cb.arg);
-            }))
-        } else {
-            Listener::None
-        }
-    }
-}
-
-impl Drop for ClientStateListenerAdapter {
-    fn drop(&mut self) {
-        if let Some(cb) = self.native_cb.on_destroy {
-            (cb)(self.native_cb.arg)
-        }
+        Listener::BoxedFn(Box::new(move |value| {
+            let value = match value {
+                ClientState::Connecting => ffi::ClientState::Connecting,
+                ClientState::Connected => ffi::ClientState::Connected,
+                ClientState::WaitAfterFailedConnect(_) => ffi::ClientState::WaitAfterFailedConnect,
+                ClientState::WaitAfterDisconnect(_) => ffi::ClientState::WaitAfterDisconnect,
+                ClientState::Shutdown => ffi::ClientState::Shutdown,
+            };
+            self.native_cb.on_change(value);
+        }))
     }
 }

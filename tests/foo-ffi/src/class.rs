@@ -31,7 +31,7 @@ pub unsafe fn testclass_increment_value(testclass: *mut TestClass) {
 
 pub unsafe fn testclass_get_value_async(testclass: *const TestClass, cb: ffi::GetValueCallback) {
     let testclass = testclass.as_ref().unwrap();
-    (cb.on_value.unwrap())(testclass.value, cb.data);
+    cb.on_value(testclass.value);
 }
 
 pub unsafe fn testclass_construction_counter() -> u32 {

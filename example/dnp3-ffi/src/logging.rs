@@ -19,9 +19,6 @@ pub fn logging_set_log_level(level: ffi::LogLevel) {
     log::set_max_level(level);
 }
 
-unsafe impl Send for ffi::Logger {}
-unsafe impl Sync for ffi::Logger {}
-
 struct LoggerAdapter {
     handler: ffi::Logger,
 }
@@ -32,30 +29,20 @@ impl Log for LoggerAdapter {
     }
 
     fn log(&self, record: &Record) {
-        if let Some(cb) = self.handler.on_message {
-            if let Ok(message) = CString::new(format!("{}", record.args())) {
-                let level = match record.level() {
-                    Level::Error => ffi::LogLevel::Error,
-                    Level::Warn => ffi::LogLevel::Warn,
-                    Level::Info => ffi::LogLevel::Info,
-                    Level::Debug => ffi::LogLevel::Debug,
-                    Level::Trace => ffi::LogLevel::Trace,
-                };
+        if let Ok(message) = CString::new(format!("{}", record.args())) {
+            let level = match record.level() {
+                Level::Error => ffi::LogLevel::Error,
+                Level::Warn => ffi::LogLevel::Warn,
+                Level::Info => ffi::LogLevel::Info,
+                Level::Debug => ffi::LogLevel::Debug,
+                Level::Trace => ffi::LogLevel::Trace,
+            };
 
-                (cb)(level, message.as_ptr(), self.handler.arg);
-            }
+            self.handler.on_message(level, message.as_ptr());
         }
     }
 
     fn flush(&self) {}
-}
-
-impl Drop for LoggerAdapter {
-    fn drop(&mut self) {
-        if let Some(cb) = self.handler.on_destroy {
-            (cb)(self.handler.arg)
-        }
-    }
 }
 
 impl From<ffi::DecodeLogLevel> for DecodeLogLevel {

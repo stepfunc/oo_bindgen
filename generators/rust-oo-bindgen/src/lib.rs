@@ -196,6 +196,7 @@ impl<'a> RustCodegen<'a> {
     }
 
     fn write_interface(&self, f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
+        // C structure
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
@@ -203,11 +204,11 @@ impl<'a> RustCodegen<'a> {
             for element in &handle.elements {
                 match element {
                     InterfaceElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
+                        f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
                     }
                     InterfaceElement::CallbackFunction(handle) => {
                         f.newline()?;
-                        f.write(&format!("pub {}: Option<extern \"C\" fn(", handle.name))?;
+                        f.write(&format!("{}: Option<extern \"C\" fn(", handle.name))?;
 
                         f.write(
                             &handle
@@ -229,13 +230,29 @@ impl<'a> RustCodegen<'a> {
                     }
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!(
-                            "pub {}: Option<extern \"C\" fn(data: *mut std::os::raw::c_void)>,",
+                            "{}: Option<extern \"C\" fn(data: *mut std::os::raw::c_void)>,",
                             name
                         ))?;
                     }
                 }
             }
             Ok(())
+        })?;
+
+        f.newline()?;
+
+        self.write_callback_helpers(f, &handle.name, handle.callbacks())?;
+
+        f.newline()?;
+
+        // Drop
+        f.writeln(&format!("impl Drop for {}", handle.name))?;
+        blocked(f, |f| {
+            f.writeln("fn drop(&mut self)")?;
+            blocked(f, |f| {
+                f.writeln(&format!("if let Some(cb) = self.{}", handle.destroy_name))?;
+                blocked(f, |f| f.writeln(&format!("cb(self.{});", handle.arg_name)))
+            })
         })
     }
 
@@ -276,6 +293,79 @@ impl<'a> RustCodegen<'a> {
                         f.write(&format!(") -> {}>,", RustReturnType(&handle.return_type)))?;
                     }
                 }
+            }
+            Ok(())
+        })?;
+
+        f.newline()?;
+
+        self.write_callback_helpers(f, &handle.name, handle.callbacks())
+    }
+
+    fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction>>(
+        &self,
+        f: &mut dyn Printer,
+        name: &str,
+        callbacks: I,
+    ) -> FormattingResult<()> {
+        // Send/Sync trait
+        f.writeln(&format!("unsafe impl Send for {} {{}}", name))?;
+        f.writeln(&format!("unsafe impl Sync for {} {{}}", name))?;
+
+        f.newline()?;
+
+        // Helper impl
+        f.writeln(&format!("impl {}", name))?;
+        blocked(f, |f| {
+            for callback in callbacks {
+                f.writeln(&format!("pub(crate) fn {}(&self, ", callback.name))?;
+                f.write(
+                    &callback
+                        .parameters
+                        .iter()
+                        .filter_map(|param| match param {
+                            CallbackParameter::Arg(_) => None,
+                            CallbackParameter::Parameter(param) => {
+                                Some(format!("{}: {}", param.name, RustType(&param.param_type)))
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                )?;
+                f.write(")")?;
+
+                if let ReturnType::Type(return_type, _) = &callback.return_type {
+                    f.write(&format!(": Option<{}>", RustType(return_type).to_string()))?;
+                }
+
+                blocked(f, |f| {
+                    f.writeln(&format!("if let Some(cb) = self.{}", callback.name))?;
+                    blocked(f, |f| {
+                        let params = &callback
+                            .parameters
+                            .iter()
+                            .map(|param| match param {
+                                CallbackParameter::Arg(name) => format!("self.{}", name),
+                                CallbackParameter::Parameter(param) => param.name.to_string(),
+                            })
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        let call = format!("cb({})", params);
+
+                        if callback.return_type.is_void() {
+                            f.writeln(&format!("{};", call))
+                        } else {
+                            f.writeln(&format!("Some({})", call))
+                        }
+                    })?;
+
+                    if !callback.return_type.is_void() {
+                        f.writeln("else")?;
+                        blocked(f, |f| f.writeln("None"))?;
+                    }
+
+                    Ok(())
+                })?;
             }
             Ok(())
         })
@@ -335,6 +425,6 @@ impl<'a> Display for StructField<'a> {
                 f.write_str("<'a>")?
             }
         }
-        return Ok(());
+        Ok(())
     }
 }

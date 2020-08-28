@@ -1,38 +1,8 @@
-use crate::ffi::{CallbackInterface, OneTimeCallbackInterface};
+use crate::ffi;
 use std::time::Duration;
 
-struct CallbackAdapter {
-    native_cb: CallbackInterface,
-}
-
-impl CallbackAdapter {
-    fn new(native_cb: CallbackInterface) -> Self {
-        Self { native_cb }
-    }
-
-    fn on_value(&self, value: u32) {
-        if let Some(cb) = self.native_cb.on_value {
-            (cb)(value, self.native_cb.data);
-        }
-    }
-
-    fn on_duration(&self, value: Duration) {
-        if let Some(cb) = self.native_cb.on_duration {
-            (cb)(value.as_millis() as u64, self.native_cb.data);
-        }
-    }
-}
-
-impl Drop for CallbackAdapter {
-    fn drop(&mut self) {
-        if let Some(cb) = self.native_cb.on_destroy {
-            (cb)(self.native_cb.data);
-        }
-    }
-}
-
 pub struct CallbackSource {
-    callbacks: Vec<CallbackAdapter>,
+    callbacks: Vec<ffi::CallbackInterface>,
     value: u32,
 }
 
@@ -44,7 +14,7 @@ impl CallbackSource {
         }
     }
 
-    fn add(&mut self, cb: CallbackAdapter) {
+    fn add(&mut self, cb: ffi::CallbackInterface) {
         self.callbacks.push(cb);
     }
 
@@ -57,7 +27,7 @@ impl CallbackSource {
 
     fn set_duration(&mut self, value: Duration) {
         self.callbacks.iter().for_each(|cb| {
-            cb.on_duration(value);
+            cb.on_duration(value.as_millis() as u64);
         });
     }
 }
@@ -73,18 +43,17 @@ pub unsafe fn cbsource_destroy(cb_source: *mut CallbackSource) {
     }
 }
 
-pub unsafe fn cbsource_add(cb_source: *mut CallbackSource, cb: CallbackInterface) {
-    let cb_adapter = CallbackAdapter::new(cb);
-
+pub unsafe fn cbsource_add(cb_source: *mut CallbackSource, cb: ffi::CallbackInterface) {
     let cb_source = cb_source.as_mut().unwrap();
-    cb_source.add(cb_adapter);
+    cb_source.add(cb);
 }
 
-pub unsafe fn cbsource_add_one_time(cb_source: *mut CallbackSource, cb: OneTimeCallbackInterface) {
-    if let Some(callback) = cb.on_value {
-        let cb_source = cb_source.as_mut().unwrap();
-        (callback)(cb_source.value, cb.data);
-    }
+pub unsafe fn cbsource_add_one_time(
+    cb_source: *mut CallbackSource,
+    cb: ffi::OneTimeCallbackInterface,
+) {
+    let cb_source = cb_source.as_mut().unwrap();
+    cb.on_value(cb_source.value);
 }
 
 pub unsafe fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) {

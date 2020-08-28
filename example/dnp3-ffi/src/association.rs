@@ -89,9 +89,6 @@ pub unsafe fn association_add_poll(
     }
 }
 
-unsafe impl Send for ffi::ReadTaskCallback {}
-unsafe impl Sync for ffi::ReadTaskCallback {}
-
 pub unsafe fn association_read(
     association: *mut Association,
     request: *const Request,
@@ -100,9 +97,7 @@ pub unsafe fn association_read(
     let association = match association.as_mut() {
         Some(association) => association,
         None => {
-            if let Some(cb) = callback.on_complete {
-                cb(ffi::ReadResult::TaskError, callback.arg);
-            }
+            callback.on_complete(ffi::ReadResult::TaskError);
             return;
         }
     };
@@ -110,9 +105,7 @@ pub unsafe fn association_read(
     let request = match request.as_ref() {
         Some(request) => request,
         None => {
-            if let Some(cb) = callback.on_complete {
-                cb(ffi::ReadResult::TaskError, callback.arg);
-            }
+            callback.on_complete(ffi::ReadResult::TaskError);
             return;
         }
     };
@@ -125,14 +118,9 @@ pub unsafe fn association_read(
             Err(_) => ffi::ReadResult::TaskError,
         };
 
-        if let Some(cb) = callback.on_complete {
-            cb(result, callback.arg);
-        }
+        callback.on_complete(result);
     });
 }
-
-unsafe impl Send for ffi::CommandTaskCallback {}
-unsafe impl Sync for ffi::CommandTaskCallback {}
 
 pub unsafe fn association_operate(
     association: *mut Association,
@@ -143,9 +131,7 @@ pub unsafe fn association_operate(
     let association = match association.as_mut() {
         Some(association) => association,
         None => {
-            if let Some(cb) = callback.on_complete {
-                cb(ffi::CommandResult::TaskError, callback.arg);
-            }
+            callback.on_complete(ffi::CommandResult::TaskError);
             return;
         }
     };
@@ -153,9 +139,7 @@ pub unsafe fn association_operate(
     let command = match command.as_ref() {
         Some(command) => command,
         None => {
-            if let Some(cb) = callback.on_complete {
-                cb(ffi::CommandResult::TaskError, callback.arg);
-            }
+            callback.on_complete(ffi::CommandResult::TaskError);
             return;
         }
     };
@@ -187,14 +171,9 @@ pub unsafe fn association_operate(
             },
         };
 
-        if let Some(cb) = callback.on_complete {
-            cb(result, callback.arg);
-        }
+        callback.on_complete(result);
     });
 }
-
-unsafe impl Send for ffi::TimeSyncTaskCallback {}
-unsafe impl Sync for ffi::TimeSyncTaskCallback {}
 
 pub unsafe fn association_perform_time_sync(
     association: *mut Association,
@@ -204,9 +183,7 @@ pub unsafe fn association_perform_time_sync(
     let association = match association.as_mut() {
         Some(association) => association,
         None => {
-            if let Some(cb) = callback.on_complete {
-                cb(ffi::TimeSyncResult::TaskError, callback.arg);
-            }
+            callback.on_complete(ffi::TimeSyncResult::TaskError);
             return;
         }
     };
@@ -231,8 +208,6 @@ pub unsafe fn association_perform_time_sync(
             Err(TimeSyncError::IINError(_)) => ffi::TimeSyncResult::IINError,
         };
 
-        if let Some(cb) = callback.on_complete {
-            cb(result, callback.arg);
-        }
+        callback.on_complete(result);
     });
 }

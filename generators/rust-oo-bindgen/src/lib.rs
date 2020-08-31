@@ -268,11 +268,11 @@ impl<'a> RustCodegen<'a> {
             for element in &handle.elements {
                 match element {
                     OneTimeCallbackElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
+                        f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
                     }
                     OneTimeCallbackElement::CallbackFunction(handle) => {
                         f.newline()?;
-                        f.write(&format!("pub {}: Option<extern \"C\" fn(", handle.name))?;
+                        f.write(&format!("{}: Option<extern \"C\" fn(", handle.name))?;
 
                         f.write(
                             &handle

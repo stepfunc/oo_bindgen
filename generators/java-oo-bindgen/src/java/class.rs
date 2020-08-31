@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
 use oo_bindgen::native_function::*;
@@ -27,13 +27,13 @@ pub(crate) fn generate(
 
     blocked(f, |f| {
         if !class.is_static() {
-            f.writeln("com.sun.jna.Pointer self;")?;
+            f.writeln("final long self;")?;
             if class.destructor.is_some() {
                 f.writeln("private boolean disposed = false;")?;
             }
             f.newline()?;
 
-            f.writeln(&format!("{}(com.sun.jna.Pointer self)", classname))?;
+            f.writeln(&format!("{}(long self)", classname))?;
             blocked(f, |f| f.writeln("this.self = self;"))?;
             f.newline()?;
         }

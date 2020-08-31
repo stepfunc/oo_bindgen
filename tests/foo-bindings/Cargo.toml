@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 foo-ffi = { path = "../foo-ffi" }
+foo-java-ffi = { path = "../foo-java-ffi" }
 foo-schema = { path = "../foo-schema" }
 oo-bindgen = { path = "../../oo-bindgen" }
 c-oo-bindgen = { path = "../../generators/c-oo-bindgen" }

@@ -8,8 +8,8 @@ use std::process::Command;
 fn main() {
     let lib = build_lib().expect("failed to build library schema");
 
-    test_c_lib(&lib);
-    test_dotnet_lib(&lib);
+    //test_c_lib(&lib);
+    //test_dotnet_lib(&lib);
     test_java_lib(&lib);
 }
 
@@ -125,7 +125,7 @@ fn generate_java_lib(lib: &Library) {
 
     let config = java_oo_bindgen::JavaBindgenConfig {
         output_dir: build_dir,
-        ffi_name: "foo_ffi".to_string(),
+        ffi_name: "foo_java_ffi".to_string(),
         group_id: "io.stepfunc".to_string(),
         platforms,
     };

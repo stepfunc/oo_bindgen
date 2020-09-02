@@ -3,6 +3,7 @@ use crate::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
+use oo_bindgen::collection::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::native_enum::*;
@@ -34,8 +35,12 @@ impl<'a> JavaType<'a> {
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => format!(
-                "java.util.List<{}>",
+                "java.util.Collection<{}>",
                 handle.item_type.name().to_camel_case()
+            ),
+            Type::Collection(handle) => format!(
+                "java.util.Collection<{}>",
+                JavaType(&handle.item_type).as_java_type()
             ),
             Type::Duration(_) => "java.time.Duration".to_string(),
         }
@@ -69,6 +74,7 @@ impl<'a> JavaType<'a> {
                 format!("{}.NativeAdapter.ByValue", handle.name.to_camel_case())
             }
             Type::Iterator(_) => "com.sun.jna.Pointer".to_string(),
+            Type::Collection(_) => "com.sun.jna.Pointer".to_string(),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => "long".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),
@@ -99,6 +105,7 @@ impl<'a> JavaType<'a> {
                 Some(Box::new(OneTimeCallbackConverter(handle.clone())))
             }
             Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone()))),
+            Type::Collection(handle) => Some(Box::new(CollectionConverter(handle.clone()))),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(Box::new(DurationMillisecondsConverter)),
                 DurationMapping::Seconds => Some(Box::new(DurationSecondsConverter)),
@@ -128,6 +135,7 @@ impl<'a> JavaType<'a> {
             Type::Interface(_) => format!("_{}", param_name.to_mixed_case()),
             Type::OneTimeCallback(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Iterator(_) => format!("_{}", param_name.to_mixed_case()),
+            Type::Collection(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => format!("_{}", param_name.to_mixed_case()),
                 DurationMapping::Seconds => format!("_{}", param_name.to_mixed_case()),
@@ -437,6 +445,53 @@ impl TypeConverter for IteratorConverter {
             "{}java.util.Collections.unmodifiableList({});",
             to, builder_name
         ))
+    }
+}
+
+struct CollectionConverter(CollectionHandle);
+impl TypeConverter for CollectionConverter {
+    fn convert_to_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        let builder_name = format!("_{}Builder", from.replace(".", "_"));
+        let java_type = JavaType(&self.0.item_type);
+
+        f.writeln(&format!("com.sun.jna.Pointer {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+        f.writeln(&format!("for ({} __value : {})", java_type.as_java_type(), from))?;
+        blocked(f, |f| {
+            let converter = java_type.conversion();
+            let value_name = if let Some(converter) = &converter {
+                converter.convert_to_native(f, "__value", &format!("{} ___value = ", java_type.as_native_type()))?;
+                "___value"
+            } else {
+                "__value"
+            };
+
+            f.writeln(&format!("{}.{}({}, {});", NATIVE_FUNCTIONS_CLASSNAME, self.0.add_func.name, builder_name, value_name))?;
+
+            if let Some(converter) = &converter {
+                converter.convert_to_native_cleanup(f, "___value")?;
+            }
+
+            Ok(())
+        })?;
+        f.writeln(&format!("{}{};", to, builder_name))
+    }
+
+    fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}.{}({});", NATIVE_FUNCTIONS_CLASSNAME, self.0.delete_func.name, name))
+    }
+
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        _from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}java.util.Collections.unmodifiableList(new java.util.List<{}>());", to, JavaType(&self.0.item_type).as_java_type()))
     }
 }
 

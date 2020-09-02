@@ -113,6 +113,7 @@ impl CFormatting for Symbol {
             Symbol::Interface(handle) => handle.to_type(),
             Symbol::OneTimeCallback(handle) => handle.to_type(),
             Symbol::Iterator(handle) => handle.iter_type.to_type(),
+            Symbol::Collection(handle) => handle.collection_type.to_type(),
         }
     }
 }
@@ -695,6 +696,7 @@ impl<'a> Display for CType<'a> {
             Type::Interface(handle) => write!(f, "{}", handle.to_type()),
             Type::OneTimeCallback(handle) => write!(f, "{}", handle.to_type()),
             Type::Iterator(handle) => write!(f, "{}*", handle.iter_type.to_type()),
+            Type::Collection(handle) => write!(f, "{}*", handle.collection_type.to_type()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),

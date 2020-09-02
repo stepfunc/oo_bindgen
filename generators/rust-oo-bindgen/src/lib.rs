@@ -409,6 +409,7 @@ impl<'a> Display for RustType<'a> {
             Type::Interface(handle) => write!(f, "{}", handle.name),
             Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
             Type::Iterator(handle) => write!(f, "*mut crate::{}", handle.name()),
+            Type::Collection(handle) => write!(f, "*mut crate::{}", handle.name()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "u64"),
                 DurationMapping::SecondsFloat => write!(f, "f32"),

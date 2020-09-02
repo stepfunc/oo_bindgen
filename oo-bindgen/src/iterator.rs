@@ -1,7 +1,6 @@
 use crate::Result;
 use crate::*;
 
-/// C-style structure definition
 #[derive(Debug)]
 pub struct Iterator {
     pub has_lifetime_annotation: bool,

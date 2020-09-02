@@ -3,6 +3,7 @@ use crate::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
+use oo_bindgen::collection::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::native_function::*;
@@ -33,8 +34,12 @@ impl<'a> DotnetType<'a> {
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => format!(
-                "ImmutableArray<{}>",
+                "System.Collections.Generic.IEnumerable<{}>",
                 handle.item_type.name().to_camel_case()
+            ),
+            Type::Collection(handle) => format!(
+                "System.Collections.Generic.IEnumerable<{}>",
+                DotnetType(&handle.item_type).as_dotnet_type()
             ),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
@@ -64,6 +69,7 @@ impl<'a> DotnetType<'a> {
                 format!("{}NativeAdapter", handle.name.to_camel_case())
             }
             Type::Iterator(_) => "IntPtr".to_string(),
+            Type::Collection(_) => "IntPtr".to_string(),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => "ulong".to_string(),
                 DurationMapping::SecondsFloat => "float".to_string(),
@@ -94,6 +100,7 @@ impl<'a> DotnetType<'a> {
                 Some(Box::new(OneTimeCallbackConverter(handle.clone())))
             }
             Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone()))),
+            Type::Collection(handle) => Some(Box::new(CollectionConverter(handle.clone()))),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(Box::new(DurationMillisecondsConverter)),
                 DurationMapping::Seconds => Some(Box::new(DurationSecondsConverter)),
@@ -123,6 +130,7 @@ impl<'a> DotnetType<'a> {
             Type::Interface(_) => format!("_{}", param_name.to_mixed_case()),
             Type::OneTimeCallback(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Iterator(_) => format!("_{}", param_name.to_mixed_case()),
+            Type::Collection(_) => format!("_{}", param_name.to_mixed_case()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => format!("_{}", param_name.to_mixed_case()),
                 DurationMapping::Seconds => format!("_{}", param_name.to_mixed_case()),
@@ -467,6 +475,53 @@ impl TypeConverter for IteratorConverter {
     }
 }
 
+struct CollectionConverter(CollectionHandle);
+impl TypeConverter for CollectionConverter {
+    fn convert_to_native(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        let builder_name = format!("_{}Builder", from.replace(".", "_"));
+
+        f.writeln(&format!("var {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+        f.writeln(&format!("foreach (var __value in {})", from))?;
+        blocked(f, |f| {
+            let dotnet_type = DotnetType(&self.0.item_type);
+            let converter = dotnet_type.conversion();
+            let value_name = if let Some(converter) = &converter {
+                converter.convert_to_native(f, "__value", "var ___value = ")?;
+                "___value"
+            } else {
+                "__value"
+            };
+
+            f.writeln(&format!("{}.{}({}, {});", NATIVE_FUNCTIONS_CLASSNAME, self.0.add_func.name, builder_name, value_name))?;
+
+            if let Some(converter) = &converter {
+                converter.convert_to_native_cleanup(f, "___value")?;
+            }
+
+            Ok(())
+        })?;
+        f.writeln(&format!("{}{};", to, builder_name))
+    }
+
+    fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}.{}({});", NATIVE_FUNCTIONS_CLASSNAME, self.0.delete_func.name, name))
+    }
+
+    fn convert_from_native(
+        &self,
+        f: &mut dyn Printer,
+        _from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}System.Collections.Immutable.ImmutableArray<{}>.Empty;", to, DotnetType(&self.0.item_type).as_dotnet_type()))
+    }
+}
+
 struct DurationMillisecondsConverter;
 impl TypeConverter for DurationMillisecondsConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
@@ -578,6 +633,21 @@ pub(crate) fn call_native_function(
     )?;
     f.write(");")?;
 
+    // Convert the result (if required)
+    let return_name = if let ReturnType::Type(return_type, _) = &method.return_type {
+        let mut return_name = "_result";
+        if let Some(converter) = DotnetType(&return_type).conversion() {
+            if !is_constructor {
+                converter.convert_from_native(f, "_result", "var __result = ")?;
+                return_name = "__result";
+            }
+        }
+
+        return_name
+    } else {
+        ""
+    };
+
     //Cleanup type conversions
     for param in method.parameters.iter() {
         if let Some(converter) = DotnetType(&param.param_type).conversion() {
@@ -585,15 +655,9 @@ pub(crate) fn call_native_function(
         }
     }
 
-    // Convert the result (if required) and return
-    if let ReturnType::Type(return_type, _) = &method.return_type {
-        if let Some(converter) = DotnetType(&return_type).conversion() {
-            if !is_constructor {
-                return converter.convert_from_native(f, "_result", return_destination);
-            }
-        }
-
-        f.writeln(&format!("{}_result;", return_destination))?;
+    // Return (if required)
+    if !method.return_type.is_void() {
+        f.writeln(&format!("{}{};", return_destination, return_name))?;
     }
 
     Ok(())

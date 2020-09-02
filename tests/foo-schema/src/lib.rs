@@ -2,6 +2,7 @@ use oo_bindgen::*;
 
 mod callback;
 mod class;
+mod collection;
 mod duration;
 mod enums;
 mod iterator;
@@ -34,6 +35,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     strings::define(&mut builder)?;
     structure::define(&mut builder)?;
     lifetime::define(&mut builder)?;
+    collection::define(&mut builder)?;
 
     Ok(builder.build())
 }

@@ -228,7 +228,9 @@ pub enum BindingError {
     #[error("Invalid native function '{}' signature for add_func of collection", handle.name)]
     CollectionAddFuncInvalidSignature { handle: NativeFunctionHandle },
     #[error("Collection '{}' is not part of this library", handle.name())]
-    CollectionNotPartOfThisLib { handle: collection::CollectionHandle },
+    CollectionNotPartOfThisLib {
+        handle: collection::CollectionHandle,
+    },
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -472,7 +474,10 @@ impl LibraryBuilder {
                     symbols.insert(handle.name().to_string(), Symbol::Iterator(handle.clone()));
                 }
                 Statement::CollectionDeclaration(handle) => {
-                    symbols.insert(handle.name().to_string(), Symbol::Collection(handle.clone()));
+                    symbols.insert(
+                        handle.name().to_string(),
+                        Symbol::Collection(handle.clone()),
+                    );
                 }
                 Statement::NativeFunctionDeclaration(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::NativeFunction(handle.clone()));
@@ -645,7 +650,8 @@ impl LibraryBuilder {
             add_func,
         )?);
         self.collections.insert(collection.clone());
-        self.statements.push(Statement::CollectionDeclaration(collection.clone()));
+        self.statements
+            .push(Statement::CollectionDeclaration(collection.clone()));
         Ok(collection)
     }
 

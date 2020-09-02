@@ -89,3 +89,9 @@ impl From<DocBuilder> for Doc {
         from.build()
     }
 }
+
+impl Default for DocBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}

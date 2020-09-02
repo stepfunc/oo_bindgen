@@ -477,18 +477,19 @@ impl TypeConverter for IteratorConverter {
 
 struct CollectionConverter(CollectionHandle);
 impl TypeConverter for CollectionConverter {
-    fn convert_to_native(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let builder_name = format!("_{}Builder", from.replace(".", "_"));
 
         if self.0.has_reserve {
-            f.writeln(&format!("var {} = {}.{}((uint){}.Count);", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name, from))?;
+            f.writeln(&format!(
+                "var {} = {}.{}((uint){}.Count);",
+                builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name, from
+            ))?;
         } else {
-            f.writeln(&format!("var {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+            f.writeln(&format!(
+                "var {} = {}.{}();",
+                builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name
+            ))?;
         }
         f.writeln(&format!("foreach (var __value in {})", from))?;
         blocked(f, |f| {
@@ -501,7 +502,10 @@ impl TypeConverter for CollectionConverter {
                 "__value"
             };
 
-            f.writeln(&format!("{}.{}({}, {});", NATIVE_FUNCTIONS_CLASSNAME, self.0.add_func.name, builder_name, value_name))?;
+            f.writeln(&format!(
+                "{}.{}({}, {});",
+                NATIVE_FUNCTIONS_CLASSNAME, self.0.add_func.name, builder_name, value_name
+            ))?;
 
             if let Some(converter) = &converter {
                 converter.convert_to_native_cleanup(f, "___value")?;
@@ -513,7 +517,10 @@ impl TypeConverter for CollectionConverter {
     }
 
     fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}.{}({});", NATIVE_FUNCTIONS_CLASSNAME, self.0.delete_func.name, name))
+        f.writeln(&format!(
+            "{}.{}({});",
+            NATIVE_FUNCTIONS_CLASSNAME, self.0.delete_func.name, name
+        ))
     }
 
     fn convert_from_native(
@@ -522,7 +529,11 @@ impl TypeConverter for CollectionConverter {
         _from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        f.writeln(&format!("{}System.Collections.Immutable.ImmutableArray<{}>.Empty;", to, DotnetType(&self.0.item_type).as_dotnet_type()))
+        f.writeln(&format!(
+            "{}System.Collections.Immutable.ImmutableArray<{}>.Empty;",
+            to,
+            DotnetType(&self.0.item_type).as_dotnet_type()
+        ))
     }
 }
 

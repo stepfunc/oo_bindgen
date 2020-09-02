@@ -7,14 +7,12 @@ pub struct StringCollection {
 
 impl StringCollection {
     fn new() -> Self {
-        Self {
-            values: Vec::new(),
-        }
+        Self { values: Vec::new() }
     }
 
     fn new_with_reserve(reserve: usize) -> Self {
         Self {
-            values: Vec::with_capacity(reserve)
+            values: Vec::with_capacity(reserve),
         }
     }
 

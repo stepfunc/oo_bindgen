@@ -18,12 +18,14 @@ impl Collection {
         add_func: &NativeFunctionHandle,
     ) -> Result<Collection> {
         // Validate constructor
-        let collection_type = if let ReturnType::Type(Type::ClassRef(collection_type), _) = &create_func.return_type {
+        let collection_type = if let ReturnType::Type(Type::ClassRef(collection_type), _) =
+            &create_func.return_type
+        {
             collection_type
         } else {
             return Err(BindingError::CollectionCreateFuncInvalidSignature {
                 handle: create_func.clone(),
-            })
+            });
         };
 
         let mut iter = create_func.parameters.iter();
@@ -31,13 +33,13 @@ impl Collection {
             if param.param_type != Type::Uint32 {
                 return Err(BindingError::CollectionCreateFuncInvalidSignature {
                     handle: create_func.clone(),
-                })
+                });
             }
 
             if iter.next().is_some() {
                 return Err(BindingError::CollectionCreateFuncInvalidSignature {
                     handle: create_func.clone(),
-                })
+                });
             }
 
             true
@@ -63,12 +65,12 @@ impl Collection {
             } else {
                 return Err(BindingError::CollectionDeleteFuncInvalidSignature {
                     handle: delete_func.clone(),
-                })
+                });
             }
         } else {
             return Err(BindingError::CollectionDeleteFuncInvalidSignature {
                 handle: delete_func.clone(),
-            })
+            });
         }
 
         // Validate add function
@@ -99,12 +101,12 @@ impl Collection {
             } else {
                 return Err(BindingError::CollectionAddFuncInvalidSignature {
                     handle: add_func.clone(),
-                })
+                });
             }
         } else {
             return Err(BindingError::CollectionAddFuncInvalidSignature {
                 handle: add_func.clone(),
-            })
+            });
         };
 
         Ok(Collection {
@@ -112,7 +114,7 @@ impl Collection {
             delete_func: delete_func.clone(),
             add_func: add_func.clone(),
             collection_type: collection_type.clone(),
-            item_type: item_type.clone(),
+            item_type,
             has_reserve,
         })
     }

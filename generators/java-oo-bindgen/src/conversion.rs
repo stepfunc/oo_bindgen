@@ -450,32 +450,44 @@ impl TypeConverter for IteratorConverter {
 
 struct CollectionConverter(CollectionHandle);
 impl TypeConverter for CollectionConverter {
-    fn convert_to_native(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
+    fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let builder_name = format!("_{}Builder", from.replace(".", "_"));
         let java_type = JavaType(&self.0.item_type);
 
         if self.0.has_reserve {
-            f.writeln(&format!("com.sun.jna.Pointer {} = {}.{}({}.size());", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name, from))?;
+            f.writeln(&format!(
+                "com.sun.jna.Pointer {} = {}.{}({}.size());",
+                builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name, from
+            ))?;
         } else {
-            f.writeln(&format!("com.sun.jna.Pointer {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+            f.writeln(&format!(
+                "com.sun.jna.Pointer {} = {}.{}();",
+                builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name
+            ))?;
         }
 
-        f.writeln(&format!("for ({} __value : {})", java_type.as_java_type(), from))?;
+        f.writeln(&format!(
+            "for ({} __value : {})",
+            java_type.as_java_type(),
+            from
+        ))?;
         blocked(f, |f| {
             let converter = java_type.conversion();
             let value_name = if let Some(converter) = &converter {
-                converter.convert_to_native(f, "__value", &format!("{} ___value = ", java_type.as_native_type()))?;
+                converter.convert_to_native(
+                    f,
+                    "__value",
+                    &format!("{} ___value = ", java_type.as_native_type()),
+                )?;
                 "___value"
             } else {
                 "__value"
             };
 
-            f.writeln(&format!("{}.{}({}, {});", NATIVE_FUNCTIONS_CLASSNAME, self.0.add_func.name, builder_name, value_name))?;
+            f.writeln(&format!(
+                "{}.{}({}, {});",
+                NATIVE_FUNCTIONS_CLASSNAME, self.0.add_func.name, builder_name, value_name
+            ))?;
 
             if let Some(converter) = &converter {
                 converter.convert_to_native_cleanup(f, "___value")?;
@@ -487,7 +499,10 @@ impl TypeConverter for CollectionConverter {
     }
 
     fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}.{}({});", NATIVE_FUNCTIONS_CLASSNAME, self.0.delete_func.name, name))
+        f.writeln(&format!(
+            "{}.{}({});",
+            NATIVE_FUNCTIONS_CLASSNAME, self.0.delete_func.name, name
+        ))
     }
 
     fn convert_from_native(
@@ -496,7 +511,11 @@ impl TypeConverter for CollectionConverter {
         _from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        f.writeln(&format!("{}java.util.Collections.unmodifiableList(new java.util.List<{}>());", to, JavaType(&self.0.item_type).as_java_type()))
+        f.writeln(&format!(
+            "{}java.util.Collections.unmodifiableList(new java.util.List<{}>());",
+            to,
+            JavaType(&self.0.item_type).as_java_type()
+        ))
     }
 }
 

@@ -6,7 +6,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_item = lib.declare_native_struct("IteratorItem")?;
     let iterator_next_fn = lib
         .declare_native_function("next_value_with_lifetime")?
-        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
+        .param("it", Type::ClassRef(iterator_class), "Iterator")?
         .return_type(ReturnType::new(
             Type::StructRef(iterator_item.clone()),
             "Iterator Value",

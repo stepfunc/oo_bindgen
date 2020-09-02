@@ -73,7 +73,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .param(
             "cb",
-            Type::OneTimeCallback(one_time_callback.clone()),
+            Type::OneTimeCallback(one_time_callback),
             "Callback to add",
         )?
         .return_type(ReturnType::void())?

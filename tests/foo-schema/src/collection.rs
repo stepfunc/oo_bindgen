@@ -11,6 +11,13 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Create a collection")?
         .build()?;
 
+    let collection_create_with_reserve_fn = lib
+        .declare_native_function("collection_create_with_reserve")?
+        .param("reserve", Type::Uint32, "Number of elements to pre-allocate")?
+        .return_type(ReturnType::new(Type::ClassRef(collection_class.clone()), "New collection (with reserve optimization)"))?
+        .doc("Create a collection")?
+        .build()?;
+
     // Destructor method
     let collection_destroy_fn = lib
         .declare_native_function("collection_destroy")?
@@ -29,6 +36,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     // Define the actual collection
     let collection = lib.define_collection(&collection_create_fn, &collection_destroy_fn, &collection_add_fn)?;
+    let collection_with_reserve = lib.define_collection(&collection_create_with_reserve_fn, &collection_destroy_fn, &collection_add_fn)?;
     
     // Define test method
     let collection_size_func = lib
@@ -46,9 +54,26 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Get an item from the collection")?
         .build()?;
 
+    let collection_with_reserve_size_func = lib
+        .declare_native_function("collection_with_reserve_size")?
+        .param("col", Type::Collection(collection_with_reserve.clone()), "Collection")?
+        .return_type(ReturnType::new(Type::Uint32, "Size of the collection"))?
+        .doc("Get the size of a collection")?
+        .build()?;
+
+    let collection_with_reserve_get_func = lib
+        .declare_native_function("collection_with_reserve_get")?
+        .param("col", Type::Collection(collection_with_reserve.clone()), "Collection")?
+        .param("idx", Type::Uint32, "Index")?
+        .return_type(ReturnType::new(Type::String, "Value"))?
+        .doc("Get an item from the collection")?
+        .build()?;
+
     lib.define_class(&collection_class)?
         .static_method("GetSize", &collection_size_func)?
         .static_method("GetValue", &collection_get_func)?
+        .static_method("GetSizeWithReserve", &collection_with_reserve_size_func)?
+        .static_method("GetValueWithReserve", &collection_with_reserve_get_func)?
         .doc("Collection helper functions")?
         .build()?;
 

@@ -12,6 +12,12 @@ impl StringCollection {
         }
     }
 
+    fn new_with_reserve(reserve: usize) -> Self {
+        Self {
+            values: Vec::with_capacity(reserve)
+        }
+    }
+
     fn add(&mut self, value: CString) {
         self.values.push(value);
     }
@@ -19,6 +25,11 @@ impl StringCollection {
 
 pub unsafe fn collection_create() -> *mut StringCollection {
     let it = Box::new(StringCollection::new());
+    Box::into_raw(it)
+}
+
+pub unsafe fn collection_create_with_reserve(reserve: u32) -> *mut StringCollection {
+    let it = Box::new(StringCollection::new_with_reserve(reserve as usize));
     Box::into_raw(it)
 }
 
@@ -53,4 +64,12 @@ pub unsafe fn collection_get(col: *mut StringCollection, idx: u32) -> *const c_c
     } else {
         std::ptr::null()
     }
+}
+
+pub unsafe fn collection_with_reserve_size(col: *mut StringCollection) -> u32 {
+    collection_size(col)
+}
+
+pub unsafe fn collection_with_reserve_get(col: *mut StringCollection, idx: u32) -> *const c_char {
+    collection_get(col, idx)
 }

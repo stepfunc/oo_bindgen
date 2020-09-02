@@ -21,5 +21,19 @@ namespace foo.Tests
             Assert.Equal("World!", StringCollection.GetValue(strings, 1));
             Assert.Equal("Émile", StringCollection.GetValue(strings, 2));
         }
+
+        [Fact]
+        public void StringCollectionWithReserveTest()
+        {
+            var strings = new List<string>();
+            strings.Add("Hello");
+            strings.Add("World!");
+            strings.Add("Émile");
+
+            Assert.Equal((uint)strings.Count, StringCollection.GetSizeWithReserve(strings));
+            Assert.Equal("Hello", StringCollection.GetValueWithReserve(strings, 0));
+            Assert.Equal("World!", StringCollection.GetValueWithReserve(strings, 1));
+            Assert.Equal("Émile", StringCollection.GetValueWithReserve(strings, 2));
+        }
     }
 }

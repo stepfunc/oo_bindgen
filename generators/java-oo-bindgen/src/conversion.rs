@@ -459,7 +459,12 @@ impl TypeConverter for CollectionConverter {
         let builder_name = format!("_{}Builder", from.replace(".", "_"));
         let java_type = JavaType(&self.0.item_type);
 
-        f.writeln(&format!("com.sun.jna.Pointer {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+        if self.0.has_reserve {
+            f.writeln(&format!("com.sun.jna.Pointer {} = {}.{}({}.size());", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name, from))?;
+        } else {
+            f.writeln(&format!("com.sun.jna.Pointer {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+        }
+
         f.writeln(&format!("for ({} __value : {})", java_type.as_java_type(), from))?;
         blocked(f, |f| {
             let converter = java_type.conversion();

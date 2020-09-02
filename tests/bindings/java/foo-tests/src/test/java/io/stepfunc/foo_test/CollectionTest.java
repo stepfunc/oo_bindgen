@@ -22,4 +22,17 @@ public class CollectionTest {
         assertThat(StringCollection.getValue(strings, uint(1))).isEqualTo("World!");
         assertThat(StringCollection.getValue(strings, uint(2))).isEqualTo("Émile");
     }
+
+    @Test
+    public void StringCollectionWithReserveTest() {
+        List<String> strings = new ArrayList<>();
+        strings.add("Hello");
+        strings.add("World!");
+        strings.add("Émile");
+
+        assertThat(StringCollection.getSizeWithReserve(strings)).isEqualTo(uint(3));
+        assertThat(StringCollection.getValueWithReserve(strings, uint(0))).isEqualTo("Hello");
+        assertThat(StringCollection.getValueWithReserve(strings, uint(1))).isEqualTo("World!");
+        assertThat(StringCollection.getValueWithReserve(strings, uint(2))).isEqualTo("Émile");
+    }
 }

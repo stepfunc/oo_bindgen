@@ -34,11 +34,11 @@ impl<'a> DotnetType<'a> {
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => format!(
-                "System.Collections.Generic.IEnumerable<{}>",
+                "System.Collections.Generic.ICollection<{}>",
                 handle.item_type.name().to_camel_case()
             ),
             Type::Collection(handle) => format!(
-                "System.Collections.Generic.IEnumerable<{}>",
+                "System.Collections.Generic.ICollection<{}>",
                 DotnetType(&handle.item_type).as_dotnet_type()
             ),
             Type::Duration(_) => "TimeSpan".to_string(),
@@ -485,7 +485,11 @@ impl TypeConverter for CollectionConverter {
     ) -> FormattingResult<()> {
         let builder_name = format!("_{}Builder", from.replace(".", "_"));
 
-        f.writeln(&format!("var {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+        if self.0.has_reserve {
+            f.writeln(&format!("var {} = {}.{}((uint){}.Count);", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name, from))?;
+        } else {
+            f.writeln(&format!("var {} = {}.{}();", builder_name, NATIVE_FUNCTIONS_CLASSNAME, self.0.create_func.name))?;
+        }
         f.writeln(&format!("foreach (var __value in {})", from))?;
         blocked(f, |f| {
             let dotnet_type = DotnetType(&self.0.item_type);

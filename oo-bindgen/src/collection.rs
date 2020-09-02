@@ -8,6 +8,7 @@ pub struct Collection {
     pub add_func: NativeFunctionHandle,
     pub collection_type: ClassDeclarationHandle,
     pub item_type: Type,
+    pub has_reserve: bool,
 }
 
 impl Collection {
@@ -25,11 +26,24 @@ impl Collection {
             })
         };
 
-        if !create_func.parameters.is_empty() {
-            return Err(BindingError::CollectionCreateFuncInvalidSignature {
-                handle: create_func.clone(),
-            })
-        }
+        let mut iter = create_func.parameters.iter();
+        let has_reserve = if let Some(param) = iter.next() {
+            if param.param_type != Type::Uint32 {
+                return Err(BindingError::CollectionCreateFuncInvalidSignature {
+                    handle: create_func.clone(),
+                })
+            }
+
+            if iter.next().is_some() {
+                return Err(BindingError::CollectionCreateFuncInvalidSignature {
+                    handle: create_func.clone(),
+                })
+            }
+
+            true
+        } else {
+            false
+        };
 
         // Validate destructor
         let mut iter = delete_func.parameters.iter();
@@ -99,6 +113,7 @@ impl Collection {
             add_func: add_func.clone(),
             collection_type: collection_type.clone(),
             item_type: item_type.clone(),
+            has_reserve,
         })
     }
 

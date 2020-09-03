@@ -4,7 +4,7 @@ using foo;
 
 namespace foo.Tests
 {
-    class CallbackImpl : CallbackInterface
+    class CallbackImpl : ICallbackInterface
     {
         public uint lastValue = 0;
         public TimeSpan lastDuration = TimeSpan.MinValue;
@@ -20,7 +20,7 @@ namespace foo.Tests
         }
     }
 
-    class CallbackFinalizerCounterImpl : CallbackInterface
+    class CallbackFinalizerCounterImpl : ICallbackInterface
     {
         private Counters counters;
 
@@ -39,7 +39,7 @@ namespace foo.Tests
         }
     }
 
-    class OneTimeCallbackImpl : OneTimeCallbackInterface
+    class OneTimeCallbackImpl : IOneTimeCallbackInterface
     {
         public uint lastValue = 0;
 

@@ -31,8 +31,8 @@ impl<'a> DotnetType<'a> {
             Type::StructRef(handle) => format!("{}?", handle.name.to_camel_case()),
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
+            Type::Interface(handle) => format!("I{}", handle.name.to_camel_case()),
+            Type::OneTimeCallback(handle) => format!("I{}", handle.name.to_camel_case()),
             Type::Iterator(handle) => format!(
                 "System.Collections.Generic.ICollection<{}>",
                 handle.item_type.name().to_camel_case()
@@ -64,9 +64,9 @@ impl<'a> DotnetType<'a> {
             Type::StructRef(_) => "IntPtr".to_string(),
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(_) => "IntPtr".to_string(),
-            Type::Interface(handle) => format!("{}NativeAdapter", handle.name.to_camel_case()),
+            Type::Interface(handle) => format!("I{}NativeAdapter", handle.name.to_camel_case()),
             Type::OneTimeCallback(handle) => {
-                format!("{}NativeAdapter", handle.name.to_camel_case())
+                format!("I{}NativeAdapter", handle.name.to_camel_case())
             }
             Type::Iterator(_) => "IntPtr".to_string(),
             Type::Collection(_) => "IntPtr".to_string(),
@@ -230,7 +230,7 @@ struct InterfaceConverter(InterfaceHandle);
 impl TypeConverter for InterfaceConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
-            "{}new {}NativeAdapter({});",
+            "{}new I{}NativeAdapter({});",
             to,
             self.0.name.to_camel_case(),
             from
@@ -255,7 +255,7 @@ impl TypeConverter for InterfaceConverter {
                 self.0.arg_name.to_mixed_case()
             ))?;
             f.writeln(&format!(
-                "{}_handle.Target as {};",
+                "{}_handle.Target as I{};",
                 to,
                 self.0.name.to_camel_case()
             ))
@@ -269,7 +269,7 @@ struct OneTimeCallbackConverter(OneTimeCallbackHandle);
 impl TypeConverter for OneTimeCallbackConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
-            "{}new {}NativeAdapter({});",
+            "{}new I{}NativeAdapter({});",
             to,
             self.0.name.to_camel_case(),
             from
@@ -294,7 +294,7 @@ impl TypeConverter for OneTimeCallbackConverter {
                 self.0.arg_name.to_mixed_case()
             ))?;
             f.writeln(&format!(
-                "{}({})_handle.Target;",
+                "{}_handle.Target as I{};",
                 to,
                 self.0.name.to_camel_case()
             ))

@@ -286,7 +286,7 @@ fn generate_async_method(
     let method_name = method.name.to_camel_case();
     let async_handler_name = format!("{}Handler", method_name);
     let return_type = DotnetType(&method.return_type).as_dotnet_type();
-    let one_time_callback_name = method.one_time_callback_name.to_camel_case();
+    let one_time_callback_name = format!("I{}", method.one_time_callback_name.to_camel_case());
     let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
     let callback_name = method.callback_name.to_camel_case();
     let callback_param_name = method.callback_param_name.to_mixed_case();

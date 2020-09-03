@@ -7,7 +7,7 @@ pub(crate) fn generate(
     cb: &OneTimeCallbackHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let cb_name = cb.name.to_camel_case();
+    let cb_name = format!("I{}", cb.name.to_camel_case());
 
     print_license(f, &lib.license)?;
     print_imports(f)?;

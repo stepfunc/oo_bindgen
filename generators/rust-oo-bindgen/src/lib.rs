@@ -107,7 +107,6 @@ impl<'a> RustCodegen<'a> {
         handle: &NativeStructHandle,
     ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
 
         if Self::requires_lifetime_annotation(handle) {
             f.writeln(&format!("pub struct {}<'a>", handle.name()))?;
@@ -198,7 +197,6 @@ impl<'a> RustCodegen<'a> {
     fn write_interface(&self, f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
         // C structure
         f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {
@@ -262,7 +260,6 @@ impl<'a> RustCodegen<'a> {
         handle: &OneTimeCallbackHandle,
     ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {

@@ -8,9 +8,10 @@ pub(crate) fn struct_by_value_echo(value: ffi::Structure) -> ffi::Structure {
 }
 
 pub(crate) unsafe fn struct_by_reference_echo(value: *const ffi::Structure) -> ffi::Structure {
-    let value = value.as_ref().unwrap();
+    let value = std::ptr::read(value);
     {
-        value.interface_value.on_value(value);
+        value.interface_value.on_value(&value);
     }
-    value.clone()
+
+    value
 }

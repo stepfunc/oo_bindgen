@@ -140,8 +140,12 @@ pub(crate) fn generate(
                                     interface_name,
                                     func.arg_name.to_mixed_case(),
                                 ))?;
-                                f.writeln("if(_arg != null)")?;
-                                blocked(f, |f| call_java_function(f, func, "return "))
+
+                                f.writeln("if(_arg == null)")?;
+                                blocked(f, |f| {
+                                    f.writeln(&format!("throw new RuntimeException(\"Unknown callback of type \" + {}.class);", interface_name))
+                                })?;
+                                call_java_function(f, func, "return ")
                             })
                         })?;
                         f.writeln("};")?;

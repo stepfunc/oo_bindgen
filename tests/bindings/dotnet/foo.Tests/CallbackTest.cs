@@ -9,14 +9,16 @@ namespace foo.Tests
         public uint lastValue = 0;
         public TimeSpan lastDuration = TimeSpan.MinValue;
 
-        public void OnValue(uint value)
+        public uint OnValue(uint value)
         {
             lastValue = value;
+            return value;
         }
 
-        public void OnDuration(TimeSpan value)
+        public TimeSpan OnDuration(TimeSpan value)
         {
             lastDuration = value;
+            return value;
         }
     }
 
@@ -24,8 +26,15 @@ namespace foo.Tests
     {
         private Counters counters;
 
-        public void OnValue(uint value) {}
-        public void OnDuration(TimeSpan value) {}
+        public uint OnValue(uint value)
+        {
+            return value;
+        }
+
+        public TimeSpan OnDuration(TimeSpan value)
+        {
+            return value;
+        }
 
         public CallbackFinalizerCounterImpl(Counters counters)
         {
@@ -43,9 +52,10 @@ namespace foo.Tests
     {
         public uint lastValue = 0;
 
-        public void OnValue(uint value)
+        public uint OnValue(uint value)
         {
             lastValue = value;
+            return value;
         }
     }
 
@@ -63,18 +73,21 @@ namespace foo.Tests
             using (var cbSource = new CallbackSource())
             {
                 var cb = new CallbackImpl();
-                cbSource.AddFunc(cb);
+                cbSource.SetInterface(cb);
 
                 Assert.Equal(0u, cb.lastValue);
-                cbSource.SetValue(76);
+                var result = cbSource.SetValue(76);
+                Assert.Equal(76u, result);
                 Assert.Equal(76u, cb.lastValue);
 
                 Assert.Equal(TimeSpan.MinValue, cb.lastDuration);
-                cbSource.SetDuration(TimeSpan.FromSeconds(76));
+                var timeResult = cbSource.SetDuration(TimeSpan.FromSeconds(76));
+                Assert.Equal(TimeSpan.FromSeconds(76), timeResult);
                 Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
 
                 var oneTimeCb = new OneTimeCallbackImpl();
-                cbSource.AddOneTimeFunc(oneTimeCb);
+                result = cbSource.CallOneTime(oneTimeCb);
+                Assert.Equal(76u, result);
                 Assert.Equal(76u, oneTimeCb.lastValue);
             }
         }
@@ -83,7 +96,7 @@ namespace foo.Tests
         {
             using (var cbSource = new CallbackSource())
             {
-                cbSource.AddFunc(new CallbackFinalizerCounterImpl(counters));
+                cbSource.SetInterface(new CallbackFinalizerCounterImpl(counters));
                 cbSource.SetValue(76);
             }
         }

@@ -9,10 +9,11 @@ typedef struct data {
     bool destroy_called;
 } data_t;
 
-static void on_value(uint32_t value, void* context)
+static uint32_t on_value(uint32_t value, void* context)
 {
     data_t* data = (data_t*)context;
     data->last_value = value;
+    return value;
 }
 
 static void on_duration(uint64_t value, void* context)
@@ -45,10 +46,11 @@ static void simple_callback_test()
         .ctx = &data,
     };
 
-    cbsource_add(cb_source, interface);
+    cbsource_set_interface(cb_source, interface);
 
     assert(0 == data.last_value);
-    cbsource_set_value(cb_source, 24);
+    uint32_t result = cbsource_set_value(cb_source, 24);
+    assert(24 == result);
     assert(24 == data.last_value);
 
     assert(0 == data.last_duration);
@@ -72,10 +74,35 @@ static void optional_callback_test()
         .ctx = NULL,
     };
 
-    cbsource_add(cb_source, interface);
+    cbsource_set_interface(cb_source, interface);
 
     cbsource_set_value(cb_source, 24);
     cbsource_set_duration(cb_source, 76);
+
+    cbsource_destroy(cb_source);
+}
+
+static void one_time_callback_test()
+{
+    callback_source_t* cb_source = cbsource_new();
+
+    data_t data =
+    {
+        .last_value = 0,
+        .destroy_called = false,
+    };
+
+    one_time_callback_interface_t interface =
+    {
+        .on_value = &on_value,
+        .ctx = &data,
+    };
+
+    assert(0 == data.last_value);
+    cbsource_set_value(cb_source, 24);
+    uint32_t result = cbsource_call_one_time(cb_source, interface);
+    assert(24 == result);
+    assert(24 == data.last_value);
 
     cbsource_destroy(cb_source);
 }
@@ -84,4 +111,5 @@ void callback_tests()
 {
     simple_callback_test();
     optional_callback_test();
+    one_time_callback_test();
 }

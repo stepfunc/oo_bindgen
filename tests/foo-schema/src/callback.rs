@@ -7,7 +7,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_interface("CallbackInterface", "Test interface")?
         .callback("on_value", "On value callback")?
         .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::void())?
+        .return_type(ReturnType::Type(Type::Uint32, "Some value".into()))?
         .build()?
         .callback("on_duration", "On duration callback")?
         .param(
@@ -15,7 +15,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::Duration(DurationMapping::Milliseconds),
             "Value",
         )?
-        .return_type(ReturnType::void())?
+        .return_type(ReturnType::Type(
+            Type::Duration(DurationMapping::Milliseconds),
+            "Some value".into(),
+        ))?
         .build()?
         .destroy_callback("on_destroy")?
         .build()?;
@@ -24,7 +27,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_one_time_callback("OneTimeCallbackInterface", "Test one-time-interface")?
         .callback("on_value", "On value callback")?
         .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::void())?
+        .return_type(ReturnType::Type(Type::Uint32, "Some value".into()))?
         .build()?
         .build()?;
 
@@ -52,8 +55,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Destroy a callback source")?
         .build()?;
 
-    let cbsource_add_func = lib
-        .declare_native_function("cbsource_add")?
+    let cbsource_set_interface = lib
+        .declare_native_function("cbsource_set_interface")?
         .param(
             "cbsource",
             Type::ClassRef(cbsource.clone()),
@@ -64,8 +67,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Add a callback")?
         .build()?;
 
-    let cbsource_add_one_time_func = lib
-        .declare_native_function("cbsource_add_one_time")?
+    let cbsource_call_one_time_func = lib
+        .declare_native_function("cbsource_call_one_time")?
         .param(
             "cbsource",
             Type::ClassRef(cbsource.clone()),
@@ -76,7 +79,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::OneTimeCallback(one_time_callback),
             "Callback to add",
         )?
-        .return_type(ReturnType::void())?
+        .return_type(ReturnType::Type(
+            Type::Uint32,
+            "Value returned by the callback".into(),
+        ))?
         .doc("Add a one-time callback")?
         .build()?;
 
@@ -88,7 +94,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "Callback source",
         )?
         .param("value", Type::Uint32, "New value")?
-        .return_type(ReturnType::void())?
+        .return_type(ReturnType::Type(
+            Type::Uint32,
+            "Value returned by the callback".into(),
+        ))?
         .doc("Set the value and call all the callbacks")?
         .build()?;
 
@@ -104,7 +113,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::Duration(DurationMapping::Milliseconds),
             "New duration",
         )?
-        .return_type(ReturnType::void())?
+        .return_type(ReturnType::Type(
+            Type::Duration(DurationMapping::Milliseconds),
+            "Some value".into(),
+        ))?
         .doc("Set the duration and call all the callbacks")?
         .build()?;
 
@@ -113,8 +125,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_class(&cbsource)?
         .constructor(&cbsource_new_func)?
         .destructor(&cbsource_destroy_func)?
-        .method("AddFunc", &cbsource_add_func)?
-        .method("AddOneTimeFunc", &cbsource_add_one_time_func)?
+        .method("SetInterface", &cbsource_set_interface)?
+        .method("CallOneTime", &cbsource_call_one_time_func)?
         .method("SetValue", &cbsource_set_value_func)?
         .method("SetDuration", &cbsource_set_duration_func)?
         .doc("CallbackSource class")?

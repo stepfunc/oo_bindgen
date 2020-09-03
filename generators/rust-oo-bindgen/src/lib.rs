@@ -332,7 +332,10 @@ impl<'a> RustCodegen<'a> {
                 f.write(")")?;
 
                 if let ReturnType::Type(return_type, _) = &callback.return_type {
-                    f.write(&format!(" -> Option<{}>", RustType(return_type).to_string()))?;
+                    f.write(&format!(
+                        " -> Option<{}>",
+                        RustType(return_type).to_string()
+                    ))?;
                 }
 
                 blocked(f, |f| {

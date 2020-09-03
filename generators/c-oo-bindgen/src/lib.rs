@@ -486,7 +486,11 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                     }
 
                     // Print function signature
-                    f.write(&format!("void (*{})(", handle.name))?;
+                    f.write(&format!(
+                        "{} (*{})(",
+                        CReturnType(&handle.return_type),
+                        handle.name
+                    ))?;
 
                     f.write(
                         &handle
@@ -581,7 +585,11 @@ fn write_one_time_callback(
                     }
 
                     // Print function signature
-                    f.write(&format!("void (*{})(", handle.name))?;
+                    f.write(&format!(
+                        "{} (*{})(",
+                        CReturnType(&handle.return_type),
+                        handle.name
+                    ))?;
 
                     f.write(
                         &handle

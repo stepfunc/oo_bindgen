@@ -130,12 +130,17 @@ pub(crate) fn generate(
                                     callback_name,
                                     func.arg_name.to_mixed_case(),
                                 ))?;
-                                f.writeln("if(_arg != null)")?;
-                                blocked(f, |f| call_java_function(f, func, "return "))?;
+
+                                f.writeln("if(_arg == null)")?;
+                                blocked(f, |f| {
+                                    f.writeln(&format!("throw new RuntimeException(\"Unknown callback of type \" + {}.class);", callback_name))
+                                })?;
+
                                 f.writeln(&format!(
                                     "NativeAdapter._impls.remove({});",
                                     func.arg_name.to_mixed_case()
-                                ))
+                                ))?;
+                                call_java_function(f, func, "return ")
                             })
                         })?;
                         f.writeln("};")?;

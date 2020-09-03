@@ -88,7 +88,11 @@ pub(crate) fn generate(
             for el in &cb.elements {
                 match el {
                     OneTimeCallbackElement::CallbackFunction(func) => {
-                        f.writeln(&format!("private delegate void {}_delegate(", func.name))?;
+                        f.writeln(&format!(
+                            "private delegate {} {}_delegate(",
+                            DotnetReturnType(&func.return_type).as_native_type(),
+                            func.name
+                        ))?;
                         f.write(
                             &func
                                 .parameters
@@ -186,7 +190,7 @@ pub(crate) fn generate(
                                 func.arg_name
                             ))?;
                             f.writeln(&format!("var _impl = ({})_handle.Target;", cb_name))?;
-                            call_dotnet_function(f, func, "_result = ")?;
+                            call_dotnet_function(f, func, "var _result = ")?;
                             f.writeln("_handle.Free();")?;
 
                             if !func.return_type.is_void() {

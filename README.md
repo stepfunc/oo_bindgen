@@ -2,6 +2,11 @@
 
 Object-oriented binding generator for Rust.
 
+# license 
+
+Refer to `License.txt` for the terms of the non-commercial license.  This software is "source available", 
+but is not "open source". You must purchase a commercial license to use this software for profit.
+
 ## How it works
 
 - First, you write your Rust library without thinking about bindings.

@@ -16,10 +16,11 @@ static uint32_t on_value(uint32_t value, void* context)
     return value;
 }
 
-static void on_duration(uint64_t value, void* context)
+static uint64_t on_duration(uint64_t value, void* context)
 {
     data_t* data = (data_t*)context;
     data->last_duration = value;
+    return value;
 }
 
 static void on_destroy(void* context)
@@ -54,7 +55,8 @@ static void simple_callback_test()
     assert(24 == data.last_value);
 
     assert(0 == data.last_duration);
-    cbsource_set_duration(cb_source, 76);
+    uint64_t duration_result = cbsource_set_duration(cb_source, 76);
+    assert(76 == duration_result);
     assert(76 == data.last_duration);
 
     assert(!data.destroy_called);

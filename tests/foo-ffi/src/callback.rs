@@ -30,7 +30,7 @@ impl CallbackSource {
             .as_ref()
             .map_or(Duration::from_millis(0), |cb| {
                 cb.on_duration(value.as_millis() as u64)
-                    .map_or(Duration::from_millis(0), |val| Duration::from_millis(val))
+                    .map_or(Duration::from_millis(0), Duration::from_millis)
             })
     }
 }

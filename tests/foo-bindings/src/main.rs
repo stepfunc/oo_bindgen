@@ -26,7 +26,7 @@ fn generate_c_lib(lib: &Library) {
         output_dir: PathBuf::from("tests/bindings/c/generated"),
         ffi_name: "foo_ffi".to_string(),
         platforms,
-        generate_doc: true,
+        generate_doc: false,
     };
 
     c_oo_bindgen::generate_c_package(&lib, &config).expect("failed to package C lib");
@@ -146,6 +146,7 @@ fn build_and_test_java_lib() {
 
     let result = command
         .current_dir(&build_dir)
+        .arg("-B")
         .arg("verify")
         .status()
         .unwrap();

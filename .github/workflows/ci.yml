@@ -31,11 +31,21 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-      - name: Run target languages unit tests
+      - name: C bindings
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --bin foo-bindings
+          args: --bin foo-bindings -- --c
+      - name: .NET bindings
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --bin foo-bindings -- --dotnet
+      - name: Java bindings
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --bin foo-bindings -- --java
   linting:
     strategy:
       fail-fast: false

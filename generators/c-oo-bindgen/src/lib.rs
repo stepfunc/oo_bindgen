@@ -139,7 +139,6 @@ pub struct CBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
     pub platforms: PlatformLocations,
-    pub generate_doc: bool,
 }
 
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
@@ -173,30 +172,32 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         )?;
     }
 
-    if config.generate_doc {
-        // Build documentation
-        let mut command = Command::new("doxygen")
-            .current_dir(&config.output_dir)
-            .arg("-")
-            .stdin(std::process::Stdio::piped())
-            .spawn()
-            .expect("failed to spawn doxygen");
+    Ok(())
+}
 
-        {
-            let stdin = command.stdin.as_mut().unwrap();
-            stdin
-                .write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes())
-                .unwrap();
-            stdin
-                .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
-                .unwrap();
-            stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
-            stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
-            stdin.write_all(b"INPUT = include\n").unwrap();
-        }
+pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+    // Build documentation
+    let mut command = Command::new("doxygen")
+        .current_dir(&config.output_dir)
+        .arg("-")
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .expect("failed to spawn doxygen");
 
-        command.wait()?;
+    {
+        let stdin = command.stdin.as_mut().unwrap();
+        stdin
+            .write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes())
+            .unwrap();
+        stdin
+            .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
+            .unwrap();
+        stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
+        stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
+        stdin.write_all(b"INPUT = include\n").unwrap();
     }
+
+    command.wait()?;
 
     Ok(())
 }

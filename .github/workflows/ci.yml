@@ -10,8 +10,8 @@ jobs:
           - windows-latest
         rust:
           - stable
-          #- beta
-          #- nightly
+          - beta
+          - nightly
         profile:
           - Debug
           - Release
@@ -32,9 +32,11 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Build
-        run: cargo build
+        run: |
+          Invoke-Expression "cargo build $(($Env:BUILD_TYPE -eq 'Release') ? '--release' : '')"
       - name: Run Rust unit tests
-        run: cargo test
+        run: |
+          Invoke-Expression "cargo test $(($Env:BUILD_TYPE -eq 'Release') ? '--release' : '')"
       - name: C bindings
         run: |
           Invoke-Expression "cargo run $(($Env:BUILD_TYPE -eq 'Release') ? '--release' : '') --bin foo-bindings -- --c"
@@ -50,8 +52,8 @@ jobs:
       matrix:
         rust:
           - stable
-          #- beta
-          #- nightly
+          - beta
+          - nightly
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

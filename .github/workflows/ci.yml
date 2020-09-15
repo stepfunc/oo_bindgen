@@ -12,7 +12,15 @@ jobs:
           - stable
           #- beta
           #- nightly
+        profile:
+          - Debug
+          - Release
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      BUILD_TYPE: ${{ matrix.profile }}
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -24,28 +32,18 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+        run: cargo build
       - name: Run Rust unit tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
       - name: C bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --bin foo-bindings -- --c
+        run: |
+          Invoke-Expression "cargo run $(($Env:BUILD_TYPE -eq 'Release') ? '--release' : '') --bin foo-bindings -- --c"
       - name: .NET bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --bin foo-bindings -- --dotnet
+        run: |
+          Invoke-Expression "cargo run $(($Env:BUILD_TYPE -eq 'Release') ? '--release' : '') --bin foo-bindings -- --dotnet"
       - name: Java bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --bin foo-bindings -- --java
+        run: |
+          Invoke-Expression "cargo run $(($Env:BUILD_TYPE -eq 'Release') ? '--release' : '') --bin foo-bindings -- --java"
   linting:
     strategy:
       fail-fast: false

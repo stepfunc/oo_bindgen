@@ -5,6 +5,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+include!(concat!(env!("OUT_DIR"), "/paths.rs"));
+
 pub fn run(settings: BindingBuilderSettings) {
     let matches = App::new("oo-bindgen")
         .arg(
@@ -41,27 +43,28 @@ pub fn run(settings: BindingBuilderSettings) {
 
     let run_tests = !matches.is_present("no-tests");
 
-    if matches.is_present("c") {
+    let run_c = matches.is_present("c");
+    let run_dotnet = matches.is_present("dotnet");
+    let run_java = matches.is_present("java");
+    let run_all = !run_c && !run_dotnet && !run_java;
+
+    if run_c || run_all {
         run_builder::<CBindingBuilder>(&settings, run_tests);
 
         if matches.is_present("doxygen") {
             CBindingBuilder::new(&settings).build_doxygen();
         }
     }
-    if matches.is_present("dotnet") {
+    if run_dotnet || run_all {
         run_builder::<DotnetBindingBuilder>(&settings, run_tests);
     }
-    if matches.is_present("java") {
+    if run_java || run_all {
         run_builder::<JavaBindingBuilder>(&settings, run_tests);
     }
 }
 
 fn ffi_path() -> PathBuf {
-    if cfg!(debug_assertions) {
-        PathBuf::from("target/debug/deps")
-    } else {
-        PathBuf::from("target/release/deps")
-    }
+    [TARGET_DIR, "deps"].iter().collect()
 }
 
 fn run_builder<'a, B: BindingBuilder<'a>>(settings: &'a BindingBuilderSettings, run_tests: bool) {

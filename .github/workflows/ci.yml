@@ -23,10 +23,14 @@ jobs:
           target: x86_64-unknown-linux-musl
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
+      - name: Copy Windows config
+        if: ${{ runner.os == 'Windows' }}
+        shell: pwsh
+        run: Copy-Item -Path .cargo/config-windows.toml -Destination .cargo/config.toml
+      - name: Copy Linux config
+        if: ${{ runner.os == 'Linux' }}
+        shell: pwsh
+        run: Copy-Item -Path .cargo/config-linux.toml -Destination .cargo/config.toml
       - name: Run Rust unit tests
         uses: actions-rs/cargo@v1
         with:

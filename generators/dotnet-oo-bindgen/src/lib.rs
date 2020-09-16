@@ -117,6 +117,10 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("<Project Sdk=\"Microsoft.NET.Sdk\">")?;
     f.writeln("  <PropertyGroup>")?;
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
+    f.writeln(&format!(
+        "    <Version>{}</Version>",
+        lib.version.to_string()
+    ))?;
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
     f.writeln("  <ItemGroup>")?;

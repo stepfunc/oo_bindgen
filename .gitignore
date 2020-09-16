@@ -22,28 +22,10 @@ tests/bindings/c/generated
 tests/bindings/dotnet/foo
 tests/bindings/dotnet/*/bin
 tests/bindings/dotnet/*/obj
+tests/bindings/dotnet/nupkg
 
 # Generated Java lib
 tests/bindings/java/.idea
 tests/bindings/java/foo
 tests/bindings/java/*/target
 tests/bindings/java/**/*.iml
-
-# =======================
-# Generated example files
-# =======================
-
-# Generated C lib
-example/bindings/c/build
-example/bindings/c/generated
-
-# Generated .NET lib
-example/bindings/dotnet/dnp3rs
-example/bindings/dotnet/*/bin
-example/bindings/dotnet/*/obj
-
-# Generated Java lib
-example/bindings/java/.idea
-example/bindings/java/dnp3rs
-example/bindings/java/*/target
-example/bindings/java/**/*.iml

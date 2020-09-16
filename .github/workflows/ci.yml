@@ -55,6 +55,43 @@ jobs:
         with:
           name: ffi-modules
           path: tests/bindings/c/generated/lib
+  packaging:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Download compiled FFI
+        uses: actions/download-artifact@v2
+        with:
+          name: ffi-modules
+          path: ffi-modules
+      - name: Package all bindings
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --release --bin foo-bindings -- --package ./ffi-modules
+      - name: Upload C bindings
+        uses: actions/upload-artifact@v2
+        with:
+          name: c-bindings
+          path: tests/bindings/c/generated
+      - name: Upload .NET bindings
+        uses: actions/upload-artifact@v2
+        with:
+          name: dotnet-bindings
+          path: tests/bindings/dotnet/nupkg/*.nupkg
+      - name: Upload Java bindings
+        uses: actions/upload-artifact@v2
+        with:
+          name: java-bindings
+          path: tests/bindings/java/foo/target/*.jar
   linting:
     strategy:
       fail-fast: false

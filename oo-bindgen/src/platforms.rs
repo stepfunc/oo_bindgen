@@ -56,6 +56,7 @@ impl PlatformLocation {
     }
 }
 
+#[derive(Clone)]
 pub struct PlatformLocations {
     pub win64: Option<PathBuf>,
     pub win32: Option<PathBuf>,
@@ -91,6 +92,10 @@ impl PlatformLocations {
             vec.push(PlatformLocation::new(Platform::Linux, loc.clone()))
         }
         vec.into_iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.win64.is_none() && self.win32.is_none() && self.linux.is_none()
     }
 }
 

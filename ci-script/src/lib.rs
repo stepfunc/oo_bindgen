@@ -39,6 +39,12 @@ pub fn run(settings: BindingBuilderSettings) {
                 .takes_value(false)
                 .help("Do not run the unit tests"),
         )
+        .arg(
+            Arg::with_name("package")
+                .long("package")
+                .takes_value(true)
+                .help("Generate package with the provided modules"),
+        )
         .get_matches();
 
     let run_tests = !matches.is_present("no-tests");
@@ -48,18 +54,20 @@ pub fn run(settings: BindingBuilderSettings) {
     let run_java = matches.is_present("java");
     let run_all = !run_c && !run_dotnet && !run_java;
 
+    let package_src = matches.value_of("package");
+
     if run_c || run_all {
-        run_builder::<CBindingBuilder>(&settings, run_tests);
+        let builder = run_builder::<CBindingBuilder>(&settings, run_tests, package_src);
 
         if matches.is_present("doxygen") {
-            CBindingBuilder::new(&settings).build_doxygen();
+            builder.build_doxygen();
         }
     }
     if run_dotnet || run_all {
-        run_builder::<DotnetBindingBuilder>(&settings, run_tests);
+        run_builder::<DotnetBindingBuilder>(&settings, run_tests, package_src);
     }
     if run_java || run_all {
-        run_builder::<JavaBindingBuilder>(&settings, run_tests);
+        run_builder::<JavaBindingBuilder>(&settings, run_tests, package_src);
     }
 }
 
@@ -67,13 +75,54 @@ fn ffi_path() -> PathBuf {
     [TARGET_DIR, "deps"].iter().collect()
 }
 
-fn run_builder<'a, B: BindingBuilder<'a>>(settings: &'a BindingBuilderSettings, run_tests: bool) {
-    let mut builder = B::new(settings);
-    builder.generate();
-    builder.build();
-    if run_tests {
-        builder.test();
+fn run_builder<'a, B: BindingBuilder<'a>>(
+    settings: &'a BindingBuilderSettings,
+    run_tests: bool,
+    package_src: Option<&str>,
+) -> B {
+    let mut platforms = PlatformLocations::new();
+    if let Some(package_src) = package_src {
+        let platform_path = [package_src, Platform::Linux.to_string()]
+            .iter()
+            .collect::<PathBuf>();
+        if platform_path.is_dir() {
+            platforms.add(Platform::Linux, platform_path);
+        }
+
+        let platform_path = [package_src, Platform::Win64.to_string()]
+            .iter()
+            .collect::<PathBuf>();
+        if platform_path.is_dir() {
+            platforms.add(Platform::Win64, platform_path);
+        }
+
+        let platform_path = [package_src, Platform::Win32.to_string()]
+            .iter()
+            .collect::<PathBuf>();
+        if platform_path.is_dir() {
+            platforms.add(Platform::Win32, platform_path);
+        }
+    } else {
+        platforms.add(Platform::current(), ffi_path());
     }
+
+    if platforms.is_empty() {
+        panic!("No platforms found!");
+    }
+
+    let mut builder = B::new(settings, platforms);
+    builder.generate();
+
+    if package_src.is_none() {
+        builder.build();
+        if run_tests {
+            builder.test();
+        }
+    } else {
+        builder.package();
+    }
+
+    builder
 }
 
 pub struct BindingBuilderSettings<'a> {
@@ -83,13 +132,17 @@ pub struct BindingBuilderSettings<'a> {
 }
 
 trait BindingBuilder<'a> {
-    fn new(settings: &'a BindingBuilderSettings<'a>) -> Self;
+    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self;
     fn generate(&mut self);
     fn build(&mut self);
     fn test(&mut self);
+    fn package(&mut self);
 }
 
-struct CBindingBuilder<'a>(&'a BindingBuilderSettings<'a>);
+struct CBindingBuilder<'a> {
+    settings: &'a BindingBuilderSettings<'a>,
+    platforms: PlatformLocations,
+}
 
 impl<'a> CBindingBuilder<'a> {
     fn build_doxygen(&self) {
@@ -98,22 +151,23 @@ impl<'a> CBindingBuilder<'a> {
 
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
-            ffi_name: self.0.ffi_name.to_owned(),
+            ffi_name: self.settings.ffi_name.to_owned(),
             platforms,
         };
 
-        c_oo_bindgen::generate_doxygen(&self.0.library, &config).expect("failed to package C lib");
+        c_oo_bindgen::generate_doxygen(&self.settings.library, &config)
+            .expect("failed to package C lib");
     }
 
     fn output_dir(&self) -> PathBuf {
-        let mut output_dir = PathBuf::from(self.0.destination_path);
+        let mut output_dir = PathBuf::from(self.settings.destination_path);
         output_dir.push("c");
         output_dir.push("generated");
         output_dir
     }
 
     fn build_dir(&self) -> PathBuf {
-        let mut build_dir = PathBuf::from(self.0.destination_path);
+        let mut build_dir = PathBuf::from(self.settings.destination_path);
         build_dir.push("c");
         build_dir.push("build");
         build_dir
@@ -121,8 +175,11 @@ impl<'a> CBindingBuilder<'a> {
 }
 
 impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
-    fn new(settings: &'a BindingBuilderSettings<'a>) -> Self {
-        Self(settings)
+    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
+        Self {
+            settings,
+            platforms,
+        }
     }
 
     fn generate(&mut self) {
@@ -131,11 +188,11 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
 
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
-            ffi_name: self.0.ffi_name.to_owned(),
-            platforms,
+            ffi_name: self.settings.ffi_name.to_owned(),
+            platforms: self.platforms.clone(),
         };
 
-        c_oo_bindgen::generate_c_package(&self.0.library, &config)
+        c_oo_bindgen::generate_c_package(&self.settings.library, &config)
             .expect("failed to package C lib");
     }
 
@@ -173,27 +230,37 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
             .unwrap();
         assert!(result.success());
     }
+
+    fn package(&mut self) {
+        // Already done in build
+    }
 }
 
-struct DotnetBindingBuilder<'a>(&'a BindingBuilderSettings<'a>);
+struct DotnetBindingBuilder<'a> {
+    settings: &'a BindingBuilderSettings<'a>,
+    platforms: PlatformLocations,
+}
 
 impl<'a> DotnetBindingBuilder<'a> {
     fn output_dir(&self) -> PathBuf {
-        let mut output_dir = PathBuf::from(self.0.destination_path);
+        let mut output_dir = PathBuf::from(self.settings.destination_path);
         output_dir.push("dotnet");
         output_dir
     }
 
     fn build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
-        output_dir.push(self.0.library.name.to_owned());
+        output_dir.push(self.settings.library.name.to_owned());
         output_dir
     }
 }
 
 impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
-    fn new(settings: &'a BindingBuilderSettings<'a>) -> Self {
-        Self(settings)
+    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
+        Self {
+            settings,
+            platforms,
+        }
     }
 
     fn generate(&mut self) {
@@ -204,22 +271,21 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         }
         fs::create_dir_all(&build_dir).unwrap();
 
-        let mut platforms = PlatformLocations::new();
-        platforms.add(Platform::current(), ffi_path());
-
         let config = dotnet_oo_bindgen::DotnetBindgenConfig {
             output_dir: build_dir,
-            ffi_name: self.0.ffi_name.to_owned(),
-            platforms,
+            ffi_name: self.settings.ffi_name.to_owned(),
+            platforms: self.platforms.clone(),
         };
 
-        dotnet_oo_bindgen::generate_dotnet_bindings(self.0.library, &config).unwrap();
+        dotnet_oo_bindgen::generate_dotnet_bindings(self.settings.library, &config).unwrap();
     }
 
     fn build(&mut self) {
         let result = Command::new("dotnet")
             .current_dir(&self.output_dir())
             .arg("build")
+            .arg("--configuration")
+            .arg("Release")
             .status()
             .unwrap();
         assert!(result.success());
@@ -230,24 +296,43 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         let result = Command::new("dotnet")
             .current_dir(&self.output_dir())
             .arg("test")
+            .arg("--configuration")
+            .arg("Release")
+            .status()
+            .unwrap();
+        assert!(result.success());
+    }
+
+    fn package(&mut self) {
+        // Run unit tests
+        let result = Command::new("dotnet")
+            .current_dir(&self.output_dir())
+            .arg("pack")
+            .arg("--configuration")
+            .arg("Release")
+            .arg("--output")
+            .arg("nupkg")
             .status()
             .unwrap();
         assert!(result.success());
     }
 }
 
-struct JavaBindingBuilder<'a>(&'a BindingBuilderSettings<'a>);
+struct JavaBindingBuilder<'a> {
+    settings: &'a BindingBuilderSettings<'a>,
+    platforms: PlatformLocations,
+}
 
 impl<'a> JavaBindingBuilder<'a> {
     fn output_dir(&self) -> PathBuf {
-        let mut output_dir = PathBuf::from(self.0.destination_path);
+        let mut output_dir = PathBuf::from(self.settings.destination_path);
         output_dir.push("java");
         output_dir
     }
 
     fn build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
-        output_dir.push(self.0.library.name.to_owned());
+        output_dir.push(self.settings.library.name.to_owned());
         output_dir
     }
 
@@ -268,8 +353,11 @@ impl<'a> JavaBindingBuilder<'a> {
 }
 
 impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
-    fn new(settings: &'a BindingBuilderSettings<'a>) -> Self {
-        Self(settings)
+    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
+        Self {
+            settings,
+            platforms,
+        }
     }
 
     fn generate(&mut self) {
@@ -280,17 +368,14 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         }
         fs::create_dir_all(&build_dir).unwrap();
 
-        let mut platforms = PlatformLocations::new();
-        platforms.add(Platform::current(), ffi_path());
-
         let config = java_oo_bindgen::JavaBindgenConfig {
             output_dir: build_dir,
-            ffi_name: self.0.ffi_name.to_owned(),
+            ffi_name: self.settings.ffi_name.to_owned(),
             group_id: "io.stepfunc".to_string(),
-            platforms,
+            platforms: self.platforms.clone(),
         };
 
-        java_oo_bindgen::generate_java_bindings(self.0.library, &config).unwrap();
+        java_oo_bindgen::generate_java_bindings(self.settings.library, &config).unwrap();
     }
 
     fn build(&mut self) {
@@ -300,6 +385,16 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
 
     fn test(&mut self) {
         let result = self.maven().arg("verify").status().unwrap();
+        assert!(result.success());
+    }
+
+    fn package(&mut self) {
+        let result = self
+            .maven()
+            .arg("package")
+            .arg("-DskipTests")
+            .status()
+            .unwrap();
         assert!(result.success());
     }
 }

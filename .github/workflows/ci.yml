@@ -20,7 +20,6 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          target: x86_64-unknown-linux-musl
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Copy Windows config
@@ -50,6 +49,12 @@ jobs:
         with:
           command: run
           args: --release --bin foo-bindings -- --java
+      - name: Upload compiled
+        if: ${{ matrix.rust == 'stable' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffi-modules
+          path: tests/bindings/c/generated/lib
   linting:
     strategy:
       fail-fast: false

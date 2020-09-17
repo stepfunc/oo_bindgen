@@ -2,7 +2,7 @@
 // dead_code,
 arithmetic_overflow,
 invalid_type_param_default,
-missing_fragment_specifier,
+//missing_fragment_specifier,
 mutable_transmutes,
 no_mangle_const_items,
 overflowing_literals,
@@ -38,7 +38,7 @@ clippy::all
 )]
 #![forbid(
     unsafe_code,
-    intra_doc_link_resolution_failure,
+    //intra_doc_link_resolution_failure, broken_intra_doc_links
     safe_packed_borrows,
     while_true,
     bare_trait_objects
@@ -117,6 +117,10 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("<Project Sdk=\"Microsoft.NET.Sdk\">")?;
     f.writeln("  <PropertyGroup>")?;
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
+    f.writeln(&format!(
+        "    <Version>{}</Version>",
+        lib.version.to_string()
+    ))?;
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
     f.writeln("  <ItemGroup>")?;

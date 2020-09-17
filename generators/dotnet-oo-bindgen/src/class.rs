@@ -324,16 +324,12 @@ fn generate_async_method(
             f.write("</summary>")?;
 
             // Print each parameter value
-            for param in
-                method
-                    .native_function
-                    .parameters
-                    .iter()
-                    .skip(1)
-                    .filter(|param| match param.param_type {
-                        Type::OneTimeCallback(_) => false,
-                        _ => true,
-                    })
+            for param in method
+                .native_function
+                .parameters
+                .iter()
+                .skip(1)
+                .filter(|param| !matches!(param.param_type, Type::OneTimeCallback(_)))
             {
                 f.writeln(&format!("<param name=\"{}\">", param.name))?;
                 doc_print(f, &param.doc, lib)?;
@@ -359,10 +355,7 @@ fn generate_async_method(
             .parameters
             .iter()
             .skip(1)
-            .filter(|param| match param.param_type {
-                Type::OneTimeCallback(_) => false,
-                _ => true,
-            })
+            .filter(|param| !matches!(param.param_type, Type::OneTimeCallback(_)))
             .map(|param| {
                 format!(
                     "{} {}",

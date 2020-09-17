@@ -6,6 +6,7 @@ import io.stepfunc.foo.OneTimeCallbackInterface;
 import org.assertj.core.data.Percentage;
 import org.joou.UInteger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 
 import java.time.Duration;
 
@@ -89,6 +90,7 @@ public class CallbackTest {
     }
 
     @Test
+    @Disabled // System.gc and System.runFinalization are not deterministic
     public void CallbackMemoryLeakTest() {
         final int NUM_RUNS = 1000;
         final Counters counters = new Counters();

@@ -1,5 +1,7 @@
 # oo-bindgen
 
+![CI](https://github.com/stepfunc/oo_bindgen/workflows/CI/badge.svg)
+
 Object-oriented binding generator for Rust.
 
 # license 
@@ -21,7 +23,6 @@ but is not "open source". You must purchase a commercial license to use this sof
   portable code.
 - You write unit tests in the generated languages to make sure everything works
   as expected.
-- 💲 Profits
 
 ## Directories
 
@@ -33,5 +34,4 @@ but is not "open source". You must purchase a commercial license to use this sof
   `foo-bindings` object-oriented library definition. It builds the same library
   in each supported language. Each language has extensive unit tests written to
   check that the generated bindings work as expected.
-- `example`: a full real-life example of a library exposing `dnp3rs` to other
-  languages.
+- `ci-script`: a library for uniform CI scripts of projects

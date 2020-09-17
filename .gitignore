@@ -10,10 +10,6 @@ Cargo.lock
 # Cargo config
 /.cargo/config.toml
 
-# ====================
-# Generated test files
-# ====================
-
 # Generated C lib
 tests/bindings/c/build
 tests/bindings/c/generated

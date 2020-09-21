@@ -44,7 +44,8 @@ clippy::all
     bare_trait_objects
 )]
 
-use formatting::*;
+use crate::conversion::*;
+use crate::formatting::*;
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
@@ -52,9 +53,9 @@ use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::*;
 use std::env;
-use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
+mod conversion;
 mod formatting;
 
 pub struct RustCodegen<'a> {
@@ -68,11 +69,6 @@ impl<'a> RustCodegen<'a> {
             library: lib,
             dest_path: Path::new(&env::var_os("OUT_DIR").unwrap()).join("ffi.rs"),
         }
-    }
-
-    pub fn destination<P: AsRef<Path>>(&mut self, dest: P) -> &mut Self {
-        self.dest_path = dest.as_ref().to_owned();
-        self
     }
 
     pub fn generate(self) -> FormattingResult<()> {
@@ -157,9 +153,6 @@ impl<'a> RustCodegen<'a> {
         f: &mut dyn Printer,
         handle: &NativeFunctionHandle,
     ) -> FormattingResult<()> {
-        f.writeln("/// # Safety")?;
-        f.writeln("///")?;
-        f.writeln("/// Clippy requires safety documentation for public unsafe functions")?;
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub unsafe extern \"C\" fn {}(", handle.name))?;
 
@@ -167,18 +160,24 @@ impl<'a> RustCodegen<'a> {
             &handle
                 .parameters
                 .iter()
-                .map(|param| format!("{}: {}", param.name, RustType(&param.param_type)))
+                .map(|param| format!("{}: {}", param.name, param.param_type.as_c_type()))
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
 
-        if handle.return_type.is_void() {
-            f.write(")")?;
+        if let ReturnType::Type(return_type, _) = handle.return_type {
+            f.write(&format!(") -> {}", return_type.as_c_type()))?;
         } else {
-            f.write(&format!(") -> {}", RustReturnType(&handle.return_type)))?;
+            f.write(")")?;
         }
 
         blocked(f, |f| {
+            for param in &handle.parameters {
+                if let Some(converter) = param.param_type.conversion() {
+                    converter.convert_from_c(f, &param.name, &format!("let {} = ", param.name))?;
+                }
+            }
+
             f.writeln(&format!("crate::{}(", handle.name))?;
 
             f.write(
@@ -369,63 +368,5 @@ impl<'a> RustCodegen<'a> {
             }
             Ok(())
         })
-    }
-}
-
-struct RustReturnType<'a>(&'a ReturnType);
-
-impl<'a> Display for RustReturnType<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self.0 {
-            ReturnType::Void => write!(f, "()"),
-            ReturnType::Type(return_type, _) => write!(f, "{}", RustType(&return_type)),
-        }
-    }
-}
-
-struct RustType<'a>(&'a Type);
-
-struct StructField<'a>(&'a Type);
-
-impl<'a> Display for RustType<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self.0 {
-            Type::Bool => write!(f, "bool"),
-            Type::Uint8 => write!(f, "u8"),
-            Type::Sint8 => write!(f, "i8"),
-            Type::Uint16 => write!(f, "u16"),
-            Type::Sint16 => write!(f, "i16"),
-            Type::Uint32 => write!(f, "u32"),
-            Type::Sint32 => write!(f, "i32"),
-            Type::Uint64 => write!(f, "u64"),
-            Type::Sint64 => write!(f, "i64"),
-            Type::Float => write!(f, "f32"),
-            Type::Double => write!(f, "f64"),
-            Type::String => write!(f, "*const std::os::raw::c_char"),
-            Type::Struct(handle) => write!(f, "{}", handle.name()),
-            Type::StructRef(handle) => write!(f, "*const {}", handle.name),
-            Type::Enum(handle) => write!(f, "{}", handle.name),
-            Type::ClassRef(handle) => write!(f, "*mut crate::{}", handle.name),
-            Type::Interface(handle) => write!(f, "{}", handle.name),
-            Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
-            Type::Iterator(handle) => write!(f, "*mut crate::{}", handle.name()),
-            Type::Collection(handle) => write!(f, "*mut crate::{}", handle.name()),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "u64"),
-                DurationMapping::SecondsFloat => write!(f, "f32"),
-            },
-        }
-    }
-}
-
-impl<'a> Display for StructField<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        RustType(self.0).fmt(f)?;
-        if let Type::Iterator(handle) = &self.0 {
-            if handle.has_lifetime_annotation {
-                f.write_str("<'a>")?
-            }
-        }
-        Ok(())
     }
 }

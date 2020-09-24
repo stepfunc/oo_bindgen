@@ -1,12 +1,15 @@
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
-use crate::formatting::*;
+use oo_bindgen::native_struct::*;
 
-pub trait RustType {
+pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
     fn as_c_type(&self) -> String;
     fn conversion(&self) -> Option<Box<dyn TypeConverter>>;
+    fn has_conversion(&self) -> bool {
+        self.conversion().is_some()
+    }
 }
 
 impl RustType for Type {
@@ -25,7 +28,7 @@ impl RustType for Type {
             Type::Double => "f64".to_string(),
             Type::String => "*const std::os::raw::c_char".to_string(),
             Type::Struct(handle) => format!("{}", handle.name()),
-            Type::StructRef(handle) => format!("*const {}", handle.name),
+            Type::StructRef(handle) => format!("Option<&{}>", handle.name),
             Type::Enum(handle) => format!("{}", handle.name),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name),
             Type::Interface(handle) => format!("{}", handle.name),
@@ -53,9 +56,9 @@ impl RustType for Type {
             Type::Float => "f32".to_string(),
             Type::Double => "f64".to_string(),
             Type::String => "*const std::os::raw::c_char".to_string(),
-            Type::Struct(handle) => format!("{}", handle.name()),
-            Type::StructRef(handle) => format!("*const {}", handle.name),
-            Type::Enum(handle) => "std::os::raw::c_int".to_string(),
+            Type::Struct(handle) => format!("Native{}", handle.name()),
+            Type::StructRef(handle) => format!("*const Native{}", handle.name),
+            Type::Enum(_) => "std::os::raw::c_int".to_string(),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name),
             Type::Interface(handle) => format!("{}", handle.name),
             Type::OneTimeCallback(handle) => format!("{}", handle.name),
@@ -82,8 +85,8 @@ impl RustType for Type {
             Type::Float => None,
             Type::Double => None,
             Type::String => None,
-            Type::Struct(_) => None,
-            Type::StructRef(_) => None,
+            Type::Struct(handle) => Some(Box::new(StructConverter(handle.clone()))),
+            Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
             Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(_) => None,
             Type::Interface(_) => None,
@@ -95,7 +98,33 @@ impl RustType for Type {
     }
 }
 
-pub trait TypeConverter {
+impl RustType for ReturnType {
+    fn as_rust_type(&self) -> String {
+        if let ReturnType::Type(return_type, _) = self {
+            return_type.as_rust_type()
+        } else {
+            "()".to_string()
+        }
+    }
+
+    fn as_c_type(&self) -> String {
+        if let ReturnType::Type(return_type, _) = self {
+            return_type.as_c_type()
+        } else {
+            "()".to_string()
+        }
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        if let ReturnType::Type(return_type, _) = self {
+            return_type.conversion()
+        } else {
+            None
+        }
+    }
+}
+
+pub(crate) trait TypeConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_c(
         &self,
@@ -109,14 +138,7 @@ struct EnumConverter(NativeEnumHandle);
 
 impl TypeConverter for EnumConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{} = match {}", to, from))?;
-        blocked(f, |f| {
-            for variant in self.0.variants {
-                f.writeln(&format!("{}::{} => {},", self.0.name, variant.name, variant.value))?;
-            }
-            Ok(())
-        })?;
-        f.write(";")
+        f.writeln(&format!("{}{}.into()", to, from))
     }
 
     fn convert_from_c(
@@ -125,27 +147,83 @@ impl TypeConverter for EnumConverter {
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        f.writeln(&format!("{} = match {}", to, from))?;
-        blocked(f, |f| {
-            for variant in self.0.variants {
-                f.writeln(&format!("{} => {}::{},", variant.value, self.0.name, variant.name, ))?;
-            }
-            f.writeln(&format!("_ => panic!(\"{{}} is not a variant of {}\", {}),", self.0.name, from))
-        })?;
-        f.write(";")
+        f.writeln(&format!("{}{}.into()", to, from))
     }
 }
 
-/*pub struct StructField<'a>(&'a Type);
+struct StructConverter(NativeStructHandle);
 
-impl<'a> Display for StructField<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", RustType(self.0).as_rust_type())?;
-        if let Type::Iterator(handle) = &self.0 {
+impl TypeConverter for StructConverter {
+    fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.into()", to, from))
+    }
+
+    fn convert_from_c(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.into()", to, from))
+    }
+}
+
+struct StructRefConverter(NativeStructDeclarationHandle);
+
+impl TypeConverter for StructRefConverter {
+    fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.map_or(std::ptr::null(), |val| val.into() as *const _)", to, from))
+    }
+
+    fn convert_from_c(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.as_ref().map(|val| val.into())", to, from))
+    }
+}
+
+pub(crate) trait RustStruct {
+    fn requires_lifetime_annotation(&self) -> bool;
+}
+
+impl RustStruct for NativeStructHandle {
+    fn requires_lifetime_annotation(&self) -> bool {
+        self.elements.iter().any(|e| {
+            if let Type::Iterator(handle) = &e.element_type {
+                handle.has_lifetime_annotation
+            } else {
+                false
+            }
+        })
+    }
+}
+
+pub(crate) trait RustStructField {
+    fn as_rust_type(&self) -> String;
+    fn as_c_type(&self) -> String;
+}
+
+impl RustStructField for NativeStructElement {
+    fn as_rust_type(&self) -> String {
+        let mut result = format!("{}", self.element_type.as_rust_type());
+        if let Type::Iterator(handle) = &self.element_type {
             if handle.has_lifetime_annotation {
-                f.write_str("<'a>")?
+                result.push_str("<'a>");
             }
         }
-        Ok(())
+        result
     }
-}*/
+
+    fn as_c_type(&self) -> String {
+        let mut result = format!("{}", self.element_type.as_c_type());
+        if let Type::Iterator(handle) = &self.element_type {
+            if handle.has_lifetime_annotation {
+                result.push_str("<'a>");
+            }
+        }
+        result
+    }
+}

@@ -35,14 +35,14 @@ pub unsafe fn iterator_destroy(it: *mut StringIterator) {
     }
 }
 
-pub unsafe fn iterator_next(value: *mut StringIterator) -> *const ffi::StringIteratorItem {
+pub unsafe fn iterator_next<'a>(value: *mut StringIterator) -> Option<&'a ffi::StringIteratorItem> {
     if let Some(it) = value.as_mut() {
         it.next();
         match &it.current {
-            Some(val) => val as *const _,
-            None => std::ptr::null(),
+            Some(val) => Some(val),
+            None => None,
         }
     } else {
-        std::ptr::null()
+        None
     }
 }

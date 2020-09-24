@@ -102,12 +102,70 @@ impl<'a> RustCodegen<'a> {
         f: &mut dyn Printer,
         handle: &NativeStructHandle,
     ) -> FormattingResult<()> {
-        f.writeln("#[repr(C)]")?;
-
-        if Self::requires_lifetime_annotation(handle) {
-            f.writeln(&format!("pub struct {}<'a>", handle.name()))?;
+        let lifetime = if handle.requires_lifetime_annotation() {
+            "<'a>"
         } else {
-            f.writeln(&format!("pub struct {}", handle.name()))?;
+            ""
+        };
+
+        // Write the proper C struct
+        f.writeln("#[repr(C)]")?;
+        f.writeln(&format!("pub struct Native{}{}", handle.name(), lifetime))?;
+
+        blocked(f, |f| {
+            for element in &handle.elements {
+                f.writeln(&format!(
+                    "pub {}: {},",
+                    element.name,
+                    element.as_c_type()
+                ))?;
+            }
+            Ok(())
+        })?;
+
+        // Conversion routines
+        f.writeln(&format!("impl{lifetime} From<{name}{lifetime}> for Native{name}{lifetime}", name=handle.name(), lifetime=lifetime))?;
+        blocked(f, |f| {
+            f.writeln(&format!("fn from(value: {}{lifetime}) -> Self", handle.name(), lifetime=lifetime))?;
+            blocked(f, |f| {
+                f.writeln("Self")?;
+                blocked(f, |f| {
+                    for element in &handle.elements {
+                        if let Some(conversion) = element.element_type.conversion() {
+                            conversion.convert_to_c(f, &format!("value.{}", element.name), &format!("{}: ", element.name))?;
+                            f.write(",")?;
+                        } else {
+                            f.writeln(&format!("{}: value.{},", element.name, element.name))?;
+                        }
+                    }
+                    Ok(())
+                })
+            })
+        })?;
+
+        f.writeln(&format!("impl{lifetime} From<Native{name}{lifetime}> for {name}{lifetime}", name=handle.name(), lifetime=lifetime))?;
+        blocked(f, |f| {
+            f.writeln(&format!("fn from(value: Native{}{lifetime}) -> Self", handle.name(), lifetime=lifetime))?;
+            blocked(f, |f| {
+                f.writeln("Self")?;
+                blocked(f, |f| {
+                    for element in &handle.elements {
+                        if let Some(conversion) = element.element_type.conversion() {
+                            conversion.convert_from_c(f, &format!("value.{}", element.name), &format!("{}: ", element.name))?;
+                            f.write(",")?;
+                        } else {
+                            f.writeln(&format!("{}: value.{},", element.name, element.name))?;
+                        }
+                    }
+                    Ok(())
+                })
+            })
+        })?;
+
+        // Convert Rust equivalent
+        f.writeln(&format!("pub struct {}", handle.name()))?;
+        if handle.requires_lifetime_annotation() {
+            f.write("<'a>")?;
         }
 
         blocked(f, |f| {
@@ -115,20 +173,10 @@ impl<'a> RustCodegen<'a> {
                 f.writeln(&format!(
                     "pub {}: {},",
                     element.name,
-                    StructField(&element.element_type)
+                    element.as_rust_type()
                 ))?;
             }
             Ok(())
-        })
-    }
-
-    fn requires_lifetime_annotation(handle: &NativeStructHandle) -> bool {
-        handle.elements.iter().any(|e| {
-            if let Type::Iterator(handle) = &e.element_type {
-                handle.has_lifetime_annotation
-            } else {
-                false
-            }
         })
     }
 
@@ -145,6 +193,35 @@ impl<'a> RustCodegen<'a> {
                 f.writeln(&format!("{} = {},", variant.name, variant.value))?;
             }
             Ok(())
+        })?;
+
+        // Conversion routines
+        f.writeln(&format!("impl From<{}> for std::os::raw::c_int", handle.name))?;
+        blocked(f, |f| {
+            f.writeln(&format!("fn from(value: {}) -> Self", handle.name))?;
+            blocked(f, |f| {
+                f.writeln("match value")?;
+                blocked(f, |f| {
+                    for variant in &handle.variants {
+                        f.writeln(&format!("{}::{} => {},", handle.name, variant.name, variant.value))?;
+                    }
+                    Ok(())
+                })
+            })
+        })?;
+
+        f.writeln(&format!("impl From<std::os::raw::c_int> for {}", handle.name))?;
+        blocked(f, |f| {
+            f.writeln("fn from(value: std::os::raw::c_int) -> Self")?;
+            blocked(f, |f| {
+                f.writeln("match value")?;
+                blocked(f, |f| {
+                    for variant in &handle.variants {
+                        f.writeln(&format!("{} => {}::{},", variant.value, handle.name, variant.name, ))?;
+                    }
+                    f.writeln(&format!("_ => panic!(\"{{}} is not a variant of {}\", value),", handle.name))
+                })
+            })
         })
     }
 
@@ -165,7 +242,7 @@ impl<'a> RustCodegen<'a> {
                 .join(", "),
         )?;
 
-        if let ReturnType::Type(return_type, _) = handle.return_type {
+        if let ReturnType::Type(return_type, _) = &handle.return_type {
             f.write(&format!(") -> {}", return_type.as_c_type()))?;
         } else {
             f.write(")")?;
@@ -175,10 +252,15 @@ impl<'a> RustCodegen<'a> {
             for param in &handle.parameters {
                 if let Some(converter) = param.param_type.conversion() {
                     converter.convert_from_c(f, &param.name, &format!("let {} = ", param.name))?;
+                    f.write(";")?;
                 }
             }
 
-            f.writeln(&format!("crate::{}(", handle.name))?;
+            if handle.return_type.has_conversion() {
+                f.writeln(&format!("let _result = crate::{}(", handle.name))?;
+            } else {
+                f.writeln(&format!("crate::{}(", handle.name))?;
+            }
 
             f.write(
                 &handle
@@ -188,8 +270,14 @@ impl<'a> RustCodegen<'a> {
                     .collect::<Vec<String>>()
                     .join(", "),
             )?;
+            f.write(")")?;
 
-            f.write(")")
+            if let Some(conversion) = handle.return_type.conversion() {
+                f.write(";")?;
+                conversion.convert_to_c(f, "_result", "")?;
+            }
+
+            Ok(())
         })
     }
 
@@ -216,14 +304,14 @@ impl<'a> RustCodegen<'a> {
                                         format!("{}: *mut std::os::raw::c_void", name)
                                     }
                                     CallbackParameter::Parameter(param) => {
-                                        format!("{}: {}", param.name, RustType(&param.param_type))
+                                        format!("{}: {}", param.name, param.param_type.as_c_type())
                                     }
                                 })
                                 .collect::<Vec<String>>()
                                 .join(", "),
                         )?;
 
-                        f.write(&format!(") -> {}>,", RustReturnType(&handle.return_type)))?;
+                        f.write(&format!(") -> {}>,", handle.return_type.as_rust_type()))?;
                     }
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!(
@@ -279,14 +367,14 @@ impl<'a> RustCodegen<'a> {
                                         format!("{}: *mut std::os::raw::c_void", name)
                                     }
                                     CallbackParameter::Parameter(param) => {
-                                        format!("{}: {}", param.name, RustType(&param.param_type))
+                                        format!("{}: {}", param.name, param.param_type.as_c_type())
                                     }
                                 })
                                 .collect::<Vec<String>>()
                                 .join(", "),
                         )?;
 
-                        f.write(&format!(") -> {}>,", RustReturnType(&handle.return_type)))?;
+                        f.write(&format!(") -> {}>,", handle.return_type.as_c_type()))?;
                     }
                 }
             }
@@ -314,6 +402,7 @@ impl<'a> RustCodegen<'a> {
         f.writeln(&format!("impl {}", name))?;
         blocked(f, |f| {
             for callback in callbacks {
+                // Function signature
                 f.writeln(&format!("pub(crate) fn {}(&self, ", callback.name))?;
                 f.write(
                     &callback
@@ -322,7 +411,7 @@ impl<'a> RustCodegen<'a> {
                         .filter_map(|param| match param {
                             CallbackParameter::Arg(_) => None,
                             CallbackParameter::Parameter(param) => {
-                                Some(format!("{}: {}", param.name, RustType(&param.param_type)))
+                                Some(format!("{}: {}", param.name, param.param_type.as_rust_type()))
                             }
                         })
                         .collect::<Vec<_>>()
@@ -333,13 +422,23 @@ impl<'a> RustCodegen<'a> {
                 if let ReturnType::Type(return_type, _) = &callback.return_type {
                     f.write(&format!(
                         " -> Option<{}>",
-                        RustType(return_type).to_string()
+                        return_type.as_rust_type()
                     ))?;
                 }
 
+                // Function body
                 blocked(f, |f| {
                     f.writeln(&format!("if let Some(cb) = self.{}", callback.name))?;
                     blocked(f, |f| {
+                        for param in &callback.parameters {
+                            if let CallbackParameter::Parameter(param) = param {
+                                if let Some(converter) = param.param_type.conversion() {
+                                    converter.convert_to_c(f, &param.name, &format!("let {} = ", param.name))?;
+                                    f.write(";")?;
+                                }
+                            }
+                        }
+
                         let params = &callback
                             .parameters
                             .iter()
@@ -351,10 +450,17 @@ impl<'a> RustCodegen<'a> {
                             .join(", ");
                         let call = format!("cb({})", params);
 
-                        if callback.return_type.is_void() {
-                            f.writeln(&format!("{};", call))
-                        } else {
-                            f.writeln(&format!("Some({})", call))
+                        match &callback.return_type {
+                            ReturnType::Void => f.writeln(&format!("{};", call)),
+                            ReturnType::Type(return_type, _) => {
+                                if let Some(conversion) = return_type.conversion() {
+                                    f.writeln(&format!("let _result = {};", call))?;
+                                    conversion.convert_from_c(f, "_result", "let _result = ")?;
+                                    f.writeln("Some(_result)")
+                                } else {
+                                    f.writeln(&format!("Some({})", call))
+                                }
+                            }
                         }
                     })?;
 

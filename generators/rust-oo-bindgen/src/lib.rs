@@ -377,8 +377,14 @@ impl<'a> RustCodegen<'a> {
                         f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
                     }
                     InterfaceElement::CallbackFunction(handle) => {
+                        let lifetime = if handle.requires_lifetime_annotation() {
+                            "for<'a> "
+                        } else {
+                            ""
+                        };
+
                         f.newline()?;
-                        f.write(&format!("{}: Option<extern \"C\" fn(", handle.name))?;
+                        f.write(&format!("{name}: Option<{lifetime}extern \"C\" fn(", name=handle.name, lifetime=lifetime))?;
 
                         f.write(
                             &handle
@@ -440,8 +446,14 @@ impl<'a> RustCodegen<'a> {
                         f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
                     }
                     OneTimeCallbackElement::CallbackFunction(handle) => {
+                        let lifetime = if handle.requires_lifetime_annotation() {
+                            "for<'a> "
+                        } else {
+                            ""
+                        };
+
                         f.newline()?;
-                        f.write(&format!("{}: Option<extern \"C\" fn(", handle.name))?;
+                        f.write(&format!("{name}: Option<{lifetime}extern \"C\" fn(", name=handle.name, lifetime=lifetime))?;
 
                         f.write(
                             &handle
@@ -487,8 +499,14 @@ impl<'a> RustCodegen<'a> {
         f.writeln(&format!("impl {}", name))?;
         blocked(f, |f| {
             for callback in callbacks {
+                let lifetime = if callback.requires_lifetime_annotation() {
+                    "<'a>"
+                } else {
+                    ""
+                };
+
                 // Function signature
-                f.writeln(&format!("pub(crate) fn {}(&self, ", callback.name))?;
+                f.writeln(&format!("pub(crate) fn {name}{lifetime}(&self, ", name=callback.name, lifetime=lifetime))?;
                 f.write(
                     &callback
                         .parameters

@@ -2,6 +2,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::callback::*;
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -229,37 +230,35 @@ impl RustStruct for NativeStructHandle {
 }
 
 pub(crate) trait RustStructField {
-    /*fn as_rust_type(&self) -> String;
-    fn as_c_type(&self) -> String;*/
     fn requires_lifetime_annotation(&self) -> bool;
 }
 
 impl RustStructField for NativeStructElement {
-    /*fn as_rust_type(&self) -> String {
-        let mut result = format!("{}", self.element_type.as_rust_type());
-        if let Type::Iterator(handle) = &self.element_type {
-            if handle.has_lifetime_annotation {
-                result.push_str("<'a>");
-            }
-        }
-        result
-    }
-
-    fn as_c_type(&self) -> String {
-        let mut result = format!("{}", self.element_type.as_c_type());
-        if let Type::Iterator(handle) = &self.element_type {
-            if handle.has_lifetime_annotation {
-                result.push_str("<'a>");
-            }
-        }
-        result
-    }*/
-
     fn requires_lifetime_annotation(&self) -> bool {
         if let Type::Iterator(handle) = &self.element_type {
             handle.has_lifetime_annotation
         } else {
             false
         }
+    }
+}
+
+pub(crate) trait RustCallbackFunction {
+    fn requires_lifetime_annotation(&self) -> bool;
+}
+
+impl RustCallbackFunction for CallbackFunction {
+    fn requires_lifetime_annotation(&self) -> bool {
+        for param in &self.parameters {
+            if let CallbackParameter::Parameter(param) = param {
+                if let Type::Iterator(handle) = &param.param_type {
+                    if handle.has_lifetime_annotation {
+                        return true
+                    }
+                }
+            }
+        }
+
+        false
     }
 }

@@ -17,7 +17,7 @@ impl StringIterator {
 
     fn next(&mut self) {
         match self.iter.next() {
-            Some(val) => self.current = Some(ffi::StringIteratorItem { value: val }),
+            Some(val) => self.current = Some(ffi::StringIteratorItemFields { value: val }.into()),
             None => self.current = None,
         }
     }

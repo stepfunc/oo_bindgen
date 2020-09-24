@@ -107,77 +107,147 @@ impl<'a> RustCodegen<'a> {
         } else {
             ""
         };
+        let public = if handle.has_conversion() { "" } else { "pub " };
 
-        // Write the proper C struct
+        // Write the C struct with private fields (if conversion required)
         f.writeln("#[repr(C)]")?;
-        f.writeln(&format!("pub struct Native{}{}", handle.name(), lifetime))?;
+        f.writeln(&format!("pub struct {}{}", handle.name(), lifetime))?;
 
         blocked(f, |f| {
             for element in &handle.elements {
                 f.writeln(&format!(
-                    "pub {}: {},",
+                    "{}{}: {},",
+                    public,
                     element.name,
-                    element.as_c_type()
+                    element.element_type.as_c_type()
                 ))?;
             }
             Ok(())
         })?;
 
-        // Conversion routines
-        f.writeln(&format!("impl{lifetime} From<{name}{lifetime}> for Native{name}{lifetime}", name=handle.name(), lifetime=lifetime))?;
+        f.newline()?;
+
+        // Write accessors/mutators
+        f.writeln(&format!(
+            "impl{lifetime} {name}{lifetime}",
+            name = handle.name(),
+            lifetime = lifetime
+        ))?;
         blocked(f, |f| {
-            f.writeln(&format!("fn from(value: {}{lifetime}) -> Self", handle.name(), lifetime=lifetime))?;
-            blocked(f, |f| {
-                f.writeln("Self")?;
+            for element in &handle.elements {
+                let lifetime = if element.requires_lifetime_annotation() {
+                    "'a "
+                } else {
+                    ""
+                };
+                let ampersand = if element.element_type.is_copyable() {
+                    ""
+                } else {
+                    "&"
+                };
+
+                // Accessor
+                f.writeln(&format!(
+                    "pub fn {name}(&{lifetime}self) -> {ampersand}{return_type}",
+                    name = element.name,
+                    return_type = element.element_type.as_rust_type(),
+                    lifetime = lifetime,
+                    ampersand = ampersand
+                ))?;
                 blocked(f, |f| {
-                    for element in &handle.elements {
-                        if let Some(conversion) = element.element_type.conversion() {
-                            conversion.convert_to_c(f, &format!("value.{}", element.name), &format!("{}: ", element.name))?;
-                            f.write(",")?;
-                        } else {
-                            f.writeln(&format!("{}: value.{},", element.name, element.name))?;
-                        }
+                    if let Some(conversion) = element.element_type.conversion() {
+                        conversion.convert_from_c(
+                            f,
+                            &format!(
+                                "{ampersand}self.{name}",
+                                name = element.name,
+                                ampersand = ampersand
+                            ),
+                            "",
+                        )
+                    } else {
+                        f.writeln(&format!(
+                            "{ampersand}self.{name}",
+                            name = element.name,
+                            ampersand = ampersand
+                        ))
                     }
-                    Ok(())
-                })
-            })
+                })?;
+
+                // Mutator
+                f.writeln(&format!(
+                    "pub fn set_{name}(&{lifetime}mut self, value: {element_type})",
+                    name = element.name,
+                    element_type = element.element_type.as_rust_type(),
+                    lifetime = lifetime
+                ))?;
+                blocked(f, |f| {
+                    if let Some(conversion) = element.element_type.conversion() {
+                        conversion.convert_to_c(
+                            f,
+                            "value",
+                            &format!("self.{} = ", element.name),
+                        )?;
+                        f.write(";")
+                    } else {
+                        f.writeln(&format!("self.{} = value;", element.name))
+                    }
+                })?;
+            }
+            Ok(())
         })?;
 
-        f.writeln(&format!("impl{lifetime} From<Native{name}{lifetime}> for {name}{lifetime}", name=handle.name(), lifetime=lifetime))?;
-        blocked(f, |f| {
-            f.writeln(&format!("fn from(value: Native{}{lifetime}) -> Self", handle.name(), lifetime=lifetime))?;
+        // Write the Rust version with all public fields
+        let rust_struct_name = format!("{}Fields", handle.name());
+        if handle.has_conversion() {
+            f.writeln(&format!("pub struct {}{}", rust_struct_name, lifetime))?;
             blocked(f, |f| {
-                f.writeln("Self")?;
+                for element in &handle.elements {
+                    f.writeln(&format!(
+                        "pub {}: {},",
+                        element.name,
+                        element.element_type.as_rust_type()
+                    ))?;
+                }
+                Ok(())
+            })?;
+
+            // Write the conversion to the C representation
+            f.writeln(&format!(
+                "impl{lifetime} From<{rust_struct_name}{lifetime}> for {name}{lifetime}",
+                name = handle.name(),
+                rust_struct_name = rust_struct_name,
+                lifetime = lifetime
+            ))?;
+            blocked(f, |f| {
+                f.writeln(&format!("fn from(from: {}) -> Self", rust_struct_name))?;
                 blocked(f, |f| {
-                    for element in &handle.elements {
-                        if let Some(conversion) = element.element_type.conversion() {
-                            conversion.convert_from_c(f, &format!("value.{}", element.name), &format!("{}: ", element.name))?;
-                            f.write(",")?;
-                        } else {
-                            f.writeln(&format!("{}: value.{},", element.name, element.name))?;
+                    f.writeln("Self")?;
+                    blocked(f, |f| {
+                        for element in &handle.elements {
+                            if let Some(conversion) = element.element_type.conversion() {
+                                conversion.convert_to_c(
+                                    f,
+                                    &format!("from.{}", element.name),
+                                    &format!("{}: ", element.name),
+                                )?;
+                                f.write(",")?;
+                            } else {
+                                f.writeln(&format!("{name}: from.{name},", name = element.name))?;
+                            }
                         }
-                    }
-                    Ok(())
+                        Ok(())
+                    })
                 })
             })
-        })?;
-
-        // Convert Rust equivalent
-        f.writeln(&format!("pub struct {}", handle.name()))?;
-        if handle.requires_lifetime_annotation() {
-            f.write("<'a>")?;
+        } else {
+            f.writeln(&format!(
+                "pub type {rust_struct_name}{lifetime} = {name}{lifetime};",
+                rust_struct_name = rust_struct_name,
+                name = handle.name(),
+                lifetime = lifetime
+            ))
         }
-
-        blocked(f, |f| {
-            for element in &handle.elements {
-                f.writeln(&format!(
-                    "pub {}: {},",
-                    element.name,
-                    element.as_rust_type()
-                ))?;
-            }
-            Ok(())
-        })
     }
 
     fn write_enum_definition(
@@ -196,30 +266,45 @@ impl<'a> RustCodegen<'a> {
         })?;
 
         // Conversion routines
-        f.writeln(&format!("impl From<{}> for std::os::raw::c_int", handle.name))?;
+        f.writeln(&format!(
+            "impl From<{}> for std::os::raw::c_int",
+            handle.name
+        ))?;
         blocked(f, |f| {
             f.writeln(&format!("fn from(value: {}) -> Self", handle.name))?;
             blocked(f, |f| {
                 f.writeln("match value")?;
                 blocked(f, |f| {
                     for variant in &handle.variants {
-                        f.writeln(&format!("{}::{} => {},", handle.name, variant.name, variant.value))?;
+                        f.writeln(&format!(
+                            "{}::{} => {},",
+                            handle.name, variant.name, variant.value
+                        ))?;
                     }
                     Ok(())
                 })
             })
         })?;
 
-        f.writeln(&format!("impl From<std::os::raw::c_int> for {}", handle.name))?;
+        f.writeln(&format!(
+            "impl From<std::os::raw::c_int> for {}",
+            handle.name
+        ))?;
         blocked(f, |f| {
             f.writeln("fn from(value: std::os::raw::c_int) -> Self")?;
             blocked(f, |f| {
                 f.writeln("match value")?;
                 blocked(f, |f| {
                     for variant in &handle.variants {
-                        f.writeln(&format!("{} => {}::{},", variant.value, handle.name, variant.name, ))?;
+                        f.writeln(&format!(
+                            "{} => {}::{},",
+                            variant.value, handle.name, variant.name,
+                        ))?;
                     }
-                    f.writeln(&format!("_ => panic!(\"{{}} is not a variant of {}\", value),", handle.name))
+                    f.writeln(&format!(
+                        "_ => panic!(\"{{}} is not a variant of {}\", value),",
+                        handle.name
+                    ))
                 })
             })
         })
@@ -410,9 +495,11 @@ impl<'a> RustCodegen<'a> {
                         .iter()
                         .filter_map(|param| match param {
                             CallbackParameter::Arg(_) => None,
-                            CallbackParameter::Parameter(param) => {
-                                Some(format!("{}: {}", param.name, param.param_type.as_rust_type()))
-                            }
+                            CallbackParameter::Parameter(param) => Some(format!(
+                                "{}: {}",
+                                param.name,
+                                param.param_type.as_rust_type()
+                            )),
                         })
                         .collect::<Vec<_>>()
                         .join(", "),
@@ -420,10 +507,7 @@ impl<'a> RustCodegen<'a> {
                 f.write(")")?;
 
                 if let ReturnType::Type(return_type, _) = &callback.return_type {
-                    f.write(&format!(
-                        " -> Option<{}>",
-                        return_type.as_rust_type()
-                    ))?;
+                    f.write(&format!(" -> Option<{}>", return_type.as_rust_type()))?;
                 }
 
                 // Function body
@@ -433,7 +517,11 @@ impl<'a> RustCodegen<'a> {
                         for param in &callback.parameters {
                             if let CallbackParameter::Parameter(param) = param {
                                 if let Some(converter) = param.param_type.conversion() {
-                                    converter.convert_to_c(f, &param.name, &format!("let {} = ", param.name))?;
+                                    converter.convert_to_c(
+                                        f,
+                                        &param.name,
+                                        &format!("let {} = ", param.name),
+                                    )?;
                                     f.write(";")?;
                                 }
                             }

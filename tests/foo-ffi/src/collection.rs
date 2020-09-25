@@ -36,7 +36,7 @@ pub unsafe fn collection_destroy(col: *mut StringCollection) {
     }
 }
 
-pub unsafe fn collection_add<'a>(col: *mut StringCollection, value: &'a CStr) {
+pub unsafe fn collection_add(col: *mut StringCollection, value: &CStr) {
     if let Some(col) = col.as_mut() {
         let value = value.to_owned();
         col.add(value);

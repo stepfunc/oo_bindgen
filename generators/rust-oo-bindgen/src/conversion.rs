@@ -132,7 +132,7 @@ impl RustType for Type {
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
             Type::OneTimeCallback(_) => false,
-            Type::Iterator(_) => true,
+            Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
             Type::Duration(_) => false,
         }
@@ -158,7 +158,7 @@ impl RustType for Type {
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
             Type::OneTimeCallback(_) => false,
-            Type::Iterator(_) => true,
+            Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
             Type::Duration(_) => false,
         }
@@ -367,22 +367,20 @@ impl RustCallbackFunction for CallbackFunction {
     fn rust_requires_lifetime(&self) -> bool {
         self.parameters.iter().any(|param| {
             if let CallbackParameter::Parameter(param) = param {
-                if param.param_type.rust_requires_lifetime() {
-                    return true;
-                }
+                param.param_type.rust_requires_lifetime()
+            } else {
+                false
             }
-            false
         })
     }
 
     fn c_requires_lifetime(&self) -> bool {
         self.parameters.iter().any(|param| {
             if let CallbackParameter::Parameter(param) = param {
-                if param.param_type.c_requires_lifetime() {
-                    return true;
-                }
+                param.param_type.c_requires_lifetime()
+            } else {
+                false
             }
-            false
         })
     }
 }

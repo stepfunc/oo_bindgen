@@ -156,6 +156,7 @@ impl<'a> RustCodegen<'a> {
                 };
 
                 // Accessor
+                f.writeln("#[allow(clippy::needless_lifetimes)]")?;
                 f.writeln(&format!(
                     "pub fn {name}{fn_lifetime}(&{lifetime}self) -> {ampersand}{return_type}",
                     name = element.name,
@@ -191,7 +192,10 @@ impl<'a> RustCodegen<'a> {
                     }
                 })?;
 
+                f.newline()?;
+
                 // Mutator
+                f.writeln("#[allow(clippy::needless_lifetimes)]")?;
                 f.writeln(&format!(
                     "pub fn set_{name}{fn_lifetime}(&{lifetime}mut self, value: {element_type})",
                     name = element.name,
@@ -211,6 +215,8 @@ impl<'a> RustCodegen<'a> {
                         f.writeln(&format!("self.{} = value;", element.name))
                     }
                 })?;
+
+                f.newline()?;
             }
             Ok(())
         })?;
@@ -334,6 +340,7 @@ impl<'a> RustCodegen<'a> {
         f: &mut dyn Printer,
         handle: &NativeFunctionHandle,
     ) -> FormattingResult<()> {
+        f.writeln("#[allow(clippy::missing_safety_doc)]")?;
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub unsafe extern \"C\" fn {}(", handle.name))?;
 

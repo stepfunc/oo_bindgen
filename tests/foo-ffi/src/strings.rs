@@ -23,12 +23,12 @@ pub unsafe fn string_destroy(string_class: *mut StringClass) {
     }
 }
 
-pub unsafe fn string_echo<'a>(string_class: *mut StringClass, value: &'a CStr) -> &'a CStr {
+pub unsafe fn string_echo(string_class: *mut StringClass, value: &CStr) -> &CStr {
     let mut string_class = string_class.as_mut().unwrap();
     string_class.value = value.to_owned();
     &string_class.value
 }
 
-pub unsafe fn string_length<'a>(value: &'a CStr) -> u32 {
+pub unsafe fn string_length(value: &CStr) -> u32 {
     value.to_string_lossy().len() as u32
 }

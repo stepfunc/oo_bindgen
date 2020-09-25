@@ -22,7 +22,7 @@ impl StringIterator {
     }
 }
 
-pub unsafe fn iterator_create<'a>(value: &'a CStr) -> *mut StringIterator {
+pub unsafe fn iterator_create(value: &CStr) -> *mut StringIterator {
     let bytes = value.to_bytes().to_vec();
     let it = Box::new(StringIterator::new(bytes));
     Box::into_raw(it)

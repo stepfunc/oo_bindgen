@@ -1,6 +1,5 @@
 use crate::ffi;
 use std::ffi::CStr;
-use std::os::raw::c_char;
 
 pub struct StringIterator {
     iter: std::vec::IntoIter<u8>,
@@ -17,14 +16,14 @@ impl StringIterator {
 
     fn next(&mut self) {
         match self.iter.next() {
-            Some(val) => self.current = Some(ffi::StringIteratorItemFields { value: val }.into()),
+            Some(val) => self.current = Some(ffi::StringIteratorItemFields { value: val }),
             None => self.current = None,
         }
     }
 }
 
-pub unsafe fn iterator_create(value: *const c_char) -> *mut StringIterator {
-    let bytes = CStr::from_ptr(value).to_bytes().to_vec();
+pub unsafe fn iterator_create<'a>(value: &'a CStr) -> *mut StringIterator {
+    let bytes = value.to_bytes().to_vec();
     let it = Box::new(StringIterator::new(bytes));
     Box::into_raw(it)
 }

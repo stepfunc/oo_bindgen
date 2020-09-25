@@ -1,5 +1,4 @@
 use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
 
 pub struct StringClass {
     value: CString,
@@ -24,12 +23,12 @@ pub unsafe fn string_destroy(string_class: *mut StringClass) {
     }
 }
 
-pub unsafe fn string_echo(string_class: *mut StringClass, value: *const c_char) -> *const c_char {
+pub unsafe fn string_echo<'a>(string_class: *mut StringClass, value: &'a CStr) -> &'a CStr {
     let mut string_class = string_class.as_mut().unwrap();
-    string_class.value = CStr::from_ptr(value).to_owned();
-    string_class.value.as_ptr()
+    string_class.value = value.to_owned();
+    &string_class.value
 }
 
-pub unsafe fn string_length(value: *const c_char) -> u32 {
-    CStr::from_ptr(value).to_string_lossy().len() as u32
+pub unsafe fn string_length<'a>(value: &'a CStr) -> u32 {
+    value.to_string_lossy().len() as u32
 }

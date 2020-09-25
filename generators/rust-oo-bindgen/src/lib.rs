@@ -74,8 +74,6 @@ impl<'a> RustCodegen<'a> {
     pub fn generate(self) -> FormattingResult<()> {
         let mut f = FilePrinter::new(&self.dest_path)?;
 
-        f.newline()?;
-
         for statement in self.library.into_iter() {
             match statement {
                 Statement::NativeStructDefinition(handle) => {
@@ -102,7 +100,12 @@ impl<'a> RustCodegen<'a> {
         f: &mut dyn Printer,
         handle: &NativeStructHandle,
     ) -> FormattingResult<()> {
-        let lifetime = if handle.requires_lifetime_annotation() {
+        let c_lifetime = if handle.c_requires_lifetime() {
+            "<'a>"
+        } else {
+            ""
+        };
+        let rust_lifetime = if handle.rust_requires_lifetime() {
             "<'a>"
         } else {
             ""
@@ -111,7 +114,7 @@ impl<'a> RustCodegen<'a> {
 
         // Write the C struct with private fields (if conversion required)
         f.writeln("#[repr(C)]")?;
-        f.writeln(&format!("pub struct {}{}", handle.name(), lifetime))?;
+        f.writeln(&format!("pub struct {}{}", handle.name(), c_lifetime))?;
 
         blocked(f, |f| {
             for element in &handle.elements {
@@ -131,15 +134,21 @@ impl<'a> RustCodegen<'a> {
         f.writeln(&format!(
             "impl{lifetime} {name}{lifetime}",
             name = handle.name(),
-            lifetime = lifetime
+            lifetime = c_lifetime
         ))?;
         blocked(f, |f| {
             for element in &handle.elements {
-                let lifetime = if element.requires_lifetime_annotation() {
+                let el_lifetime = if element.rust_requires_lifetime() {
                     "'a "
                 } else {
                     ""
                 };
+                let fn_lifetime =
+                    if element.rust_requires_lifetime() && !handle.c_requires_lifetime() {
+                        "<'a>"
+                    } else {
+                        ""
+                    };
                 let ampersand = if element.element_type.is_copyable() {
                     ""
                 } else {
@@ -148,14 +157,18 @@ impl<'a> RustCodegen<'a> {
 
                 // Accessor
                 f.writeln(&format!(
-                    "pub fn {name}(&{lifetime}self) -> {ampersand}{return_type}",
+                    "pub fn {name}{fn_lifetime}(&{lifetime}self) -> {ampersand}{return_type}",
                     name = element.name,
                     return_type = element.element_type.as_rust_type(),
-                    lifetime = lifetime,
+                    fn_lifetime = fn_lifetime,
+                    lifetime = el_lifetime,
                     ampersand = ampersand
                 ))?;
                 blocked(f, |f| {
                     if let Some(conversion) = element.element_type.conversion() {
+                        if conversion.is_unsafe() {
+                            f.writeln("unsafe {")?;
+                        }
                         conversion.convert_from_c(
                             f,
                             &format!(
@@ -164,7 +177,11 @@ impl<'a> RustCodegen<'a> {
                                 ampersand = ampersand
                             ),
                             "",
-                        )
+                        )?;
+                        if conversion.is_unsafe() {
+                            f.writeln("}")?;
+                        }
+                        Ok(())
                     } else {
                         f.writeln(&format!(
                             "{ampersand}self.{name}",
@@ -176,10 +193,11 @@ impl<'a> RustCodegen<'a> {
 
                 // Mutator
                 f.writeln(&format!(
-                    "pub fn set_{name}(&{lifetime}mut self, value: {element_type})",
+                    "pub fn set_{name}{fn_lifetime}(&{lifetime}mut self, value: {element_type})",
                     name = element.name,
                     element_type = element.element_type.as_rust_type(),
-                    lifetime = lifetime
+                    fn_lifetime = fn_lifetime,
+                    lifetime = el_lifetime
                 ))?;
                 blocked(f, |f| {
                     if let Some(conversion) = element.element_type.conversion() {
@@ -200,7 +218,7 @@ impl<'a> RustCodegen<'a> {
         // Write the Rust version with all public fields
         let rust_struct_name = format!("{}Fields", handle.name());
         if handle.has_conversion() {
-            f.writeln(&format!("pub struct {}{}", rust_struct_name, lifetime))?;
+            f.writeln(&format!("pub struct {}{}", rust_struct_name, rust_lifetime))?;
             blocked(f, |f| {
                 for element in &handle.elements {
                     f.writeln(&format!(
@@ -214,10 +232,11 @@ impl<'a> RustCodegen<'a> {
 
             // Write the conversion to the C representation
             f.writeln(&format!(
-                "impl{lifetime} From<{rust_struct_name}{lifetime}> for {name}{lifetime}",
+                "impl{rust_lifetime} From<{rust_struct_name}{rust_lifetime}> for {name}{c_lifetime}",
                 name = handle.name(),
                 rust_struct_name = rust_struct_name,
-                lifetime = lifetime
+                rust_lifetime = rust_lifetime,
+                c_lifetime = c_lifetime,
             ))?;
             blocked(f, |f| {
                 f.writeln(&format!("fn from(from: {}) -> Self", rust_struct_name))?;
@@ -245,7 +264,7 @@ impl<'a> RustCodegen<'a> {
                 "pub type {rust_struct_name}{lifetime} = {name}{lifetime};",
                 rust_struct_name = rust_struct_name,
                 name = handle.name(),
-                lifetime = lifetime
+                lifetime = c_lifetime
             ))
         }
     }
@@ -377,14 +396,18 @@ impl<'a> RustCodegen<'a> {
                         f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
                     }
                     InterfaceElement::CallbackFunction(handle) => {
-                        let lifetime = if handle.requires_lifetime_annotation() {
+                        let lifetime = if handle.c_requires_lifetime() {
                             "for<'a> "
                         } else {
                             ""
                         };
 
                         f.newline()?;
-                        f.write(&format!("{name}: Option<{lifetime}extern \"C\" fn(", name=handle.name, lifetime=lifetime))?;
+                        f.write(&format!(
+                            "{name}: Option<{lifetime}extern \"C\" fn(",
+                            name = handle.name,
+                            lifetime = lifetime
+                        ))?;
 
                         f.write(
                             &handle
@@ -402,7 +425,7 @@ impl<'a> RustCodegen<'a> {
                                 .join(", "),
                         )?;
 
-                        f.write(&format!(") -> {}>,", handle.return_type.as_rust_type()))?;
+                        f.write(&format!(") -> {}>,", handle.return_type.as_c_type()))?;
                     }
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!(
@@ -446,14 +469,18 @@ impl<'a> RustCodegen<'a> {
                         f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
                     }
                     OneTimeCallbackElement::CallbackFunction(handle) => {
-                        let lifetime = if handle.requires_lifetime_annotation() {
+                        let lifetime = if handle.c_requires_lifetime() {
                             "for<'a> "
                         } else {
                             ""
                         };
 
                         f.newline()?;
-                        f.write(&format!("{name}: Option<{lifetime}extern \"C\" fn(", name=handle.name, lifetime=lifetime))?;
+                        f.write(&format!(
+                            "{name}: Option<{lifetime}extern \"C\" fn(",
+                            name = handle.name,
+                            lifetime = lifetime
+                        ))?;
 
                         f.write(
                             &handle
@@ -499,14 +526,18 @@ impl<'a> RustCodegen<'a> {
         f.writeln(&format!("impl {}", name))?;
         blocked(f, |f| {
             for callback in callbacks {
-                let lifetime = if callback.requires_lifetime_annotation() {
+                let lifetime = if callback.rust_requires_lifetime() {
                     "<'a>"
                 } else {
                     ""
                 };
 
                 // Function signature
-                f.writeln(&format!("pub(crate) fn {name}{lifetime}(&self, ", name=callback.name, lifetime=lifetime))?;
+                f.writeln(&format!(
+                    "pub(crate) fn {name}{lifetime}(&self, ",
+                    name = callback.name,
+                    lifetime = lifetime
+                ))?;
                 f.write(
                     &callback
                         .parameters
@@ -562,6 +593,7 @@ impl<'a> RustCodegen<'a> {
                                 if let Some(conversion) = return_type.conversion() {
                                     f.writeln(&format!("let _result = {};", call))?;
                                     conversion.convert_from_c(f, "_result", "let _result = ")?;
+                                    f.write(";")?;
                                     f.writeln("Some(_result)")
                                 } else {
                                     f.writeln(&format!("Some({})", call))

@@ -1,13 +1,15 @@
+use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::callback::*;
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
     fn as_c_type(&self) -> String;
     fn is_copyable(&self) -> bool;
+    fn rust_requires_lifetime(&self) -> bool;
+    fn c_requires_lifetime(&self) -> bool;
     fn conversion(&self) -> Option<Box<dyn TypeConverter>>;
     fn has_conversion(&self) -> bool {
         self.conversion().is_some()
@@ -28,13 +30,13 @@ impl RustType for Type {
             Type::Sint64 => "i64".to_string(),
             Type::Float => "f32".to_string(),
             Type::Double => "f64".to_string(),
-            Type::String => "*const std::os::raw::c_char".to_string(),
-            Type::Struct(handle) => format!("{}", handle.name()),
+            Type::String => "&'a std::ffi::CStr".to_string(),
+            Type::Struct(handle) => handle.name().to_string(),
             Type::StructRef(handle) => format!("Option<&{}>", handle.name),
-            Type::Enum(handle) => format!("{}", handle.name),
+            Type::Enum(handle) => handle.name.to_string(),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name),
-            Type::Interface(handle) => format!("{}", handle.name),
-            Type::OneTimeCallback(handle) => format!("{}", handle.name),
+            Type::Interface(handle) => handle.name.to_string(),
+            Type::OneTimeCallback(handle) => handle.name.to_string(),
             Type::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
@@ -44,10 +46,7 @@ impl RustType for Type {
                 format!("*mut crate::{}{}", handle.name(), lifetime)
             }
             Type::Collection(handle) => format!("*mut crate::{}", handle.name()),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => "u64".to_string(),
-                DurationMapping::SecondsFloat => "f32".to_string(),
-            },
+            Type::Duration(_) => "std::time::Duration".to_string(),
         }
     }
 
@@ -100,7 +99,7 @@ impl RustType for Type {
             Type::Sint64 => true,
             Type::Float => true,
             Type::Double => true,
-            Type::String => true, // Just copying the pointer
+            Type::String => true, // Just copying the reference
             Type::Struct(_) => false,
             Type::StructRef(_) => true,
             Type::Enum(_) => true,
@@ -110,6 +109,58 @@ impl RustType for Type {
             Type::Iterator(_) => true,   // Just copying the pointer
             Type::Collection(_) => true, // Just copying the pointer
             Type::Duration(_) => true,
+        }
+    }
+
+    fn rust_requires_lifetime(&self) -> bool {
+        match self {
+            Type::Bool => false,
+            Type::Uint8 => false,
+            Type::Sint8 => false,
+            Type::Uint16 => false,
+            Type::Sint16 => false,
+            Type::Uint32 => false,
+            Type::Sint32 => false,
+            Type::Uint64 => false,
+            Type::Sint64 => false,
+            Type::Float => false,
+            Type::Double => false,
+            Type::String => true,
+            Type::Struct(_) => false,
+            Type::StructRef(_) => false,
+            Type::Enum(_) => false,
+            Type::ClassRef(_) => false,
+            Type::Interface(_) => false,
+            Type::OneTimeCallback(_) => false,
+            Type::Iterator(_) => true,
+            Type::Collection(_) => false,
+            Type::Duration(_) => false,
+        }
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        match self {
+            Type::Bool => false,
+            Type::Uint8 => false,
+            Type::Sint8 => false,
+            Type::Uint16 => false,
+            Type::Sint16 => false,
+            Type::Uint32 => false,
+            Type::Sint32 => false,
+            Type::Uint64 => false,
+            Type::Sint64 => false,
+            Type::Float => false,
+            Type::Double => false,
+            Type::String => false,
+            Type::Struct(_) => false,
+            Type::StructRef(_) => false,
+            Type::Enum(_) => false,
+            Type::ClassRef(_) => false,
+            Type::Interface(_) => false,
+            Type::OneTimeCallback(_) => false,
+            Type::Iterator(_) => true,
+            Type::Collection(_) => false,
+            Type::Duration(_) => false,
         }
     }
 
@@ -126,7 +177,7 @@ impl RustType for Type {
             Type::Sint64 => None,
             Type::Float => None,
             Type::Double => None,
-            Type::String => None,
+            Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
             Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
@@ -135,7 +186,7 @@ impl RustType for Type {
             Type::OneTimeCallback(_) => None,
             Type::Iterator(_) => None,
             Type::Collection(_) => None,
-            Type::Duration(_) => None,
+            Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
 }
@@ -165,6 +216,22 @@ impl RustType for ReturnType {
         }
     }
 
+    fn rust_requires_lifetime(&self) -> bool {
+        if let ReturnType::Type(return_type, _) = self {
+            return_type.rust_requires_lifetime()
+        } else {
+            false
+        }
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        if let ReturnType::Type(return_type, _) = self {
+            return_type.c_requires_lifetime()
+        } else {
+            false
+        }
+    }
+
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         if let ReturnType::Type(return_type, _) = self {
             return_type.conversion()
@@ -177,6 +244,25 @@ impl RustType for ReturnType {
 pub(crate) trait TypeConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
+    fn is_unsafe(&self) -> bool {
+        false
+    }
+}
+
+struct StringConverter;
+
+impl TypeConverter for StringConverter {
+    fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}{}.as_ptr()", to, from))
+    }
+
+    fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}std::ffi::CStr::from_ptr({})", to, from))
+    }
+
+    fn is_unsafe(&self) -> bool {
+        true
+    }
 }
 
 struct EnumConverter(NativeEnumHandle);
@@ -206,59 +292,97 @@ impl TypeConverter for StructRefConverter {
     }
 }
 
+struct DurationConverter(DurationMapping);
+
+impl TypeConverter for DurationConverter {
+    fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        match self.0 {
+            DurationMapping::Milliseconds => {
+                f.writeln(&format!("{}{}.as_millis() as u64", to, from))
+            }
+            DurationMapping::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
+            DurationMapping::SecondsFloat => f.writeln(&format!("{}{}.as_secs_f32()", to, from)),
+        }
+    }
+
+    fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        match self.0 {
+            DurationMapping::Milliseconds => {
+                f.writeln(&format!("{}std::time::Duration::from_millis({})", to, from))
+            }
+            DurationMapping::Seconds => {
+                f.writeln(&format!("{}std::time::Duration::from_secs({})", to, from))
+            }
+            DurationMapping::SecondsFloat => f.writeln(&format!(
+                "{}std::time::Duration::from_secs_f32({})",
+                to, from
+            )),
+        }
+    }
+}
+
 pub(crate) trait RustStruct {
-    fn requires_lifetime_annotation(&self) -> bool;
+    fn rust_requires_lifetime(&self) -> bool;
+    fn c_requires_lifetime(&self) -> bool;
     fn has_conversion(&self) -> bool;
 }
 
 impl RustStruct for NativeStructHandle {
-    fn requires_lifetime_annotation(&self) -> bool {
-        self.elements
-            .iter()
-            .any(|e| e.requires_lifetime_annotation())
+    fn rust_requires_lifetime(&self) -> bool {
+        self.elements.iter().any(|e| e.rust_requires_lifetime())
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        self.elements.iter().any(|e| e.c_requires_lifetime())
     }
 
     fn has_conversion(&self) -> bool {
-        for element in &self.elements {
-            if element.element_type.has_conversion() {
-                return true;
-            }
-        }
-
-        false
+        self.elements
+            .iter()
+            .any(|e| e.element_type.has_conversion())
     }
 }
 
 pub(crate) trait RustStructField {
-    fn requires_lifetime_annotation(&self) -> bool;
+    fn rust_requires_lifetime(&self) -> bool;
+    fn c_requires_lifetime(&self) -> bool;
 }
 
 impl RustStructField for NativeStructElement {
-    fn requires_lifetime_annotation(&self) -> bool {
-        if let Type::Iterator(handle) = &self.element_type {
-            handle.has_lifetime_annotation
-        } else {
-            false
-        }
+    fn rust_requires_lifetime(&self) -> bool {
+        self.element_type.rust_requires_lifetime()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        self.element_type.c_requires_lifetime()
     }
 }
 
 pub(crate) trait RustCallbackFunction {
-    fn requires_lifetime_annotation(&self) -> bool;
+    fn rust_requires_lifetime(&self) -> bool;
+    fn c_requires_lifetime(&self) -> bool;
 }
 
 impl RustCallbackFunction for CallbackFunction {
-    fn requires_lifetime_annotation(&self) -> bool {
-        for param in &self.parameters {
+    fn rust_requires_lifetime(&self) -> bool {
+        self.parameters.iter().any(|param| {
             if let CallbackParameter::Parameter(param) = param {
-                if let Type::Iterator(handle) = &param.param_type {
-                    if handle.has_lifetime_annotation {
-                        return true
-                    }
+                if param.param_type.rust_requires_lifetime() {
+                    return true;
                 }
             }
-        }
+            false
+        })
+    }
 
-        false
+    fn c_requires_lifetime(&self) -> bool {
+        self.parameters.iter().any(|param| {
+            if let CallbackParameter::Parameter(param) = param {
+                if param.param_type.c_requires_lifetime() {
+                    return true;
+                }
+            }
+            false
+        })
     }
 }

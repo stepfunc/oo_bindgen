@@ -29,8 +29,8 @@ impl CallbackSource {
         self.callback
             .as_ref()
             .map_or(Duration::from_millis(0), |cb| {
-                cb.on_duration(value.as_millis() as u64)
-                    .map_or(Duration::from_millis(0), Duration::from_millis)
+                cb.on_duration(value)
+                    .map_or(Duration::from_millis(0), |value| value)
             })
     }
 }
@@ -64,9 +64,7 @@ pub unsafe fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) -> 
     cb_source.set_value(value)
 }
 
-pub unsafe fn cbsource_set_duration(cb_source: *mut CallbackSource, value: u64) -> u64 {
+pub unsafe fn cbsource_set_duration(cb_source: *mut CallbackSource, value: Duration) -> Duration {
     let cb_source = cb_source.as_mut().unwrap();
-    cb_source
-        .set_duration(Duration::from_millis(value))
-        .as_millis() as u64
+    cb_source.set_duration(value)
 }

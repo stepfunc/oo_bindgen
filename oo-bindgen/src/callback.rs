@@ -1,4 +1,4 @@
-use crate::doc::Doc;
+use crate::doc::{Doc, DocString};
 use crate::*;
 use std::collections::HashSet;
 
@@ -318,7 +318,12 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
         }
     }
 
-    pub fn param<D: Into<Doc>>(mut self, name: &str, param_type: Type, doc: D) -> Result<Self> {
+    pub fn param<D: Into<DocString>>(
+        mut self,
+        name: &str,
+        param_type: Type,
+        doc: D,
+    ) -> Result<Self> {
         self.target.lib().validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.to_string(),

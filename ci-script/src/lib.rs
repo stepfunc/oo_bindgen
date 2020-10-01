@@ -63,12 +63,12 @@ pub fn run(settings: BindingBuilderSettings) {
             builder.build_doxygen();
         }
     }
-    if run_dotnet || run_all {
+    /*if run_dotnet || run_all {
         run_builder::<DotnetBindingBuilder>(&settings, run_tests, package_src);
     }
     if run_java || run_all {
         run_builder::<JavaBindingBuilder>(&settings, run_tests, package_src);
-    }
+    }*/
 }
 
 fn ffi_path() -> PathBuf {
@@ -235,7 +235,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         // Already done in build
     }
 }
-
+/*
 struct DotnetBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
     platforms: PlatformLocations,
@@ -398,3 +398,4 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         assert!(result.success());
     }
 }
+*/

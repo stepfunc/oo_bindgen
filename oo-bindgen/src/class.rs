@@ -1,3 +1,4 @@
+use crate::doc::DocString;
 use crate::*;
 
 /// C-style structure forward declaration
@@ -25,7 +26,7 @@ pub struct AsyncMethod {
     pub name: String,
     pub native_function: NativeFunctionHandle,
     pub return_type: Type,
-    pub return_type_doc: Doc,
+    pub return_type_doc: DocString,
     pub one_time_callback_name: String,
     pub one_time_callback_param_name: String,
     pub callback_name: String,
@@ -55,6 +56,28 @@ impl Class {
 
     pub fn is_static(&self) -> bool {
         self.constructor.is_none() && self.destructor.is_none() && self.methods.is_empty()
+    }
+
+    pub fn find_method(&self, method_name: &str) -> Option<&NativeFunctionHandle> {
+        for method in &self.methods {
+            if &method.name == method_name {
+                return Some(&method.native_function);
+            }
+        }
+
+        for method in &self.static_methods {
+            if &method.name == method_name {
+                return Some(&method.native_function);
+            }
+        }
+
+        for method in &self.async_methods {
+            if &method.name == method_name {
+                return Some(&method.native_function);
+            }
+        }
+
+        None
     }
 }
 

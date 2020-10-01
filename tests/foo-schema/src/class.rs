@@ -13,7 +13,13 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::ClassRef(testclass.clone()),
             "New TestClass",
         ))?
-        .doc("Create a new TestClass")?
+        .doc(
+            doc("Create a new {class:TestClass}")
+                .details("Here are some details about {class:TestClass}. You can call {class:TestClass.GetValue()} method.")
+                .details("Here are some details about the struct {struct:Structure}. It has the {struct:Structure.boolean_value} and the {struct:Structure.StructByValueEcho()} method." )
+                .details("Here are some details about {enum:EnumZeroToFive}. It has the {enum:EnumZeroToFive.Two} variant.")
+                .warning("And here's a dangerous warning! Do not use {class:TestClass.GetValue()}"),
+        )?
         .build()?;
 
     let testclass_destroy_func = lib

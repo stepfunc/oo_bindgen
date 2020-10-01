@@ -71,6 +71,8 @@ pub mod native_function;
 pub mod native_struct;
 pub mod platforms;
 
+pub use crate::doc::doc;
+
 type Result<T> = std::result::Result<T, BindingError>;
 
 #[derive(Error, Debug)]
@@ -80,6 +82,23 @@ pub enum BindingError {
     SymbolAlreadyUsed { name: String },
     #[error("Description already set")]
     DescriptionAlreadySet,
+
+    // Documentation error
+    #[error("Invalid documentation string")]
+    InvalidDocString,
+    #[error("Documentation of '{}' was already defined", symbol_name)]
+    DocAlreadyDefined { symbol_name: String },
+    #[error("Documentation of '{}' was not defined", symbol_name)]
+    DocNotDefined { symbol_name: String },
+    #[error(
+        "Documentation of '{}' references '{}' which does not exist",
+        symbol_name,
+        ref_name
+    )]
+    DocInvalidReference {
+        symbol_name: String,
+        ref_name: String,
+    },
 
     // Native function errors
     #[error("Native struct '{}' is not part of this library", handle.name)]
@@ -98,10 +117,6 @@ pub enum BindingError {
         native_func_name
     )]
     ReturnTypeNotDefined { native_func_name: String },
-    #[error("Documentation of '{}' was already defined", symbol_name)]
-    DocAlreadyDefined { symbol_name: String },
-    #[error("Documentation of '{}' was not defined", symbol_name)]
-    DocNotDefined { symbol_name: String },
 
     // Native enum errors
     #[error("Native enum '{}' is not part of this library", handle.name)]
@@ -332,6 +347,19 @@ impl Library {
         self.structs.values()
     }
 
+    pub fn find_struct(&self, name: &str) -> Option<&StructHandle> {
+        self.symbol(name)
+            .iter()
+            .filter_map(|symbol| {
+                if let Symbol::Struct(handle) = symbol {
+                    Some(handle)
+                } else {
+                    None
+                }
+            })
+            .next()
+    }
+
     pub fn native_enums(&self) -> impl Iterator<Item = &NativeEnumHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::EnumDefinition(handle) => Some(handle),
@@ -339,11 +367,37 @@ impl Library {
         })
     }
 
+    pub fn find_enum(&self, name: &str) -> Option<&NativeEnumHandle> {
+        self.symbol(name)
+            .iter()
+            .filter_map(|symbol| {
+                if let Symbol::Enum(handle) = symbol {
+                    Some(handle)
+                } else {
+                    None
+                }
+            })
+            .next()
+    }
+
     pub fn classes(&self) -> impl Iterator<Item = &ClassHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::ClassDefinition(handle) => Some(handle),
             _ => None,
         })
+    }
+
+    pub fn find_class(&self, name: &str) -> Option<&ClassHandle> {
+        self.symbol(name)
+            .iter()
+            .filter_map(|symbol| {
+                if let Symbol::Class(handle) = symbol {
+                    Some(handle)
+                } else {
+                    None
+                }
+            })
+            .next()
     }
 
     pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
@@ -430,7 +484,7 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn build(self) -> Library {
+    pub fn build(self) -> Result<Library> {
         // Update all native structs to full structs
         let mut structs = HashMap::with_capacity(self.defined_structs.len());
         for structure in self.defined_structs.values() {
@@ -485,9 +539,7 @@ impl LibraryBuilder {
             }
         }
 
-        // TODO: validate all documentation nodes with the symbols map
-
-        Library {
+        let lib = Library {
             name: self.name,
             version: self.version,
             description: self.description,
@@ -497,7 +549,11 @@ impl LibraryBuilder {
             structs,
             _classes: self.classes,
             symbols,
-        }
+        };
+
+        doc::validate_library_docs(&lib)?;
+
+        Ok(lib)
     }
 
     pub fn description(&mut self, description: &str) -> Result<()> {

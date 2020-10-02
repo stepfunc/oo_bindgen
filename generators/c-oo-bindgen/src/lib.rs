@@ -49,6 +49,7 @@ use crate::formatting::*;
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
+use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -253,13 +254,7 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
                     write_struct_definition(f, handle, lib)?
                 }
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
-                Statement::ClassDeclaration(handle) => {
-                    f.writeln(&format!(
-                        "typedef struct {} {};",
-                        handle.to_type(),
-                        handle.to_type()
-                    ))?;
-                }
+                Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle, lib)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
                 Statement::OneTimeCallbackDefinition(handle) => {
@@ -293,7 +288,7 @@ fn write_struct_definition(
             f.writeln(&format!(
                 "{} {};",
                 CType(&element.element_type),
-                element.name
+                element.name.to_snake_case(),
             ))?;
         }
         Ok(())
@@ -347,6 +342,46 @@ fn write_enum_definition(
         })?;
         f.writeln("}")
     })
+}
+
+fn write_class_declaration(
+    f: &mut dyn Printer,
+    handle: &ClassDeclarationHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
+    match lib.symbol(&handle.name) {
+        Some(Symbol::Class(handle)) => doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?,
+        Some(Symbol::Iterator(handle)) => doxygen(f, |f| {
+            doxygen_print(
+                f,
+                &Doc::from(&*format!(
+                    "Iterator of {{struct:{}}}. See @ref {}.",
+                    handle.item_type.name(),
+                    handle.native_func.name
+                )),
+                lib,
+            )
+        })?,
+        Some(Symbol::Collection(handle)) => doxygen(f, |f| {
+            doxygen_print(
+                f,
+                &Doc::from(&*format!(
+                    "Collection of {}. See @ref {} and @ref {}.",
+                    CType(&handle.item_type).to_string(),
+                    handle.add_func.name,
+                    handle.delete_func.name
+                )),
+                lib,
+            )
+        })?,
+        _ => (),
+    }
+
+    f.writeln(&format!(
+        "typedef struct {} {};",
+        handle.to_type(),
+        handle.to_type()
+    ))
 }
 
 fn write_function(
@@ -448,7 +483,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                     f.write(&format!(
                         "{} (*{})(",
                         CReturnType(&handle.return_type),
-                        handle.name
+                        handle.name.to_snake_case(),
                     ))?;
 
                     f.write(
@@ -534,7 +569,7 @@ fn write_one_time_callback(
                     f.write(&format!(
                         "{} (*{})(",
                         CReturnType(&handle.return_type),
-                        handle.name
+                        handle.name.to_snake_case(),
                     ))?;
 
                     f.write(

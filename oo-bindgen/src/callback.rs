@@ -51,6 +51,10 @@ impl Interface {
             _ => None,
         })
     }
+
+    pub fn find_callback(&self, name: &str) -> Option<&CallbackFunction> {
+        self.callbacks().find(|callback| callback.name == name)
+    }
 }
 
 pub type InterfaceHandle = Handle<Interface>;
@@ -182,6 +186,10 @@ impl OneTimeCallback {
             OneTimeCallbackElement::CallbackFunction(cb) => Some(cb),
             _ => None,
         })
+    }
+
+    pub fn find_callback(&self, name: &str) -> Option<&CallbackFunction> {
+        self.callbacks().find(|callback| callback.name == name)
     }
 }
 

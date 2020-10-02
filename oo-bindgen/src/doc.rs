@@ -1,3 +1,4 @@
+use crate::callback::*;
 use crate::native_function::Parameter;
 use crate::{BindingError, Library};
 use lazy_static::lazy_static;
@@ -148,6 +149,18 @@ pub enum DocReference {
     ///
     /// First string is the enum name, second is the enum variant name
     EnumVariant(String, String),
+    /// Reference an interface
+    Interface(String),
+    /// Reference a method of a interface
+    ///
+    /// First string is the interface name, second is the method's name
+    InterfaceMethod(String, String),
+    /// Reference an OneTimeCallback
+    OneTimeCallback(String),
+    /// Reference a method of a OneTimeCallback
+    ///
+    /// First string is the OneTimeCallback name, second is the method's name
+    OneTimeCallbackMethod(String, String),
 }
 
 impl TryFrom<&str> for DocReference {
@@ -167,6 +180,13 @@ impl TryFrom<&str> for DocReference {
             static ref RE_ENUM: Regex = Regex::new(r"\{enum:([[:word:]]+)\}").unwrap();
             static ref RE_ENUM_VARIANT: Regex =
                 Regex::new(r"\{enum:([[:word:]]+)\.([[:word:]]+)\}").unwrap();
+            static ref RE_INTERFACE: Regex = Regex::new(r"\{interface:([[:word:]]+)\}").unwrap();
+            static ref RE_INTERFACE_METHOD: Regex =
+                Regex::new(r"\{interface:([[:word:]]+)\.([[:word:]]+)\(\)\}").unwrap();
+            static ref RE_ONETIME_CALLBACK: Regex =
+                Regex::new(r"\{callback:([[:word:]]+)\}").unwrap();
+            static ref RE_ONETIME_CALLBACK_METHOD: Regex =
+                Regex::new(r"\{callback:([[:word:]]+)\.([[:word:]]+)\(\)\}").unwrap();
         }
 
         if let Some(capture) = RE_PARAM.captures(from) {
@@ -213,6 +233,28 @@ impl TryFrom<&str> for DocReference {
                 capture.get(2).unwrap().as_str().to_owned(),
             ));
         }
+        if let Some(capture) = RE_INTERFACE.captures(from) {
+            return Ok(DocReference::Interface(
+                capture.get(1).unwrap().as_str().to_owned(),
+            ));
+        }
+        if let Some(capture) = RE_INTERFACE_METHOD.captures(from) {
+            return Ok(DocReference::InterfaceMethod(
+                capture.get(1).unwrap().as_str().to_owned(),
+                capture.get(2).unwrap().as_str().to_owned(),
+            ));
+        }
+        if let Some(capture) = RE_ONETIME_CALLBACK.captures(from) {
+            return Ok(DocReference::OneTimeCallback(
+                capture.get(1).unwrap().as_str().to_owned(),
+            ));
+        }
+        if let Some(capture) = RE_ONETIME_CALLBACK_METHOD.captures(from) {
+            return Ok(DocReference::OneTimeCallbackMethod(
+                capture.get(1).unwrap().as_str().to_owned(),
+                capture.get(2).unwrap().as_str().to_owned(),
+            ));
+        }
 
         Err(BindingError::InvalidDocString)
     }
@@ -230,6 +272,70 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 
     for class in lib.classes() {
         validate_doc(class.name(), &class.doc, lib)?;
+    }
+
+    for structure in lib.structs() {
+        validate_doc(structure.name(), structure.doc(), lib)?;
+        for element in structure.elements() {
+            validate_doc(
+                &format!("{}.{}()", structure.name(), element.name),
+                &element.doc,
+                lib,
+            )?;
+        }
+    }
+
+    for enumeration in lib.native_enums() {
+        validate_doc(&enumeration.name, &enumeration.doc, lib)?;
+        for variant in &enumeration.variants {
+            validate_doc(
+                &format!("{}.{}", enumeration.name, variant.name),
+                &variant.doc,
+                lib,
+            )?;
+        }
+    }
+
+    for interface in lib.interfaces() {
+        validate_doc(&interface.name, &interface.doc, lib)?;
+        for callback in interface.callbacks() {
+            let params = callback
+                .parameters
+                .iter()
+                .filter_map(|param| match param {
+                    CallbackParameter::Parameter(param) => Some(param.clone()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+
+            validate_doc_with_params(
+                &format!("{}.{}", interface.name, callback.name),
+                &callback.doc,
+                params.as_slice(),
+                lib,
+            )?;
+        }
+    }
+
+    for interface in lib.one_time_callbacks() {
+        validate_doc(&interface.name, &interface.doc, lib)?;
+        for callback in interface.callbacks() {
+            let params = callback
+                .parameters
+                .iter()
+                .filter_map(|param| match param {
+                    CallbackParameter::Parameter(param) => Some(param.clone()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+
+            validate_doc_with_params(
+                &format!("{}.{}", interface.name, callback.name),
+                &callback.doc,
+                params.as_slice(),
+                lib,
+            )?;
+        }
     }
 
     Ok(())
@@ -368,6 +474,68 @@ fn validate_doc_with_params(
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
+                    });
+                }
+            }
+            DocReference::Interface(interface_name) => {
+                if lib.find_interface(interface_name).is_none() {
+                    return Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: interface_name.to_string(),
+                    });
+                }
+            }
+            DocReference::InterfaceMethod(interface_name, method_name) => {
+                if let Some(handle) = lib.find_interface(interface_name) {
+                    if handle.find_callback(method_name).is_none() {
+                        return Err(BindingError::DocInvalidReference {
+                            symbol_name: symbol_name.to_string(),
+                            ref_name: format!(
+                                "{}.{}()",
+                                interface_name.to_string(),
+                                method_name.to_string()
+                            ),
+                        });
+                    }
+                } else {
+                    return Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!(
+                            "{}.{}()",
+                            interface_name.to_string(),
+                            method_name.to_string()
+                        ),
+                    });
+                }
+            }
+            DocReference::OneTimeCallback(interface_name) => {
+                if lib.find_one_time_callback(interface_name).is_none() {
+                    return Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: interface_name.to_string(),
+                    });
+                }
+            }
+            DocReference::OneTimeCallbackMethod(interface_name, method_name) => {
+                if let Some(handle) = lib.find_one_time_callback(interface_name) {
+                    if handle.find_callback(method_name).is_none() {
+                        return Err(BindingError::DocInvalidReference {
+                            symbol_name: symbol_name.to_string(),
+                            ref_name: format!(
+                                "{}.{}()",
+                                interface_name.to_string(),
+                                method_name.to_string()
+                            ),
+                        });
+                    }
+                } else {
+                    return Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!(
+                            "{}.{}()",
+                            interface_name.to_string(),
+                            method_name.to_string()
+                        ),
                     });
                 }
             }

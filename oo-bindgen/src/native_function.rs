@@ -65,7 +65,7 @@ impl ReturnType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parameter {
     pub name: String,
     pub param_type: Type,

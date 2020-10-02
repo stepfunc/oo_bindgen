@@ -407,11 +407,37 @@ impl Library {
         })
     }
 
+    pub fn find_interface(&self, name: &str) -> Option<&InterfaceHandle> {
+        self.symbol(name)
+            .iter()
+            .filter_map(|symbol| {
+                if let Symbol::Interface(handle) = symbol {
+                    Some(handle)
+                } else {
+                    None
+                }
+            })
+            .next()
+    }
+
     pub fn one_time_callbacks(&self) -> impl Iterator<Item = &OneTimeCallbackHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::OneTimeCallbackDefinition(handle) => Some(handle),
             _ => None,
         })
+    }
+
+    pub fn find_one_time_callback(&self, name: &str) -> Option<&OneTimeCallbackHandle> {
+        self.symbol(name)
+            .iter()
+            .filter_map(|symbol| {
+                if let Symbol::OneTimeCallback(handle) = symbol {
+                    Some(handle)
+                } else {
+                    None
+                }
+            })
+            .next()
     }
 
     pub fn symbol(&self, symbol_name: &str) -> Option<&Symbol> {

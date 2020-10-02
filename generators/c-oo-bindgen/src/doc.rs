@@ -47,7 +47,9 @@ fn reference_print(
     lib: &Library,
 ) -> FormattingResult<()> {
     match reference {
-        DocReference::Param(param_name) => f.write(&param_name.to_snake_case())?,
+        DocReference::Param(param_name) => {
+            f.write(&format!("@p {}", param_name.to_snake_case()))?
+        }
         DocReference::Class(class_name) => {
             let class_name = lib.find_class(class_name).unwrap().declaration();
             f.write(&format!("@ref {}", class_name.to_type()))?;
@@ -75,13 +77,12 @@ fn reference_print(
             f.write(&format!("@ref {}", func_name))?;
         }
         DocReference::StructElement(struct_name, element_name) => {
-            let func_name = &lib
-                .find_struct(struct_name)
-                .unwrap()
-                .find_element(element_name)
-                .unwrap()
-                .name;
-            f.write(&format!("@ref {}", func_name))?;
+            let handle = lib.find_struct(struct_name).unwrap();
+            f.write(&format!(
+                "@ref {}.{}",
+                handle.definition().to_type(),
+                element_name.to_snake_case()
+            ))?;
         }
         DocReference::Enum(enum_name) => {
             let enum_name = lib.find_enum(enum_name).unwrap();
@@ -93,6 +94,30 @@ fn reference_print(
                 "@ref {}_{}",
                 handle.name.to_camel_case(),
                 variant_name.to_camel_case()
+            ))?;
+        }
+        DocReference::Interface(interface_name) => {
+            let handle = lib.find_interface(interface_name).unwrap();
+            f.write(&format!("@ref {}", handle.to_type()))?;
+        }
+        DocReference::InterfaceMethod(interface_name, callback_name) => {
+            let handle = &lib.find_interface(interface_name).unwrap();
+            f.write(&format!(
+                "@ref {}.{}",
+                handle.to_type(),
+                callback_name.to_snake_case()
+            ))?;
+        }
+        DocReference::OneTimeCallback(interface_name) => {
+            let handle = lib.find_one_time_callback(interface_name).unwrap();
+            f.write(&format!("@ref {}", handle.to_type()))?;
+        }
+        DocReference::OneTimeCallbackMethod(interface_name, callback_name) => {
+            let handle = &lib.find_one_time_callback(interface_name).unwrap();
+            f.write(&format!(
+                "@ref {}.{}",
+                handle.to_type(),
+                callback_name.to_snake_case()
             ))?;
         }
     }

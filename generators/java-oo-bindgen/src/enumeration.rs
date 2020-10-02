@@ -1,4 +1,5 @@
 use crate::*;
+use crate::doc::*;
 use heck::{CamelCase, ShoutySnakeCase};
 use oo_bindgen::native_enum::*;
 
@@ -10,13 +11,9 @@ pub(crate) fn generate(
     let enum_name = native_enum.name.to_camel_case();
 
     // Documentation
-    if !native_enum.doc.is_empty() {
-        documentation(f, |f| {
-            f.newline()?;
-            doc_print(f, &native_enum.doc, lib)?;
-            Ok(())
-        })?;
-    }
+    documentation(f, |f| {
+        javadoc_print(f, &native_enum.doc, lib)
+    })?;
 
     // Enum definition
     f.writeln(&format!("public enum {}", enum_name))?;
@@ -24,9 +21,7 @@ pub(crate) fn generate(
         // Write the variants
         for variant in &native_enum.variants {
             documentation(f, |f| {
-                f.newline()?;
-                doc_print(f, &variant.doc, lib)?;
-                Ok(())
+                javadoc_print(f, &variant.doc, lib)
             })?;
             f.writeln(&format!("{},", variant.name.to_shouty_snake_case()))?;
         }

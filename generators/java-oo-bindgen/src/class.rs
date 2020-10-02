@@ -1,4 +1,5 @@
 use crate::*;
+use crate::doc::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
 use oo_bindgen::native_function::*;
@@ -11,13 +12,9 @@ pub(crate) fn generate(
     let classname = class.name().to_camel_case();
 
     // Documentation
-    if !class.doc.is_empty() {
-        documentation(f, |f| {
-            f.newline()?;
-            doc_print(f, &class.doc, lib)?;
-            Ok(())
-        })?;
-    }
+    documentation(f, |f| {
+        javadoc_print(f, &class.doc, lib)
+    })?;
 
     // Class definition
     f.writeln(&format!("public class {}", classname))?;
@@ -75,13 +72,13 @@ fn generate_constructor(
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
+        javadoc_print(f, &constructor.doc, lib)?;
         f.newline()?;
-        doc_print(f, &constructor.doc, lib)?;
 
         // Print each parameter value
         for param in constructor.parameters.iter() {
             f.writeln(&format!("@param {} ", param.name))?;
-            doc_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc, lib)?;
         }
 
         Ok(())
@@ -95,7 +92,7 @@ fn generate_constructor(
             .map(|param| {
                 format!(
                     "{} {}",
-                    JavaType(&param.param_type).as_java_type(),
+                    param.param_type.as_java_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -116,13 +113,13 @@ fn generate_destructor(
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
+        javadoc_print(f, &destructor.doc, lib)?;
         f.newline()?;
-        doc_print(f, &destructor.doc, lib)?;
 
         // Print each parameter value
         for param in destructor.parameters.iter().skip(1) {
             f.writeln(&format!("@param {} ", param.name))?;
-            doc_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc, lib)?;
         }
 
         Ok(())
@@ -147,26 +144,26 @@ fn generate_destructor(
 fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
+        javadoc_print(f, &method.native_function.doc, lib)?;
         f.newline()?;
-        doc_print(f, &method.native_function.doc, lib)?;
 
         // Print each parameter value
         for param in method.native_function.parameters.iter().skip(1) {
             f.writeln(&format!("@param {} ", param.name))?;
-            doc_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc, lib)?;
         }
 
         // Print return value
         if let ReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("@return ")?;
-            doc_print(f, doc, lib)?;
+            docstring_print(f, doc, lib)?;
         }
         Ok(())
     })?;
 
     f.writeln(&format!(
         "public {} {}(",
-        JavaReturnType(&method.native_function.return_type).as_java_type(),
+        method.native_function.return_type.as_java_type(),
         method.name.to_mixed_case()
     ))?;
     f.write(
@@ -178,7 +175,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
             .map(|param| {
                 format!(
                     "{} {}",
-                    JavaType(&param.param_type).as_java_type(),
+                    param.param_type.as_java_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -205,26 +202,26 @@ fn generate_static_method(
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
+        javadoc_print(f, &method.native_function.doc, lib)?;
         f.newline()?;
-        doc_print(f, &method.native_function.doc, lib)?;
 
         // Print each parameter value
         for param in method.native_function.parameters.iter() {
             f.writeln(&format!("@param {} ", param.name))?;
-            doc_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc, lib)?;
         }
 
         // Print return value
         if let ReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("@return ")?;
-            doc_print(f, doc, lib)?;
+            docstring_print(f, doc, lib)?;
         }
         Ok(())
     })?;
 
     f.writeln(&format!(
         "public static {} {}(",
-        JavaReturnType(&method.native_function.return_type).as_java_type(),
+        method.native_function.return_type.as_java_type(),
         method.name.to_mixed_case()
     ))?;
     f.write(
@@ -235,7 +232,7 @@ fn generate_static_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    JavaType(&param.param_type).as_java_type(),
+                    param.param_type.as_java_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -254,7 +251,7 @@ fn generate_async_method(
     method: &AsyncMethod,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let return_type = JavaType(&method.return_type).as_java_type();
+    let return_type = method.return_type.as_java_type();
     let one_time_callback_name = method.one_time_callback_name.to_camel_case();
     let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
     let callback_param_name = method.callback_param_name.to_mixed_case();
@@ -262,29 +259,27 @@ fn generate_async_method(
     let future_type = format!("java.util.concurrent.CompletableFuture<{}>", return_type);
 
     // Documentation
-    if !method.native_function.doc.is_empty() {
-        documentation(f, |f| {
-            // Print top-level documentation
-            f.newline()?;
-            doc_print(f, &method.native_function.doc, lib)?;
+    documentation(f, |f| {
+        // Print top-level documentation
+        javadoc_print(f, &method.native_function.doc, lib)?;
+        f.newline()?;
 
-            // Print each parameter value
-            for param in method
-                .native_function
-                .parameters
-                .iter()
-                .skip(1)
-                .filter(|param| !matches!(param.param_type, Type::OneTimeCallback(_)))
-            {
-                f.writeln(&format!("@param {} ", param.name))?;
-                doc_print(f, &param.doc, lib)?;
-            }
+        // Print each parameter value
+        for param in method
+            .native_function
+            .parameters
+            .iter()
+            .skip(1)
+            .filter(|param| !matches!(param.param_type, Type::OneTimeCallback(_)))
+        {
+            f.writeln(&format!("@param {} ", param.name))?;
+            docstring_print(f, &param.doc, lib)?;
+        }
 
-            // Print return value
-            f.writeln("@return ")?;
-            doc_print(f, &method.return_type_doc, lib)
-        })?;
-    }
+        // Print return value
+        f.writeln("@return ")?;
+        docstring_print(f, &method.return_type_doc, lib)
+    })?;
 
     f.writeln(&format!(
         "public java.util.concurrent.CompletionStage<{}> {}(",
@@ -301,7 +296,7 @@ fn generate_async_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    JavaType(&param.param_type).as_java_type(),
+                    param.param_type.as_java_type(),
                     param.name.to_mixed_case()
                 )
             })

@@ -47,7 +47,6 @@ clippy::all
 use crate::conversion::*;
 use crate::formatting::*;
 use heck::{CamelCase, KebabCase};
-use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::platforms::*;
 use oo_bindgen::*;
@@ -57,6 +56,7 @@ use std::path::PathBuf;
 mod callback;
 mod class;
 mod conversion;
+mod doc;
 mod enumeration;
 mod formatting;
 mod interface;
@@ -69,21 +69,6 @@ pub struct JavaBindgenConfig {
     pub ffi_name: String,
     pub group_id: String,
     pub platforms: PlatformLocations,
-}
-
-pub(crate) fn doc_print(f: &mut dyn Printer, doc: &Doc, _lib: &Library) -> FormattingResult<()> {
-    for doc in doc {
-        match doc {
-            DocElement::Text(text) => f.write(text)?,
-            DocElement::Reference(typename) => {
-                f.write(&format!("{{@link {}}}", typename.to_camel_case()))?;
-            }
-            DocElement::Warning(text) => {
-                f.write(&format!("@warning {}", text))?;
-            }
-        }
-    }
-    Ok(())
 }
 
 impl JavaBindgenConfig {
@@ -210,7 +195,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             f.newline()?;
             f.write(&format!(
                 "static native {} {}(",
-                JavaReturnType(&handle.return_type).as_native_type(),
+                handle.return_type.as_native_type(),
                 handle.name
             ))?;
 
@@ -221,7 +206,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     .map(|param| {
                         format!(
                             "{} {}",
-                            JavaType(&param.param_type).as_native_type(),
+                            param.param_type.as_native_type(),
                             param.name
                         )
                     })

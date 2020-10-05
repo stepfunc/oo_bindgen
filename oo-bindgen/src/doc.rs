@@ -88,12 +88,18 @@ impl DocString {
     }
 }
 
+impl Default for DocString {
+    fn default() -> Self {
+        DocString::new()
+    }
+}
+
 impl From<&str> for DocString {
     fn from(mut from: &str) -> DocString {
         let mut result = DocString::new();
-        while let Some(start_idx) = from.find("{") {
+        while let Some(start_idx) = from.find('{') {
             let (before_str, current_str) = from.split_at(start_idx);
-            if let Some(end_idx) = current_str.find("}") {
+            if let Some(end_idx) = current_str.find('}') {
                 let (reference_str, current_str) = current_str.split_at(end_idx + 1);
                 let reference = DocReference::try_from(reference_str)
                     .expect("Invalid docstring: ill-formatted reference");

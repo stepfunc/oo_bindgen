@@ -1,5 +1,5 @@
-use crate::*;
 use crate::doc::*;
+use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
@@ -12,18 +12,14 @@ pub(crate) fn generate(
     let struct_name = native_struct.name().to_camel_case();
 
     // Documentation
-    documentation(f, |f| {
-        javadoc_print(f, &native_struct.doc(), lib)
-    })?;
+    documentation(f, |f| javadoc_print(f, &native_struct.doc(), lib))?;
 
     // Structure definition
     f.writeln(&format!("public class {}", struct_name))?;
     blocked(f, |f| {
         // Write Java structure elements
         for el in native_struct.elements() {
-            documentation(f, |f| {
-                javadoc_print(f, &el.doc, lib)
-            })?;
+            documentation(f, |f| javadoc_print(f, &el.doc, lib))?;
 
             f.writeln(&format!(
                 "public {} {};",

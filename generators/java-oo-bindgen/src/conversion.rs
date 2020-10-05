@@ -43,10 +43,9 @@ impl JavaType for Type {
                 "java.util.Collection<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => format!(
-                "java.util.Collection<{}>",
-                handle.item_type.as_java_type()
-            ),
+            Type::Collection(handle) => {
+                format!("java.util.Collection<{}>", handle.item_type.as_java_type())
+            }
             Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }

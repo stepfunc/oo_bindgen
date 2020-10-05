@@ -63,9 +63,9 @@ pub fn run(settings: BindingBuilderSettings) {
             builder.build_doxygen();
         }
     }
-    /*if run_dotnet || run_all {
+    if run_dotnet || run_all {
         run_builder::<DotnetBindingBuilder>(&settings, run_tests, package_src);
-    }*/
+    }
     if run_java || run_all {
         run_builder::<JavaBindingBuilder>(&settings, run_tests, package_src);
     }
@@ -235,7 +235,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         // Already done in build
     }
 }
-/*
+
 struct DotnetBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
     platforms: PlatformLocations,
@@ -316,7 +316,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
             .unwrap();
         assert!(result.success());
     }
-}*/
+}
 
 struct JavaBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,

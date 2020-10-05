@@ -203,13 +203,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 &handle
                     .parameters
                     .iter()
-                    .map(|param| {
-                        format!(
-                            "{} {}",
-                            param.param_type.as_native_type(),
-                            param.name
-                        )
-                    })
+                    .map(|param| format!("{} {}", param.param_type.as_native_type(), param.name))
                     .collect::<Vec<String>>()
                     .join(", "),
             )?;

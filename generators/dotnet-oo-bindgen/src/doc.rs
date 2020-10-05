@@ -1,27 +1,30 @@
-use heck::{CamelCase, MixedCase, ShoutySnakeCase};
+use heck::{CamelCase, MixedCase};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::Library;
 
-pub(crate) fn javadoc_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
-    f.newline()?;
+pub(crate) fn xmldoc_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
+    f.writeln("<summary>")?;
     docstring_print(f, &doc.brief, lib)?;
+    f.write("</summary>")?;
 
-    for detail in &doc.details {
-        f.newline()?;
-
-        match detail {
-            DocParagraph::Details(docstring) => {
-                f.writeln("<p>")?;
-                docstring_print(f, docstring, lib)?;
-                f.write("</p>")?;
-            }
-            DocParagraph::Warning(docstring) => {
-                f.writeln("<p><b>Warning:</b> ")?;
-                docstring_print(f, docstring, lib)?;
-                f.write("</p>")?;
+    if !doc.details.is_empty() {
+        f.writeln("<remarks>")?;
+        for detail in &doc.details {
+            match detail {
+                DocParagraph::Details(docstring) => {
+                    f.writeln("<para>")?;
+                    docstring_print(f, docstring, lib)?;
+                    f.write("</para>")?;
+                }
+                DocParagraph::Warning(docstring) => {
+                    f.writeln("<para><b>Warning:</b> ")?;
+                    docstring_print(f, docstring, lib)?;
+                    f.write("</para>")?;
+                }
             }
         }
+        f.writeln("</remarks>")?;
     }
 
     Ok(())
@@ -49,63 +52,69 @@ fn reference_print(
 ) -> FormattingResult<()> {
     match reference {
         DocReference::Param(param_name) => {
-            f.write(&format!("{{@code {}}}", param_name.to_mixed_case()))?
+            f.write(&format!("<c>{}</c>", param_name.to_mixed_case()))?
         }
         DocReference::Class(class_name) => {
-            f.write(&format!("{{@link {}}}", class_name.to_camel_case()))?;
+            f.write(&format!("<see cref=\"{}\" />", class_name.to_camel_case()))?;
         }
         DocReference::ClassMethod(class_name, method_name) => {
             f.write(&format!(
-                "{{@link {}#{}}}",
+                "<see cref=\"{}.{}\" />",
                 class_name.to_camel_case(),
-                method_name.to_mixed_case()
+                method_name.to_camel_case()
             ))?;
         }
         DocReference::Struct(struct_name) => {
-            f.write(&format!("{{@link {}}}", struct_name.to_camel_case()))?;
+            f.write(&format!("<see cref=\"{}\" />", struct_name.to_camel_case()))?;
         }
         DocReference::StructMethod(struct_name, method_name) => {
             f.write(&format!(
-                "{{@link {}#{}}}",
+                "<see cref=\"{}.{}\" />",
                 struct_name.to_camel_case(),
-                method_name.to_mixed_case()
+                method_name.to_camel_case()
             ))?;
         }
         DocReference::StructElement(struct_name, element_name) => {
             f.write(&format!(
-                "{{@link {}#{}}}",
+                "<see cref=\"{}.{}\" />",
                 struct_name.to_camel_case(),
-                element_name.to_mixed_case()
+                element_name.to_camel_case()
             ))?;
         }
         DocReference::Enum(enum_name) => {
-            f.write(&format!("{{@link {}}}", enum_name.to_camel_case()))?;
+            f.write(&format!("<see cref=\"{}\" />", enum_name.to_camel_case()))?;
         }
         DocReference::EnumVariant(enum_name, variant_name) => {
             f.write(&format!(
-                "{{@link {}#{}}}",
+                "<see cref=\"{}.{}\" />",
                 enum_name.to_camel_case(),
-                variant_name.to_shouty_snake_case()
+                variant_name.to_camel_case()
             ))?;
         }
         DocReference::Interface(interface_name) => {
-            f.write(&format!("{{@link {}}}", interface_name.to_camel_case()))?;
+            f.write(&format!(
+                "<see cref=\"I{}\" />",
+                interface_name.to_camel_case()
+            ))?;
         }
         DocReference::InterfaceMethod(interface_name, callback_name) => {
             f.write(&format!(
-                "{{@link {}#{}}}",
+                "<see cref=\"I{}.{}\" />",
                 interface_name.to_camel_case(),
-                callback_name.to_mixed_case()
+                callback_name.to_camel_case()
             ))?;
         }
         DocReference::OneTimeCallback(interface_name) => {
-            f.write(&format!("{{@link {}}}", interface_name.to_camel_case()))?;
+            f.write(&format!(
+                "<see cref=\"I{}\" />",
+                interface_name.to_camel_case()
+            ))?;
         }
         DocReference::OneTimeCallbackMethod(interface_name, callback_name) => {
             f.write(&format!(
-                "{{@link {}#{}}}",
+                "<see cref=\"I{}.{}\" />",
                 interface_name.to_camel_case(),
-                callback_name.to_mixed_case()
+                callback_name.to_camel_case()
             ))?;
         }
     }

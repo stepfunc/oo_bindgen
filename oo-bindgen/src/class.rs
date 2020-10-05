@@ -60,19 +60,19 @@ impl Class {
 
     pub fn find_method(&self, method_name: &str) -> Option<&NativeFunctionHandle> {
         for method in &self.methods {
-            if &method.name == method_name {
+            if method.name == method_name {
                 return Some(&method.native_function);
             }
         }
 
         for method in &self.static_methods {
-            if &method.name == method_name {
+            if method.name == method_name {
                 return Some(&method.native_function);
             }
         }
 
         for method in &self.async_methods {
-            if &method.name == method_name {
+            if method.name == method_name {
                 return Some(&method.native_function);
             }
         }

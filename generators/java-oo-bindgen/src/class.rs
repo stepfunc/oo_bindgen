@@ -1,5 +1,5 @@
-use crate::*;
 use crate::doc::*;
+use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
 use oo_bindgen::native_function::*;
@@ -12,9 +12,7 @@ pub(crate) fn generate(
     let classname = class.name().to_camel_case();
 
     // Documentation
-    documentation(f, |f| {
-        javadoc_print(f, &class.doc, lib)
-    })?;
+    documentation(f, |f| javadoc_print(f, &class.doc, lib))?;
 
     // Class definition
     f.writeln(&format!("public class {}", classname))?;

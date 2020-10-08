@@ -100,14 +100,14 @@ impl From<&str> for DocString {
         while let Some(start_idx) = from.find('{') {
             let (before_str, current_str) = from.split_at(start_idx);
             if let Some(end_idx) = current_str.find('}') {
-                let (reference_str, current_str) = current_str.split_at(end_idx + 1);
-                let reference = DocReference::try_from(reference_str)
-                    .expect("Invalid docstring: ill-formatted reference");
+                let (element_str, current_str) = current_str.split_at(end_idx + 1);
+                let element = DocStringElement::try_from(element_str)
+                    .expect("Invalid docstring: ill-formatted docstring element");
 
                 if !before_str.is_empty() {
                     result.push(DocStringElement::Text(before_str.to_owned()));
                 }
-                result.push(DocStringElement::Reference(reference));
+                result.push(element);
                 from = current_str;
             } else {
                 panic!("Invalid docstring: no end bracket");
@@ -126,6 +126,8 @@ impl From<&str> for DocString {
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
 pub enum DocStringElement {
     Text(String),
+    Null,
+    Iterator,
     Reference(DocReference),
 }
 
@@ -139,6 +141,10 @@ pub enum DocReference {
     ///
     /// First string is the class name, second is the method's name
     ClassMethod(String, String),
+    /// Reference to the class constructor
+    ClassConstructor(String),
+    /// Reference to the class destructor
+    ClassDestructor(String),
     /// Reference a struct
     Struct(String),
     /// Reference an element in a struct
@@ -169,15 +175,19 @@ pub enum DocReference {
     OneTimeCallbackMethod(String, String),
 }
 
-impl TryFrom<&str> for DocReference {
+impl TryFrom<&str> for DocStringElement {
     type Error = BindingError;
 
-    fn try_from(from: &str) -> Result<DocReference, BindingError> {
+    fn try_from(from: &str) -> Result<DocStringElement, BindingError> {
         lazy_static! {
             static ref RE_PARAM: Regex = Regex::new(r"\{param:([[:word:]]+)\}").unwrap();
             static ref RE_CLASS: Regex = Regex::new(r"\{class:([[:word:]]+)\}").unwrap();
             static ref RE_CLASS_METHOD: Regex =
                 Regex::new(r"\{class:([[:word:]]+)\.([[:word:]]+)\(\)\}").unwrap();
+            static ref RE_CLASS_CONSTRUCTOR: Regex =
+                Regex::new(r"\{class:([[:word:]]+)\.\[constructor\]\}").unwrap();
+            static ref RE_CLASS_DESTRUCTOR: Regex =
+                Regex::new(r"\{class:([[:word:]]+)\.\[destructor\]\}").unwrap();
             static ref RE_STRUCT: Regex = Regex::new(r"\{struct:([[:word:]]+)\}").unwrap();
             static ref RE_STRUCT_ELEMENT: Regex =
                 Regex::new(r"\{struct:([[:word:]]+)\.([[:word:]]+)\}").unwrap();
@@ -196,70 +206,88 @@ impl TryFrom<&str> for DocReference {
         }
 
         if let Some(capture) = RE_PARAM.captures(from) {
-            return Ok(DocReference::Param(
+            return Ok(DocStringElement::Reference(DocReference::Param(
                 capture.get(1).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_CLASS.captures(from) {
-            return Ok(DocReference::Class(
+            return Ok(DocStringElement::Reference(DocReference::Class(
                 capture.get(1).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_CLASS_METHOD.captures(from) {
-            return Ok(DocReference::ClassMethod(
+            return Ok(DocStringElement::Reference(DocReference::ClassMethod(
                 capture.get(1).unwrap().as_str().to_owned(),
                 capture.get(2).unwrap().as_str().to_owned(),
-            ));
+            )));
+        }
+        if let Some(capture) = RE_CLASS_CONSTRUCTOR.captures(from) {
+            return Ok(DocStringElement::Reference(DocReference::ClassConstructor(
+                capture.get(1).unwrap().as_str().to_owned(),
+            )));
+        }
+        if let Some(capture) = RE_CLASS_DESTRUCTOR.captures(from) {
+            return Ok(DocStringElement::Reference(DocReference::ClassDestructor(
+                capture.get(1).unwrap().as_str().to_owned(),
+            )));
         }
         if let Some(capture) = RE_STRUCT.captures(from) {
-            return Ok(DocReference::Struct(
+            return Ok(DocStringElement::Reference(DocReference::Struct(
                 capture.get(1).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_STRUCT_ELEMENT.captures(from) {
-            return Ok(DocReference::StructElement(
+            return Ok(DocStringElement::Reference(DocReference::StructElement(
                 capture.get(1).unwrap().as_str().to_owned(),
                 capture.get(2).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_STRUCT_METHOD.captures(from) {
-            return Ok(DocReference::StructMethod(
+            return Ok(DocStringElement::Reference(DocReference::StructMethod(
                 capture.get(1).unwrap().as_str().to_owned(),
                 capture.get(2).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_ENUM.captures(from) {
-            return Ok(DocReference::Enum(
+            return Ok(DocStringElement::Reference(DocReference::Enum(
                 capture.get(1).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_ENUM_VARIANT.captures(from) {
-            return Ok(DocReference::EnumVariant(
+            return Ok(DocStringElement::Reference(DocReference::EnumVariant(
                 capture.get(1).unwrap().as_str().to_owned(),
                 capture.get(2).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_INTERFACE.captures(from) {
-            return Ok(DocReference::Interface(
+            return Ok(DocStringElement::Reference(DocReference::Interface(
                 capture.get(1).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_INTERFACE_METHOD.captures(from) {
-            return Ok(DocReference::InterfaceMethod(
+            return Ok(DocStringElement::Reference(DocReference::InterfaceMethod(
                 capture.get(1).unwrap().as_str().to_owned(),
                 capture.get(2).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_ONETIME_CALLBACK.captures(from) {
-            return Ok(DocReference::OneTimeCallback(
+            return Ok(DocStringElement::Reference(DocReference::OneTimeCallback(
                 capture.get(1).unwrap().as_str().to_owned(),
-            ));
+            )));
         }
         if let Some(capture) = RE_ONETIME_CALLBACK_METHOD.captures(from) {
-            return Ok(DocReference::OneTimeCallbackMethod(
-                capture.get(1).unwrap().as_str().to_owned(),
-                capture.get(2).unwrap().as_str().to_owned(),
+            return Ok(DocStringElement::Reference(
+                DocReference::OneTimeCallbackMethod(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                    capture.get(2).unwrap().as_str().to_owned(),
+                ),
             ));
+        }
+        if from == "{null}" {
+            return Ok(DocStringElement::Null);
+        }
+        if from == "{iterator}" {
+            return Ok(DocStringElement::Iterator);
         }
 
         Err(BindingError::InvalidDocString)
@@ -400,6 +428,26 @@ fn validate_doc_with_params(
                             method_name.to_string()
                         ),
                     });
+                }
+            }
+            DocReference::ClassConstructor(class_name) => {
+                if let Some(handle) = lib.find_class(class_name) {
+                    if handle.constructor.is_none() {
+                        return Err(BindingError::DocInvalidReference {
+                            symbol_name: symbol_name.to_string(),
+                            ref_name: format!("{}.[constructor]", class_name.to_string(),),
+                        });
+                    }
+                }
+            }
+            DocReference::ClassDestructor(class_name) => {
+                if let Some(handle) = lib.find_class(class_name) {
+                    if handle.destructor.is_none() {
+                        return Err(BindingError::DocInvalidReference {
+                            symbol_name: symbol_name.to_string(),
+                            ref_name: format!("{}.[destructor]", class_name.to_string(),),
+                        });
+                    }
                 }
             }
             DocReference::Struct(struct_name) => {

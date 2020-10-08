@@ -16,10 +16,12 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc(
             doc("Create a new {class:TestClass}")
                 .details("Here are some details about {class:TestClass}. You can call {class:TestClass.GetValue()} method.")
+                .details("Here is a reference to a constructor {class:TestClass.[constructor]} and to a destructor {class:TestClass.[destructor]}.")
                 .details("Here are some details about the struct {struct:Structure}. It has the {struct:Structure.boolean_value} element and the {struct:Structure.StructByValueEcho()} method." )
                 .details("Here are some details about {enum:EnumZeroToFive}. It has the {enum:EnumZeroToFive.Two} variant.")
                 .details("Here are some details about {interface:CallbackInterface}. It has the {interface:CallbackInterface.on_value()} callback.")
                 .details("Here are some details about {callback:OneTimeCallbackInterface}. It has the {callback:OneTimeCallbackInterface.on_value()} callback.")
+                .details("Here's a {null}. Here's the {iterator}.")
                 .warning("And here's a dangerous warning! Do not use {class:TestClass.GetValue()}"),
         )?
         .build()?;

@@ -1,3 +1,4 @@
+use crate::conversion::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
@@ -38,6 +39,8 @@ pub(crate) fn docstring_print(
     for el in docstring.elements() {
         match el {
             DocStringElement::Text(text) => f.write(text)?,
+            DocStringElement::Null => f.write("<c>null</c>")?,
+            DocStringElement::Iterator => f.write("collection")?,
             DocStringElement::Reference(reference) => reference_print(f, reference, lib)?,
         }
     }
@@ -48,7 +51,7 @@ pub(crate) fn docstring_print(
 fn reference_print(
     f: &mut dyn Printer,
     reference: &DocReference,
-    _lib: &Library,
+    lib: &Library,
 ) -> FormattingResult<()> {
     match reference {
         DocReference::Param(param_name) => {
@@ -62,6 +65,30 @@ fn reference_print(
                 "<see cref=\"{}.{}\" />",
                 class_name.to_camel_case(),
                 method_name.to_camel_case()
+            ))?;
+        }
+        DocReference::ClassConstructor(class_name) => {
+            let func = lib
+                .find_class(class_name)
+                .unwrap()
+                .constructor
+                .as_ref()
+                .unwrap();
+            let params = func
+                .parameters
+                .iter()
+                .map(|param| param.param_type.as_dotnet_type())
+                .collect::<Vec<_>>()
+                .join(", ");
+            f.write(&format!(
+                "<see cref=\"{}.{}({})\" />",
+                class_name, class_name, params
+            ))?;
+        }
+        DocReference::ClassDestructor(class_name) => {
+            f.write(&format!(
+                "<see cref=\"{}.Dispose\" />",
+                class_name.to_camel_case()
             ))?;
         }
         DocReference::Struct(struct_name) => {

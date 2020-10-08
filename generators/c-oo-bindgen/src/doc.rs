@@ -34,6 +34,8 @@ pub(crate) fn docstring_print(
     for el in docstring.elements() {
         match el {
             DocStringElement::Text(text) => f.write(text)?,
+            DocStringElement::Null => f.write("@p NULL")?,
+            DocStringElement::Iterator => f.write("iterator")?,
             DocStringElement::Reference(reference) => reference_print(f, reference, lib)?,
         }
     }
@@ -51,8 +53,8 @@ fn reference_print(
             f.write(&format!("@p {}", param_name.to_snake_case()))?
         }
         DocReference::Class(class_name) => {
-            let class_name = lib.find_class(class_name).unwrap().declaration();
-            f.write(&format!("@ref {}", class_name.to_type()))?;
+            let handle = lib.find_class(class_name).unwrap().declaration();
+            f.write(&format!("@ref {}", handle.to_type()))?;
         }
         DocReference::ClassMethod(class_name, method_name) => {
             let func_name = &lib
@@ -62,6 +64,20 @@ fn reference_print(
                 .unwrap()
                 .name;
             f.write(&format!("@ref {}", func_name))?;
+        }
+        DocReference::ClassConstructor(class_name) => {
+            let handle = lib.find_class(class_name).unwrap();
+            f.write(&format!(
+                "@ref {}",
+                handle.constructor.as_ref().unwrap().name
+            ))?;
+        }
+        DocReference::ClassDestructor(class_name) => {
+            let handle = lib.find_class(class_name).unwrap();
+            f.write(&format!(
+                "@ref {}",
+                handle.destructor.as_ref().unwrap().name
+            ))?;
         }
         DocReference::Struct(struct_name) => {
             let struct_name = lib.find_struct(struct_name).unwrap().declaration();

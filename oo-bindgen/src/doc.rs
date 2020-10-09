@@ -1,3 +1,46 @@
+//! Documentation
+//!
+//! Documentation is split in two; the `Doc` contains the mandatory brief description and optional details paragraph.
+//! The `DocString` represents a single paragraph of text. It can parse references and create hyperlinks in the
+//! generated doc. All the references are checked when creating the library and an error will be returned if a
+//! reference cannot be resolved.
+//!
+//! When a `Doc` is needed, the user can provide a string and it will automatically be parsed and interpreted as
+//! just a brief description. If additional details are needed, then the user may use the `doc()` function to
+//! build a more complex documentation. The `doc()` functions takes the brief string as a parameter, then can be
+//! chained with `details()` to add details paragraph or with `warning()` to add a warning paragraph.
+//!
+//! For parameters, only a `DocString` is accepted, because some generators do not support paragraphs for parameters.
+//!
+//! ### References
+//!
+//! In any `DocString`, you can put references that will print a hyperlink in the generated doc. You simply put
+//! the reference between curly braces and the `DocString` parser will resolve them. All the names used must match
+//! exactly what is specified __in the schema__, each generator takes care of the renaming the type for the target
+//! language.
+//!
+//! Here are all the type of links available:
+//! - `{param:MyParam}`: references the parameter `MyParam` of a method. __This is only valid within a method documentation__.
+//!   Not all documentation generator supports hyperlinking this, so `code font` is used instead.
+//! - `{class:MyClass}`: references the class `MyClass`.
+//! - `{class:MyClass.foo()}`: references the method `foo()` of `MyClass`. Can be a static, non-static, or async method.
+//!   No need to put parameters.
+//! - `{class:MyClass.[constructor]}`: references `MyClass`'s constructor.
+//! - `{class:MyClass.[destructor]}`: references `MyClass`'s destructor (the `Dispose()` method in C#, the `close()` method in Java).
+//! - `{struct:MyStruct}`: references the structure `MyStruct`.
+//! - `{struct:MyStruct.foo}`: references the `foo` element inside `MyStruct`.
+//! - `{struct:MyStruct.foo()}`: references the `foo()` method of `MyStruct`. Can be a static or non-static method. No need to put parameters.
+//! - `{enum:MyEnum}`: references the enum `MyEnum`.
+//! - `{enum:MyEnum.foo}`: references the `foo` variant of `MyEnum`.
+//! - `{interface:MyInterface}`: references the interface `MyInterface`.
+//! - `{interface:MyInterface.foo()}`: references the `foo()` callback of `MyInterface`. This cannot reference the `on_destroy` callback.
+//! - `{callback:MyOneTimeCallback}`: references the interface `MyOneTimeCallback`.
+//! - `{callback:MyOneTimeCallback.foo()}`: references the `foo()` callback of `MyOneTimeCallback`.
+//!
+//! There other miscellaneous tag that can be used:
+//! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
+//! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
+
 use crate::callback::*;
 use crate::native_function::Parameter;
 use crate::{BindingError, Library};
@@ -743,6 +786,104 @@ mod tests {
                     "foo".to_owned()
                 )),
                 DocStringElement::Text(" enum variant.".to_owned()),
+            ]
+            .as_ref(),
+            doc.elements.as_slice()
+        );
+    }
+
+    #[test]
+    fn parse_interface() {
+        let doc: DocString = "This is a {interface:Interface} interface."
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            [
+                DocStringElement::Text("This is a ".to_owned()),
+                DocStringElement::Reference(DocReference::Interface("Interface".to_owned())),
+                DocStringElement::Text(" interface.".to_owned()),
+            ]
+            .as_ref(),
+            doc.elements.as_slice()
+        );
+    }
+
+    #[test]
+    fn parse_interface_method() {
+        let doc: DocString = "This is a {interface:Interface.foo()} interface method."
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            [
+                DocStringElement::Text("This is a ".to_owned()),
+                DocStringElement::Reference(DocReference::InterfaceMethod(
+                    "Interface".to_owned(),
+                    "foo".to_owned()
+                )),
+                DocStringElement::Text(" interface method.".to_owned()),
+            ]
+            .as_ref(),
+            doc.elements.as_slice()
+        );
+    }
+
+    #[test]
+    fn parse_callback() {
+        let doc: DocString = "This is a {callback:Interface} callback."
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            [
+                DocStringElement::Text("This is a ".to_owned()),
+                DocStringElement::Reference(DocReference::OneTimeCallback("Interface".to_owned())),
+                DocStringElement::Text(" callback.".to_owned()),
+            ]
+            .as_ref(),
+            doc.elements.as_slice()
+        );
+    }
+
+    #[test]
+    fn parse_callback_method() {
+        let doc: DocString = "This is a {callback:Interface.foo()} callback method."
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            [
+                DocStringElement::Text("This is a ".to_owned()),
+                DocStringElement::Reference(DocReference::OneTimeCallbackMethod(
+                    "Interface".to_owned(),
+                    "foo".to_owned()
+                )),
+                DocStringElement::Text(" callback method.".to_owned()),
+            ]
+            .as_ref(),
+            doc.elements.as_slice()
+        );
+    }
+
+    #[test]
+    fn parse_null() {
+        let doc: DocString = "This is a {null} null.".try_into().unwrap();
+        assert_eq!(
+            [
+                DocStringElement::Text("This is a ".to_owned()),
+                DocStringElement::Null,
+                DocStringElement::Text(" null.".to_owned()),
+            ]
+            .as_ref(),
+            doc.elements.as_slice()
+        );
+    }
+
+    #[test]
+    fn parse_iterator() {
+        let doc: DocString = "This is a {iterator} iterator.".try_into().unwrap();
+        assert_eq!(
+            [
+                DocStringElement::Text("This is a ".to_owned()),
+                DocStringElement::Iterator,
+                DocStringElement::Text(" iterator.".to_owned()),
             ]
             .as_ref(),
             doc.elements.as_slice()

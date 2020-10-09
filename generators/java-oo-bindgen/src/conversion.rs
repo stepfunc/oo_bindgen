@@ -10,12 +10,17 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 
-pub(crate) struct JavaType<'a>(pub(crate) &'a Type);
+pub(crate) trait JavaType {
+    fn as_java_type(&self) -> String;
+    fn as_native_type(&self) -> String;
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>>;
+    fn as_java_arg(&self, param_name: &str) -> String;
+}
 
-impl<'a> JavaType<'a> {
+impl JavaType for Type {
     /// Returns the Java natural type
-    pub(crate) fn as_java_type(&self) -> String {
-        match self.0 {
+    fn as_java_type(&self) -> String {
+        match self {
             Type::Bool => "Boolean".to_string(),
             Type::Uint8 => "UByte".to_string(),
             Type::Sint8 => "Byte".to_string(),
@@ -38,17 +43,16 @@ impl<'a> JavaType<'a> {
                 "java.util.Collection<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => format!(
-                "java.util.Collection<{}>",
-                JavaType(&handle.item_type).as_java_type()
-            ),
+            Type::Collection(handle) => {
+                format!("java.util.Collection<{}>", handle.item_type.as_java_type())
+            }
             Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
 
     /// Return the Java representation of the native C type
-    pub(crate) fn as_native_type(&self) -> String {
-        match self.0 {
+    fn as_native_type(&self) -> String {
+        match self {
             Type::Bool => "byte".to_string(),
             Type::Uint8 => "byte".to_string(),
             Type::Sint8 => "byte".to_string(),
@@ -82,8 +86,8 @@ impl<'a> JavaType<'a> {
         }
     }
 
-    pub(crate) fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        match self.0 {
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        match self {
             Type::Bool => Some(Box::new(BoolConverter)),
             Type::Uint8 => Some(Box::new(UByteConverter)),
             Type::Sint8 => None,
@@ -114,8 +118,8 @@ impl<'a> JavaType<'a> {
         }
     }
 
-    pub(crate) fn as_java_arg(&self, param_name: &str) -> String {
-        match self.0 {
+    fn as_java_arg(&self, param_name: &str) -> String {
+        match self {
             Type::Bool => format!("_{}", param_name.to_mixed_case()),
             Type::Uint8 => format!("_{}", param_name.to_mixed_case()),
             Type::Sint8 => param_name.to_mixed_case(),
@@ -141,6 +145,36 @@ impl<'a> JavaType<'a> {
                 DurationMapping::Seconds => format!("_{}", param_name.to_mixed_case()),
                 DurationMapping::SecondsFloat => format!("_{}", param_name.to_mixed_case()),
             },
+        }
+    }
+}
+
+impl JavaType for ReturnType {
+    fn as_java_type(&self) -> String {
+        match self {
+            ReturnType::Void => "void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.as_java_type(),
+        }
+    }
+
+    fn as_native_type(&self) -> String {
+        match self {
+            ReturnType::Void => "void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.as_native_type(),
+        }
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        match self {
+            ReturnType::Void => None,
+            ReturnType::Type(return_type, _) => return_type.conversion(),
+        }
+    }
+
+    fn as_java_arg(&self, param_name: &str) -> String {
+        match self {
+            ReturnType::Void => "void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.as_java_arg(param_name),
         }
     }
 }
@@ -452,7 +486,6 @@ struct CollectionConverter(CollectionHandle);
 impl TypeConverter for CollectionConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let builder_name = format!("_{}Builder", from.replace(".", "_"));
-        let java_type = JavaType(&self.0.item_type);
 
         if self.0.has_reserve {
             f.writeln(&format!(
@@ -468,16 +501,16 @@ impl TypeConverter for CollectionConverter {
 
         f.writeln(&format!(
             "for ({} __value : {})",
-            java_type.as_java_type(),
+            self.0.item_type.as_java_type(),
             from
         ))?;
         blocked(f, |f| {
-            let converter = java_type.conversion();
+            let converter = self.0.item_type.conversion();
             let value_name = if let Some(converter) = &converter {
                 converter.convert_to_native(
                     f,
                     "__value",
-                    &format!("{} ___value = ", java_type.as_native_type()),
+                    &format!("{} ___value = ", self.0.item_type.as_native_type()),
                 )?;
                 "___value"
             } else {
@@ -514,7 +547,7 @@ impl TypeConverter for CollectionConverter {
         f.writeln(&format!(
             "{}java.util.Collections.unmodifiableList(new java.util.List<{}>());",
             to,
-            JavaType(&self.0.item_type).as_java_type()
+            self.0.item_type.as_java_type()
         ))
     }
 }
@@ -570,24 +603,6 @@ impl TypeConverter for DurationSecondsFloatConverter {
     }
 }
 
-pub(crate) struct JavaReturnType<'a>(pub(crate) &'a ReturnType);
-
-impl<'a> JavaReturnType<'a> {
-    pub(crate) fn as_java_type(&self) -> String {
-        match self.0 {
-            ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => JavaType(return_type).as_java_type(),
-        }
-    }
-
-    pub(crate) fn as_native_type(&self) -> String {
-        match self.0 {
-            ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => JavaType(return_type).as_native_type(),
-        }
-    }
-}
-
 pub(crate) fn call_native_function(
     f: &mut dyn Printer,
     method: &NativeFunction,
@@ -597,7 +612,7 @@ pub(crate) fn call_native_function(
 ) -> FormattingResult<()> {
     // Write the type conversions
     for (idx, param) in method.parameters.iter().enumerate() {
-        if let Some(converter) = JavaType(&param.param_type).conversion() {
+        if let Some(converter) = param.param_type.conversion() {
             let mut param_name = param.name.to_mixed_case();
             if idx == 0 {
                 if let Some(first_param) = first_param_is_self.clone() {
@@ -609,7 +624,7 @@ pub(crate) fn call_native_function(
                 &param_name,
                 &format!(
                     "{} _{} = ",
-                    JavaType(&param.param_type).as_native_type(),
+                    param.param_type.as_native_type(),
                     param.name.to_mixed_case()
                 ),
             )?;
@@ -621,7 +636,7 @@ pub(crate) fn call_native_function(
     if let ReturnType::Type(return_type, _) = &method.return_type {
         f.write(&format!(
             "{} _result = {}.{}(",
-            JavaType(return_type).as_native_type(),
+            return_type.as_native_type(),
             NATIVE_FUNCTIONS_CLASSNAME,
             method.name
         ))?;
@@ -633,7 +648,7 @@ pub(crate) fn call_native_function(
         &method
             .parameters
             .iter()
-            .map(|param| JavaType(&param.param_type).as_java_arg(&param.name.to_mixed_case()))
+            .map(|param| param.param_type.as_java_arg(&param.name.to_mixed_case()))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -641,14 +656,14 @@ pub(crate) fn call_native_function(
 
     //Cleanup type conversions
     for param in method.parameters.iter() {
-        if let Some(converter) = JavaType(&param.param_type).conversion() {
+        if let Some(converter) = param.param_type.conversion() {
             converter.convert_to_native_cleanup(f, &format!("_{}", param.name.to_mixed_case()))?;
         }
     }
 
     // Convert the result (if required) and return
     if let ReturnType::Type(return_type, _) = &method.return_type {
-        if let Some(converter) = JavaType(&return_type).conversion() {
+        if let Some(converter) = return_type.conversion() {
             if !is_constructor {
                 return converter.convert_from_native(f, "_result", return_destination);
             }
@@ -667,13 +682,13 @@ pub(crate) fn call_java_function(
 ) -> FormattingResult<()> {
     // Write the type conversions
     for param in method.params() {
-        if let Some(converter) = JavaType(&param.param_type).conversion() {
+        if let Some(converter) = param.param_type.conversion() {
             converter.convert_from_native(
                 f,
                 &param.name,
                 &format!(
                     "{} _{} = ",
-                    JavaType(&param.param_type).as_java_type(),
+                    param.param_type.as_java_type(),
                     param.name.to_mixed_case()
                 ),
             )?;
@@ -684,10 +699,10 @@ pub(crate) fn call_java_function(
     f.newline()?;
     let method_name = method.name.to_mixed_case();
     if let ReturnType::Type(return_type, _) = &method.return_type {
-        if JavaType(&return_type).conversion().is_some() {
+        if return_type.conversion().is_some() {
             f.write(&format!(
                 "{} _result = _arg._impl.{}(",
-                JavaType(&return_type).as_java_type(),
+                return_type.as_java_type(),
                 method_name
             ))?;
         } else {
@@ -703,7 +718,7 @@ pub(crate) fn call_java_function(
     f.write(
         &method
             .params()
-            .map(|param| JavaType(&param.param_type).as_java_arg(&param.name))
+            .map(|param| param.param_type.as_java_arg(&param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -711,7 +726,7 @@ pub(crate) fn call_java_function(
 
     // Convert the result (if required)
     if let ReturnType::Type(return_type, _) = &method.return_type {
-        if let Some(converter) = JavaType(&return_type).conversion() {
+        if let Some(converter) = return_type.conversion() {
             converter.convert_to_native(f, "_result", return_destination)?;
         }
     }

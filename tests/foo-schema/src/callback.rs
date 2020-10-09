@@ -7,7 +7,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_interface("CallbackInterface", "Test interface")?
         .callback("on_value", "On value callback")?
         .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::Type(Type::Uint32, "Some value".into()))?
+        .return_type(ReturnType::new(Type::Uint32, "Some value"))?
         .build()?
         .callback("on_duration", "On duration callback")?
         .param(
@@ -15,9 +15,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::Duration(DurationMapping::Milliseconds),
             "Value",
         )?
-        .return_type(ReturnType::Type(
+        .return_type(ReturnType::new(
             Type::Duration(DurationMapping::Milliseconds),
-            "Some value".into(),
+            "Some value",
         ))?
         .build()?
         .destroy_callback("on_destroy")?
@@ -27,7 +27,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_one_time_callback("OneTimeCallbackInterface", "Test one-time-interface")?
         .callback("on_value", "On value callback")?
         .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::Type(Type::Uint32, "Some value".into()))?
+        .return_type(ReturnType::new(Type::Uint32, "Some value"))?
         .build()?
         .build()?;
 
@@ -79,9 +79,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::OneTimeCallback(one_time_callback),
             "Callback to add",
         )?
-        .return_type(ReturnType::Type(
+        .return_type(ReturnType::new(
             Type::Uint32,
-            "Value returned by the callback".into(),
+            "Value returned by the callback",
         ))?
         .doc("Add a one-time callback")?
         .build()?;
@@ -94,9 +94,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "Callback source",
         )?
         .param("value", Type::Uint32, "New value")?
-        .return_type(ReturnType::Type(
+        .return_type(ReturnType::new(
             Type::Uint32,
-            "Value returned by the callback".into(),
+            "Value returned by the callback",
         ))?
         .doc("Set the value and call all the callbacks")?
         .build()?;
@@ -113,9 +113,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::Duration(DurationMapping::Milliseconds),
             "New duration",
         )?
-        .return_type(ReturnType::Type(
+        .return_type(ReturnType::new(
             Type::Duration(DurationMapping::Milliseconds),
-            "Some value".into(),
+            "Some value",
         ))?
         .doc("Set the duration and call all the callbacks")?
         .build()?;

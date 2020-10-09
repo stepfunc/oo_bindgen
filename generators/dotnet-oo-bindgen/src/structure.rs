@@ -17,24 +17,21 @@ pub(crate) fn generate(
     namespaced(f, &lib.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &native_struct.doc(), lib)?;
-            f.write("</summary>")
+            xmldoc_print(f, &native_struct.doc(), lib)
         })?;
+
         f.writeln(&format!("public struct {}", struct_name))?;
         blocked(f, |f| {
             // Write .NET structure elements
             for el in native_struct.elements() {
                 documentation(f, |f| {
                     // Print top-level documentation
-                    f.writeln("<summary>")?;
-                    doc_print(f, &el.doc, lib)?;
-                    f.write("</summary>")
+                    xmldoc_print(f, &el.doc, lib)
                 })?;
-                let dotnet_type = DotnetType(&el.element_type);
+
                 f.writeln(&format!(
                     "public {} {};",
-                    dotnet_type.as_dotnet_type(),
+                    el.element_type.as_dotnet_type(),
                     el.name.to_camel_case()
                 ))?;
             }
@@ -45,21 +42,20 @@ pub(crate) fn generate(
             for method in &native_struct.methods {
                 documentation(f, |f| {
                     // Print top-level documentation
-                    f.writeln("<summary>")?;
-                    doc_print(f, &method.native_function.doc, lib)?;
-                    f.write("</summary>")?;
+                    xmldoc_print(f, &method.native_function.doc, lib)?;
+                    f.newline()?;
 
                     // Print each parameter value
                     for param in method.native_function.parameters.iter().skip(1) {
-                        f.writeln(&format!("<param name=\"{}\">", param.name))?;
-                        doc_print(f, &param.doc, lib)?;
+                        f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+                        docstring_print(f, &param.doc, lib)?;
                         f.write("</param>")?;
                     }
 
                     // Print return value
                     if let ReturnType::Type(_, doc) = &method.native_function.return_type {
                         f.writeln("<returns>")?;
-                        doc_print(f, doc, lib)?;
+                        docstring_print(f, doc, lib)?;
                         f.write("</returns>")?;
                     }
                     Ok(())
@@ -67,7 +63,7 @@ pub(crate) fn generate(
 
                 f.writeln(&format!(
                     "public {} {}(",
-                    DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),
+                    method.native_function.return_type.as_dotnet_type(),
                     method.name.to_camel_case()
                 ))?;
                 f.write(
@@ -79,7 +75,7 @@ pub(crate) fn generate(
                         .map(|param| {
                             format!(
                                 "{} {}",
-                                DotnetType(&param.param_type).as_dotnet_type(),
+                                param.param_type.as_dotnet_type(),
                                 param.name.to_mixed_case()
                             )
                         })
@@ -104,9 +100,30 @@ pub(crate) fn generate(
 
             // Write static methods
             for method in &native_struct.static_methods {
+                documentation(f, |f| {
+                    // Print top-level documentation
+                    xmldoc_print(f, &method.native_function.doc, lib)?;
+                    f.newline()?;
+
+                    // Print each parameter value
+                    for param in method.native_function.parameters.iter().skip(1) {
+                        f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+                        docstring_print(f, &param.doc, lib)?;
+                        f.write("</param>")?;
+                    }
+
+                    // Print return value
+                    if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+                        f.writeln("<returns>")?;
+                        docstring_print(f, doc, lib)?;
+                        f.write("</returns>")?;
+                    }
+                    Ok(())
+                })?;
+
                 f.writeln(&format!(
                     "public static {} {}(",
-                    DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),
+                    method.native_function.return_type.as_dotnet_type(),
                     method.name.to_camel_case()
                 ))?;
                 f.write(
@@ -117,7 +134,7 @@ pub(crate) fn generate(
                         .map(|param| {
                             format!(
                                 "{} {}",
-                                DotnetType(&param.param_type).as_dotnet_type(),
+                                param.param_type.as_dotnet_type(),
                                 param.name.to_mixed_case()
                             )
                         })
@@ -142,10 +159,9 @@ pub(crate) fn generate(
         blocked(f, |f| {
             // Write native elements
             for el in native_struct.elements() {
-                let dotnet_type = DotnetType(&el.element_type);
                 f.writeln(&format!(
                     "{} {};",
-                    dotnet_type.as_native_type(),
+                    el.element_type.as_native_type(),
                     el.name.to_camel_case()
                 ))?;
             }
@@ -162,8 +178,7 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    let dotnet_type = DotnetType(&el.element_type);
-                    if let Some(conversion) = dotnet_type.conversion() {
+                    if let Some(conversion) = el.element_type.conversion() {
                         conversion.convert_to_native(
                             f,
                             &format!("self.{}", el_name),
@@ -188,8 +203,7 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    let dotnet_type = DotnetType(&el.element_type);
-                    if let Some(conversion) = dotnet_type.conversion() {
+                    if let Some(conversion) = el.element_type.conversion() {
                         conversion.convert_from_native(
                             f,
                             &format!("native.{}", el_name),
@@ -210,8 +224,7 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    let dotnet_type = DotnetType(&el.element_type);
-                    if let Some(conversion) = dotnet_type.conversion() {
+                    if let Some(conversion) = el.element_type.conversion() {
                         conversion.convert_to_native_cleanup(f, &format!("this.{}", el_name))?;
                     }
                 }

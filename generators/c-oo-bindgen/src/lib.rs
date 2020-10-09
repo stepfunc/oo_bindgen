@@ -44,8 +44,9 @@ clippy::all
     bare_trait_objects
 )]
 
+use crate::doc::*;
 use crate::formatting::*;
-use heck::SnakeCase;
+use heck::{CamelCase, SnakeCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::doc::*;
@@ -61,6 +62,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod doc;
 mod formatting;
 
 trait CFormatting {
@@ -116,23 +118,6 @@ impl CFormatting for Symbol {
             Symbol::Collection(handle) => handle.collection_type.to_type(),
         }
     }
-}
-
-pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
-    for doc in doc {
-        match doc {
-            DocElement::Text(text) => f.write(text)?,
-            DocElement::Reference(typename) => {
-                let symbol = lib.symbol(typename).unwrap();
-                f.write(&format!("@ref {}", symbol.to_type()))?;
-            }
-            DocElement::Warning(text) => {
-                f.writeln(&format!("@warning {}", text))?;
-                f.newline()?;
-            }
-        }
-    }
-    Ok(())
 }
 
 pub struct CBindgenConfig {
@@ -269,13 +254,7 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
                     write_struct_definition(f, handle, lib)?
                 }
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
-                Statement::ClassDeclaration(handle) => {
-                    f.writeln(&format!(
-                        "typedef struct {} {};",
-                        handle.to_type(),
-                        handle.to_type()
-                    ))?;
-                }
+                Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle, lib)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
                 Statement::OneTimeCallbackDefinition(handle) => {
@@ -295,14 +274,7 @@ fn write_struct_definition(
     handle: &NativeStructHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    if !handle.doc.is_empty() {
-        doxygen(f, |f| {
-            f.newline()?;
-            doxygen_print(f, &handle.doc, lib)?;
-            Ok(())
-        })?;
-        f.newline()?;
-    }
+    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
     f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
@@ -316,7 +288,7 @@ fn write_struct_definition(
             f.writeln(&format!(
                 "{} {};",
                 CType(&element.element_type),
-                element.name
+                element.name.to_snake_case(),
             ))?;
         }
         Ok(())
@@ -329,27 +301,18 @@ fn write_enum_definition(
     handle: &NativeEnumHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    if !handle.doc.is_empty() {
-        doxygen(f, |f| {
-            f.newline()?;
-            doxygen_print(f, &handle.doc, lib)?;
-            Ok(())
-        })?;
-        f.newline()?;
-    }
+    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
     f.writeln(&format!("typedef enum {}", handle.to_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
-            doxygen(f, |f| {
-                f.newline()?;
-                doxygen_print(f, &variant.doc, lib)?;
-                Ok(())
-            })?;
+            doxygen(f, |f| doxygen_print(f, &variant.doc, lib))?;
             f.writeln(&format!(
                 "{}_{} = {},",
-                handle.name, variant.name, variant.value
+                handle.name.to_camel_case(),
+                variant.name.to_camel_case(),
+                variant.value
             ))?;
         }
         Ok(())
@@ -370,7 +333,9 @@ fn write_enum_definition(
             for variant in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}: return \"{}\";",
-                    handle.name, variant.name, variant.name
+                    handle.name.to_camel_case(),
+                    variant.name.to_camel_case(),
+                    variant.name
                 ))?;
             }
             f.writeln("default: return \"\";")
@@ -379,36 +344,71 @@ fn write_enum_definition(
     })
 }
 
+fn write_class_declaration(
+    f: &mut dyn Printer,
+    handle: &ClassDeclarationHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
+    match lib.symbol(&handle.name) {
+        Some(Symbol::Class(handle)) => doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?,
+        Some(Symbol::Iterator(handle)) => doxygen(f, |f| {
+            doxygen_print(
+                f,
+                &Doc::from(&*format!(
+                    "Iterator of {{struct:{}}}. See @ref {}.",
+                    handle.item_type.name(),
+                    handle.native_func.name
+                )),
+                lib,
+            )
+        })?,
+        Some(Symbol::Collection(handle)) => doxygen(f, |f| {
+            doxygen_print(
+                f,
+                &Doc::from(&*format!(
+                    "Collection of {}. See @ref {} and @ref {}.",
+                    CType(&handle.item_type).to_string(),
+                    handle.add_func.name,
+                    handle.delete_func.name
+                )),
+                lib,
+            )
+        })?,
+        _ => (),
+    }
+
+    f.writeln(&format!(
+        "typedef struct {} {};",
+        handle.to_type(),
+        handle.to_type()
+    ))
+}
+
 fn write_function(
     f: &mut dyn Printer,
     handle: &NativeFunctionHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
+    doxygen(f, |f| {
+        // Print top-level documentation
+        doxygen_print(f, &handle.doc, lib)?;
+
+        // Print each parameter value
+        for param in &handle.parameters {
+            f.writeln(&format!("@param {} ", param.name))?;
+            docstring_print(f, &param.doc, lib)?;
+        }
+
+        // Print return documentation
+        if let ReturnType::Type(_, doc) = &handle.return_type {
+            f.writeln("@return ")?;
+            docstring_print(f, doc, lib)?;
+        }
+
+        Ok(())
+    })?;
+
     f.newline()?;
-
-    if !handle.doc.is_empty() {
-        doxygen(f, |f| {
-            f.newline()?;
-            // Print top-level documentation
-            f.writeln("@brief ")?;
-            doxygen_print(f, &handle.doc, lib)?;
-
-            // Print each parameter value
-            for param in &handle.parameters {
-                f.writeln(&format!("@param {} ", param.name))?;
-                doxygen_print(f, &param.doc, lib)?;
-            }
-
-            // Print return documentation
-            if let ReturnType::Type(_, doc) = &handle.return_type {
-                f.writeln("@return ")?;
-                doxygen_print(f, doc, lib)?;
-            }
-
-            Ok(())
-        })?;
-        f.newline()?;
-    }
 
     f.write(&format!(
         "{} {}(",
@@ -420,7 +420,13 @@ fn write_function(
         &handle
             .parameters
             .iter()
-            .map(|param| format!("{} {}", CType(&param.param_type), param.name))
+            .map(|param| {
+                format!(
+                    "{} {}",
+                    CType(&param.param_type),
+                    param.name.to_snake_case()
+                )
+            })
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -429,14 +435,7 @@ fn write_function(
 }
 
 fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> FormattingResult<()> {
-    if !handle.doc.is_empty() {
-        doxygen(f, |f| {
-            f.newline()?;
-            doxygen_print(f, &handle.doc, lib)?;
-            Ok(())
-        })?;
-        f.newline()?;
-    }
+    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
     f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
@@ -451,46 +450,40 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                     f.newline()?;
 
                     // Print the documentation
-                    if !handle.doc.is_empty() {
-                        doxygen(f, |f| {
-                            // Print top-level documentation
-                            f.writeln("@brief ")?;
-                            doxygen_print(f, &handle.doc, lib)?;
+                    doxygen(f, |f| {
+                        // Print top-level documentation
+                        doxygen_print(f, &handle.doc, lib)?;
 
-                            // Print each parameter value
-                            for param in &handle.parameters {
-                                match param {
-                                    CallbackParameter::Arg(name) => {
-                                        f.writeln(&format!("@param {} ", name))?;
-                                        doxygen_print(
-                                            f,
-                                            &DocBuilder::new().text("Context data").build(),
-                                            lib,
-                                        )?;
-                                    }
-                                    CallbackParameter::Parameter(param) => {
-                                        f.writeln(&format!("@param {} ", param.name))?;
-                                        doxygen_print(f, &param.doc, lib)?;
-                                    }
+                        // Print each parameter value
+                        for param in &handle.parameters {
+                            match param {
+                                CallbackParameter::Arg(name) => {
+                                    f.writeln(&format!("@param {} ", name))?;
+                                    docstring_print(f, &"Context data".into(), lib)?;
+                                }
+                                CallbackParameter::Parameter(param) => {
+                                    f.writeln(&format!("@param {} ", param.name))?;
+                                    docstring_print(f, &param.doc, lib)?;
                                 }
                             }
+                        }
 
-                            // Print return documentation
-                            if let ReturnType::Type(_, doc) = &handle.return_type {
-                                f.writeln("@return ")?;
-                                doxygen_print(f, doc, lib)?;
-                            }
+                        // Print return documentation
+                        if let ReturnType::Type(_, doc) = &handle.return_type {
+                            f.writeln("@return ")?;
+                            docstring_print(f, doc, lib)?;
+                        }
 
-                            Ok(())
-                        })?;
-                        f.newline()?;
-                    }
+                        Ok(())
+                    })?;
+
+                    f.newline()?;
 
                     // Print function signature
                     f.write(&format!(
                         "{} (*{})(",
                         CReturnType(&handle.return_type),
-                        handle.name
+                        handle.name.to_snake_case(),
                     ))?;
 
                     f.write(
@@ -528,14 +521,7 @@ fn write_one_time_callback(
     handle: &OneTimeCallbackHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    if !handle.doc.is_empty() {
-        doxygen(f, |f| {
-            f.newline()?;
-            doxygen_print(f, &handle.doc, lib)?;
-            Ok(())
-        })?;
-        f.newline()?;
-    }
+    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
     f.writeln(&format!("typedef struct {}", handle.to_type()))?;
     f.writeln("{")?;
@@ -550,46 +536,40 @@ fn write_one_time_callback(
                     f.newline()?;
 
                     // Print the documentation
-                    if !handle.doc.is_empty() {
-                        doxygen(f, |f| {
-                            // Print top-level documentation
-                            f.writeln("@brief ")?;
-                            doxygen_print(f, &handle.doc, lib)?;
+                    doxygen(f, |f| {
+                        // Print top-level documentation
+                        doxygen_print(f, &handle.doc, lib)?;
 
-                            // Print each parameter value
-                            for param in &handle.parameters {
-                                match param {
-                                    CallbackParameter::Arg(name) => {
-                                        f.writeln(&format!("@param {} ", name))?;
-                                        doxygen_print(
-                                            f,
-                                            &DocBuilder::new().text("Context data").build(),
-                                            lib,
-                                        )?;
-                                    }
-                                    CallbackParameter::Parameter(param) => {
-                                        f.writeln(&format!("@param {} ", param.name))?;
-                                        doxygen_print(f, &param.doc, lib)?;
-                                    }
+                        // Print each parameter value
+                        for param in &handle.parameters {
+                            match param {
+                                CallbackParameter::Arg(name) => {
+                                    f.writeln(&format!("@param {} ", name))?;
+                                    docstring_print(f, &"Context data".into(), lib)?;
+                                }
+                                CallbackParameter::Parameter(param) => {
+                                    f.writeln(&format!("@param {} ", param.name))?;
+                                    docstring_print(f, &param.doc, lib)?;
                                 }
                             }
+                        }
 
-                            // Print return documentation
-                            if let ReturnType::Type(_, doc) = &handle.return_type {
-                                f.writeln("@return ")?;
-                                doxygen_print(f, doc, lib)?;
-                            }
+                        // Print return documentation
+                        if let ReturnType::Type(_, doc) = &handle.return_type {
+                            f.writeln("@return ")?;
+                            docstring_print(f, doc, lib)?;
+                        }
 
-                            Ok(())
-                        })?;
-                        f.newline()?;
-                    }
+                        Ok(())
+                    })?;
+
+                    f.newline()?;
 
                     // Print function signature
                     f.write(&format!(
                         "{} (*{})(",
                         CReturnType(&handle.return_type),
-                        handle.name
+                        handle.name.to_snake_case(),
                     ))?;
 
                     f.write(

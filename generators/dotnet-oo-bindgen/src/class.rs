@@ -16,9 +16,7 @@ pub(crate) fn generate(
     namespaced(f, &lib.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &class.doc, lib)?;
-            f.write("</summary>")
+            xmldoc_print(f, &class.doc, lib)
         })?;
 
         let static_specifier = if class.is_static() { "static " } else { "" };
@@ -76,29 +74,27 @@ fn generate_constructor(
     constructor: &NativeFunctionHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    if !constructor.doc.is_empty() {
-        documentation(f, |f| {
-            // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &constructor.doc, lib)?;
-            f.write("</summary>")?;
+    documentation(f, |f| {
+        // Print top-level documentation
+        xmldoc_print(f, &constructor.doc, lib)?;
+        f.newline()?;
 
-            // Print each parameter value
-            for param in &constructor.parameters {
-                f.writeln(&format!("<param name=\"{}\">", param.name))?;
-                doc_print(f, &param.doc, lib)?;
-                f.write("</param>")?;
-            }
+        // Print each parameter value
+        for param in &constructor.parameters {
+            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            docstring_print(f, &param.doc, lib)?;
+            f.write("</param>")?;
+        }
 
-            // Print return value
-            if let ReturnType::Type(_, doc) = &constructor.return_type {
-                f.writeln("<returns>")?;
-                doc_print(f, doc, lib)?;
-                f.write("</returns>")?;
-            }
-            Ok(())
-        })?;
-    }
+        // Print return value
+        if let ReturnType::Type(_, doc) = &constructor.return_type {
+            f.writeln("<returns>")?;
+            docstring_print(f, doc, lib)?;
+            f.write("</returns>")?;
+        }
+        Ok(())
+    })?;
+
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor
@@ -107,7 +103,7 @@ fn generate_constructor(
             .map(|param| {
                 format!(
                     "{} {}",
-                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.param_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -128,13 +124,8 @@ fn generate_destructor(
     lib: &Library,
 ) -> FormattingResult<()> {
     // Public Dispose method
-    if !destructor.doc.is_empty() {
-        documentation(f, |f| {
-            f.writeln("<summary>")?;
-            doc_print(f, &destructor.doc, lib)?;
-            f.write("</summary>")
-        })?;
-    }
+    documentation(f, |f| xmldoc_print(f, &destructor.doc, lib))?;
+
     f.writeln("public void Dispose()")?;
     blocked(f, |f| {
         f.writeln("Dispose(true);")?;
@@ -165,33 +156,30 @@ fn generate_destructor(
 }
 
 fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
-    if !method.native_function.doc.is_empty() {
-        documentation(f, |f| {
-            // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &method.native_function.doc, lib)?;
-            f.write("</summary>")?;
+    documentation(f, |f| {
+        // Print top-level documentation
+        xmldoc_print(f, &method.native_function.doc, lib)?;
+        f.newline()?;
 
-            // Print each parameter value
-            for param in method.native_function.parameters.iter().skip(1) {
-                f.writeln(&format!("<param name=\"{}\">", param.name))?;
-                doc_print(f, &param.doc, lib)?;
-                f.write("</param>")?;
-            }
+        // Print each parameter value
+        for param in method.native_function.parameters.iter().skip(1) {
+            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            docstring_print(f, &param.doc, lib)?;
+            f.write("</param>")?;
+        }
 
-            // Print return value
-            if let ReturnType::Type(_, doc) = &method.native_function.return_type {
-                f.writeln("<returns>")?;
-                doc_print(f, doc, lib)?;
-                f.write("</returns>")?;
-            }
-            Ok(())
-        })?;
-    }
+        // Print return value
+        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+            f.writeln("<returns>")?;
+            docstring_print(f, doc, lib)?;
+            f.write("</returns>")?;
+        }
+        Ok(())
+    })?;
 
     f.writeln(&format!(
         "public {} {}(",
-        DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),
+        method.native_function.return_type.as_dotnet_type(),
         method.name.to_camel_case()
     ))?;
     f.write(
@@ -203,7 +191,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
             .map(|param| {
                 format!(
                     "{} {}",
-                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.param_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -228,32 +216,30 @@ fn generate_static_method(
     method: &Method,
     lib: &Library,
 ) -> FormattingResult<()> {
-    if !method.native_function.doc.is_empty() {
-        documentation(f, |f| {
-            // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &method.native_function.doc, lib)?;
-            f.write("</summary>")?;
+    documentation(f, |f| {
+        // Print top-level documentation
+        xmldoc_print(f, &method.native_function.doc, lib)?;
+        f.newline()?;
 
-            // Print each parameter value
-            for param in &method.native_function.parameters {
-                f.writeln(&format!("<param name=\"{}\">", param.name))?;
-                doc_print(f, &param.doc, lib)?;
-                f.write("</param>")?;
-            }
+        // Print each parameter value
+        for param in &method.native_function.parameters {
+            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            docstring_print(f, &param.doc, lib)?;
+            f.write("</param>")?;
+        }
 
-            // Print return value
-            if let ReturnType::Type(_, doc) = &method.native_function.return_type {
-                f.writeln("<returns>")?;
-                doc_print(f, doc, lib)?;
-                f.write("</returns>")?;
-            }
-            Ok(())
-        })?;
-    }
+        // Print return value
+        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+            f.writeln("<returns>")?;
+            docstring_print(f, doc, lib)?;
+            f.write("</returns>")?;
+        }
+        Ok(())
+    })?;
+
     f.writeln(&format!(
         "public static {} {}(",
-        DotnetReturnType(&method.native_function.return_type).as_dotnet_type(),
+        method.native_function.return_type.as_dotnet_type(),
         method.name.to_camel_case()
     ))?;
     f.write(
@@ -264,7 +250,7 @@ fn generate_static_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.param_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -285,7 +271,7 @@ fn generate_async_method(
 ) -> FormattingResult<()> {
     let method_name = method.name.to_camel_case();
     let async_handler_name = format!("{}Handler", method_name);
-    let return_type = DotnetType(&method.return_type).as_dotnet_type();
+    let return_type = method.return_type.as_dotnet_type();
     let one_time_callback_name = format!("I{}", method.one_time_callback_name.to_camel_case());
     let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
     let callback_name = method.callback_name.to_camel_case();
@@ -316,33 +302,30 @@ fn generate_async_method(
     f.newline()?;
 
     // Documentation
-    if !method.native_function.doc.is_empty() {
-        documentation(f, |f| {
-            // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &method.native_function.doc, lib)?;
-            f.write("</summary>")?;
+    documentation(f, |f| {
+        // Print top-level documentation
+        xmldoc_print(f, &method.native_function.doc, lib)?;
+        f.newline()?;
 
-            // Print each parameter value
-            for param in method
-                .native_function
-                .parameters
-                .iter()
-                .skip(1)
-                .filter(|param| !matches!(param.param_type, Type::OneTimeCallback(_)))
-            {
-                f.writeln(&format!("<param name=\"{}\">", param.name))?;
-                doc_print(f, &param.doc, lib)?;
-                f.write("</param>")?;
-            }
+        // Print each parameter value
+        for param in method
+            .native_function
+            .parameters
+            .iter()
+            .skip(1)
+            .filter(|param| !matches!(param.param_type, Type::OneTimeCallback(_)))
+        {
+            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            docstring_print(f, &param.doc, lib)?;
+            f.write("</param>")?;
+        }
 
-            // Print return value
-            f.writeln("<returns>")?;
-            doc_print(f, &method.return_type_doc, lib)?;
-            f.write("</returns>")?;
-            Ok(())
-        })?;
-    }
+        // Print return value
+        f.writeln("<returns>")?;
+        docstring_print(f, &method.return_type_doc, lib)?;
+        f.write("</returns>")?;
+        Ok(())
+    })?;
 
     f.writeln(&format!(
         "public Task<{}> {}(",
@@ -359,7 +342,7 @@ fn generate_async_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    DotnetType(&param.param_type).as_dotnet_type(),
+                    param.param_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })

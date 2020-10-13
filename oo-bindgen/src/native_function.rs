@@ -1,3 +1,4 @@
+use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
 use crate::*;
@@ -25,6 +26,7 @@ pub enum Type {
     Interface(InterfaceHandle),
     OneTimeCallback(OneTimeCallbackHandle),
     Iterator(IteratorHandle),
+    Collection(CollectionHandle),
 
     // Not native types
     Duration(DurationMapping),

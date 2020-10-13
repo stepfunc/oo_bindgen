@@ -2,7 +2,7 @@
 // dead_code,
 arithmetic_overflow,
 invalid_type_param_default,
-missing_fragment_specifier,
+//missing_fragment_specifier,
 mutable_transmutes,
 no_mangle_const_items,
 overflowing_literals,
@@ -38,7 +38,7 @@ clippy::all
 )]
 #![forbid(
     unsafe_code,
-    intra_doc_link_resolution_failure,
+    // intra_doc_link_resolution_failure, broken_intra_doc_links
     safe_packed_borrows,
     while_true,
     bare_trait_objects
@@ -113,6 +113,7 @@ impl CFormatting for Symbol {
             Symbol::Interface(handle) => handle.to_type(),
             Symbol::OneTimeCallback(handle) => handle.to_type(),
             Symbol::Iterator(handle) => handle.iter_type.to_type(),
+            Symbol::Collection(handle) => handle.collection_type.to_type(),
         }
     }
 }
@@ -138,7 +139,6 @@ pub struct CBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
     pub platforms: PlatformLocations,
-    pub generate_doc: bool,
 }
 
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
@@ -172,30 +172,32 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         )?;
     }
 
-    if config.generate_doc {
-        // Build documentation
-        let mut command = Command::new("doxygen")
-            .current_dir(&config.output_dir)
-            .arg("-")
-            .stdin(std::process::Stdio::piped())
-            .spawn()
-            .expect("failed to spawn doxygen");
+    Ok(())
+}
 
-        {
-            let stdin = command.stdin.as_mut().unwrap();
-            stdin
-                .write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes())
-                .unwrap();
-            stdin
-                .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
-                .unwrap();
-            stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
-            stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
-            stdin.write_all(b"INPUT = include\n").unwrap();
-        }
+pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+    // Build documentation
+    let mut command = Command::new("doxygen")
+        .current_dir(&config.output_dir)
+        .arg("-")
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .expect("failed to spawn doxygen");
 
-        command.wait()?;
+    {
+        let stdin = command.stdin.as_mut().unwrap();
+        stdin
+            .write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes())
+            .unwrap();
+        stdin
+            .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
+            .unwrap();
+        stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
+        stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
+        stdin.write_all(b"INPUT = include\n").unwrap();
     }
+
+    command.wait()?;
 
     Ok(())
 }
@@ -485,7 +487,11 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                     }
 
                     // Print function signature
-                    f.write(&format!("void (*{})(", handle.name))?;
+                    f.write(&format!(
+                        "{} (*{})(",
+                        CReturnType(&handle.return_type),
+                        handle.name
+                    ))?;
 
                     f.write(
                         &handle
@@ -580,7 +586,11 @@ fn write_one_time_callback(
                     }
 
                     // Print function signature
-                    f.write(&format!("void (*{})(", handle.name))?;
+                    f.write(&format!(
+                        "{} (*{})(",
+                        CReturnType(&handle.return_type),
+                        handle.name
+                    ))?;
 
                     f.write(
                         &handle
@@ -695,6 +705,7 @@ impl<'a> Display for CType<'a> {
             Type::Interface(handle) => write!(f, "{}", handle.to_type()),
             Type::OneTimeCallback(handle) => write!(f, "{}", handle.to_type()),
             Type::Iterator(handle) => write!(f, "{}*", handle.iter_type.to_type()),
+            Type::Collection(handle) => write!(f, "{}*", handle.collection_type.to_type()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),

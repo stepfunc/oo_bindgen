@@ -2,7 +2,7 @@
 // dead_code,
 arithmetic_overflow,
 invalid_type_param_default,
-missing_fragment_specifier,
+//missing_fragment_specifier,
 mutable_transmutes,
 no_mangle_const_items,
 overflowing_literals,
@@ -38,7 +38,7 @@ clippy::all
 )]
 #![forbid(
     unsafe_code,
-    intra_doc_link_resolution_failure,
+    //intra_doc_link_resolution_failure, broken_intra_doc_links
     safe_packed_borrows,
     while_true,
     bare_trait_objects
@@ -62,6 +62,7 @@ pub use semver::Version;
 
 pub mod callback;
 pub mod class;
+pub mod collection;
 pub mod doc;
 pub mod formatting;
 pub mod iterator;
@@ -218,6 +219,18 @@ pub enum BindingError {
     IteratorReturnTypeNotStructRef { handle: NativeFunctionHandle },
     #[error("Iterator '{}' is not part of this library", handle.name())]
     IteratorNotPartOfThisLib { handle: iterator::IteratorHandle },
+
+    // Collection errors
+    #[error("Invalid native function '{}' signature for create_func of collection", handle.name)]
+    CollectionCreateFuncInvalidSignature { handle: NativeFunctionHandle },
+    #[error("Invalid native function '{}' signature for delete_func of collection", handle.name)]
+    CollectionDeleteFuncInvalidSignature { handle: NativeFunctionHandle },
+    #[error("Invalid native function '{}' signature for add_func of collection", handle.name)]
+    CollectionAddFuncInvalidSignature { handle: NativeFunctionHandle },
+    #[error("Collection '{}' is not part of this library", handle.name())]
+    CollectionNotPartOfThisLib {
+        handle: collection::CollectionHandle,
+    },
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -271,6 +284,7 @@ pub enum Symbol {
     Interface(InterfaceHandle),
     OneTimeCallback(OneTimeCallbackHandle),
     Iterator(iterator::IteratorHandle),
+    Collection(collection::CollectionHandle),
 }
 
 #[derive(Debug)]
@@ -284,6 +298,7 @@ pub enum Statement {
     InterfaceDefinition(InterfaceHandle),
     OneTimeCallbackDefinition(OneTimeCallbackHandle),
     IteratorDeclaration(iterator::IteratorHandle),
+    CollectionDeclaration(collection::CollectionHandle),
     NativeFunctionDeclaration(NativeFunctionHandle),
 }
 
@@ -380,6 +395,7 @@ pub struct LibraryBuilder {
     one_time_callbacks: HashSet<OneTimeCallbackHandle>,
 
     iterators: HashSet<iterator::IteratorHandle>,
+    collections: HashSet<collection::CollectionHandle>,
 
     native_functions: HashSet<NativeFunctionHandle>,
 }
@@ -408,6 +424,7 @@ impl LibraryBuilder {
             one_time_callbacks: HashSet::new(),
 
             iterators: HashSet::new(),
+            collections: HashSet::new(),
 
             native_functions: HashSet::new(),
         }
@@ -455,6 +472,12 @@ impl LibraryBuilder {
                 }
                 Statement::IteratorDeclaration(handle) => {
                     symbols.insert(handle.name().to_string(), Symbol::Iterator(handle.clone()));
+                }
+                Statement::CollectionDeclaration(handle) => {
+                    symbols.insert(
+                        handle.name().to_string(),
+                        Symbol::Collection(handle.clone()),
+                    );
                 }
                 Statement::NativeFunctionDeclaration(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::NativeFunction(handle.clone()));
@@ -615,6 +638,23 @@ impl LibraryBuilder {
         Ok(iter)
     }
 
+    pub fn define_collection(
+        &mut self,
+        create_func: &NativeFunctionHandle,
+        delete_func: &NativeFunctionHandle,
+        add_func: &NativeFunctionHandle,
+    ) -> Result<collection::CollectionHandle> {
+        let collection = collection::CollectionHandle::new(collection::Collection::new(
+            create_func,
+            delete_func,
+            add_func,
+        )?);
+        self.collections.insert(collection.clone());
+        self.statements
+            .push(Statement::CollectionDeclaration(collection.clone()));
+        Ok(collection)
+    }
+
     fn check_unique_symbol(&mut self, name: &str) -> Result<()> {
         if self.symbol_names.insert(name.to_string()) {
             Ok(())
@@ -646,6 +686,7 @@ impl LibraryBuilder {
             Type::OneTimeCallback(cb) => self.validate_one_time_callback(cb),
             Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
             Type::Iterator(iter) => self.validate_iterator(iter),
+            Type::Collection(collection) => self.validate_collection(collection),
             _ => Ok(()),
         }
     }
@@ -717,6 +758,16 @@ impl LibraryBuilder {
         } else {
             Err(BindingError::IteratorNotPartOfThisLib {
                 handle: iter.clone(),
+            })
+        }
+    }
+
+    fn validate_collection(&self, collection: &collection::CollectionHandle) -> Result<()> {
+        if self.collections.contains(collection) {
+            Ok(())
+        } else {
+            Err(BindingError::CollectionNotPartOfThisLib {
+                handle: collection.clone(),
             })
         }
     }

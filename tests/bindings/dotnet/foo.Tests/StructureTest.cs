@@ -4,7 +4,7 @@ using foo;
 
 namespace foo.Tests
 {
-    class TestInterface : StructureInterface
+    class TestInterface : IStructureInterface
     {
         public Structure? lastValue = null;
 

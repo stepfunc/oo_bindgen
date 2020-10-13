@@ -2,7 +2,7 @@
 // dead_code,
 arithmetic_overflow,
 invalid_type_param_default,
-missing_fragment_specifier,
+//missing_fragment_specifier,
 mutable_transmutes,
 no_mangle_const_items,
 overflowing_literals,
@@ -38,7 +38,7 @@ clippy::all
 )]
 #![forbid(
     unsafe_code,
-    intra_doc_link_resolution_failure,
+    // intra_doc_link_resolution_failure, broken_intra_doc_links
     safe_packed_borrows,
     while_true,
     bare_trait_objects
@@ -107,7 +107,6 @@ impl<'a> RustCodegen<'a> {
         handle: &NativeStructHandle,
     ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
 
         if Self::requires_lifetime_annotation(handle) {
             f.writeln(&format!("pub struct {}<'a>", handle.name()))?;
@@ -198,7 +197,6 @@ impl<'a> RustCodegen<'a> {
     fn write_interface(&self, f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
         // C structure
         f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {
@@ -262,17 +260,16 @@ impl<'a> RustCodegen<'a> {
         handle: &OneTimeCallbackHandle,
     ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {
                 match element {
                     OneTimeCallbackElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
+                        f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
                     }
                     OneTimeCallbackElement::CallbackFunction(handle) => {
                         f.newline()?;
-                        f.write(&format!("pub {}: Option<extern \"C\" fn(", handle.name))?;
+                        f.write(&format!("{}: Option<extern \"C\" fn(", handle.name))?;
 
                         f.write(
                             &handle
@@ -335,7 +332,10 @@ impl<'a> RustCodegen<'a> {
                 f.write(")")?;
 
                 if let ReturnType::Type(return_type, _) = &callback.return_type {
-                    f.write(&format!(": Option<{}>", RustType(return_type).to_string()))?;
+                    f.write(&format!(
+                        " -> Option<{}>",
+                        RustType(return_type).to_string()
+                    ))?;
                 }
 
                 blocked(f, |f| {
@@ -409,6 +409,7 @@ impl<'a> Display for RustType<'a> {
             Type::Interface(handle) => write!(f, "{}", handle.name),
             Type::OneTimeCallback(handle) => write!(f, "{}", handle.name),
             Type::Iterator(handle) => write!(f, "*mut crate::{}", handle.name()),
+            Type::Collection(handle) => write!(f, "*mut crate::{}", handle.name()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "u64"),
                 DurationMapping::SecondsFloat => write!(f, "f32"),

@@ -2,6 +2,7 @@
 
 members = [
     "oo-bindgen",
+    "ci-script",
 
     "generators/rust-oo-bindgen",
     "generators/c-oo-bindgen",

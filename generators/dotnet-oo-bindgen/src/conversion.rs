@@ -9,12 +9,17 @@ use oo_bindgen::iterator::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 
-pub(crate) struct DotnetType<'a>(pub(crate) &'a Type);
+pub(crate) trait DotnetType {
+    fn as_dotnet_type(&self) -> String;
+    fn as_native_type(&self) -> String;
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>>;
+    fn as_dotnet_arg(&self, param_name: &str) -> String;
+}
 
-impl<'a> DotnetType<'a> {
+impl DotnetType for Type {
     /// Returns the .NET natural type
-    pub(crate) fn as_dotnet_type(&self) -> String {
-        match self.0 {
+    fn as_dotnet_type(&self) -> String {
+        match self {
             Type::Bool => "bool".to_string(),
             Type::Uint8 => "byte".to_string(),
             Type::Sint8 => "sbyte".to_string(),
@@ -39,15 +44,15 @@ impl<'a> DotnetType<'a> {
             ),
             Type::Collection(handle) => format!(
                 "System.Collections.Generic.ICollection<{}>",
-                DotnetType(&handle.item_type).as_dotnet_type()
+                handle.item_type.as_dotnet_type()
             ),
             Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
 
     /// Return the .NET representation of the native C type
-    pub(crate) fn as_native_type(&self) -> String {
-        match self.0 {
+    fn as_native_type(&self) -> String {
+        match self {
             Type::Bool => "byte".to_string(),
             Type::Uint8 => "byte".to_string(),
             Type::Sint8 => "sbyte".to_string(),
@@ -77,8 +82,8 @@ impl<'a> DotnetType<'a> {
         }
     }
 
-    pub(crate) fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        match self.0 {
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        match self {
             Type::Bool => Some(Box::new(BoolConverter)),
             Type::Uint8 => None,
             Type::Sint8 => None,
@@ -109,8 +114,8 @@ impl<'a> DotnetType<'a> {
         }
     }
 
-    pub(crate) fn as_dotnet_arg(&self, param_name: &str) -> String {
-        match self.0 {
+    fn as_dotnet_arg(&self, param_name: &str) -> String {
+        match self {
             Type::Bool => format!("_{}", param_name.to_mixed_case()),
             Type::Uint8 => param_name.to_mixed_case(),
             Type::Sint8 => param_name.to_mixed_case(),
@@ -493,8 +498,7 @@ impl TypeConverter for CollectionConverter {
         }
         f.writeln(&format!("foreach (var __value in {})", from))?;
         blocked(f, |f| {
-            let dotnet_type = DotnetType(&self.0.item_type);
-            let converter = dotnet_type.conversion();
+            let converter = self.0.item_type.conversion();
             let value_name = if let Some(converter) = &converter {
                 converter.convert_to_native(f, "__value", "var ___value = ")?;
                 "___value"
@@ -532,7 +536,7 @@ impl TypeConverter for CollectionConverter {
         f.writeln(&format!(
             "{}System.Collections.Immutable.ImmutableArray<{}>.Empty;",
             to,
-            DotnetType(&self.0.item_type).as_dotnet_type()
+            self.0.item_type.as_dotnet_type()
         ))
     }
 }
@@ -585,20 +589,32 @@ impl TypeConverter for DurationSecondsFloatConverter {
     }
 }
 
-pub(crate) struct DotnetReturnType<'a>(pub(crate) &'a ReturnType);
-
-impl<'a> DotnetReturnType<'a> {
-    pub(crate) fn as_dotnet_type(&self) -> String {
-        match self.0 {
+impl DotnetType for ReturnType {
+    fn as_dotnet_type(&self) -> String {
+        match self {
             ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => DotnetType(return_type).as_dotnet_type(),
+            ReturnType::Type(return_type, _) => return_type.as_dotnet_type(),
         }
     }
 
-    pub(crate) fn as_native_type(&self) -> String {
-        match self.0 {
+    fn as_native_type(&self) -> String {
+        match self {
             ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => DotnetType(return_type).as_native_type(),
+            ReturnType::Type(return_type, _) => return_type.as_native_type(),
+        }
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        match self {
+            ReturnType::Void => None,
+            ReturnType::Type(return_type, _) => return_type.conversion(),
+        }
+    }
+
+    fn as_dotnet_arg(&self, param_name: &str) -> String {
+        match self {
+            ReturnType::Void => "void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.as_dotnet_arg(param_name),
         }
     }
 }
@@ -612,7 +628,7 @@ pub(crate) fn call_native_function(
 ) -> FormattingResult<()> {
     // Write the type conversions
     for (idx, param) in method.parameters.iter().enumerate() {
-        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+        if let Some(converter) = param.param_type.conversion() {
             let mut param_name = param.name.to_mixed_case();
             if idx == 0 {
                 if let Some(first_param) = first_param_is_self.clone() {
@@ -642,7 +658,7 @@ pub(crate) fn call_native_function(
         &method
             .parameters
             .iter()
-            .map(|param| DotnetType(&param.param_type).as_dotnet_arg(&param.name.to_mixed_case()))
+            .map(|param| param.param_type.as_dotnet_arg(&param.name.to_mixed_case()))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -651,7 +667,7 @@ pub(crate) fn call_native_function(
     // Convert the result (if required)
     let return_name = if let ReturnType::Type(return_type, _) = &method.return_type {
         let mut return_name = "_result";
-        if let Some(converter) = DotnetType(&return_type).conversion() {
+        if let Some(converter) = return_type.conversion() {
             if !is_constructor {
                 converter.convert_from_native(f, "_result", "var __result = ")?;
                 return_name = "__result";
@@ -665,7 +681,7 @@ pub(crate) fn call_native_function(
 
     //Cleanup type conversions
     for param in method.parameters.iter() {
-        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+        if let Some(converter) = param.param_type.conversion() {
             converter.convert_to_native_cleanup(f, &format!("_{}", param.name.to_mixed_case()))?;
         }
     }
@@ -685,7 +701,7 @@ pub(crate) fn call_dotnet_function(
 ) -> FormattingResult<()> {
     // Write the type conversions
     for param in method.params() {
-        if let Some(converter) = DotnetType(&param.param_type).conversion() {
+        if let Some(converter) = param.param_type.conversion() {
             converter.convert_from_native(
                 f,
                 &param.name,
@@ -698,7 +714,7 @@ pub(crate) fn call_dotnet_function(
     f.newline()?;
     let method_name = method.name.to_camel_case();
     if let ReturnType::Type(return_type, _) = &method.return_type {
-        if DotnetType(&return_type).conversion().is_some() {
+        if return_type.conversion().is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
             f.write(&format!("{}_impl.{}(", return_destination, method_name))?;
@@ -710,7 +726,7 @@ pub(crate) fn call_dotnet_function(
     f.write(
         &method
             .params()
-            .map(|param| DotnetType(&param.param_type).as_dotnet_arg(&param.name))
+            .map(|param| param.param_type.as_dotnet_arg(&param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -718,7 +734,7 @@ pub(crate) fn call_dotnet_function(
 
     // Convert the result (if required)
     if let ReturnType::Type(return_type, _) = &method.return_type {
-        if let Some(converter) = DotnetType(&return_type).conversion() {
+        if let Some(converter) = return_type.conversion() {
             converter.convert_to_native(f, "_result", return_destination)?;
         }
     }

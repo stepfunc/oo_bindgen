@@ -45,9 +45,9 @@ clippy::all
 )]
 
 use crate::conversion::*;
+use crate::doc::*;
 use crate::formatting::*;
 use heck::CamelCase;
-use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -59,6 +59,7 @@ use std::path::PathBuf;
 mod callback;
 mod class;
 mod conversion;
+mod doc;
 mod formatting;
 mod interface;
 mod structure;
@@ -69,24 +70,6 @@ pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
     pub platforms: PlatformLocations,
-}
-
-pub(crate) fn doc_print(f: &mut dyn Printer, doc: &Doc, _lib: &Library) -> FormattingResult<()> {
-    for doc in doc {
-        match doc {
-            DocElement::Text(text) => f.write(text)?,
-            DocElement::Reference(typename) => {
-                // TODO: do this properly
-                f.write(&format!("<see cref=\"{}\"/>", typename.to_camel_case()))?;
-                //let symbol = lib.symbol(typename).unwrap();
-                //f.write(&format!("@ref {}", symbol.to_type()))?;
-            }
-            DocElement::Warning(text) => {
-                f.write(&format!("<remarks>{}</remarks>", text))?;
-            }
-        }
-    }
-    Ok(())
 }
 
 pub fn generate_dotnet_bindings(
@@ -164,7 +147,7 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
                 f.newline()?;
                 f.write(&format!(
                     "internal static extern {} {}(",
-                    DotnetReturnType(&handle.return_type).as_native_type(),
+                    handle.return_type.as_native_type(),
                     handle.name
                 ))?;
 
@@ -173,11 +156,7 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
                         .parameters
                         .iter()
                         .map(|param| {
-                            format!(
-                                "{} {}",
-                                DotnetType(&param.param_type).as_native_type(),
-                                param.name
-                            )
+                            format!("{} {}", param.param_type.as_native_type(), param.name)
                         })
                         .collect::<Vec<String>>()
                         .join(", "),
@@ -231,18 +210,13 @@ fn generate_enum(
     namespaced(f, &lib.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &native_enum.doc, lib)?;
-            f.write("</summary>")
+            xmldoc_print(f, &native_enum.doc, lib)
         })?;
+
         f.writeln(&format!("public enum {}", native_enum.name.to_camel_case()))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
-                documentation(f, |f| {
-                    f.writeln("<summary>")?;
-                    doc_print(f, &variant.doc, lib)?;
-                    f.write("</summary>")
-                })?;
+                documentation(f, |f| xmldoc_print(f, &variant.doc, lib))?;
                 f.writeln(&format!(
                     "{} =  {},",
                     variant.name.to_camel_case(),

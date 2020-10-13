@@ -16,12 +16,10 @@ pub(crate) fn generate(
     namespaced(f, &lib.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            f.writeln("<summary>")?;
-            doc_print(f, &cb.doc, lib)?;
-            f.write("</summary>")
+            xmldoc_print(f, &cb.doc, lib)
         })?;
-        f.writeln(&format!("public interface {}", cb_name))?;
 
+        f.writeln(&format!("public interface {}", cb_name))?;
         blocked(f, |f| {
             // Write each required method
             cb.callbacks()
@@ -29,15 +27,17 @@ pub(crate) fn generate(
                     // Documentation
                     documentation(f, |f| {
                         // Print top-level documentation
-                        f.writeln("<summary>")?;
-                        doc_print(f, &func.doc, lib)?;
-                        f.write("</summary>")?;
+                        xmldoc_print(f, &func.doc, lib)?;
+                        f.newline()?;
 
                         // Print each parameter value
                         for param in &func.parameters {
                             if let CallbackParameter::Parameter(param) = param {
-                                f.writeln(&format!("<param name=\"{}\">", param.name))?;
-                                doc_print(f, &param.doc, lib)?;
+                                f.writeln(&format!(
+                                    "<param name=\"{}\">",
+                                    param.name.to_mixed_case()
+                                ))?;
+                                docstring_print(f, &param.doc, lib)?;
                                 f.write("</param>")?;
                             }
                         }
@@ -45,7 +45,7 @@ pub(crate) fn generate(
                         // Print return value
                         if let ReturnType::Type(_, doc) = &func.return_type {
                             f.writeln("<returns>")?;
-                            doc_print(f, doc, lib)?;
+                            docstring_print(f, doc, lib)?;
                             f.write("</returns>")?;
                         }
 
@@ -55,7 +55,7 @@ pub(crate) fn generate(
                     // Callback signature
                     f.writeln(&format!(
                         "{} {}(",
-                        DotnetReturnType(&func.return_type).as_dotnet_type(),
+                        func.return_type.as_dotnet_type(),
                         func.name.to_camel_case()
                     ))?;
                     f.write(
@@ -65,7 +65,7 @@ pub(crate) fn generate(
                             .filter_map(|param| match param {
                                 CallbackParameter::Parameter(param) => Some(format!(
                                     "{} {}",
-                                    DotnetType(&param.param_type).as_dotnet_type(),
+                                    param.param_type.as_dotnet_type(),
                                     param.name.to_mixed_case()
                                 )),
                                 _ => None,
@@ -90,7 +90,7 @@ pub(crate) fn generate(
                     OneTimeCallbackElement::CallbackFunction(func) => {
                         f.writeln(&format!(
                             "private delegate {} {}_delegate(",
-                            DotnetReturnType(&func.return_type).as_native_type(),
+                            func.return_type.as_native_type(),
                             func.name
                         ))?;
                         f.write(
@@ -100,7 +100,7 @@ pub(crate) fn generate(
                                 .map(|param| match param {
                                     CallbackParameter::Parameter(param) => format!(
                                         "{} {}",
-                                        DotnetType(&param.param_type).as_native_type(),
+                                        param.param_type.as_native_type(),
                                         param.name.to_mixed_case()
                                     ),
                                     CallbackParameter::Arg(name) => format!("IntPtr {}", name),
@@ -164,7 +164,7 @@ pub(crate) fn generate(
                     OneTimeCallbackElement::CallbackFunction(func) => {
                         f.writeln(&format!(
                             "internal static {} {}_cb(",
-                            DotnetReturnType(&func.return_type).as_dotnet_type(),
+                            func.return_type.as_dotnet_type(),
                             func.name
                         ))?;
                         f.write(
@@ -174,7 +174,7 @@ pub(crate) fn generate(
                                 .map(|param| match param {
                                     CallbackParameter::Parameter(param) => format!(
                                         "{} {}",
-                                        DotnetType(&param.param_type).as_native_type(),
+                                        param.param_type.as_native_type(),
                                         param.name.to_mixed_case()
                                     ),
                                     CallbackParameter::Arg(name) => format!("IntPtr {}", name),

@@ -37,5 +37,15 @@ pub fn build_lib() -> Result<Library, BindingError> {
     lifetime::define(&mut builder)?;
     collection::define(&mut builder)?;
 
-    Ok(builder.build())
+    builder.build()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_lib() {
+        build_lib().unwrap();
+    }
 }

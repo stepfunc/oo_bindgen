@@ -15,6 +15,14 @@ pub struct NativeEnum {
     pub doc: Doc,
 }
 
+impl NativeEnum {
+    pub fn find_variant(&self, variant_name: &str) -> Option<&EnumVariant> {
+        self.variants
+            .iter()
+            .find(|variant| variant.name == variant_name)
+    }
+}
+
 pub type NativeEnumHandle = Handle<NativeEnum>;
 
 pub struct NativeEnumBuilder<'a> {

@@ -1,5 +1,4 @@
 use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
 
 pub struct StringCollection {
     values: Vec<CString>,
@@ -37,9 +36,9 @@ pub unsafe fn collection_destroy(col: *mut StringCollection) {
     }
 }
 
-pub unsafe fn collection_add(col: *mut StringCollection, value: *const c_char) {
+pub unsafe fn collection_add(col: *mut StringCollection, value: &CStr) {
     if let Some(col) = col.as_mut() {
-        let value = CStr::from_ptr(value).to_owned();
+        let value = value.to_owned();
         col.add(value);
     }
 }
@@ -52,15 +51,15 @@ pub unsafe fn collection_size(col: *mut StringCollection) -> u32 {
     }
 }
 
-pub unsafe fn collection_get(col: *mut StringCollection, idx: u32) -> *const c_char {
+pub unsafe fn collection_get<'a>(col: *mut StringCollection, idx: u32) -> &'a CStr {
     if let Some(col) = col.as_ref() {
         if let Some(value) = col.values.get(idx as usize) {
-            value.as_ptr()
+            value
         } else {
-            std::ptr::null()
+            CStr::from_ptr(std::ptr::null())
         }
     } else {
-        std::ptr::null()
+        CStr::from_ptr(std::ptr::null())
     }
 }
 
@@ -68,6 +67,6 @@ pub unsafe fn collection_with_reserve_size(col: *mut StringCollection) -> u32 {
     collection_size(col)
 }
 
-pub unsafe fn collection_with_reserve_get(col: *mut StringCollection, idx: u32) -> *const c_char {
+pub unsafe fn collection_with_reserve_get<'a>(col: *mut StringCollection, idx: u32) -> &'a CStr {
     collection_get(col, idx)
 }

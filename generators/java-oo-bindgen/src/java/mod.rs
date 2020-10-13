@@ -2,7 +2,7 @@ use crate::JavaBindgenConfig;
 use self::conversion::*;
 use self::formatting::*;
 use heck::{CamelCase, KebabCase};
-use oo_bindgen::doc::*;
+use oo_bindgen::native_function::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::platforms::*;
 use oo_bindgen::*;
@@ -11,27 +11,13 @@ use std::fs;
 mod callback;
 mod class;
 mod conversion;
+mod doc;
 mod enumeration;
 mod formatting;
 mod interface;
 mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
-
-pub(crate) fn doc_print(f: &mut dyn Printer, doc: &Doc, _lib: &Library) -> FormattingResult<()> {
-    for doc in doc {
-        match doc {
-            DocElement::Text(text) => f.write(text)?,
-            DocElement::Reference(typename) => {
-                f.write(&format!("{{@link {}}}", typename.to_camel_case()))?;
-            }
-            DocElement::Warning(text) => {
-                f.write(&format!("@warning {}", text))?;
-            }
-        }
-    }
-    Ok(())
-}
 
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.output_dir)?;
@@ -124,24 +110,30 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         blocked(f, |f| {
             f.writeln("try")?;
             blocked(f, |f| {
-                f.writeln("java.io.InputStream libStream = ClassLoader.class.getResourceAsStream(\"/win32-x86-64/foo_java_ffi.dll\");")?;
-                f.writeln("java.nio.file.Path tempFilePath = java.nio.file.Files.createTempFile(null, \"foo_java_ffi.dll\");")?;
-                f.writeln("tempFilePath.toFile().deleteOnExit();")?;
-                f.writeln("java.nio.file.Files.copy(libStream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);")?;
-                f.writeln("System.load(tempFilePath.toAbsolutePath().toString());")
+                f.writeln(&format!("System.loadLibrary(\"{}_java\");", config.ffi_name))
             })?;
-            f.writeln("catch(java.io.IOException ex)")?;
+            f.writeln("catch(UnsatisfiedLinkError e)")?;
             blocked(f, |f| {
-                f.writeln("System.out.println(ex.getMessage());")
+                f.writeln("System.err.println(\"Native code library failed to load: \" + e);")?;
+                f.writeln("System.exit(1);")
             })
         })?;
 
         // Write each native functions
         for handle in lib.native_functions() {
+            if let Some(first_param) = handle.parameters.first() {
+                // We don't want to generate the `next` methods of iterators
+                if let Type::ClassRef(handle) = &first_param.param_type {
+                    if matches!(lib.symbol(&handle.name).unwrap(), Symbol::Iterator(_)) {
+                        continue;
+                    }
+                }
+            }
+
             f.newline()?;
             f.write(&format!(
                 "static native {} {}(",
-                JavaReturnType(&handle.return_type).as_native_type(),
+                handle.return_type.as_java_primitive(),
                 handle.name
             ))?;
 
@@ -149,13 +141,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 &handle
                     .parameters
                     .iter()
-                    .map(|param| {
-                        format!(
-                            "{} {}",
-                            JavaType(&param.param_type).as_native_type(),
-                            param.name
-                        )
-                    })
+                    .map(|param| format!("{} {}", param.param_type.as_java_primitive(), param.name))
                     .collect::<Vec<String>>()
                     .join(", "),
             )?;

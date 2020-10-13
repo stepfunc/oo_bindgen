@@ -1,5 +1,5 @@
 use crate::collection::CollectionHandle;
-use crate::doc::Doc;
+use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::*;
 
@@ -45,7 +45,7 @@ pub enum DurationMapping {
 #[derive(Debug)]
 pub enum ReturnType {
     Void,
-    Type(Type, Doc),
+    Type(Type, DocString),
 }
 
 impl ReturnType {
@@ -53,7 +53,7 @@ impl ReturnType {
         ReturnType::Void
     }
 
-    pub fn new<D: Into<Doc>>(return_type: Type, doc: D) -> Self {
+    pub fn new<D: Into<DocString>>(return_type: Type, doc: D) -> Self {
         ReturnType::Type(return_type, doc.into())
     }
 
@@ -65,11 +65,11 @@ impl ReturnType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parameter {
     pub name: String,
     pub param_type: Type,
-    pub doc: Doc,
+    pub doc: DocString,
 }
 
 /// C function
@@ -102,7 +102,12 @@ impl<'a> NativeFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<D: Into<Doc>>(mut self, name: &str, param_type: Type, doc: D) -> Result<Self> {
+    pub fn param<D: Into<DocString>>(
+        mut self,
+        name: &str,
+        param_type: Type,
+        doc: D,
+    ) -> Result<Self> {
         self.lib.validate_type(&param_type)?;
         self.params.push(Parameter {
             name: name.to_string(),

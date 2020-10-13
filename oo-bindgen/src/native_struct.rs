@@ -159,6 +159,26 @@ impl Struct {
     pub fn doc(&self) -> &Doc {
         &self.definition.doc
     }
+
+    pub fn find_method(&self, method_name: &str) -> Option<&NativeFunctionHandle> {
+        for method in &self.methods {
+            if method.name == method_name {
+                return Some(&method.native_function);
+            }
+        }
+
+        for method in &self.static_methods {
+            if method.name == method_name {
+                return Some(&method.native_function);
+            }
+        }
+
+        None
+    }
+
+    pub fn find_element(&self, element_name: &str) -> Option<&NativeStructElement> {
+        self.elements().find(|el| el.name == element_name)
+    }
 }
 
 pub type StructHandle = Handle<Struct>;

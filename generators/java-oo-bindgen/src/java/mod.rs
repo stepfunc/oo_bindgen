@@ -1,10 +1,10 @@
-use crate::JavaBindgenConfig;
 use self::conversion::*;
-use self::formatting::*;
+use crate::formatting::*;
+use crate::JavaBindgenConfig;
 use heck::{CamelCase, KebabCase};
-use oo_bindgen::native_function::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::platforms::*;
+use oo_bindgen::native_function::*;
+use oo_bindgen::platforms::Platform;
 use oo_bindgen::*;
 use std::fs;
 
@@ -13,40 +13,36 @@ mod class;
 mod conversion;
 mod doc;
 mod enumeration;
-mod formatting;
 mod interface;
 mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    fs::create_dir_all(&config.output_dir)?;
+    fs::create_dir_all(&config.java_output_dir)?;
 
     // Create the pom.xml
     generate_pom(lib, config)?;
 
     // Copy the compiled libraries to the resource folder
+    let mut ffi_name = config.ffi_name.clone();
+    ffi_name.push_str("_java");
     for platform in config.platforms.iter() {
-        let platform_directory = match platform.platform {
-            Platform::Win64 => "win32-x86-64",
-            Platform::Win32 => "win32-x86",
-            Platform::Linux => "linux-x86-64",
-        };
-        let mut target_dir = config.resource_dir();
-        target_dir.push(platform_directory);
+        let mut target_dir = config.java_resource_dir();
+        target_dir.push(platform.platform.to_string());
         fs::create_dir_all(&target_dir)?;
 
         let mut source_file = platform.location.clone();
-        source_file.push(platform.bin_filename(&config.ffi_name));
+        source_file.push(platform.bin_filename(&ffi_name));
 
         let mut target_file = target_dir.clone();
-        target_file.push(platform.bin_filename(&config.ffi_name));
+        target_file.push(platform.bin_filename(&ffi_name));
 
         fs::copy(source_file, target_file)?;
     }
 
     // Create the source directory
-    fs::create_dir_all(&config.source_dir(lib))?;
+    fs::create_dir_all(&config.java_source_dir(lib))?;
 
     // Create all the direct mappings
     generate_native_func_class(lib, config)?;
@@ -63,7 +59,7 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
 
 fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     // Open file
-    let mut filename = config.output_dir.clone();
+    let mut filename = config.java_output_dir.clone();
     filename.push("pom");
     filename.set_extension("xml");
     let mut f = FilePrinter::new(filename)?;
@@ -93,6 +89,11 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln("        <artifactId>joou-java-6</artifactId>")?;
         f.writeln("        <version>0.9.4</version>")?;
         f.writeln("    </dependency>")?;
+        f.writeln("    <dependency>")?;
+        f.writeln("        <groupId>org.apache.commons</groupId>")?;
+        f.writeln("        <artifactId>commons-lang3</artifactId>")?;
+        f.writeln("        <version>3.11</version>")?;
+        f.writeln("    </dependency>")?;
         f.writeln("</dependencies>")?;
 
         Ok(())
@@ -110,14 +111,62 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         blocked(f, |f| {
             f.writeln("try")?;
             blocked(f, |f| {
-                f.writeln(&format!("System.loadLibrary(\"{}_java\");", config.ffi_name))
+                let libname = format!("{}_java", config.ffi_name);
+                for platform in config.platforms.iter() {
+                    match platform.platform {
+                        Platform::Win64 => {
+                            f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
+                            blocked(f, |f| {
+                                f.writeln(&format!(
+                                    "loadLibrary(\"{}\", \"{}\", \"dll\");",
+                                    platform.platform.to_string(),
+                                    libname
+                                ))
+                            })?;
+                        }
+                        Platform::Win32 => {
+                            f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS && org.apache.commons.lang3.ArchUtils.getProcessor().is32Bit())")?;
+                            blocked(f, |f| {
+                                f.writeln(&format!(
+                                    "loadLibrary(\"{}\", \"{}\", \"dll\");",
+                                    platform.platform.to_string(),
+                                    libname
+                                ))
+                            })?;
+                        }
+                        Platform::Linux => {
+                            f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_LINUX && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
+                            blocked(f, |f| {
+                                f.writeln(&format!(
+                                    "loadLibrary(\"{}\", \"{}\", \"so\");",
+                                    platform.platform.to_string(),
+                                    libname
+                                ))
+                            })?;
+                        }
+                    }
+                }
+                Ok(())
             })?;
-            f.writeln("catch(UnsatisfiedLinkError e)")?;
+            f.writeln("catch(java.io.IOException e)")?;
             blocked(f, |f| {
                 f.writeln("System.err.println(\"Native code library failed to load: \" + e);")?;
                 f.writeln("System.exit(1);")
             })
         })?;
+
+        f.newline()?;
+
+        // Load library helper function
+        f.writeln("private static void loadLibrary(String directory, String name, String extension) throws java.io.IOException {")?;
+        f.writeln("    java.io.InputStream stream = NativeFunctions.class.getResourceAsStream(\"/\" + directory + \"/\" + name + \".\" + extension);")?;
+        f.writeln("    java.nio.file.Path tempFilePath = java.nio.file.Files.createTempFile(name, \".\" + extension);")?;
+        f.writeln("    tempFilePath.toFile().deleteOnExit();")?;
+        f.writeln("    java.nio.file.Files.copy(stream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);")?;
+        f.writeln("    System.load(tempFilePath.toString());")?;
+        f.writeln("}")?;
+
+        f.newline()?;
 
         // Write each native functions
         for handle in lib.native_functions() {
@@ -204,7 +253,7 @@ fn create_file(
     lib: &Library,
 ) -> FormattingResult<FilePrinter> {
     // Open file
-    let mut filename = config.source_dir(lib);
+    let mut filename = config.java_source_dir(lib);
     filename.push(name);
     filename.set_extension("java");
     let mut f = FilePrinter::new(filename)?;

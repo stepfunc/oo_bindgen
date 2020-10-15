@@ -5,8 +5,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-include!(concat!(env!("OUT_DIR"), "/paths.rs"));
-
 pub fn run(settings: BindingBuilderSettings) {
     let matches = App::new("oo-bindgen")
         .arg(
@@ -72,7 +70,7 @@ pub fn run(settings: BindingBuilderSettings) {
 }
 
 fn ffi_path() -> PathBuf {
-    [TARGET_DIR, "deps"].iter().collect()
+    [env!("TARGET_DIR"), "deps"].iter().collect()
 }
 
 fn run_builder<'a, B: BindingBuilder<'a>>(
@@ -111,7 +109,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
     }
 
     let mut builder = B::new(settings, platforms);
-    builder.generate();
+    builder.generate(package_src.is_some());
 
     if package_src.is_none() {
         builder.build();
@@ -127,13 +125,14 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 
 pub struct BindingBuilderSettings<'a> {
     pub ffi_name: &'a str,
+    pub ffi_path: &'a Path,
     pub destination_path: &'a Path,
     pub library: &'a Library,
 }
 
 trait BindingBuilder<'a> {
     fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self;
-    fn generate(&mut self);
+    fn generate(&mut self, is_packaging: bool);
     fn build(&mut self);
     fn test(&mut self);
     fn package(&mut self);
@@ -182,7 +181,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self) {
+    fn generate(&mut self, _is_packaging: bool) {
         let mut platforms = PlatformLocations::new();
         platforms.add(Platform::current(), ffi_path());
 
@@ -263,7 +262,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self) {
+    fn generate(&mut self, _is_packaging: bool) {
         // Clear/create generated files
         let build_dir = self.build_dir();
         if build_dir.exists() {
@@ -330,9 +329,15 @@ impl<'a> JavaBindingBuilder<'a> {
         output_dir
     }
 
-    fn build_dir(&self) -> PathBuf {
+    fn java_build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
         output_dir.push(self.settings.library.name.to_owned());
+        output_dir
+    }
+
+    fn rust_build_dir(&self) -> PathBuf {
+        let mut output_dir = self.output_dir();
+        output_dir.push(format!("{}-jni", self.settings.library.name));
         output_dir
     }
 
@@ -360,21 +365,61 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self) {
-        // Clear/create generated files
-        let build_dir = self.build_dir();
+    fn generate(&mut self, is_packaging: bool) {
+        let config = java_oo_bindgen::JavaBindgenConfig {
+            java_output_dir: self.java_build_dir(),
+            rust_output_dir: self.rust_build_dir(),
+            ffi_name: self.settings.ffi_name.to_owned(),
+            ffi_path: self.settings.ffi_path.to_owned(),
+            group_id: "io.stepfunc".to_string(),
+            platforms: self.platforms.clone(),
+        };
+
+        // Generate Java JNI DLL if we are not packaging
+        if !is_packaging {
+            // Clear/create the generated files
+            let build_dir = self.rust_build_dir();
+            if build_dir.exists() {
+                fs::remove_dir_all(&build_dir).unwrap();
+            }
+            fs::create_dir_all(&build_dir).unwrap();
+
+            // Generate the Rust code
+            java_oo_bindgen::generate_java_ffi(self.settings.library, &config).unwrap();
+
+            // You: You're setting the target directory to point at the workspace dir. This doesn't look right...
+            // Me: Yeah, it avoids some recompilation.
+            // You: But this doesn't feel safe. What are your credentials for doing such a thing?
+            // Me: Here's my business card. *hands said card*. The lettering is something called "Silian Rail".
+            // You: Impressive, but still, that doesn't give you the right to do that.
+            // Me: Let's see Paul Allen's card.
+            // You: What!?
+            // Me: You know what, I got to go. I have to return some videotapes. *leaves in a hurry*
+            // You: *still puzzled about the situation, but accepting this hack*
+            let target_dir = pathdiff::diff_paths("./target", self.rust_build_dir()).unwrap();
+            let mut cmd = Command::new("cargo");
+            cmd.current_dir(self.rust_build_dir()).args(&[
+                "build",
+                "--target-dir",
+                &target_dir.to_string_lossy(),
+            ]);
+
+            if env!("PROFILE") == "release" {
+                cmd.arg("--release");
+            }
+
+            let result = cmd.status().unwrap();
+            assert!(result.success());
+        }
+
+        // Clear/create Java generated files
+        let build_dir = self.java_build_dir();
         if build_dir.exists() {
             fs::remove_dir_all(&build_dir).unwrap();
         }
         fs::create_dir_all(&build_dir).unwrap();
 
-        let config = java_oo_bindgen::JavaBindgenConfig {
-            output_dir: build_dir,
-            ffi_name: self.settings.ffi_name.to_owned(),
-            group_id: "io.stepfunc".to_string(),
-            platforms: self.platforms.clone(),
-        };
-
+        // Generate the Java code
         java_oo_bindgen::generate_java_bindings(self.settings.library, &config).unwrap();
     }
 

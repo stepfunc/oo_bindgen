@@ -1,8 +1,7 @@
-use super::*;
 use super::doc::*;
+use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
-use oo_bindgen::native_function::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -180,12 +179,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(
-            f,
-            &method.native_function,
-            "return ",
-            true,
-        )
+        call_native_function(f, &method.native_function, "return ", true)
     })
 }
 
@@ -311,12 +305,7 @@ fn generate_async_method(
         })?;
         f.writeln("};")?;
 
-        call_native_function(
-            f,
-            &method.native_function,
-            "return ",
-            true,
-        )?;
+        call_native_function(f, &method.native_function, "return ", true)?;
         f.writeln("return future;")
     })
 }

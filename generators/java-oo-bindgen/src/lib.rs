@@ -49,20 +49,28 @@ use oo_bindgen::platforms::*;
 use oo_bindgen::*;
 use std::path::PathBuf;
 
+mod formatting;
 mod java;
+mod rust;
 
 pub use java::generate_java_bindings;
+pub use rust::generate_java_ffi;
 
 pub struct JavaBindgenConfig {
-    pub output_dir: PathBuf,
+    /// Path to output the generated Java code
+    pub java_output_dir: PathBuf,
+    /// Path to output the generated Rust code
+    pub rust_output_dir: PathBuf,
+    /// Path to the C FFI target lib (the actual Rust code, not the compiled FFI)
+    pub ffi_path: PathBuf,
     pub ffi_name: String,
     pub group_id: String,
     pub platforms: PlatformLocations,
 }
 
 impl JavaBindgenConfig {
-    fn source_dir(&self, lib: &Library) -> PathBuf {
-        let mut result = self.output_dir.clone();
+    fn java_source_dir(&self, lib: &Library) -> PathBuf {
+        let mut result = self.java_output_dir.clone();
         result.extend(&["src", "main", "java"]);
         for dir in self.group_id.split('.') {
             result.push(dir);
@@ -71,9 +79,21 @@ impl JavaBindgenConfig {
         result
     }
 
-    fn resource_dir(&self) -> PathBuf {
-        let mut result = self.output_dir.clone();
+    fn java_resource_dir(&self) -> PathBuf {
+        let mut result = self.java_output_dir.clone();
         result.extend(&["src", "main", "resources"]);
+        result
+    }
+
+    fn java_ffi_name(&self) -> String {
+        let mut result = self.ffi_name.clone();
+        result.push_str("-java");
+        result
+    }
+
+    fn rust_source_dir(&self) -> PathBuf {
+        let mut result = self.rust_output_dir.clone();
+        result.extend(&["src"]);
         result
     }
 }

@@ -2,7 +2,6 @@ use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
-use oo_bindgen::native_function::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

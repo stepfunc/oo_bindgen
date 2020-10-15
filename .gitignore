@@ -23,5 +23,6 @@ tests/bindings/dotnet/nupkg
 # Generated Java lib
 tests/bindings/java/.idea
 tests/bindings/java/foo
+tests/bindings/java/foo-jni
 tests/bindings/java/*/target
 tests/bindings/java/**/*.iml

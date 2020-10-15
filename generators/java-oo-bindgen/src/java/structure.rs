@@ -1,7 +1,6 @@
-use super::*;
 use super::doc::*;
+use super::*;
 use heck::{CamelCase, MixedCase};
-use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 
 pub(crate) fn generate(
@@ -75,12 +74,7 @@ pub(crate) fn generate(
             f.write(")")?;
 
             blocked(f, |f| {
-                call_native_function(
-                    f,
-                    &method.native_function,
-                    "return ",
-                    true,
-                )
+                call_native_function(f, &method.native_function, "return ", true)
             })?;
         }
 

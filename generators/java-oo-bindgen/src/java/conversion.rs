@@ -34,9 +34,10 @@ impl JavaType for Type {
                 "java.util.Collection<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => {
-                format!("java.util.Collection<{}>", handle.item_type.as_java_object())
-            }
+            Type::Collection(handle) => format!(
+                "java.util.Collection<{}>",
+                handle.item_type.as_java_object()
+            ),
             Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
@@ -66,9 +67,10 @@ impl JavaType for Type {
                 "java.util.Collection<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => {
-                format!("java.util.Collection<{}>", handle.item_type.as_java_object())
-            }
+            Type::Collection(handle) => format!(
+                "java.util.Collection<{}>",
+                handle.item_type.as_java_object()
+            ),
             Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
@@ -113,7 +115,8 @@ pub(crate) fn call_native_function(
 
     f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
 
-    f.write(&params
+    f.write(
+        &params
             .map(|param| param.name.to_mixed_case())
             .collect::<Vec<String>>()
             .join(", "),

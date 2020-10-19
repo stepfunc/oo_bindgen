@@ -1,6 +1,3 @@
-use jni::sys::jint;
-use jni::JNIEnv;
-
 struct EnumDisjointEcho {
     _class: jni::objects::GlobalRef,
     enum_five: jni::objects::JObject<'static>,
@@ -12,7 +9,7 @@ struct EnumDisjointEcho {
 }
 
 impl EnumDisjointEcho {
-    fn init(env: &JNIEnv) -> Result<Self, jni::errors::Error> {
+    fn init(env: &jni::JNIEnv) -> Result<Self, jni::errors::Error> {
         let class_name = "Lio/stepfunc/foo/EnumDisjoint;";
         let class = env.find_class(class_name)?;
 
@@ -102,34 +99,34 @@ fn get_enum_object(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn JNI_OnLoad(vm: *mut jni::sys::JavaVM, _: *mut std::ffi::c_void) -> jint {
+pub extern "C" fn JNI_OnLoad(vm: *mut jni::sys::JavaVM, _: *mut std::ffi::c_void) -> jni::sys::jint {
     // Initialize the cache
-    let vm = jni::JavaVM::from_raw(vm).unwrap();
+    let vm = unsafe { jni::JavaVM::from_raw(vm).unwrap() };
     let jcache = JCache::init(vm).unwrap();
 
     // Set global variables
-    JCACHE.replace(jcache);
+    unsafe { JCACHE.replace(jcache); }
 
     // We target Java 8, to JNI 1.8 is the minimum version required
     jni::JNIVersion::V8.into()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn JNI_OnUnload(_vm: jni::sys::JavaVM, _reserved: *mut std::ffi::c_void) {
+pub extern "C" fn JNI_OnUnload(_vm: jni::sys::JavaVM, _reserved: *mut std::ffi::c_void) {
     // Cleanup all the static stuff
-    JCACHE.take().unwrap();
+    unsafe { JCACHE.take().unwrap(); }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_stepfunc_foo_NativeFunctions_enum_1disjoint_1echo(
-    env: JNIEnv,
+pub extern "C" fn Java_io_stepfunc_foo_NativeFunctions_enum_1disjoint_1echo(
+    env: jni::JNIEnv,
     _: jni::objects::JObject,
     value: jni::objects::JObject,
 ) -> jni::sys::jobject {
-    let cache = JCACHE.as_ref().unwrap();
+    let cache = unsafe { JCACHE.as_ref().unwrap() };
     let value = cache.enum_disjoint_echo.to_ffi(&env, value);
 
-    let result = foo_ffi::ffi::enum_disjoint_echo(value.into()).into();
+    let result = unsafe { foo_ffi::ffi::enum_disjoint_echo(value.into()).into() };
 
     let result = cache.enum_disjoint_echo.from_ffi(result);
 

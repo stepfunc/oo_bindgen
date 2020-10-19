@@ -1,6 +1,12 @@
 use crate::*;
+use conversion::*;
+use self::formatting::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::native_function::*;
 use std::fs;
+
+mod conversion;
+mod formatting;
 
 pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.rust_output_dir)?;
@@ -15,7 +21,16 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     let mut filename = config.rust_source_dir();
     filename.push("lib");
     filename.set_extension("rs");
-    let _f = FilePrinter::new(filename)?;
+    let mut f = FilePrinter::new(&filename)?;
+
+    generate_cache(&mut f)?;
+    f.newline()?;
+    generate_functions(&mut f, lib, config)?;
+
+    // Copy the modules that never changes
+    filename.set_file_name("joou.rs");
+    let mut f = FilePrinter::new(&filename)?;
+    f.write(include_str!("./copy/joou.rs"))?;
 
     Ok(())
 }
@@ -47,4 +62,144 @@ fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<
     ))?;
     f.newline()?;
     f.writeln("[workspace]")
+}
+
+fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
+    // Import modules
+    f.writeln("mod joou;")?;
+
+    // Create cache
+    f.writeln("struct JCache")?;
+    blocked(f, |f| {
+        f.writeln("vm: jni::JavaVM,")?;
+        f.writeln("joou: joou::Joou,")?;
+        // TODO: put the other cache elements here
+        Ok(())
+    })?;
+
+    f.newline()?;
+
+    f.writeln("impl JCache")?;
+    blocked(f, |f| {
+        f.writeln("fn init(vm: jni::JavaVM) -> Self")?;
+        blocked(f, |f| {
+            f.writeln("let env = vm.get_env().unwrap();")?;
+            f.writeln("let joou = joou::Joou::init(&env);")?;
+            // TODO: initialize all the stuff here
+            f.writeln("Self")?;
+            blocked(f, |f| {
+                f.writeln("vm,")?;
+                f.writeln("joou,")?;
+                // TODO: put everything else here
+                Ok(())
+            })
+        })
+    })?;
+
+    f.newline()?;
+
+    f.writeln("static mut JCACHE: Option<JCache> = None;")?;
+
+    f.newline()?;
+
+    // OnLoad function
+    f.writeln("#[no_mangle]")?;
+    f.writeln("pub extern \"C\" fn JNI_OnLoad(vm: *mut jni::sys::JavaVM, _: *mut std::ffi::c_void) -> jni::sys::jint")?;
+    blocked(f, |f| {
+        f.writeln("let vm = unsafe { jni::JavaVM::from_raw(vm).unwrap() };")?;
+        f.writeln("let jcache = JCache::init(vm);")?;
+        f.writeln("unsafe { JCACHE.replace(jcache) };")?;
+        f.writeln("jni::JNIVersion::V8.into()")
+    })?;
+
+    f.newline()?;
+
+    // OnUnload function
+    f.writeln("#[no_mangle]")?;
+    f.writeln("pub extern \"C\" fn JNI_OnUnload(_vm: *mut jni::sys::JavaVM, _: *mut std::ffi::c_void) -> jni::sys::jint")?;
+    blocked(f, |f| {
+        f.writeln("unsafe { JCACHE.take().unwrap(); }")?;
+        f.writeln("return 0;")
+    })
+}
+
+fn generate_functions(f: &mut dyn Printer, lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+    for handle in lib.native_functions() {
+        if let Some(first_param) = handle.parameters.first() {
+            // We don't want to generate the `next` methods of iterators
+            if let Type::ClassRef(handle) = &first_param.param_type {
+                if matches!(lib.symbol(&handle.name).unwrap(), Symbol::Iterator(_)) {
+                    continue;
+                }
+            }
+        }
+
+        f.writeln("#[no_mangle]")?;
+        f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.name, handle.name.replace("_", "_1")))?;
+        f.write(
+            &handle
+                .parameters
+                .iter()
+                .map(|param| format!("{}: {}", param.name, param.param_type.as_raw_jni_type()))
+                .collect::<Vec<String>>()
+                .join(", "),
+        )?;
+        f.write(")")?;
+
+        if let ReturnType::Type(return_type, _) = &handle.return_type {
+            f.write(&format!(" -> {}", return_type.as_raw_jni_type()))?;
+        }
+
+        blocked(f, |f| {
+            // Get the JCache
+            f.writeln("let _cache = unsafe { JCACHE.as_ref().unwrap() };")?;
+
+            // Perform the conversion of the parameters
+            for param in &handle.parameters {
+                if let Some(conversion) = param.param_type.conversion() {
+                    conversion.convert_to_rust(f, &param.name, &format!("let {} = ", param.name))?;
+                    f.write(";")?;
+                }
+            }
+
+            // Call the C FFI
+            if !handle.return_type.is_void() {
+                f.writeln("let _result = ")?;
+            } else {
+                f.newline()?;
+            }
+            f.write(&format!("unsafe {{ {}::ffi::{}(", config.ffi_name, handle.name))?;
+            f.write(
+                &handle
+                    .parameters
+                    .iter()
+                    .map(|param| param.name.clone())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+            )?;
+            f.write(") };")?;
+
+
+            // Conversion cleanup
+            for param in &handle.parameters {
+                if let Some(conversion) = param.param_type.conversion() {
+                    conversion.convert_to_rust_cleanup(f, &param.name)?;
+                }
+            }
+
+            // Return value
+            if let ReturnType::Type(return_type, _) = &handle.return_type {
+                if let Some(conversion) = return_type.conversion() {
+                    conversion.convert_from_rust(f, "_result", "return ")?;
+                } else {
+                    f.writeln("return _result;")?;
+                }
+            }
+
+            Ok(())
+        })?;
+
+        f.newline()?;
+    }
+    Ok(())
 }

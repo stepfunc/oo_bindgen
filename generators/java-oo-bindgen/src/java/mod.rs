@@ -1,5 +1,5 @@
 use self::conversion::*;
-use crate::formatting::*;
+use self::formatting::*;
 use crate::JavaBindgenConfig;
 use heck::{CamelCase, KebabCase};
 use oo_bindgen::formatting::*;
@@ -13,6 +13,7 @@ mod class;
 mod conversion;
 mod doc;
 mod enumeration;
+mod formatting;
 mod interface;
 mod structure;
 
@@ -179,8 +180,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 }
             }
 
-            f.newline()?;
-            f.write(&format!(
+            f.writeln(&format!(
                 "static native {} {}(",
                 handle.return_type.as_java_primitive(),
                 handle.name

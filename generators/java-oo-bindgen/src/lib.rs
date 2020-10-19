@@ -49,7 +49,6 @@ use oo_bindgen::platforms::*;
 use oo_bindgen::*;
 use std::path::PathBuf;
 
-mod formatting;
 mod java;
 mod rust;
 

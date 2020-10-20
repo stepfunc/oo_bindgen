@@ -21,10 +21,18 @@ pub(crate) fn generate(
 
     blocked(f, |f| {
         if !class.is_static() {
-            f.writeln("private long self;")?;
+            f.writeln("final private long self;")?;
             if class.destructor.is_some() {
                 f.writeln("private boolean disposed = false;")?;
             }
+
+            f.newline()?;
+
+            f.writeln(&format!("private {}(long self)", classname))?;
+            blocked(f, |f| {
+                f.writeln("this.self = self;")
+            })?;
+
             f.newline()?;
         }
 

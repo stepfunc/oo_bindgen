@@ -1,11 +1,8 @@
-use heck::{CamelCase, MixedCase};
-use oo_bindgen::callback::*;
-use oo_bindgen::class::*;
-use oo_bindgen::collection::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::iterator::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::native_struct::*;
+use oo_bindgen::class::*;
+use super::formatting::*;
+use heck::SnakeCase;
 
 pub(crate) trait JniType {
     fn as_raw_jni_type(&self) -> &str;
@@ -52,11 +49,11 @@ impl JniType for Type {
             Type::Sint64 => None,
             Type::Float => None,
             Type::Double => None,
-            Type::String => None,
+            Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(_) => None,
             Type::Enum(_) => None,
-            Type::ClassRef(_) => None,
+            Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(_) => None,
             Type::OneTimeCallback(_) => None,
             Type::Iterator(_) => None,
@@ -125,6 +122,50 @@ impl TypeConverter for UnsignedConverter {
         to: &str,
     ) -> FormattingResult<()> {
         f.writeln(&format!("{}_cache.joou.{}_from_rust(&_env, {})", to, self.0, from))
+    }
+}
+
+struct StringConverter;
+impl TypeConverter for StringConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(to)?;
+        blocked(f, |f| {
+            f.writeln(&format!("let value = _env.get_string({}.into()).unwrap();", from))?;
+            f.writeln("(**value).to_owned().into_raw()")
+        })
+    }
+
+    fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+        f.writeln(&format!("unsafe {{ std::ffi::CString::from_raw({}) }};", name))
+    }
+
+    fn convert_from_rust(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(to)?;
+        blocked(f, |f| {
+            f.writeln(&format!("let string = unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy();", from))?;
+            f.writeln("_env.new_string(string).unwrap().into_inner()")
+        })
+    }
+}
+
+struct ClassConverter(ClassDeclarationHandle);
+impl TypeConverter for ClassConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}_cache.classes.{}_to_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
+    }
+
+    fn convert_from_rust(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}_cache.classes.{}_from_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
     }
 }
 

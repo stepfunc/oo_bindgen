@@ -1,6 +1,7 @@
 use jni::objects::JValue;
 use jni::signature::*;
 
+#[allow(dead_code)]
 pub struct Joou {
     class_ubyte: jni::objects::GlobalRef,
     class_ushort: jni::objects::GlobalRef,

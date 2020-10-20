@@ -5,6 +5,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use std::fs;
 
+mod classes;
 mod conversion;
 mod formatting;
 
@@ -26,6 +27,9 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     generate_cache(&mut f)?;
     f.newline()?;
     generate_functions(&mut f, lib, config)?;
+
+    // Create the modules
+    classes::generate_classes_cache(lib, config)?;
 
     // Copy the modules that never changes
     filename.set_file_name("joou.rs");
@@ -67,12 +71,14 @@ fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<
 fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     // Import modules
     f.writeln("mod joou;")?;
+    f.writeln("mod classes;")?;
 
     // Create cache
     f.writeln("struct JCache")?;
     blocked(f, |f| {
         f.writeln("vm: jni::JavaVM,")?;
         f.writeln("joou: joou::Joou,")?;
+        f.writeln("classes: classes::Classes,")?;
         // TODO: put the other cache elements here
         Ok(())
     })?;
@@ -85,11 +91,13 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         blocked(f, |f| {
             f.writeln("let env = vm.get_env().unwrap();")?;
             f.writeln("let joou = joou::Joou::init(&env);")?;
+            f.writeln("let classes = classes::Classes::init(&env);")?;
             // TODO: initialize all the stuff here
             f.writeln("Self")?;
             blocked(f, |f| {
                 f.writeln("vm,")?;
                 f.writeln("joou,")?;
+                f.writeln("classes,")?;
                 // TODO: put everything else here
                 Ok(())
             })

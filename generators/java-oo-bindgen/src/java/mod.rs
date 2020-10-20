@@ -139,7 +139,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                             f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_LINUX && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
                             blocked(f, |f| {
                                 f.writeln(&format!(
-                                    "loadLibrary(\"{}\", \"{}\", \"so\");",
+                                    "loadLibrary(\"{}\", \"lib{}\", \"so\");",
                                     platform.platform.to_string(),
                                     libname
                                 ))

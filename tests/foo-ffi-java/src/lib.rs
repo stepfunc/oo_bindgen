@@ -1,15 +1,15 @@
 struct EnumDisjointEcho {
-    _class: jni::objects::GlobalRef,
+    /*_class: jni::objects::GlobalRef,
     enum_five: jni::objects::JObject<'static>,
     enum_one: jni::objects::JObject<'static>,
     enum_twenty: jni::objects::JObject<'static>,
     enum_four: jni::objects::JObject<'static>,
     enum_seven: jni::objects::JObject<'static>,
-    enum_two: jni::objects::JObject<'static>,
+    enum_two: jni::objects::JObject<'static>,*/
 }
 
 impl EnumDisjointEcho {
-    fn init(env: &jni::JNIEnv) -> Result<Self, jni::errors::Error> {
+    /*fn init(env: &jni::JNIEnv) -> Result<Self, jni::errors::Error> {
         let class_name = "Lio/stepfunc/foo/EnumDisjoint;";
         let class = env.find_class(class_name)?;
 
@@ -56,7 +56,7 @@ impl EnumDisjointEcho {
             foo_ffi::ffi::EnumDisjoint::Seven => self.enum_seven,
             foo_ffi::ffi::EnumDisjoint::Two => self.enum_two,
         }
-    }
+    }*/
 }
 
 struct JCache {
@@ -117,7 +117,7 @@ pub extern "C" fn JNI_OnUnload(_vm: jni::sys::JavaVM, _reserved: *mut std::ffi::
     unsafe { JCACHE.take().unwrap(); }
 }
 
-#[no_mangle]
+/*#[no_mangle]
 pub extern "C" fn Java_io_stepfunc_foo_NativeFunctions_enum_1disjoint_1echo(
     env: jni::JNIEnv,
     _: jni::objects::JObject,
@@ -131,4 +131,27 @@ pub extern "C" fn Java_io_stepfunc_foo_NativeFunctions_enum_1disjoint_1echo(
     let result = cache.enum_disjoint_echo.from_ffi(result);
 
     result.into_inner()
+}*/
+
+#[no_mangle]
+pub extern "C" fn Java_io_stepfunc_foo_NativeFunctions_enum_1disjoint_1echo(
+    _env: jni::JNIEnv,
+    _: jni::objects::JObject,
+    value: jni::sys::jstring,
+) -> jni::sys::jstring {
+    let cache = unsafe { JCACHE.as_ref().unwrap() };
+
+    let value = {
+        let value = _env.get_string(value.into()).unwrap();
+        (**value).to_owned().into_raw()
+    };
+
+    let test = {
+        let string = unsafe { std::ffi::CStr::from_ptr(value) }.to_string_lossy();
+        _env.new_string(string).unwrap().into_inner()
+    };
+
+    unsafe { std::ffi::CString::from_raw(value) };
+
+    test
 }

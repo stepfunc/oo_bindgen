@@ -53,7 +53,7 @@ fn reference_print(
             f.write(&format!("@p {}", param_name.to_snake_case()))?
         }
         DocReference::Class(class_name) => {
-            let handle = lib.find_class(class_name).unwrap().declaration();
+            let handle = lib.find_class_declaration(class_name).unwrap();
             f.write(&format!("@ref {}", handle.to_type()))?;
         }
         DocReference::ClassMethod(class_name, method_name) => {

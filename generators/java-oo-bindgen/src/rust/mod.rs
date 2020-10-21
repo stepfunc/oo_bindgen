@@ -1,6 +1,6 @@
+use self::formatting::*;
 use crate::*;
 use conversion::*;
-use self::formatting::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use std::fs;
@@ -137,7 +137,11 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     })
 }
 
-fn generate_functions(f: &mut dyn Printer, lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+fn generate_functions(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
     for handle in lib.native_functions() {
         if let Some(first_param) = handle.parameters.first() {
             // We don't want to generate the `next` methods of iterators
@@ -171,7 +175,11 @@ fn generate_functions(f: &mut dyn Printer, lib: &Library, config: &JavaBindgenCo
             // Perform the conversion of the parameters
             for param in &handle.parameters {
                 if let Some(conversion) = param.param_type.conversion() {
-                    conversion.convert_to_rust(f, &param.name, &format!("let {} = ", param.name))?;
+                    conversion.convert_to_rust(
+                        f,
+                        &param.name,
+                        &format!("let {} = ", param.name),
+                    )?;
                     f.write(";")?;
                 }
             }
@@ -182,7 +190,10 @@ fn generate_functions(f: &mut dyn Printer, lib: &Library, config: &JavaBindgenCo
             } else {
                 f.newline()?;
             }
-            f.write(&format!("unsafe {{ {}::ffi::{}(", config.ffi_name, handle.name))?;
+            f.write(&format!(
+                "unsafe {{ {}::ffi::{}(",
+                config.ffi_name, handle.name
+            ))?;
             f.write(
                 &handle
                     .parameters
@@ -192,7 +203,6 @@ fn generate_functions(f: &mut dyn Printer, lib: &Library, config: &JavaBindgenCo
                     .join(", "),
             )?;
             f.write(") };")?;
-
 
             // Conversion cleanup
             for param in &handle.parameters {

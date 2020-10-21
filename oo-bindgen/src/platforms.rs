@@ -41,17 +41,17 @@ impl PlatformLocation {
         Self { platform, location }
     }
 
-    pub fn lib_filename(&self, libname: &str) -> String {
+    pub fn lib_filename<T: AsRef<str>>(&self, libname: T) -> String {
         match self.platform {
-            Platform::Win64 | Platform::Win32 => format!("{}.dll.lib", libname),
-            Platform::Linux => format!("lib{}.so", libname),
+            Platform::Win64 | Platform::Win32 => format!("{}.dll.lib", libname.as_ref()),
+            Platform::Linux => format!("lib{}.so", libname.as_ref()),
         }
     }
 
-    pub fn bin_filename(&self, libname: &str) -> String {
+    pub fn bin_filename<T: AsRef<str>>(&self, libname: T) -> String {
         match self.platform {
-            Platform::Win64 | Platform::Win32 => format!("{}.dll", libname),
-            Platform::Linux => format!("lib{}.so", libname),
+            Platform::Win64 | Platform::Win32 => format!("{}.dll", libname.as_ref()),
+            Platform::Linux => format!("lib{}.so", libname.as_ref()),
         }
     }
 }

@@ -29,9 +29,7 @@ pub(crate) fn generate(
             f.newline()?;
 
             f.writeln(&format!("private {}(long self)", classname))?;
-            blocked(f, |f| {
-                f.writeln("this.self = self;")
-            })?;
+            blocked(f, |f| f.writeln("this.self = self;"))?;
 
             f.newline()?;
         }

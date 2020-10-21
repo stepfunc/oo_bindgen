@@ -1,9 +1,9 @@
-use oo_bindgen::formatting::*;
-use oo_bindgen::native_function::*;
-use oo_bindgen::class::*;
-use oo_bindgen::native_enum::*;
 use super::formatting::*;
 use heck::SnakeCase;
+use oo_bindgen::class::*;
+use oo_bindgen::formatting::*;
+use oo_bindgen::native_enum::*;
+use oo_bindgen::native_function::*;
 
 pub(crate) trait JniType {
     fn as_raw_jni_type(&self) -> &str;
@@ -82,12 +82,7 @@ impl JniType for ReturnType {
 
 pub(crate) trait TypeConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
-    fn convert_from_rust(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()>;
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
 
     fn convert_to_rust_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
         Ok(())
@@ -100,12 +95,7 @@ impl TypeConverter for BooleanConverter {
         f.writeln(&format!("{}{} != 0", to, from))
     }
 
-    fn convert_from_rust(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}if {} {{ 0 }} else {{ 0xFF }}", to, from))
     }
 }
@@ -113,16 +103,17 @@ impl TypeConverter for BooleanConverter {
 struct UnsignedConverter(String);
 impl TypeConverter for UnsignedConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.joou.{}_to_rust(&_env, {})", to, self.0, from))
+        f.writeln(&format!(
+            "{}_cache.joou.{}_to_rust(&_env, {})",
+            to, self.0, from
+        ))
     }
 
-    fn convert_from_rust(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.joou.{}_from_rust(&_env, {})", to, self.0, from))
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}_cache.joou.{}_from_rust(&_env, {})",
+            to, self.0, from
+        ))
     }
 }
 
@@ -131,24 +122,28 @@ impl TypeConverter for StringConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(to)?;
         blocked(f, |f| {
-            f.writeln(&format!("let value = _env.get_string({}.into()).unwrap();", from))?;
+            f.writeln(&format!(
+                "let value = _env.get_string({}.into()).unwrap();",
+                from
+            ))?;
             f.writeln("(**value).to_owned().into_raw()")
         })
     }
 
     fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!("unsafe {{ std::ffi::CString::from_raw({}) }};", name))
+        f.writeln(&format!(
+            "unsafe {{ std::ffi::CString::from_raw({}) }};",
+            name
+        ))
     }
 
-    fn convert_from_rust(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(to)?;
         blocked(f, |f| {
-            f.writeln(&format!("let string = unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy();", from))?;
+            f.writeln(&format!(
+                "let string = unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy();",
+                from
+            ))?;
             f.writeln("_env.new_string(string).unwrap().into_inner()")
         })
     }
@@ -157,32 +152,42 @@ impl TypeConverter for StringConverter {
 struct EnumConverter(NativeEnumHandle);
 impl TypeConverter for EnumConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.enums.enum_{}.enum_to_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
+        f.writeln(&format!(
+            "{}_cache.enums.enum_{}.enum_to_rust(&_env, {})",
+            to,
+            self.0.name.to_snake_case(),
+            from
+        ))
     }
 
-    fn convert_from_rust(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.enums.enum_{}.enum_from_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}_cache.enums.enum_{}.enum_from_rust(&_env, {})",
+            to,
+            self.0.name.to_snake_case(),
+            from
+        ))
     }
 }
 
 struct ClassConverter(ClassDeclarationHandle);
 impl TypeConverter for ClassConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.classes.{}_to_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
+        f.writeln(&format!(
+            "{}_cache.classes.{}_to_rust(&_env, {})",
+            to,
+            self.0.name.to_snake_case(),
+            from
+        ))
     }
 
-    fn convert_from_rust(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.classes.{}_from_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}_cache.classes.{}_from_rust(&_env, {})",
+            to,
+            self.0.name.to_snake_case(),
+            from
+        ))
     }
 }
 

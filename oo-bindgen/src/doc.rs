@@ -79,8 +79,8 @@ impl Doc {
     }
 }
 
-impl From<&str> for Doc {
-    fn from(from: &str) -> Self {
+impl<T: AsRef<str>> From<T> for Doc {
+    fn from(from: T) -> Self {
         doc(from)
     }
 }
@@ -137,8 +137,9 @@ impl Default for DocString {
     }
 }
 
-impl From<&str> for DocString {
-    fn from(mut from: &str) -> DocString {
+impl<T: AsRef<str>> From<T> for DocString {
+    fn from(from: T) -> DocString {
+        let mut from = from.as_ref();
         let mut result = DocString::new();
         while let Some(start_idx) = from.find('{') {
             let (before_str, current_str) = from.split_at(start_idx);
@@ -345,6 +346,15 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
             &native_function.parameters,
             lib,
         )?;
+
+        for param in &native_function.parameters {
+            validate_docstring_with_params(
+                &native_function.name,
+                &param.doc,
+                &native_function.parameters,
+                lib,
+            )?;
+        }
     }
 
     for class in lib.classes() {
@@ -385,12 +395,12 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
                 })
                 .collect::<Vec<_>>();
 
-            validate_doc_with_params(
-                &format!("{}.{}", interface.name, callback.name),
-                &callback.doc,
-                params.as_slice(),
-                lib,
-            )?;
+            let callback_name = format!("{}.{}", interface.name, callback.name);
+            validate_doc_with_params(&callback_name, &callback.doc, params.as_slice(), lib)?;
+
+            for param in &params {
+                validate_docstring_with_params(&callback_name, &param.doc, params.as_slice(), lib)?;
+            }
         }
     }
 
@@ -406,12 +416,12 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
                 })
                 .collect::<Vec<_>>();
 
-            validate_doc_with_params(
-                &format!("{}.{}", interface.name, callback.name),
-                &callback.doc,
-                params.as_slice(),
-                lib,
-            )?;
+            let callback_name = format!("{}.{}", interface.name, callback.name);
+            validate_doc_with_params(&callback_name, &callback.doc, params.as_slice(), lib)?;
+
+            for param in &params {
+                validate_docstring_with_params(&callback_name, &param.doc, params.as_slice(), lib)?;
+            }
         }
     }
 
@@ -429,40 +439,55 @@ fn validate_doc_with_params(
     lib: &Library,
 ) -> Result<(), BindingError> {
     for reference in doc.references() {
-        match reference {
-            DocReference::Param(param_name) => {
-                if params
-                    .iter()
-                    .find(|param| &param.name == param_name)
-                    .is_none()
-                {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: param_name.to_string(),
-                    });
-                }
+        validate_reference_with_params(symbol_name, reference, params, lib)?;
+    }
+
+    Ok(())
+}
+
+fn validate_docstring_with_params(
+    symbol_name: &str,
+    doc: &DocString,
+    params: &[Parameter],
+    lib: &Library,
+) -> Result<(), BindingError> {
+    for reference in doc.references() {
+        validate_reference_with_params(symbol_name, reference, params, lib)?;
+    }
+
+    Ok(())
+}
+
+fn validate_reference_with_params(
+    symbol_name: &str,
+    reference: &DocReference,
+    params: &[Parameter],
+    lib: &Library,
+) -> Result<(), BindingError> {
+    match reference {
+        DocReference::Param(param_name) => {
+            if params
+                .iter()
+                .find(|param| &param.name == param_name)
+                .is_none()
+            {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: param_name.to_string(),
+                });
             }
-            DocReference::Class(class_name) => {
-                if lib.find_class(class_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: class_name.to_string(),
-                    });
-                }
+        }
+        DocReference::Class(class_name) => {
+            if lib.find_class_declaration(class_name).is_none() {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: class_name.to_string(),
+                });
             }
-            DocReference::ClassMethod(class_name, method_name) => {
-                if let Some(handle) = lib.find_class(class_name) {
-                    if handle.find_method(method_name).is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!(
-                                "{}.{}()",
-                                class_name.to_string(),
-                                method_name.to_string()
-                            ),
-                        });
-                    }
-                } else {
+        }
+        DocReference::ClassMethod(class_name, method_name) => {
+            if let Some(handle) = lib.find_class(class_name) {
+                if handle.find_method(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!(
@@ -472,48 +497,44 @@ fn validate_doc_with_params(
                         ),
                     });
                 }
+            } else {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: format!("{}.{}()", class_name.to_string(), method_name.to_string()),
+                });
             }
-            DocReference::ClassConstructor(class_name) => {
-                if let Some(handle) = lib.find_class(class_name) {
-                    if handle.constructor.is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!("{}.[constructor]", class_name.to_string(),),
-                        });
-                    }
-                }
-            }
-            DocReference::ClassDestructor(class_name) => {
-                if let Some(handle) = lib.find_class(class_name) {
-                    if handle.destructor.is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!("{}.[destructor]", class_name.to_string(),),
-                        });
-                    }
-                }
-            }
-            DocReference::Struct(struct_name) => {
-                if lib.find_struct(struct_name).is_none() {
+        }
+        DocReference::ClassConstructor(class_name) => {
+            if let Some(handle) = lib.find_class(class_name) {
+                if handle.constructor.is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: struct_name.to_string(),
+                        ref_name: format!("{}.[constructor]", class_name.to_string(),),
                     });
                 }
             }
-            DocReference::StructElement(struct_name, method_name) => {
-                if let Some(handle) = lib.find_struct(struct_name) {
-                    if handle.find_element(method_name).is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!(
-                                "{}.{}",
-                                struct_name.to_string(),
-                                method_name.to_string()
-                            ),
-                        });
-                    }
-                } else {
+        }
+        DocReference::ClassDestructor(class_name) => {
+            if let Some(handle) = lib.find_class(class_name) {
+                if handle.destructor.is_none() {
+                    return Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!("{}.[destructor]", class_name.to_string(),),
+                    });
+                }
+            }
+        }
+        DocReference::Struct(struct_name) => {
+            if lib.find_struct(struct_name).is_none() {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: struct_name.to_string(),
+                });
+            }
+        }
+        DocReference::StructElement(struct_name, method_name) => {
+            if let Some(handle) = lib.find_struct(struct_name) {
+                if handle.find_element(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!(
@@ -523,20 +544,16 @@ fn validate_doc_with_params(
                         ),
                     });
                 }
+            } else {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: format!("{}.{}", struct_name.to_string(), method_name.to_string()),
+                });
             }
-            DocReference::StructMethod(struct_name, element_name) => {
-                if let Some(handle) = lib.find_struct(struct_name) {
-                    if handle.find_method(element_name).is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!(
-                                "{}.{}()",
-                                struct_name.to_string(),
-                                element_name.to_string()
-                            ),
-                        });
-                    }
-                } else {
+        }
+        DocReference::StructMethod(struct_name, element_name) => {
+            if let Some(handle) = lib.find_struct(struct_name) {
+                if handle.find_method(element_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!(
@@ -546,55 +563,47 @@ fn validate_doc_with_params(
                         ),
                     });
                 }
+            } else {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: format!("{}.{}()", struct_name.to_string(), element_name.to_string()),
+                });
             }
-            DocReference::Enum(enum_name) => {
-                if lib.find_enum(enum_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: enum_name.to_string(),
-                    });
-                }
+        }
+        DocReference::Enum(enum_name) => {
+            if lib.find_enum(enum_name).is_none() {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: enum_name.to_string(),
+                });
             }
-            DocReference::EnumVariant(enum_name, variant_name) => {
-                if let Some(handle) = lib.find_enum(enum_name) {
-                    if handle.find_variant(variant_name).is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!(
-                                "{}.{}",
-                                enum_name.to_string(),
-                                variant_name.to_string()
-                            ),
-                        });
-                    }
-                } else {
+        }
+        DocReference::EnumVariant(enum_name, variant_name) => {
+            if let Some(handle) = lib.find_enum(enum_name) {
+                if handle.find_variant(variant_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
                     });
                 }
+            } else {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
+                });
             }
-            DocReference::Interface(interface_name) => {
-                if lib.find_interface(interface_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: interface_name.to_string(),
-                    });
-                }
+        }
+        DocReference::Interface(interface_name) => {
+            if lib.find_interface(interface_name).is_none() {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: interface_name.to_string(),
+                });
             }
-            DocReference::InterfaceMethod(interface_name, method_name) => {
-                if let Some(handle) = lib.find_interface(interface_name) {
-                    if handle.find_callback(method_name).is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!(
-                                "{}.{}()",
-                                interface_name.to_string(),
-                                method_name.to_string()
-                            ),
-                        });
-                    }
-                } else {
+        }
+        DocReference::InterfaceMethod(interface_name, method_name) => {
+            if let Some(handle) = lib.find_interface(interface_name) {
+                if handle.find_callback(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!(
@@ -604,28 +613,28 @@ fn validate_doc_with_params(
                         ),
                     });
                 }
+            } else {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: format!(
+                        "{}.{}()",
+                        interface_name.to_string(),
+                        method_name.to_string()
+                    ),
+                });
             }
-            DocReference::OneTimeCallback(interface_name) => {
-                if lib.find_one_time_callback(interface_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: interface_name.to_string(),
-                    });
-                }
+        }
+        DocReference::OneTimeCallback(interface_name) => {
+            if lib.find_one_time_callback(interface_name).is_none() {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: interface_name.to_string(),
+                });
             }
-            DocReference::OneTimeCallbackMethod(interface_name, method_name) => {
-                if let Some(handle) = lib.find_one_time_callback(interface_name) {
-                    if handle.find_callback(method_name).is_none() {
-                        return Err(BindingError::DocInvalidReference {
-                            symbol_name: symbol_name.to_string(),
-                            ref_name: format!(
-                                "{}.{}()",
-                                interface_name.to_string(),
-                                method_name.to_string()
-                            ),
-                        });
-                    }
-                } else {
+        }
+        DocReference::OneTimeCallbackMethod(interface_name, method_name) => {
+            if let Some(handle) = lib.find_one_time_callback(interface_name) {
+                if handle.find_callback(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!(
@@ -635,6 +644,15 @@ fn validate_doc_with_params(
                         ),
                     });
                 }
+            } else {
+                return Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: format!(
+                        "{}.{}()",
+                        interface_name.to_string(),
+                        method_name.to_string()
+                    ),
+                });
             }
         }
     }
@@ -888,5 +906,10 @@ mod tests {
             .as_ref(),
             doc.elements.as_slice()
         );
+    }
+
+    #[test]
+    fn parse_from_owned_string() {
+        doc(format!("{{null}} this is a {}", "test"));
     }
 }

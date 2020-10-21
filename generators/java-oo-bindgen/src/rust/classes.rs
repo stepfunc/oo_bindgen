@@ -1,10 +1,13 @@
-use oo_bindgen::*;
-use oo_bindgen::formatting::*;
-use crate::*;
 use super::formatting::*;
+use crate::*;
 use heck::{CamelCase, SnakeCase};
+use oo_bindgen::formatting::*;
+use oo_bindgen::*;
 
-pub(crate) fn generate_classes_cache(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+pub(crate) fn generate_classes_cache(
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.name);
 
     let mut filename = config.rust_source_dir();
@@ -15,9 +18,18 @@ pub(crate) fn generate_classes_cache(lib: &Library, config: &JavaBindgenConfig) 
     f.writeln("pub struct Classes")?;
     blocked(&mut f, |f| {
         for class in lib.classes().filter(|class| !class.is_static()) {
-            f.writeln(&format!("class_{}: jni::objects::GlobalRef,", class.name().to_snake_case()))?;
-            f.writeln(&format!("{}_constructor: jni::objects::JMethodID<'static>,", class.name().to_snake_case()))?;
-            f.writeln(&format!("{}_self_field: jni::objects::JFieldID<'static>,", class.name().to_snake_case()))?;
+            f.writeln(&format!(
+                "class_{}: jni::objects::GlobalRef,",
+                class.name().to_snake_case()
+            ))?;
+            f.writeln(&format!(
+                "{}_constructor: jni::objects::JMethodID<'static>,",
+                class.name().to_snake_case()
+            ))?;
+            f.writeln(&format!(
+                "{}_self_field: jni::objects::JFieldID<'static>,",
+                class.name().to_snake_case()
+            ))?;
         }
 
         Ok(())
@@ -41,7 +53,10 @@ pub(crate) fn generate_classes_cache(lib: &Library, config: &JavaBindgenConfig) 
             blocked(f, |f| {
                 for class in lib.classes().filter(|class| !class.is_static()) {
                     let snake_name = class.name().to_snake_case();
-                    f.writeln(&format!("class_{}: env.new_global_ref(class_{}).unwrap(),", snake_name, snake_name))?;
+                    f.writeln(&format!(
+                        "class_{}: env.new_global_ref(class_{}).unwrap(),",
+                        snake_name, snake_name
+                    ))?;
                     f.writeln(&format!("{}_constructor,", snake_name))?;
                     f.writeln(&format!("{}_self_field,", snake_name))?;
                 }

@@ -1,10 +1,13 @@
-use oo_bindgen::*;
-use oo_bindgen::formatting::*;
-use crate::*;
 use super::formatting::*;
+use crate::*;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
+use oo_bindgen::formatting::*;
+use oo_bindgen::*;
 
-pub(crate) fn generate_enums_cache(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+pub(crate) fn generate_enums_cache(
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.name);
 
     let mut filename = config.rust_source_dir();
@@ -16,7 +19,11 @@ pub(crate) fn generate_enums_cache(lib: &Library, config: &JavaBindgenConfig) ->
     f.writeln("pub struct Enums")?;
     blocked(&mut f, |f| {
         for enumeration in lib.native_enums() {
-            f.writeln(&format!("pub enum_{}: Enum{},", enumeration.name.to_snake_case(), enumeration.name.to_camel_case()))?;
+            f.writeln(&format!(
+                "pub enum_{}: Enum{},",
+                enumeration.name.to_snake_case(),
+                enumeration.name.to_camel_case()
+            ))?;
         }
 
         Ok(())
@@ -31,7 +38,11 @@ pub(crate) fn generate_enums_cache(lib: &Library, config: &JavaBindgenConfig) ->
             f.writeln("Self")?;
             blocked(f, |f| {
                 for enumeration in lib.native_enums() {
-                    f.writeln(&format!("enum_{}: Enum{}::init(env),", enumeration.name.to_snake_case(), enumeration.name.to_camel_case()))?;
+                    f.writeln(&format!(
+                        "enum_{}: Enum{}::init(env),",
+                        enumeration.name.to_snake_case(),
+                        enumeration.name.to_camel_case()
+                    ))?;
                 }
                 Ok(())
             })
@@ -47,7 +58,10 @@ pub(crate) fn generate_enums_cache(lib: &Library, config: &JavaBindgenConfig) ->
         blocked(&mut f, |f| {
             f.writeln("value_field: jni::objects::JFieldID<'static>,")?;
             for variant in &enumeration.variants {
-                f.writeln(&format!("variant_{}: jni::objects::GlobalRef,", variant.name.to_snake_case()))?;
+                f.writeln(&format!(
+                    "variant_{}: jni::objects::GlobalRef,",
+                    variant.name.to_snake_case()
+                ))?;
             }
 
             Ok(())
@@ -59,7 +73,10 @@ pub(crate) fn generate_enums_cache(lib: &Library, config: &JavaBindgenConfig) ->
         blocked(&mut f, |f| {
             f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
             blocked(f, |f| {
-                f.writeln(&format!("let class = env.find_class({}).expect(\"Unable to find {}\");", enum_sig, enum_name))?;
+                f.writeln(&format!(
+                    "let class = env.find_class({}).expect(\"Unable to find {}\");",
+                    enum_sig, enum_name
+                ))?;
                 f.writeln("Self")?;
                 blocked(f, |f| {
                     f.writeln(&format!("value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {}\"),", enum_name))?;
@@ -84,9 +101,16 @@ pub(crate) fn generate_enums_cache(lib: &Library, config: &JavaBindgenConfig) ->
                 f.writeln("match value")?;
                 blocked(f, |f| {
                     for variant in &enumeration.variants {
-                        f.writeln(&format!("{} => self.variant_{}.as_obj().into_inner(),", variant.value, variant.name.to_snake_case()))?;
+                        f.writeln(&format!(
+                            "{} => self.variant_{}.as_obj().into_inner(),",
+                            variant.value,
+                            variant.name.to_snake_case()
+                        ))?;
                     }
-                    f.writeln(&format!("_ => panic!(\"Invalid {} value: {{}}\", value),", enum_name))
+                    f.writeln(&format!(
+                        "_ => panic!(\"Invalid {} value: {{}}\", value),",
+                        enum_name
+                    ))
                 })
             })
         })?;

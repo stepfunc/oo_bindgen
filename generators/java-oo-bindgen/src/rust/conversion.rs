@@ -1,6 +1,7 @@
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::class::*;
+use oo_bindgen::native_enum::*;
 use super::formatting::*;
 use heck::SnakeCase;
 
@@ -52,7 +53,7 @@ impl JniType for Type {
             Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(_) => None,
-            Type::Enum(_) => None,
+            Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(_) => None,
             Type::OneTimeCallback(_) => None,
@@ -150,6 +151,22 @@ impl TypeConverter for StringConverter {
             f.writeln(&format!("let string = unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy();", from))?;
             f.writeln("_env.new_string(string).unwrap().into_inner()")
         })
+    }
+}
+
+struct EnumConverter(NativeEnumHandle);
+impl TypeConverter for EnumConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}_cache.enums.enum_{}.enum_to_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
+    }
+
+    fn convert_from_rust(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        f.writeln(&format!("{}_cache.enums.enum_{}.enum_from_rust(&_env, {})", to, self.0.name.to_snake_case(), from))
     }
 }
 

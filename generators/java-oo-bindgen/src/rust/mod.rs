@@ -7,6 +7,7 @@ use std::fs;
 
 mod classes;
 mod conversion;
+mod enums;
 mod formatting;
 
 pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
@@ -28,8 +29,9 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     f.newline()?;
     generate_functions(&mut f, lib, config)?;
 
-    // Create the modules
+    // Create the cache modules
     classes::generate_classes_cache(lib, config)?;
+    enums::generate_enums_cache(lib, config)?;
 
     // Copy the modules that never changes
     filename.set_file_name("joou.rs");
@@ -72,6 +74,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     // Import modules
     f.writeln("mod joou;")?;
     f.writeln("mod classes;")?;
+    f.writeln("mod enums;")?;
 
     // Create cache
     f.writeln("struct JCache")?;
@@ -79,6 +82,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("vm: jni::JavaVM,")?;
         f.writeln("joou: joou::Joou,")?;
         f.writeln("classes: classes::Classes,")?;
+        f.writeln("enums: enums::Enums,")?;
         // TODO: put the other cache elements here
         Ok(())
     })?;
@@ -92,12 +96,14 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             f.writeln("let env = vm.get_env().unwrap();")?;
             f.writeln("let joou = joou::Joou::init(&env);")?;
             f.writeln("let classes = classes::Classes::init(&env);")?;
+            f.writeln("let enums = enums::Enums::init(&env);")?;
             // TODO: initialize all the stuff here
             f.writeln("Self")?;
             blocked(f, |f| {
                 f.writeln("vm,")?;
                 f.writeln("joou,")?;
                 f.writeln("classes,")?;
+                f.writeln("enums,")?;
                 // TODO: put everything else here
                 Ok(())
             })

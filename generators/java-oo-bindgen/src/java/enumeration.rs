@@ -19,10 +19,19 @@ pub(crate) fn generate(
         // Write the variants
         for variant in &native_enum.variants {
             documentation(f, |f| javadoc_print(f, &variant.doc, lib))?;
-            f.writeln(&format!("{},", variant.name.to_shouty_snake_case()))?;
+            f.writeln(&format!("{}({}),", variant.name.to_shouty_snake_case(), variant.value))?;
         }
         f.write(";")?;
 
-        Ok(())
+        f.newline()?;
+
+        f.writeln("final private int value;")?;
+
+        f.newline()?;
+
+        f.writeln(&format!("private {}(int value)", enum_name))?;
+        blocked(f, |f| {
+            f.writeln("this.value = value;")
+        })
     })
 }

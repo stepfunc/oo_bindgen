@@ -2,7 +2,7 @@
 //mod class;
 //mod collection;
 //mod duration;
-//mod enums;
+mod enums;
 mod integer;
 //mod iterator;
 //mod lifetime;
@@ -13,7 +13,7 @@ mod strings;
 //pub(crate) use class::*;
 //pub(crate) use collection::*;
 //pub(crate) use duration::*;
-//pub(crate) use enums::*;
+pub use enums::*;
 pub use integer::*;
 //pub(crate) use iterator::*;
 //pub(crate) use lifetime::*;

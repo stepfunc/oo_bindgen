@@ -31,7 +31,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     //callback::define(&mut builder)?;
     //class::define(&mut builder)?;
     //duration::define(&mut builder)?;
-    //enums::define(&mut builder)?;
+    enums::define(&mut builder)?;
     integer::define(&mut builder)?;
     //iterator::define(&mut builder)?;
     strings::define(&mut builder)?;

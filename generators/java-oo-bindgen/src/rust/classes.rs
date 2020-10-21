@@ -15,9 +15,9 @@ pub(crate) fn generate_classes_cache(lib: &Library, config: &JavaBindgenConfig) 
     f.writeln("pub struct Classes")?;
     blocked(&mut f, |f| {
         for class in lib.classes().filter(|class| !class.is_static()) {
-            f.writeln(&format!("pub class_{}: jni::objects::GlobalRef,", class.name().to_snake_case()))?;
-            f.writeln(&format!("pub {}_constructor: jni::objects::JMethodID<'static>,", class.name().to_snake_case()))?;
-            f.writeln(&format!("pub {}_self_field: jni::objects::JFieldID<'static>,", class.name().to_snake_case()))?;
+            f.writeln(&format!("class_{}: jni::objects::GlobalRef,", class.name().to_snake_case()))?;
+            f.writeln(&format!("{}_constructor: jni::objects::JMethodID<'static>,", class.name().to_snake_case()))?;
+            f.writeln(&format!("{}_self_field: jni::objects::JFieldID<'static>,", class.name().to_snake_case()))?;
         }
 
         Ok(())
@@ -68,7 +68,5 @@ pub(crate) fn generate_classes_cache(lib: &Library, config: &JavaBindgenConfig) 
         }
 
         Ok(())
-    })?;
-
-    Ok(())
+    })
 }

@@ -58,21 +58,21 @@ impl Class {
         self.constructor.is_none() && self.destructor.is_none() && self.methods.is_empty()
     }
 
-    pub fn find_method(&self, method_name: &str) -> Option<&NativeFunctionHandle> {
+    pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&NativeFunctionHandle> {
         for method in &self.methods {
-            if method.name == method_name {
+            if method.name == method_name.as_ref() {
                 return Some(&method.native_function);
             }
         }
 
         for method in &self.static_methods {
-            if method.name == method_name {
+            if method.name == method_name.as_ref() {
                 return Some(&method.native_function);
             }
         }
 
         for method in &self.async_methods {
-            if method.name == method_name {
+            if method.name == method_name.as_ref() {
                 return Some(&method.native_function);
             }
         }
@@ -162,36 +162,40 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn method(mut self, name: &str, native_function: &NativeFunctionHandle) -> Result<Self> {
+    pub fn method<T: Into<String>>(
+        mut self,
+        name: T,
+        native_function: &NativeFunctionHandle,
+    ) -> Result<Self> {
         self.lib.validate_native_function(native_function)?;
         self.validate_first_param(native_function)?;
 
         self.methods.push(Method {
-            name: name.to_string(),
+            name: name.into(),
             native_function: native_function.clone(),
         });
 
         Ok(self)
     }
 
-    pub fn static_method(
+    pub fn static_method<T: Into<String>>(
         mut self,
-        name: &str,
+        name: T,
         native_function: &NativeFunctionHandle,
     ) -> Result<Self> {
         self.lib.validate_native_function(native_function)?;
 
         self.static_methods.push(Method {
-            name: name.to_string(),
+            name: name.into(),
             native_function: native_function.clone(),
         });
 
         Ok(self)
     }
 
-    pub fn async_method(
+    pub fn async_method<T: Into<String>>(
         mut self,
-        name: &str,
+        name: T,
         native_function: &NativeFunctionHandle,
     ) -> Result<Self> {
         self.lib.validate_native_function(native_function)?;
@@ -200,6 +204,7 @@ impl<'a> ClassBuilder<'a> {
         // Check that native method has a single callback with a single method,
         // with a single argument
 
+        let name = name.into();
         let mut async_method = None;
         for param in &native_function.parameters {
             if let Type::OneTimeCallback(ot_cb) = &param.param_type {

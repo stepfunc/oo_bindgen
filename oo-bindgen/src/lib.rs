@@ -347,7 +347,7 @@ impl Library {
         self.structs.values()
     }
 
-    pub fn find_struct(&self, name: &str) -> Option<&StructHandle> {
+    pub fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&StructHandle> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -367,7 +367,7 @@ impl Library {
         })
     }
 
-    pub fn find_enum(&self, name: &str) -> Option<&NativeEnumHandle> {
+    pub fn find_enum<T: AsRef<str>>(&self, name: T) -> Option<&NativeEnumHandle> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -387,7 +387,22 @@ impl Library {
         })
     }
 
-    pub fn find_class(&self, name: &str) -> Option<&ClassHandle> {
+    pub fn find_class_declaration<T: AsRef<str>>(
+        &self,
+        name: T,
+    ) -> Option<&ClassDeclarationHandle> {
+        self.symbol(name)
+            .iter()
+            .filter_map(|symbol| match symbol {
+                Symbol::Class(handle) => Some(&handle.declaration),
+                Symbol::Iterator(handle) => Some(&handle.iter_type),
+                Symbol::Collection(handle) => Some(&handle.collection_type),
+                _ => None,
+            })
+            .next()
+    }
+
+    pub fn find_class<T: AsRef<str>>(&self, name: T) -> Option<&ClassHandle> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -407,7 +422,7 @@ impl Library {
         })
     }
 
-    pub fn find_interface(&self, name: &str) -> Option<&InterfaceHandle> {
+    pub fn find_interface<T: AsRef<str>>(&self, name: T) -> Option<&InterfaceHandle> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -427,7 +442,7 @@ impl Library {
         })
     }
 
-    pub fn find_one_time_callback(&self, name: &str) -> Option<&OneTimeCallbackHandle> {
+    pub fn find_one_time_callback<T: AsRef<str>>(&self, name: T) -> Option<&OneTimeCallbackHandle> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -440,8 +455,8 @@ impl Library {
             .next()
     }
 
-    pub fn symbol(&self, symbol_name: &str) -> Option<&Symbol> {
-        self.symbols.get(symbol_name)
+    pub fn symbol<T: AsRef<str>>(&self, symbol_name: T) -> Option<&Symbol> {
+        self.symbols.get(symbol_name.as_ref())
     }
 }
 
@@ -481,9 +496,9 @@ pub struct LibraryBuilder {
 }
 
 impl LibraryBuilder {
-    pub fn new(name: &str, version: Version) -> Self {
+    pub fn new<T: Into<String>>(name: T, version: Version) -> Self {
         Self {
-            name: name.to_string(),
+            name: name.into(),
             version,
             description: None,
             license: Vec::new(),
@@ -582,11 +597,11 @@ impl LibraryBuilder {
         Ok(lib)
     }
 
-    pub fn description(&mut self, description: &str) -> Result<()> {
+    pub fn description<T: Into<String>>(&mut self, description: T) -> Result<()> {
         match self.description {
             Some(_) => Err(BindingError::DescriptionAlreadySet),
             None => {
-                self.description = Some(description.to_string());
+                self.description = Some(description.into());
                 Ok(())
             }
         }
@@ -598,10 +613,13 @@ impl LibraryBuilder {
     }
 
     /// Forward declare a native structure
-    pub fn declare_native_struct(&mut self, name: &str) -> Result<NativeStructDeclarationHandle> {
-        self.check_unique_symbol(name)?;
-        let handle =
-            NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name.to_string()));
+    pub fn declare_native_struct<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> Result<NativeStructDeclarationHandle> {
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        let handle = NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name));
         self.native_structs_declarations.insert(handle.clone());
         self.statements
             .push(Statement::NativeStructDeclaration(handle.clone()));
@@ -635,19 +653,25 @@ impl LibraryBuilder {
     }
 
     /// Define an enumeration
-    pub fn define_native_enum(&mut self, name: &str) -> Result<NativeEnumBuilder> {
-        self.check_unique_symbol(name)?;
-        Ok(NativeEnumBuilder::new(self, name.to_string()))
+    pub fn define_native_enum<T: Into<String>>(&mut self, name: T) -> Result<NativeEnumBuilder> {
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        Ok(NativeEnumBuilder::new(self, name))
     }
 
-    pub fn declare_native_function(&mut self, name: &str) -> Result<NativeFunctionBuilder> {
-        self.check_unique_symbol(name)?;
-        Ok(NativeFunctionBuilder::new(self, name.to_string()))
+    pub fn declare_native_function<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> Result<NativeFunctionBuilder> {
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        Ok(NativeFunctionBuilder::new(self, name))
     }
 
-    pub fn declare_class(&mut self, name: &str) -> Result<ClassDeclarationHandle> {
-        self.check_unique_symbol(name)?;
-        let handle = ClassDeclarationHandle::new(ClassDeclaration::new(name.to_string()));
+    pub fn declare_class<T: Into<String>>(&mut self, name: T) -> Result<ClassDeclarationHandle> {
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        let handle = ClassDeclarationHandle::new(ClassDeclaration::new(name));
         self.class_declarations.insert(handle.clone());
         self.statements
             .push(Statement::ClassDeclaration(handle.clone()));
@@ -665,26 +689,24 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn define_interface<D: Into<Doc>>(
+    pub fn define_interface<T: Into<String>, D: Into<Doc>>(
         &mut self,
-        name: &str,
+        name: T,
         doc: D,
     ) -> Result<InterfaceBuilder> {
-        self.check_unique_symbol(name)?;
-        Ok(InterfaceBuilder::new(self, name.to_string(), doc.into()))
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        Ok(InterfaceBuilder::new(self, name, doc.into()))
     }
 
-    pub fn define_one_time_callback<D: Into<Doc>>(
+    pub fn define_one_time_callback<T: Into<String>, D: Into<Doc>>(
         &mut self,
-        name: &str,
+        name: T,
         doc: D,
     ) -> Result<OneTimeCallbackBuilder> {
-        self.check_unique_symbol(name)?;
-        Ok(OneTimeCallbackBuilder::new(
-            self,
-            name.to_string(),
-            doc.into(),
-        ))
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        Ok(OneTimeCallbackBuilder::new(self, name, doc.into()))
     }
 
     pub fn define_iterator(

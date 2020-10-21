@@ -102,15 +102,15 @@ impl<'a> NativeFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<D: Into<DocString>>(
+    pub fn param<T: Into<String>, D: Into<DocString>>(
         mut self,
-        name: &str,
+        name: T,
         param_type: Type,
         doc: D,
     ) -> Result<Self> {
         self.lib.validate_type(&param_type)?;
         self.params.push(Parameter {
-            name: name.to_string(),
+            name: name.into(),
             param_type,
             doc: doc.into(),
         });

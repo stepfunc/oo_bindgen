@@ -16,10 +16,10 @@ pub struct NativeEnum {
 }
 
 impl NativeEnum {
-    pub fn find_variant(&self, variant_name: &str) -> Option<&EnumVariant> {
+    pub fn find_variant<T: AsRef<str>>(&self, variant_name: T) -> Option<&EnumVariant> {
         self.variants
             .iter()
-            .find(|variant| variant.name == variant_name)
+            .find(|variant| variant.name == variant_name.as_ref())
     }
 }
 
@@ -48,12 +48,18 @@ impl<'a> NativeEnumBuilder<'a> {
         }
     }
 
-    pub fn variant<D: Into<Doc>>(mut self, name: &str, value: i32, doc: D) -> Result<Self> {
+    pub fn variant<T: Into<String>, D: Into<Doc>>(
+        mut self,
+        name: T,
+        value: i32,
+        doc: D,
+    ) -> Result<Self> {
+        let name = name.into();
         let unique_name = self.variant_names.insert(name.to_string());
         let unique_value = self.variant_values.insert(value);
         if unique_name && unique_value {
             self.variants.push(EnumVariant {
-                name: name.to_string(),
+                name,
                 value,
                 doc: doc.into(),
             });
@@ -62,7 +68,7 @@ impl<'a> NativeEnumBuilder<'a> {
         } else if !unique_name {
             Err(BindingError::NativeEnumAlreadyContainsVariantWithSameName {
                 name: self.name,
-                variant_name: name.to_string(),
+                variant_name: name,
             })
         } else {
             Err(
@@ -74,7 +80,7 @@ impl<'a> NativeEnumBuilder<'a> {
         }
     }
 
-    pub fn push<D: Into<Doc>>(self, name: &str, doc: D) -> Result<Self> {
+    pub fn push<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> Result<Self> {
         let value = self.next_value;
         self.variant(name, value, doc)
     }

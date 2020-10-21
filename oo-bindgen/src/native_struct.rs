@@ -65,11 +65,17 @@ impl<'a> NativeStructBuilder<'a> {
         }
     }
 
-    pub fn add<D: Into<Doc>>(mut self, name: &str, element_type: Type, doc: D) -> Result<Self> {
+    pub fn add<T: Into<String>, D: Into<Doc>>(
+        mut self,
+        name: T,
+        element_type: Type,
+        doc: D,
+    ) -> Result<Self> {
+        let name = name.into();
         self.lib.validate_type(&element_type)?;
         if self.element_names_set.insert(name.to_string()) {
             self.elements.push(NativeStructElement {
-                name: name.to_string(),
+                name,
                 element_type,
                 doc: doc.into(),
             });
@@ -78,7 +84,7 @@ impl<'a> NativeStructBuilder<'a> {
             Err(
                 BindingError::NativeStructAlreadyContainsElementWithSameName {
                     handle: self.declaration,
-                    element_name: name.to_string(),
+                    element_name: name,
                 },
             )
         }
@@ -160,15 +166,15 @@ impl Struct {
         &self.definition.doc
     }
 
-    pub fn find_method(&self, method_name: &str) -> Option<&NativeFunctionHandle> {
+    pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&NativeFunctionHandle> {
         for method in &self.methods {
-            if method.name == method_name {
+            if method.name == method_name.as_ref() {
                 return Some(&method.native_function);
             }
         }
 
         for method in &self.static_methods {
-            if method.name == method_name {
+            if method.name == method_name.as_ref() {
                 return Some(&method.native_function);
             }
         }
@@ -176,8 +182,8 @@ impl Struct {
         None
     }
 
-    pub fn find_element(&self, element_name: &str) -> Option<&NativeStructElement> {
-        self.elements().find(|el| el.name == element_name)
+    pub fn find_element<T: AsRef<str>>(&self, element_name: T) -> Option<&NativeStructElement> {
+        self.elements().find(|el| el.name == element_name.as_ref())
     }
 }
 
@@ -207,41 +213,47 @@ impl<'a> StructBuilder<'a> {
         }
     }
 
-    pub fn method(mut self, name: &str, native_function: &NativeFunctionHandle) -> Result<Self> {
+    pub fn method<T: Into<String>>(
+        mut self,
+        name: T,
+        native_function: &NativeFunctionHandle,
+    ) -> Result<Self> {
+        let name = name.into();
         self.lib.validate_native_function(native_function)?;
         self.validate_first_param(native_function)?;
 
         if self.element_names_set.insert(name.to_string()) {
             self.methods.push(Method {
-                name: name.to_string(),
+                name,
                 native_function: native_function.clone(),
             });
             Ok(self)
         } else {
             Err(BindingError::StructAlreadyContainsElementWithSameName {
                 handle: self.definition.declaration(),
-                element_name: name.to_string(),
+                element_name: name,
             })
         }
     }
 
-    pub fn static_method(
+    pub fn static_method<T: Into<String>>(
         mut self,
-        name: &str,
+        name: T,
         native_function: &NativeFunctionHandle,
     ) -> Result<Self> {
+        let name = name.into();
         self.lib.validate_native_function(native_function)?;
 
         if self.element_names_set.insert(name.to_string()) {
             self.static_methods.push(Method {
-                name: name.to_string(),
+                name,
                 native_function: native_function.clone(),
             });
             Ok(self)
         } else {
             Err(BindingError::StructAlreadyContainsElementWithSameName {
                 handle: self.definition.declaration(),
-                element_name: name.to_string(),
+                element_name: name,
             })
         }
     }

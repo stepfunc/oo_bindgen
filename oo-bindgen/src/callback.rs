@@ -52,8 +52,9 @@ impl Interface {
         })
     }
 
-    pub fn find_callback(&self, name: &str) -> Option<&CallbackFunction> {
-        self.callbacks().find(|callback| callback.name == name)
+    pub fn find_callback<T: AsRef<str>>(&self, name: T) -> Option<&CallbackFunction> {
+        self.callbacks()
+            .find(|callback| callback.name == name.as_ref())
     }
 }
 
@@ -82,26 +83,23 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn callback<D: Into<Doc>>(
+    pub fn callback<T: Into<String>, D: Into<Doc>>(
         mut self,
-        name: &str,
+        name: T,
         doc: D,
     ) -> Result<CallbackFunctionBuilder<Self>> {
-        self.check_unique_name(name)?;
-        Ok(CallbackFunctionBuilder::new(
-            self,
-            name.to_string(),
-            doc.into(),
-        ))
+        let name = name.into();
+        self.check_unique_name(&name)?;
+        Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
     }
 
-    pub fn destroy_callback(mut self, name: &str) -> Result<Self> {
+    pub fn destroy_callback<T: Into<String>>(mut self, name: T) -> Result<Self> {
         match self.destroy_name {
             None => {
-                self.check_unique_name(name)?;
+                let name = name.into();
+                self.check_unique_name(&name)?;
                 self.destroy_name = Some(name.to_string());
-                self.elements
-                    .push(InterfaceElement::DestroyFunction(name.to_string()));
+                self.elements.push(InterfaceElement::DestroyFunction(name));
                 Ok(self)
             }
             Some(_) => Err(BindingError::InterfaceDestroyCallbackAlreadyDefined {
@@ -110,12 +108,13 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn ctx(mut self, name: &str) -> Result<Self> {
+    pub fn ctx<T: Into<String>>(mut self, name: T) -> Result<Self> {
         match self.arg_name {
             None => {
-                self.check_unique_name(name)?;
+                let name = name.into();
+                self.check_unique_name(&name)?;
                 self.arg_name = Some(name.to_string());
-                self.elements.push(InterfaceElement::Arg(name.to_string()));
+                self.elements.push(InterfaceElement::Arg(name));
                 Ok(self)
             }
             Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
@@ -188,8 +187,9 @@ impl OneTimeCallback {
         })
     }
 
-    pub fn find_callback(&self, name: &str) -> Option<&CallbackFunction> {
-        self.callbacks().find(|callback| callback.name == name)
+    pub fn find_callback<T: AsRef<str>>(&self, name: T) -> Option<&CallbackFunction> {
+        self.callbacks()
+            .find(|callback| callback.name == name.as_ref())
     }
 }
 
@@ -216,26 +216,23 @@ impl<'a> OneTimeCallbackBuilder<'a> {
         }
     }
 
-    pub fn callback<D: Into<Doc>>(
+    pub fn callback<T: Into<String>, D: Into<Doc>>(
         mut self,
-        name: &str,
+        name: T,
         doc: D,
     ) -> Result<CallbackFunctionBuilder<Self>> {
-        self.check_unique_name(name)?;
-        Ok(CallbackFunctionBuilder::new(
-            self,
-            name.to_string(),
-            doc.into(),
-        ))
+        let name = name.into();
+        self.check_unique_name(&name)?;
+        Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
     }
 
-    pub fn ctx(mut self, name: &str) -> Result<Self> {
+    pub fn ctx<T: Into<String>>(mut self, name: T) -> Result<Self> {
         match self.arg_name {
             None => {
-                self.check_unique_name(name)?;
+                let name = name.into();
+                self.check_unique_name(&name)?;
                 self.arg_name = Some(name.to_string());
-                self.elements
-                    .push(OneTimeCallbackElement::Arg(name.to_string()));
+                self.elements.push(OneTimeCallbackElement::Arg(name));
                 Ok(self)
             }
             Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
@@ -326,26 +323,27 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
         }
     }
 
-    pub fn param<D: Into<DocString>>(
+    pub fn param<S: Into<String>, D: Into<DocString>>(
         mut self,
-        name: &str,
+        name: S,
         param_type: Type,
         doc: D,
     ) -> Result<Self> {
         self.target.lib().validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
-            name: name.to_string(),
+            name: name.into(),
             param_type,
             doc: doc.into(),
         }));
         Ok(self)
     }
 
-    pub fn ctx(mut self, name: &str) -> Result<Self> {
+    pub fn ctx<S: Into<String>>(mut self, name: S) -> Result<Self> {
         match self.arg_name {
             None => {
+                let name = name.into();
                 self.arg_name = Some(name.to_string());
-                self.params.push(CallbackParameter::Arg(name.to_string()));
+                self.params.push(CallbackParameter::Arg(name));
                 Ok(self)
             }
             Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {

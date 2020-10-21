@@ -137,8 +137,9 @@ impl Default for DocString {
     }
 }
 
-impl From<&str> for DocString {
-    fn from(mut from: &str) -> DocString {
+impl<T: AsRef<str>> From<T> for DocString {
+    fn from(from: T) -> DocString {
+        let mut from = from.as_ref();
         let mut result = DocString::new();
         while let Some(start_idx) = from.find('{') {
             let (before_str, current_str) = from.split_at(start_idx);
@@ -888,5 +889,10 @@ mod tests {
             .as_ref(),
             doc.elements.as_slice()
         );
+    }
+
+    #[test]
+    fn parse_from_owned_string() {
+        doc(format!("{{null}} this is a {}", "test"));
     }
 }

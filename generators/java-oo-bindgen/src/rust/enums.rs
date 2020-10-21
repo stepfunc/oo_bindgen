@@ -96,7 +96,7 @@ pub(crate) fn generate_enums_cache(
 
             f.newline()?;
 
-            f.writeln("pub fn enum_from_rust(&self, env: &jni::JNIEnv, value: std::os::raw::c_int) -> jni::sys::jobject")?;
+            f.writeln("pub fn enum_from_rust(&self, _env: &jni::JNIEnv, value: std::os::raw::c_int) -> jni::sys::jobject")?;
             blocked(f, |f| {
                 f.writeln("match value")?;
                 blocked(f, |f| {

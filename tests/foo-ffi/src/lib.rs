@@ -1,7 +1,7 @@
 //mod callback;
 //mod class;
 //mod collection;
-//mod duration;
+mod duration;
 mod enums;
 mod integer;
 //mod iterator;
@@ -12,7 +12,7 @@ mod strings;
 //pub(crate) use callback::*;
 //pub(crate) use class::*;
 //pub(crate) use collection::*;
-//pub(crate) use duration::*;
+pub use duration::*;
 pub use enums::*;
 pub use integer::*;
 //pub(crate) use iterator::*;

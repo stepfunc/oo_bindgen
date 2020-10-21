@@ -59,7 +59,7 @@ impl JniType for Type {
             Type::OneTimeCallback(_) => None,
             Type::Iterator(_) => None,
             Type::Collection(_) => None,
-            Type::Duration(_) => None,
+            Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
 }
@@ -186,6 +186,39 @@ impl TypeConverter for ClassConverter {
             "{}_cache.classes.{}_from_rust(&_env, {})",
             to,
             self.0.name.to_snake_case(),
+            from
+        ))
+    }
+}
+
+struct DurationConverter(DurationMapping);
+impl TypeConverter for DurationConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        let method = match self.0 {
+            DurationMapping::Milliseconds => "duration_to_millis",
+            DurationMapping::Seconds => "duration_to_seconds",
+            DurationMapping::SecondsFloat => "duration_to_seconds_float",
+        };
+
+        f.writeln(&format!(
+            "{}_cache.duration.{}(&_env, {})",
+            to,
+            method,
+            from
+        ))
+    }
+
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        let method = match self.0 {
+            DurationMapping::Milliseconds => "duration_from_millis",
+            DurationMapping::Seconds => "duration_from_seconds",
+            DurationMapping::SecondsFloat => "duration_from_seconds_float",
+        };
+
+        f.writeln(&format!(
+            "{}_cache.duration.{}(&_env, {})",
+            to,
+            method,
             from
         ))
     }

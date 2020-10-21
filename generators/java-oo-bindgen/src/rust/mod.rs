@@ -38,6 +38,10 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("./copy/joou.rs"))?;
 
+    filename.set_file_name("duration.rs");
+    let mut f = FilePrinter::new(&filename)?;
+    f.write(include_str!("./copy/duration.rs"))?;
+
     Ok(())
 }
 
@@ -73,6 +77,7 @@ fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<
 fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     // Import modules
     f.writeln("mod joou;")?;
+    f.writeln("mod duration;")?;
     f.writeln("mod classes;")?;
     f.writeln("mod enums;")?;
 
@@ -81,6 +86,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     blocked(f, |f| {
         f.writeln("vm: jni::JavaVM,")?;
         f.writeln("joou: joou::Joou,")?;
+        f.writeln("duration: duration::Duration,")?;
         f.writeln("classes: classes::Classes,")?;
         f.writeln("enums: enums::Enums,")?;
         // TODO: put the other cache elements here
@@ -95,6 +101,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         blocked(f, |f| {
             f.writeln("let env = vm.get_env().unwrap();")?;
             f.writeln("let joou = joou::Joou::init(&env);")?;
+            f.writeln("let duration = duration::Duration::init(&env);")?;
             f.writeln("let classes = classes::Classes::init(&env);")?;
             f.writeln("let enums = enums::Enums::init(&env);")?;
             // TODO: initialize all the stuff here
@@ -102,6 +109,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             blocked(f, |f| {
                 f.writeln("vm,")?;
                 f.writeln("joou,")?;
+                f.writeln("duration,")?;
                 f.writeln("classes,")?;
                 f.writeln("enums,")?;
                 // TODO: put everything else here

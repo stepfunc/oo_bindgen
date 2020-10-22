@@ -27,7 +27,7 @@ public class StructureTest {
         checkStructure(result);
     }
 
-    @Test
+    /*@Test
     @Disabled // Because of the way we handle interfaces atm, it will return null
     public void InterfaceStruct() {
         Structure value = createStructure();
@@ -38,7 +38,7 @@ public class StructureTest {
 
         assertThat(result.interfaceValue).isNotNull();
         checkStructure(testInterface.lastValue);
-    }
+    }*/
 
     static class TestInterface implements StructureInterface {
         public Structure lastValue = null;
@@ -63,13 +63,14 @@ public class StructureTest {
         structure.int64Value = -4L;
         structure.floatValue = 12.34f;
         structure.doubleValue = -56.78;
+        structure.stringValue = "asdf";
 
         structure.structureValue = new OtherStructure();
         structure.structureValue.test = ushort(41);
 
         structure.enumValue = StructureEnum.VAR2;
 
-        structure.interfaceValue = new TestInterface();
+        //structure.interfaceValue = new TestInterface();
 
         structure.durationMillis = Duration.ofMillis(4200);
         structure.durationSeconds = Duration.ofSeconds(76);
@@ -90,6 +91,7 @@ public class StructureTest {
         assertThat(structure.int64Value).isEqualTo(-4);
         assertThat(structure.floatValue).isEqualTo(12.34f);
         assertThat(structure.doubleValue).isEqualTo(-56.78);
+        assertThat(structure.stringValue).isEqualTo("asdf");
 
         assertThat(structure.structureValue.test).isEqualTo(ushort(41));
         assertThat(structure.enumValue).isEqualTo(StructureEnum.VAR2);

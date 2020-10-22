@@ -110,10 +110,11 @@ impl<'a> RustCodegen<'a> {
         } else {
             ""
         };
-        let public = if handle.has_conversion() { "" } else { "pub " };
+        let public = "pub ";//if handle.has_conversion() { "" } else { "pub " };
 
         // Write the C struct with private fields (if conversion required)
         f.writeln("#[repr(C)]")?;
+        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}{}", handle.name(), c_lifetime))?;
 
         blocked(f, |f| {

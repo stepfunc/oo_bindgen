@@ -9,6 +9,7 @@ mod classes;
 mod conversion;
 mod enums;
 mod formatting;
+mod structs;
 
 pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.rust_output_dir)?;
@@ -32,6 +33,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     // Create the cache modules
     classes::generate_classes_cache(lib, config)?;
     enums::generate_enums_cache(lib, config)?;
+    structs::generate_structs_cache(lib, config)?;
 
     // Copy the modules that never changes
     filename.set_file_name("joou.rs");
@@ -80,6 +82,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod duration;")?;
     f.writeln("mod classes;")?;
     f.writeln("mod enums;")?;
+    f.writeln("mod structs;")?;
 
     // Create cache
     f.writeln("struct JCache")?;
@@ -89,6 +92,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("duration: duration::Duration,")?;
         f.writeln("classes: classes::Classes,")?;
         f.writeln("enums: enums::Enums,")?;
+        f.writeln("structs: structs::Structs,")?;
         // TODO: put the other cache elements here
         Ok(())
     })?;
@@ -104,6 +108,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             f.writeln("let duration = duration::Duration::init(&env);")?;
             f.writeln("let classes = classes::Classes::init(&env);")?;
             f.writeln("let enums = enums::Enums::init(&env);")?;
+            f.writeln("let structs = structs::Structs::init(&env);")?;
             // TODO: initialize all the stuff here
             f.writeln("Self")?;
             blocked(f, |f| {
@@ -112,6 +117,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
                 f.writeln("duration,")?;
                 f.writeln("classes,")?;
                 f.writeln("enums,")?;
+                f.writeln("structs,")?;
                 // TODO: put everything else here
                 Ok(())
             })
@@ -206,11 +212,25 @@ fn generate_functions(
                 &handle
                     .parameters
                     .iter()
-                    .map(|param| param.name.clone())
+                    .map(|param| {
+                        if matches!(param.param_type, Type::Struct(_)) {
+                            format!("{}.clone()", &param.name)
+                        } else {
+                            param.name.to_string()
+                        }
+                    })
                     .collect::<Vec<String>>()
                     .join(", "),
             )?;
             f.write(") };")?;
+
+            // Convert return value
+            if let ReturnType::Type(return_type, _) = &handle.return_type {
+                if let Some(conversion) = return_type.conversion() {
+                    conversion.convert_from_rust(f, "_result", "let _result = ")?;
+                    f.write(";")?;
+                }
+            }
 
             // Conversion cleanup
             for param in &handle.parameters {
@@ -220,12 +240,8 @@ fn generate_functions(
             }
 
             // Return value
-            if let ReturnType::Type(return_type, _) = &handle.return_type {
-                if let Some(conversion) = return_type.conversion() {
-                    conversion.convert_from_rust(f, "_result", "return ")?;
-                } else {
-                    f.writeln("return _result;")?;
-                }
+            if !handle.return_type.is_void() {
+                f.writeln("return _result;")?;
             }
 
             Ok(())

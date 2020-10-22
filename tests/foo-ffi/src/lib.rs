@@ -7,7 +7,7 @@ mod integer;
 //mod iterator;
 //mod lifetime;
 mod strings;
-//mod structure;
+mod structure;
 
 //pub(crate) use callback::*;
 //pub(crate) use class::*;
@@ -18,6 +18,6 @@ pub use integer::*;
 //pub(crate) use iterator::*;
 //pub(crate) use lifetime::*;
 pub use strings::*;
-//pub(crate) use structure::*;
+pub use structure::*;
 
 pub mod ffi;

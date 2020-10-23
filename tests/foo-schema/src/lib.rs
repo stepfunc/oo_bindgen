@@ -33,7 +33,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     duration::define(&mut builder)?;
     enums::define(&mut builder)?;
     integer::define(&mut builder)?;
-    //iterator::define(&mut builder)?;
+    iterator::define(&mut builder)?;
     strings::define(&mut builder)?;
     structure::define(&mut builder)?;
     //lifetime::define(&mut builder)?;

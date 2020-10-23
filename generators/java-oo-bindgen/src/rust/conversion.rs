@@ -2,6 +2,7 @@ use super::formatting::*;
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::iterator::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
@@ -10,7 +11,7 @@ pub(crate) trait JniType {
     fn as_raw_jni_type(&self) -> &str;
     fn as_jni_sig(&self, lib_path: &str) -> String;
     fn convert_jvalue(&self) -> &str;
-    fn conversion(&self) -> Option<Box<dyn TypeConverter>>;
+    fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>>;
 }
 
 impl JniType for Type {
@@ -60,8 +61,8 @@ impl JniType for Type {
             Type::ClassRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::Interface(_) => todo!(),
             Type::OneTimeCallback(_) => todo!(),
-            Type::Iterator(_) => todo!(),
-            Type::Collection(_) => todo!(),
+            Type::Iterator(_) => "Ljava/util/Collection;".to_string(),
+            Type::Collection(_) => "Ljava/util/Collection;".to_string(),
             Type::Duration(_) => "Ljava/time/Duration;".to_string(),
         }
     }
@@ -92,7 +93,7 @@ impl JniType for Type {
         }
     }
 
-    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+    fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
             Type::Bool => Some(Box::new(BooleanConverter)),
             Type::Uint8 => Some(Box::new(UnsignedConverter("ubyte".to_string()))),
@@ -112,7 +113,7 @@ impl JniType for Type {
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(_) => None,
             Type::OneTimeCallback(_) => None,
-            Type::Iterator(_) => None,
+            Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone(), lib_name.to_string()))),
             Type::Collection(_) => None,
             Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
@@ -141,10 +142,10 @@ impl JniType for ReturnType {
         }
     }
 
-    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+    fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
             ReturnType::Void => None,
-            ReturnType::Type(return_type, _) => return_type.conversion(),
+            ReturnType::Type(return_type, _) => return_type.conversion(lib_name),
         }
     }
 }
@@ -256,7 +257,11 @@ impl TypeConverter for StructRefConverter {
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.structs.struct_{}.struct_from_rust(_cache, &_env, &{})", to, self.0.name.to_snake_case(), from))
+        f.writeln(&format!("{}match unsafe {{ {}.as_ref() }}", to, from))?;
+        blocked(f, |f| {
+            f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
+            f.writeln(&format!("Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),", self.0.name.to_snake_case()))
+        })
     }
 }
 
@@ -299,6 +304,39 @@ impl TypeConverter for ClassConverter {
             self.0.name.to_snake_case(),
             from
         ))
+    }
+}
+
+struct IteratorConverter(IteratorHandle, String);
+impl TypeConverter for IteratorConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}std::ptr::null()",
+            to
+        ))
+    }
+
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(to)?;
+        blocked(f, |f| {
+            f.writeln("let array_list = _cache.collection.new_array_list(&_env);")?;
+            f.writeln(&format!("while let it = unsafe {{ {}::ffi::{}({}) }}", self.1, self.0.native_func.name, from))?;
+            blocked(f, |f| {
+                f.writeln("match unsafe { it.as_ref() }")?;
+                blocked(f, |f| {
+                    f.writeln("None => { break; }")?;
+                    f.writeln("Some(it) => ")?;
+                    blocked(f, |f| {
+                        StructConverter(self.0.item_type.clone()).convert_from_rust(f, "it", "let item = ")?;
+                        f.write(";")?;
+
+                        f.writeln("_cache.collection.add_to_array_list(&_env, array_list, item.into());")
+                    })?;
+                    f.write(",")
+                })
+            })?;
+            f.writeln("array_list.into_inner()")
+        })
     }
 }
 

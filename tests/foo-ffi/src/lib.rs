@@ -4,7 +4,7 @@
 mod duration;
 mod enums;
 mod integer;
-//mod iterator;
+mod iterator;
 //mod lifetime;
 mod strings;
 mod structure;
@@ -15,9 +15,9 @@ mod structure;
 pub use duration::*;
 pub use enums::*;
 pub use integer::*;
-//pub(crate) use iterator::*;
+pub use iterator::*;
 //pub(crate) use lifetime::*;
 pub use strings::*;
-pub use structure::*;
+pub(crate) use structure::*;
 
 pub mod ffi;

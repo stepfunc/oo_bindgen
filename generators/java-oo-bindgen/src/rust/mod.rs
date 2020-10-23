@@ -44,6 +44,10 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("./copy/duration.rs"))?;
 
+    filename.set_file_name("collection.rs");
+    let mut f = FilePrinter::new(&filename)?;
+    f.write(include_str!("./copy/collection.rs"))?;
+
     Ok(())
 }
 
@@ -82,6 +86,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod duration;")?;
     f.writeln("mod classes;")?;
     f.writeln("mod enums;")?;
+    f.writeln("mod collection;")?;
     f.writeln("mod structs;")?;
 
     // Create cache
@@ -90,6 +95,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("vm: jni::JavaVM,")?;
         f.writeln("joou: joou::Joou,")?;
         f.writeln("duration: duration::Duration,")?;
+        f.writeln("collection: collection::Collection,")?;
         f.writeln("classes: classes::Classes,")?;
         f.writeln("enums: enums::Enums,")?;
         f.writeln("structs: structs::Structs,")?;
@@ -106,6 +112,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             f.writeln("let env = vm.get_env().unwrap();")?;
             f.writeln("let joou = joou::Joou::init(&env);")?;
             f.writeln("let duration = duration::Duration::init(&env);")?;
+            f.writeln("let collection = collection::Collection::init(&env);")?;
             f.writeln("let classes = classes::Classes::init(&env);")?;
             f.writeln("let enums = enums::Enums::init(&env);")?;
             f.writeln("let structs = structs::Structs::init(&env);")?;
@@ -115,6 +122,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
                 f.writeln("vm,")?;
                 f.writeln("joou,")?;
                 f.writeln("duration,")?;
+                f.writeln("collection,")?;
                 f.writeln("classes,")?;
                 f.writeln("enums,")?;
                 f.writeln("structs,")?;
@@ -157,15 +165,6 @@ fn generate_functions(
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
     for handle in lib.native_functions() {
-        if let Some(first_param) = handle.parameters.first() {
-            // We don't want to generate the `next` methods of iterators
-            if let Type::ClassRef(handle) = &first_param.param_type {
-                if matches!(lib.symbol(&handle.name).unwrap(), Symbol::Iterator(_)) {
-                    continue;
-                }
-            }
-        }
-
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.name, handle.name.replace("_", "_1")))?;
         f.write(
@@ -188,7 +187,7 @@ fn generate_functions(
 
             // Perform the conversion of the parameters
             for param in &handle.parameters {
-                if let Some(conversion) = param.param_type.conversion() {
+                if let Some(conversion) = param.param_type.conversion(&config.ffi_name) {
                     conversion.convert_to_rust(
                         f,
                         &param.name,
@@ -226,7 +225,7 @@ fn generate_functions(
 
             // Convert return value
             if let ReturnType::Type(return_type, _) = &handle.return_type {
-                if let Some(conversion) = return_type.conversion() {
+                if let Some(conversion) = return_type.conversion(&config.ffi_name) {
                     conversion.convert_from_rust(f, "_result", "let _result = ")?;
                     f.write(";")?;
                 }
@@ -234,7 +233,7 @@ fn generate_functions(
 
             // Conversion cleanup
             for param in &handle.parameters {
-                if let Some(conversion) = param.param_type.conversion() {
+                if let Some(conversion) = param.param_type.conversion(&config.ffi_name) {
                     conversion.convert_to_rust_cleanup(f, &param.name)?;
                 }
             }

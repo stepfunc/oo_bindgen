@@ -99,7 +99,7 @@ pub(crate) fn generate_structs_cache(
 
             let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
 
-            f.writeln(&format!("pub fn struct_to_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}", ffi_struct_name))?;
+            f.writeln(&format!("pub(crate) fn struct_to_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}", ffi_struct_name))?;
             blocked(f, |f| {
                 for field in &structure.elements {
                     f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name.to_snake_case(), field.name.to_snake_case(), field.element_type.as_jni_sig(&lib_path), field.element_type.convert_jvalue()))?;
@@ -108,7 +108,7 @@ pub(crate) fn generate_structs_cache(
                 f.writeln(&ffi_struct_name)?;
                 blocked(f, |f| {
                     for field in &structure.elements {
-                        if let Some(conversion) = field.element_type.conversion() {
+                        if let Some(conversion) = field.element_type.conversion(&config.ffi_name) {
                             conversion.convert_to_rust(f, &field.name.to_snake_case(), &format!("{}: ", field.name.to_snake_case()))?;
                             f.write(",")?;
                         } else {
@@ -124,11 +124,11 @@ pub(crate) fn generate_structs_cache(
 
             f.newline()?;
 
-            f.writeln(&format!("pub fn struct_to_rust_cleanup(&self, _cache: &super::JCache, _env: &jni::JNIEnv, value: &{})", ffi_struct_name))?;
+            f.writeln(&format!("pub(crate) fn struct_to_rust_cleanup(&self, _cache: &super::JCache, _env: &jni::JNIEnv, _value: &{})", ffi_struct_name))?;
             blocked(f, |f| {
                 for field in &structure.elements {
-                    if let Some(conversion) = field.element_type.conversion() {
-                        conversion.convert_to_rust_cleanup(f, &format!("value.{}", field.name.to_snake_case()))?;
+                    if let Some(conversion) = field.element_type.conversion(&config.ffi_name) {
+                        conversion.convert_to_rust_cleanup(f, &format!("_value.{}", field.name.to_snake_case()))?;
                     }
                 }
 
@@ -137,11 +137,11 @@ pub(crate) fn generate_structs_cache(
 
             f.newline()?;
 
-            f.writeln(&format!("pub fn struct_from_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
+            f.writeln(&format!("pub(crate) fn struct_from_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
             blocked(f, |f| {
                 f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
                 for field in &structure.elements {
-                    if let Some(conversion) = field.element_type.conversion() {
+                    if let Some(conversion) = field.element_type.conversion(&config.ffi_name) {
                         conversion.convert_from_rust(f, &format!("value.{}", field.name.to_snake_case()), "let temp = ")?;
                         f.write(";")?;
                     } else {

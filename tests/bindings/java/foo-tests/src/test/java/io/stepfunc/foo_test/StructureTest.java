@@ -5,7 +5,6 @@ import io.stepfunc.foo.Structure;
 import io.stepfunc.foo.StructureEnum;
 import io.stepfunc.foo.StructureInterface;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 
 import java.time.Duration;
 
@@ -27,8 +26,7 @@ public class StructureTest {
         checkStructure(result);
     }
 
-    /*@Test
-    @Disabled // Because of the way we handle interfaces atm, it will return null
+    @Test
     public void InterfaceStruct() {
         Structure value = createStructure();
         TestInterface testInterface = new TestInterface();
@@ -38,7 +36,7 @@ public class StructureTest {
 
         assertThat(result.interfaceValue).isNotNull();
         checkStructure(testInterface.lastValue);
-    }*/
+    }
 
     static class TestInterface implements StructureInterface {
         public Structure lastValue = null;
@@ -70,7 +68,7 @@ public class StructureTest {
 
         structure.enumValue = StructureEnum.VAR2;
 
-        //structure.interfaceValue = new TestInterface();
+        structure.interfaceValue = new TestInterface();
 
         structure.durationMillis = Duration.ofMillis(4200);
         structure.durationSeconds = Duration.ofSeconds(76);

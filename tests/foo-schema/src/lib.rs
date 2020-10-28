@@ -28,8 +28,8 @@ pub fn build_lib() -> Result<Library, BindingError> {
         .collect(),
     )?;
 
-    //callback::define(&mut builder)?;
-    //class::define(&mut builder)?;
+    callback::define(&mut builder)?;
+    class::define(&mut builder)?;
     duration::define(&mut builder)?;
     enums::define(&mut builder)?;
     integer::define(&mut builder)?;

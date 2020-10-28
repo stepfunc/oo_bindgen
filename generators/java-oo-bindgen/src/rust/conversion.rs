@@ -1,5 +1,6 @@
 use super::formatting::*;
 use heck::{CamelCase, SnakeCase};
+use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::iterator::*;
@@ -10,6 +11,7 @@ use oo_bindgen::native_struct::*;
 pub(crate) trait JniType {
     fn as_raw_jni_type(&self) -> &str;
     fn as_jni_sig(&self, lib_path: &str) -> String;
+    fn as_rust_type(&self, ffi_name: &str) -> String;
     fn convert_jvalue(&self) -> &str;
     fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>>;
 }
@@ -59,11 +61,47 @@ impl JniType for Type {
             Type::StructRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::Enum(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::ClassRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::Interface(_) => todo!(),
-            Type::OneTimeCallback(_) => todo!(),
+            Type::Interface(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
+            Type::OneTimeCallback(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::Iterator(_) => "Ljava/util/Collection;".to_string(),
             Type::Collection(_) => "Ljava/util/Collection;".to_string(),
             Type::Duration(_) => "Ljava/time/Duration;".to_string(),
+        }
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        match self {
+            Type::Bool => "bool".to_string(),
+            Type::Uint8 => "u8".to_string(),
+            Type::Sint8 => "i8".to_string(),
+            Type::Uint16 => "u16".to_string(),
+            Type::Sint16 => "i16".to_string(),
+            Type::Uint32 => "u32".to_string(),
+            Type::Sint32 => "i32".to_string(),
+            Type::Uint64 => "u64".to_string(),
+            Type::Sint64 => "i64".to_string(),
+            Type::Float => "f32".to_string(),
+            Type::Double => "f64".to_string(),
+            Type::String => "*const std::os::raw::c_char".to_string(),
+            Type::Struct(handle) => format!("{}::ffi::{}", ffi_name, handle.name()),
+            Type::StructRef(handle) => format!("*const {}::ffi::{}", ffi_name, handle.name),
+            Type::Enum(_) => "std::os::raw::c_int".to_string(),
+            Type::ClassRef(handle) => format!("*mut {}::ffi::{}", ffi_name, handle.name),
+            Type::Interface(handle) => format!("{}::ffi::{}", ffi_name, handle.name),
+            Type::OneTimeCallback(handle) => format!("{}::ffi::{}", ffi_name, handle.name),
+            Type::Iterator(handle) => {
+                let lifetime = if handle.has_lifetime_annotation {
+                    "<'a>"
+                } else {
+                    ""
+                };
+                format!("*mut {}::ffi::{}{}", ffi_name, handle.name(), lifetime)
+            }
+            Type::Collection(handle) => format!("*mut {}::ffi::{}", ffi_name, handle.name()),
+            Type::Duration(mapping) => match mapping {
+                DurationMapping::Milliseconds | DurationMapping::Seconds => "u64".to_string(),
+                DurationMapping::SecondsFloat => "f32".to_string(),
+            },
         }
     }
 
@@ -111,8 +149,8 @@ impl JniType for Type {
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
             Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
-            Type::Interface(_) => None,
-            Type::OneTimeCallback(_) => None,
+            Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
+            Type::OneTimeCallback(handle) => Some(Box::new(OneTimeCallbackConverter(handle.clone()))),
             Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone(), lib_name.to_string()))),
             Type::Collection(_) => None,
             Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
@@ -132,6 +170,13 @@ impl JniType for ReturnType {
         match self {
             ReturnType::Void => "V".to_string(),
             ReturnType::Type(return_type, _) => return_type.as_jni_sig(lib_path),
+        }
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        match self {
+            ReturnType::Void => "()".to_string(),
+            ReturnType::Type(return_type, _) => return_type.as_rust_type(ffi_name),
         }
     }
 
@@ -307,6 +352,62 @@ impl TypeConverter for ClassConverter {
     }
 }
 
+struct InterfaceConverter(InterfaceHandle);
+impl TypeConverter for InterfaceConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}_cache.interfaces.interface_{}.interface_to_rust(&_env, {})",
+            to,
+            self.0.name.to_snake_case(),
+            from
+        ))
+    }
+
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
+            to,
+            from,
+            self.0.arg_name.to_snake_case()
+        ))?;
+        blocked(f, |f| {
+            f.writeln("obj.as_obj()")
+        })?;
+        f.writeln("else")?;
+        blocked(f, |f| {
+            f.writeln("jni::objects::JObject::null()")
+        })
+    }
+}
+
+struct OneTimeCallbackConverter(OneTimeCallbackHandle);
+impl TypeConverter for OneTimeCallbackConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}_cache.interfaces.callback_{}.interface_to_rust(&_env, {})",
+            to,
+            self.0.name.to_snake_case(),
+            from
+        ))
+    }
+
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
+            to,
+            from,
+            self.0.arg_name.to_snake_case()
+        ))?;
+        blocked(f, |f| {
+            f.writeln("obj.as_obj()")
+        })?;
+        f.writeln("else")?;
+        blocked(f, |f| {
+            f.writeln("jni::objects::JObject::null()")
+        })
+    }
+}
+
 struct IteratorConverter(IteratorHandle, String);
 impl TypeConverter for IteratorConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
@@ -331,6 +432,7 @@ impl TypeConverter for IteratorConverter {
                         f.write(";")?;
 
                         f.writeln("_cache.collection.add_to_array_list(&_env, array_list, item.into());")
+                        //f.writeln("_env.delete_local_ref(item.into()).unwrap();")
                     })?;
                     f.write(",")
                 })

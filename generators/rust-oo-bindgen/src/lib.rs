@@ -396,12 +396,13 @@ impl<'a> RustCodegen<'a> {
     fn write_interface(&self, f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
         // C structure
         f.writeln("#[repr(C)]")?;
+        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {
                 match element {
                     InterfaceElement::Arg(name) => {
-                        f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
+                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
                     }
                     InterfaceElement::CallbackFunction(handle) => {
                         let lifetime = if handle.c_requires_lifetime() {
@@ -412,7 +413,7 @@ impl<'a> RustCodegen<'a> {
 
                         f.newline()?;
                         f.write(&format!(
-                            "{name}: Option<{lifetime}extern \"C\" fn(",
+                            "pub {name}: Option<{lifetime}extern \"C\" fn(",
                             name = handle.name,
                             lifetime = lifetime
                         ))?;
@@ -437,7 +438,7 @@ impl<'a> RustCodegen<'a> {
                     }
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!(
-                            "{}: Option<extern \"C\" fn(data: *mut std::os::raw::c_void)>,",
+                            "pub {}: Option<extern \"C\" fn(data: *mut std::os::raw::c_void)>,",
                             name
                         ))?;
                     }
@@ -469,12 +470,13 @@ impl<'a> RustCodegen<'a> {
         handle: &OneTimeCallbackHandle,
     ) -> FormattingResult<()> {
         f.writeln("#[repr(C)]")?;
+        f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", handle.name))?;
         blocked(f, |f| {
             for element in &handle.elements {
                 match element {
                     OneTimeCallbackElement::Arg(name) => {
-                        f.writeln(&format!("{}: *mut std::os::raw::c_void,", name))?
+                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
                     }
                     OneTimeCallbackElement::CallbackFunction(handle) => {
                         let lifetime = if handle.c_requires_lifetime() {
@@ -485,7 +487,7 @@ impl<'a> RustCodegen<'a> {
 
                         f.newline()?;
                         f.write(&format!(
-                            "{name}: Option<{lifetime}extern \"C\" fn(",
+                            "pub {name}: Option<{lifetime}extern \"C\" fn(",
                             name = handle.name,
                             lifetime = lifetime
                         ))?;

@@ -4,11 +4,13 @@ use conversion::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use std::fs;
+use heck::SnakeCase;
 
 mod classes;
 mod conversion;
 mod enums;
 mod formatting;
+mod interface;
 mod structs;
 
 pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
@@ -34,6 +36,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     classes::generate_classes_cache(lib, config)?;
     enums::generate_enums_cache(lib, config)?;
     structs::generate_structs_cache(lib, config)?;
+    interface::generate_interfaces_cache(lib, config)?;
 
     // Copy the modules that never changes
     filename.set_file_name("joou.rs");
@@ -70,7 +73,7 @@ fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<
     f.writeln("crate-type = [\"cdylib\"]")?;
     f.newline()?;
     f.writeln("[dependencies]")?;
-    f.writeln("jni = \"0.17\"")?;
+    f.writeln("jni = \"0.18\"")?;
     f.writeln(&format!(
         "{} = {{ path = \"{}\" }}",
         ffi_project_name.to_string_lossy(),
@@ -88,6 +91,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod enums;")?;
     f.writeln("mod collection;")?;
     f.writeln("mod structs;")?;
+    f.writeln("mod interfaces;")?;
 
     // Create cache
     f.writeln("struct JCache")?;
@@ -99,7 +103,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("classes: classes::Classes,")?;
         f.writeln("enums: enums::Enums,")?;
         f.writeln("structs: structs::Structs,")?;
-        // TODO: put the other cache elements here
+        f.writeln("interfaces: interfaces::Interfaces,")?;
         Ok(())
     })?;
 
@@ -116,7 +120,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             f.writeln("let classes = classes::Classes::init(&env);")?;
             f.writeln("let enums = enums::Enums::init(&env);")?;
             f.writeln("let structs = structs::Structs::init(&env);")?;
-            // TODO: initialize all the stuff here
+            f.writeln("let interfaces = interfaces::Interfaces::init(&env);")?;
             f.writeln("Self")?;
             blocked(f, |f| {
                 f.writeln("vm,")?;
@@ -126,7 +130,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
                 f.writeln("classes,")?;
                 f.writeln("enums,")?;
                 f.writeln("structs,")?;
-                // TODO: put everything else here
+                f.writeln("interfaces,")?;
                 Ok(())
             })
         })
@@ -171,7 +175,7 @@ fn generate_functions(
             &handle
                 .parameters
                 .iter()
-                .map(|param| format!("{}: {}", param.name, param.param_type.as_raw_jni_type()))
+                .map(|param| format!("{}: {}", param.name.to_snake_case(), param.param_type.as_raw_jni_type()))
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
@@ -191,7 +195,7 @@ fn generate_functions(
                     conversion.convert_to_rust(
                         f,
                         &param.name,
-                        &format!("let {} = ", param.name),
+                        &format!("let {} = ", param.name.to_snake_case()),
                     )?;
                     f.write(";")?;
                 }
@@ -213,9 +217,9 @@ fn generate_functions(
                     .iter()
                     .map(|param| {
                         if matches!(param.param_type, Type::Struct(_)) {
-                            format!("{}.clone()", &param.name)
+                            format!("{}.clone()", &param.name.to_snake_case())
                         } else {
-                            param.name.to_string()
+                            param.name.to_snake_case()
                         }
                     })
                     .collect::<Vec<String>>()
@@ -234,7 +238,12 @@ fn generate_functions(
             // Conversion cleanup
             for param in &handle.parameters {
                 if let Some(conversion) = param.param_type.conversion(&config.ffi_name) {
-                    conversion.convert_to_rust_cleanup(f, &param.name)?;
+                    conversion.convert_to_rust_cleanup(f, &param.name.to_snake_case())?;
+                }
+
+                // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
+                if matches!(param.param_type, Type::Struct(_)) {
+                    f.writeln(&format!("std::mem::forget({});", param.name.to_snake_case()))?;
                 }
             }
 

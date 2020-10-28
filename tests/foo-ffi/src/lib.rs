@@ -1,5 +1,5 @@
-//mod callback;
-//mod class;
+mod callback;
+mod class;
 //mod collection;
 mod duration;
 mod enums;
@@ -9,8 +9,8 @@ mod iterator;
 mod strings;
 mod structure;
 
-//pub(crate) use callback::*;
-//pub(crate) use class::*;
+pub use callback::*;
+pub use class::*;
 //pub(crate) use collection::*;
 pub use duration::*;
 pub use enums::*;

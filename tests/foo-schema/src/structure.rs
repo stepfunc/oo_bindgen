@@ -48,11 +48,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "structure_value",
         )?
         .add("enum_value", Type::Enum(structure_enum), "enum_value")?
-        /*.add(
+        .add(
             "interface_value",
             Type::Interface(structure_interface),
             "interface_value",
-        )?*/
+        )?
         .add(
             "duration_millis",
             Type::Duration(DurationMapping::Milliseconds),

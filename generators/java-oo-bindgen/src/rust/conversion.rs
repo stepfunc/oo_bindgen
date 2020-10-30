@@ -412,7 +412,7 @@ struct IteratorConverter(IteratorHandle, String);
 impl TypeConverter for IteratorConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
-            "{}std::ptr::null()",
+            "{}std::ptr::null_mut()",
             to
         ))
     }

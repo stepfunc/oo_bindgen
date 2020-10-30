@@ -169,6 +169,15 @@ fn generate_functions(
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
     for handle in lib.native_functions() {
+        if let Some(first_param) = handle.parameters.first() {
+            // We don't want to generate the `next` methods of iterators
+            if let Type::ClassRef(handle) = &first_param.param_type {
+                if matches!(lib.symbol(&handle.name).unwrap(), Symbol::Iterator(_)) {
+                    continue;
+                }
+            }
+        }
+
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.name, handle.name.replace("_", "_1")))?;
         f.write(

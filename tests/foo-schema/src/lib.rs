@@ -36,7 +36,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     iterator::define(&mut builder)?;
     strings::define(&mut builder)?;
     structure::define(&mut builder)?;
-    //lifetime::define(&mut builder)?;
+    lifetime::define(&mut builder)?;
     //collection::define(&mut builder)?;
 
     builder.build()

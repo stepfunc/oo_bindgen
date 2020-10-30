@@ -8,5 +8,4 @@ edition = "2018"
 oo-bindgen = { path = "../../oo-bindgen" }
 dunce = "1.0"
 heck = "0.3"
-jni = "0.17"
 pathdiff = "0.2"

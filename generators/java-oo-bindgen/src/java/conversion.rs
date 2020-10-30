@@ -31,11 +31,11 @@ impl JavaType for Type {
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => format!(
-                "java.util.Collection<{}>",
+                "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
             Type::Collection(handle) => format!(
-                "java.util.Collection<{}>",
+                "java.util.List<{}>",
                 handle.item_type.as_java_object()
             ),
             Type::Duration(_) => "java.time.Duration".to_string(),
@@ -64,11 +64,11 @@ impl JavaType for Type {
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => format!(
-                "java.util.Collection<{}>",
+                "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
             Type::Collection(handle) => format!(
-                "java.util.Collection<{}>",
+                "java.util.List<{}>",
                 handle.item_type.as_java_object()
             ),
             Type::Duration(_) => "java.time.Duration".to_string(),

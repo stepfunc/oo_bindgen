@@ -1,6 +1,6 @@
 mod callback;
 mod class;
-//mod collection;
+mod collection;
 mod duration;
 mod enums;
 mod integer;
@@ -11,7 +11,7 @@ mod structure;
 
 pub use callback::*;
 pub use class::*;
-//pub(crate) use collection::*;
+pub use collection::*;
 pub use duration::*;
 pub use enums::*;
 pub use integer::*;

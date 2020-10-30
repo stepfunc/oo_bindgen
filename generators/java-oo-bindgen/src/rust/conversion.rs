@@ -2,6 +2,7 @@ use super::formatting::*;
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
+use oo_bindgen::collection::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::native_enum::*;
@@ -63,8 +64,8 @@ impl JniType for Type {
             Type::ClassRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::Interface(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::OneTimeCallback(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::Iterator(_) => "Ljava/util/Collection;".to_string(),
-            Type::Collection(_) => "Ljava/util/Collection;".to_string(),
+            Type::Iterator(_) => "Ljava/util/List;".to_string(),
+            Type::Collection(_) => "Ljava/util/List;".to_string(),
             Type::Duration(_) => "Ljava/time/Duration;".to_string(),
         }
     }
@@ -152,7 +153,7 @@ impl JniType for Type {
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
             Type::OneTimeCallback(handle) => Some(Box::new(OneTimeCallbackConverter(handle.clone()))),
             Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone(), lib_name.to_string()))),
-            Type::Collection(_) => None,
+            Type::Collection(handle) => Some(Box::new(CollectionConverter(handle.clone(), lib_name.to_string()))),
             Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
@@ -431,14 +432,63 @@ impl TypeConverter for IteratorConverter {
                         StructConverter(self.0.item_type.clone()).convert_from_rust(f, "it", "let item = ")?;
                         f.write(";")?;
 
-                        f.writeln("_cache.collection.add_to_array_list(&_env, array_list, item.into());")
-                        //f.writeln("_env.delete_local_ref(item.into()).unwrap();")
+                        f.writeln("_cache.collection.add_to_array_list(&_env, array_list, item.into());")?;
+                        f.writeln("_env.delete_local_ref(item.into()).unwrap();")
                     })?;
                     f.write(",")
                 })
             })?;
             f.writeln("array_list.into_inner()")
         })
+    }
+}
+
+struct CollectionConverter(CollectionHandle, String);
+impl TypeConverter for CollectionConverter {
+    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(to)?;
+        blocked(f, |f| {
+            if self.0.has_reserve {
+                f.writeln(&format!("let _size = _cache.collection.get_size(&_env, {}.into());", from))?;
+                f.writeln(&format!("let result = unsafe {{ {}::ffi::{}(_size) }};", self.1, self.0.create_func.name))?;
+            } else {
+                f.writeln(&format!("let result = unsafe {{ {}::ffi::{}() }};", self.1, self.0.create_func.name))?;
+            }
+            f.writeln(&format!("let _it = _cache.collection.get_iterator(&_env, {}.into());", from))?;
+            f.writeln("while _cache.collection.has_next(&_env, _it)")?;
+            blocked(f, |f| {
+                f.writeln("let next = _cache.collection.next(&_env, _it);")?;
+                f.writeln("if !_env.is_same_object(next, jni::objects::JObject::null()).unwrap()")?;
+                blocked(f, |f| {
+                    let converter = self.0.item_type.conversion(&self.1);
+                    if let Some(converter) = &converter {
+                        converter.convert_to_rust(f, "next.into_inner()", "let _next = ")?;
+                        f.write(";")?;
+                    } else {
+                        f.writeln("let _next = next;")?;
+                    }
+
+                    f.writeln(&format!("unsafe {{ {}::ffi::{}(result, _next) }};", self.1, self.0.add_func.name))?;
+
+                    if let Some(converter) = &converter {
+                        converter.convert_to_rust_cleanup(f, "_next")?;
+                    }
+
+                    f.writeln("_env.delete_local_ref(next.into()).unwrap();")?;
+
+                    Ok(())
+                })
+            })?;
+            f.writeln("_env.delete_local_ref(_it).unwrap();")?;
+            f.writeln("result")
+        })
+    }
+
+    fn convert_from_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "{}jni::objects::JObject::null()::into_inner()",
+            to
+        ))
     }
 }
 

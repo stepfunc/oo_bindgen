@@ -170,9 +170,21 @@ fn generate_functions(
 ) -> FormattingResult<()> {
     for handle in lib.native_functions() {
         if let Some(first_param) = handle.parameters.first() {
-            // We don't want to generate the `next` methods of iterators
             if let Type::ClassRef(handle) = &first_param.param_type {
-                if matches!(lib.symbol(&handle.name).unwrap(), Symbol::Iterator(_)) {
+                // We don't want to generate the `next` methods of iterators
+                if lib.find_iterator(&handle.name).is_some() {
+                    continue;
+                }
+                // We don't want to generate the `add` and `delete` methods of collections
+                if lib.find_collection(&handle.name).is_some() {
+                    continue;
+                }
+            }
+        }
+        if let ReturnType::Type(return_type, _) = &handle.return_type {
+            if let Type::ClassRef(handle) = &return_type {
+                // We don't want to generate the `create` method of collections
+                if lib.find_collection(&handle.name).is_some() {
                     continue;
                 }
             }

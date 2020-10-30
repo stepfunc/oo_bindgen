@@ -34,10 +34,9 @@ impl JavaType for Type {
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => format!(
-                "java.util.List<{}>",
-                handle.item_type.as_java_object()
-            ),
+            Type::Collection(handle) => {
+                format!("java.util.List<{}>", handle.item_type.as_java_object())
+            }
             Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
@@ -67,10 +66,9 @@ impl JavaType for Type {
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => format!(
-                "java.util.List<{}>",
-                handle.item_type.as_java_object()
-            ),
+            Type::Collection(handle) => {
+                format!("java.util.List<{}>", handle.item_type.as_java_object())
+            }
             Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }

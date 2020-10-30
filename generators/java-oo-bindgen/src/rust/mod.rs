@@ -1,10 +1,10 @@
 use self::formatting::*;
 use crate::*;
 use conversion::*;
+use heck::SnakeCase;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use std::fs;
-use heck::SnakeCase;
 
 mod classes;
 mod conversion;
@@ -196,7 +196,13 @@ fn generate_functions(
             &handle
                 .parameters
                 .iter()
-                .map(|param| format!("{}: {}", param.name.to_snake_case(), param.param_type.as_raw_jni_type()))
+                .map(|param| {
+                    format!(
+                        "{}: {}",
+                        param.name.to_snake_case(),
+                        param.param_type.as_raw_jni_type()
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
@@ -264,7 +270,10 @@ fn generate_functions(
 
                 // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
                 if matches!(param.param_type, Type::Struct(_)) {
-                    f.writeln(&format!("std::mem::forget({});", param.name.to_snake_case()))?;
+                    f.writeln(&format!(
+                        "std::mem::forget({});",
+                        param.name.to_snake_case()
+                    ))?;
                 }
             }
 

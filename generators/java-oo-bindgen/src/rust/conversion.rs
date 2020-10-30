@@ -63,7 +63,9 @@ impl JniType for Type {
             Type::Enum(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::ClassRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::Interface(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::OneTimeCallback(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
+            Type::OneTimeCallback(handle) => {
+                format!("L{}/{};", lib_path, handle.name.to_camel_case())
+            }
             Type::Iterator(_) => "Ljava/util/List;".to_string(),
             Type::Collection(_) => "Ljava/util/List;".to_string(),
             Type::Duration(_) => "Ljava/time/Duration;".to_string(),
@@ -151,9 +153,17 @@ impl JniType for Type {
             Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
-            Type::OneTimeCallback(handle) => Some(Box::new(OneTimeCallbackConverter(handle.clone()))),
-            Type::Iterator(handle) => Some(Box::new(IteratorConverter(handle.clone(), lib_name.to_string()))),
-            Type::Collection(handle) => Some(Box::new(CollectionConverter(handle.clone(), lib_name.to_string()))),
+            Type::OneTimeCallback(handle) => {
+                Some(Box::new(OneTimeCallbackConverter(handle.clone())))
+            }
+            Type::Iterator(handle) => Some(Box::new(IteratorConverter(
+                handle.clone(),
+                lib_name.to_string(),
+            ))),
+            Type::Collection(handle) => Some(Box::new(CollectionConverter(
+                handle.clone(),
+                lib_name.to_string(),
+            ))),
             Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
@@ -268,37 +278,62 @@ impl TypeConverter for StringConverter {
 struct StructConverter(NativeStructHandle);
 impl TypeConverter for StructConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})", to, self.0.name().to_snake_case(), from))
+        f.writeln(&format!(
+            "{}_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
+            to,
+            self.0.name().to_snake_case(),
+            from
+        ))
     }
 
     fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!("_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &{});", self.0.name().to_snake_case(), name))
+        f.writeln(&format!(
+            "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &{});",
+            self.0.name().to_snake_case(),
+            name
+        ))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}_cache.structs.struct_{}.struct_from_rust(_cache, &_env, &{})", to, self.0.name().to_snake_case(), from))
+        f.writeln(&format!(
+            "{}_cache.structs.struct_{}.struct_from_rust(_cache, &_env, &{})",
+            to,
+            self.0.name().to_snake_case(),
+            from
+        ))
     }
 }
 
 struct StructRefConverter(NativeStructDeclarationHandle);
 impl TypeConverter for StructRefConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{} if !_env.is_same_object({}, jni::objects::JObject::null()).unwrap()", to, from))?;
+        f.writeln(&format!(
+            "{} if !_env.is_same_object({}, jni::objects::JObject::null()).unwrap()",
+            to, from
+        ))?;
         blocked(f, |f| {
-            f.writeln(&format!("let temp = Box::new(_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {}));", self.0.name.to_snake_case(), from))?;
+            f.writeln(&format!(
+                "let temp = Box::new(_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {}));",
+                self.0.name.to_snake_case(),
+                from
+            ))?;
             f.writeln("Box::into_raw(temp)")
         })?;
         f.writeln("else")?;
-        blocked(f, |f| {
-            f.writeln("std::ptr::null()")
-        })
+        blocked(f, |f| f.writeln("std::ptr::null()"))
     }
 
     fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
         f.writeln(&format!("if {}.is_null()", name))?;
         blocked(f, |f| {
-            f.writeln(&format!("let temp = unsafe {{ Box::from_raw({} as *mut _) }};", name))?;
-            f.writeln(&format!("_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &temp)", self.0.name.to_snake_case()))
+            f.writeln(&format!(
+                "let temp = unsafe {{ Box::from_raw({} as *mut _) }};",
+                name
+            ))?;
+            f.writeln(&format!(
+                "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &temp)",
+                self.0.name.to_snake_case()
+            ))
         })
     }
 
@@ -306,7 +341,10 @@ impl TypeConverter for StructRefConverter {
         f.writeln(&format!("{}match unsafe {{ {}.as_ref() }}", to, from))?;
         blocked(f, |f| {
             f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
-            f.writeln(&format!("Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),", self.0.name.to_snake_case()))
+            f.writeln(&format!(
+                "Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),",
+                self.0.name.to_snake_case()
+            ))
         })
     }
 }
@@ -371,13 +409,9 @@ impl TypeConverter for InterfaceConverter {
             from,
             self.0.arg_name.to_snake_case()
         ))?;
-        blocked(f, |f| {
-            f.writeln("obj.as_obj()")
-        })?;
+        blocked(f, |f| f.writeln("obj.as_obj()"))?;
         f.writeln("else")?;
-        blocked(f, |f| {
-            f.writeln("jni::objects::JObject::null()")
-        })
+        blocked(f, |f| f.writeln("jni::objects::JObject::null()"))
     }
 }
 
@@ -399,40 +433,42 @@ impl TypeConverter for OneTimeCallbackConverter {
             from,
             self.0.arg_name.to_snake_case()
         ))?;
-        blocked(f, |f| {
-            f.writeln("obj.as_obj()")
-        })?;
+        blocked(f, |f| f.writeln("obj.as_obj()"))?;
         f.writeln("else")?;
-        blocked(f, |f| {
-            f.writeln("jni::objects::JObject::null()")
-        })
+        blocked(f, |f| f.writeln("jni::objects::JObject::null()"))
     }
 }
 
 struct IteratorConverter(IteratorHandle, String);
 impl TypeConverter for IteratorConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}std::ptr::null_mut()",
-            to
-        ))
+        f.writeln(&format!("{}std::ptr::null_mut()", to))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(to)?;
         blocked(f, |f| {
             f.writeln("let array_list = _cache.collection.new_array_list(&_env);")?;
-            f.writeln(&format!("while let it = unsafe {{ {}::ffi::{}({}) }}", self.1, self.0.native_func.name, from))?;
+            f.writeln(&format!(
+                "while let it = unsafe {{ {}::ffi::{}({}) }}",
+                self.1, self.0.native_func.name, from
+            ))?;
             blocked(f, |f| {
                 f.writeln("match unsafe { it.as_ref() }")?;
                 blocked(f, |f| {
                     f.writeln("None => { break; }")?;
                     f.writeln("Some(it) => ")?;
                     blocked(f, |f| {
-                        StructConverter(self.0.item_type.clone()).convert_from_rust(f, "it", "let item = ")?;
+                        StructConverter(self.0.item_type.clone()).convert_from_rust(
+                            f,
+                            "it",
+                            "let item = ",
+                        )?;
                         f.write(";")?;
 
-                        f.writeln("_cache.collection.add_to_array_list(&_env, array_list, item.into());")?;
+                        f.writeln(
+                            "_cache.collection.add_to_array_list(&_env, array_list, item.into());",
+                        )?;
                         f.writeln("_env.delete_local_ref(item.into()).unwrap();")
                     })?;
                     f.write(",")
@@ -449,12 +485,24 @@ impl TypeConverter for CollectionConverter {
         f.writeln(to)?;
         blocked(f, |f| {
             if self.0.has_reserve {
-                f.writeln(&format!("let _size = _cache.collection.get_size(&_env, {}.into());", from))?;
-                f.writeln(&format!("let result = unsafe {{ {}::ffi::{}(_size) }};", self.1, self.0.create_func.name))?;
+                f.writeln(&format!(
+                    "let _size = _cache.collection.get_size(&_env, {}.into());",
+                    from
+                ))?;
+                f.writeln(&format!(
+                    "let result = unsafe {{ {}::ffi::{}(_size) }};",
+                    self.1, self.0.create_func.name
+                ))?;
             } else {
-                f.writeln(&format!("let result = unsafe {{ {}::ffi::{}() }};", self.1, self.0.create_func.name))?;
+                f.writeln(&format!(
+                    "let result = unsafe {{ {}::ffi::{}() }};",
+                    self.1, self.0.create_func.name
+                ))?;
             }
-            f.writeln(&format!("let _it = _cache.collection.get_iterator(&_env, {}.into());", from))?;
+            f.writeln(&format!(
+                "let _it = _cache.collection.get_iterator(&_env, {}.into());",
+                from
+            ))?;
             f.writeln("while _cache.collection.has_next(&_env, _it)")?;
             blocked(f, |f| {
                 f.writeln("let next = _cache.collection.next(&_env, _it);")?;
@@ -468,7 +516,10 @@ impl TypeConverter for CollectionConverter {
                         f.writeln("let _next = next;")?;
                     }
 
-                    f.writeln(&format!("unsafe {{ {}::ffi::{}(result, _next) }};", self.1, self.0.add_func.name))?;
+                    f.writeln(&format!(
+                        "unsafe {{ {}::ffi::{}(result, _next) }};",
+                        self.1, self.0.add_func.name
+                    ))?;
 
                     if let Some(converter) = &converter {
                         converter.convert_to_rust_cleanup(f, "_next")?;
@@ -484,7 +535,12 @@ impl TypeConverter for CollectionConverter {
         })
     }
 
-    fn convert_from_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
+    fn convert_from_rust(
+        &self,
+        f: &mut dyn Printer,
+        _from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}jni::objects::JObject::null()::into_inner()",
             to

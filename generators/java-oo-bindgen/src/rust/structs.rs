@@ -1,6 +1,6 @@
-use crate::*;
 use super::conversion::*;
 use super::formatting::*;
+use crate::*;
 use heck::{CamelCase, MixedCase, SnakeCase};
 use oo_bindgen::formatting::*;
 
@@ -109,7 +109,11 @@ pub(crate) fn generate_structs_cache(
                 blocked(f, |f| {
                     for field in &structure.elements {
                         if let Some(conversion) = field.element_type.conversion(&config.ffi_name) {
-                            conversion.convert_to_rust(f, &field.name.to_snake_case(), &format!("{}: ", field.name.to_snake_case()))?;
+                            conversion.convert_to_rust(
+                                f,
+                                &field.name.to_snake_case(),
+                                &format!("{}: ", field.name.to_snake_case()),
+                            )?;
                             f.write(",")?;
                         } else {
                             f.writeln(&format!("{},", field.name.to_snake_case()))?;
@@ -128,7 +132,10 @@ pub(crate) fn generate_structs_cache(
             blocked(f, |f| {
                 for field in &structure.elements {
                     if let Some(conversion) = field.element_type.conversion(&config.ffi_name) {
-                        conversion.convert_to_rust_cleanup(f, &format!("_value.{}", field.name.to_snake_case()))?;
+                        conversion.convert_to_rust_cleanup(
+                            f,
+                            &format!("_value.{}", field.name.to_snake_case()),
+                        )?;
                     }
                 }
 
@@ -142,12 +149,19 @@ pub(crate) fn generate_structs_cache(
                 f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
                 for field in &structure.elements {
                     if let Some(conversion) = field.element_type.conversion(&config.ffi_name) {
-                        conversion.convert_from_rust(f, &format!("value.{}", field.name.to_snake_case()), "let temp = ")?;
+                        conversion.convert_from_rust(
+                            f,
+                            &format!("value.{}", field.name.to_snake_case()),
+                            "let temp = ",
+                        )?;
                         f.write(";")?;
                     } else {
                         f.writeln(&format!("let temp = value.{};", field.name.to_snake_case()))?;
                     }
-                    f.writeln(&format!("_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();", field.name.to_snake_case()))?;
+                    f.writeln(&format!(
+                        "_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();",
+                        field.name.to_snake_case()
+                    ))?;
                 }
 
                 f.writeln("obj.into_inner()")

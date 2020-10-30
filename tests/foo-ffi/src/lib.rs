@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 mod callback;
 mod class;
 mod collection;

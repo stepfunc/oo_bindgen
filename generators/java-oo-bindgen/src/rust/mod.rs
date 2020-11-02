@@ -84,6 +84,14 @@ fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<
 }
 
 fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
+    // Disable some warnings, otherwise I won't see the light of day
+    f.writeln("#![allow(dead_code)]")?;
+    f.writeln("#![allow(irrefutable_let_patterns)]")?;
+    f.writeln("#![allow(non_snake_case)]")?;
+    f.writeln("#![allow(unused_variables)]")?;
+
+    f.newline()?;
+
     // Import modules
     f.writeln("mod joou;")?;
     f.writeln("mod duration;")?;

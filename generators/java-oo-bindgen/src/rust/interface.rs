@@ -159,7 +159,6 @@ pub(crate) fn generate_interfaces_cache(
                         })
                         .collect::<Vec<_>>()
                         .join(", ");
-                    f.writeln("#[allow(non_snake_case)]")?;
                     f.writeln(&format!(
                         "extern \"C\" fn {}_{}({}) -> {}",
                         interface.name.to_camel_case(),
@@ -197,7 +196,6 @@ pub(crate) fn generate_interfaces_cache(
                     })?;
                 }
                 InterfaceElement::DestroyFunction(name) => {
-                    f.writeln("#[allow(non_snake_case)]")?;
                     f.writeln(&format!(
                         "extern \"C\" fn {}_{}(ctx: *mut std::ffi::c_void)",
                         interface.name.to_camel_case(),
@@ -293,7 +291,6 @@ pub(crate) fn generate_interfaces_cache(
                         })
                         .collect::<Vec<_>>()
                         .join(", ");
-                    f.writeln("#[allow(non_snake_case)]")?;
                     f.writeln(&format!(
                         "extern \"C\" fn {}_{}({}) -> {}",
                         interface.name.to_camel_case(),
@@ -370,7 +367,7 @@ fn write_interface_init<'a>(
                     .params()
                     .map(|param| { param.param_type.as_jni_sig(&lib_path) })
                     .collect::<Vec<_>>()
-                    .join(", "),
+                    .join(""),
                 callback.return_type.as_jni_sig(&lib_path)
             );
             f.writeln(&format!("let cb_{method_snake} = env.get_method_id(class, \"{method_mixed}\", \"{method_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find method {method_mixed}\");", method_snake=callback.name.to_snake_case(), method_mixed=callback.name.to_mixed_case(), method_sig=method_sig))?;
@@ -440,7 +437,7 @@ fn call_java_callback<'a>(
 
     // Release the local refs
     for param in params {
-        if param.param_type.as_raw_jni_type() == "jni::sys::jobject" {
+        if param.param_type.requires_local_ref_cleanup() {
             f.writeln(&format!(
                 "_env.delete_local_ref({}.into()).unwrap();",
                 param.name.to_snake_case()

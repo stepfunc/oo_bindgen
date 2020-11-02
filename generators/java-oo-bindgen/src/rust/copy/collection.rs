@@ -1,6 +1,5 @@
 use jni::signature::*;
 
-#[allow(dead_code)]
 pub struct Collection {
     // Iterator stuff
     array_list_class: jni::objects::GlobalRef,

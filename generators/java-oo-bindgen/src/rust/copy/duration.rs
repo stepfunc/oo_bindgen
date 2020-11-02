@@ -1,7 +1,6 @@
 use jni::objects::JValue;
 use jni::signature::*;
 
-#[allow(dead_code)]
 pub struct Duration {
     class: jni::objects::GlobalRef,
     of_millis_method: jni::objects::JStaticMethodID<'static>,

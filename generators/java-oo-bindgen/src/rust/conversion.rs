@@ -15,6 +15,7 @@ pub(crate) trait JniType {
     fn as_rust_type(&self, ffi_name: &str) -> String;
     fn convert_jvalue(&self) -> &str;
     fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>>;
+    fn requires_local_ref_cleanup(&self) -> bool;
 }
 
 impl JniType for Type {
@@ -86,21 +87,24 @@ impl JniType for Type {
             Type::Float => "f32".to_string(),
             Type::Double => "f64".to_string(),
             Type::String => "*const std::os::raw::c_char".to_string(),
-            Type::Struct(handle) => format!("{}::ffi::{}", ffi_name, handle.name()),
-            Type::StructRef(handle) => format!("*const {}::ffi::{}", ffi_name, handle.name),
-            Type::Enum(_) => "std::os::raw::c_int".to_string(),
-            Type::ClassRef(handle) => format!("*mut {}::ffi::{}", ffi_name, handle.name),
-            Type::Interface(handle) => format!("{}::ffi::{}", ffi_name, handle.name),
-            Type::OneTimeCallback(handle) => format!("{}::ffi::{}", ffi_name, handle.name),
-            Type::Iterator(handle) => {
-                let lifetime = if handle.has_lifetime_annotation {
-                    "<'a>"
-                } else {
-                    ""
-                };
-                format!("*mut {}::ffi::{}{}", ffi_name, handle.name(), lifetime)
+            Type::Struct(handle) => format!("{}::ffi::{}", ffi_name, handle.name().to_camel_case()),
+            Type::StructRef(handle) => {
+                format!("*const {}::ffi::{}", ffi_name, handle.name.to_camel_case())
             }
-            Type::Collection(handle) => format!("*mut {}::ffi::{}", ffi_name, handle.name()),
+            Type::Enum(_) => "std::os::raw::c_int".to_string(),
+            Type::ClassRef(handle) => format!("*mut {}::{}", ffi_name, handle.name.to_camel_case()),
+            Type::Interface(handle) => {
+                format!("{}::ffi::{}", ffi_name, handle.name.to_camel_case())
+            }
+            Type::OneTimeCallback(handle) => {
+                format!("{}::ffi::{}", ffi_name, handle.name.to_camel_case())
+            }
+            Type::Iterator(handle) => {
+                format!("*mut {}::{}", ffi_name, handle.name().to_camel_case())
+            }
+            Type::Collection(handle) => {
+                format!("*mut {}::{}", ffi_name, handle.name().to_camel_case())
+            }
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => "u64".to_string(),
                 DurationMapping::SecondsFloat => "f32".to_string(),
@@ -167,6 +171,32 @@ impl JniType for Type {
             Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        match self {
+            Type::Bool => false,
+            Type::Uint8 => true,
+            Type::Sint8 => false,
+            Type::Uint16 => true,
+            Type::Sint16 => false,
+            Type::Uint32 => true,
+            Type::Sint32 => false,
+            Type::Uint64 => true,
+            Type::Sint64 => false,
+            Type::Float => false,
+            Type::Double => false,
+            Type::String => true,
+            Type::Struct(_) => true,
+            Type::StructRef(_) => true,
+            Type::Enum(_) => false, // We re-use a global ref here
+            Type::ClassRef(_) => true,
+            Type::Interface(_) => true,
+            Type::OneTimeCallback(_) => true,
+            Type::Iterator(_) => true,
+            Type::Collection(_) => true,
+            Type::Duration(_) => true,
+        }
+    }
 }
 
 impl JniType for ReturnType {
@@ -202,6 +232,13 @@ impl JniType for ReturnType {
         match self {
             ReturnType::Void => None,
             ReturnType::Type(return_type, _) => return_type.conversion(lib_name),
+        }
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        match self {
+            ReturnType::Void => false,
+            ReturnType::Type(return_type, _) => return_type.requires_local_ref_cleanup(),
         }
     }
 }

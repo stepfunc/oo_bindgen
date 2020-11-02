@@ -126,6 +126,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 pub struct BindingBuilderSettings<'a> {
     pub ffi_name: &'a str,
     pub ffi_path: &'a Path,
+    pub java_group_id: &'a str,
     pub destination_path: &'a Path,
     pub library: &'a Library,
 }
@@ -371,7 +372,7 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
             rust_output_dir: self.rust_build_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
             ffi_path: self.settings.ffi_path.to_owned(),
-            group_id: "io.stepfunc".to_string(),
+            group_id: self.settings.java_group_id.to_owned(),
             platforms: self.platforms.clone(),
         };
 

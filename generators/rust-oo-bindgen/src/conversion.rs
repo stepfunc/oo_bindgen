@@ -1,3 +1,4 @@
+use heck::CamelCase;
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
@@ -31,21 +32,21 @@ impl RustType for Type {
             Type::Float => "f32".to_string(),
             Type::Double => "f64".to_string(),
             Type::String => "&'a std::ffi::CStr".to_string(),
-            Type::Struct(handle) => handle.name().to_string(),
-            Type::StructRef(handle) => format!("Option<&{}>", handle.name),
-            Type::Enum(handle) => handle.name.to_string(),
-            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name),
-            Type::Interface(handle) => handle.name.to_string(),
-            Type::OneTimeCallback(handle) => handle.name.to_string(),
+            Type::Struct(handle) => handle.name().to_camel_case(),
+            Type::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
+            Type::Enum(handle) => handle.name.to_camel_case(),
+            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
+            Type::Interface(handle) => handle.name.to_camel_case(),
+            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
                 } else {
                     ""
                 };
-                format!("*mut crate::{}{}", handle.name(), lifetime)
+                format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            Type::Collection(handle) => format!("*mut crate::{}", handle.name()),
+            Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
             Type::Duration(_) => "std::time::Duration".to_string(),
         }
     }
@@ -64,21 +65,21 @@ impl RustType for Type {
             Type::Float => "f32".to_string(),
             Type::Double => "f64".to_string(),
             Type::String => "*const std::os::raw::c_char".to_string(),
-            Type::Struct(handle) => handle.name().to_string(),
-            Type::StructRef(handle) => format!("*const {}", handle.name),
+            Type::Struct(handle) => handle.name().to_camel_case(),
+            Type::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
             Type::Enum(_) => "std::os::raw::c_int".to_string(),
-            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name),
-            Type::Interface(handle) => handle.name.to_string(),
-            Type::OneTimeCallback(handle) => handle.name.to_string(),
+            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
+            Type::Interface(handle) => handle.name.to_camel_case(),
+            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
                 } else {
                     ""
                 };
-                format!("*mut crate::{}{}", handle.name(), lifetime)
+                format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            Type::Collection(handle) => format!("*mut crate::{}", handle.name()),
+            Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => "u64".to_string(),
                 DurationMapping::SecondsFloat => "f32".to_string(),

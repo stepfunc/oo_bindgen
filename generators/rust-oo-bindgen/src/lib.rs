@@ -409,8 +409,8 @@ impl<'a> RustCodegen<'a> {
                             ""
                         };
 
-                        f.newline()?;
-                        f.write(&format!(
+                        f.writeln("#[allow(clippy::needless_lifetimes)]")?;
+                        f.writeln(&format!(
                             "pub {name}: Option<{lifetime}extern \"C\" fn(",
                             name = handle.name,
                             lifetime = lifetime
@@ -484,8 +484,8 @@ impl<'a> RustCodegen<'a> {
                             ""
                         };
 
-                        f.newline()?;
-                        f.write(&format!(
+                        f.writeln("#[allow(clippy::needless_lifetimes)]")?;
+                        f.writeln(&format!(
                             "pub {name}: Option<{lifetime}extern \"C\" fn(",
                             name = handle.name,
                             lifetime = lifetime
@@ -542,6 +542,7 @@ impl<'a> RustCodegen<'a> {
                 };
 
                 // Function signature
+                f.writeln("#[allow(clippy::needless_lifetimes)]")?;
                 f.writeln(&format!(
                     "pub(crate) fn {name}{lifetime}(&self, ",
                     name = callback.name,

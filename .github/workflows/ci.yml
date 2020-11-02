@@ -49,7 +49,7 @@ jobs:
         with:
           command: run
           args: --release --bin foo-bindings -- --java
-      - name: Upload compiled
+      - name: Upload compiled bindings
         if: ${{ matrix.rust == 'stable' }}
         uses: actions/upload-artifact@v2
         with:

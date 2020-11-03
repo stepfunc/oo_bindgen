@@ -190,8 +190,8 @@ impl JniType for Type {
             Type::StructRef(_) => true,
             Type::Enum(_) => false, // We re-use a global ref here
             Type::ClassRef(_) => true,
-            Type::Interface(_) => true,
-            Type::OneTimeCallback(_) => true,
+            Type::Interface(_) => false,       // This is freed by Rust
+            Type::OneTimeCallback(_) => false, // This is freed by Rust
             Type::Iterator(_) => true,
             Type::Collection(_) => true,
             Type::Duration(_) => true,

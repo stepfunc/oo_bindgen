@@ -162,6 +162,10 @@ pub(crate) fn generate_structs_cache(
                         "_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();",
                         field.name.to_snake_case()
                     ))?;
+
+                    if field.element_type.requires_local_ref_cleanup() {
+                        f.writeln("_env.delete_local_ref(temp.into()).unwrap();")?;
+                    }
                 }
 
                 f.writeln("obj.into_inner()")

@@ -23,7 +23,7 @@ pub(crate) fn generate(
         if !class.is_static() {
             f.writeln("final private long self;")?;
             if class.destructor.is_some() {
-                f.writeln("private boolean disposed = false;")?;
+                f.writeln("private java.util.concurrent.atomic.AtomicBoolean disposed = new java.util.concurrent.atomic.AtomicBoolean(false);")?;
             }
 
             f.newline()?;
@@ -76,7 +76,7 @@ fn generate_constructor(
 
         // Print each parameter value
         for param in constructor.parameters.iter() {
-            f.writeln(&format!("@param {} ", param.name))?;
+            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
         }
 
@@ -102,7 +102,8 @@ fn generate_constructor(
 
     blocked(f, |f| {
         call_native_function(f, &constructor, &format!("{} object = ", classname), false)?;
-        f.writeln("this.self = object.self;")
+        f.writeln("this.self = object.self;")?;
+        f.writeln("object.disposed.set(true);")
     })
 }
 
@@ -118,7 +119,7 @@ fn generate_destructor(
 
         // Print each parameter value
         for param in destructor.parameters.iter().skip(1) {
-            f.writeln(&format!("@param {} ", param.name))?;
+            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
         }
 
@@ -129,16 +130,23 @@ fn generate_destructor(
     f.writeln("@Override")?;
     f.writeln("public void close()")?;
     blocked(f, |f| {
-        f.writeln("if (this.disposed)")?;
+        f.writeln("if (this.disposed.getAndSet(true))")?;
         f.writeln("    return;")?;
+
         f.newline()?;
+
         f.writeln(&format!(
             "{}.{}(this);",
             NATIVE_FUNCTIONS_CLASSNAME, destructor.name
-        ))?;
-        f.newline()?;
-        f.writeln("this.disposed = true;")
-    })
+        ))
+    })?;
+
+    f.newline()?;
+
+    // Dispose method
+    f.writeln("@Override")?;
+    f.writeln("public void finalize()")?;
+    blocked(f, |f| f.writeln("this.close();"))
 }
 
 fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
@@ -149,7 +157,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
 
         // Print each parameter value
         for param in method.native_function.parameters.iter().skip(1) {
-            f.writeln(&format!("@param {} ", param.name))?;
+            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
         }
 
@@ -201,7 +209,7 @@ fn generate_static_method(
 
         // Print each parameter value
         for param in method.native_function.parameters.iter() {
-            f.writeln(&format!("@param {} ", param.name))?;
+            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
         }
 
@@ -266,7 +274,7 @@ fn generate_async_method(
             .skip(1)
             .filter(|param| !matches!(param.param_type, Type::OneTimeCallback(_)))
         {
-            f.writeln(&format!("@param {} ", param.name))?;
+            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
         }
 

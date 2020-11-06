@@ -38,7 +38,7 @@ pub(crate) fn generate(
 
                 // Print each parameter value
                 for param in method.native_function.parameters.iter().skip(1) {
-                    f.writeln(&format!("@param {} ", param.name))?;
+                    f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
                     docstring_print(f, &param.doc, lib)?;
                 }
 
@@ -89,7 +89,7 @@ pub(crate) fn generate(
 
                 // Print each parameter value
                 for param in method.native_function.parameters.iter() {
-                    f.writeln(&format!("@param {} ", param.name))?;
+                    f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
                     docstring_print(f, &param.doc, lib)?;
                 }
 

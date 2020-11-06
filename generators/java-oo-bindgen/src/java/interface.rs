@@ -31,7 +31,7 @@ pub(crate) fn generate(
                 // Print each parameter value
                 for param in &func.parameters {
                     if let CallbackParameter::Parameter(param) = param {
-                        f.writeln(&format!("@param {} ", param.name))?;
+                        f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
                         docstring_print(f, &param.doc, lib)?;
                     }
                 }

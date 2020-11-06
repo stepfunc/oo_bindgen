@@ -224,6 +224,36 @@ fn generate_functions(
             // Get the JCache
             f.writeln("let _cache = unsafe { JCACHE.as_ref().unwrap() };")?;
 
+            f.newline()?;
+
+            // Check for illegal null
+            //
+            // "Illégale!
+            // Tu m'fais faire des bêtises,
+            // Dans les rues d'Montréal.
+            // Quand y faut que j'me maîtrise,
+            // Tu m'fais piquer des crises.
+            // Illégale!"
+            f.writeln("if let Err(msg) = (|| -> Result<(), String>")?;
+            blocked(f, |f| {
+                for param in &handle.parameters {
+                    param
+                        .param_type
+                        .check_null(f, &param.name.to_snake_case())?;
+                }
+                f.writeln("Ok(())")
+            })?;
+            f.write(")()")?;
+            blocked(f, |f| {
+                f.writeln("_env.throw_new(\"java/lang/IllegalArgumentException\", msg).unwrap();")?;
+                if let ReturnType::Type(return_type, _) = &handle.return_type {
+                    f.writeln(&format!("return {}", return_type.default_value()))?;
+                } else {
+                    f.writeln("return;")?;
+                }
+                Ok(())
+            })?;
+
             // Perform the conversion of the parameters
             for param in &handle.parameters {
                 if let Some(conversion) = param.param_type.conversion(&config.ffi_name) {

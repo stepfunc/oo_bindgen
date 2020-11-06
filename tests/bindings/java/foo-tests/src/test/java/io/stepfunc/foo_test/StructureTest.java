@@ -47,7 +47,7 @@ public class StructureTest {
         }
     }
 
-    private static Structure createStructure() {
+    public static Structure createStructure() {
         Structure structure = new Structure();
 
         structure.booleanValue = true;

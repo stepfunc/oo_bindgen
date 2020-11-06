@@ -10,12 +10,22 @@ use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 
 pub(crate) trait JniType {
+    /// Returns raw JNI type (from jni::sys::* module)
     fn as_raw_jni_type(&self) -> &str;
+    /// Returns the JNI signature of the type
     fn as_jni_sig(&self, lib_path: &str) -> String;
+    /// Return the Rust FFI type
     fn as_rust_type(&self, ffi_name: &str) -> String;
+    /// Convert from jni::objects::JValue to raw JNI type (by calling one of the unwrappers)
     fn convert_jvalue(&self) -> &str;
+    /// Returns converter is required by the type
     fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>>;
+    /// Indicates whether a local reference cleanup is required once we are done with the type
     fn requires_local_ref_cleanup(&self) -> bool;
+    /// Check the parameter for null value. Must return an `Err(String)` if it's the case.
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()>;
+    /// Returns the default raw JNI type value (used when throwing exceptions). Almost always `JObject::null` except for native types.
+    fn default_value(&self) -> &str;
 }
 
 impl JniType for Type {
@@ -197,6 +207,66 @@ impl JniType for Type {
             Type::Duration(_) => true,
         }
     }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        match self {
+            Type::Bool => Ok(()),
+            Type::Uint8 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Sint8 => Ok(()),
+            Type::Uint16 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Sint16 => Ok(()),
+            Type::Uint32 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Sint32 => Ok(()),
+            Type::Uint64 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Sint64 => Ok(()),
+            Type::Float => Ok(()),
+            Type::Double => Ok(()),
+            Type::String => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Struct(handle) => {
+                f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name))?;
+                f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", handle.name().to_snake_case(), param_name, param_name))
+            },
+            Type::StructRef(handle) => {
+                f.writeln(&format!("if !_env.is_same_object({}, jni::objects::JObject::null()).unwrap()", param_name))?;
+                blocked(f, |f| {
+                    f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", handle.name.to_snake_case(), param_name, param_name))
+                })
+            },
+            Type::Enum(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::ClassRef(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Interface(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::OneTimeCallback(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Iterator(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Collection(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Type::Duration(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+        }
+    }
+
+    fn default_value(&self) -> &str {
+        match self {
+            Type::Bool => "0",
+            Type::Uint8 => "jni::objects::JObject::null().into_inner()",
+            Type::Sint8 => "0",
+            Type::Uint16 => "jni::objects::JObject::null().into_inner()",
+            Type::Sint16 => "0",
+            Type::Uint32 => "jni::objects::JObject::null().into_inner()",
+            Type::Sint32 => "0",
+            Type::Uint64 => "jni::objects::JObject::null().into_inner()",
+            Type::Sint64 => "0",
+            Type::Float => "0.0",
+            Type::Double => "0.0",
+            Type::String => "jni::objects::JObject::null().into_inner()",
+            Type::Struct(_) => "jni::objects::JObject::null().into_inner()",
+            Type::StructRef(_) => "jni::objects::JObject::null().into_inner()",
+            Type::Enum(_) => "jni::objects::JObject::null().into_inner()",
+            Type::ClassRef(_) => "jni::objects::JObject::null().into_inner()",
+            Type::Interface(_) => "jni::objects::JObject::null().into_inner()",
+            Type::OneTimeCallback(_) => "jni::objects::JObject::null().into_inner()",
+            Type::Iterator(_) => "jni::objects::JObject::null().into_inner()",
+            Type::Collection(_) => "jni::objects::JObject::null().into_inner()",
+            Type::Duration(_) => "jni::objects::JObject::null().into_inner()",
+        }
+    }
 }
 
 impl JniType for ReturnType {
@@ -239,6 +309,20 @@ impl JniType for ReturnType {
         match self {
             ReturnType::Void => false,
             ReturnType::Type(return_type, _) => return_type.requires_local_ref_cleanup(),
+        }
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        match self {
+            ReturnType::Void => Ok(()),
+            ReturnType::Type(return_type, _) => return_type.check_null(f, param_name),
+        }
+    }
+
+    fn default_value(&self) -> &str {
+        match self {
+            ReturnType::Void => "",
+            ReturnType::Type(return_type, _) => return_type.default_value(),
         }
     }
 }

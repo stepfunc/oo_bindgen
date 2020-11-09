@@ -18,6 +18,17 @@ pub(crate) trait JniType {
     fn as_rust_type(&self, ffi_name: &str) -> String;
     /// Convert from jni::objects::JValue to raw JNI type (by calling one of the unwrappers)
     fn convert_jvalue(&self) -> &str;
+    /// Convert to Rust from a JNI JObject (even for primitives).
+    ///
+    /// This should call the conversion routine for objects, but implement
+    /// custom conversions for primitives.
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+    ) -> FormattingResult<()>;
     /// Returns converter is required by the type
     fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
@@ -145,6 +156,68 @@ impl JniType for Type {
             Type::Iterator(_) => "l().unwrap().into_inner()",
             Type::Collection(_) => "l().unwrap().into_inner()",
             Type::Duration(_) => "l().unwrap().into_inner()",
+        }
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+    ) -> FormattingResult<()> {
+        match self {
+            Type::Bool => f.writeln(&format!(
+                "{}_cache.primitives.boolean_value(&_env, {})",
+                to, from
+            )),
+            Type::Uint8 => UnsignedConverter("ubyte".to_string()).convert_to_rust(f, from, to),
+            Type::Sint8 => f.writeln(&format!(
+                "{}_cache.primitives.byte_value(&_env, {})",
+                to, from
+            )),
+            Type::Uint16 => UnsignedConverter("ushort".to_string()).convert_to_rust(f, from, to),
+            Type::Sint16 => f.writeln(&format!(
+                "{}_cache.primitives.short_value(&_env, {})",
+                to, from
+            )),
+            Type::Uint32 => UnsignedConverter("uinteger".to_string()).convert_to_rust(f, from, to),
+            Type::Sint32 => f.writeln(&format!(
+                "{}_cache.primitives.integer_value(&_env, {})",
+                to, from
+            )),
+            Type::Uint64 => UnsignedConverter("ulong".to_string()).convert_to_rust(f, from, to),
+            Type::Sint64 => f.writeln(&format!(
+                "{}_cache.primitives.long_value(&_env, {})",
+                to, from
+            )),
+            Type::Float => f.writeln(&format!(
+                "{}_cache.primitives.float_value(&_env, {})",
+                to, from
+            )),
+            Type::Double => f.writeln(&format!(
+                "{}_cache.primitives.double_value(&_env, {})",
+                to, from
+            )),
+            Type::String => StringConverter.convert_to_rust(f, from, to),
+            Type::Struct(handle) => StructConverter(handle.clone()).convert_to_rust(f, from, to),
+            Type::StructRef(handle) => {
+                StructRefConverter(handle.clone()).convert_to_rust(f, from, to)
+            }
+            Type::Enum(handle) => EnumConverter(handle.clone()).convert_to_rust(f, from, to),
+            Type::ClassRef(handle) => ClassConverter(handle.clone()).convert_to_rust(f, from, to),
+            Type::Interface(handle) => {
+                InterfaceConverter(handle.clone()).convert_to_rust(f, from, to)
+            }
+            Type::OneTimeCallback(handle) => {
+                OneTimeCallbackConverter(handle.clone()).convert_to_rust(f, from, to)
+            }
+            Type::Iterator(handle) => {
+                IteratorConverter(handle.clone(), lib_name.to_string()).convert_to_rust(f, from, to)
+            }
+            Type::Collection(handle) => CollectionConverter(handle.clone(), lib_name.to_string())
+                .convert_to_rust(f, from, to),
+            Type::Duration(mapping) => DurationConverter(*mapping).convert_to_rust(f, from, to),
         }
     }
 
@@ -295,6 +368,21 @@ impl JniType for ReturnType {
         match self {
             ReturnType::Void => "v().unwrap()",
             ReturnType::Type(return_type, _) => return_type.convert_jvalue(),
+        }
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+    ) -> FormattingResult<()> {
+        match self {
+            ReturnType::Void => Ok(()),
+            ReturnType::Type(return_type, _) => {
+                return_type.convert_to_rust_from_object(f, from, to, lib_name)
+            }
         }
     }
 
@@ -629,20 +717,20 @@ impl TypeConverter for CollectionConverter {
                 f.writeln("let next = _cache.collection.next(&_env, _it);")?;
                 f.writeln("if !_env.is_same_object(next, jni::objects::JObject::null()).unwrap()")?;
                 blocked(f, |f| {
-                    let converter = self.0.item_type.conversion(&self.1);
-                    if let Some(converter) = &converter {
-                        converter.convert_to_rust(f, "next.into_inner()", "let _next = ")?;
-                        f.write(";")?;
-                    } else {
-                        f.writeln("let _next = next;")?;
-                    }
+                    self.0.item_type.convert_to_rust_from_object(
+                        f,
+                        "next.into_inner()",
+                        "let _next = ",
+                        &self.1,
+                    )?;
+                    f.write(";")?;
 
                     f.writeln(&format!(
                         "unsafe {{ {}::ffi::{}(result, _next) }};",
                         self.1, self.0.add_func.name
                     ))?;
 
-                    if let Some(converter) = &converter {
+                    if let Some(converter) = self.0.item_type.conversion(&self.1) {
                         converter.convert_to_rust_cleanup(f, "_next")?;
                     }
 

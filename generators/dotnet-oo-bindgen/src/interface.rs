@@ -25,7 +25,7 @@ pub(crate) fn generate(
             interface
                 .callbacks()
                 .filter(|func| func.name != interface.destroy_name)
-                .map(|func| {
+                .try_for_each(|func| {
                     // Documentation
                     documentation(f, |f| {
                         // Print top-level documentation
@@ -77,7 +77,6 @@ pub(crate) fn generate(
                     )?;
                     f.write(");")
                 })
-                .collect()
         })?;
 
         f.newline()?;

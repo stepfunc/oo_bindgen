@@ -39,6 +39,10 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     interface::generate_interfaces_cache(lib, config)?;
 
     // Copy the modules that never changes
+    filename.set_file_name("primitives.rs");
+    let mut f = FilePrinter::new(&filename)?;
+    f.write(include_str!("./copy/primitives.rs"))?;
+
     filename.set_file_name("joou.rs");
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("./copy/joou.rs"))?;
@@ -93,6 +97,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()?;
 
     // Import modules
+    f.writeln("mod primitives;")?;
     f.writeln("mod joou;")?;
     f.writeln("mod duration;")?;
     f.writeln("mod classes;")?;
@@ -105,6 +110,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("struct JCache")?;
     blocked(f, |f| {
         f.writeln("vm: jni::JavaVM,")?;
+        f.writeln("primitives: primitives::Primitives,")?;
         f.writeln("joou: joou::Joou,")?;
         f.writeln("duration: duration::Duration,")?;
         f.writeln("collection: collection::Collection,")?;
@@ -122,6 +128,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("fn init(vm: jni::JavaVM) -> Self")?;
         blocked(f, |f| {
             f.writeln("let env = vm.get_env().unwrap();")?;
+            f.writeln("let primitives = primitives::Primitives::init(&env);")?;
             f.writeln("let joou = joou::Joou::init(&env);")?;
             f.writeln("let duration = duration::Duration::init(&env);")?;
             f.writeln("let collection = collection::Collection::init(&env);")?;
@@ -132,6 +139,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             f.writeln("Self")?;
             blocked(f, |f| {
                 f.writeln("vm,")?;
+                f.writeln("primitives,")?;
                 f.writeln("joou,")?;
                 f.writeln("duration,")?;
                 f.writeln("collection,")?;
@@ -178,21 +186,25 @@ fn generate_functions(
 ) -> FormattingResult<()> {
     for handle in lib.native_functions() {
         if let Some(first_param) = handle.parameters.first() {
-            if let Type::ClassRef(handle) = &first_param.param_type {
+            if let Type::ClassRef(class_handle) = &first_param.param_type {
                 // We don't want to generate the `next` methods of iterators
-                if lib.find_iterator(&handle.name).is_some() {
-                    continue;
+                if let Some(it) = lib.find_iterator(&class_handle.name) {
+                    if &it.native_func == handle {
+                        continue;
+                    }
                 }
                 // We don't want to generate the `add` and `delete` methods of collections
-                if lib.find_collection(&handle.name).is_some() {
-                    continue;
+                if let Some(col) = lib.find_collection(&class_handle.name) {
+                    if &col.add_func == handle || &col.delete_func == handle {
+                        continue;
+                    }
                 }
             }
         }
         if let ReturnType::Type(return_type, _) = &handle.return_type {
-            if let Type::ClassRef(handle) = &return_type {
+            if let Type::ClassRef(class_handle) = &return_type {
                 // We don't want to generate the `create` method of collections
-                if lib.find_collection(&handle.name).is_some() {
+                if lib.find_collection(&class_handle.name).is_some() {
                     continue;
                 }
             }

@@ -22,60 +22,55 @@ pub(crate) fn generate(
         f.writeln(&format!("public interface {}", cb_name))?;
         blocked(f, |f| {
             // Write each required method
-            cb.callbacks()
-                .map(|func| {
-                    // Documentation
-                    documentation(f, |f| {
-                        // Print top-level documentation
-                        xmldoc_print(f, &func.doc, lib)?;
-                        f.newline()?;
+            cb.callbacks().try_for_each(|func| {
+                // Documentation
+                documentation(f, |f| {
+                    // Print top-level documentation
+                    xmldoc_print(f, &func.doc, lib)?;
+                    f.newline()?;
 
-                        // Print each parameter value
-                        for param in &func.parameters {
-                            if let CallbackParameter::Parameter(param) = param {
-                                f.writeln(&format!(
-                                    "<param name=\"{}\">",
-                                    param.name.to_mixed_case()
-                                ))?;
-                                docstring_print(f, &param.doc, lib)?;
-                                f.write("</param>")?;
-                            }
+                    // Print each parameter value
+                    for param in &func.parameters {
+                        if let CallbackParameter::Parameter(param) = param {
+                            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+                            docstring_print(f, &param.doc, lib)?;
+                            f.write("</param>")?;
                         }
+                    }
 
-                        // Print return value
-                        if let ReturnType::Type(_, doc) = &func.return_type {
-                            f.writeln("<returns>")?;
-                            docstring_print(f, doc, lib)?;
-                            f.write("</returns>")?;
-                        }
+                    // Print return value
+                    if let ReturnType::Type(_, doc) = &func.return_type {
+                        f.writeln("<returns>")?;
+                        docstring_print(f, doc, lib)?;
+                        f.write("</returns>")?;
+                    }
 
-                        Ok(())
-                    })?;
+                    Ok(())
+                })?;
 
-                    // Callback signature
-                    f.writeln(&format!(
-                        "{} {}(",
-                        func.return_type.as_dotnet_type(),
-                        func.name.to_camel_case()
-                    ))?;
-                    f.write(
-                        &func
-                            .parameters
-                            .iter()
-                            .filter_map(|param| match param {
-                                CallbackParameter::Parameter(param) => Some(format!(
-                                    "{} {}",
-                                    param.param_type.as_dotnet_type(),
-                                    param.name.to_mixed_case()
-                                )),
-                                _ => None,
-                            })
-                            .collect::<Vec<String>>()
-                            .join(", "),
-                    )?;
-                    f.write(");")
-                })
-                .collect()
+                // Callback signature
+                f.writeln(&format!(
+                    "{} {}(",
+                    func.return_type.as_dotnet_type(),
+                    func.name.to_camel_case()
+                ))?;
+                f.write(
+                    &func
+                        .parameters
+                        .iter()
+                        .filter_map(|param| match param {
+                            CallbackParameter::Parameter(param) => Some(format!(
+                                "{} {}",
+                                param.param_type.as_dotnet_type(),
+                                param.name.to_mixed_case()
+                            )),
+                            _ => None,
+                        })
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                )?;
+                f.write(");")
+            })
         })?;
 
         f.newline()?;

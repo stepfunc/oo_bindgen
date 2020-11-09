@@ -5,6 +5,7 @@ mod class;
 mod collection;
 mod duration;
 mod enums;
+mod integer;
 mod iterator;
 mod lifetime;
 mod strings;
@@ -31,6 +32,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     class::define(&mut builder)?;
     duration::define(&mut builder)?;
     enums::define(&mut builder)?;
+    integer::define(&mut builder)?;
     iterator::define(&mut builder)?;
     strings::define(&mut builder)?;
     structure::define(&mut builder)?;

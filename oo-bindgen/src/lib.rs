@@ -455,6 +455,36 @@ impl Library {
             .next()
     }
 
+    pub fn find_iterator<T: AsRef<str>>(&self, name: T) -> Option<&iterator::IteratorHandle> {
+        self.statements
+            .iter()
+            .filter_map(|statement| {
+                if let Statement::IteratorDeclaration(handle) = statement {
+                    if handle.name() == name.as_ref() {
+                        return Some(handle);
+                    }
+                }
+
+                None
+            })
+            .next()
+    }
+
+    pub fn find_collection<T: AsRef<str>>(&self, name: T) -> Option<&collection::CollectionHandle> {
+        self.statements
+            .iter()
+            .filter_map(|statement| {
+                if let Statement::CollectionDeclaration(handle) = statement {
+                    if handle.name() == name.as_ref() {
+                        return Some(handle);
+                    }
+                }
+
+                None
+            })
+            .next()
+    }
+
     pub fn symbol<T: AsRef<str>>(&self, symbol_name: T) -> Option<&Symbol> {
         self.symbols.get(symbol_name.as_ref())
     }

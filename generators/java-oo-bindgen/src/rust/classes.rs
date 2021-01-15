@@ -66,16 +66,17 @@ pub(crate) fn generate_classes_cache(
         f.newline()?;
 
         for class in lib.classes().filter(|class| !class.is_static()) {
+            let class_name = class.name().to_camel_case();
             let snake_name = class.name().to_snake_case();
 
-            f.writeln(&format!("pub fn {snake_name}_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> *mut {ffi_name}::{class_name}", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class.name()))?;
+            f.writeln(&format!("pub fn {snake_name}_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> *mut {ffi_name}::{class_name}", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class_name))?;
             blocked(f, |f| {
                 f.writeln(&format!("env.get_field_unchecked(obj, self.{snake_name}_self_field, jni::signature::JavaType::Primitive(jni::signature::Primitive::Long)).unwrap().j().unwrap() as *mut _", snake_name=snake_name))
             })?;
 
             f.newline()?;
 
-            f.writeln(&format!("pub fn {snake_name}_from_rust(&self, env: &jni::JNIEnv, value: *mut {ffi_name}::{class_name}) -> jni::sys::jobject", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class.name()))?;
+            f.writeln(&format!("pub fn {snake_name}_from_rust(&self, env: &jni::JNIEnv, value: *mut {ffi_name}::{class_name}) -> jni::sys::jobject", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class_name))?;
             blocked(f, |f| {
                 f.writeln(&format!("env.new_object_unchecked(&self.class_{snake_name}, self.{snake_name}_constructor, &[jni::objects::JValue::Long(value as i64)]).unwrap().into_inner()", snake_name=snake_name))
             })?;

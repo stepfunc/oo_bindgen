@@ -287,7 +287,7 @@ fn write_struct_definition(
             })?;
             f.writeln(&format!(
                 "{} {};",
-                CType(&element.element_type),
+                CType(&element.element_type.to_type()),
                 element.name.to_snake_case(),
             ))?;
         }

@@ -1,11 +1,14 @@
+use std::time::Duration;
+
 use oo_bindgen::native_function::*;
+use oo_bindgen::native_struct::StructElementType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let other_structure = lib.declare_native_struct("OtherStructure")?;
     let other_structure = lib
         .define_native_struct(&other_structure)?
-        .add("test", Type::Uint16, "test")?
+        .add("test", StructElementType::Uint16(Some(41)), "test")?
         .doc("Structure within a structure")?
         .build()?;
 
@@ -30,24 +33,76 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let structure = lib
         .define_native_struct(&structure)?
-        .add("boolean_value", Type::Bool, "boolean_value")?
-        .add("uint8_value", Type::Uint8, "uint8_value")?
-        .add("int8_value", Type::Sint8, "int8_value")?
-        .add("uint16_value", Type::Uint16, "uint16_value")?
-        .add("int16_value", Type::Sint16, "int16_value")?
-        .add("uint32_value", Type::Uint32, "uint32_value")?
-        .add("int32_value", Type::Sint32, "int32_value")?
-        .add("uint64_value", Type::Uint64, "uint64_value")?
-        .add("int64_value", Type::Sint64, "int64_value")?
-        .add("float_value", Type::Float, "float_value")?
-        .add("double_value", Type::Double, "double_value")?
-        .add("string_value", Type::String, "string_value")?
+        .add(
+            "boolean_value",
+            StructElementType::Bool(Some(true)),
+            "boolean_value",
+        )?
+        .add(
+            "uint8_value",
+            StructElementType::Uint8(Some(1)),
+            "uint8_value",
+        )?
+        .add(
+            "int8_value",
+            StructElementType::Sint8(Some(-1)),
+            "int8_value",
+        )?
+        .add(
+            "uint16_value",
+            StructElementType::Uint16(Some(2)),
+            "uint16_value",
+        )?
+        .add(
+            "int16_value",
+            StructElementType::Sint16(Some(-2)),
+            "int16_value",
+        )?
+        .add(
+            "uint32_value",
+            StructElementType::Uint32(Some(3)),
+            "uint32_value",
+        )?
+        .add(
+            "int32_value",
+            StructElementType::Sint32(Some(-3)),
+            "int32_value",
+        )?
+        .add(
+            "uint64_value",
+            StructElementType::Uint64(Some(4)),
+            "uint64_value",
+        )?
+        .add(
+            "int64_value",
+            StructElementType::Sint64(Some(-4)),
+            "int64_value",
+        )?
+        .add(
+            "float_value",
+            StructElementType::Float(Some(12.34)),
+            "float_value",
+        )?
+        .add(
+            "double_value",
+            StructElementType::Double(Some(-56.78)),
+            "double_value",
+        )?
+        .add(
+            "string_value",
+            StructElementType::String(Some("Hello".to_string())),
+            "string_value",
+        )?
         .add(
             "structure_value",
             Type::Struct(other_structure),
             "structure_value",
         )?
-        .add("enum_value", Type::Enum(structure_enum), "enum_value")?
+        .add(
+            "enum_value",
+            StructElementType::Enum(structure_enum, Some(1)),
+            "enum_value",
+        )?
         .add(
             "interface_value",
             Type::Interface(structure_interface),
@@ -55,17 +110,23 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .add(
             "duration_millis",
-            Type::Duration(DurationMapping::Milliseconds),
+            StructElementType::Duration(
+                DurationMapping::Milliseconds,
+                Some(Duration::from_millis(4200)),
+            ),
             "duration_millis",
         )?
         .add(
             "duration_seconds",
-            Type::Duration(DurationMapping::Seconds),
+            StructElementType::Duration(DurationMapping::Seconds, Some(Duration::from_secs(76))),
             "duration_seconds",
         )?
         .add(
             "duration_seconds_float",
-            Type::Duration(DurationMapping::SecondsFloat),
+            StructElementType::Duration(
+                DurationMapping::SecondsFloat,
+                Some(Duration::from_millis(15250)),
+            ),
             "duration_seconds_float",
         )?
         .doc("Test structure")?

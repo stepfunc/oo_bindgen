@@ -125,7 +125,7 @@ impl<'a> RustCodegen<'a> {
                     "{}{}: {},",
                     public,
                     element.name,
-                    element.element_type.as_c_type()
+                    element.element_type.to_type().as_c_type()
                 ))?;
             }
             Ok(())
@@ -152,7 +152,7 @@ impl<'a> RustCodegen<'a> {
                     } else {
                         ""
                     };
-                let ampersand = if element.element_type.is_copyable() {
+                let ampersand = if element.element_type.to_type().is_copyable() {
                     ""
                 } else {
                     "&"
@@ -163,13 +163,13 @@ impl<'a> RustCodegen<'a> {
                 f.writeln(&format!(
                     "pub fn {name}{fn_lifetime}(&{lifetime}self) -> {ampersand}{return_type}",
                     name = element.name,
-                    return_type = element.element_type.as_rust_type(),
+                    return_type = element.element_type.to_type().as_rust_type(),
                     fn_lifetime = fn_lifetime,
                     lifetime = el_lifetime,
                     ampersand = ampersand
                 ))?;
                 blocked(f, |f| {
-                    if let Some(conversion) = element.element_type.conversion() {
+                    if let Some(conversion) = element.element_type.to_type().conversion() {
                         if conversion.is_unsafe() {
                             f.writeln("unsafe {")?;
                         }
@@ -202,12 +202,12 @@ impl<'a> RustCodegen<'a> {
                 f.writeln(&format!(
                     "pub fn set_{name}{fn_lifetime}(&{lifetime}mut self, value: {element_type})",
                     name = element.name,
-                    element_type = element.element_type.as_rust_type(),
+                    element_type = element.element_type.to_type().as_rust_type(),
                     fn_lifetime = fn_lifetime,
                     lifetime = el_lifetime
                 ))?;
                 blocked(f, |f| {
-                    if let Some(conversion) = element.element_type.conversion() {
+                    if let Some(conversion) = element.element_type.to_type().conversion() {
                         conversion.convert_to_c(
                             f,
                             "value",
@@ -233,7 +233,7 @@ impl<'a> RustCodegen<'a> {
                     f.writeln(&format!(
                         "pub {}: {},",
                         element.name,
-                        element.element_type.as_rust_type()
+                        element.element_type.to_type().as_rust_type()
                     ))?;
                 }
                 Ok(())
@@ -253,7 +253,7 @@ impl<'a> RustCodegen<'a> {
                     f.writeln("Self")?;
                     blocked(f, |f| {
                         for element in &handle.elements {
-                            if let Some(conversion) = element.element_type.conversion() {
+                            if let Some(conversion) = element.element_type.to_type().conversion() {
                                 conversion.convert_to_c(
                                     f,
                                     &format!("from.{}", element.name),

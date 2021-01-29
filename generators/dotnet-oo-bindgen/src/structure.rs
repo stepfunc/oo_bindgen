@@ -20,7 +20,7 @@ pub(crate) fn generate(
             xmldoc_print(f, &native_struct.doc(), lib)
         })?;
 
-        f.writeln(&format!("public struct {}", struct_name))?;
+        f.writeln(&format!("public class {}", struct_name))?;
         blocked(f, |f| {
             // Write .NET structure elements
             for el in native_struct.elements() {
@@ -30,13 +30,157 @@ pub(crate) fn generate(
                 })?;
 
                 f.writeln(&format!(
-                    "public {} {};",
-                    el.element_type.as_dotnet_type(),
+                    "public {} {}",
+                    el.element_type.to_type().as_dotnet_type(),
                     el.name.to_camel_case()
                 ))?;
+                match &el.element_type {
+                    StructElementType::Bool(default) => match default {
+                        None => (),
+                        Some(false) => f.write(" = false")?,
+                        Some(true) => f.write(" = true")?,
+                    },
+                    StructElementType::Uint8(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (byte){}", value))?;
+                        }
+                    }
+                    StructElementType::Sint8(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (sbyte){}", value))?;
+                        }
+                    }
+                    StructElementType::Uint16(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (ushort){}", value))?;
+                        }
+                    }
+                    StructElementType::Sint16(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (short){}", value))?;
+                        }
+                    }
+                    StructElementType::Uint32(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (uint){}", value))?;
+                        }
+                    }
+                    StructElementType::Sint32(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (int){}", value))?;
+                        }
+                    }
+                    StructElementType::Uint64(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (ulong){}", value))?;
+                        }
+                    }
+                    StructElementType::Sint64(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = (long){}", value))?;
+                        }
+                    }
+                    StructElementType::Float(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = {}f", value))?;
+                        }
+                    }
+                    StructElementType::Double(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = {}", value))?;
+                        }
+                    }
+                    StructElementType::String(default) => {
+                        if let Some(value) = default {
+                            f.write(&format!(" = \"{}\"", &value))?;
+                        }
+                    }
+                    StructElementType::Struct(handle) => {
+                        if handle.is_default_constructed() {
+                            f.write(&format!(" = new {}()", handle.name().to_camel_case()))?;
+                        }
+                    }
+                    StructElementType::StructRef(_) => (),
+                    StructElementType::Enum(handle, default) => {
+                        if let Some(value) = default {
+                            match handle.find_variant_by_value(*value) {
+                                Some(variant) => f.write(&format!(
+                                    " = {}.{}",
+                                    handle.name.to_camel_case(),
+                                    variant.name.to_camel_case()
+                                ))?,
+                                None => panic!("Variant {} not found in {}", value, handle.name),
+                            }
+                        }
+                    }
+                    StructElementType::ClassRef(_) => (),
+                    StructElementType::Interface(_) => (),
+                    StructElementType::OneTimeCallback(_) => (),
+                    StructElementType::Iterator(_) => (),
+                    StructElementType::Collection(_) => (),
+                    StructElementType::Duration(mapping, default) => {
+                        if let Some(value) = default {
+                            match mapping {
+                                DurationMapping::Milliseconds => f.write(&format!(
+                                    " = TimeSpan.FromMilliseconds({})",
+                                    value.as_millis()
+                                ))?,
+                                DurationMapping::Seconds => f.write(&format!(
+                                    " = TimeSpan.FromSeconds({})",
+                                    value.as_secs()
+                                ))?,
+                                DurationMapping::SecondsFloat => f.write(&format!(
+                                    " = TimeSpan.FromSeconds({}f)",
+                                    value.as_secs_f32()
+                                ))?,
+                            }
+                        }
+                    }
+                }
+
+                f.write(";")?;
             }
 
             f.newline()?;
+
+            // Write constructor
+            if !native_struct.definition().is_default_constructed() {
+                f.writeln(&format!("public {}(", struct_name,))?;
+                f.write(
+                    &native_struct
+                        .elements()
+                        .filter(|el| !el.element_type.has_default())
+                        .map(|el| {
+                            format!(
+                                "{} {}",
+                                el.element_type.to_type().as_dotnet_type(),
+                                el.name.to_mixed_case()
+                            )
+                        })
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                )?;
+                f.write(")")?;
+
+                blocked(f, |f| {
+                    for el in native_struct.elements() {
+                        if !el.element_type.has_default() {
+                            f.writeln(&format!(
+                                "this.{} = {};",
+                                el.name.to_camel_case(),
+                                el.name.to_mixed_case()
+                            ))?;
+                        }
+                    }
+                    Ok(())
+                })?;
+
+                f.newline()?;
+
+                // Internal parameterless constructor
+                f.writeln(&format!("internal {}() {{ }}", struct_name))?;
+                f.newline()?;
+            }
 
             // Write methods
             for method in &native_struct.methods {
@@ -85,12 +229,11 @@ pub(crate) fn generate(
                 f.write(")")?;
 
                 blocked(f, |f| {
-                    f.writeln(&format!("{}? _self = this;", struct_name))?;
                     call_native_function(
                         f,
                         &method.native_function,
                         "return ",
-                        Some("_self".to_string()),
+                        Some("this".to_string()),
                         false,
                     )
                 })?;
@@ -161,7 +304,7 @@ pub(crate) fn generate(
             for el in native_struct.elements() {
                 f.writeln(&format!(
                     "{} {};",
-                    el.element_type.as_native_type(),
+                    el.element_type.to_type().as_native_type(),
                     el.name.to_camel_case()
                 ))?;
             }
@@ -178,7 +321,7 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    if let Some(conversion) = el.element_type.conversion() {
+                    if let Some(conversion) = el.element_type.to_type().conversion() {
                         conversion.convert_to_native(
                             f,
                             &format!("self.{}", el_name),
@@ -199,11 +342,11 @@ pub(crate) fn generate(
                 struct_name, struct_native_name
             ))?;
             blocked(f, |f| {
-                f.writeln(&format!("{} result;", struct_name))?;
+                f.writeln(&format!("{} result = new {}();", struct_name, struct_name))?;
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    if let Some(conversion) = el.element_type.conversion() {
+                    if let Some(conversion) = el.element_type.to_type().conversion() {
                         conversion.convert_from_native(
                             f,
                             &format!("native.{}", el_name),
@@ -224,7 +367,7 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    if let Some(conversion) = el.element_type.conversion() {
+                    if let Some(conversion) = el.element_type.to_type().conversion() {
                         conversion.convert_to_native_cleanup(f, &format!("this.{}", el_name))?;
                     }
                 }

@@ -33,7 +33,7 @@ impl DotnetType for Type {
             Type::Double => "double".to_string(),
             Type::String => "string".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => format!("{}?", handle.name.to_camel_case()),
+            Type::StructRef(handle) => format!("{}", handle.name.to_camel_case()),
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => format!("I{}", handle.name.to_camel_case()),
@@ -377,7 +377,7 @@ impl TypeConverter for StructRefConverter {
     ) -> FormattingResult<()> {
         let handle_name = format!("_{}Handle", from.replace(".", "_"));
         f.writeln(&format!(
-            "{}? {} = null;",
+            "{} {} = null;",
             self.0.name.to_camel_case(),
             handle_name
         ))?;
@@ -466,7 +466,7 @@ impl TypeConverter for IteratorConverter {
         ))?;
         blocked(f, |f| {
             f.writeln(&format!(
-                "{}? _itValue = null;",
+                "{} _itValue = null;",
                 self.0.item_type.name().to_camel_case()
             ))?;
             StructRefConverter(self.0.item_type.declaration()).convert_from_native(
@@ -474,7 +474,7 @@ impl TypeConverter for IteratorConverter {
                 "_itRawValue",
                 "_itValue = ",
             )?;
-            f.writeln(&format!("{}.Add(_itValue.Value);", builder_name))
+            f.writeln(&format!("{}.Add(_itValue);", builder_name))
         })?;
         f.writeln(&format!("{}{}.ToImmutable();", to, builder_name))
     }

@@ -1,6 +1,9 @@
+use crate::collection::CollectionHandle;
 use crate::doc::Doc;
+use crate::iterator::IteratorHandle;
 use crate::*;
 use std::collections::HashSet;
+use std::time::Duration;
 
 /// C-style structure forward declaration
 #[derive(Debug)]
@@ -17,9 +20,116 @@ impl NativeStructDeclaration {
 pub type NativeStructDeclarationHandle = Handle<NativeStructDeclaration>;
 
 #[derive(Debug)]
+pub enum StructElementType {
+    Bool(Option<bool>),
+    Uint8(Option<u8>),
+    Sint8(Option<i8>),
+    Uint16(Option<u16>),
+    Sint16(Option<i16>),
+    Uint32(Option<u32>),
+    Sint32(Option<i32>),
+    Uint64(Option<u64>),
+    Sint64(Option<i64>),
+    Float(Option<f32>),
+    Double(Option<f64>),
+    String(Option<String>),
+    Struct(NativeStructHandle),
+    StructRef(NativeStructDeclarationHandle),
+    Enum(NativeEnumHandle, Option<i32>),
+    ClassRef(ClassDeclarationHandle),
+    Interface(InterfaceHandle),
+    OneTimeCallback(OneTimeCallbackHandle),
+    Iterator(IteratorHandle),
+    Collection(CollectionHandle),
+    Duration(DurationMapping, Option<Duration>),
+}
+
+impl StructElementType {
+    pub fn to_type(&self) -> Type {
+        match self {
+            Self::Bool(_) => Type::Bool,
+            Self::Uint8(_) => Type::Uint8,
+            Self::Sint8(_) => Type::Sint8,
+            Self::Uint16(_) => Type::Uint16,
+            Self::Sint16(_) => Type::Sint16,
+            Self::Uint32(_) => Type::Uint32,
+            Self::Sint32(_) => Type::Sint32,
+            Self::Uint64(_) => Type::Uint64,
+            Self::Sint64(_) => Type::Sint64,
+            Self::Float(_) => Type::Float,
+            Self::Double(_) => Type::Double,
+            Self::String(_) => Type::String,
+            Self::Struct(handle) => Type::Struct(handle.clone()),
+            Self::StructRef(handle) => Type::StructRef(handle.clone()),
+            Self::Enum(handle, _) => Type::Enum(handle.clone()),
+            Self::ClassRef(handle) => Type::ClassRef(handle.clone()),
+            Self::Interface(handle) => Type::Interface(handle.clone()),
+            Self::OneTimeCallback(handle) => Type::OneTimeCallback(handle.clone()),
+            Self::Iterator(handle) => Type::Iterator(handle.clone()),
+            Self::Collection(handle) => Type::Collection(handle.clone()),
+            Self::Duration(mapping, _) => Type::Duration(mapping.clone()),
+        }
+    }
+
+    pub fn has_default(&self) -> bool {
+        match self {
+            Self::Bool(default) => default.is_some(),
+            Self::Uint8(default) => default.is_some(),
+            Self::Sint8(default) => default.is_some(),
+            Self::Uint16(default) => default.is_some(),
+            Self::Sint16(default) => default.is_some(),
+            Self::Uint32(default) => default.is_some(),
+            Self::Sint32(default) => default.is_some(),
+            Self::Uint64(default) => default.is_some(),
+            Self::Sint64(default) => default.is_some(),
+            Self::Float(default) => default.is_some(),
+            Self::Double(default) => default.is_some(),
+            Self::String(default) => default.is_some(),
+            Self::Struct(handle) => handle.is_default_constructed(),
+            Self::StructRef(_) => false,
+            Self::Enum(_, default) => default.is_some(),
+            Self::ClassRef(_) => false,
+            Self::Interface(_) => false,
+            Self::OneTimeCallback(_) => false,
+            Self::Iterator(_) => false,
+            Self::Collection(_) => false,
+            Self::Duration(_, default) => default.is_some(),
+        }
+    }
+}
+
+impl From<Type> for StructElementType {
+    fn from(from: Type) -> Self {
+        match from {
+            Type::Bool => Self::Bool(None),
+            Type::Uint8 => Self::Uint8(None),
+            Type::Sint8 => Self::Sint8(None),
+            Type::Uint16 => Self::Uint16(None),
+            Type::Sint16 => Self::Sint16(None),
+            Type::Uint32 => Self::Uint32(None),
+            Type::Sint32 => Self::Sint32(None),
+            Type::Uint64 => Self::Uint64(None),
+            Type::Sint64 => Self::Sint64(None),
+            Type::Float => Self::Float(None),
+            Type::Double => Self::Double(None),
+            Type::String => Self::String(None),
+            Type::Struct(handle) => Self::Struct(handle.clone()),
+            Type::StructRef(handle) => Self::StructRef(handle.clone()),
+            Type::Enum(handle) => Self::Enum(handle.clone(), None),
+            Type::ClassRef(handle) => Self::ClassRef(handle.clone()),
+            Type::Interface(handle) => Self::Interface(handle.clone()),
+            Type::OneTimeCallback(handle) => Self::OneTimeCallback(handle.clone()),
+            Type::Iterator(handle) => Self::Iterator(handle.clone()),
+            Type::Collection(handle) => Self::Collection(handle.clone()),
+            Type::Duration(mapping) => Self::Duration(mapping.clone(), None),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct NativeStructElement {
     pub name: String,
-    pub element_type: Type,
+    pub element_type: StructElementType,
     pub doc: Doc,
 }
 
@@ -38,6 +148,10 @@ impl NativeStruct {
 
     pub fn declaration(&self) -> NativeStructDeclarationHandle {
         self.declaration.clone()
+    }
+
+    pub fn is_default_constructed(&self) -> bool {
+        self.elements.iter().all(|el| el.element_type.has_default())
     }
 }
 
@@ -65,18 +179,19 @@ impl<'a> NativeStructBuilder<'a> {
         }
     }
 
-    pub fn add<T: Into<String>, D: Into<Doc>>(
+    pub fn add<S: Into<String>, T: Into<StructElementType>, D: Into<Doc>>(
         mut self,
-        name: T,
-        element_type: Type,
+        name: S,
+        element_type: T,
         doc: D,
     ) -> Result<Self> {
         let name = name.into();
-        self.lib.validate_type(&element_type)?;
+        let element_type = element_type.into();
+        self.lib.validate_type(&element_type.to_type())?;
         if self.element_names_set.insert(name.to_string()) {
             self.elements.push(NativeStructElement {
                 name,
-                element_type,
+                element_type: element_type.into(),
                 doc: doc.into(),
             });
             Ok(self)

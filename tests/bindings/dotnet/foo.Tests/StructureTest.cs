@@ -6,9 +6,9 @@ namespace foo.Tests
 {
     class TestInterface : IStructureInterface
     {
-        public Structure? lastValue = null;
+        public Structure lastValue = null;
 
-        public void OnValue(Structure? value)
+        public void OnValue(Structure value)
         {
             this.lastValue = value;
         }
@@ -21,7 +21,7 @@ namespace foo.Tests
         {
             var value = CreateStructure();
             var result = Structure.StructByValueEcho(value);
-            CheckStructure(ref result);
+            CheckStructure(result);
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace foo.Tests
         {
             var value = CreateStructure();
             var result = value.StructByReferenceEcho();
-            CheckStructure(ref result);
+            CheckStructure(result);
         }
 
         [Fact]
@@ -42,8 +42,7 @@ namespace foo.Tests
             Structure.StructByValueEcho(value);
 
             Assert.NotNull(testInterface.lastValue);
-            var lastValue = testInterface.lastValue.Value;
-            CheckStructure(ref lastValue);
+            CheckStructure(testInterface.lastValue);
         }
 
         [Fact]
@@ -59,35 +58,12 @@ namespace foo.Tests
 
         private Structure CreateStructure()
         {
-            var structure = new Structure();
-
-            structure.BooleanValue = true;
-            structure.Uint8Value = 1;
-            structure.Int8Value = -1;
-            structure.Uint16Value = 2;
-            structure.Int16Value = -2;
-            structure.Uint32Value = 3;
-            structure.Int32Value = -3;
-            structure.Uint64Value = 4;
-            structure.Int64Value = -4;
-            structure.FloatValue = 12.34f;
-            structure.DoubleValue = -56.78;
-            structure.StringValue = "Hello from C#!";
-
-            structure.StructureValue.Test = 41;
-
-            structure.EnumValue = StructureEnum.Var2;
-
-            structure.InterfaceValue = new TestInterface();
-
-            structure.DurationMillis = TimeSpan.FromMilliseconds(4200);
-            structure.DurationSeconds = TimeSpan.FromSeconds(76);
-            structure.DurationSecondsFloat = TimeSpan.FromSeconds(15.25f);
+            var structure = new Structure(new TestInterface());
 
             return structure;
         }
 
-        private void CheckStructure(ref Structure structure)
+        private void CheckStructure(Structure structure)
         {
             Assert.True(structure.BooleanValue);
             Assert.Equal(1u, structure.Uint8Value);

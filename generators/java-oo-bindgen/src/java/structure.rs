@@ -1,6 +1,6 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, MixedCase};
+use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::native_struct::*;
 
 pub(crate) fn generate(
@@ -21,13 +21,152 @@ pub(crate) fn generate(
             documentation(f, |f| javadoc_print(f, &el.doc, lib))?;
 
             f.writeln(&format!(
-                "public {} {};",
-                el.element_type.as_java_primitive(),
+                "public {} {}",
+                el.element_type.to_type().as_java_primitive(),
                 el.name.to_mixed_case()
             ))?;
+            match &el.element_type {
+                StructElementType::Bool(default) => match default {
+                    None => (),
+                    Some(false) => f.write(" = false")?,
+                    Some(true) => f.write(" = true")?,
+                },
+                StructElementType::Uint8(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = UByte.valueOf({})", value))?;
+                    }
+                }
+                StructElementType::Sint8(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = (byte){}", value))?;
+                    }
+                }
+                StructElementType::Uint16(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = UShort.valueOf({})", value))?;
+                    }
+                }
+                StructElementType::Sint16(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = (short){}", value))?;
+                    }
+                }
+                StructElementType::Uint32(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = UInteger.valueOf({})", value))?;
+                    }
+                }
+                StructElementType::Sint32(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = (int){}", value))?;
+                    }
+                }
+                StructElementType::Uint64(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = ULong.valueOf({})", value))?;
+                    }
+                }
+                StructElementType::Sint64(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = (long){}", value))?;
+                    }
+                }
+                StructElementType::Float(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = {}f", value))?;
+                    }
+                }
+                StructElementType::Double(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = {}", value))?;
+                    }
+                }
+                StructElementType::String(default) => {
+                    if let Some(value) = default {
+                        f.write(&format!(" = \"{}\"", &value))?;
+                    }
+                }
+                StructElementType::Struct(handle) => {
+                    if handle.is_default_constructed() {
+                        f.write(&format!(" = new {}()", handle.name().to_camel_case()))?;
+                    }
+                }
+                StructElementType::StructRef(_) => (),
+                StructElementType::Enum(handle, default) => {
+                    if let Some(value) = default {
+                        match handle.find_variant_by_value(*value) {
+                            Some(variant) => f.write(&format!(
+                                " = {}.{}",
+                                handle.name.to_camel_case(),
+                                variant.name.to_shouty_snake_case()
+                            ))?,
+                            None => panic!("Variant {} not found in {}", value, handle.name),
+                        }
+                    }
+                }
+                StructElementType::ClassRef(_) => (),
+                StructElementType::Interface(_) => (),
+                StructElementType::OneTimeCallback(_) => (),
+                StructElementType::Iterator(_) => (),
+                StructElementType::Collection(_) => (),
+                StructElementType::Duration(mapping, default) => {
+                    if let Some(value) = default {
+                        match mapping {
+                            DurationMapping::Milliseconds => f.write(&format!(
+                                " = java.time.Duration.ofMillis({})",
+                                value.as_millis()
+                            ))?,
+                            DurationMapping::Seconds => f.write(&format!(
+                                " = java.time.Duration.ofSeconds({})",
+                                value.as_secs()
+                            ))?,
+                            DurationMapping::SecondsFloat => f.write(&format!(
+                                " = java.time.Duration.ofMillis({})",
+                                value.as_millis()
+                            ))?,
+                        }
+                    }
+                }
+            }
+
+            f.write(";")?;
         }
 
         f.newline()?;
+
+        if !native_struct.definition().is_default_constructed() {
+            f.writeln(&format!("public {}(", struct_name,))?;
+            f.write(
+                &native_struct
+                    .elements()
+                    .filter(|el| !el.element_type.has_default())
+                    .map(|el| {
+                        format!(
+                            "{} {}",
+                            el.element_type.to_type().as_java_primitive(),
+                            el.name.to_mixed_case()
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", "),
+            )?;
+            f.write(")")?;
+
+            blocked(f, |f| {
+                for el in native_struct.elements() {
+                    if !el.element_type.has_default() {
+                        f.writeln(&format!(
+                            "this.{} = {};",
+                            el.name.to_mixed_case(),
+                            el.name.to_mixed_case()
+                        ))?;
+                    }
+                }
+                Ok(())
+            })?;
+
+            f.newline()?;
+        }
 
         // Write methods
         for method in &native_struct.methods {

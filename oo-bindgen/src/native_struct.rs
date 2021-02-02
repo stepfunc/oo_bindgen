@@ -67,7 +67,7 @@ impl StructElementType {
             Self::OneTimeCallback(handle) => Type::OneTimeCallback(handle.clone()),
             Self::Iterator(handle) => Type::Iterator(handle.clone()),
             Self::Collection(handle) => Type::Collection(handle.clone()),
-            Self::Duration(mapping, _) => Type::Duration(mapping.clone()),
+            Self::Duration(mapping, _) => Type::Duration(*mapping),
         }
     }
 
@@ -129,15 +129,15 @@ impl From<Type> for StructElementType {
             Type::Float => Self::Float(None),
             Type::Double => Self::Double(None),
             Type::String => Self::String(None),
-            Type::Struct(handle) => Self::Struct(handle.clone()),
-            Type::StructRef(handle) => Self::StructRef(handle.clone()),
-            Type::Enum(handle) => Self::Enum(handle.clone(), None),
-            Type::ClassRef(handle) => Self::ClassRef(handle.clone()),
-            Type::Interface(handle) => Self::Interface(handle.clone()),
-            Type::OneTimeCallback(handle) => Self::OneTimeCallback(handle.clone()),
-            Type::Iterator(handle) => Self::Iterator(handle.clone()),
-            Type::Collection(handle) => Self::Collection(handle.clone()),
-            Type::Duration(mapping) => Self::Duration(mapping.clone(), None),
+            Type::Struct(handle) => Self::Struct(handle),
+            Type::StructRef(handle) => Self::StructRef(handle),
+            Type::Enum(handle) => Self::Enum(handle, None),
+            Type::ClassRef(handle) => Self::ClassRef(handle),
+            Type::Interface(handle) => Self::Interface(handle),
+            Type::OneTimeCallback(handle) => Self::OneTimeCallback(handle),
+            Type::Iterator(handle) => Self::Iterator(handle),
+            Type::Collection(handle) => Self::Collection(handle),
+            Type::Duration(mapping) => Self::Duration(mapping, None),
         }
     }
 }
@@ -168,6 +168,10 @@ impl NativeStruct {
 
     pub fn is_default_constructed(&self) -> bool {
         self.elements.iter().all(|el| el.element_type.has_default())
+    }
+
+    pub fn elements(&self) -> impl Iterator<Item = &NativeStructElement> {
+        self.elements.iter()
     }
 }
 
@@ -292,7 +296,7 @@ impl Struct {
     }
 
     pub fn elements(&self) -> impl Iterator<Item = &NativeStructElement> {
-        self.definition.elements.iter()
+        self.definition.elements()
     }
 
     pub fn doc(&self) -> &Doc {

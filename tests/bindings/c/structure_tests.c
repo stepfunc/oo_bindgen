@@ -74,8 +74,17 @@ static void test_struct_by_reference()
     check_struct(&result);
 }
 
+static void test_struct_init()
+{
+    structure_t test = structure_init((structure_interface_t) {NULL, NULL, NULL});
+    assert(strcmp("Hello", test.string_value) == 0);
+    test.string_value = ENGLISH_STRING_1;
+    check_struct(&test);
+}
+
 void structure_tests()
 {
     test_struct_by_value();
     test_struct_by_reference();
+    test_struct_init();
 }

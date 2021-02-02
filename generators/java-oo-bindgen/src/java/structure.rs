@@ -33,7 +33,9 @@ pub(crate) fn generate(
                     StructElementType::Sint64(default) => default.map(|x| x.to_string()),
                     StructElementType::Float(default) => default.map(|x| x.to_string()),
                     StructElementType::Double(default) => default.map(|x| x.to_string()),
-                    StructElementType::String(default) => default.clone(),
+                    StructElementType::String(default) => {
+                        default.clone().map(|x| format!("\"{}\"", x))
+                    }
                     StructElementType::Struct(_) => None,
                     StructElementType::StructRef(_) => None,
                     StructElementType::Enum(handle, default) => default.clone().map(|x| {

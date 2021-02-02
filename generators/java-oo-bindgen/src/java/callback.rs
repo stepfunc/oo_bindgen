@@ -10,6 +10,9 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let callback_name = callback.name.to_camel_case();
 
+    if callback.is_functional() {
+        f.writeln("@FunctionalInterface")?;
+    }
     f.writeln(&format!("public interface {}", callback_name))?;
     blocked(f, |f| {
         // Write each required method

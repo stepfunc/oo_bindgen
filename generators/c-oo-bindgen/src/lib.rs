@@ -66,56 +66,56 @@ mod doc;
 mod formatting;
 
 trait CFormatting {
-    fn to_type(&self) -> String;
+    fn to_c_type(&self) -> String;
 }
 
 impl CFormatting for NativeStructDeclarationHandle {
-    fn to_type(&self) -> String {
+    fn to_c_type(&self) -> String {
         format!("{}_t", self.name.to_snake_case())
     }
 }
 
 impl CFormatting for NativeStructHandle {
-    fn to_type(&self) -> String {
+    fn to_c_type(&self) -> String {
         format!("{}_t", self.name().to_snake_case())
     }
 }
 
 impl CFormatting for NativeEnumHandle {
-    fn to_type(&self) -> String {
+    fn to_c_type(&self) -> String {
         format!("{}_t", self.name.to_snake_case())
     }
 }
 
 impl CFormatting for ClassDeclarationHandle {
-    fn to_type(&self) -> String {
+    fn to_c_type(&self) -> String {
         format!("{}_t", self.name.to_snake_case())
     }
 }
 
 impl CFormatting for Interface {
-    fn to_type(&self) -> String {
+    fn to_c_type(&self) -> String {
         format!("{}_t", self.name.to_snake_case())
     }
 }
 
 impl CFormatting for OneTimeCallbackHandle {
-    fn to_type(&self) -> String {
+    fn to_c_type(&self) -> String {
         format!("{}_t", self.name.to_snake_case())
     }
 }
 
 impl CFormatting for Symbol {
-    fn to_type(&self) -> String {
+    fn to_c_type(&self) -> String {
         match self {
             Symbol::NativeFunction(handle) => handle.name.to_owned(),
-            Symbol::Struct(handle) => handle.declaration().to_type(),
-            Symbol::Enum(handle) => handle.to_type(),
-            Symbol::Class(handle) => handle.declaration().to_type(),
-            Symbol::Interface(handle) => handle.to_type(),
-            Symbol::OneTimeCallback(handle) => handle.to_type(),
-            Symbol::Iterator(handle) => handle.iter_type.to_type(),
-            Symbol::Collection(handle) => handle.collection_type.to_type(),
+            Symbol::Struct(handle) => handle.declaration().to_c_type(),
+            Symbol::Enum(handle) => handle.to_c_type(),
+            Symbol::Class(handle) => handle.declaration().to_c_type(),
+            Symbol::Interface(handle) => handle.to_c_type(),
+            Symbol::OneTimeCallback(handle) => handle.to_c_type(),
+            Symbol::Iterator(handle) => handle.iter_type.to_c_type(),
+            Symbol::Collection(handle) => handle.collection_type.to_c_type(),
         }
     }
 }
@@ -246,8 +246,8 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
                 Statement::NativeStructDeclaration(handle) => {
                     f.writeln(&format!(
                         "typedef struct {} {};",
-                        handle.to_type(),
-                        handle.to_type()
+                        handle.to_c_type(),
+                        handle.to_c_type()
                     ))?;
                 }
                 Statement::NativeStructDefinition(handle) => {
@@ -276,24 +276,178 @@ fn write_struct_definition(
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    f.writeln(&format!("typedef struct {}", handle.to_type()))?;
+    // Write the struct definition
+    f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
             doxygen(f, |f| {
-                f.newline()?;
                 doxygen_print(f, &element.doc, lib)?;
+
+                let default_value = match &element.element_type {
+                    StructElementType::Bool(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint8(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint8(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint16(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint16(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint32(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint32(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint64(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint64(default) => default.map(|x| x.to_string()),
+                    StructElementType::Float(default) => default.map(|x| x.to_string()),
+                    StructElementType::Double(default) => default.map(|x| x.to_string()),
+                    StructElementType::String(default) => {
+                        default.clone().map(|x| format!("\"{}\"", x))
+                    }
+                    StructElementType::Struct(_) => None,
+                    StructElementType::StructRef(_) => None,
+                    StructElementType::Enum(handle, default) => default.clone().map(|x| {
+                        format!("@ref {}_{}", handle.name.to_camel_case(), x.to_camel_case())
+                    }),
+                    StructElementType::ClassRef(_) => None,
+                    StructElementType::Interface(_) => None,
+                    StructElementType::OneTimeCallback(_) => None,
+                    StructElementType::Iterator(_) => None,
+                    StructElementType::Collection(_) => None,
+                    StructElementType::Duration(_, default) => {
+                        default.map(|x| format!("{}s", x.as_secs_f32()))
+                    }
+                };
+
+                if let Some(default_value) = default_value {
+                    f.writeln(&format!("@note Default value is {}", default_value))?;
+                }
+
                 Ok(())
             })?;
             f.writeln(&format!(
                 "{} {};",
-                CType(&element.element_type),
+                CType(&element.element_type.to_type()),
                 element.name.to_snake_case(),
             ))?;
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_type()))
+    f.writeln(&format!("}} {};", handle.to_c_type()))?;
+
+    // Write the struct initializer
+    let params = handle
+        .elements()
+        .filter(|el| !el.element_type.has_default())
+        .map(|el| {
+            format!(
+                "{} {}",
+                CType(&el.element_type.to_type()),
+                el.name.to_snake_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.newline()?;
+
+    f.writeln(&format!(
+        "static {} {}_init({})",
+        handle.to_c_type(),
+        handle.name().to_snake_case(),
+        params
+    ))?;
+    blocked(f, |f| {
+        f.writeln(&format!("return ({})", handle.to_c_type()))?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for el in handle.elements() {
+                let value = match &el.element_type {
+                    StructElementType::Bool(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(false) => "false".to_string(),
+                        Some(true) => "true".to_string(),
+                    },
+                    StructElementType::Uint8(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Sint8(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Uint16(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Sint16(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Uint32(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Sint32(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Uint64(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Sint64(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => value.to_string(),
+                    },
+                    StructElementType::Float(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => format!("{:.}f", value),
+                    },
+                    StructElementType::Double(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => format!("{:.}", value),
+                    },
+                    StructElementType::String(default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => format!("\"{}\"", value),
+                    },
+                    StructElementType::Struct(handle) => {
+                        if handle.is_default_constructed() {
+                            format!("{}_init()", handle.name().to_snake_case())
+                        } else {
+                            el.name.to_snake_case()
+                        }
+                    }
+                    StructElementType::StructRef(_) => el.name.to_snake_case(),
+                    StructElementType::Enum(handle, default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => match handle.find_variant_by_name(value) {
+                            Some(variant) => format!(
+                                "{}_{}",
+                                handle.name.to_camel_case(),
+                                variant.name.to_camel_case()
+                            ),
+                            None => panic!("Variant {} not found in {}", value, handle.name),
+                        },
+                    },
+                    StructElementType::ClassRef(_) => el.name.to_snake_case(),
+                    StructElementType::Interface(_) => el.name.to_snake_case(),
+                    StructElementType::OneTimeCallback(_) => el.name.to_snake_case(),
+                    StructElementType::Iterator(_) => el.name.to_snake_case(),
+                    StructElementType::Collection(_) => el.name.to_snake_case(),
+                    StructElementType::Duration(mapping, default) => match default {
+                        None => el.name.to_snake_case(),
+                        Some(value) => match mapping {
+                            DurationMapping::Milliseconds => value.as_millis().to_string(),
+                            DurationMapping::Seconds => value.as_secs().to_string(),
+                            DurationMapping::SecondsFloat => value.as_secs_f32().to_string(),
+                        },
+                    },
+                };
+                f.writeln(&format!(".{} = {},", el.name.to_snake_case(), value))?;
+            }
+            Ok(())
+        })?;
+        f.writeln("};")
+    })?;
+
+    Ok(())
 }
 
 fn write_enum_definition(
@@ -303,7 +457,7 @@ fn write_enum_definition(
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    f.writeln(&format!("typedef enum {}", handle.to_type()))?;
+    f.writeln(&format!("typedef enum {}", handle.to_c_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
@@ -317,19 +471,18 @@ fn write_enum_definition(
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_type()))?;
+    f.writeln(&format!("}} {};", handle.to_c_type()))?;
 
     f.newline()?;
 
     f.writeln(&format!(
         "static const char* {}_to_string({} value)",
         handle.name,
-        handle.to_type()
+        handle.to_c_type()
     ))?;
     blocked(f, |f| {
         f.writeln("switch (value)")?;
-        f.writeln("{")?;
-        indented(f, |f| {
+        blocked(f, |f| {
             for variant in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}: return \"{}\";",
@@ -339,8 +492,7 @@ fn write_enum_definition(
                 ))?;
             }
             f.writeln("default: return \"\";")
-        })?;
-        f.writeln("}")
+        })
     })
 }
 
@@ -379,8 +531,8 @@ fn write_class_declaration(
 
     f.writeln(&format!(
         "typedef struct {} {};",
-        handle.to_type(),
-        handle.to_type()
+        handle.to_c_type(),
+        handle.to_c_type()
     ))
 }
 
@@ -437,7 +589,7 @@ fn write_function(
 fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    f.writeln(&format!("typedef struct {}", handle.to_type()))?;
+    f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
@@ -513,7 +665,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_type()))
+    f.writeln(&format!("}} {};", handle.to_c_type()))
 }
 
 fn write_one_time_callback(
@@ -523,7 +675,7 @@ fn write_one_time_callback(
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    f.writeln(&format!("typedef struct {}", handle.to_type()))?;
+    f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
@@ -592,7 +744,7 @@ fn write_one_time_callback(
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_type()))
+    f.writeln(&format!("}} {};", handle.to_c_type()))
 }
 
 fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
@@ -678,14 +830,14 @@ impl<'a> Display for CType<'a> {
             Type::Float => write!(f, "float"),
             Type::Double => write!(f, "double"),
             Type::String => write!(f, "const char*"),
-            Type::Struct(handle) => write!(f, "{}", handle.to_type()),
-            Type::StructRef(handle) => write!(f, "{}*", handle.to_type()),
-            Type::Enum(handle) => write!(f, "{}", handle.to_type()),
-            Type::ClassRef(handle) => write!(f, "{}*", handle.to_type()),
-            Type::Interface(handle) => write!(f, "{}", handle.to_type()),
-            Type::OneTimeCallback(handle) => write!(f, "{}", handle.to_type()),
-            Type::Iterator(handle) => write!(f, "{}*", handle.iter_type.to_type()),
-            Type::Collection(handle) => write!(f, "{}*", handle.collection_type.to_type()),
+            Type::Struct(handle) => write!(f, "{}", handle.to_c_type()),
+            Type::StructRef(handle) => write!(f, "{}*", handle.to_c_type()),
+            Type::Enum(handle) => write!(f, "{}", handle.to_c_type()),
+            Type::ClassRef(handle) => write!(f, "{}*", handle.to_c_type()),
+            Type::Interface(handle) => write!(f, "{}", handle.to_c_type()),
+            Type::OneTimeCallback(handle) => write!(f, "{}", handle.to_c_type()),
+            Type::Iterator(handle) => write!(f, "{}*", handle.iter_type.to_c_type()),
+            Type::Collection(handle) => write!(f, "{}*", handle.collection_type.to_c_type()),
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "uint64_t"),
                 DurationMapping::SecondsFloat => write!(f, "float"),

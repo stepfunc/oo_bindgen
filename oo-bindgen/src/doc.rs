@@ -580,7 +580,7 @@ fn validate_reference_with_params(
         }
         DocReference::EnumVariant(enum_name, variant_name) => {
             if let Some(handle) = lib.find_enum(enum_name) {
-                if handle.find_variant(variant_name).is_none() {
+                if handle.find_variant_by_name(variant_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),

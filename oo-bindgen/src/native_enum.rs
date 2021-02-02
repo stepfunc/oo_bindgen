@@ -16,10 +16,14 @@ pub struct NativeEnum {
 }
 
 impl NativeEnum {
-    pub fn find_variant<T: AsRef<str>>(&self, variant_name: T) -> Option<&EnumVariant> {
+    pub fn find_variant_by_name<T: AsRef<str>>(&self, variant_name: T) -> Option<&EnumVariant> {
         self.variants
             .iter()
             .find(|variant| variant.name == variant_name.as_ref())
+    }
+
+    pub fn find_variant_by_value(&self, value: i32) -> Option<&EnumVariant> {
+        self.variants.iter().find(|variant| variant.value == value)
     }
 }
 

@@ -33,7 +33,7 @@ impl DotnetType for Type {
             Type::Double => "double".to_string(),
             Type::String => "string".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => format!("{}?", handle.name.to_camel_case()),
+            Type::StructRef(handle) => handle.name.to_camel_case(),
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => format!("I{}", handle.name.to_camel_case()),
@@ -377,7 +377,7 @@ impl TypeConverter for StructRefConverter {
     ) -> FormattingResult<()> {
         let handle_name = format!("_{}Handle", from.replace(".", "_"));
         f.writeln(&format!(
-            "{}? {} = null;",
+            "{} {} = null;",
             self.0.name.to_camel_case(),
             handle_name
         ))?;
@@ -466,7 +466,7 @@ impl TypeConverter for IteratorConverter {
         ))?;
         blocked(f, |f| {
             f.writeln(&format!(
-                "{}? _itValue = null;",
+                "{} _itValue = null;",
                 self.0.item_type.name().to_camel_case()
             ))?;
             StructRefConverter(self.0.item_type.declaration()).convert_from_native(
@@ -474,7 +474,7 @@ impl TypeConverter for IteratorConverter {
                 "_itRawValue",
                 "_itValue = ",
             )?;
-            f.writeln(&format!("{}.Add(_itValue.Value);", builder_name))
+            f.writeln(&format!("{}.Add(_itValue);", builder_name))
         })?;
         f.writeln(&format!("{}{}.ToImmutable();", to, builder_name))
     }
@@ -740,4 +740,83 @@ pub(crate) fn call_dotnet_function(
     }
 
     Ok(())
+}
+
+pub(crate) fn generate_functional_callback(
+    f: &mut dyn Printer,
+    interface_name: &str,
+    class_name: &str,
+    function: &CallbackFunction,
+) -> FormattingResult<()> {
+    // Build the Action<>/Func<> signature
+    let param_types = function
+        .params()
+        .map(|param| param.param_type.as_dotnet_type())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let action_type = match &function.return_type {
+        ReturnType::Type(return_type, _) => {
+            if param_types.is_empty() {
+                format!("Func<{}>", return_type.as_dotnet_type())
+            } else {
+                format!("Func<{}, {}>", param_types, return_type.as_dotnet_type())
+            }
+        }
+        ReturnType::Void => {
+            if param_types.is_empty() {
+                "Action".to_string()
+            } else {
+                format!("Action<{}>", param_types)
+            }
+        }
+    };
+
+    f.writeln(&format!("public class {} : {}", class_name, interface_name))?;
+    blocked(f, |f| {
+        f.writeln(&format!("readonly {} action;", action_type))?;
+
+        f.newline()?;
+
+        // Write the constructor
+        f.writeln(&format!("public {}({} action)", class_name, action_type))?;
+        blocked(f, |f| f.writeln("this.action = action;"))?;
+
+        f.newline()?;
+
+        // Write the required method
+        f.writeln(&format!(
+            "public {} {}(",
+            function.return_type.as_dotnet_type(),
+            function.name.to_camel_case()
+        ))?;
+        f.write(
+            &function
+                .params()
+                .map(|param| {
+                    format!(
+                        "{} {}",
+                        param.param_type.as_dotnet_type(),
+                        param.name.to_mixed_case()
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(", "),
+        )?;
+        f.write(")")?;
+        blocked(f, |f| {
+            f.newline()?;
+
+            if !function.return_type.is_void() {
+                f.write("return ")?;
+            }
+
+            let params = function
+                .params()
+                .map(|param| param.name.to_mixed_case())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            f.write(&format!("this.action.Invoke({});", params))
+        })
+    })
 }

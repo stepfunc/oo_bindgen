@@ -56,6 +56,10 @@ impl Interface {
         self.callbacks()
             .find(|callback| callback.name == name.as_ref())
     }
+
+    pub fn is_functional(&self) -> bool {
+        self.callbacks().count() == 1
+    }
 }
 
 pub type InterfaceHandle = Handle<Interface>;
@@ -190,6 +194,10 @@ impl OneTimeCallback {
     pub fn find_callback<T: AsRef<str>>(&self, name: T) -> Option<&CallbackFunction> {
         self.callbacks()
             .find(|callback| callback.name == name.as_ref())
+    }
+
+    pub fn is_functional(&self) -> bool {
+        self.callbacks().count() == 1
     }
 }
 

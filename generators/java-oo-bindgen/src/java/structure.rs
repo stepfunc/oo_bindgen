@@ -93,22 +93,22 @@ pub(crate) fn generate(
                 }
                 StructElementType::Uint32(default) => {
                     if let Some(value) = default {
-                        f.write(&format!(" = UInteger.valueOf({})", value))?;
+                        f.write(&format!(" = UInteger.valueOf({}L)", value))?;
                     }
                 }
                 StructElementType::Sint32(default) => {
                     if let Some(value) = default {
-                        f.write(&format!(" = (int){}", value))?;
+                        f.write(&format!(" = {}", value))?;
                     }
                 }
                 StructElementType::Uint64(default) => {
                     if let Some(value) = default {
-                        f.write(&format!(" = ULong.valueOf({})", value))?;
+                        f.write(&format!(" = ULong.valueOf({}L)", value))?;
                     }
                 }
                 StructElementType::Sint64(default) => {
                     if let Some(value) = default {
-                        f.write(&format!(" = (long){}", value))?;
+                        f.write(&format!(" = {}L", value))?;
                     }
                 }
                 StructElementType::Float(default) => {

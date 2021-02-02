@@ -15,6 +15,9 @@ pub(crate) fn generate(
         javadoc_print(f, &interface.doc, lib)
     })?;
 
+    if interface.is_functional() {
+        f.writeln("@FunctionalInterface")?;
+    }
     f.writeln(&format!("public interface {}", interface_name))?;
     blocked(f, |f| {
         // Write each required method

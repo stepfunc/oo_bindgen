@@ -56,15 +56,13 @@ pub(crate) fn generate(
                 ))?;
                 f.write(
                     &func
-                        .parameters
-                        .iter()
-                        .filter_map(|param| match param {
-                            CallbackParameter::Parameter(param) => Some(format!(
+                        .params()
+                        .map(|param| {
+                            format!(
                                 "{} {}",
                                 param.param_type.as_dotnet_type(),
                                 param.name.to_mixed_case()
-                            )),
-                            _ => None,
+                            )
                         })
                         .collect::<Vec<String>>()
                         .join(", "),
@@ -74,6 +72,17 @@ pub(crate) fn generate(
         })?;
 
         f.newline()?;
+
+        // Write the Action<>/Func<> based implementation if it's a functional interface
+        if cb.is_functional() {
+            generate_functional_callback(
+                f,
+                &cb_name,
+                &cb.name.to_camel_case(),
+                cb.callbacks().next().unwrap(),
+            )?;
+            f.newline()?;
+        }
 
         // Create the native adapter
         f.writeln("[StructLayout(LayoutKind.Sequential)]")?;

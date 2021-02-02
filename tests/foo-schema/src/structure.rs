@@ -100,7 +100,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .add(
             "enum_value",
-            StructElementType::Enum(structure_enum, Some(1)),
+            StructElementType::Enum(structure_enum, Some("Var2".to_string())),
             "enum_value",
         )?
         .add(

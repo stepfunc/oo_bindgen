@@ -35,7 +35,7 @@ pub enum StructElementType {
     String(Option<String>),
     Struct(NativeStructHandle),
     StructRef(NativeStructDeclarationHandle),
-    Enum(NativeEnumHandle, Option<i32>),
+    Enum(NativeEnumHandle, Option<String>),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     OneTimeCallback(OneTimeCallbackHandle),
@@ -94,6 +94,22 @@ impl StructElementType {
             Self::Iterator(_) => false,
             Self::Collection(_) => false,
             Self::Duration(_, default) => default.is_some(),
+        }
+    }
+
+    fn validate(&self) -> Result<()> {
+        match self {
+            Self::Enum(handle, Some(default)) => {
+                if handle.find_variant_by_name(default).is_none() {
+                    Err(BindingError::NativeEnumDoesNotContainVariant {
+                        name: handle.name.to_string(),
+                        variant_name: default.to_string(),
+                    })
+                } else {
+                    Ok(())
+                }
+            }
+            _ => Ok(()),
         }
     }
 }
@@ -187,11 +203,13 @@ impl<'a> NativeStructBuilder<'a> {
     ) -> Result<Self> {
         let name = name.into();
         let element_type = element_type.into();
+        element_type.validate()?;
+
         self.lib.validate_type(&element_type.to_type())?;
         if self.element_names_set.insert(name.to_string()) {
             self.elements.push(NativeStructElement {
                 name,
-                element_type: element_type.into(),
+                element_type,
                 doc: doc.into(),
             });
             Ok(self)

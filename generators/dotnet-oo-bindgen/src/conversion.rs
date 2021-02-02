@@ -33,7 +33,7 @@ impl DotnetType for Type {
             Type::Double => "double".to_string(),
             Type::String => "string".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => format!("{}", handle.name.to_camel_case()),
+            Type::StructRef(handle) =>  handle.name.to_camel_case(),
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => format!("I{}", handle.name.to_camel_case()),

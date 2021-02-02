@@ -18,7 +18,47 @@ pub(crate) fn generate(
     blocked(f, |f| {
         // Write Java structure elements
         for el in native_struct.elements() {
-            documentation(f, |f| javadoc_print(f, &el.doc, lib))?;
+            documentation(f, |f| {
+                javadoc_print(f, &el.doc, lib)?;
+
+                let default_value = match &el.element_type {
+                    StructElementType::Bool(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint8(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint8(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint16(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint16(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint32(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint32(default) => default.map(|x| x.to_string()),
+                    StructElementType::Uint64(default) => default.map(|x| x.to_string()),
+                    StructElementType::Sint64(default) => default.map(|x| x.to_string()),
+                    StructElementType::Float(default) => default.map(|x| x.to_string()),
+                    StructElementType::Double(default) => default.map(|x| x.to_string()),
+                    StructElementType::String(default) => default.clone(),
+                    StructElementType::Struct(_) => None,
+                    StructElementType::StructRef(_) => None,
+                    StructElementType::Enum(handle, default) => default.clone().map(|x| {
+                        format!(
+                            "{{@link {}#{}}}",
+                            handle.name.to_camel_case(),
+                            x.to_shouty_snake_case()
+                        )
+                    }),
+                    StructElementType::ClassRef(_) => None,
+                    StructElementType::Interface(_) => None,
+                    StructElementType::OneTimeCallback(_) => None,
+                    StructElementType::Iterator(_) => None,
+                    StructElementType::Collection(_) => None,
+                    StructElementType::Duration(_, default) => {
+                        default.map(|x| format!("{}s", x.as_secs_f32()))
+                    }
+                };
+
+                if let Some(default_value) = default_value {
+                    f.writeln(&format!("<p>Default value is {}</p>", default_value))?;
+                }
+
+                Ok(())
+            })?;
 
             f.writeln(&format!(
                 "public {} {}",
@@ -94,7 +134,7 @@ pub(crate) fn generate(
                 StructElementType::StructRef(_) => (),
                 StructElementType::Enum(handle, default) => {
                     if let Some(value) = default {
-                        match handle.find_variant_by_value(*value) {
+                        match handle.find_variant_by_name(value) {
                             Some(variant) => f.write(&format!(
                                 " = {}.{}",
                                 handle.name.to_camel_case(),

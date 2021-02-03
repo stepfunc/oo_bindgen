@@ -23,7 +23,7 @@ pub fn run(settings: BindingBuilderSettings) {
             Arg::with_name("java")
                 .long("java")
                 .takes_value(false)
-                .help("Build Java (JNA) bindings"),
+                .help("Build Java (JNI) bindings"),
         )
         .arg(
             Arg::with_name("doxygen")

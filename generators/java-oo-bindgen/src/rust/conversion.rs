@@ -431,7 +431,7 @@ impl TypeConverter for BooleanConverter {
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}if {} {{ 1 }} else {{ 0 }}", to, from))
+        f.writeln(&format!("{}{}", to, from))
     }
 }
 

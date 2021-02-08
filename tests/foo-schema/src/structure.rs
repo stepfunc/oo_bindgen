@@ -5,19 +5,32 @@ use oo_bindgen::native_struct::StructElementType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
-    let other_structure = lib.declare_native_struct("OtherStructure")?;
-    let other_structure = lib
-        .define_native_struct(&other_structure)?
-        .add("test", StructElementType::Uint16(Some(41)), "test")?
-        .doc("Structure within a structure")?
-        .build()?;
-
     let structure_enum = lib
         .define_native_enum("StructureEnum")?
         .push("Var1", "Var1")?
         .push("Var2", "Var2")?
         .push("Var3", "Var3")?
         .doc("Enum")?
+        .build()?;
+
+    let other_structure = lib.declare_native_struct("OtherStructure")?;
+    let other_structure = lib
+        .define_native_struct(&other_structure)?
+        .add("test", StructElementType::Uint16(Some(41)), "test")?
+        // The following pattern used to crash in Java because of the way we handled boolean
+        .add(
+            "first_enum_value",
+            StructElementType::Enum(structure_enum.clone(), Some("Var2".to_string())),
+            "first_enum_value",
+        )?
+        .add("bool1", StructElementType::Sint16(Some(1)), "bool1")?
+        .add("bool2", StructElementType::Bool(Some(false)), "bool2")?
+        .add(
+            "second_enum_value",
+            StructElementType::Enum(structure_enum.clone(), Some("Var2".to_string())),
+            "second_enum_value",
+        )?
+        .doc("Structure within a structure")?
         .build()?;
 
     let structure = lib.declare_native_struct("Structure")?;
@@ -34,9 +47,24 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let structure = lib
         .define_native_struct(&structure)?
         .add(
+            "enum_value",
+            StructElementType::Enum(structure_enum.clone(), Some("Var2".to_string())),
+            "enum_value",
+        )?
+        .add(
             "boolean_value",
             StructElementType::Bool(Some(true)),
             "boolean_value",
+        )?
+        .add(
+            "boolean_value2",
+            StructElementType::Bool(Some(true)),
+            "boolean_value2",
+        )?
+        .add(
+            "enum_value2",
+            StructElementType::Enum(structure_enum, Some("Var2".to_string())),
+            "enum_value2",
         )?
         .add(
             "uint8_value",
@@ -97,11 +125,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "structure_value",
             Type::Struct(other_structure),
             "structure_value",
-        )?
-        .add(
-            "enum_value",
-            StructElementType::Enum(structure_enum, Some("Var2".to_string())),
-            "enum_value",
         )?
         .add(
             "interface_value",

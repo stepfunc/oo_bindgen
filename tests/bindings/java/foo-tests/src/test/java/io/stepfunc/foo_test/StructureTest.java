@@ -66,7 +66,10 @@ public class StructureTest {
         assertThat(structure.stringValue).isEqualTo("Hello");
 
         assertThat(structure.structureValue.test).isEqualTo(ushort(41));
+        assertThat(structure.structureValue.firstEnumValue).isEqualTo(StructureEnum.VAR2);
+        assertThat(structure.structureValue.secondEnumValue).isEqualTo(StructureEnum.VAR2);
         assertThat(structure.enumValue).isEqualTo(StructureEnum.VAR2);
+        assertThat(structure.enumValue2).isEqualTo(StructureEnum.VAR2);
 
         assertThat(structure.durationMillis).isEqualTo(Duration.ofMillis(4200));
         assertThat(structure.durationSeconds).isEqualTo(Duration.ofSeconds(76));

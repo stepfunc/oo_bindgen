@@ -329,7 +329,7 @@ fn generate_functions(
 
             // Return value
             if !handle.return_type.is_void() {
-                f.writeln("return _result;")?;
+                f.writeln("return _result.into();")?;
             }
 
             Ok(())

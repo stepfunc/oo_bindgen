@@ -378,6 +378,13 @@ impl Library {
             .next()
     }
 
+    pub fn constants(&self) -> impl Iterator<Item = &ConstantSetHandle> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::Constants(handle) => Some(handle),
+            _ => None,
+        })
+    }
+
     pub fn native_enums(&self) -> impl Iterator<Item = &NativeEnumHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::EnumDefinition(handle) => Some(handle),

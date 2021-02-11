@@ -1,4 +1,5 @@
 void version_tests();
+void constant_tests();
 void enum_tests();
 void duration_tests();
 void string_tests();
@@ -9,6 +10,7 @@ void iterator_tests();
 int main()
 {
     version_tests();
+    constant_tests();
     enum_tests();
     duration_tests();
     string_tests();

@@ -46,9 +46,10 @@ clippy::all
 
 use crate::doc::*;
 use crate::formatting::*;
-use heck::{CamelCase, SnakeCase};
+use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
+use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
@@ -243,6 +244,7 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
         // Iterate through each statement and print them
         for statement in lib.into_iter() {
             match statement {
+                Statement::Constants(handle) => write_constants_definition(f, handle, lib)?,
                 Statement::NativeStructDeclaration(handle) => {
                     f.writeln(&format!(
                         "typedef struct {} {};",
@@ -267,6 +269,29 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
 
         Ok(())
     })
+}
+
+fn write_constants_definition(
+    f: &mut dyn Printer,
+    handle: &ConstantSetHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
+    fn get_constant_value(value: ConstantValue) -> String {
+        match value {
+            ConstantValue::U8(value, Representation::Hex) => format!("0x{:02X?}", value),
+        }
+    }
+
+    for item in &handle.values {
+        doxygen(f, |f| doxygen_print(f, &item.doc, lib))?;
+        f.writeln(&format!(
+            "#define {}_{} {}",
+            handle.name.to_shouty_snake_case(),
+            item.name.to_shouty_snake_case(),
+            get_constant_value(item.value)
+        ))?;
+    }
+    Ok(())
 }
 
 fn write_struct_definition(

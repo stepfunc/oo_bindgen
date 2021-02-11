@@ -63,6 +63,7 @@ pub use semver::Version;
 pub mod callback;
 pub mod class;
 pub mod collection;
+pub mod constants;
 pub mod doc;
 pub mod formatting;
 pub mod iterator;
@@ -71,6 +72,7 @@ pub mod native_function;
 pub mod native_struct;
 pub mod platforms;
 
+use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
 
 type Result<T> = std::result::Result<T, BindingError>;
@@ -252,6 +254,15 @@ pub enum BindingError {
     CollectionNotPartOfThisLib {
         handle: collection::CollectionHandle,
     },
+    #[error(
+        "ConstantSet '{}' already contains constant name  '{}'",
+        set_name,
+        constant_name
+    )]
+    ConstantNameAlreadyUsed {
+        set_name: String,
+        constant_name: String,
+    },
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -310,6 +321,7 @@ pub enum Symbol {
 
 #[derive(Debug)]
 pub enum Statement {
+    Constants(ConstantSetHandle),
     NativeStructDeclaration(NativeStructDeclarationHandle),
     NativeStructDefinition(NativeStructHandle),
     StructDefinition(StructHandle),
@@ -580,6 +592,7 @@ impl LibraryBuilder {
         let mut symbols = HashMap::new();
         for statement in &self.statements {
             match statement {
+                Statement::Constants(_) => {}
                 Statement::NativeStructDeclaration(handle) => {
                     symbols.insert(
                         handle.name.clone(),
@@ -646,6 +659,12 @@ impl LibraryBuilder {
     pub fn license(&mut self, license: Vec<String>) -> Result<()> {
         self.license = license;
         Ok(())
+    }
+
+    pub fn define_constants<T: Into<String>>(&mut self, name: T) -> Result<ConstantSetBuilder> {
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        Ok(ConstantSetBuilder::new(self, name))
     }
 
     /// Forward declare a native structure

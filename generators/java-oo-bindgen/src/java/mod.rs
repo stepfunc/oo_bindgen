@@ -10,6 +10,7 @@ use std::fs;
 
 mod callback;
 mod class;
+mod constant;
 mod conversion;
 mod doc;
 mod enumeration;
@@ -49,6 +50,7 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     generate_native_func_class(lib, config)?;
 
     // Generate the user-facing stuff
+    generate_constants(lib, config)?;
     generate_structs(lib, config)?;
     generate_enums(lib, config)?;
     generate_classes(lib, config)?;
@@ -187,12 +189,10 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     }
                 }
             }
-            if let ReturnType::Type(return_type, _) = &handle.return_type {
-                if let Type::ClassRef(class_handle) = &return_type {
-                    // We don't want to generate the `create` method of collections
-                    if lib.find_collection(&class_handle.name).is_some() {
-                        continue;
-                    }
+            if let ReturnType::Type(Type::ClassRef(class_handle), _) = &handle.return_type {
+                // We don't want to generate the `create` method of collections
+                if lib.find_collection(&class_handle.name).is_some() {
+                    continue;
                 }
             }
 
@@ -216,6 +216,15 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
         Ok(())
     })
+}
+
+fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+    for set in lib.constants() {
+        let mut f = create_file(&set.name.to_camel_case(), config, lib)?;
+        constant::generate(&mut f, set, lib)?;
+    }
+
+    Ok(())
 }
 
 fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {

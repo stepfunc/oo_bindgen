@@ -14,6 +14,7 @@ set(tests
     ./structure_tests.c
     ./callback_tests.c
     ./iterator_tests.c
+    ./constant_tests.c
 )
 
 add_executable(foo_c main.c ${tests})

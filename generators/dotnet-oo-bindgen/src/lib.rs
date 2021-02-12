@@ -48,6 +48,7 @@ use crate::conversion::*;
 use crate::doc::*;
 use crate::formatting::*;
 use heck::CamelCase;
+use oo_bindgen::constants::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -81,6 +82,7 @@ pub fn generate_dotnet_bindings(
 
     generate_native_func_class(lib, config)?;
 
+    generate_constants(lib, config)?;
     generate_structs(lib, config)?;
     generate_enums(lib, config)?;
     generate_classes(lib, config)?;
@@ -170,6 +172,20 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
     })
 }
 
+fn generate_constants(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for constants in lib.constants() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&constants.name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        generate_constant_set(&mut f, constants, lib)?;
+    }
+
+    Ok(())
+}
+
 fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     for native_struct in lib.structs() {
         // Open file
@@ -196,6 +212,49 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
     }
 
     Ok(())
+}
+
+fn generate_constant_set(
+    f: &mut impl Printer,
+    set: &ConstantSetHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
+    fn get_type_as_string(value: &ConstantValue) -> &'static str {
+        match value {
+            ConstantValue::U8(_, _) => "byte",
+        }
+    }
+
+    fn get_value_as_string(value: &ConstantValue) -> String {
+        match value {
+            ConstantValue::U8(x, Representation::Hex) => format!("0x{:02X?}", x),
+        }
+    }
+
+    print_license(f, &lib.license)?;
+    print_imports(f)?;
+    f.newline()?;
+
+    namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            xmldoc_print(f, &set.doc, lib)
+        })?;
+
+        f.writeln(&format!("public static class {}", set.name.to_camel_case()))?;
+        blocked(f, |f| {
+            for value in &set.values {
+                documentation(f, |f| xmldoc_print(f, &value.doc, lib))?;
+                f.writeln(&format!(
+                    "public const {} {} = {};",
+                    get_type_as_string(&value.value),
+                    value.name.to_camel_case(),
+                    get_value_as_string(&value.value),
+                ))?;
+            }
+            Ok(())
+        })
+    })
 }
 
 fn generate_enum(

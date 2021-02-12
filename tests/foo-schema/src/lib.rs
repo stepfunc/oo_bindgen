@@ -3,6 +3,7 @@ use oo_bindgen::*;
 mod callback;
 mod class;
 mod collection;
+mod constants;
 mod duration;
 mod enums;
 mod integer;
@@ -17,7 +18,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     builder.license(
         [
             "foo v1.2.3",
-            "Copyright (C) 2020 Automatak LLC",
+            "Copyright (C) 2020-2021 Step Function I/O",
             "",
             "This is my custom license.",
             "These views are not even my own. They belong to nobody.",
@@ -28,6 +29,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
         .collect(),
     )?;
 
+    constants::define(&mut builder)?;
     callback::define(&mut builder)?;
     class::define(&mut builder)?;
     duration::define(&mut builder)?;

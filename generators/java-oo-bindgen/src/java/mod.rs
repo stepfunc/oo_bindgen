@@ -189,12 +189,10 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     }
                 }
             }
-            if let ReturnType::Type(return_type, _) = &handle.return_type {
-                if let Type::ClassRef(class_handle) = &return_type {
-                    // We don't want to generate the `create` method of collections
-                    if lib.find_collection(&class_handle.name).is_some() {
-                        continue;
-                    }
+            if let ReturnType::Type(Type::ClassRef(class_handle), _) = &handle.return_type {
+                // We don't want to generate the `create` method of collections
+                if lib.find_collection(&class_handle.name).is_some() {
+                    continue;
                 }
             }
 

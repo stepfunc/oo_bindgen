@@ -80,13 +80,6 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 ) -> B {
     let mut platforms = PlatformLocations::new();
     if let Some(package_src) = package_src {
-        let platform_path = [package_src, Platform::Linux.to_string()]
-            .iter()
-            .collect::<PathBuf>();
-        if platform_path.is_dir() {
-            platforms.add(Platform::Linux, platform_path);
-        }
-
         let platform_path = [package_src, Platform::Win64.to_string()]
             .iter()
             .collect::<PathBuf>();
@@ -94,11 +87,18 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
             platforms.add(Platform::Win64, platform_path);
         }
 
-        let platform_path = [package_src, Platform::Win32.to_string()]
+        let platform_path = [package_src, Platform::Linux.to_string()]
             .iter()
             .collect::<PathBuf>();
         if platform_path.is_dir() {
-            platforms.add(Platform::Win32, platform_path);
+            platforms.add(Platform::Linux, platform_path);
+        }
+
+        let platform_path = [package_src, Platform::LinuxMusl.to_string()]
+            .iter()
+            .collect::<PathBuf>();
+        if platform_path.is_dir() {
+            platforms.add(Platform::LinuxMusl, platform_path);
         }
     } else {
         platforms.add(Platform::current(), ffi_path());
@@ -108,7 +108,18 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
         panic!("No platforms found!");
     }
 
+    let has_dynamic_libs = platforms.has_dynamic_lib();
+
     let mut builder = B::new(settings, platforms);
+
+    if B::requires_dynamic_lib() && !has_dynamic_libs {
+        println!(
+            "Skipping {} because it requires dynamic libraries",
+            B::name()
+        );
+        return builder;
+    }
+
     builder.generate(package_src.is_some());
 
     if package_src.is_none() {
@@ -132,6 +143,8 @@ pub struct BindingBuilderSettings<'a> {
 }
 
 trait BindingBuilder<'a> {
+    fn name() -> &'static str;
+    fn requires_dynamic_lib() -> bool;
     fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self;
     fn generate(&mut self, is_packaging: bool);
     fn build(&mut self);
@@ -175,6 +188,14 @@ impl<'a> CBindingBuilder<'a> {
 }
 
 impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
+    fn name() -> &'static str {
+        "c"
+    }
+
+    fn requires_dynamic_lib() -> bool {
+        false
+    }
+
     fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
         Self {
             settings,
@@ -256,6 +277,14 @@ impl<'a> DotnetBindingBuilder<'a> {
 }
 
 impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
+    fn name() -> &'static str {
+        "dotnet"
+    }
+
+    fn requires_dynamic_lib() -> bool {
+        true
+    }
+
     fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
         Self {
             settings,
@@ -359,6 +388,14 @@ impl<'a> JavaBindingBuilder<'a> {
 }
 
 impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
+    fn name() -> &'static str {
+        "java"
+    }
+
+    fn requires_dynamic_lib() -> bool {
+        true
+    }
+
     fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
         Self {
             settings,

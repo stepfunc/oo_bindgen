@@ -783,54 +783,12 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
     f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/../\")")?;
     f.newline()?;
 
-    // Write each platform variation
     let mut is_first_if = true;
 
-    // Add a config value if we have two linux versions
-    let has_static_choice =
-        if config.platforms.linux.is_some() && config.platforms.linux_musl.is_some() {
-            f.writeln(&format!(
-            "set({}_STATIC_MUSL OFF CACHE BOOL \"Use statically built musl lib on Linux for {}\")",
-            lib.name.to_shouty_snake_case(),
-            lib.name
-        ))?;
-            f.newline()?;
-            true
-        } else {
-            false
-        };
-
-    for p in config.platforms.iter() {
-        let platform_check = match p.platform {
-            Platform::Win64 => "WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8".to_string(),
-            Platform::Linux => {
-                if !has_static_choice {
-                    "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8".to_string()
-                } else {
-                    format!(
-                        "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT $CACHE{{{}_STATIC_MUSL}}",
-                        lib.name.to_shouty_snake_case()
-                    )
-                }
-            }
-            Platform::LinuxMusl => {
-                if !has_static_choice {
-                    "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8".to_string()
-                } else {
-                    format!(
-                        "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND $CACHE{{{}_STATIC_MUSL}}",
-                        lib.name.to_shouty_snake_case()
-                    )
-                }
-            }
-        };
-
-        if is_first_if {
-            f.writeln(&format!("if({})", platform_check))?;
-            is_first_if = false;
-        } else {
-            f.writeln(&format!("elseif({})", platform_check))?;
-        }
+    // Windows platform
+    if let Some(p) = &config.platforms.win64 {
+        f.writeln("if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)")?;
+        is_first_if = false;
 
         indented(&mut f, |f| {
             f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
@@ -850,6 +808,56 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
             })?;
             f.writeln(")")
         })?;
+    }
+
+    const LINUX_PLATFORM_CHECK: &str = "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8";
+
+    // Linux dynamic lib
+    if config.platforms.linux.is_some() || config.platforms.linux_musl.is_some() {
+        if is_first_if {
+            f.writeln(&format!("if({})", LINUX_PLATFORM_CHECK))?;
+            //is_first_if = false;
+        } else {
+            f.writeln(&format!("elseif({})", LINUX_PLATFORM_CHECK))?;
+        }
+
+        if let Some(p) = &config.platforms.linux {
+            indented(&mut f, |f| {
+                f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
+                f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
+                indented(f, |f| {
+                    f.writeln(&format!(
+                        "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
+                        p.platform.to_string(),
+                        p.bin_filename(&config.ffi_name)
+                    ))?;
+                    f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
+                })?;
+                f.writeln(")")
+            })?;
+        }
+
+        if let Some(p) = &config.platforms.linux_musl {
+            indented(&mut f, |f| {
+                f.writeln(&format!(
+                    "add_library({}_static STATIC IMPORTED GLOBAL)",
+                    lib.name
+                ))?;
+                f.writeln(&format!(
+                    "set_target_properties({}_static PROPERTIES",
+                    lib.name
+                ))?;
+                indented(f, |f| {
+                    f.writeln(&format!(
+                        "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
+                        p.platform.to_string(),
+                        p.bin_filename(&config.ffi_name)
+                    ))?;
+                    f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
+                })?;
+                f.writeln(")")
+            })?;
+        }
     }
 
     // Write error message if platform not found

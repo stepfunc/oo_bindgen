@@ -37,6 +37,7 @@ impl Platform {
     }
 }
 
+#[derive(Clone)]
 pub struct PlatformLocation {
     pub platform: Platform,
     pub location: PathBuf,
@@ -66,9 +67,9 @@ impl PlatformLocation {
 
 #[derive(Clone)]
 pub struct PlatformLocations {
-    pub win64: Option<PathBuf>,
-    pub linux: Option<PathBuf>,
-    pub linux_musl: Option<PathBuf>,
+    pub win64: Option<PlatformLocation>,
+    pub linux: Option<PlatformLocation>,
+    pub linux_musl: Option<PlatformLocation>,
 }
 
 impl PlatformLocations {
@@ -81,23 +82,24 @@ impl PlatformLocations {
     }
 
     pub fn add(&mut self, platform: Platform, location: PathBuf) {
+        let loc = PlatformLocation::new(platform, location);
         match platform {
-            Platform::Win64 => self.win64 = Some(location),
-            Platform::Linux => self.linux = Some(location),
-            Platform::LinuxMusl => self.linux_musl = Some(location),
+            Platform::Win64 => self.win64 = Some(loc),
+            Platform::Linux => self.linux = Some(loc),
+            Platform::LinuxMusl => self.linux_musl = Some(loc),
         }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = PlatformLocation> {
         let mut vec = Vec::new();
         if let Some(loc) = &self.win64 {
-            vec.push(PlatformLocation::new(Platform::Win64, loc.clone()))
+            vec.push(loc.clone())
         }
         if let Some(loc) = &self.linux {
-            vec.push(PlatformLocation::new(Platform::Linux, loc.clone()))
+            vec.push(loc.clone())
         }
         if let Some(loc) = &self.linux_musl {
-            vec.push(PlatformLocation::new(Platform::LinuxMusl, loc.clone()))
+            vec.push(loc.clone())
         }
         vec.into_iter()
     }

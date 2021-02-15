@@ -29,7 +29,11 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     // Copy the compiled libraries to the resource folder
     let mut ffi_name = config.ffi_name.clone();
     ffi_name.push_str("_java");
-    for platform in config.platforms.iter() {
+    for platform in config
+        .platforms
+        .iter()
+        .filter(|x| x.platform != Platform::LinuxMusl)
+    {
         let mut target_dir = config.java_resource_dir();
         target_dir.push(platform.platform.to_string());
         fs::create_dir_all(&target_dir)?;
@@ -127,16 +131,6 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                 ))
                             })?;
                         }
-                        Platform::Win32 => {
-                            f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS && org.apache.commons.lang3.ArchUtils.getProcessor().is32Bit())")?;
-                            blocked(f, |f| {
-                                f.writeln(&format!(
-                                    "loadLibrary(\"{}\", \"{}\", \"dll\");",
-                                    platform.platform.to_string(),
-                                    libname
-                                ))
-                            })?;
-                        }
                         Platform::Linux => {
                             f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_LINUX && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
                             blocked(f, |f| {
@@ -147,6 +141,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                 ))
                             })?;
                         }
+                        Platform::LinuxMusl => (), // We do not generate Java bindings for Linux musl
                     }
                 }
                 Ok(())

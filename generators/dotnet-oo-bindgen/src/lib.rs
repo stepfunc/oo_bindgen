@@ -110,7 +110,11 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.newline()?;
     f.writeln("  <ItemGroup>")?;
 
-    for p in config.platforms.iter() {
+    for p in config
+        .platforms
+        .iter()
+        .filter(|x| x.platform != Platform::LinuxMusl)
+    {
         let filename = p.bin_filename(&config.ffi_name);
         let filepath = dunce::canonicalize(p.location.join(&filename))?;
         f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, p.platform.to_string()))?;

@@ -785,11 +785,44 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
 
     // Write each platform variation
     let mut is_first_if = true;
+
+    // Add a config value if we have two linux versions
+    let has_static_choice =
+        if config.platforms.linux.is_some() && config.platforms.linux_musl.is_some() {
+            f.writeln(&format!(
+            "set({}_STATIC_MUSL OFF CACHE BOOL \"Use statically built musl lib on Linux for {}\")",
+            lib.name.to_shouty_snake_case(),
+            lib.name
+        ))?;
+            f.newline()?;
+            true
+        } else {
+            false
+        };
+
     for p in config.platforms.iter() {
         let platform_check = match p.platform {
-            Platform::Win64 => "WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8",
-            Platform::Win32 => "WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4",
-            Platform::Linux => "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8",
+            Platform::Win64 => "WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8".to_string(),
+            Platform::Linux => {
+                if !has_static_choice {
+                    "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8".to_string()
+                } else {
+                    format!(
+                        "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT $CACHE{{{}_STATIC_MUSL}}",
+                        lib.name.to_shouty_snake_case()
+                    )
+                }
+            }
+            Platform::LinuxMusl => {
+                if !has_static_choice {
+                    "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8".to_string()
+                } else {
+                    format!(
+                        "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND $CACHE{{{}_STATIC_MUSL}}",
+                        lib.name.to_shouty_snake_case()
+                    )
+                }
+            }
         };
 
         if is_first_if {

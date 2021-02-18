@@ -29,7 +29,7 @@ add_executable(foo_c main.c ${tests})
 target_link_libraries(foo_c PRIVATE ${foo_target})
 
 # Copy the DLL after build (if using dynamic)
-if(${foo_target} EQUAL "foo")
+if(${foo_target} STREQUAL "foo")
     add_custom_command(TARGET foo_c POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:foo> $<TARGET_FILE_DIR:foo_c>
     )

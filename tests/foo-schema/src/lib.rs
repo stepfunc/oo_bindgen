@@ -9,6 +9,7 @@ mod enums;
 mod integer;
 mod iterator;
 mod lifetime;
+mod opaque_struct;
 mod strings;
 mod structure;
 
@@ -36,6 +37,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     enums::define(&mut builder)?;
     integer::define(&mut builder)?;
     iterator::define(&mut builder)?;
+    opaque_struct::define(&mut builder)?;
     strings::define(&mut builder)?;
     structure::define(&mut builder)?;
     lifetime::define(&mut builder)?;

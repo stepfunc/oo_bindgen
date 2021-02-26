@@ -142,6 +142,15 @@ impl From<Type> for StructElementType {
     }
 }
 
+/// struct type affects the type of code the backend will generate
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum NativeStructType {
+    /// struct members are public
+    Public,
+    /// struct members are private (except C of course), and the struct is just an opaque "token"
+    Opaque,
+}
+
 #[derive(Debug)]
 pub struct NativeStructElement {
     pub name: String,
@@ -152,6 +161,7 @@ pub struct NativeStructElement {
 /// C-style structure definition
 #[derive(Debug)]
 pub struct NativeStruct {
+    pub struct_type: NativeStructType,
     pub declaration: NativeStructDeclarationHandle,
     pub elements: Vec<NativeStructElement>,
     pub doc: Doc,
@@ -179,6 +189,7 @@ pub type NativeStructHandle = Handle<NativeStruct>;
 
 pub struct NativeStructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
+    struct_type: NativeStructType,
     declaration: NativeStructDeclarationHandle,
     elements: Vec<NativeStructElement>,
     element_names_set: HashSet<String>,
@@ -192,11 +203,17 @@ impl<'a> NativeStructBuilder<'a> {
     ) -> Self {
         Self {
             lib,
+            struct_type: NativeStructType::Public, // defaults to a public struct
             declaration,
             elements: Vec::new(),
             element_names_set: HashSet::new(),
             doc: None,
         }
+    }
+
+    pub fn with_type(mut self, struct_type: NativeStructType) -> Self {
+        self.struct_type = struct_type;
+        self
     }
 
     pub fn add<S: Into<String>, T: Into<StructElementType>, D: Into<Doc>>(
@@ -250,6 +267,7 @@ impl<'a> NativeStructBuilder<'a> {
         };
 
         let handle = NativeStructHandle::new(NativeStruct {
+            struct_type: self.struct_type,
             declaration: self.declaration.clone(),
             elements: self.elements,
             doc,

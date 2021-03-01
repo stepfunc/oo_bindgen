@@ -211,8 +211,8 @@ impl<'a> NativeStructBuilder<'a> {
         }
     }
 
-    pub fn with_type(mut self, struct_type: NativeStructType) -> Self {
-        self.struct_type = struct_type;
+    pub fn make_opaque(mut self) -> Self {
+        self.struct_type = NativeStructType::Opaque;
         self
     }
 

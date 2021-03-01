@@ -14,7 +14,7 @@ pub(crate) fn generate(
     documentation(f, |f| javadoc_print(f, &class.doc, lib))?;
 
     // Class definition
-    f.writeln(&format!("public class {}", classname))?;
+    f.writeln(&format!("public final class {}", classname))?;
     if class.destructor.is_some() {
         f.write(" implements AutoCloseable")?;
     }

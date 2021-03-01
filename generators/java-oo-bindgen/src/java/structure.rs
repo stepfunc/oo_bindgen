@@ -14,7 +14,7 @@ pub(crate) fn generate(
     documentation(f, |f| javadoc_print(f, &native_struct.doc(), lib))?;
 
     // Structure definition
-    f.writeln(&format!("public class {}", struct_name))?;
+    f.writeln(&format!("public final class {}", struct_name))?;
     blocked(f, |f| {
         // Write Java structure elements
         for el in native_struct.elements() {

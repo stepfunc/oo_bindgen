@@ -26,7 +26,7 @@ pub(crate) fn generate(
     documentation(f, |f| javadoc_print(f, &set.doc, lib))?;
 
     // class definition
-    f.writeln(&format!("public class {}", set_name))?;
+    f.writeln(&format!("public final class {}", set_name))?;
     blocked(f, |f| {
         f.writeln("// not constructable")?;
         f.writeln(&format!("private {}() {{}}", set_name))?;

@@ -19,8 +19,13 @@ pub(crate) fn generate(
             xmldoc_print(f, &class.doc, lib)
         })?;
 
-        let static_specifier = if class.is_static() { "static " } else { "" };
-        f.writeln(&format!("public {}class {}", static_specifier, classname))?;
+        let class_type = if class.is_static() {
+            "static"
+        } else {
+            "sealed"
+        };
+
+        f.writeln(&format!("public {} class {}", class_type, classname))?;
         if class.destructor.is_some() {
             f.write(": IDisposable")?;
         }
@@ -141,7 +146,7 @@ fn generate_destructor(
     f.newline()?;
 
     // The IDisposable implementation
-    f.writeln("protected virtual void Dispose(bool disposing)")?;
+    f.writeln("private void Dispose(bool disposing)")?;
     blocked(f, |f| {
         f.writeln("if (this.disposed)")?;
         f.writeln("    return;")?;

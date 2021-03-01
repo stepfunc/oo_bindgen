@@ -3,6 +3,20 @@ use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::native_struct::*;
 
+fn constructor_visibility(struct_type: NativeStructType) -> &'static str {
+    match struct_type {
+        NativeStructType::Public => "public",
+        NativeStructType::Opaque => "private",
+    }
+}
+
+fn field_visibility(struct_type: NativeStructType) -> &'static str {
+    match struct_type {
+        NativeStructType::Public => "public",
+        NativeStructType::Opaque => "private final",
+    }
+}
+
 pub(crate) fn generate(
     f: &mut impl Printer,
     native_struct: &StructHandle,
@@ -10,8 +24,16 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let struct_name = native_struct.name().to_camel_case();
 
+    let doc = match native_struct.definition.struct_type {
+        NativeStructType::Public => native_struct.doc().clone(),
+        NativeStructType::Opaque => native_struct
+            .doc()
+            .clone()
+            .warning("This class is an opaque handle and cannot be constructed by user code"),
+    };
+
     // Documentation
-    documentation(f, |f| javadoc_print(f, &native_struct.doc(), lib))?;
+    documentation(f, |f| javadoc_print(f, &doc, lib))?;
 
     // Structure definition
     f.writeln(&format!("public class {}", struct_name))?;
@@ -63,7 +85,8 @@ pub(crate) fn generate(
             })?;
 
             f.writeln(&format!(
-                "public {} {}",
+                "{} {} {}",
+                field_visibility(native_struct.definition.struct_type),
                 el.element_type.to_type().as_java_primitive(),
                 el.name.to_mixed_case()
             ))?;
@@ -177,7 +200,11 @@ pub(crate) fn generate(
         f.newline()?;
 
         if !native_struct.definition().is_default_constructed() {
-            f.writeln(&format!("public {}(", struct_name,))?;
+            f.writeln(&format!(
+                "{} {}(",
+                constructor_visibility(native_struct.definition.struct_type),
+                struct_name,
+            ))?;
             f.write(
                 &native_struct
                     .elements()

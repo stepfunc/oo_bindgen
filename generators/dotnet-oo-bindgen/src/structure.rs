@@ -2,6 +2,20 @@ use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::native_struct::*;
 
+fn field_visibility(struct_type: NativeStructType) -> &'static str {
+    match struct_type {
+        NativeStructType::Opaque => "internal",
+        NativeStructType::Public => "public",
+    }
+}
+
+fn constructor_visibility(struct_type: NativeStructType) -> &'static str {
+    match struct_type {
+        NativeStructType::Opaque => "internal",
+        NativeStructType::Public => "public",
+    }
+}
+
 pub(crate) fn generate(
     f: &mut impl Printer,
     native_struct: &StructHandle,
@@ -14,10 +28,18 @@ pub(crate) fn generate(
     print_imports(f)?;
     f.newline()?;
 
+    let doc = match native_struct.definition.struct_type {
+        NativeStructType::Public => native_struct.doc().clone(),
+        NativeStructType::Opaque => native_struct
+            .doc()
+            .clone()
+            .warning("This class is an opaque handle and cannot be constructed by user code"),
+    };
+
     namespaced(f, &lib.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &native_struct.doc(), lib)
+            xmldoc_print(f, &doc, lib)
         })?;
 
         f.writeln(&format!("public class {}", struct_name))?;
@@ -73,7 +95,8 @@ pub(crate) fn generate(
                 })?;
 
                 f.writeln(&format!(
-                    "public {} {}",
+                    "{} {} {}",
+                    field_visibility(native_struct.definition.struct_type),
                     el.element_type.to_type().as_dotnet_type(),
                     el.name.to_camel_case()
                 ))?;
@@ -188,7 +211,11 @@ pub(crate) fn generate(
 
             // Write constructor
             if !native_struct.definition().is_default_constructed() {
-                f.writeln(&format!("public {}(", struct_name))?;
+                f.writeln(&format!(
+                    "{} {}(",
+                    constructor_visibility(native_struct.definition.struct_type),
+                    struct_name
+                ))?;
                 f.write(
                     &native_struct
                         .elements()

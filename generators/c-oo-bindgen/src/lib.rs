@@ -299,7 +299,15 @@ fn write_struct_definition(
     handle: &NativeStructHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
+    let doc = match handle.struct_type {
+        NativeStructType::Public => handle.doc.clone(),
+        NativeStructType::Opaque => handle
+            .doc
+            .clone()
+            .warning("This struct should never be initialized or modified by user code"),
+    };
+
+    doxygen(f, |f| doxygen_print(f, &doc, lib))?;
 
     // Write the struct definition
     f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
@@ -355,7 +363,19 @@ fn write_struct_definition(
     })?;
     f.writeln(&format!("}} {};", handle.to_c_type()))?;
 
-    // Write the struct initializer
+    // user should never try to initialize opaque structs, so don't suggest this is OK
+    if handle.struct_type != NativeStructType::Opaque {
+        f.newline()?;
+        write_struct_initializer(f, handle)?;
+    }
+
+    Ok(())
+}
+
+fn write_struct_initializer(
+    f: &mut dyn Printer,
+    handle: &NativeStructHandle,
+) -> FormattingResult<()> {
     let params = handle
         .elements()
         .filter(|el| !el.element_type.has_default())
@@ -368,8 +388,6 @@ fn write_struct_definition(
         })
         .collect::<Vec<String>>()
         .join(", ");
-
-    f.newline()?;
 
     f.writeln(&format!(
         "static {} {}_init({})",
@@ -470,9 +488,7 @@ fn write_struct_definition(
             Ok(())
         })?;
         f.writeln("};")
-    })?;
-
-    Ok(())
+    })
 }
 
 fn write_enum_definition(

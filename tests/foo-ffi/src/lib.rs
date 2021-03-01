@@ -8,6 +8,7 @@ mod enums;
 mod integer;
 mod iterator;
 mod lifetime;
+mod opaque_struct;
 mod strings;
 mod structure;
 
@@ -19,6 +20,7 @@ pub use enums::*;
 pub use integer::*;
 pub use iterator::*;
 pub use lifetime::*;
+pub(crate) use opaque_struct::*;
 pub use strings::*;
 pub(crate) use structure::*;
 

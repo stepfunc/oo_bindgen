@@ -19,8 +19,11 @@ pub(crate) fn generate(
             xmldoc_print(f, &class.doc, lib)
         })?;
 
-        let class_type = if class.is_static() { "static" } else { "sealed" };
-
+        let class_type = if class.is_static() {
+            "static"
+        } else {
+            "sealed"
+        };
 
         f.writeln(&format!("public {} class {}", class_type, classname))?;
         if class.destructor.is_some() {

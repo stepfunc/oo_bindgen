@@ -65,6 +65,7 @@ pub mod class;
 pub mod collection;
 pub mod constants;
 pub mod doc;
+pub mod error_type;
 pub mod formatting;
 pub mod iterator;
 pub mod native_enum;
@@ -74,6 +75,7 @@ pub mod platforms;
 
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
+use crate::error_type::{ErrorType, ErrorTypeBuilder};
 
 type Result<T> = std::result::Result<T, BindingError>;
 
@@ -344,6 +346,7 @@ pub struct Library {
     structs: HashMap<NativeStructDeclarationHandle, StructHandle>,
     _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
     symbols: HashMap<String, Symbol>,
+    _error_types: HashSet<ErrorType>,
 }
 
 impl Library {
@@ -548,6 +551,8 @@ pub struct LibraryBuilder {
     collections: HashSet<collection::CollectionHandle>,
 
     native_functions: HashSet<NativeFunctionHandle>,
+
+    error_types: HashSet<ErrorType>,
 }
 
 impl LibraryBuilder {
@@ -577,6 +582,7 @@ impl LibraryBuilder {
             collections: HashSet::new(),
 
             native_functions: HashSet::new(),
+            error_types: HashSet::new(),
         }
     }
 
@@ -646,6 +652,7 @@ impl LibraryBuilder {
             structs,
             _classes: self.classes,
             symbols,
+            _error_types: self.error_types,
         };
 
         doc::validate_library_docs(&lib)?;
@@ -666,6 +673,12 @@ impl LibraryBuilder {
     pub fn license(&mut self, license: Vec<String>) -> Result<()> {
         self.license = license;
         Ok(())
+    }
+
+    pub fn define_error_type<T: Into<String>>(&mut self, name: T) -> Result<ErrorTypeBuilder> {
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        ErrorTypeBuilder::new(self, name)
     }
 
     pub fn define_constants<T: Into<String>>(&mut self, name: T) -> Result<ConstantSetBuilder> {

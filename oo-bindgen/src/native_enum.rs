@@ -30,7 +30,7 @@ impl NativeEnum {
 pub type NativeEnumHandle = Handle<NativeEnum>;
 
 pub struct NativeEnumBuilder<'a> {
-    lib: &'a mut LibraryBuilder,
+    pub(crate) lib: &'a mut LibraryBuilder,
     name: String,
     variants: Vec<EnumVariant>,
     variant_names: HashSet<String>,
@@ -101,7 +101,7 @@ impl<'a> NativeEnumBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<NativeEnumHandle> {
+    pub(crate) fn build_and_release(self) -> Result<(NativeEnumHandle, &'a mut LibraryBuilder)> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -122,6 +122,11 @@ impl<'a> NativeEnumBuilder<'a> {
             .statements
             .push(Statement::EnumDefinition(handle.clone()));
 
-        Ok(handle)
+        Ok((handle, self.lib))
+    }
+
+    pub fn build(self) -> Result<NativeEnumHandle> {
+        let (ret, _) = self.build_and_release()?;
+        Ok(ret)
     }
 }

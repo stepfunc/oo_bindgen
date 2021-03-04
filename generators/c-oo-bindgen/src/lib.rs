@@ -603,11 +603,19 @@ fn write_function(
 
     f.newline()?;
 
-    f.write(&format!(
-        "{} {}(",
-        CReturnType(&handle.return_type),
-        handle.name
-    ))?;
+    if let Some(error_type) = &handle.error_type {
+        f.write(&format!(
+            "{} {}(",
+            CType(&Type::Enum(error_type.inner.clone())),
+            handle.name
+        ))?;
+    } else {
+        f.write(&format!(
+            "{} {}(",
+            CReturnType(&handle.return_type),
+            handle.name
+        ))?;
+    }
 
     f.write(
         &handle
@@ -623,6 +631,15 @@ fn write_function(
             .collect::<Vec<String>>()
             .join(", "),
     )?;
+
+    if handle.error_type.is_some() {
+        if let ReturnType::Type(x, _) = &handle.return_type {
+            if !handle.parameters.is_empty() {
+                f.write(", ")?;
+                f.write(&format!("{}* out", CType(x)))?;
+            }
+        }
+    }
 
     f.write(");")
 }

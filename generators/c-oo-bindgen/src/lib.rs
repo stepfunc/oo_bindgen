@@ -592,10 +592,18 @@ fn write_function(
             docstring_print(f, &param.doc, lib)?;
         }
 
-        // Print return documentation
-        if let ReturnType::Type(_, doc) = &handle.return_type {
-            f.writeln("@return ")?;
-            docstring_print(f, doc, lib)?;
+        if handle.error_type.is_some() {
+            if let ReturnType::Type(_, doc) = &handle.return_type {
+                f.writeln("@param out ")?;
+                docstring_print(f, doc, lib)?;
+            }
+            f.writeln("@return Error code")?;
+        } else {
+            // Print return documentation
+            if let ReturnType::Type(_, doc) = &handle.return_type {
+                f.writeln("@return ")?;
+                docstring_print(f, doc, lib)?;
+            }
         }
 
         Ok(())

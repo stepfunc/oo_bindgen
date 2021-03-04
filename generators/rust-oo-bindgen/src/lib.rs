@@ -48,6 +48,7 @@ use crate::conversion::*;
 use crate::formatting::*;
 use heck::CamelCase;
 use oo_bindgen::callback::*;
+use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -347,22 +348,28 @@ impl<'a> RustCodegen<'a> {
                 .join(", "),
         )?;
 
-        if let Some(error) = &handle.error_type {
-            // turn any return type into an out parameter
-            if let ReturnType::Type(return_type, _) = &handle.return_type {
+        fn write_error_return(f: &mut dyn Printer, error: &ErrorType) -> FormattingResult<()> {
+            f.write(&format!(") -> {}", error.inner.name.to_camel_case()))
+        }
+
+        // write the return type
+        match handle.get_type() {
+            NativeFunctionType::NoErrorNoReturn => {
+                f.write(")")?;
+            }
+            NativeFunctionType::NoErrorWithReturn(t, _) => {
+                f.write(&format!(") -> {}", t.as_c_type()))?;
+            }
+            NativeFunctionType::ErrorNoReturn(err) => {
+                write_error_return(f, &err)?;
+            }
+            NativeFunctionType::ErrorWithReturn(err, ret, _) => {
                 if !handle.parameters.is_empty() {
                     f.write(", ")?;
                 }
-                f.write(&format!("out: *mut {}", return_type.as_c_type()))?;
+                f.write(&format!("out: *mut {}", ret.as_c_type()))?;
+                write_error_return(f, &err)?;
             }
-            f.write(&format!(
-                ") -> {}",
-                Type::Enum(error.clone().inner).as_rust_type()
-            ))?;
-        } else if let ReturnType::Type(return_type, _) = &handle.return_type {
-            f.write(&format!(") -> {}", return_type.as_c_type()))?;
-        } else {
-            f.write(")")?;
         }
 
         blocked(f, |f| {
@@ -373,12 +380,28 @@ impl<'a> RustCodegen<'a> {
                 }
             }
 
-            if handle.error_type.is_some() {
-                f.writeln(&format!("match crate::{}(", handle.name))?;
-            } else if handle.return_type.has_conversion() {
-                f.writeln(&format!("let _result = crate::{}(", handle.name))?;
-            } else {
-                f.writeln(&format!("crate::{}(", handle.name))?;
+            fn basic_invocation(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+                f.writeln(&format!("crate::{}(", name))
+            }
+
+            // invoke the inner function
+            match handle.get_type() {
+                NativeFunctionType::NoErrorNoReturn => {
+                    basic_invocation(f, &handle.name)?;
+                }
+                NativeFunctionType::NoErrorWithReturn(ret, _) => {
+                    if ret.has_conversion() {
+                        f.writeln(&format!("let _result = crate::{}(", handle.name))?;
+                    } else {
+                        basic_invocation(f, &handle.name)?;
+                    }
+                }
+                NativeFunctionType::ErrorNoReturn(_) => {
+                    basic_invocation(f, &handle.name)?;
+                }
+                NativeFunctionType::ErrorWithReturn(_, _, _) => {
+                    f.writeln(&format!("match crate::{}(", &handle.name))?;
+                }
             }
 
             f.write(
@@ -391,19 +414,26 @@ impl<'a> RustCodegen<'a> {
             )?;
             f.write(")")?;
 
-            if let Some(error_type) = &handle.error_type {
-                blocked(f, |f| {
-                    f.writeln("Ok(x) =>")?;
+            match handle.get_type() {
+                NativeFunctionType::NoErrorNoReturn => {}
+                NativeFunctionType::ErrorNoReturn(_) => {}
+                NativeFunctionType::NoErrorWithReturn(ret, _) => {
+                    if let Some(conversion) = ret.conversion() {
+                        f.write(";")?;
+                        conversion.convert_to_c(f, "_result", "")?;
+                    }
+                }
+                NativeFunctionType::ErrorWithReturn(err, _, _) => {
                     blocked(f, |f| {
-                        f.writeln("out.write(x);")?;
-                        f.writeln(&format!("{}::Ok", error_type.inner.name))
+                        f.writeln("Ok(x) =>")?;
+                        blocked(f, |f| {
+                            f.writeln("out.write(x);")?;
+                            f.writeln(&format!("{}::Ok", err.inner.name))
+                        })?;
+                        f.writeln("Err(err) =>")?;
+                        blocked(f, |f| f.writeln("err"))
                     })?;
-                    f.writeln("Err(err) =>")?;
-                    blocked(f, |f| f.writeln("err"))
-                })?;
-            } else if let Some(conversion) = handle.return_type.conversion() {
-                f.write(";")?;
-                conversion.convert_to_c(f, "_result", "")?;
+                }
             }
 
             Ok(())

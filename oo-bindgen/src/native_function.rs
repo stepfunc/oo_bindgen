@@ -82,6 +82,37 @@ pub struct NativeFunction {
     pub doc: Doc,
 }
 
+#[derive(Debug, Clone)]
+pub enum NativeFunctionType {
+    /// function that cannot fail and returns nothing
+    NoErrorNoReturn,
+    /// function that cannot fail and returns something
+    NoErrorWithReturn(Type, DocString),
+    /// function that can fail, but does not return a value
+    ErrorNoReturn(ErrorType),
+    /// function that can fail and returns something via an out parameter
+    ErrorWithReturn(ErrorType, Type, DocString),
+}
+
+impl NativeFunction {
+    pub fn get_type(&self) -> NativeFunctionType {
+        match &self.error_type {
+            Some(e) => match &self.return_type {
+                ReturnType::Void => NativeFunctionType::ErrorNoReturn(e.clone()),
+                ReturnType::Type(t, d) => {
+                    NativeFunctionType::ErrorWithReturn(e.clone(), t.clone(), d.clone())
+                }
+            },
+            None => match &self.return_type {
+                ReturnType::Void => NativeFunctionType::NoErrorNoReturn,
+                ReturnType::Type(t, d) => {
+                    NativeFunctionType::NoErrorWithReturn(t.clone(), d.clone())
+                }
+            },
+        }
+    }
+}
+
 pub type NativeFunctionHandle = Handle<NativeFunction>;
 
 pub struct NativeFunctionBuilder<'a> {
@@ -118,6 +149,10 @@ impl<'a> NativeFunctionBuilder<'a> {
             doc: doc.into(),
         });
         Ok(self)
+    }
+
+    pub fn return_nothing(self) -> Result<Self> {
+        self.return_type(ReturnType::Void)
     }
 
     pub fn return_type(mut self, return_type: ReturnType) -> Result<Self> {

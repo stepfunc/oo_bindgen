@@ -3,17 +3,39 @@
 
 #include "foo.h"
 
-static void test_password()
+#define CORRECT_PASSWORD "12345"
+#define WRONG_PASSWORD "wrong!"
+#define MAGIC_NUMBER 42
+
+static void test_integer_out_parameter()
 {
     // my_error_t get_special_number(const char* password, uint32_t* out);
     uint32_t number = 0;
-    assert(get_special_number("badpassword", &number) == MyError_BadPassword);
+    assert(get_special_number(WRONG_PASSWORD, &number) == MyError_BadPassword);
     assert(number == 0);
-    assert(get_special_number("solarwinds123", &number) == MyError_Ok);
-    assert(number == 42);
+    assert(get_special_number(CORRECT_PASSWORD, &number) == MyError_Ok);
+    assert(number == MAGIC_NUMBER);
+}
+
+static void test_allocation_via_out_parameter()
+{
+    // my_error_t get_special_number(const char* password, uint32_t* out);
+    class_with_password_t* instance = NULL;
+    assert(create_class_with_password(WRONG_PASSWORD, &instance) == MyError_BadPassword);
+    assert(!instance);
+    assert(create_class_with_password(CORRECT_PASSWORD, &instance) == MyError_Ok);
+    assert(instance);
+
+    uint32_t number = 0;
+    assert(get_special_value_from_class(instance, &number) == MyError_Ok);
+    assert(number == MAGIC_NUMBER);
+
+    assert(destroy_class_with_password(NULL) == MyError_NullArgument);
+    assert(destroy_class_with_password(instance) == MyError_Ok);
 }
 
 void error_tests()
 {
-    test_password();
+    test_integer_out_parameter();
+    test_allocation_via_out_parameter();
 }

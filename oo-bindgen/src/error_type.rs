@@ -12,12 +12,8 @@ pub struct ErrorTypeBuilder<'a> {
 }
 
 impl<'a> ErrorTypeBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Result<Self> {
-        let builder = lib
-            .define_native_enum(name)?
-            .push("Ok", "Success, i.e. no error occurred")?;
-
-        Ok(Self { inner: builder })
+    pub(crate) fn new(inner: NativeEnumBuilder<'a>) -> Self {
+        Self { inner }
     }
 
     pub fn add_error<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> Result<Self> {

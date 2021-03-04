@@ -78,6 +78,7 @@ pub struct NativeFunction {
     pub name: String,
     pub return_type: ReturnType,
     pub parameters: Vec<Parameter>,
+    pub error_type: Option<ErrorType>,
     pub doc: Doc,
 }
 
@@ -89,6 +90,7 @@ pub struct NativeFunctionBuilder<'a> {
     return_type: Option<ReturnType>,
     params: Vec<Parameter>,
     doc: Option<Doc>,
+    error_type: Option<ErrorType>,
 }
 
 impl<'a> NativeFunctionBuilder<'a> {
@@ -99,6 +101,7 @@ impl<'a> NativeFunctionBuilder<'a> {
             return_type: None,
             params: Vec::new(),
             doc: None,
+            error_type: None,
         }
     }
 
@@ -128,6 +131,18 @@ impl<'a> NativeFunctionBuilder<'a> {
                 return_type,
             }),
         }
+    }
+
+    pub fn fails_with(mut self, err: ErrorType) -> Result<Self> {
+        if let Some(x) = self.error_type {
+            return Err(BindingError::ErrorTypeAlreadyDefined {
+                function: self.name,
+                error_type: x.inner.name.clone(),
+            });
+        }
+
+        self.error_type = Some(err);
+        Ok(self)
     }
 
     pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
@@ -165,6 +180,7 @@ impl<'a> NativeFunctionBuilder<'a> {
             name: self.name,
             return_type,
             parameters: self.params,
+            error_type: self.error_type,
             doc,
         });
 

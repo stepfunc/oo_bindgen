@@ -265,6 +265,15 @@ pub enum BindingError {
         set_name: String,
         constant_name: String,
     },
+    #[error(
+        "Function '{}' already has an error type specified: '{}'",
+        function,
+        error_type
+    )]
+    ErrorTypeAlreadyDefined {
+        function: String,
+        error_type: String,
+    },
 }
 
 pub struct Handle<T>(Rc<T>);
@@ -676,9 +685,11 @@ impl LibraryBuilder {
     }
 
     pub fn define_error_type<T: Into<String>>(&mut self, name: T) -> Result<ErrorTypeBuilder> {
-        let name = name.into();
-        self.check_unique_symbol(&name)?;
-        ErrorTypeBuilder::new(self, name)
+        let builder = self
+            .define_native_enum(name)?
+            .push("Ok", "Success, i.e. no error occurred")?;
+
+        Ok(ErrorTypeBuilder::new(builder))
     }
 
     pub fn define_constants<T: Into<String>>(&mut self, name: T) -> Result<ConstantSetBuilder> {

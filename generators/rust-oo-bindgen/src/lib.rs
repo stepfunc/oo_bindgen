@@ -82,7 +82,7 @@ impl<'a> RustCodegen<'a> {
                 }
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::NativeFunctionDeclaration(handle) => {
-                    self.write_function(&mut f, handle)?
+                    Self::write_function(&mut f, handle)?
                 }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
                 Statement::OneTimeCallbackDefinition(handle) => {
@@ -333,11 +333,7 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_function(
-        &self,
-        f: &mut dyn Printer,
-        handle: &NativeFunctionHandle,
-    ) -> FormattingResult<()> {
+    fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
         f.writeln("#[allow(clippy::missing_safety_doc)]")?;
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub unsafe extern \"C\" fn {}(", handle.name))?;
@@ -351,7 +347,19 @@ impl<'a> RustCodegen<'a> {
                 .join(", "),
         )?;
 
-        if let ReturnType::Type(return_type, _) = &handle.return_type {
+        if let Some(error) = &handle.error_type {
+            // turn any return type into an out parameter
+            if let ReturnType::Type(return_type, _) = &handle.return_type {
+                if !handle.parameters.is_empty() {
+                    f.write(", ")?;
+                }
+                f.write(&format!("out: *mut {}", return_type.as_c_type()))?;
+            }
+            f.write(&format!(
+                ") -> {}",
+                Type::Enum(error.clone().inner).as_rust_type()
+            ))?;
+        } else if let ReturnType::Type(return_type, _) = &handle.return_type {
             f.write(&format!(") -> {}", return_type.as_c_type()))?;
         } else {
             f.write(")")?;
@@ -365,7 +373,9 @@ impl<'a> RustCodegen<'a> {
                 }
             }
 
-            if handle.return_type.has_conversion() {
+            if handle.error_type.is_some() {
+                f.writeln(&format!("match crate::{}(", handle.name))?;
+            } else if handle.return_type.has_conversion() {
                 f.writeln(&format!("let _result = crate::{}(", handle.name))?;
             } else {
                 f.writeln(&format!("crate::{}(", handle.name))?;
@@ -381,7 +391,17 @@ impl<'a> RustCodegen<'a> {
             )?;
             f.write(")")?;
 
-            if let Some(conversion) = handle.return_type.conversion() {
+            if let Some(error_type) = &handle.error_type {
+                blocked(f, |f| {
+                    f.writeln("Ok(x) =>")?;
+                    blocked(f, |f| {
+                        f.writeln("out.write(x);")?;
+                        f.writeln(&format!("{}::Ok", error_type.inner.name))
+                    })?;
+                    f.writeln("Err(err) =>")?;
+                    blocked(f, |f| f.writeln("err"))
+                })?;
+            } else if let Some(conversion) = handle.return_type.conversion() {
                 f.write(";")?;
                 conversion.convert_to_c(f, "_result", "")?;
             }

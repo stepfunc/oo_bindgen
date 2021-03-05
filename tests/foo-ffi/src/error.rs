@@ -6,7 +6,7 @@ pub struct ClassWithPassword {
 }
 
 const SPECIAL_VALUE: u32 = 42;
-const PASSWORD: &'static str = "12345";
+const PASSWORD: &str = "12345";
 
 pub(crate) fn get_special_number(password: &CStr) -> std::result::Result<u32, crate::ffi::MyError> {
     if password.to_str()? == PASSWORD {

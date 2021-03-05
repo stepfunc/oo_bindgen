@@ -151,11 +151,20 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
                     config.ffi_name
                 ))?;
                 f.newline()?;
-                f.write(&format!(
-                    "internal static extern {} {}(",
-                    handle.return_type.as_native_type(),
-                    handle.name
-                ))?;
+
+                if let Some(err) = &handle.error_type {
+                    f.write(&format!(
+                        "internal static extern {} {}(",
+                        err.to_enum_type().as_native_type(),
+                        handle.name
+                    ))?;
+                } else {
+                    f.write(&format!(
+                        "internal static extern {} {}(",
+                        handle.return_type.as_native_type(),
+                        handle.name
+                    ))?;
+                }
 
                 f.write(
                     &handle
@@ -167,6 +176,14 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
                         .collect::<Vec<String>>()
                         .join(", "),
                 )?;
+
+                if let NativeFunctionType::ErrorWithReturn(_, ret, _) = handle.get_type() {
+                    if !handle.parameters.is_empty() {
+                        f.write(", ")?;
+                    }
+                    f.write(&format!("out {} @out", ret.as_native_type()))?
+                }
+
                 f.write(");")?;
                 f.newline()?;
             }

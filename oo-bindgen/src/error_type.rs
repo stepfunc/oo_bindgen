@@ -7,6 +7,12 @@ pub struct ErrorType {
     pub inner: NativeEnumHandle,
 }
 
+impl ErrorType {
+    pub fn to_enum_type(&self) -> Type {
+        Type::Enum(self.inner.clone())
+    }
+}
+
 pub struct ErrorTypeBuilder<'a> {
     inner: NativeEnumBuilder<'a>,
 }

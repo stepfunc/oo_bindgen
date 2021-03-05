@@ -337,6 +337,7 @@ pub enum Statement {
     NativeStructDefinition(NativeStructHandle),
     StructDefinition(StructHandle),
     EnumDefinition(NativeEnumHandle),
+    ErrorType(ErrorType),
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(ClassHandle),
     InterfaceDefinition(InterfaceHandle),
@@ -355,7 +356,6 @@ pub struct Library {
     structs: HashMap<NativeStructDeclarationHandle, StructHandle>,
     _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
     symbols: HashMap<String, Symbol>,
-    _error_types: HashSet<ErrorType>,
 }
 
 impl Library {
@@ -400,6 +400,13 @@ impl Library {
     pub fn native_enums(&self) -> impl Iterator<Item = &NativeEnumHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::EnumDefinition(handle) => Some(handle),
+            _ => None,
+        })
+    }
+
+    pub fn error_types(&self) -> impl Iterator<Item = &ErrorType> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::ErrorType(err) => Some(err),
             _ => None,
         })
     }
@@ -560,8 +567,6 @@ pub struct LibraryBuilder {
     collections: HashSet<collection::CollectionHandle>,
 
     native_functions: HashSet<NativeFunctionHandle>,
-
-    error_types: HashSet<ErrorType>,
 }
 
 impl LibraryBuilder {
@@ -591,7 +596,6 @@ impl LibraryBuilder {
             collections: HashSet::new(),
 
             native_functions: HashSet::new(),
-            error_types: HashSet::new(),
         }
     }
 
@@ -626,6 +630,7 @@ impl LibraryBuilder {
                 Statement::EnumDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::Enum(handle.clone()));
                 }
+                Statement::ErrorType(_) => {}
                 Statement::ClassDeclaration(_) => (),
                 Statement::ClassDefinition(handle) => {
                     symbols.insert(handle.name().to_string(), Symbol::Class(handle.clone()));
@@ -656,12 +661,10 @@ impl LibraryBuilder {
             version: self.version,
             description: self.description,
             license: self.license,
-
             statements: self.statements,
             structs,
             _classes: self.classes,
             symbols,
-            _error_types: self.error_types,
         };
 
         doc::validate_library_docs(&lib)?;
@@ -684,12 +687,16 @@ impl LibraryBuilder {
         Ok(())
     }
 
-    pub fn define_error_type<T: Into<String>>(&mut self, name: T) -> Result<ErrorTypeBuilder> {
+    pub fn define_error_type<T: Into<String>>(
+        &mut self,
+        error_name: T,
+        exception_name: T,
+    ) -> Result<ErrorTypeBuilder> {
         let builder = self
-            .define_native_enum(name)?
+            .define_native_enum(error_name)?
             .push("Ok", "Success, i.e. no error occurred")?;
 
-        Ok(ErrorTypeBuilder::new(builder))
+        Ok(ErrorTypeBuilder::new(exception_name.into(), builder))
     }
 
     pub fn define_constants<T: Into<String>>(&mut self, name: T) -> Result<ConstantSetBuilder> {

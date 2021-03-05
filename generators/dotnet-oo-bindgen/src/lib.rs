@@ -49,6 +49,7 @@ use crate::doc::*;
 use crate::formatting::*;
 use heck::CamelCase;
 use oo_bindgen::constants::*;
+use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -85,6 +86,7 @@ pub fn generate_dotnet_bindings(
     generate_constants(lib, config)?;
     generate_structs(lib, config)?;
     generate_enums(lib, config)?;
+    generate_exceptions(lib, config)?;
     generate_classes(lib, config)?;
     generate_interfaces(lib, config)?;
     generate_one_time_callbacks(lib, config)?;
@@ -235,6 +237,20 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
     Ok(())
 }
 
+fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for err in lib.error_types() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&err.exception_name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        generate_exception(&mut f, err, lib)?;
+    }
+
+    Ok(())
+}
+
 fn generate_constant_set(
     f: &mut impl Printer,
     set: &ConstantSetHandle,
@@ -304,6 +320,37 @@ fn generate_enum(
                 ))?;
             }
             Ok(())
+        })
+    })
+}
+
+fn generate_exception(
+    f: &mut impl Printer,
+    err: &ErrorType,
+    lib: &Library,
+) -> FormattingResult<()> {
+    print_license(f, &lib.license)?;
+    print_imports(f)?;
+    f.newline()?;
+
+    namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            xmldoc_print(f, &err.inner.doc, lib)
+        })?;
+
+        let error_name = err.inner.name.to_camel_case();
+        let exception_name = err.exception_name.to_camel_case();
+
+        f.writeln(&format!("public class {}: Exception", exception_name))?;
+        blocked(f, |f| {
+            f.writeln(&format!("public readonly {} error;", error_name))?;
+            f.newline()?;
+            f.writeln(&format!(
+                "internal {}({} error) : base(error.ToString())",
+                exception_name, error_name
+            ))?;
+            blocked(f, |f| f.writeln("this.error = error;"))
         })
     })
 }

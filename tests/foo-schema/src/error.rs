@@ -3,7 +3,7 @@ use oo_bindgen::{BindingError, LibraryBuilder};
 
 pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let error_type = lib
-        .define_error_type("MyError")?
+        .define_error_type("MyError", "MyException")?
         .add_error("BadPassword", "Wrong password!")?
         .add_error("NullArgument", "Provided argument was NULL")?
         .doc("Errors returned by the various functions")?

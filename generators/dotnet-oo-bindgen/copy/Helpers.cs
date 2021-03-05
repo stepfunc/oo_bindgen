@@ -5,7 +5,7 @@ namespace Helpers
 {
     internal class RustString
     {
-        internal static IntPtr Allocate(string value)
+        internal static IntPtr Create(string value)
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(value);
             var handle = Marshal.AllocHGlobal(bytes.Length + 1);
@@ -14,6 +14,11 @@ namespace Helpers
             // null terminator
             Marshal.WriteByte(handle, bytes.Length, 0);
             return handle;
+        }
+
+        internal static void Destroy(IntPtr value)
+        {
+            Marshal.FreeHGlobal(value);
         }
     }
 }

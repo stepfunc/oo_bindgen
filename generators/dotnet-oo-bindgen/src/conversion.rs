@@ -179,11 +179,11 @@ impl TypeConverter for BoolConverter {
 struct StringConverter;
 impl TypeConverter for StringConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{} Helpers.RustString.Allocate({});", to, from))
+        f.writeln(&format!("{} Helpers.RustString.Create({});", to, from))
     }
 
     fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!("Marshal.FreeHGlobal({});", name))
+        f.writeln(&format!("Helpers.RustString.Destroy({});", name))
     }
 
     fn convert_from_native(

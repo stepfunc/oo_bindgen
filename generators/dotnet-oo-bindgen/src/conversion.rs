@@ -179,7 +179,7 @@ impl TypeConverter for BoolConverter {
 struct StringConverter;
 impl TypeConverter for StringConverter {
     fn convert_to_native(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{} Helpers.RustString.Create({});", to, from))
+        f.writeln(&format!("{}Helpers.RustString.Create({});", to, from))
     }
 
     fn convert_to_native_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
@@ -192,23 +192,7 @@ impl TypeConverter for StringConverter {
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        let len_name = format!("{}Length", from.replace(".", "_"));
-        let buffer_name = format!("{}Buffer", from.replace(".", "_"));
-
-        f.writeln(&format!("int {} = 0;", len_name))?;
-        f.writeln(&format!(
-            "while (Marshal.ReadByte({}, {}) != 0) ++{};",
-            from, len_name, len_name
-        ))?;
-        f.writeln(&format!("byte[] {} = new byte[{}];", buffer_name, len_name))?;
-        f.writeln(&format!(
-            "Marshal.Copy({}, {}, 0, {});",
-            from, buffer_name, len_name
-        ))?;
-        f.writeln(&format!(
-            "{}System.Text.Encoding.UTF8.GetString({});",
-            to, buffer_name
-        ))
+        f.writeln(&format!("{}Helpers.RustString.FromNative({});", to, from))
     }
 }
 

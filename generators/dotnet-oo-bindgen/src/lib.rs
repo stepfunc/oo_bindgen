@@ -97,7 +97,6 @@ pub fn generate_dotnet_bindings(
 }
 
 fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-
     let mut filename = config.output_dir.clone();
     filename.push("Helpers");
     filename.set_extension("cs");
@@ -157,7 +156,11 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
     print_imports(&mut f)?;
     f.newline()?;
 
-    fn write_inner_class(f: &mut dyn Printer, lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    fn write_inner_class(
+        f: &mut dyn Printer,
+        lib: &Library,
+        config: &DotnetBindgenConfig,
+    ) -> FormattingResult<()> {
         f.writeln("private class Inner")?;
         blocked(f, |f| {
             for handle in lib.native_functions() {
@@ -207,8 +210,10 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
         })
     }
 
-    fn write_function_wrapper(f: &mut dyn Printer, func: &NativeFunctionHandle) -> FormattingResult<()> {
-
+    fn write_function_wrapper(
+        f: &mut dyn Printer,
+        func: &NativeFunctionHandle,
+    ) -> FormattingResult<()> {
         f.write(&format!(
             "internal static {} {}(",
             func.return_type.as_native_type(),
@@ -219,41 +224,45 @@ fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> Fo
             &func
                 .parameters
                 .iter()
-                .map(|param| {
-                    format!("{} {}", param.param_type.as_native_type(), param.name)
-                })
+                .map(|param| format!("{} {}", param.param_type.as_native_type(), param.name))
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
 
         f.write(")")?;
 
-        let params = func.parameters.iter().map(|p| p.name.clone()).collect::<Vec<String>>().join(", ");
+        let params = func
+            .parameters
+            .iter()
+            .map(|p| p.name.clone())
+            .collect::<Vec<String>>()
+            .join(", ");
 
-        blocked(f, |f| {
-            match func.get_type() {
-                NativeFunctionType::NoErrorNoReturn => {
-                    f.writeln(&format!("Inner.{}({});", func.name, params))
-                }
-                NativeFunctionType::NoErrorWithReturn(_, _) => {
-                    f.writeln(&format!("return Inner.{}({});", func.name, params))
-                }
-                NativeFunctionType::ErrorNoReturn(err) => {
-                    f.writeln(&format!("var error = Inner.{}({});", func.name, params))?;
-                    f.writeln(&format!("if(error != {}.Ok)", err.inner.name))?;
-                    blocked(f, |f| {
-                        f.writeln(&format!("throw new {}(error);", err.exception_name))
-                    })
-                }
-                NativeFunctionType::ErrorWithReturn(err, ret, _) => {
-                    f.writeln(&format!("{} _return_value;", ret.as_native_type()))?;
-                    f.writeln(&format!("var _error_result = Inner.{}({}, out _return_value);", func.name, params))?;
-                    f.writeln(&format!("if(_error_result != {}.Ok)", err.inner.name))?;
-                    blocked(f, |f| {
-                        f.writeln(&format!("throw new {}(_error_result);", err.exception_name))
-                    })?;
-                    f.writeln("return _return_value;")
-                }
+        blocked(f, |f| match func.get_type() {
+            NativeFunctionType::NoErrorNoReturn => {
+                f.writeln(&format!("Inner.{}({});", func.name, params))
+            }
+            NativeFunctionType::NoErrorWithReturn(_, _) => {
+                f.writeln(&format!("return Inner.{}({});", func.name, params))
+            }
+            NativeFunctionType::ErrorNoReturn(err) => {
+                f.writeln(&format!("var error = Inner.{}({});", func.name, params))?;
+                f.writeln(&format!("if(error != {}.Ok)", err.inner.name))?;
+                blocked(f, |f| {
+                    f.writeln(&format!("throw new {}(error);", err.exception_name))
+                })
+            }
+            NativeFunctionType::ErrorWithReturn(err, ret, _) => {
+                f.writeln(&format!("{} _return_value;", ret.as_native_type()))?;
+                f.writeln(&format!(
+                    "var _error_result = Inner.{}({}, out _return_value);",
+                    func.name, params
+                ))?;
+                f.writeln(&format!("if(_error_result != {}.Ok)", err.inner.name))?;
+                blocked(f, |f| {
+                    f.writeln(&format!("throw new {}(_error_result);", err.exception_name))
+                })?;
+                f.writeln("return _return_value;")
             }
         })
     }

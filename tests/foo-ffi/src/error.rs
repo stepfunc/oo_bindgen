@@ -39,13 +39,10 @@ pub(crate) unsafe fn get_special_value_from_class(
 
 pub(crate) unsafe fn destroy_class_with_password(
     instance: *mut crate::ClassWithPassword,
-) -> crate::ffi::MyError {
-    if instance.is_null() {
-        return crate::ffi::MyError::NullArgument;
+) {
+    if !instance.is_null() {
+        Box::from_raw(instance);
     }
-
-    Box::from_raw(instance);
-    crate::ffi::MyError::Ok
 }
 
 impl From<Utf8Error> for crate::ffi::MyError {

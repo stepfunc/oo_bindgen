@@ -35,7 +35,6 @@ pub(crate) fn generate_native_functions_class(
             Ok(())
         })?;
 
-
         f.newline()?;
 
         f.writeln("internal class PInvoke")?;
@@ -153,9 +152,7 @@ fn write_exception_wrapper(
         .collect::<Vec<String>>()
         .join(", ");
 
-    blocked(f, |f| {
-        write_exception_and_return_block(f, func, &params)
-    })
+    blocked(f, |f| write_exception_and_return_block(f, func, &params))
 }
 
 fn write_pinvoke_signature(
@@ -201,4 +198,3 @@ fn write_pinvoke_signature(
 
     f.write(");")
 }
-

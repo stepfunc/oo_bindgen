@@ -63,6 +63,7 @@ mod class;
 mod conversion;
 mod doc;
 mod formatting;
+mod helpers;
 mod interface;
 mod structure;
 mod wrappers;
@@ -90,6 +91,8 @@ pub fn generate_dotnet_bindings(
     generate_classes(lib, config)?;
     generate_interfaces(lib, config)?;
     generate_one_time_callbacks(lib, config)?;
+    generate_collection_helpers(lib, config)?;
+    generate_iterator_helpers(lib, config)?;
 
     // generate the helper classes
     generate_helpers(lib, config)?;
@@ -333,7 +336,7 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for interface in lib.interfaces() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&interface.name);
+        filename.push(&format!("I{}", interface.name.to_camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -350,11 +353,42 @@ fn generate_one_time_callbacks(
     for cb in lib.one_time_callbacks() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&cb.name);
+        filename.push(&format!("I{}", cb.name.to_camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
         callback::generate(&mut f, cb, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_iterator_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for iter in lib.iterators() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&format!("{}Helpers", iter.name().to_camel_case()));
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        helpers::generate_iterator_helpers(&mut f, iter, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_collection_helpers(
+    lib: &Library,
+    config: &DotnetBindgenConfig,
+) -> FormattingResult<()> {
+    for coll in lib.collections() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&format!("{}Helpers", coll.name().to_camel_case()));
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        helpers::generate_collection_helpers(&mut f, coll, lib)?;
     }
 
     Ok(())

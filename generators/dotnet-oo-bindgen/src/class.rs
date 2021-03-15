@@ -32,7 +32,7 @@ pub(crate) fn generate(
 
         blocked(f, |f| {
             if !class.is_static() {
-                f.writeln("internal IntPtr self;")?;
+                f.writeln("internal readonly IntPtr self;")?;
                 if class.destructor.is_some() {
                     f.writeln("private bool disposed = false;")?;
                 }
@@ -40,6 +40,17 @@ pub(crate) fn generate(
 
                 f.writeln(&format!("internal {}(IntPtr self)", classname))?;
                 blocked(f, |f| f.writeln("this.self = self;"))?;
+                f.newline()?;
+
+                f.writeln(&format!("internal {} FromNative(IntPtr self)", classname))?;
+                blocked(f, |f| {
+                    f.writeln(&format!("{} result = null;", classname))?;
+                    f.writeln("if (self != IntPtr.Zero)")?;
+                    blocked(f, |f| {
+                        f.writeln(&format!("result = new {}(self);", classname))
+                    })?;
+                    f.writeln("return result;")
+                })?;
                 f.newline()?;
             }
 

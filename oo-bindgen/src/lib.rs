@@ -499,6 +499,13 @@ impl Library {
             .next()
     }
 
+    pub fn iterators(&self) -> impl Iterator<Item = &iterator::IteratorHandle> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::IteratorDeclaration(handle) => Some(handle),
+            _ => None,
+        })
+    }
+
     pub fn find_iterator<T: AsRef<str>>(&self, name: T) -> Option<&iterator::IteratorHandle> {
         self.statements
             .iter()
@@ -512,6 +519,13 @@ impl Library {
                 None
             })
             .next()
+    }
+
+    pub fn collections(&self) -> impl Iterator<Item = &collection::CollectionHandle> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::CollectionDeclaration(handle) => Some(handle),
+            _ => None,
+        })
     }
 
     pub fn find_collection<T: AsRef<str>>(&self, name: T) -> Option<&collection::CollectionHandle> {

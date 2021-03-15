@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 
 namespace Helpers
 {
-    internal class RustString
+    internal static class RustString
     {
-        internal static IntPtr Create(string value)
+        internal static IntPtr ToNative(string value)
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(value);
             var handle = Marshal.AllocHGlobal(bytes.Length + 1);

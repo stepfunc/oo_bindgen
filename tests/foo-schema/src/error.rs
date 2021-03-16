@@ -36,7 +36,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "class instance",
         )?
         .return_type(ReturnType::Type(Type::Uint32, "special value".into()))?
-        .fails_with(error_type)?
+        .fails_with(error_type.clone())?
         .doc("extract a special value from the class instance")?
         .build()?;
 
@@ -47,6 +47,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "class to destroy",
         )?
         .return_nothing()?
+        .fails_with(error_type)?
         .doc("Destroy an instance")?
         .build()?;
 

@@ -396,10 +396,7 @@ impl<'a> RustCodegen<'a> {
                         basic_invocation(f, &handle.name)?;
                     }
                 }
-                NativeFunctionType::ErrorNoReturn(_) => {
-                    basic_invocation(f, &handle.name)?;
-                }
-                NativeFunctionType::ErrorWithReturn(_, _, _) => {
+                NativeFunctionType::ErrorWithReturn(_, _, _) | NativeFunctionType::ErrorNoReturn(_) => {
                     f.writeln(&format!("match crate::{}(", &handle.name))?;
                 }
             }
@@ -416,14 +413,23 @@ impl<'a> RustCodegen<'a> {
 
             match handle.get_type() {
                 NativeFunctionType::NoErrorNoReturn => {}
-                NativeFunctionType::ErrorNoReturn(_) => {}
                 NativeFunctionType::NoErrorWithReturn(ret, _) => {
                     if let Some(conversion) = ret.conversion() {
                         f.write(";")?;
                         conversion.convert_to_c(f, "_result", "")?;
                     }
                 }
-                NativeFunctionType::ErrorWithReturn(err, _, _) => {
+                NativeFunctionType::ErrorNoReturn(err) => {
+                    blocked(f, |f| {
+                        f.writeln("Ok(()) =>")?;
+                        blocked(f, |f| {
+                            f.writeln(&format!("{}::Ok", err.inner.name))
+                        })?;
+                        f.writeln("Err(err) =>")?;
+                        blocked(f, |f| f.writeln("err"))
+                    })?;
+                }
+                NativeFunctionType::ErrorWithReturn(err, _, _)  => {
                     blocked(f, |f| {
                         f.writeln("Ok(x) =>")?;
                         blocked(f, |f| {

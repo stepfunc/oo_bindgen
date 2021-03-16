@@ -8,7 +8,7 @@
 #define MAGIC_NUMBER 42
 
 static void test_integer_out_parameter()
-{ 
+{
     uint32_t number = 0;
     assert(get_special_number(WRONG_PASSWORD, &number) == MyError_BadPassword);
     assert(number == 0);
@@ -17,7 +17,7 @@ static void test_integer_out_parameter()
 }
 
 static void test_allocation_via_out_parameter()
-{    
+{
     class_with_password_t* instance = NULL;
     assert(create_class_with_password(WRONG_PASSWORD, &instance) == MyError_BadPassword);
     assert(!instance);

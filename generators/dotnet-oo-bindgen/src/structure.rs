@@ -272,6 +272,12 @@ pub(crate) fn generate(
                         docstring_print(f, doc, lib)?;
                         f.write("</returns>")?;
                     }
+
+                    // Print exception
+                    if let Some(error) = &method.native_function.error_type {
+                        f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+                    }
+
                     Ok(())
                 })?;
 
@@ -331,6 +337,12 @@ pub(crate) fn generate(
                         docstring_print(f, doc, lib)?;
                         f.write("</returns>")?;
                     }
+
+                    // Print exception
+                    if let Some(error) = &method.native_function.error_type {
+                        f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+                    }
+
                     Ok(())
                 })?;
 

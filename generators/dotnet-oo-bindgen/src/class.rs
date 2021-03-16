@@ -42,7 +42,7 @@ pub(crate) fn generate(
                 blocked(f, |f| f.writeln("this.self = self;"))?;
                 f.newline()?;
 
-                f.writeln(&format!("internal {} FromNative(IntPtr self)", classname))?;
+                f.writeln(&format!("internal static {} FromNative(IntPtr self)", classname))?;
                 blocked(f, |f| {
                     f.writeln(&format!("{} result = null;", classname))?;
                     f.writeln("if (self != IntPtr.Zero)")?;
@@ -108,6 +108,12 @@ fn generate_constructor(
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
         }
+
+        // Print exception
+        if let Some(error) = &constructor.error_type {
+            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+        }
+
         Ok(())
     })?;
 
@@ -190,6 +196,12 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
         }
+
+        // Print exception
+        if let Some(error) = &method.native_function.error_type {
+            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+        }
+
         Ok(())
     })?;
 
@@ -250,6 +262,12 @@ fn generate_static_method(
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
         }
+
+        // Print exception
+        if let Some(error) = &method.native_function.error_type {
+            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+        }
+
         Ok(())
     })?;
 
@@ -340,6 +358,12 @@ fn generate_async_method(
         f.writeln("<returns>")?;
         docstring_print(f, &method.return_type_doc, lib)?;
         f.write("</returns>")?;
+
+        // Print exception
+        if let Some(error) = &method.native_function.error_type {
+            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+        }
+
         Ok(())
     })?;
 

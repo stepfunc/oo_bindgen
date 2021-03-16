@@ -37,9 +37,12 @@ pub(crate) unsafe fn get_special_value_from_class(
     }
 }
 
-pub(crate) unsafe fn destroy_class_with_password(instance: *mut crate::ClassWithPassword) {
+pub(crate) unsafe fn destroy_class_with_password(instance: *mut crate::ClassWithPassword) -> Result<(), crate::ffi::MyError> {
     if !instance.is_null() {
         Box::from_raw(instance);
+        Ok(())
+    } else {
+        Err(crate::ffi::MyError::NullArgument)
     }
 }
 

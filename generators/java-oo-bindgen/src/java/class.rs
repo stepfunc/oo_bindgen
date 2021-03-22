@@ -2,6 +2,7 @@ use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
+use oo_bindgen::error_type::ExceptionType;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -20,19 +21,17 @@ pub(crate) fn generate(
     }
 
     blocked(f, |f| {
-        if !class.is_static() {
-            f.writeln("final private long self;")?;
-            if class.destructor.is_some() {
-                f.writeln("private java.util.concurrent.atomic.AtomicBoolean disposed = new java.util.concurrent.atomic.AtomicBoolean(false);")?;
-            }
-
-            f.newline()?;
-
-            f.writeln(&format!("private {}(long self)", classname))?;
-            blocked(f, |f| f.writeln("this.self = self;"))?;
-
-            f.newline()?;
+        f.writeln("final private long self;")?;
+        if class.destructor.is_some() {
+            f.writeln("private java.util.concurrent.atomic.AtomicBoolean disposed = new java.util.concurrent.atomic.AtomicBoolean(false);")?;
         }
+
+        f.newline()?;
+
+        f.writeln(&format!("private {}(long self)", classname))?;
+        blocked(f, |f| f.writeln("this.self = self;"))?;
+
+        f.newline()?;
 
         if let Some(constructor) = &class.constructor {
             generate_constructor(f, &classname, constructor, lib)?;
@@ -63,6 +62,33 @@ pub(crate) fn generate(
     })
 }
 
+pub(crate) fn generate_static(
+    f: &mut dyn Printer,
+    class: &StaticClassHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
+    let classname = class.name.to_camel_case();
+
+    // Documentation
+    documentation(f, |f| javadoc_print(f, &class.doc, lib))?;
+
+    // Class definition
+    f.writeln(&format!("public final class {}", classname))?;
+
+    blocked(f, |f| {
+        // Private constructor to make it static
+        f.writeln(&format!("private {}() {{ }}", classname))?;
+        f.newline()?;
+
+        for method in &class.static_methods {
+            generate_static_method(f, method, lib)?;
+            f.newline()?;
+        }
+
+        Ok(())
+    })
+}
+
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
@@ -78,6 +104,15 @@ fn generate_constructor(
         for param in constructor.parameters.iter() {
             f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
+        }
+
+        // Print exception
+        if let Some(error) = &constructor.error_type {
+            f.writeln(&format!(
+                "@throws {} {}",
+                error.exception_name.to_camel_case(),
+                error.inner.name.to_camel_case()
+            ))?;
         }
 
         Ok(())
@@ -166,6 +201,16 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
             f.writeln("@return ")?;
             docstring_print(f, doc, lib)?;
         }
+
+        // Print exception
+        if let Some(error) = &method.native_function.error_type {
+            f.writeln(&format!(
+                "@throws {} {}",
+                error.exception_name.to_camel_case(),
+                error.inner.name.to_camel_case()
+            ))?;
+        }
+
         Ok(())
     })?;
 
@@ -191,6 +236,12 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
             .join(", "),
     )?;
     f.write(")")?;
+
+    if let Some(error) = &method.native_function.error_type {
+        if error.exception_type == ExceptionType::CheckedException {
+            f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+        }
+    }
 
     blocked(f, |f| {
         call_native_function(f, &method.native_function, "return ", true)
@@ -218,6 +269,16 @@ fn generate_static_method(
             f.writeln("@return ")?;
             docstring_print(f, doc, lib)?;
         }
+
+        // Print exception
+        if let Some(error) = &method.native_function.error_type {
+            f.writeln(&format!(
+                "@throws {} {}",
+                error.exception_name.to_camel_case(),
+                error.inner.name.to_camel_case()
+            ))?;
+        }
+
         Ok(())
     })?;
 
@@ -242,6 +303,12 @@ fn generate_static_method(
             .join(", "),
     )?;
     f.write(")")?;
+
+    if let Some(error) = &method.native_function.error_type {
+        if error.exception_type == ExceptionType::CheckedException {
+            f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+        }
+    }
 
     blocked(f, |f| {
         call_native_function(f, &method.native_function, "return ", false)
@@ -280,7 +347,18 @@ fn generate_async_method(
 
         // Print return value
         f.writeln("@return ")?;
-        docstring_print(f, &method.return_type_doc, lib)
+        docstring_print(f, &method.return_type_doc, lib)?;
+
+        // Print exception
+        if let Some(error) = &method.native_function.error_type {
+            f.writeln(&format!(
+                "@throws {} {}",
+                error.exception_name.to_camel_case(),
+                error.inner.name.to_camel_case()
+            ))?;
+        }
+
+        Ok(())
     })?;
 
     f.writeln(&format!(
@@ -306,6 +384,12 @@ fn generate_async_method(
             .join(", "),
     )?;
     f.write(")")?;
+
+    if let Some(error) = &method.native_function.error_type {
+        if error.exception_type == ExceptionType::CheckedException {
+            f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+        }
+    }
 
     blocked(f, |f| {
         f.writeln(&format!("{} future = new {}();", future_type, future_type))?;

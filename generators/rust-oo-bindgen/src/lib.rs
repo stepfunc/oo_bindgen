@@ -48,6 +48,7 @@ use crate::conversion::*;
 use crate::formatting::*;
 use heck::CamelCase;
 use oo_bindgen::callback::*;
+use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -82,7 +83,7 @@ impl<'a> RustCodegen<'a> {
                 }
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::NativeFunctionDeclaration(handle) => {
-                    self.write_function(&mut f, handle)?
+                    Self::write_function(&mut f, handle)?
                 }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
                 Statement::OneTimeCallbackDefinition(handle) => {
@@ -333,11 +334,7 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_function(
-        &self,
-        f: &mut dyn Printer,
-        handle: &NativeFunctionHandle,
-    ) -> FormattingResult<()> {
+    fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
         f.writeln("#[allow(clippy::missing_safety_doc)]")?;
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub unsafe extern \"C\" fn {}(", handle.name))?;
@@ -351,10 +348,29 @@ impl<'a> RustCodegen<'a> {
                 .join(", "),
         )?;
 
-        if let ReturnType::Type(return_type, _) = &handle.return_type {
-            f.write(&format!(") -> {}", return_type.as_c_type()))?;
-        } else {
-            f.write(")")?;
+        fn write_error_return(f: &mut dyn Printer, _error: &ErrorType) -> FormattingResult<()> {
+            f.write(") -> std::os::raw::c_int")
+            //f.write(&format!(") -> {}", error.inner.name.to_camel_case()))
+        }
+
+        // write the return type
+        match handle.get_type() {
+            NativeFunctionType::NoErrorNoReturn => {
+                f.write(")")?;
+            }
+            NativeFunctionType::NoErrorWithReturn(t, _) => {
+                f.write(&format!(") -> {}", t.as_c_type()))?;
+            }
+            NativeFunctionType::ErrorNoReturn(err) => {
+                write_error_return(f, &err)?;
+            }
+            NativeFunctionType::ErrorWithReturn(err, ret, _) => {
+                if !handle.parameters.is_empty() {
+                    f.write(", ")?;
+                }
+                f.write(&format!("out: *mut {}", ret.as_c_type()))?;
+                write_error_return(f, &err)?;
+            }
         }
 
         blocked(f, |f| {
@@ -365,10 +381,26 @@ impl<'a> RustCodegen<'a> {
                 }
             }
 
-            if handle.return_type.has_conversion() {
-                f.writeln(&format!("let _result = crate::{}(", handle.name))?;
-            } else {
-                f.writeln(&format!("crate::{}(", handle.name))?;
+            fn basic_invocation(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+                f.writeln(&format!("crate::{}(", name))
+            }
+
+            // invoke the inner function
+            match handle.get_type() {
+                NativeFunctionType::NoErrorNoReturn => {
+                    basic_invocation(f, &handle.name)?;
+                }
+                NativeFunctionType::NoErrorWithReturn(ret, _) => {
+                    if ret.has_conversion() {
+                        f.writeln(&format!("let _result = crate::{}(", handle.name))?;
+                    } else {
+                        basic_invocation(f, &handle.name)?;
+                    }
+                }
+                NativeFunctionType::ErrorWithReturn(_, _, _)
+                | NativeFunctionType::ErrorNoReturn(_) => {
+                    f.writeln(&format!("match crate::{}(", &handle.name))?;
+                }
             }
 
             f.write(
@@ -381,9 +413,41 @@ impl<'a> RustCodegen<'a> {
             )?;
             f.write(")")?;
 
-            if let Some(conversion) = handle.return_type.conversion() {
-                f.write(";")?;
-                conversion.convert_to_c(f, "_result", "")?;
+            match handle.get_type() {
+                NativeFunctionType::NoErrorNoReturn => {}
+                NativeFunctionType::NoErrorWithReturn(ret, _) => {
+                    if let Some(conversion) = ret.conversion() {
+                        f.write(";")?;
+                        conversion.convert_to_c(f, "_result", "")?;
+                    }
+                }
+                NativeFunctionType::ErrorNoReturn(err) => {
+                    blocked(f, |f| {
+                        let converter = EnumConverter(err.inner.clone());
+                        f.writeln("Ok(()) =>")?;
+                        blocked(f, |f| {
+                            converter.convert_to_c(f, &format!("{}::Ok", err.inner.name), "")
+                        })?;
+                        f.writeln("Err(err) =>")?;
+                        blocked(f, |f| converter.convert_to_c(f, "err", ""))
+                    })?;
+                }
+                NativeFunctionType::ErrorWithReturn(err, result_type, _) => {
+                    blocked(f, |f| {
+                        let converter = EnumConverter(err.inner.clone());
+                        f.writeln("Ok(x) =>")?;
+                        blocked(f, |f| {
+                            if let Some(converter) = result_type.conversion() {
+                                converter.convert_to_c(f, "x", "let x = ")?;
+                                f.write(";")?;
+                            }
+                            f.writeln("out.write(x);")?;
+                            converter.convert_to_c(f, &format!("{}::Ok", err.inner.name), "")
+                        })?;
+                        f.writeln("Err(err) =>")?;
+                        blocked(f, |f| converter.convert_to_c(f, "err", ""))
+                    })?;
+                }
             }
 
             Ok(())

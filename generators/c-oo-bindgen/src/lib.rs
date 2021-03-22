@@ -113,6 +113,7 @@ impl CFormatting for Symbol {
             Symbol::Struct(handle) => handle.declaration().to_c_type(),
             Symbol::Enum(handle) => handle.to_c_type(),
             Symbol::Class(handle) => handle.declaration().to_c_type(),
+            Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
             Symbol::Interface(handle) => handle.to_c_type(),
             Symbol::OneTimeCallback(handle) => handle.to_c_type(),
             Symbol::Iterator(handle) => handle.iter_type.to_c_type(),
@@ -577,7 +578,7 @@ fn write_class_declaration(
     ))
 }
 
-fn write_function(
+fn write_function_docs(
     f: &mut dyn Printer,
     handle: &NativeFunctionHandle,
     lib: &Library,
@@ -592,22 +593,50 @@ fn write_function(
             docstring_print(f, &param.doc, lib)?;
         }
 
-        // Print return documentation
-        if let ReturnType::Type(_, doc) = &handle.return_type {
-            f.writeln("@return ")?;
-            docstring_print(f, doc, lib)?;
+        fn write_error_return_doc(f: &mut dyn Printer) -> FormattingResult<()> {
+            f.writeln("@return Error code")
+        }
+
+        match handle.get_type() {
+            NativeFunctionType::NoErrorNoReturn => {}
+            NativeFunctionType::NoErrorWithReturn(_, doc) => {
+                f.writeln("@return ")?;
+                docstring_print(f, &doc, lib)?;
+            }
+            NativeFunctionType::ErrorNoReturn(_) => {
+                write_error_return_doc(f)?;
+            }
+            NativeFunctionType::ErrorWithReturn(_, _, doc) => {
+                f.writeln("@param out ")?;
+                docstring_print(f, &doc, lib)?;
+                write_error_return_doc(f)?;
+            }
         }
 
         Ok(())
-    })?;
+    })
+}
 
-    f.newline()?;
+fn write_function(
+    f: &mut dyn Printer,
+    handle: &NativeFunctionHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
+    write_function_docs(f, handle, lib)?;
 
-    f.write(&format!(
-        "{} {}(",
-        CReturnType(&handle.return_type),
-        handle.name
-    ))?;
+    if let Some(error_type) = &handle.error_type {
+        f.writeln(&format!(
+            "{} {}(",
+            CType(&Type::Enum(error_type.inner.clone())),
+            handle.name
+        ))?;
+    } else {
+        f.writeln(&format!(
+            "{} {}(",
+            CReturnType(&handle.return_type),
+            handle.name
+        ))?;
+    }
 
     f.write(
         &handle
@@ -623,6 +652,15 @@ fn write_function(
             .collect::<Vec<String>>()
             .join(", "),
     )?;
+
+    if handle.error_type.is_some() {
+        if let ReturnType::Type(x, _) = &handle.return_type {
+            if !handle.parameters.is_empty() {
+                f.write(", ")?;
+                f.write(&format!("{}* out", CType(x)))?;
+            }
+        }
+    }
 
     f.write(");")
 }

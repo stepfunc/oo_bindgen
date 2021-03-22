@@ -59,8 +59,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     // Declare static class
-    let class = lib.declare_class("IntegerEchoFunctions")?;
-    lib.define_class(&class)?
+    lib.define_static_class("IntegerEchoFunctions")?
         .static_method("Uint8Echo", &uint8_echo)?
         .static_method("Sint8Echo", &sint8_echo)?
         .static_method("Uint16Echo", &uint16_echo)?

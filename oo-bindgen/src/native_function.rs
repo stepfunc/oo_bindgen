@@ -78,7 +78,39 @@ pub struct NativeFunction {
     pub name: String,
     pub return_type: ReturnType,
     pub parameters: Vec<Parameter>,
+    pub error_type: Option<ErrorType>,
     pub doc: Doc,
+}
+
+#[derive(Debug, Clone)]
+pub enum NativeFunctionType {
+    /// function that cannot fail and returns nothing
+    NoErrorNoReturn,
+    /// function that cannot fail and returns something
+    NoErrorWithReturn(Type, DocString),
+    /// function that can fail, but does not return a value
+    ErrorNoReturn(ErrorType),
+    /// function that can fail and returns something via an out parameter
+    ErrorWithReturn(ErrorType, Type, DocString),
+}
+
+impl NativeFunction {
+    pub fn get_type(&self) -> NativeFunctionType {
+        match &self.error_type {
+            Some(e) => match &self.return_type {
+                ReturnType::Void => NativeFunctionType::ErrorNoReturn(e.clone()),
+                ReturnType::Type(t, d) => {
+                    NativeFunctionType::ErrorWithReturn(e.clone(), t.clone(), d.clone())
+                }
+            },
+            None => match &self.return_type {
+                ReturnType::Void => NativeFunctionType::NoErrorNoReturn,
+                ReturnType::Type(t, d) => {
+                    NativeFunctionType::NoErrorWithReturn(t.clone(), d.clone())
+                }
+            },
+        }
+    }
 }
 
 pub type NativeFunctionHandle = Handle<NativeFunction>;
@@ -89,6 +121,7 @@ pub struct NativeFunctionBuilder<'a> {
     return_type: Option<ReturnType>,
     params: Vec<Parameter>,
     doc: Option<Doc>,
+    error_type: Option<ErrorType>,
 }
 
 impl<'a> NativeFunctionBuilder<'a> {
@@ -99,6 +132,7 @@ impl<'a> NativeFunctionBuilder<'a> {
             return_type: None,
             params: Vec::new(),
             doc: None,
+            error_type: None,
         }
     }
 
@@ -117,6 +151,10 @@ impl<'a> NativeFunctionBuilder<'a> {
         Ok(self)
     }
 
+    pub fn return_nothing(self) -> Result<Self> {
+        self.return_type(ReturnType::Void)
+    }
+
     pub fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
         match self.return_type {
             None => {
@@ -128,6 +166,18 @@ impl<'a> NativeFunctionBuilder<'a> {
                 return_type,
             }),
         }
+    }
+
+    pub fn fails_with(mut self, err: ErrorType) -> Result<Self> {
+        if let Some(x) = self.error_type {
+            return Err(BindingError::ErrorTypeAlreadyDefined {
+                function: self.name,
+                error_type: x.inner.name.clone(),
+            });
+        }
+
+        self.error_type = Some(err);
+        Ok(self)
     }
 
     pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
@@ -165,6 +215,7 @@ impl<'a> NativeFunctionBuilder<'a> {
             name: self.name,
             return_type,
             parameters: self.params,
+            error_type: self.error_type,
             doc,
         });
 

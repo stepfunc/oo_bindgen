@@ -272,6 +272,15 @@ pub(crate) fn generate(
                         docstring_print(f, doc, lib)?;
                         f.write("</returns>")?;
                     }
+
+                    // Print exception
+                    if let Some(error) = &method.native_function.error_type {
+                        f.writeln(&format!(
+                            "<exception cref=\"{}\" />",
+                            error.exception_name.to_camel_case()
+                        ))?;
+                    }
+
                     Ok(())
                 })?;
 
@@ -331,6 +340,15 @@ pub(crate) fn generate(
                         docstring_print(f, doc, lib)?;
                         f.write("</returns>")?;
                     }
+
+                    // Print exception
+                    if let Some(error) = &method.native_function.error_type {
+                        f.writeln(&format!(
+                            "<exception cref=\"{}\" />",
+                            error.exception_name.to_camel_case()
+                        ))?;
+                    }
+
                     Ok(())
                 })?;
 
@@ -391,15 +409,12 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    if let Some(conversion) = el.element_type.to_type().conversion() {
-                        conversion.convert_to_native(
-                            f,
-                            &format!("self.{}", el_name),
-                            &format!("result.{} = ", el_name),
-                        )?;
-                    } else {
-                        f.writeln(&format!("result.{} = self.{};", el_name, el_name))?;
-                    }
+                    let conversion = el
+                        .element_type
+                        .to_type()
+                        .convert_to_native(&format!("self.{}", el_name))
+                        .unwrap_or(format!("self.{}", el_name));
+                    f.writeln(&format!("result.{} = {};", el_name, conversion))?;
                 }
                 f.writeln("return result;")
             })?;
@@ -416,17 +431,62 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    if let Some(conversion) = el.element_type.to_type().conversion() {
-                        conversion.convert_from_native(
-                            f,
-                            &format!("native.{}", el_name),
-                            &format!("result.{} = ", el_name),
-                        )?;
-                    } else {
-                        f.writeln(&format!("result.{} = native.{};", el_name, el_name))?;
-                    }
+                    let conversion = el
+                        .element_type
+                        .to_type()
+                        .convert_from_native(&format!("native.{}", el_name))
+                        .unwrap_or(format!("native.{}", el_name));
+                    f.writeln(&format!("result.{} = {};", el_name, conversion))?;
                 }
                 f.writeln("return result;")
+            })?;
+
+            f.newline()?;
+
+            // Convert from .NET to native reference
+            f.writeln(&format!(
+                "internal static IntPtr ToNativeRef({} self)",
+                struct_name
+            ))?;
+            blocked(f, |f| {
+                f.writeln("var handle = IntPtr.Zero;")?;
+                f.writeln("if (self != null)")?;
+                blocked(f, |f| {
+                    f.writeln("var nativeStruct = ToNative(self);")?;
+                    f.writeln("handle = Marshal.AllocHGlobal(Marshal.SizeOf(nativeStruct));")?;
+                    f.writeln("Marshal.StructureToPtr(nativeStruct, handle, false);")?;
+                    f.writeln("nativeStruct.Dispose();")
+                })?;
+                f.writeln("return handle;")
+            })?;
+
+            f.newline()?;
+
+            // Ref cleanup
+            f.writeln("internal static void NativeRefCleanup(IntPtr native)")?;
+            blocked(f, |f| {
+                f.writeln("if (native != IntPtr.Zero)")?;
+                blocked(f, |f| f.writeln("Marshal.FreeHGlobal(native);"))
+            })?;
+
+            f.newline()?;
+
+            // Convert from native ref to .NET
+            f.writeln(&format!(
+                "internal static {} FromNativeRef(IntPtr native)",
+                struct_name
+            ))?;
+            blocked(f, |f| {
+                f.writeln(&format!("{} handle = null;", struct_name))?;
+                f.writeln("if (native != IntPtr.Zero)")?;
+                blocked(f, |f| {
+                    f.writeln(&format!(
+                        "var nativeStruct = Marshal.PtrToStructure<{}>(native);",
+                        struct_native_name
+                    ))?;
+                    f.writeln("handle = FromNative(nativeStruct);")
+                })?;
+                f.writeln("return handle;")
             })?;
 
             f.newline()?;
@@ -437,8 +497,12 @@ pub(crate) fn generate(
                 for el in native_struct.elements() {
                     let el_name = el.name.to_camel_case();
 
-                    if let Some(conversion) = el.element_type.to_type().conversion() {
-                        conversion.convert_to_native_cleanup(f, &format!("this.{}", el_name))?;
+                    if let Some(cleanup) = el
+                        .element_type
+                        .to_type()
+                        .cleanup(&format!("this.{}", el_name))
+                    {
+                        f.writeln(&cleanup)?;
                     }
                 }
                 Ok(())

@@ -65,6 +65,7 @@ pub mod class;
 pub mod collection;
 pub mod constants;
 pub mod doc;
+pub mod error_type;
 pub mod formatting;
 pub mod iterator;
 pub mod native_enum;
@@ -74,6 +75,7 @@ pub mod platforms;
 
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
+use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 
 type Result<T> = std::result::Result<T, BindingError>;
 
@@ -195,6 +197,8 @@ pub enum BindingError {
         handle: ClassDeclarationHandle,
         native_func: NativeFunctionHandle,
     },
+    #[error("Destructor for class '{}' cannot fail", handle.name)]
+    DestructorCannotFail { handle: ClassDeclarationHandle },
 
     // Async errors
     #[error("Native function '{}' cannot be used as an async method because it doesn't have a OneTimeCallback parameter", handle.name)]
@@ -242,6 +246,8 @@ pub enum BindingError {
     IteratorReturnTypeNotStructRef { handle: NativeFunctionHandle },
     #[error("Iterator '{}' is not part of this library", handle.name())]
     IteratorNotPartOfThisLib { handle: iterator::IteratorHandle },
+    #[error("Iterator native functions '{}' cannot fail", handle.name)]
+    IteratorFunctionsCannotFail { handle: NativeFunctionHandle },
 
     // Collection errors
     #[error("Invalid native function '{}' signature for create_func of collection", handle.name)]
@@ -250,6 +256,8 @@ pub enum BindingError {
     CollectionDeleteFuncInvalidSignature { handle: NativeFunctionHandle },
     #[error("Invalid native function '{}' signature for add_func of collection", handle.name)]
     CollectionAddFuncInvalidSignature { handle: NativeFunctionHandle },
+    #[error("Collection native functions '{}' cannot fail", handle.name)]
+    CollectionFunctionsCannotFail { handle: NativeFunctionHandle },
     #[error("Collection '{}' is not part of this library", handle.name())]
     CollectionNotPartOfThisLib {
         handle: collection::CollectionHandle,
@@ -262,6 +270,15 @@ pub enum BindingError {
     ConstantNameAlreadyUsed {
         set_name: String,
         constant_name: String,
+    },
+    #[error(
+        "Function '{}' already has an error type specified: '{}'",
+        function,
+        error_type
+    )]
+    ErrorTypeAlreadyDefined {
+        function: String,
+        error_type: String,
     },
 }
 
@@ -313,6 +330,7 @@ pub enum Symbol {
     Struct(StructHandle),
     Enum(NativeEnumHandle),
     Class(ClassHandle),
+    StaticClass(StaticClassHandle),
     Interface(InterfaceHandle),
     OneTimeCallback(OneTimeCallbackHandle),
     Iterator(iterator::IteratorHandle),
@@ -326,8 +344,10 @@ pub enum Statement {
     NativeStructDefinition(NativeStructHandle),
     StructDefinition(StructHandle),
     EnumDefinition(NativeEnumHandle),
+    ErrorType(ErrorType),
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(ClassHandle),
+    StaticClassDefinition(StaticClassHandle),
     InterfaceDefinition(InterfaceHandle),
     OneTimeCallbackDefinition(OneTimeCallbackHandle),
     IteratorDeclaration(iterator::IteratorHandle),
@@ -392,6 +412,13 @@ impl Library {
         })
     }
 
+    pub fn error_types(&self) -> impl Iterator<Item = &ErrorType> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::ErrorType(err) => Some(err),
+            _ => None,
+        })
+    }
+
     pub fn find_enum<T: AsRef<str>>(&self, name: T) -> Option<&NativeEnumHandle> {
         self.symbol(name)
             .iter()
@@ -440,6 +467,26 @@ impl Library {
             .next()
     }
 
+    pub fn static_classes(&self) -> impl Iterator<Item = &StaticClassHandle> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::StaticClassDefinition(handle) => Some(handle),
+            _ => None,
+        })
+    }
+
+    pub fn find_static_class<T: AsRef<str>>(&self, name: T) -> Option<&StaticClassHandle> {
+        self.symbol(name)
+            .iter()
+            .filter_map(|symbol| {
+                if let Symbol::StaticClass(handle) = symbol {
+                    Some(handle)
+                } else {
+                    None
+                }
+            })
+            .next()
+    }
+
     pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::InterfaceDefinition(handle) => Some(handle),
@@ -480,6 +527,13 @@ impl Library {
             .next()
     }
 
+    pub fn iterators(&self) -> impl Iterator<Item = &iterator::IteratorHandle> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::IteratorDeclaration(handle) => Some(handle),
+            _ => None,
+        })
+    }
+
     pub fn find_iterator<T: AsRef<str>>(&self, name: T) -> Option<&iterator::IteratorHandle> {
         self.statements
             .iter()
@@ -493,6 +547,13 @@ impl Library {
                 None
             })
             .next()
+    }
+
+    pub fn collections(&self) -> impl Iterator<Item = &collection::CollectionHandle> {
+        self.into_iter().filter_map(|statement| match statement {
+            Statement::CollectionDeclaration(handle) => Some(handle),
+            _ => None,
+        })
     }
 
     pub fn find_collection<T: AsRef<str>>(&self, name: T) -> Option<&collection::CollectionHandle> {
@@ -540,6 +601,7 @@ pub struct LibraryBuilder {
 
     class_declarations: HashSet<ClassDeclarationHandle>,
     classes: HashMap<ClassDeclarationHandle, ClassHandle>,
+    static_classes: HashSet<StaticClassHandle>,
 
     interfaces: HashSet<InterfaceHandle>,
     one_time_callbacks: HashSet<OneTimeCallbackHandle>,
@@ -569,6 +631,7 @@ impl LibraryBuilder {
 
             class_declarations: HashSet::new(),
             classes: HashMap::new(),
+            static_classes: HashSet::new(),
 
             interfaces: HashSet::new(),
             one_time_callbacks: HashSet::new(),
@@ -611,9 +674,13 @@ impl LibraryBuilder {
                 Statement::EnumDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::Enum(handle.clone()));
                 }
+                Statement::ErrorType(_) => {}
                 Statement::ClassDeclaration(_) => (),
                 Statement::ClassDefinition(handle) => {
                     symbols.insert(handle.name().to_string(), Symbol::Class(handle.clone()));
+                }
+                Statement::StaticClassDefinition(handle) => {
+                    symbols.insert(handle.name.clone(), Symbol::StaticClass(handle.clone()));
                 }
                 Statement::InterfaceDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::Interface(handle.clone()));
@@ -641,7 +708,6 @@ impl LibraryBuilder {
             version: self.version,
             description: self.description,
             license: self.license,
-
             statements: self.statements,
             structs,
             _classes: self.classes,
@@ -666,6 +732,23 @@ impl LibraryBuilder {
     pub fn license(&mut self, license: Vec<String>) -> Result<()> {
         self.license = license;
         Ok(())
+    }
+
+    pub fn define_error_type<T: Into<String>>(
+        &mut self,
+        error_name: T,
+        exception_name: T,
+        exception_type: ExceptionType,
+    ) -> Result<ErrorTypeBuilder> {
+        let builder = self
+            .define_native_enum(error_name)?
+            .push("Ok", "Success, i.e. no error occurred")?;
+
+        Ok(ErrorTypeBuilder::new(
+            exception_name.into(),
+            exception_type,
+            builder,
+        ))
     }
 
     pub fn define_constants<T: Into<String>>(&mut self, name: T) -> Result<ConstantSetBuilder> {
@@ -749,6 +832,12 @@ impl LibraryBuilder {
                 handle: declaration.clone(),
             })
         }
+    }
+
+    pub fn define_static_class<T: Into<String>>(&mut self, name: T) -> Result<StaticClassBuilder> {
+        let name = name.into();
+        self.check_unique_symbol(&name)?;
+        Ok(StaticClassBuilder::new(self, name))
     }
 
     pub fn define_interface<T: Into<String>, D: Into<Doc>>(

@@ -209,7 +209,22 @@ pub(crate) fn generate(
                 }
             }
 
-            Ok(())
+            f.newline()?;
+
+            // Write the conversion routine
+            f.writeln(&format!(
+                "internal static {} FromNative(IntPtr self)",
+                cb_name
+            ))?;
+            blocked(f, |f| {
+                f.writeln("if (self != IntPtr.Zero)")?;
+                blocked(f, |f| {
+                    f.writeln("var handle = GCHandle.FromIntPtr(self);")?;
+                    f.writeln(&format!("return handle.Target as {};", cb_name))
+                })?;
+                f.writeln("else")?;
+                blocked(f, |f| f.writeln("return null;"))
+            })
         })
     })
 }

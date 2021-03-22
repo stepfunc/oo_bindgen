@@ -1,6 +1,7 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
+use oo_bindgen::error_type::ExceptionType;
 use oo_bindgen::native_struct::*;
 
 fn constructor_visibility(struct_type: NativeStructType) -> &'static str {
@@ -255,6 +256,16 @@ pub(crate) fn generate(
                     f.writeln("@return ")?;
                     docstring_print(f, doc, lib)?;
                 }
+
+                // Print exception
+                if let Some(error) = &method.native_function.error_type {
+                    f.writeln(&format!(
+                        "@throws {} {}",
+                        error.exception_name.to_camel_case(),
+                        error.inner.name.to_camel_case()
+                    ))?;
+                }
+
                 Ok(())
             })?;
 
@@ -281,6 +292,12 @@ pub(crate) fn generate(
             )?;
             f.write(")")?;
 
+            if let Some(error) = &method.native_function.error_type {
+                if error.exception_type == ExceptionType::CheckedException {
+                    f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+                }
+            }
+
             blocked(f, |f| {
                 call_native_function(f, &method.native_function, "return ", true)
             })?;
@@ -306,6 +323,16 @@ pub(crate) fn generate(
                     f.writeln("@return ")?;
                     docstring_print(f, doc, lib)?;
                 }
+
+                // Print exception
+                if let Some(error) = &method.native_function.error_type {
+                    f.writeln(&format!(
+                        "@throws {} {}",
+                        error.exception_name.to_camel_case(),
+                        error.inner.name.to_camel_case()
+                    ))?;
+                }
+
                 Ok(())
             })?;
 
@@ -330,6 +357,12 @@ pub(crate) fn generate(
                     .join(", "),
             )?;
             f.write(")")?;
+
+            if let Some(error) = &method.native_function.error_type {
+                if error.exception_type == ExceptionType::CheckedException {
+                    f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+                }
+            }
 
             blocked(f, |f| {
                 call_native_function(f, &method.native_function, "return ", false)

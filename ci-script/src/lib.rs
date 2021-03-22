@@ -52,20 +52,21 @@ pub fn run(settings: BindingBuilderSettings) {
     let run_java = matches.is_present("java");
     let run_all = !run_c && !run_dotnet && !run_java;
 
+    let package = matches.is_present("package");
     let package_src = matches.value_of("package");
 
     if run_c || run_all {
-        let builder = run_builder::<CBindingBuilder>(&settings, run_tests, package_src);
+        let builder = run_builder::<CBindingBuilder>(&settings, run_tests, package, package_src);
 
         if matches.is_present("doxygen") {
             builder.build_doxygen();
         }
     }
     if run_dotnet || run_all {
-        run_builder::<DotnetBindingBuilder>(&settings, run_tests, package_src);
+        run_builder::<DotnetBindingBuilder>(&settings, run_tests, package, package_src);
     }
     if run_java || run_all {
-        run_builder::<JavaBindingBuilder>(&settings, run_tests, package_src);
+        run_builder::<JavaBindingBuilder>(&settings, run_tests, package, package_src);
     }
 }
 
@@ -76,6 +77,7 @@ fn ffi_path() -> PathBuf {
 fn run_builder<'a, B: BindingBuilder<'a>>(
     settings: &'a BindingBuilderSettings,
     run_tests: bool,
+    package: bool,
     package_src: Option<&str>,
 ) -> B {
     let mut platforms = PlatformLocations::new();
@@ -120,9 +122,9 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
         return builder;
     }
 
-    builder.generate(package_src.is_some());
+    builder.generate(package);
 
-    if package_src.is_none() {
+    if !package {
         builder.build();
         if run_tests {
             builder.test();
@@ -333,12 +335,13 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
     }
 
     fn package(&mut self) {
-        // Run unit tests
+        // Produce a nupkg
         let result = Command::new("dotnet")
             .current_dir(&self.output_dir())
             .arg("pack")
             .arg("--configuration")
             .arg("Release")
+            .arg("--include-symbols")
             .arg("--output")
             .arg("nupkg")
             .status()

@@ -49,6 +49,7 @@ use crate::doc::*;
 use crate::formatting::*;
 use heck::CamelCase;
 use oo_bindgen::constants::*;
+use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
@@ -62,10 +63,12 @@ mod class;
 mod conversion;
 mod doc;
 mod formatting;
+mod helpers;
 mod interface;
 mod structure;
+mod wrappers;
 
-const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
+pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
@@ -78,18 +81,33 @@ pub fn generate_dotnet_bindings(
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
     fs::create_dir_all(&config.output_dir)?;
+
     generate_csproj(lib, config)?;
-
-    generate_native_func_class(lib, config)?;
-
+    generate_native_functions(lib, config)?;
     generate_constants(lib, config)?;
     generate_structs(lib, config)?;
     generate_enums(lib, config)?;
+    generate_exceptions(lib, config)?;
     generate_classes(lib, config)?;
     generate_interfaces(lib, config)?;
     generate_one_time_callbacks(lib, config)?;
+    generate_collection_helpers(lib, config)?;
+    generate_iterator_helpers(lib, config)?;
+
+    // generate the helper classes
+    generate_helpers(lib, config)?;
 
     Ok(())
+}
+
+fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    let mut filename = config.output_dir.clone();
+    filename.push("Helpers");
+    filename.set_extension("cs");
+    let mut f = FilePrinter::new(filename)?;
+
+    print_license(&mut f, &lib.license)?;
+    f.writeln(include_str!("../copy/Helpers.cs"))
 }
 
 fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
@@ -102,6 +120,7 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("<Project Sdk=\"Microsoft.NET.Sdk\">")?;
     f.writeln("  <PropertyGroup>")?;
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
+    f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
     f.writeln(&format!(
         "    <Version>{}</Version>",
         lib.version.to_string()
@@ -131,49 +150,13 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("</Project>")
 }
 
-fn generate_native_func_class(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-    // Open file
+fn generate_native_functions(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     let mut filename = config.output_dir.clone();
     filename.push(NATIVE_FUNCTIONS_CLASSNAME);
     filename.set_extension("cs");
     let mut f = FilePrinter::new(filename)?;
 
-    print_license(&mut f, &lib.license)?;
-    print_imports(&mut f)?;
-    f.newline()?;
-
-    namespaced(&mut f, &lib.name, |f| {
-        f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
-        blocked(f, |f| {
-            for handle in lib.native_functions() {
-                f.writeln(&format!(
-                    "[DllImport(\"{}\", CallingConvention = CallingConvention.Cdecl)]",
-                    config.ffi_name
-                ))?;
-                f.newline()?;
-                f.write(&format!(
-                    "internal static extern {} {}(",
-                    handle.return_type.as_native_type(),
-                    handle.name
-                ))?;
-
-                f.write(
-                    &handle
-                        .parameters
-                        .iter()
-                        .map(|param| {
-                            format!("{} {}", param.param_type.as_native_type(), param.name)
-                        })
-                        .collect::<Vec<String>>()
-                        .join(", "),
-                )?;
-                f.write(");")?;
-                f.newline()?;
-            }
-
-            Ok(())
-        })
-    })
+    wrappers::generate_native_functions_class(&mut f, lib, config)
 }
 
 fn generate_constants(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
@@ -213,6 +196,20 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
         let mut f = FilePrinter::new(filename)?;
 
         generate_enum(&mut f, native_enum, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for err in lib.error_types() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&err.exception_name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        generate_exception(&mut f, err, lib)?;
     }
 
     Ok(())
@@ -291,6 +288,37 @@ fn generate_enum(
     })
 }
 
+fn generate_exception(
+    f: &mut impl Printer,
+    err: &ErrorType,
+    lib: &Library,
+) -> FormattingResult<()> {
+    print_license(f, &lib.license)?;
+    print_imports(f)?;
+    f.newline()?;
+
+    namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            xmldoc_print(f, &err.inner.doc, lib)
+        })?;
+
+        let error_name = err.inner.name.to_camel_case();
+        let exception_name = err.exception_name.to_camel_case();
+
+        f.writeln(&format!("public class {}: Exception", exception_name))?;
+        blocked(f, |f| {
+            f.writeln(&format!("public readonly {} error;", error_name))?;
+            f.newline()?;
+            f.writeln(&format!(
+                "internal {}({} error) : base(error.ToString())",
+                exception_name, error_name
+            ))?;
+            blocked(f, |f| f.writeln("this.error = error;"))
+        })
+    })
+}
+
 fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     for class in lib.classes() {
         // Open file
@@ -302,6 +330,16 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
         class::generate(&mut f, class, lib)?;
     }
 
+    for class in lib.static_classes() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&class.name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        class::generate_static(&mut f, class, lib)?;
+    }
+
     Ok(())
 }
 
@@ -309,7 +347,7 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for interface in lib.interfaces() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&interface.name);
+        filename.push(&format!("I{}", interface.name.to_camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -326,11 +364,42 @@ fn generate_one_time_callbacks(
     for cb in lib.one_time_callbacks() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&cb.name);
+        filename.push(&format!("I{}", cb.name.to_camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
         callback::generate(&mut f, cb, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_iterator_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    for iter in lib.iterators() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&format!("{}Helpers", iter.name().to_camel_case()));
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        helpers::generate_iterator_helpers(&mut f, iter, lib)?;
+    }
+
+    Ok(())
+}
+
+fn generate_collection_helpers(
+    lib: &Library,
+    config: &DotnetBindgenConfig,
+) -> FormattingResult<()> {
+    for coll in lib.collections() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&format!("{}Helpers", coll.name().to_camel_case()));
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        helpers::generate_collection_helpers(&mut f, coll, lib)?;
     }
 
     Ok(())

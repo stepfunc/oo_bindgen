@@ -16,7 +16,7 @@ pub(crate) fn generate_classes_cache(
 
     f.writeln("pub struct Classes")?;
     blocked(&mut f, |f| {
-        for class in lib.classes().filter(|class| !class.is_static()) {
+        for class in lib.classes() {
             f.writeln(&format!(
                 "class_{}: jni::objects::GlobalRef,",
                 class.name().to_snake_case()
@@ -40,7 +40,7 @@ pub(crate) fn generate_classes_cache(
     blocked(&mut f, |f| {
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
-            for class in lib.classes().filter(|class| !class.is_static()) {
+            for class in lib.classes() {
                 let class_name = class.name().to_camel_case();
                 let snake_name = class.name().to_snake_case();
                 f.writeln(&format!("let class_{snake_name} = env.find_class(\"L{lib_path}/{class_name};\").expect(\"Unable to find class {class_name}\");", snake_name=snake_name, class_name=class_name, lib_path=lib_path))?;
@@ -50,7 +50,7 @@ pub(crate) fn generate_classes_cache(
 
             f.writeln("Self")?;
             blocked(f, |f| {
-                for class in lib.classes().filter(|class| !class.is_static()) {
+                for class in lib.classes() {
                     let snake_name = class.name().to_snake_case();
                     f.writeln(&format!(
                         "class_{}: env.new_global_ref(class_{}).unwrap(),",
@@ -65,7 +65,7 @@ pub(crate) fn generate_classes_cache(
 
         f.newline()?;
 
-        for class in lib.classes().filter(|class| !class.is_static()) {
+        for class in lib.classes() {
             let class_name = class.name().to_camel_case();
             let snake_name = class.name().to_snake_case();
 

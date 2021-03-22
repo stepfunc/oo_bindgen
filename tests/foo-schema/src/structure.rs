@@ -1,10 +1,10 @@
 use std::time::Duration;
 
 use oo_bindgen::native_function::*;
-use oo_bindgen::native_struct::StructElementType;
+use oo_bindgen::native_struct::{NativeStructHandle, StructElementType};
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {
     let structure_enum = lib
         .define_native_enum("StructureEnum")?
         .push("Var1", "Var1")?
@@ -23,7 +23,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             StructElementType::Enum(structure_enum.clone(), Some("Var2".to_string())),
             "first_enum_value",
         )?
-        .add("bool1", StructElementType::Sint16(Some(1)), "bool1")?
+        .add("int1", StructElementType::Sint16(Some(1)), "int1")?
         .add("bool2", StructElementType::Bool(Some(false)), "bool2")?
         .add(
             "second_enum_value",
@@ -123,7 +123,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .add(
             "structure_value",
-            Type::Struct(other_structure),
+            Type::Struct(other_structure.clone()),
             "structure_value",
         )?
         .add(
@@ -190,5 +190,5 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .method("StructByReferenceEcho", &struct_by_reference_echo_func)?
         .build();
 
-    Ok(())
+    Ok(other_structure)
 }

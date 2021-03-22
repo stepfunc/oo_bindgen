@@ -46,8 +46,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     // Declare static class
-    let class = lib.declare_class("DurationEchoFunctions")?;
-    lib.define_class(&class)?
+    lib.define_static_class("DurationEchoFunctions")?
         .static_method("MillisecondsEcho", &duration_ms_echo_func)?
         .static_method("SecondsEcho", &duration_s_echo_func)?
         .static_method("SecondsFloatEcho", &duration_s_float_echo_func)?

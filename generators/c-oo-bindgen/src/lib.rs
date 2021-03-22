@@ -113,6 +113,7 @@ impl CFormatting for Symbol {
             Symbol::Struct(handle) => handle.declaration().to_c_type(),
             Symbol::Enum(handle) => handle.to_c_type(),
             Symbol::Class(handle) => handle.declaration().to_c_type(),
+            Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
             Symbol::Interface(handle) => handle.to_c_type(),
             Symbol::OneTimeCallback(handle) => handle.to_c_type(),
             Symbol::Iterator(handle) => handle.iter_type.to_c_type(),

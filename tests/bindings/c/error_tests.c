@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <math.h>
+#include <stddef.h>
 
 #include "foo.h"
 
@@ -28,8 +29,7 @@ static void test_allocation_via_out_parameter()
     assert(get_special_value_from_class(instance, &number) == MyError_Ok);
     assert(number == MAGIC_NUMBER);
 
-    assert(destroy_class_with_password(NULL) == MyError_NullArgument);
-    assert(destroy_class_with_password(instance) == MyError_Ok);
+    destroy_class_with_password(instance);
 }
 
 void error_tests()

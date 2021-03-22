@@ -16,6 +16,31 @@ pub(crate) fn get_special_number(password: &CStr) -> std::result::Result<u32, cr
     }
 }
 
+pub(crate) fn get_struct(
+    password: &CStr,
+) -> std::result::Result<crate::ffi::OtherStructure, crate::ffi::MyError> {
+    if password.to_str()? == PASSWORD {
+        Ok(crate::ffi::OtherStructureFields {
+            test: 41,
+            first_enum_value: crate::ffi::StructureEnum::Var2,
+            int1: 1,
+            bool2: false,
+            second_enum_value: crate::ffi::StructureEnum::Var2,
+        }
+        .into())
+    } else {
+        Err(crate::ffi::MyError::BadPassword)
+    }
+}
+
+pub(crate) fn echo_password(password: &CStr) -> std::result::Result<&CStr, crate::ffi::MyError> {
+    if password.to_str()? == PASSWORD {
+        Ok(password)
+    } else {
+        Err(crate::ffi::MyError::BadPassword)
+    }
+}
+
 pub(crate) fn create_class_with_password(
     password: &CStr,
 ) -> std::result::Result<*mut crate::ClassWithPassword, crate::ffi::MyError> {
@@ -37,12 +62,9 @@ pub(crate) unsafe fn get_special_value_from_class(
     }
 }
 
-pub(crate) unsafe fn destroy_class_with_password(instance: *mut crate::ClassWithPassword) -> Result<(), crate::ffi::MyError> {
+pub(crate) unsafe fn destroy_class_with_password(instance: *mut crate::ClassWithPassword) {
     if !instance.is_null() {
         Box::from_raw(instance);
-        Ok(())
-    } else {
-        Err(crate::ffi::MyError::NullArgument)
     }
 }
 

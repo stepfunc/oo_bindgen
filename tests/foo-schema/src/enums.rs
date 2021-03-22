@@ -72,8 +72,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     // Declare static class
-    let class = lib.declare_class("EnumEchoFunctions")?;
-    lib.define_class(&class)?
+    lib.define_static_class("EnumEchoFunctions")?
         .static_method("EnumZeroToFiveEcho", &enum_zero_to_five_echo_function)?
         .static_method("EnumOneToSixEcho", &enum_one_to_six_echo_function)?
         .static_method("EnumDisjointEcho", &enum_disjoint_echo_function)?

@@ -348,8 +348,9 @@ impl<'a> RustCodegen<'a> {
                 .join(", "),
         )?;
 
-        fn write_error_return(f: &mut dyn Printer, error: &ErrorType) -> FormattingResult<()> {
-            f.write(&format!(") -> {}", error.inner.name.to_camel_case()))
+        fn write_error_return(f: &mut dyn Printer, _error: &ErrorType) -> FormattingResult<()> {
+            f.write(") -> std::os::raw::c_int")
+            //f.write(&format!(") -> {}", error.inner.name.to_camel_case()))
         }
 
         // write the return type
@@ -396,7 +397,8 @@ impl<'a> RustCodegen<'a> {
                         basic_invocation(f, &handle.name)?;
                     }
                 }
-                NativeFunctionType::ErrorWithReturn(_, _, _) | NativeFunctionType::ErrorNoReturn(_) => {
+                NativeFunctionType::ErrorWithReturn(_, _, _)
+                | NativeFunctionType::ErrorNoReturn(_) => {
                     f.writeln(&format!("match crate::{}(", &handle.name))?;
                 }
             }
@@ -421,23 +423,29 @@ impl<'a> RustCodegen<'a> {
                 }
                 NativeFunctionType::ErrorNoReturn(err) => {
                     blocked(f, |f| {
+                        let converter = EnumConverter(err.inner.clone());
                         f.writeln("Ok(()) =>")?;
                         blocked(f, |f| {
-                            f.writeln(&format!("{}::Ok", err.inner.name))
+                            converter.convert_to_c(f, &format!("{}::Ok", err.inner.name), "")
                         })?;
                         f.writeln("Err(err) =>")?;
-                        blocked(f, |f| f.writeln("err"))
+                        blocked(f, |f| converter.convert_to_c(f, "err", ""))
                     })?;
                 }
-                NativeFunctionType::ErrorWithReturn(err, _, _)  => {
+                NativeFunctionType::ErrorWithReturn(err, result_type, _) => {
                     blocked(f, |f| {
+                        let converter = EnumConverter(err.inner.clone());
                         f.writeln("Ok(x) =>")?;
                         blocked(f, |f| {
+                            if let Some(converter) = result_type.conversion() {
+                                converter.convert_to_c(f, "x", "let x = ")?;
+                                f.write(";")?;
+                            }
                             f.writeln("out.write(x);")?;
-                            f.writeln(&format!("{}::Ok", err.inner.name))
+                            converter.convert_to_c(f, &format!("{}::Ok", err.inner.name), "")
                         })?;
                         f.writeln("Err(err) =>")?;
-                        blocked(f, |f| f.writeln("err"))
+                        blocked(f, |f| converter.convert_to_c(f, "err", ""))
                     })?;
                 }
             }

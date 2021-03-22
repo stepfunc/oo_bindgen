@@ -14,6 +14,7 @@ mod constant;
 mod conversion;
 mod doc;
 mod enumeration;
+mod exception;
 mod formatting;
 mod interface;
 mod structure;
@@ -55,6 +56,7 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
 
     // Generate the user-facing stuff
     generate_constants(lib, config)?;
+    generate_exceptions(lib, config)?;
     generate_structs(lib, config)?;
     generate_enums(lib, config)?;
     generate_classes(lib, config)?;
@@ -222,6 +224,15 @@ fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingRe
     Ok(())
 }
 
+fn generate_exceptions(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+    for error in lib.error_types() {
+        let mut f = create_file(&error.exception_name.to_camel_case(), config, lib)?;
+        exception::generate(&mut f, error, lib)?;
+    }
+
+    Ok(())
+}
+
 fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for native_struct in lib.structs() {
         let mut f = create_file(&native_struct.name().to_camel_case(), config, lib)?;
@@ -244,6 +255,11 @@ fn generate_classes(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
     for class in lib.classes() {
         let mut f = create_file(&class.name().to_camel_case(), config, lib)?;
         class::generate(&mut f, class, lib)?;
+    }
+
+    for class in lib.static_classes() {
+        let mut f = create_file(&class.name.to_camel_case(), config, lib)?;
+        class::generate_static(&mut f, class, lib)?;
     }
 
     Ok(())

@@ -9,6 +9,7 @@ use std::fs;
 mod classes;
 mod conversion;
 mod enums;
+mod exceptions;
 mod formatting;
 mod interface;
 mod structs;
@@ -37,6 +38,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     enums::generate_enums_cache(lib, config)?;
     structs::generate_structs_cache(lib, config)?;
     interface::generate_interfaces_cache(lib, config)?;
+    exceptions::generate_exceptions_cache(lib, config)?;
 
     // Copy the modules that never changes
     filename.set_file_name("primitives.rs");
@@ -105,6 +107,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod collection;")?;
     f.writeln("mod structs;")?;
     f.writeln("mod interfaces;")?;
+    f.writeln("mod exceptions;")?;
 
     // Create cache
     f.writeln("struct JCache")?;
@@ -118,6 +121,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("enums: enums::Enums,")?;
         f.writeln("structs: structs::Structs,")?;
         f.writeln("interfaces: interfaces::Interfaces,")?;
+        f.writeln("exceptions: exceptions::Exceptions,")?;
         Ok(())
     })?;
 
@@ -136,6 +140,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             f.writeln("let enums = enums::Enums::init(&env);")?;
             f.writeln("let structs = structs::Structs::init(&env);")?;
             f.writeln("let interfaces = interfaces::Interfaces::init(&env);")?;
+            f.writeln("let exceptions = exceptions::Exceptions::init(&env);")?;
             f.writeln("Self")?;
             blocked(f, |f| {
                 f.writeln("vm,")?;
@@ -147,6 +152,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
                 f.writeln("enums,")?;
                 f.writeln("structs,")?;
                 f.writeln("interfaces,")?;
+                f.writeln("exceptions,")?;
                 Ok(())
             })
         })
@@ -265,6 +271,8 @@ fn generate_functions(
                 Ok(())
             })?;
 
+            f.newline()?;
+
             // Perform the conversion of the parameters
             for param in &handle.parameters {
                 if let Some(conversion) = param.param_type.conversion(&config.ffi_name) {
@@ -277,12 +285,29 @@ fn generate_functions(
                 }
             }
 
+            f.newline()?;
+
             // Call the C FFI
-            if !handle.return_type.is_void() {
-                f.writeln("let _result = ")?;
-            } else {
-                f.newline()?;
-            }
+            let extra_param = match handle.get_type() {
+                NativeFunctionType::NoErrorNoReturn => {
+                    f.newline()?;
+                    None
+                }
+                NativeFunctionType::NoErrorWithReturn(_, _) => {
+                    f.writeln("let _result = ")?;
+                    None
+                }
+                NativeFunctionType::ErrorNoReturn(_) => {
+                    f.writeln("let _result = ")?;
+                    None
+                }
+                NativeFunctionType::ErrorWithReturn(_, _, _) => {
+                    f.writeln("let mut _out = std::mem::MaybeUninit::uninit();")?;
+                    f.writeln("let _result = ")?;
+                    Some("_out.as_mut_ptr()".to_string())
+                }
+            };
+
             f.write(&format!(
                 "unsafe {{ {}::ffi::{}(",
                 config.ffi_name, handle.name
@@ -298,18 +323,66 @@ fn generate_functions(
                             param.name.to_snake_case()
                         }
                     })
+                    .chain(extra_param.into_iter())
                     .collect::<Vec<String>>()
                     .join(", "),
             )?;
             f.write(") };")?;
 
+            f.newline()?;
+
             // Convert return value
-            if let ReturnType::Type(return_type, _) = &handle.return_type {
-                if let Some(conversion) = return_type.conversion(&config.ffi_name) {
-                    conversion.convert_from_rust(f, "_result", "let _result = ")?;
+            match handle.get_type() {
+                NativeFunctionType::NoErrorNoReturn => (),
+                NativeFunctionType::NoErrorWithReturn(return_type, _) => {
+                    if let Some(conversion) = return_type.conversion(&config.ffi_name) {
+                        conversion.convert_from_rust(f, "_result", "let _result = ")?;
+                        f.write(";")?;
+                    }
+                }
+                NativeFunctionType::ErrorNoReturn(error_type) => {
+                    f.writeln("if _result != 0")?;
+                    blocked(f, |f| {
+                        EnumConverter(error_type.inner).convert_from_rust(
+                            f,
+                            "_result",
+                            "let _error = ",
+                        )?;
+                        f.write(";")?;
+                        f.writeln(&format!(
+                            "let error = _cache.exceptions.throw_{}(&_env, _error);",
+                            error_type.exception_name.to_snake_case()
+                        ))
+                    })?;
+                }
+                NativeFunctionType::ErrorWithReturn(error_type, return_type, _) => {
+                    f.writeln("let _result = if _result == 0")?;
+                    blocked(f, |f| {
+                        f.writeln("let _result = unsafe { _out.assume_init() };")?;
+                        if let Some(conversion) = return_type.conversion(&config.ffi_name) {
+                            conversion.convert_from_rust(f, "_result", "")?;
+                        }
+                        Ok(())
+                    })?;
+                    f.writeln("else")?;
+                    blocked(f, |f| {
+                        EnumConverter(error_type.inner).convert_from_rust(
+                            f,
+                            "_result",
+                            "let _error = ",
+                        )?;
+                        f.write(";")?;
+                        f.writeln(&format!(
+                            "let error = _cache.exceptions.throw_{}(&_env, _error);",
+                            error_type.exception_name.to_snake_case()
+                        ))?;
+                        f.writeln(return_type.default_value())
+                    })?;
                     f.write(";")?;
                 }
             }
+
+            f.newline()?;
 
             // Conversion cleanup
             for param in &handle.parameters {
@@ -325,6 +398,8 @@ fn generate_functions(
                     ))?;
                 }
             }
+
+            f.newline()?;
 
             // Return value
             if !handle.return_type.is_void() {

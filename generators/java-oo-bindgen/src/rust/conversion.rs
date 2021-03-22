@@ -558,7 +558,7 @@ impl TypeConverter for StructRefConverter {
     }
 }
 
-struct EnumConverter(NativeEnumHandle);
+pub(crate) struct EnumConverter(pub(crate) NativeEnumHandle);
 impl TypeConverter for EnumConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(

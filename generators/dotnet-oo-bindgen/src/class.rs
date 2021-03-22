@@ -19,40 +19,35 @@ pub(crate) fn generate(
             xmldoc_print(f, &class.doc, lib)
         })?;
 
-        let class_type = if class.is_static() {
-            "static"
-        } else {
-            "sealed"
-        };
-
-        f.writeln(&format!("public {} class {}", class_type, classname))?;
+        f.writeln(&format!("public sealed class {}", classname))?;
         if class.destructor.is_some() {
             f.write(": IDisposable")?;
         }
 
         blocked(f, |f| {
-            if !class.is_static() {
-                f.writeln("internal readonly IntPtr self;")?;
-                if class.destructor.is_some() {
-                    f.writeln("private bool disposed = false;")?;
-                }
-                f.newline()?;
-
-                f.writeln(&format!("internal {}(IntPtr self)", classname))?;
-                blocked(f, |f| f.writeln("this.self = self;"))?;
-                f.newline()?;
-
-                f.writeln(&format!("internal static {} FromNative(IntPtr self)", classname))?;
-                blocked(f, |f| {
-                    f.writeln(&format!("{} result = null;", classname))?;
-                    f.writeln("if (self != IntPtr.Zero)")?;
-                    blocked(f, |f| {
-                        f.writeln(&format!("result = new {}(self);", classname))
-                    })?;
-                    f.writeln("return result;")
-                })?;
-                f.newline()?;
+            f.writeln("internal readonly IntPtr self;")?;
+            if class.destructor.is_some() {
+                f.writeln("private bool disposed = false;")?;
             }
+            f.newline()?;
+
+            f.writeln(&format!("internal {}(IntPtr self)", classname))?;
+            blocked(f, |f| f.writeln("this.self = self;"))?;
+            f.newline()?;
+
+            f.writeln(&format!(
+                "internal static {} FromNative(IntPtr self)",
+                classname
+            ))?;
+            blocked(f, |f| {
+                f.writeln(&format!("{} result = null;", classname))?;
+                f.writeln("if (self != IntPtr.Zero)")?;
+                blocked(f, |f| {
+                    f.writeln(&format!("result = new {}(self);", classname))
+                })?;
+                f.writeln("return result;")
+            })?;
+            f.newline()?;
 
             if let Some(constructor) = &class.constructor {
                 generate_constructor(f, &classname, constructor, lib)?;
@@ -74,6 +69,36 @@ pub(crate) fn generate(
                 f.newline()?;
             }
 
+            for method in &class.static_methods {
+                generate_static_method(f, method, lib)?;
+                f.newline()?;
+            }
+
+            Ok(())
+        })
+    })
+}
+
+pub(crate) fn generate_static(
+    f: &mut dyn Printer,
+    class: &StaticClassHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
+    let classname = class.name.to_camel_case();
+
+    print_license(f, &lib.license)?;
+    print_imports(f)?;
+    f.newline()?;
+
+    namespaced(f, &lib.name, |f| {
+        documentation(f, |f| {
+            // Print top-level documentation
+            xmldoc_print(f, &class.doc, lib)
+        })?;
+
+        f.writeln(&format!("public static class {}", classname))?;
+
+        blocked(f, |f| {
             for method in &class.static_methods {
                 generate_static_method(f, method, lib)?;
                 f.newline()?;
@@ -111,7 +136,10 @@ fn generate_constructor(
 
         // Print exception
         if let Some(error) = &constructor.error_type {
-            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+            f.writeln(&format!(
+                "<exception cref=\"{}\" />",
+                error.exception_name.to_camel_case()
+            ))?;
         }
 
         Ok(())
@@ -199,7 +227,10 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
 
         // Print exception
         if let Some(error) = &method.native_function.error_type {
-            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+            f.writeln(&format!(
+                "<exception cref=\"{}\" />",
+                error.exception_name.to_camel_case()
+            ))?;
         }
 
         Ok(())
@@ -265,7 +296,10 @@ fn generate_static_method(
 
         // Print exception
         if let Some(error) = &method.native_function.error_type {
-            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+            f.writeln(&format!(
+                "<exception cref=\"{}\" />",
+                error.exception_name.to_camel_case()
+            ))?;
         }
 
         Ok(())
@@ -361,7 +395,10 @@ fn generate_async_method(
 
         // Print exception
         if let Some(error) = &method.native_function.error_type {
-            f.writeln(&format!("<exception cref=\"{}\" />", error.exception_name.to_camel_case()))?;
+            f.writeln(&format!(
+                "<exception cref=\"{}\" />",
+                error.exception_name.to_camel_case()
+            ))?;
         }
 
         Ok(())

@@ -30,6 +30,12 @@ impl Iterator {
             }
         }
 
+        if native_func.error_type.is_some() {
+            return Err(BindingError::IteratorFunctionsCannotFail {
+                handle: native_func.clone(),
+            });
+        }
+
         let mut iter = native_func.parameters.iter();
         if let Some(param) = iter.next() {
             if let Type::ClassRef(iter_type) = &param.param_type {

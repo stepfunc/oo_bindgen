@@ -54,10 +54,6 @@ impl Class {
         self.declaration.clone()
     }
 
-    pub fn is_static(&self) -> bool {
-        self.constructor.is_none() && self.destructor.is_none() && self.methods.is_empty()
-    }
-
     pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&NativeFunctionHandle> {
         for method in &self.methods {
             if method.name == method_name.as_ref() {
@@ -149,6 +145,12 @@ impl<'a> ClassBuilder<'a> {
         }
         self.lib.validate_native_function(native_function)?;
         self.validate_first_param(native_function)?;
+
+        if native_function.error_type.is_some() {
+            return Err(BindingError::DestructorCannotFail {
+                handle: self.declaration,
+            });
+        }
 
         if native_function.parameters.len() != 1 {
             return Err(BindingError::DestructorTakesMoreThanOneParameter {
@@ -313,5 +315,84 @@ impl<'a> ClassBuilder<'a> {
             handle: self.declaration.clone(),
             native_func: native_function.clone(),
         })
+    }
+}
+
+/// Static class definition
+#[derive(Debug)]
+pub struct StaticClass {
+    pub name: String,
+    pub static_methods: Vec<Method>,
+    pub doc: Doc,
+}
+
+pub type StaticClassHandle = Handle<StaticClass>;
+
+pub struct StaticClassBuilder<'a> {
+    lib: &'a mut LibraryBuilder,
+    name: String,
+    static_methods: Vec<Method>,
+    doc: Option<Doc>,
+}
+
+impl<'a> StaticClassBuilder<'a> {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
+        Self {
+            lib,
+            name,
+            static_methods: Vec::new(),
+            doc: None,
+        }
+    }
+
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+        match self.doc {
+            None => {
+                self.doc = Some(doc.into());
+                Ok(self)
+            }
+            Some(_) => Err(BindingError::DocAlreadyDefined {
+                symbol_name: self.name,
+            }),
+        }
+    }
+
+    pub fn static_method<T: Into<String>>(
+        mut self,
+        name: T,
+        native_function: &NativeFunctionHandle,
+    ) -> Result<Self> {
+        self.lib.validate_native_function(native_function)?;
+
+        self.static_methods.push(Method {
+            name: name.into(),
+            native_function: native_function.clone(),
+        });
+
+        Ok(self)
+    }
+
+    pub fn build(self) -> Result<StaticClassHandle> {
+        let doc = match self.doc {
+            Some(doc) => doc,
+            None => {
+                return Err(BindingError::DocNotDefined {
+                    symbol_name: self.name.clone(),
+                })
+            }
+        };
+
+        let handle = StaticClassHandle::new(StaticClass {
+            name: self.name,
+            static_methods: self.static_methods,
+            doc,
+        });
+
+        self.lib.static_classes.insert(handle.clone());
+        self.lib
+            .statements
+            .push(Statement::StaticClassDefinition(handle.clone()));
+
+        Ok(handle)
     }
 }

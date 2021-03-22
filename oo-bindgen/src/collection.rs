@@ -28,6 +28,12 @@ impl Collection {
             });
         };
 
+        if create_func.error_type.is_some() {
+            return Err(BindingError::CollectionFunctionsCannotFail {
+                handle: create_func.clone(),
+            });
+        }
+
         let mut iter = create_func.parameters.iter();
         let has_reserve = if let Some(param) = iter.next() {
             if param.param_type != Type::Uint32 {
@@ -73,6 +79,12 @@ impl Collection {
             });
         }
 
+        if delete_func.error_type.is_some() {
+            return Err(BindingError::CollectionFunctionsCannotFail {
+                handle: delete_func.clone(),
+            });
+        }
+
         // Validate add function
         let mut iter = add_func.parameters.iter();
         let item_type = if let Some(param) = iter.next() {
@@ -108,6 +120,12 @@ impl Collection {
                 handle: add_func.clone(),
             });
         };
+
+        if add_func.error_type.is_some() {
+            return Err(BindingError::CollectionFunctionsCannotFail {
+                handle: add_func.clone(),
+            });
+        }
 
         Ok(Collection {
             create_func: create_func.clone(),

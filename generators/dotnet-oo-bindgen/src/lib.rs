@@ -120,6 +120,7 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("<Project Sdk=\"Microsoft.NET.Sdk\">")?;
     f.writeln("  <PropertyGroup>")?;
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
+    f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
     f.writeln(&format!(
         "    <Version>{}</Version>",
         lib.version.to_string()
@@ -327,6 +328,16 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
         let mut f = FilePrinter::new(filename)?;
 
         class::generate(&mut f, class, lib)?;
+    }
+
+    for class in lib.static_classes() {
+        // Open file
+        let mut filename = config.output_dir.clone();
+        filename.push(&class.name);
+        filename.set_extension("cs");
+        let mut f = FilePrinter::new(filename)?;
+
+        class::generate_static(&mut f, class, lib)?;
     }
 
     Ok(())

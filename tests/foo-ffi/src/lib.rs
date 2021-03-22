@@ -18,7 +18,7 @@ pub use class::*;
 pub use collection::*;
 pub use duration::*;
 pub use enums::*;
-pub(crate) use error::*;
+pub use error::*;
 pub use integer::*;
 pub use iterator::*;
 pub use lifetime::*;

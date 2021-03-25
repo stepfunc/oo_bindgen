@@ -343,13 +343,17 @@ fn write_struct_definition(
                     StructElementType::OneTimeCallback(_) => None,
                     StructElementType::Iterator(_) => None,
                     StructElementType::Collection(_) => None,
-                    StructElementType::Duration(_, default) => {
-                        default.map(|x| format!("{}s", x.as_secs_f32()))
+                    StructElementType::Duration(mapping, default) => {
+                        default.map(|x| mapping.get_value_string(x))
                     }
                 };
 
                 if let Some(default_value) = default_value {
                     f.writeln(&format!("@note Default value is {}", default_value))?;
+                }
+
+                if let StructElementType::Duration(mapping, _) = &element.element_type {
+                    f.writeln(&format!("@note The unit is {}", mapping.unit()))?;
                 }
 
                 Ok(())

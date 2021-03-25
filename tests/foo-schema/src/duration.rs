@@ -8,13 +8,13 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .param(
             "value",
             Type::Duration(DurationMapping::Milliseconds),
-            "Duration (in milliseconds)",
+            "Duration",
         )?
         .return_type(ReturnType::new(
             Type::Duration(DurationMapping::Milliseconds),
-            "Duration (in milliseconds)",
+            "Duration",
         ))?
-        .doc("Echo duration through count of milliseconds")?
+        .doc("Echo duration as count of milliseconds")?
         .build()?;
 
     let duration_s_echo_func = lib
@@ -22,13 +22,13 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .param(
             "value",
             Type::Duration(DurationMapping::Seconds),
-            "Duration (in seconds)",
+            "Duration",
         )?
         .return_type(ReturnType::new(
             Type::Duration(DurationMapping::Seconds),
-            "Duration (in seconds)",
+            "Duration",
         ))?
-        .doc("Echo duration through count of seconds")?
+        .doc("Echo duration as count of seconds")?
         .build()?;
 
     let duration_s_float_echo_func = lib
@@ -36,13 +36,13 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .param(
             "value",
             Type::Duration(DurationMapping::SecondsFloat),
-            "Duration (in seconds)",
+            "Duration",
         )?
         .return_type(ReturnType::new(
             Type::Duration(DurationMapping::SecondsFloat),
-            "Duration (in seconds)",
+            "Duration",
         ))?
-        .doc("Echo duration through floating point (in seconds)")?
+        .doc("Echo duration as fractional seconds")?
         .build()?;
 
     // Declare static class

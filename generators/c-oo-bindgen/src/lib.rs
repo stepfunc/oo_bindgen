@@ -595,6 +595,9 @@ fn write_function_docs(
         for param in &handle.parameters {
             f.writeln(&format!("@param {} ", param.name))?;
             docstring_print(f, &param.doc, lib)?;
+            if let Type::Duration(mapping) = param.param_type {
+                f.write(&format!(" ({})", mapping.unit()))?;
+            }
         }
 
         fn write_error_return_doc(f: &mut dyn Printer) -> FormattingResult<()> {
@@ -603,16 +606,22 @@ fn write_function_docs(
 
         match handle.get_type() {
             NativeFunctionType::NoErrorNoReturn => {}
-            NativeFunctionType::NoErrorWithReturn(_, doc) => {
+            NativeFunctionType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
+                if let Type::Duration(mapping) = ret {
+                    f.write(&format!(" ({})", mapping.unit()))?;
+                }
             }
             NativeFunctionType::ErrorNoReturn(_) => {
                 write_error_return_doc(f)?;
             }
-            NativeFunctionType::ErrorWithReturn(_, _, doc) => {
+            NativeFunctionType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
+                if let Type::Duration(mapping) = ret {
+                    f.write(&format!(" ({})", mapping.unit()))?;
+                }
                 write_error_return_doc(f)?;
             }
         }

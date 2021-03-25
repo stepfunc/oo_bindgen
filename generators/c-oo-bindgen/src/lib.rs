@@ -343,13 +343,17 @@ fn write_struct_definition(
                     StructElementType::OneTimeCallback(_) => None,
                     StructElementType::Iterator(_) => None,
                     StructElementType::Collection(_) => None,
-                    StructElementType::Duration(_, default) => {
-                        default.map(|x| format!("{}s", x.as_secs_f32()))
+                    StructElementType::Duration(mapping, default) => {
+                        default.map(|x| mapping.get_value_string(x))
                     }
                 };
 
                 if let Some(default_value) = default_value {
                     f.writeln(&format!("@note Default value is {}", default_value))?;
+                }
+
+                if let StructElementType::Duration(mapping, _) = &element.element_type {
+                    f.writeln(&format!("@note The unit is {}", mapping.unit()))?;
                 }
 
                 Ok(())
@@ -591,6 +595,9 @@ fn write_function_docs(
         for param in &handle.parameters {
             f.writeln(&format!("@param {} ", param.name))?;
             docstring_print(f, &param.doc, lib)?;
+            if let Type::Duration(mapping) = param.param_type {
+                f.write(&format!(" ({})", mapping.unit()))?;
+            }
         }
 
         fn write_error_return_doc(f: &mut dyn Printer) -> FormattingResult<()> {
@@ -599,16 +606,22 @@ fn write_function_docs(
 
         match handle.get_type() {
             NativeFunctionType::NoErrorNoReturn => {}
-            NativeFunctionType::NoErrorWithReturn(_, doc) => {
+            NativeFunctionType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
+                if let Type::Duration(mapping) = ret {
+                    f.write(&format!(" ({})", mapping.unit()))?;
+                }
             }
             NativeFunctionType::ErrorNoReturn(_) => {
                 write_error_return_doc(f)?;
             }
-            NativeFunctionType::ErrorWithReturn(_, _, doc) => {
+            NativeFunctionType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
+                if let Type::Duration(mapping) = ret {
+                    f.write(&format!(" ({})", mapping.unit()))?;
+                }
                 write_error_return_doc(f)?;
             }
         }

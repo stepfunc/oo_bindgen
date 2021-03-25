@@ -2,6 +2,7 @@ use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::*;
+use std::time::Duration;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
@@ -40,6 +41,30 @@ pub enum DurationMapping {
     Seconds,
     // Duration is the number of seconds and fractional part in a f32 value
     SecondsFloat,
+}
+
+impl DurationMapping {
+    pub fn unit(&self) -> &'static str {
+        match self {
+            DurationMapping::Milliseconds => "milliseconds",
+            DurationMapping::Seconds => "seconds",
+            DurationMapping::SecondsFloat => "fractional seconds",
+        }
+    }
+
+    pub fn get_value_string(&self, duration: Duration) -> String {
+        match self {
+            DurationMapping::Milliseconds => {
+                format!("{}", duration.as_millis())
+            }
+            DurationMapping::Seconds => {
+                format!("{}", duration.as_secs())
+            }
+            DurationMapping::SecondsFloat => {
+                format!("{}", duration.as_secs_f32())
+            }
+        }
+    }
 }
 
 #[derive(Debug)]

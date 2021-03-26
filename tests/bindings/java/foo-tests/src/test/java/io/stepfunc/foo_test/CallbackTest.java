@@ -2,7 +2,6 @@ package io.stepfunc.foo_test;
 
 import io.stepfunc.foo.CallbackInterface;
 import io.stepfunc.foo.CallbackSource;
-import io.stepfunc.foo.OneTimeCallbackInterface;
 import org.assertj.core.data.Percentage;
 import org.joou.UInteger;
 import org.junit.jupiter.api.Test;
@@ -31,16 +30,6 @@ public class CallbackTest {
         }
     }
 
-    static class OneTimeCallbackImpl implements OneTimeCallbackInterface {
-        public UInteger lastValue = uint(0);
-
-        @Override
-        public UInteger onValue(UInteger value) {
-            this.lastValue = value;
-            return value;
-        }
-    }
-
     @Test
     public void InterfaceAndOneTimeCallbackTest() {
         try(CallbackSource cbSource = new CallbackSource()) {
@@ -54,10 +43,6 @@ public class CallbackTest {
             assertThat(cb.lastDuration).isNull();
             assertThat(cbSource.setDuration(Duration.ofSeconds(76))).isEqualTo(Duration.ofSeconds(76));
             assertThat(cb.lastDuration).isEqualTo(Duration.ofSeconds(76));
-
-            OneTimeCallbackImpl oneTimeCb = new OneTimeCallbackImpl();
-            assertThat(cbSource.callOneTime(oneTimeCb)).isEqualTo(uint(76));
-            assertThat(oneTimeCb.lastValue).isEqualTo(uint(76));
         }
     }
 

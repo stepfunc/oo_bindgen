@@ -15,7 +15,6 @@ jobs:
         rust:
           - stable
           - beta
-          - nightly
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -100,7 +99,7 @@ jobs:
       - name: Build
         uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: build
           args: --release
       - name: C bindings
         uses: actions-rs/cargo@v1

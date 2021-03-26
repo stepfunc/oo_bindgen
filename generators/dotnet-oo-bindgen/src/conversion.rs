@@ -34,7 +34,6 @@ impl DotnetType for Type {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => format!("I{}", handle.name.to_camel_case()),
-            Type::OneTimeCallback(handle) => format!("I{}", handle.name.to_camel_case()),
             Type::Iterator(handle) => format!(
                 "System.Collections.Generic.ICollection<{}>",
                 handle.item_type.name().to_camel_case()
@@ -67,9 +66,6 @@ impl DotnetType for Type {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(_) => "IntPtr".to_string(),
             Type::Interface(handle) => format!("I{}NativeAdapter", handle.name.to_camel_case()),
-            Type::OneTimeCallback(handle) => {
-                format!("I{}NativeAdapter", handle.name.to_camel_case())
-            }
             Type::Iterator(_) => "IntPtr".to_string(),
             Type::Collection(_) => "IntPtr".to_string(),
             Type::Duration(mapping) => match mapping {
@@ -106,11 +102,6 @@ impl DotnetType for Type {
             Type::Enum(_) => None,
             Type::ClassRef(_) => Some(format!("{}.self", from)),
             Type::Interface(handle) => Some(format!(
-                "new I{}NativeAdapter({})",
-                handle.name.to_camel_case(),
-                from
-            )),
-            Type::OneTimeCallback(handle) => Some(format!(
                 "new I{}NativeAdapter({})",
                 handle.name.to_camel_case(),
                 from
@@ -152,7 +143,6 @@ impl DotnetType for Type {
             Type::Enum(_) => None,
             Type::ClassRef(_) => None,
             Type::Interface(_) => None,
-            Type::OneTimeCallback(_) => None,
             Type::Iterator(_) => None,
             Type::Collection(handle) => Some(format!(
                 "{}Helpers.Cleanup({});",
@@ -194,12 +184,6 @@ impl DotnetType for Type {
                 from
             )),
             Type::Interface(handle) => Some(format!(
-                "I{}NativeAdapter.FromNative({}.{})",
-                handle.name.to_camel_case(),
-                from,
-                handle.arg_name.to_mixed_case()
-            )),
-            Type::OneTimeCallback(handle) => Some(format!(
                 "I{}NativeAdapter.FromNative({}.{})",
                 handle.name.to_camel_case(),
                 from,

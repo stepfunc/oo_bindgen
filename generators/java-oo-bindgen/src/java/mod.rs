@@ -8,7 +8,6 @@ use oo_bindgen::platforms::Platform;
 use oo_bindgen::*;
 use std::fs;
 
-mod callback;
 mod class;
 mod constant;
 mod conversion;
@@ -61,7 +60,6 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     generate_enums(lib, config)?;
     generate_classes(lib, config)?;
     generate_interfaces(lib, config)?;
-    generate_callbacks(lib, config)?;
 
     Ok(())
 }
@@ -269,15 +267,6 @@ fn generate_interfaces(lib: &Library, config: &JavaBindgenConfig) -> FormattingR
     for interface in lib.interfaces() {
         let mut f = create_file(&interface.name.to_camel_case(), config, lib)?;
         interface::generate(&mut f, interface, lib)?;
-    }
-
-    Ok(())
-}
-
-fn generate_callbacks(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for callback in lib.one_time_callbacks() {
-        let mut f = create_file(&callback.name.to_camel_case(), config, lib)?;
-        callback::generate(&mut f, callback, lib)?;
     }
 
     Ok(())

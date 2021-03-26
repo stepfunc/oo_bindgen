@@ -91,7 +91,7 @@ impl<'a> InterfaceBuilder<'a> {
         mut self,
         name: T,
         doc: D,
-    ) -> Result<CallbackFunctionBuilder<Self>> {
+    ) -> Result<CallbackFunctionBuilder<'a>> {
         let name = name.into();
         self.check_unique_name(&name)?;
         Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
@@ -169,149 +169,8 @@ impl<'a> InterfaceBuilder<'a> {
     }
 }
 
-#[derive(Debug)]
-pub enum OneTimeCallbackElement {
-    Arg(String),
-    CallbackFunction(CallbackFunction),
-}
-
-#[derive(Debug)]
-pub struct OneTimeCallback {
-    pub name: String,
-    pub elements: Vec<OneTimeCallbackElement>,
-    pub arg_name: String,
-    pub doc: Doc,
-}
-
-impl OneTimeCallback {
-    pub fn callbacks(&self) -> impl Iterator<Item = &CallbackFunction> {
-        self.elements.iter().filter_map(|el| match el {
-            OneTimeCallbackElement::CallbackFunction(cb) => Some(cb),
-            _ => None,
-        })
-    }
-
-    pub fn find_callback<T: AsRef<str>>(&self, name: T) -> Option<&CallbackFunction> {
-        self.callbacks()
-            .find(|callback| callback.name == name.as_ref())
-    }
-
-    pub fn is_functional(&self) -> bool {
-        self.callbacks().count() == 1
-    }
-}
-
-pub type OneTimeCallbackHandle = Handle<OneTimeCallback>;
-
-pub struct OneTimeCallbackBuilder<'a> {
-    lib: &'a mut LibraryBuilder,
-    name: String,
-    elements: Vec<OneTimeCallbackElement>,
-    element_names: HashSet<String>,
-    arg_name: Option<String>,
-    doc: Doc,
-}
-
-impl<'a> OneTimeCallbackBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String, doc: Doc) -> Self {
-        Self {
-            lib,
-            name,
-            elements: Vec::new(),
-            element_names: HashSet::new(),
-            arg_name: None,
-            doc,
-        }
-    }
-
-    pub fn callback<T: Into<String>, D: Into<Doc>>(
-        mut self,
-        name: T,
-        doc: D,
-    ) -> Result<CallbackFunctionBuilder<Self>> {
-        let name = name.into();
-        self.check_unique_name(&name)?;
-        Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
-    }
-
-    pub fn ctx<T: Into<String>>(mut self, name: T) -> Result<Self> {
-        match self.arg_name {
-            None => {
-                let name = name.into();
-                self.check_unique_name(&name)?;
-                self.arg_name = Some(name.to_string());
-                self.elements.push(OneTimeCallbackElement::Arg(name));
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
-                interface_name: self.name,
-            }),
-        }
-    }
-
-    pub fn build(mut self) -> Result<OneTimeCallbackHandle> {
-        let arg_name = if let Some(arg_name) = self.arg_name {
-            arg_name
-        } else {
-            self = self.ctx(DEFAULT_CTX_NAME)?;
-            DEFAULT_CTX_NAME.to_string()
-        };
-
-        let handle = OneTimeCallbackHandle::new(OneTimeCallback {
-            name: self.name,
-            elements: self.elements,
-            arg_name,
-            doc: self.doc,
-        });
-
-        self.lib.one_time_callbacks.insert(handle.clone());
-        self.lib
-            .statements
-            .push(Statement::OneTimeCallbackDefinition(handle.clone()));
-
-        Ok(handle)
-    }
-
-    fn check_unique_name(&mut self, name: &str) -> Result<()> {
-        if self.element_names.insert(name.to_string()) {
-            Ok(())
-        } else {
-            Err(BindingError::InterfaceHasElementWithSameName {
-                interface_name: self.name.clone(),
-                element_name: name.to_string(),
-            })
-        }
-    }
-}
-
-pub trait CallbackFunctionBuilderTarget {
-    fn lib(&mut self) -> &mut LibraryBuilder;
-    fn push_callback(&mut self, cb: CallbackFunction);
-}
-
-impl<'a> CallbackFunctionBuilderTarget for InterfaceBuilder<'a> {
-    fn lib(&mut self) -> &mut LibraryBuilder {
-        self.lib
-    }
-
-    fn push_callback(&mut self, cb: CallbackFunction) {
-        self.elements.push(InterfaceElement::CallbackFunction(cb));
-    }
-}
-
-impl<'a> CallbackFunctionBuilderTarget for OneTimeCallbackBuilder<'a> {
-    fn lib(&mut self) -> &mut LibraryBuilder {
-        self.lib
-    }
-
-    fn push_callback(&mut self, cb: CallbackFunction) {
-        self.elements
-            .push(OneTimeCallbackElement::CallbackFunction(cb));
-    }
-}
-
-pub struct CallbackFunctionBuilder<T: CallbackFunctionBuilderTarget> {
-    target: T,
+pub struct CallbackFunctionBuilder<'a> {
+    builder: InterfaceBuilder<'a>,
     name: String,
     return_type: Option<ReturnType>,
     params: Vec<CallbackParameter>,
@@ -319,10 +178,10 @@ pub struct CallbackFunctionBuilder<T: CallbackFunctionBuilderTarget> {
     doc: Doc,
 }
 
-impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
-    pub(crate) fn new(target: T, name: String, doc: Doc) -> Self {
+impl<'a> CallbackFunctionBuilder<'a> {
+    pub(crate) fn new(builder: InterfaceBuilder<'a>, name: String, doc: Doc) -> Self {
         Self {
-            target,
+            builder,
             name,
             return_type: None,
             params: Vec::new(),
@@ -337,7 +196,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
         param_type: Type,
         doc: D,
     ) -> Result<Self> {
-        self.target.lib().validate_type(&param_type)?;
+        self.builder.lib.validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.into(),
             param_type,
@@ -373,7 +232,7 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
         }
     }
 
-    pub fn build(mut self) -> Result<T> {
+    pub fn build(mut self) -> Result<InterfaceBuilder<'a>> {
         let arg_name = if let Some(arg_name) = self.arg_name {
             arg_name
         } else {
@@ -393,7 +252,9 @@ impl<T: CallbackFunctionBuilderTarget> CallbackFunctionBuilder<T> {
             doc: self.doc,
         };
 
-        self.target.push_callback(cb);
-        Ok(self.target)
+        self.builder
+            .elements
+            .push(InterfaceElement::CallbackFunction(cb));
+        Ok(self.builder)
     }
 }

@@ -100,12 +100,6 @@ impl CFormatting for Interface {
     }
 }
 
-impl CFormatting for OneTimeCallbackHandle {
-    fn to_c_type(&self) -> String {
-        format!("{}_t", self.name.to_snake_case())
-    }
-}
-
 impl CFormatting for Symbol {
     fn to_c_type(&self) -> String {
         match self {
@@ -115,7 +109,6 @@ impl CFormatting for Symbol {
             Symbol::Class(handle) => handle.declaration().to_c_type(),
             Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
             Symbol::Interface(handle) => handle.to_c_type(),
-            Symbol::OneTimeCallback(handle) => handle.to_c_type(),
             Symbol::Iterator(handle) => handle.iter_type.to_c_type(),
             Symbol::Collection(handle) => handle.collection_type.to_c_type(),
         }
@@ -181,6 +174,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
             .unwrap();
         stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
         stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
+        stdin.write_all(b"EXTRACT_STATIC = YES\n").unwrap();
         stdin.write_all(b"INPUT = include\n").unwrap();
     }
 
@@ -260,9 +254,6 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
                 Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
                 Statement::NativeFunctionDeclaration(handle) => write_function(f, handle, lib)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
-                Statement::OneTimeCallbackDefinition(handle) => {
-                    write_one_time_callback(f, handle, lib)?
-                }
                 _ => (),
             }
             f.newline()?;
@@ -340,7 +331,6 @@ fn write_struct_definition(
                     }),
                     StructElementType::ClassRef(_) => None,
                     StructElementType::Interface(_) => None,
-                    StructElementType::OneTimeCallback(_) => None,
                     StructElementType::Iterator(_) => None,
                     StructElementType::Collection(_) => None,
                     StructElementType::Duration(mapping, default) => {
@@ -476,7 +466,6 @@ fn write_struct_initializer(
                     },
                     StructElementType::ClassRef(_) => el.name.to_snake_case(),
                     StructElementType::Interface(_) => el.name.to_snake_case(),
-                    StructElementType::OneTimeCallback(_) => el.name.to_snake_case(),
                     StructElementType::Iterator(_) => el.name.to_snake_case(),
                     StructElementType::Collection(_) => el.name.to_snake_case(),
                     StructElementType::Duration(mapping, default) => match default {
@@ -681,7 +670,9 @@ fn write_function(
 fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
+    let struct_name = handle.to_c_type();
+
+    f.writeln(&format!("typedef struct {}", struct_name))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
@@ -748,7 +739,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                 }
                 InterfaceElement::DestroyFunction(name) => {
                     doxygen(f, |f| {
-                        f.writeln("@brief Callback when the underlying owner doesn't need the callback anymore")?;
+                        f.writeln("@brief Callback when the underlying owner doesn't need the interface anymore")?;
                         f.writeln("@param arg Context data")
                     })?;
                     f.writeln(&format!("void (*{})(void* arg);", name))?;
@@ -757,60 +748,47 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_c_type()))
-}
+    f.writeln(&format!("}} {};", struct_name))?;
 
-fn write_one_time_callback(
-    f: &mut dyn Printer,
-    handle: &OneTimeCallbackHandle,
-    lib: &Library,
-) -> FormattingResult<()> {
-    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
+    f.newline()?;
 
-    f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
-    f.writeln("{")?;
-    indented(f, |f| {
+    // Write init helper
+    doxygen(f, |f| {
+        f.writeln("@brief ")?;
+        docstring_print(
+            f,
+            &format!("Initialize a {{interface:{}}} interface", handle.name).into(),
+            lib,
+        )?;
         for element in &handle.elements {
             match element {
-                OneTimeCallbackElement::Arg(name) => {
-                    doxygen(f, |f| f.writeln("@brief Context data"))?;
-                    f.writeln(&format!("void* {};", name))?
+                InterfaceElement::Arg(name) => {
+                    f.writeln(&format!("@param {} Context data", name.to_snake_case()))?;
                 }
-                OneTimeCallbackElement::CallbackFunction(handle) => {
-                    f.newline()?;
-
-                    // Print the documentation
-                    doxygen(f, |f| {
-                        // Print top-level documentation
-                        doxygen_print(f, &handle.doc, lib)?;
-
-                        // Print each parameter value
-                        for param in &handle.parameters {
-                            match param {
-                                CallbackParameter::Arg(name) => {
-                                    f.writeln(&format!("@param {} ", name))?;
-                                    docstring_print(f, &"Context data".into(), lib)?;
-                                }
-                                CallbackParameter::Parameter(param) => {
-                                    f.writeln(&format!("@param {} ", param.name))?;
-                                    docstring_print(f, &param.doc, lib)?;
-                                }
-                            }
-                        }
-
-                        // Print return documentation
-                        if let ReturnType::Type(_, doc) = &handle.return_type {
-                            f.writeln("@return ")?;
-                            docstring_print(f, doc, lib)?;
-                        }
-
-                        Ok(())
-                    })?;
-
-                    f.newline()?;
-
-                    // Print function signature
-                    f.write(&format!(
+                InterfaceElement::CallbackFunction(handle) => {
+                    f.writeln(&format!("@param {} ", handle.name.to_snake_case()))?;
+                    docstring_print(f, &handle.doc.brief, lib)?;
+                }
+                InterfaceElement::DestroyFunction(name) => {
+                    f.writeln(&format!("@param {} Callback when the underlying owner doesn't need the interface anymore", name.to_snake_case()))?;
+                }
+            }
+        }
+        Ok(())
+    })?;
+    f.writeln(&format!(
+        "static {} {}_init(",
+        struct_name,
+        handle.name.to_snake_case()
+    ))?;
+    indented(f, |f| {
+        for (idx, element) in handle.elements.iter().enumerate() {
+            match element {
+                InterfaceElement::Arg(name) => {
+                    f.writeln(&format!("void* {}", name.to_snake_case()))?;
+                }
+                InterfaceElement::CallbackFunction(handle) => {
+                    f.writeln(&format!(
                         "{} (*{})(",
                         CReturnType(&handle.return_type),
                         handle.name.to_snake_case(),
@@ -829,14 +807,55 @@ fn write_one_time_callback(
                             .collect::<Vec<String>>()
                             .join(", "),
                     )?;
-
-                    f.write(");")?;
+                    f.write(")")?;
                 }
+                InterfaceElement::DestroyFunction(name) => {
+                    f.writeln(&format!("void (*{})(void* arg)", name))?;
+                }
+            }
+            if idx + 1 < handle.elements.len() {
+                f.write(",")?;
             }
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_c_type()))
+    f.writeln(")")?;
+
+    blocked(f, |f| {
+        f.writeln(&format!("{} result = ", struct_name))?;
+        blocked(f, |f| {
+            for element in &handle.elements {
+                match element {
+                    InterfaceElement::Arg(name) => {
+                        f.writeln(&format!(
+                            ".{} = {},",
+                            name.to_snake_case(),
+                            name.to_snake_case()
+                        ))?;
+                    }
+                    InterfaceElement::CallbackFunction(handle) => {
+                        f.writeln(&format!(
+                            ".{} = {},",
+                            handle.name.to_snake_case(),
+                            handle.name.to_snake_case()
+                        ))?;
+                    }
+                    InterfaceElement::DestroyFunction(name) => {
+                        f.writeln(&format!(
+                            ".{} = {},",
+                            name.to_snake_case(),
+                            name.to_snake_case()
+                        ))?;
+                    }
+                }
+            }
+            Ok(())
+        })?;
+        f.write(";")?;
+        f.writeln("return result;")
+    })?;
+
+    Ok(())
 }
 
 fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
@@ -968,7 +987,6 @@ impl<'a> Display for CType<'a> {
             Type::Enum(handle) => write!(f, "{}", handle.to_c_type()),
             Type::ClassRef(handle) => write!(f, "{}*", handle.to_c_type()),
             Type::Interface(handle) => write!(f, "{}", handle.to_c_type()),
-            Type::OneTimeCallback(handle) => write!(f, "{}", handle.to_c_type()),
             Type::Iterator(handle) => write!(f, "{}*", handle.iter_type.to_c_type()),
             Type::Collection(handle) => write!(f, "{}*", handle.collection_type.to_c_type()),
             Type::Duration(mapping) => match mapping {

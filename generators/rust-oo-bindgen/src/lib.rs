@@ -86,9 +86,6 @@ impl<'a> RustCodegen<'a> {
                     Self::write_function(&mut f, handle)?
                 }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
-                Statement::OneTimeCallbackDefinition(handle) => {
-                    self.write_one_time_callback(&mut f, handle)?
-                }
                 _ => (),
             }
             f.newline()?;
@@ -526,63 +523,6 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_one_time_callback(
-        &self,
-        f: &mut dyn Printer,
-        handle: &OneTimeCallbackHandle,
-    ) -> FormattingResult<()> {
-        let interface_name = handle.name.to_camel_case();
-        f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
-        f.writeln(&format!("pub struct {}", interface_name))?;
-        blocked(f, |f| {
-            for element in &handle.elements {
-                match element {
-                    OneTimeCallbackElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
-                    }
-                    OneTimeCallbackElement::CallbackFunction(handle) => {
-                        let lifetime = if handle.c_requires_lifetime() {
-                            "for<'a> "
-                        } else {
-                            ""
-                        };
-
-                        f.writeln("#[allow(clippy::needless_lifetimes)]")?;
-                        f.writeln(&format!(
-                            "pub {name}: Option<{lifetime}extern \"C\" fn(",
-                            name = handle.name,
-                            lifetime = lifetime
-                        ))?;
-
-                        f.write(
-                            &handle
-                                .parameters
-                                .iter()
-                                .map(|param| match param {
-                                    CallbackParameter::Arg(name) => {
-                                        format!("{}: *mut std::os::raw::c_void", name)
-                                    }
-                                    CallbackParameter::Parameter(param) => {
-                                        format!("{}: {}", param.name, param.param_type.as_c_type())
-                                    }
-                                })
-                                .collect::<Vec<String>>()
-                                .join(", "),
-                        )?;
-
-                        f.write(&format!(") -> {}>,", handle.return_type.as_c_type()))?;
-                    }
-                }
-            }
-            Ok(())
-        })?;
-
-        f.newline()?;
-
-        self.write_callback_helpers(f, &interface_name, handle.callbacks())
-    }
-
     fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction>>(
         &self,
         f: &mut dyn Printer,
@@ -635,50 +575,47 @@ impl<'a> RustCodegen<'a> {
 
                 // Function body
                 blocked(f, |f| {
-                    f.writeln(&format!("if let Some(cb) = self.{}", callback.name))?;
-                    blocked(f, |f| {
-                        for param in &callback.parameters {
-                            if let CallbackParameter::Parameter(param) = param {
-                                if let Some(converter) = param.param_type.conversion() {
-                                    converter.convert_to_c(
-                                        f,
-                                        &param.name,
-                                        &format!("let {} = ", param.name),
-                                    )?;
-                                    f.write(";")?;
-                                }
+                    for param in &callback.parameters {
+                        if let CallbackParameter::Parameter(param) = param {
+                            if let Some(converter) = param.param_type.conversion() {
+                                converter.convert_to_c(
+                                    f,
+                                    &param.name,
+                                    &format!("let {} = ", param.name),
+                                )?;
+                                f.write(";")?;
                             }
                         }
+                    }
+                    let params = &callback
+                        .parameters
+                        .iter()
+                        .map(|param| match param {
+                            CallbackParameter::Arg(name) => format!("self.{}", name),
+                            CallbackParameter::Parameter(param) => param.name.to_string(),
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    let call = format!("cb({})", params);
 
-                        let params = &callback
-                            .parameters
-                            .iter()
-                            .map(|param| match param {
-                                CallbackParameter::Arg(name) => format!("self.{}", name),
-                                CallbackParameter::Parameter(param) => param.name.to_string(),
-                            })
-                            .collect::<Vec<_>>()
-                            .join(", ");
-                        let call = format!("cb({})", params);
-
-                        match &callback.return_type {
-                            ReturnType::Void => f.writeln(&format!("{};", call)),
-                            ReturnType::Type(return_type, _) => {
-                                if let Some(conversion) = return_type.conversion() {
-                                    f.writeln(&format!("let _result = {};", call))?;
-                                    conversion.convert_from_c(f, "_result", "let _result = ")?;
-                                    f.write(";")?;
-                                    f.writeln("Some(_result)")
-                                } else {
-                                    f.writeln(&format!("Some({})", call))
-                                }
+                    if let ReturnType::Type(return_type, _) = &callback.return_type {
+                        f.writeln(&format!("self.{}.map(|cb| ", callback.name))?;
+                        blocked(f, |f| {
+                            if let Some(conversion) = return_type.conversion() {
+                                f.writeln(&format!("let _result = {};", call))?;
+                                conversion.convert_from_c(f, "_result", "")
+                            } else {
+                                f.writeln(&call)
                             }
-                        }
-                    })?;
+                        })?;
+                        f.write(")")?;
+                    } else {
+                        f.writeln(&format!("if let Some(cb) = self.{}", callback.name))?;
+                        blocked(f, |f| f.writeln(&call))?;
+                    }
 
-                    if !callback.return_type.is_void() {
-                        f.writeln("else")?;
-                        blocked(f, |f| f.writeln("None"))?;
+                    if callback.return_type.is_void() {
+                        f.write(";")?;
                     }
 
                     Ok(())

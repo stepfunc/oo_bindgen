@@ -48,17 +48,6 @@ namespace foo.Tests
         }
     }
 
-    class OneTimeCallbackImpl : IOneTimeCallbackInterface
-    {
-        public uint lastValue = 0;
-
-        public uint OnValue(uint value)
-        {
-            lastValue = value;
-            return value;
-        }
-    }
-
     class Counters
     {
         public int numConstructorsCalled = 0;
@@ -84,11 +73,6 @@ namespace foo.Tests
                 var timeResult = cbSource.SetDuration(TimeSpan.FromSeconds(76));
                 Assert.Equal(TimeSpan.FromSeconds(76), timeResult);
                 Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
-
-                var oneTimeCb = new OneTimeCallbackImpl();
-                result = cbSource.CallOneTime(oneTimeCb);
-                Assert.Equal(76u, result);
-                Assert.Equal(76u, oneTimeCb.lastValue);
             }
         }
 

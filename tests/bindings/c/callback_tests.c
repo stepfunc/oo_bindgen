@@ -39,13 +39,12 @@ static void simple_callback_test()
         .destroy_called = false,
     };
 
-    callback_interface_t interface =
-    {
-        .on_value = &on_value,
-        .on_duration = &on_duration,
-        .on_destroy = &on_destroy,
-        .ctx = &data,
-    };
+    callback_interface_t interface = callback_interface_init(
+        &on_value,
+        &on_duration,
+        &on_destroy,
+        &data
+    );
 
     cbsource_set_interface(cb_source, interface);
 
@@ -68,13 +67,7 @@ static void optional_callback_test()
 {
     callback_source_t* cb_source = cbsource_new();
 
-    callback_interface_t interface =
-    {
-        .on_value = NULL,
-        .on_duration = NULL,
-        .on_destroy = NULL,
-        .ctx = NULL,
-    };
+    callback_interface_t interface = callback_interface_init(NULL, NULL, NULL, NULL);
 
     cbsource_set_interface(cb_source, interface);
 
@@ -84,34 +77,8 @@ static void optional_callback_test()
     cbsource_destroy(cb_source);
 }
 
-static void one_time_callback_test()
-{
-    callback_source_t* cb_source = cbsource_new();
-
-    data_t data =
-    {
-        .last_value = 0,
-        .destroy_called = false,
-    };
-
-    one_time_callback_interface_t interface =
-    {
-        .on_value = &on_value,
-        .ctx = &data,
-    };
-
-    assert(0 == data.last_value);
-    cbsource_set_value(cb_source, 24);
-    uint32_t result = cbsource_call_one_time(cb_source, interface);
-    assert(24 == result);
-    assert(24 == data.last_value);
-
-    cbsource_destroy(cb_source);
-}
-
 void callback_tests()
 {
     simple_callback_test();
     optional_callback_test();
-    one_time_callback_test();
 }

@@ -83,15 +83,6 @@ public class NullTest {
     }
 
     @Test
-    public void NullOneTimeCallback() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            try(CallbackSource source = new CallbackSource()) {
-                source.callOneTime(null);
-            }
-        }).withMessage("cb");
-    }
-
-    @Test
     public void NullStructSubStruct() {
         Structure structure = StructureTest.createStructure();
         structure.structureValue = null;

@@ -124,18 +124,6 @@ fn reference_print(
                 callback_name.to_snake_case()
             ))?;
         }
-        DocReference::OneTimeCallback(interface_name) => {
-            let handle = lib.find_one_time_callback(interface_name).unwrap();
-            f.write(&format!("@ref {}", handle.to_c_type()))?;
-        }
-        DocReference::OneTimeCallbackMethod(interface_name, callback_name) => {
-            let handle = &lib.find_one_time_callback(interface_name).unwrap();
-            f.write(&format!(
-                "@ref {}.{}",
-                handle.to_c_type(),
-                callback_name.to_snake_case()
-            ))?;
-        }
     }
 
     Ok(())

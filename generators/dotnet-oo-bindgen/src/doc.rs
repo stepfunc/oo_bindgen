@@ -131,19 +131,6 @@ fn reference_print(
                 callback_name.to_camel_case()
             ))?;
         }
-        DocReference::OneTimeCallback(interface_name) => {
-            f.write(&format!(
-                "<see cref=\"I{}\" />",
-                interface_name.to_camel_case()
-            ))?;
-        }
-        DocReference::OneTimeCallbackMethod(interface_name, callback_name) => {
-            f.write(&format!(
-                "<see cref=\"I{}.{}\" />",
-                interface_name.to_camel_case(),
-                callback_name.to_camel_case()
-            ))?;
-        }
     }
 
     Ok(())

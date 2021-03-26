@@ -58,7 +58,6 @@ use oo_bindgen::*;
 use std::fs;
 use std::path::PathBuf;
 
-mod callback;
 mod class;
 mod conversion;
 mod doc;
@@ -90,7 +89,6 @@ pub fn generate_dotnet_bindings(
     generate_exceptions(lib, config)?;
     generate_classes(lib, config)?;
     generate_interfaces(lib, config)?;
-    generate_one_time_callbacks(lib, config)?;
     generate_collection_helpers(lib, config)?;
     generate_iterator_helpers(lib, config)?;
 
@@ -352,23 +350,6 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
         let mut f = FilePrinter::new(filename)?;
 
         interface::generate(&mut f, interface, lib)?;
-    }
-
-    Ok(())
-}
-
-fn generate_one_time_callbacks(
-    lib: &Library,
-    config: &DotnetBindgenConfig,
-) -> FormattingResult<()> {
-    for cb in lib.one_time_callbacks() {
-        // Open file
-        let mut filename = config.output_dir.clone();
-        filename.push(&format!("I{}", cb.name.to_camel_case()));
-        filename.set_extension("cs");
-        let mut f = FilePrinter::new(filename)?;
-
-        callback::generate(&mut f, cb, lib)?;
     }
 
     Ok(())

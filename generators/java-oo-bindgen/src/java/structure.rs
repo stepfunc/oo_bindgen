@@ -70,7 +70,6 @@ pub(crate) fn generate(
                     }),
                     StructElementType::ClassRef(_) => None,
                     StructElementType::Interface(_) => None,
-                    StructElementType::OneTimeCallback(_) => None,
                     StructElementType::Iterator(_) => None,
                     StructElementType::Collection(_) => None,
                     StructElementType::Duration(_, default) => {
@@ -172,7 +171,6 @@ pub(crate) fn generate(
                 }
                 StructElementType::ClassRef(_) => (),
                 StructElementType::Interface(_) => (),
-                StructElementType::OneTimeCallback(_) => (),
                 StructElementType::Iterator(_) => (),
                 StructElementType::Collection(_) => (),
                 StructElementType::Duration(mapping, default) => {

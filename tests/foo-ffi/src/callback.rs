@@ -3,14 +3,14 @@ use std::time::Duration;
 
 pub struct CallbackSource {
     callback: Option<ffi::CallbackInterface>,
-    value: u32,
+    _value: u32,
 }
 
 impl CallbackSource {
     fn new() -> Self {
         Self {
             callback: None,
-            value: 0,
+            _value: 0,
         }
     }
 
@@ -19,7 +19,7 @@ impl CallbackSource {
     }
 
     fn set_value(&mut self, value: u32) -> u32 {
-        self.value = value;
+        self._value = value;
         self.callback
             .as_ref()
             .map_or(0, |cb| cb.on_value(value).unwrap_or(0))
@@ -49,14 +49,6 @@ pub unsafe fn cbsource_destroy(cb_source: *mut CallbackSource) {
 pub unsafe fn cbsource_set_interface(cb_source: *mut CallbackSource, cb: ffi::CallbackInterface) {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set(cb);
-}
-
-pub unsafe fn cbsource_call_one_time(
-    cb_source: *mut CallbackSource,
-    cb: ffi::OneTimeCallbackInterface,
-) -> u32 {
-    let cb_source = cb_source.as_mut().unwrap();
-    cb.on_value(cb_source.value).unwrap_or(0)
 }
 
 pub unsafe fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) -> u32 {

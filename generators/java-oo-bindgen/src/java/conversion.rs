@@ -29,7 +29,6 @@ impl JavaType for Type {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => format!(
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
@@ -61,7 +60,6 @@ impl JavaType for Type {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => handle.name.to_camel_case(),
             Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => format!(
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()

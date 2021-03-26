@@ -209,9 +209,9 @@ impl<'a> ClassBuilder<'a> {
         let name = name.into();
         let mut async_method = None;
         for param in &native_function.parameters {
-            if let Type::OneTimeCallback(ot_cb) = &param.param_type {
+            if let Type::Interface(ot_cb) = &param.param_type {
                 if async_method.is_some() {
-                    return Err(BindingError::AsyncNativeMethodTooManyOneTimeCallback {
+                    return Err(BindingError::AsyncNativeMethodTooManyInterface {
                         handle: native_function.clone(),
                     });
                 }
@@ -249,12 +249,12 @@ impl<'a> ClassBuilder<'a> {
                     }
 
                     if cb_iter.next().is_some() {
-                        return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback {
+                        return Err(BindingError::AsyncInterfaceNotSingleCallback {
                             handle: native_function.clone(),
                         });
                     }
                 } else {
-                    return Err(BindingError::AsyncOneTimeCallbackNotSingleCallback {
+                    return Err(BindingError::AsyncInterfaceNotSingleCallback {
                         handle: native_function.clone(),
                     });
                 }
@@ -264,7 +264,7 @@ impl<'a> ClassBuilder<'a> {
         if let Some(method) = async_method {
             self.async_methods.push(method);
         } else {
-            return Err(BindingError::AsyncNativeMethodNoOneTimeCallback {
+            return Err(BindingError::AsyncNativeMethodNoInterface {
                 handle: native_function.clone(),
             });
         }

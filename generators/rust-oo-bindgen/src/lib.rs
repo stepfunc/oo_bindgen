@@ -86,9 +86,6 @@ impl<'a> RustCodegen<'a> {
                     Self::write_function(&mut f, handle)?
                 }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
-                Statement::OneTimeCallbackDefinition(handle) => {
-                    self.write_one_time_callback(&mut f, handle)?
-                }
                 _ => (),
             }
             f.newline()?;
@@ -524,63 +521,6 @@ impl<'a> RustCodegen<'a> {
                 blocked(f, |f| f.writeln(&format!("cb(self.{});", handle.arg_name)))
             })
         })
-    }
-
-    fn write_one_time_callback(
-        &self,
-        f: &mut dyn Printer,
-        handle: &OneTimeCallbackHandle,
-    ) -> FormattingResult<()> {
-        let interface_name = handle.name.to_camel_case();
-        f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Clone)]")?;
-        f.writeln(&format!("pub struct {}", interface_name))?;
-        blocked(f, |f| {
-            for element in &handle.elements {
-                match element {
-                    OneTimeCallbackElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
-                    }
-                    OneTimeCallbackElement::CallbackFunction(handle) => {
-                        let lifetime = if handle.c_requires_lifetime() {
-                            "for<'a> "
-                        } else {
-                            ""
-                        };
-
-                        f.writeln("#[allow(clippy::needless_lifetimes)]")?;
-                        f.writeln(&format!(
-                            "pub {name}: Option<{lifetime}extern \"C\" fn(",
-                            name = handle.name,
-                            lifetime = lifetime
-                        ))?;
-
-                        f.write(
-                            &handle
-                                .parameters
-                                .iter()
-                                .map(|param| match param {
-                                    CallbackParameter::Arg(name) => {
-                                        format!("{}: *mut std::os::raw::c_void", name)
-                                    }
-                                    CallbackParameter::Parameter(param) => {
-                                        format!("{}: {}", param.name, param.param_type.as_c_type())
-                                    }
-                                })
-                                .collect::<Vec<String>>()
-                                .join(", "),
-                        )?;
-
-                        f.write(&format!(") -> {}>,", handle.return_type.as_c_type()))?;
-                    }
-                }
-            }
-            Ok(())
-        })?;
-
-        f.newline()?;
-
-        self.write_callback_helpers(f, &interface_name, handle.callbacks())
     }
 
     fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction>>(

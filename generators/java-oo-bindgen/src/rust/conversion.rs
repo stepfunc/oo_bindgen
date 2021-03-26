@@ -59,7 +59,6 @@ impl JniType for Type {
             Type::Enum(_) => "jni::sys::jobject",
             Type::ClassRef(_) => "jni::sys::jobject",
             Type::Interface(_) => "jni::sys::jobject",
-            Type::OneTimeCallback(_) => "jni::sys::jobject",
             Type::Iterator(_) => "jni::sys::jobject",
             Type::Collection(_) => "jni::sys::jobject",
             Type::Duration(_) => "jni::sys::jobject",
@@ -85,9 +84,6 @@ impl JniType for Type {
             Type::Enum(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::ClassRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::Interface(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::OneTimeCallback(handle) => {
-                format!("L{}/{};", lib_path, handle.name.to_camel_case())
-            }
             Type::Iterator(_) => "Ljava/util/List;".to_string(),
             Type::Collection(_) => "Ljava/util/List;".to_string(),
             Type::Duration(_) => "Ljava/time/Duration;".to_string(),
@@ -115,9 +111,6 @@ impl JniType for Type {
             Type::Enum(_) => "std::os::raw::c_int".to_string(),
             Type::ClassRef(handle) => format!("*mut {}::{}", ffi_name, handle.name.to_camel_case()),
             Type::Interface(handle) => {
-                format!("{}::ffi::{}", ffi_name, handle.name.to_camel_case())
-            }
-            Type::OneTimeCallback(handle) => {
                 format!("{}::ffi::{}", ffi_name, handle.name.to_camel_case())
             }
             Type::Iterator(handle) => {
@@ -152,7 +145,6 @@ impl JniType for Type {
             Type::Enum(_) => "l().unwrap().into_inner()",
             Type::ClassRef(_) => "l().unwrap().into_inner()",
             Type::Interface(_) => "l().unwrap().into_inner()",
-            Type::OneTimeCallback(_) => "l().unwrap().into_inner()",
             Type::Iterator(_) => "l().unwrap().into_inner()",
             Type::Collection(_) => "l().unwrap().into_inner()",
             Type::Duration(_) => "l().unwrap().into_inner()",
@@ -209,9 +201,6 @@ impl JniType for Type {
             Type::Interface(handle) => {
                 InterfaceConverter(handle.clone()).convert_to_rust(f, from, to)
             }
-            Type::OneTimeCallback(handle) => {
-                OneTimeCallbackConverter(handle.clone()).convert_to_rust(f, from, to)
-            }
             Type::Iterator(handle) => {
                 IteratorConverter(handle.clone(), lib_name.to_string()).convert_to_rust(f, from, to)
             }
@@ -240,9 +229,6 @@ impl JniType for Type {
             Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
             Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
-            Type::OneTimeCallback(handle) => {
-                Some(Box::new(OneTimeCallbackConverter(handle.clone())))
-            }
             Type::Iterator(handle) => Some(Box::new(IteratorConverter(
                 handle.clone(),
                 lib_name.to_string(),
@@ -273,8 +259,7 @@ impl JniType for Type {
             Type::StructRef(_) => true,
             Type::Enum(_) => false, // We re-use a global ref here
             Type::ClassRef(_) => true,
-            Type::Interface(_) => false,       // This is freed by Rust
-            Type::OneTimeCallback(_) => false, // This is freed by Rust
+            Type::Interface(_) => false, // This is freed by Rust
             Type::Iterator(_) => true,
             Type::Collection(_) => true,
             Type::Duration(_) => true,
@@ -308,7 +293,6 @@ impl JniType for Type {
             Type::Enum(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::ClassRef(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::Interface(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::OneTimeCallback(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::Iterator(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::Collection(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::Duration(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
@@ -334,7 +318,6 @@ impl JniType for Type {
             Type::Enum(_) => "jni::objects::JObject::null().into_inner()",
             Type::ClassRef(_) => "jni::objects::JObject::null().into_inner()",
             Type::Interface(_) => "jni::objects::JObject::null().into_inner()",
-            Type::OneTimeCallback(_) => "jni::objects::JObject::null().into_inner()",
             Type::Iterator(_) => "jni::objects::JObject::null().into_inner()",
             Type::Collection(_) => "jni::objects::JObject::null().into_inner()",
             Type::Duration(_) => "jni::objects::JObject::null().into_inner()",
@@ -605,30 +588,6 @@ impl TypeConverter for InterfaceConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.interfaces.interface_{}.interface_to_rust(&_env, {})",
-            to,
-            self.0.name.to_snake_case(),
-            from
-        ))
-    }
-
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
-            to,
-            from,
-            self.0.arg_name.to_snake_case()
-        ))?;
-        blocked(f, |f| f.writeln("obj.as_obj()"))?;
-        f.writeln("else")?;
-        blocked(f, |f| f.writeln("jni::objects::JObject::null()"))
-    }
-}
-
-struct OneTimeCallbackConverter(OneTimeCallbackHandle);
-impl TypeConverter for OneTimeCallbackConverter {
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.interfaces.callback_{}.interface_to_rust(&_env, {})",
             to,
             self.0.name.to_snake_case(),
             from

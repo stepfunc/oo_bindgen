@@ -37,7 +37,6 @@ impl RustType for Type {
             Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
             Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
@@ -70,7 +69,6 @@ impl RustType for Type {
             Type::Enum(_) => "std::os::raw::c_int".to_string(),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
             Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::OneTimeCallback(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
@@ -106,7 +104,6 @@ impl RustType for Type {
             Type::Enum(_) => true,
             Type::ClassRef(_) => true, // Just copying the opaque pointer
             Type::Interface(_) => false,
-            Type::OneTimeCallback(_) => false,
             Type::Iterator(_) => true,   // Just copying the pointer
             Type::Collection(_) => true, // Just copying the pointer
             Type::Duration(_) => true,
@@ -132,7 +129,6 @@ impl RustType for Type {
             Type::Enum(_) => false,
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
-            Type::OneTimeCallback(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
             Type::Duration(_) => false,
@@ -158,7 +154,6 @@ impl RustType for Type {
             Type::Enum(_) => false,
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
-            Type::OneTimeCallback(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
             Type::Duration(_) => false,
@@ -184,7 +179,6 @@ impl RustType for Type {
             Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(_) => None,
             Type::Interface(_) => None,
-            Type::OneTimeCallback(_) => None,
             Type::Iterator(_) => None,
             Type::Collection(_) => None,
             Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),

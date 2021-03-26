@@ -34,8 +34,6 @@
 //! - `{enum:MyEnum.foo}`: references the `foo` variant of `MyEnum`.
 //! - `{interface:MyInterface}`: references the interface `MyInterface`.
 //! - `{interface:MyInterface.foo()}`: references the `foo()` callback of `MyInterface`. This cannot reference the `on_destroy` callback.
-//! - `{callback:MyOneTimeCallback}`: references the interface `MyOneTimeCallback`.
-//! - `{callback:MyOneTimeCallback.foo()}`: references the `foo()` callback of `MyOneTimeCallback`.
 //!
 //! There other miscellaneous tag that can be used:
 //! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
@@ -211,12 +209,6 @@ pub enum DocReference {
     ///
     /// First string is the interface name, second is the method's name
     InterfaceMethod(String, String),
-    /// Reference an OneTimeCallback
-    OneTimeCallback(String),
-    /// Reference a method of a OneTimeCallback
-    ///
-    /// First string is the OneTimeCallback name, second is the method's name
-    OneTimeCallbackMethod(String, String),
 }
 
 impl TryFrom<&str> for DocStringElement {
@@ -243,10 +235,6 @@ impl TryFrom<&str> for DocStringElement {
             static ref RE_INTERFACE: Regex = Regex::new(r"\{interface:([[:word:]]+)\}").unwrap();
             static ref RE_INTERFACE_METHOD: Regex =
                 Regex::new(r"\{interface:([[:word:]]+)\.([[:word:]]+)\(\)\}").unwrap();
-            static ref RE_ONETIME_CALLBACK: Regex =
-                Regex::new(r"\{callback:([[:word:]]+)\}").unwrap();
-            static ref RE_ONETIME_CALLBACK_METHOD: Regex =
-                Regex::new(r"\{callback:([[:word:]]+)\.([[:word:]]+)\(\)\}").unwrap();
         }
 
         if let Some(capture) = RE_PARAM.captures(from) {
@@ -314,19 +302,6 @@ impl TryFrom<&str> for DocStringElement {
                 capture.get(2).unwrap().as_str().to_owned(),
             )));
         }
-        if let Some(capture) = RE_ONETIME_CALLBACK.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::OneTimeCallback(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_ONETIME_CALLBACK_METHOD.captures(from) {
-            return Ok(DocStringElement::Reference(
-                DocReference::OneTimeCallbackMethod(
-                    capture.get(1).unwrap().as_str().to_owned(),
-                    capture.get(2).unwrap().as_str().to_owned(),
-                ),
-            ));
-        }
         if from == "{null}" {
             return Ok(DocStringElement::Null);
         }
@@ -384,27 +359,6 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
     }
 
     for interface in lib.interfaces() {
-        validate_doc(&interface.name, &interface.doc, lib)?;
-        for callback in interface.callbacks() {
-            let params = callback
-                .parameters
-                .iter()
-                .filter_map(|param| match param {
-                    CallbackParameter::Parameter(param) => Some(param.clone()),
-                    _ => None,
-                })
-                .collect::<Vec<_>>();
-
-            let callback_name = format!("{}.{}", interface.name, callback.name);
-            validate_doc_with_params(&callback_name, &callback.doc, params.as_slice(), lib)?;
-
-            for param in &params {
-                validate_docstring_with_params(&callback_name, &param.doc, params.as_slice(), lib)?;
-            }
-        }
-    }
-
-    for interface in lib.one_time_callbacks() {
         validate_doc(&interface.name, &interface.doc, lib)?;
         for callback in interface.callbacks() {
             let params = callback
@@ -624,37 +578,6 @@ fn validate_reference_with_params(
                 });
             }
         }
-        DocReference::OneTimeCallback(interface_name) => {
-            if lib.find_one_time_callback(interface_name).is_none() {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: interface_name.to_string(),
-                });
-            }
-        }
-        DocReference::OneTimeCallbackMethod(interface_name, method_name) => {
-            if let Some(handle) = lib.find_one_time_callback(interface_name) {
-                if handle.find_callback(method_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}()",
-                            interface_name.to_string(),
-                            method_name.to_string()
-                        ),
-                    });
-                }
-            } else {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: format!(
-                        "{}.{}()",
-                        interface_name.to_string(),
-                        method_name.to_string()
-                    ),
-                });
-            }
-        }
     }
 
     Ok(())
@@ -839,41 +762,6 @@ mod tests {
                     "foo".to_owned()
                 )),
                 DocStringElement::Text(" interface method.".to_owned()),
-            ]
-            .as_ref(),
-            doc.elements.as_slice()
-        );
-    }
-
-    #[test]
-    fn parse_callback() {
-        let doc: DocString = "This is a {callback:Interface} callback."
-            .try_into()
-            .unwrap();
-        assert_eq!(
-            [
-                DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::OneTimeCallback("Interface".to_owned())),
-                DocStringElement::Text(" callback.".to_owned()),
-            ]
-            .as_ref(),
-            doc.elements.as_slice()
-        );
-    }
-
-    #[test]
-    fn parse_callback_method() {
-        let doc: DocString = "This is a {callback:Interface.foo()} callback method."
-            .try_into()
-            .unwrap();
-        assert_eq!(
-            [
-                DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::OneTimeCallbackMethod(
-                    "Interface".to_owned(),
-                    "foo".to_owned()
-                )),
-                DocStringElement::Text(" callback method.".to_owned()),
             ]
             .as_ref(),
             doc.elements.as_slice()

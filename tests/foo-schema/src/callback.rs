@@ -23,14 +23,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .destroy_callback("on_destroy")?
         .build()?;
 
-    let one_time_callback = lib
-        .define_one_time_callback("OneTimeCallbackInterface", "Test one-time-interface")?
-        .callback("on_value", "On value callback")?
-        .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::new(Type::Uint32, "Some value"))?
-        .build()?
-        .build()?;
-
     // Declare the class
     let cbsource = lib.declare_class("CallbackSource")?;
 
@@ -65,25 +57,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .param("cb", Type::Interface(interface), "Callback to add")?
         .return_type(ReturnType::void())?
         .doc("Add a callback")?
-        .build()?;
-
-    let cbsource_call_one_time_func = lib
-        .declare_native_function("cbsource_call_one_time")?
-        .param(
-            "cbsource",
-            Type::ClassRef(cbsource.clone()),
-            "Callback source",
-        )?
-        .param(
-            "cb",
-            Type::OneTimeCallback(one_time_callback),
-            "Callback to add",
-        )?
-        .return_type(ReturnType::new(
-            Type::Uint32,
-            "Value returned by the callback",
-        ))?
-        .doc("Add a one-time callback")?
         .build()?;
 
     let cbsource_set_value_func = lib
@@ -126,7 +99,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .constructor(&cbsource_new_func)?
         .destructor(&cbsource_destroy_func)?
         .method("SetInterface", &cbsource_set_interface)?
-        .method("CallOneTime", &cbsource_call_one_time_func)?
         .method("SetValue", &cbsource_set_value_func)?
         .method("SetDuration", &cbsource_set_duration_func)?
         .doc("CallbackSource class")?

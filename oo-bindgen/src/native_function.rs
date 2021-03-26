@@ -25,7 +25,6 @@ pub enum Type {
     Enum(NativeEnumHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
-    OneTimeCallback(OneTimeCallbackHandle),
     Iterator(IteratorHandle),
     Collection(CollectionHandle),
 

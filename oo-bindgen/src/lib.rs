@@ -201,15 +201,15 @@ pub enum BindingError {
     DestructorCannotFail { handle: ClassDeclarationHandle },
 
     // Async errors
-    #[error("Native function '{}' cannot be used as an async method because it doesn't have a OneTimeCallback parameter", handle.name)]
-    AsyncNativeMethodNoOneTimeCallback { handle: NativeFunctionHandle },
-    #[error("Native function '{}' cannot be used as an async method because it has too many OneTimeCallback parameters", handle.name)]
-    AsyncNativeMethodTooManyOneTimeCallback { handle: NativeFunctionHandle },
-    #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter doesn't have a single callback", handle.name)]
-    AsyncOneTimeCallbackNotSingleCallback { handle: NativeFunctionHandle },
-    #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter single callback does not have a single parameter (other than the arg param)", handle.name)]
+    #[error("Native function '{}' cannot be used as an async method because it doesn't have a interface parameter", handle.name)]
+    AsyncNativeMethodNoInterface { handle: NativeFunctionHandle },
+    #[error("Native function '{}' cannot be used as an async method because it has too many interface parameters", handle.name)]
+    AsyncNativeMethodTooManyInterface { handle: NativeFunctionHandle },
+    #[error("Native function '{}' cannot be used as an async method because its interface parameter doesn't have a single callback", handle.name)]
+    AsyncInterfaceNotSingleCallback { handle: NativeFunctionHandle },
+    #[error("Native function '{}' cannot be used as an async method because its interface parameter single callback does not have a single parameter (other than the arg param)", handle.name)]
     AsyncCallbackNotSingleParam { handle: NativeFunctionHandle },
-    #[error("Native function '{}' cannot be used as an async method because its OneTimeCallback parameter single callback does not return void", handle.name)]
+    #[error("Native function '{}' cannot be used as an async method because its interface parameter single callback does not return void", handle.name)]
     AsyncCallbackReturnTypeNotVoid { handle: NativeFunctionHandle },
 
     // Interface errors
@@ -236,8 +236,6 @@ pub enum BindingError {
     InterfaceDestroyCallbackAlreadyDefined { interface_name: String },
     #[error("Interface '{}' is not part of this library", handle.name)]
     InterfaceNotPartOfThisLib { handle: InterfaceHandle },
-    #[error("One-time callback '{}' is not part of this library", handle.name)]
-    OneTimeCallbackNotPartOfThisLib { handle: OneTimeCallbackHandle },
 
     // Iterator errors
     #[error("Iterator native function '{}' does not take a single class ref parameter", handle.name)]
@@ -332,7 +330,6 @@ pub enum Symbol {
     Class(ClassHandle),
     StaticClass(StaticClassHandle),
     Interface(InterfaceHandle),
-    OneTimeCallback(OneTimeCallbackHandle),
     Iterator(iterator::IteratorHandle),
     Collection(collection::CollectionHandle),
 }
@@ -349,7 +346,6 @@ pub enum Statement {
     ClassDefinition(ClassHandle),
     StaticClassDefinition(StaticClassHandle),
     InterfaceDefinition(InterfaceHandle),
-    OneTimeCallbackDefinition(OneTimeCallbackHandle),
     IteratorDeclaration(iterator::IteratorHandle),
     CollectionDeclaration(collection::CollectionHandle),
     NativeFunctionDeclaration(NativeFunctionHandle),
@@ -507,26 +503,6 @@ impl Library {
             .next()
     }
 
-    pub fn one_time_callbacks(&self) -> impl Iterator<Item = &OneTimeCallbackHandle> {
-        self.into_iter().filter_map(|statement| match statement {
-            Statement::OneTimeCallbackDefinition(handle) => Some(handle),
-            _ => None,
-        })
-    }
-
-    pub fn find_one_time_callback<T: AsRef<str>>(&self, name: T) -> Option<&OneTimeCallbackHandle> {
-        self.symbol(name)
-            .iter()
-            .filter_map(|symbol| {
-                if let Symbol::OneTimeCallback(handle) = symbol {
-                    Some(handle)
-                } else {
-                    None
-                }
-            })
-            .next()
-    }
-
     pub fn iterators(&self) -> impl Iterator<Item = &iterator::IteratorHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::IteratorDeclaration(handle) => Some(handle),
@@ -604,7 +580,6 @@ pub struct LibraryBuilder {
     static_classes: HashSet<StaticClassHandle>,
 
     interfaces: HashSet<InterfaceHandle>,
-    one_time_callbacks: HashSet<OneTimeCallbackHandle>,
 
     iterators: HashSet<iterator::IteratorHandle>,
     collections: HashSet<collection::CollectionHandle>,
@@ -634,7 +609,6 @@ impl LibraryBuilder {
             static_classes: HashSet::new(),
 
             interfaces: HashSet::new(),
-            one_time_callbacks: HashSet::new(),
 
             iterators: HashSet::new(),
             collections: HashSet::new(),
@@ -684,9 +658,6 @@ impl LibraryBuilder {
                 }
                 Statement::InterfaceDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::Interface(handle.clone()));
-                }
-                Statement::OneTimeCallbackDefinition(handle) => {
-                    symbols.insert(handle.name.clone(), Symbol::OneTimeCallback(handle.clone()));
                 }
                 Statement::IteratorDeclaration(handle) => {
                     symbols.insert(handle.name().to_string(), Symbol::Iterator(handle.clone()));
@@ -850,16 +821,6 @@ impl LibraryBuilder {
         Ok(InterfaceBuilder::new(self, name, doc.into()))
     }
 
-    pub fn define_one_time_callback<T: Into<String>, D: Into<Doc>>(
-        &mut self,
-        name: T,
-        doc: D,
-    ) -> Result<OneTimeCallbackBuilder> {
-        let name = name.into();
-        self.check_unique_symbol(&name)?;
-        Ok(OneTimeCallbackBuilder::new(self, name, doc.into()))
-    }
-
     pub fn define_iterator(
         &mut self,
         native_func: &NativeFunctionHandle,
@@ -938,7 +899,6 @@ impl LibraryBuilder {
             Type::Struct(native_struct) => self.validate_native_struct(native_struct),
             Type::Enum(native_enum) => self.validate_native_enum(native_enum),
             Type::Interface(interface) => self.validate_interface(interface),
-            Type::OneTimeCallback(cb) => self.validate_one_time_callback(cb),
             Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
             Type::Iterator(iter) => self.validate_iterator(iter),
             Type::Collection(collection) => self.validate_collection(collection),
@@ -986,14 +946,6 @@ impl LibraryBuilder {
             Err(BindingError::InterfaceNotPartOfThisLib {
                 handle: interface.clone(),
             })
-        }
-    }
-
-    fn validate_one_time_callback(&self, cb: &OneTimeCallbackHandle) -> Result<()> {
-        if self.one_time_callbacks.contains(cb) {
-            Ok(())
-        } else {
-            Err(BindingError::OneTimeCallbackNotPartOfThisLib { handle: cb.clone() })
         }
     }
 

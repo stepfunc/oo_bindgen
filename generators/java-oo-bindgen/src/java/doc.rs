@@ -122,16 +122,6 @@ fn reference_print(
                 callback_name.to_mixed_case()
             ))?;
         }
-        DocReference::OneTimeCallback(interface_name) => {
-            f.write(&format!("{{@link {}}}", interface_name.to_camel_case()))?;
-        }
-        DocReference::OneTimeCallbackMethod(interface_name, callback_name) => {
-            f.write(&format!(
-                "{{@link {}#{}}}",
-                interface_name.to_camel_case(),
-                callback_name.to_mixed_case()
-            ))?;
-        }
     }
 
     Ok(())

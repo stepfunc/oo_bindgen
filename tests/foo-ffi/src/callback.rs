@@ -51,14 +51,6 @@ pub unsafe fn cbsource_set_interface(cb_source: *mut CallbackSource, cb: ffi::Ca
     cb_source.set(cb);
 }
 
-pub unsafe fn cbsource_call_one_time(
-    cb_source: *mut CallbackSource,
-    cb: ffi::OneTimeCallbackInterface,
-) -> u32 {
-    let cb_source = cb_source.as_mut().unwrap();
-    cb.on_value(cb_source.value).unwrap_or(0)
-}
-
 pub unsafe fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) -> u32 {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set_value(value)

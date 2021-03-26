@@ -3,14 +3,14 @@ use std::time::Duration;
 
 pub struct CallbackSource {
     callback: Option<ffi::CallbackInterface>,
-    value: u32,
+    _value: u32,
 }
 
 impl CallbackSource {
     fn new() -> Self {
         Self {
             callback: None,
-            value: 0,
+            _value: 0,
         }
     }
 
@@ -19,7 +19,7 @@ impl CallbackSource {
     }
 
     fn set_value(&mut self, value: u32) -> u32 {
-        self.value = value;
+        self._value = value;
         self.callback
             .as_ref()
             .map_or(0, |cb| cb.on_value(value).unwrap_or(0))

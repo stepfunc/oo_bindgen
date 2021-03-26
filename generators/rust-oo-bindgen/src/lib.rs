@@ -575,50 +575,47 @@ impl<'a> RustCodegen<'a> {
 
                 // Function body
                 blocked(f, |f| {
-                    f.writeln(&format!("if let Some(cb) = self.{}", callback.name))?;
-                    blocked(f, |f| {
-                        for param in &callback.parameters {
-                            if let CallbackParameter::Parameter(param) = param {
-                                if let Some(converter) = param.param_type.conversion() {
-                                    converter.convert_to_c(
-                                        f,
-                                        &param.name,
-                                        &format!("let {} = ", param.name),
-                                    )?;
-                                    f.write(";")?;
-                                }
+                    for param in &callback.parameters {
+                        if let CallbackParameter::Parameter(param) = param {
+                            if let Some(converter) = param.param_type.conversion() {
+                                converter.convert_to_c(
+                                    f,
+                                    &param.name,
+                                    &format!("let {} = ", param.name),
+                                )?;
+                                f.write(";")?;
                             }
                         }
+                    }
+                    let params = &callback
+                        .parameters
+                        .iter()
+                        .map(|param| match param {
+                            CallbackParameter::Arg(name) => format!("self.{}", name),
+                            CallbackParameter::Parameter(param) => param.name.to_string(),
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    let call = format!("cb({})", params);
 
-                        let params = &callback
-                            .parameters
-                            .iter()
-                            .map(|param| match param {
-                                CallbackParameter::Arg(name) => format!("self.{}", name),
-                                CallbackParameter::Parameter(param) => param.name.to_string(),
-                            })
-                            .collect::<Vec<_>>()
-                            .join(", ");
-                        let call = format!("cb({})", params);
-
-                        match &callback.return_type {
-                            ReturnType::Void => f.writeln(&format!("{};", call)),
-                            ReturnType::Type(return_type, _) => {
-                                if let Some(conversion) = return_type.conversion() {
-                                    f.writeln(&format!("let _result = {};", call))?;
-                                    conversion.convert_from_c(f, "_result", "let _result = ")?;
-                                    f.write(";")?;
-                                    f.writeln("Some(_result)")
-                                } else {
-                                    f.writeln(&format!("Some({})", call))
-                                }
+                    if let ReturnType::Type(return_type, _) = &callback.return_type {
+                        f.writeln(&format!("self.{}.map(|cb| ", callback.name))?;
+                        blocked(f, |f| {
+                            if let Some(conversion) = return_type.conversion() {
+                                f.writeln(&format!("let _result = {};", call))?;
+                                conversion.convert_from_c(f, "_result", "")
+                            } else {
+                                f.writeln(&call)
                             }
-                        }
-                    })?;
+                        })?;
+                        f.write(")")?;
+                    } else {
+                        f.writeln(&format!("if let Some(cb) = self.{}", callback.name))?;
+                        blocked(f, |f| f.writeln(&call))?;
+                    }
 
-                    if !callback.return_type.is_void() {
-                        f.writeln("else")?;
-                        blocked(f, |f| f.writeln("None"))?;
+                    if callback.return_type.is_void() {
+                        f.write(";")?;
                     }
 
                     Ok(())

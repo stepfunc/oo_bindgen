@@ -79,7 +79,7 @@ fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<
     f.writeln("crate-type = [\"cdylib\"]")?;
     f.newline()?;
     f.writeln("[dependencies]")?;
-    f.writeln("jni = \"0.18\"")?;
+    f.writeln("jni = \"0.19\"")?;
     f.writeln(&format!(
         "{} = {{ path = \"{}\" }}",
         ffi_project_name.to_string_lossy(),

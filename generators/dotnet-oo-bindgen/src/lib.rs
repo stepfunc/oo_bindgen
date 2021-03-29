@@ -306,6 +306,11 @@ fn generate_exception(
 
         f.writeln(&format!("public class {}: Exception", exception_name))?;
         blocked(f, |f| {
+            documentation(f, |f| {
+                f.writeln("<summary>")?;
+                f.write("Error detail")?;
+                f.write("</summary>")
+            })?;
             f.writeln(&format!("public readonly {} error;", error_name))?;
             f.newline()?;
             f.writeln(&format!(

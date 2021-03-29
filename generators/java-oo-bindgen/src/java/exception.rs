@@ -25,6 +25,7 @@ pub(crate) fn generate(
         exception_name, exception_type
     ))?;
     blocked(f, |f| {
+        documentation(f, |f| f.writeln("Error detail"))?;
         f.writeln(&format!("public final {} error;", error_name))?;
         f.newline()?;
         f.writeln(&format!("{}({} error)", exception_name, error_name))?;

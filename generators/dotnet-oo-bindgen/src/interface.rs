@@ -83,9 +83,9 @@ pub(crate) fn generate(
         if interface.is_functional() {
             generate_functional_callback(
                 f,
-                &interface_name,
-                &interface.name.to_camel_case(),
+                &interface,
                 interface.callbacks().next().unwrap(),
+                lib,
             )?;
             f.newline()?;
         }
@@ -251,6 +251,128 @@ pub(crate) fn generate(
                 f.writeln("else")?;
                 blocked(f, |f| f.writeln("return null;"))
             })
+        })
+    })
+}
+
+pub(crate) fn generate_functional_callback(
+    f: &mut dyn Printer,
+    interface: &InterfaceHandle,
+    function: &CallbackFunction,
+    lib: &Library,
+) -> FormattingResult<()> {
+    let interface_name = format!("I{}", interface.name.to_camel_case());
+    let class_name = interface.name.to_camel_case();
+
+    // Build the Action<>/Func<> signature
+    let param_types = function
+        .params()
+        .map(|param| param.param_type.as_dotnet_type())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let action_type = match &function.return_type {
+        ReturnType::Type(return_type, _) => {
+            if param_types.is_empty() {
+                format!("Func<{}>", return_type.as_dotnet_type())
+            } else {
+                format!("Func<{}, {}>", param_types, return_type.as_dotnet_type())
+            }
+        }
+        ReturnType::Void => {
+            if param_types.is_empty() {
+                "Action".to_string()
+            } else {
+                format!("Action<{}>", param_types)
+            }
+        }
+    };
+
+    documentation(f, |f| {
+        f.writeln("<summary>")?;
+        docstring_print(
+            f,
+            &format!("Functional adapter of {{interface:{}}}", interface.name).into(),
+            lib,
+        )?;
+        f.write("</summary>")
+    })?;
+    f.writeln(&format!("public class {} : {}", class_name, interface_name))?;
+    blocked(f, |f| {
+        f.writeln(&format!("private readonly {} action;", action_type))?;
+
+        f.newline()?;
+
+        // Write the constructor
+        documentation(f, |f| {
+            f.writeln("<summary>")?;
+            f.write("Functional constructor")?;
+            f.write("</summary>")?;
+            f.newline()?;
+            f.writeln("<param name=\"action\">")?;
+            f.writeln("Callback to execute")?;
+            f.writeln("</param>")?;
+            Ok(())
+        })?;
+        f.writeln(&format!("public {}({} action)", class_name, action_type))?;
+        blocked(f, |f| f.writeln("this.action = action;"))?;
+
+        f.newline()?;
+
+        // Write the required method
+        documentation(f, |f| {
+            xmldoc_print(f, &function.doc, lib)?;
+            f.newline()?;
+
+            // Print each parameter value
+            for param in &function.parameters {
+                if let CallbackParameter::Parameter(param) = param {
+                    f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+                    docstring_print(f, &param.doc, lib)?;
+                    f.write("</param>")?;
+                }
+            }
+
+            // Print return value
+            if let ReturnType::Type(_, doc) = &function.return_type {
+                f.writeln("<returns>")?;
+                docstring_print(f, doc, lib)?;
+                f.write("</returns>")?;
+            }
+            Ok(())
+        })?;
+        f.writeln(&format!(
+            "public {} {}(",
+            function.return_type.as_dotnet_type(),
+            function.name.to_camel_case()
+        ))?;
+        f.write(
+            &function
+                .params()
+                .map(|param| {
+                    format!(
+                        "{} {}",
+                        param.param_type.as_dotnet_type(),
+                        param.name.to_mixed_case()
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(", "),
+        )?;
+        f.write(")")?;
+        blocked(f, |f| {
+            f.newline()?;
+
+            if !function.return_type.is_void() {
+                f.write("return ")?;
+            }
+
+            let params = function
+                .params()
+                .map(|param| param.name.to_mixed_case())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            f.write(&format!("this.action.Invoke({});", params))
         })
     })
 }

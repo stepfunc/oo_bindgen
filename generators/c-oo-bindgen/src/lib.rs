@@ -361,7 +361,7 @@ fn write_struct_definition(
     // user should never try to initialize opaque structs, so don't suggest this is OK
     if handle.struct_type != NativeStructType::Opaque {
         f.newline()?;
-        write_struct_initializer(f, handle)?;
+        write_struct_initializer(f, handle, lib)?;
     }
 
     Ok(())
@@ -370,7 +370,34 @@ fn write_struct_definition(
 fn write_struct_initializer(
     f: &mut dyn Printer,
     handle: &NativeStructHandle,
+    lib: &Library,
 ) -> FormattingResult<()> {
+    doxygen(f, |f| {
+        f.writeln("@brief ")?;
+        docstring_print(
+            f,
+            &format!("Initialize {{struct:{}}} to default values", handle.name()).into(),
+            lib,
+        )?;
+
+        for param in handle
+            .elements()
+            .filter(|el| !el.element_type.has_default())
+        {
+            f.writeln(&format!("@param {} ", param.name.to_snake_case()))?;
+            docstring_print(f, &param.doc.brief, lib)?;
+        }
+
+        f.writeln("@returns ")?;
+        docstring_print(
+            f,
+            &format!("New instance of {{struct:{}}}", handle.name()).into(),
+            lib,
+        )?;
+
+        Ok(())
+    })?;
+
     let params = handle
         .elements()
         .filter(|el| !el.element_type.has_default())
@@ -510,6 +537,16 @@ fn write_enum_definition(
 
     f.newline()?;
 
+    doxygen(f, |f| {
+        f.writeln("@brief ")?;
+        docstring_print(
+            f,
+            &format!("Converts a {{enum:{}}} to a string", handle.name).into(),
+            lib,
+        )?;
+        f.writeln("@param value Enum to convert")?;
+        f.writeln("@returns String representation")
+    })?;
     f.writeln(&format!(
         "static const char* {}_to_string({} value)",
         handle.name,

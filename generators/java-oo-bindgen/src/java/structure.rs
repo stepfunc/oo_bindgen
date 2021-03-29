@@ -199,6 +199,30 @@ pub(crate) fn generate(
         f.newline()?;
 
         if !native_struct.definition().is_default_constructed() {
+            documentation(f, |f| {
+                f.newline()?;
+                docstring_print(
+                    f,
+                    &format!(
+                        "Initialize {{struct:{}}} to default values",
+                        native_struct.name()
+                    )
+                    .into(),
+                    lib,
+                )?;
+                f.newline()?;
+
+                for param in native_struct
+                    .elements()
+                    .filter(|el| !el.element_type.has_default())
+                {
+                    f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
+                    docstring_print(f, &param.doc.brief, lib)?;
+                }
+
+                Ok(())
+            })?;
+
             f.writeln(&format!(
                 "{} {}(",
                 constructor_visibility(native_struct.definition.struct_type),

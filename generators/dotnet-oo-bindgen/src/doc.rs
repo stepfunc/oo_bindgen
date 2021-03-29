@@ -87,7 +87,7 @@ fn reference_print(
         }
         DocReference::ClassDestructor(class_name) => {
             f.write(&format!(
-                "<see cref=\"{}.Dispose\" />",
+                "<see cref=\"{}.Dispose()\" />",
                 class_name.to_camel_case()
             ))?;
         }

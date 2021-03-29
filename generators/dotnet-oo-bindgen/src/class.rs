@@ -185,6 +185,11 @@ fn generate_destructor(
     f.newline()?;
 
     // Finalizer
+    documentation(f, |f| {
+        f.writeln("<summary>")?;
+        f.writeln("Finalizer")?;
+        f.write("</summary>")
+    })?;
     f.writeln(&format!("~{}()", classname))?;
     blocked(f, |f| f.writeln("Dispose(false);"))?;
 

@@ -46,7 +46,7 @@ clippy::all
 
 use crate::doc::*;
 use crate::formatting::*;
-use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
+use heck::{ShoutySnakeCase, SnakeCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
@@ -374,9 +374,10 @@ fn write_struct_definition(
                     StructElementType::StructRef(_) => None,
                     StructElementType::Enum(handle, default) => default.clone().map(|x| {
                         format!(
-                            "@ref {}_{}",
-                            handle.to_c_type(&lib.c_ffi_prefix),
-                            x.to_camel_case()
+                            "@ref {}_{}_{}",
+                            lib.c_ffi_prefix.to_shouty_snake_case(),
+                            handle.name.to_shouty_snake_case(),
+                            x.to_shouty_snake_case()
                         )
                     }),
                     StructElementType::ClassRef(_) => None,
@@ -540,9 +541,9 @@ fn write_struct_initializer(
                         Some(value) => match handle.find_variant_by_name(value) {
                             Some(variant) => format!(
                                 "{}_{}_{}",
-                                &lib.c_ffi_prefix,
-                                handle.name.to_camel_case(),
-                                variant.name.to_camel_case()
+                                lib.c_ffi_prefix.to_shouty_snake_case(),
+                                handle.name.to_shouty_snake_case(),
+                                variant.name.to_shouty_snake_case()
                             ),
                             None => panic!("Variant {} not found in {}", value, handle.name),
                         },
@@ -585,9 +586,9 @@ fn write_enum_definition(
             doxygen(f, |f| doxygen_print(f, &variant.doc, lib))?;
             f.writeln(&format!(
                 "{}_{}_{} = {},",
-                &lib.c_ffi_prefix,
-                handle.name.to_camel_case(),
-                variant.name.to_camel_case(),
+                lib.c_ffi_prefix.to_shouty_snake_case(),
+                handle.name.to_shouty_snake_case(),
+                variant.name.to_shouty_snake_case(),
                 variant.value
             ))?;
         }
@@ -610,7 +611,7 @@ fn write_enum_definition(
     f.writeln(&format!(
         "static const char* {}_{}_to_string({} value)",
         &lib.c_ffi_prefix,
-        handle.name.to_camel_case(),
+        handle.name.to_snake_case(),
         handle.to_c_type(&lib.c_ffi_prefix)
     ))?;
     blocked(f, |f| {
@@ -619,13 +620,13 @@ fn write_enum_definition(
             for variant in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}_{}: return \"{}\";",
-                    &lib.c_ffi_prefix,
-                    handle.name.to_camel_case(),
-                    variant.name.to_camel_case(),
+                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    handle.name.to_shouty_snake_case(),
+                    variant.name.to_shouty_snake_case(),
                     variant.name
                 ))?;
             }
-            f.writeln("default: return \"\";")
+            f.writeln(&format!("default: return \"Unknown{}\";", handle.name))
         })
     })
 }
@@ -641,8 +642,9 @@ fn write_class_declaration(
             doxygen_print(
                 f,
                 &Doc::from(&*format!(
-                    "Iterator of {{struct:{}}}. See @ref {}.",
+                    "Iterator of {{struct:{}}}. See @ref {}_{}.",
                     handle.item_type.name(),
+                    lib.c_ffi_prefix,
                     handle.native_func.name
                 )),
                 lib,
@@ -652,9 +654,11 @@ fn write_class_declaration(
             doxygen_print(
                 f,
                 &Doc::from(&*format!(
-                    "Collection of {}. See @ref {} and @ref {}.",
+                    "Collection of {}. See @ref {}_{} and @ref {}_{}.",
                     handle.item_type.to_c_type(&lib.c_ffi_prefix),
+                    lib.c_ffi_prefix,
                     handle.add_func.name,
+                    lib.c_ffi_prefix,
                     handle.delete_func.name
                 )),
                 lib,

@@ -27,7 +27,7 @@ static foo_structure_t create_struct()
         {
             .test = 41
         },
-        .enum_value = foo_StructureEnum_Var2,
+        .enum_value = FOO_STRUCTURE_ENUM_VAR2,
 
         .duration_millis = 4200,
         .duration_seconds = 76,
@@ -53,7 +53,7 @@ static void check_struct(foo_structure_t* structure)
     assert(fabs(structure->double_value + 56.78) < 0.001);
 
     assert(structure->structure_value.test == 41);
-    assert(structure->enum_value == foo_StructureEnum_Var2);
+    assert(structure->enum_value == FOO_STRUCTURE_ENUM_VAR2);
 
     assert(structure->duration_millis == 4200);
     assert(structure->duration_seconds == 76);

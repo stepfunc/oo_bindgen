@@ -1,5 +1,5 @@
 use crate::CFormatting;
-use heck::{CamelCase, SnakeCase};
+use heck::{ShoutySnakeCase, SnakeCase};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::Library;
@@ -68,14 +68,16 @@ fn reference_print(
         DocReference::ClassConstructor(class_name) => {
             let handle = lib.find_class(class_name).unwrap();
             f.write(&format!(
-                "@ref {}",
+                "@ref {}_{}",
+                lib.c_ffi_prefix,
                 handle.constructor.as_ref().unwrap().name
             ))?;
         }
         DocReference::ClassDestructor(class_name) => {
             let handle = lib.find_class(class_name).unwrap();
             f.write(&format!(
-                "@ref {}",
+                "@ref {}_{}",
+                lib.c_ffi_prefix,
                 handle.destructor.as_ref().unwrap().name
             ))?;
         }
@@ -93,7 +95,7 @@ fn reference_print(
                 .find_method(method_name)
                 .unwrap()
                 .name;
-            f.write(&format!("@ref {}", func_name))?;
+            f.write(&format!("@ref {}_{}", lib.c_ffi_prefix, func_name))?;
         }
         DocReference::StructElement(struct_name, element_name) => {
             let handle = lib.find_struct(struct_name).unwrap();
@@ -111,9 +113,9 @@ fn reference_print(
             let handle = lib.find_enum(enum_name).unwrap();
             f.write(&format!(
                 "@ref {}_{}_{}",
-                lib.c_ffi_prefix,
-                handle.name.to_camel_case(),
-                variant_name.to_camel_case()
+                lib.c_ffi_prefix.to_shouty_snake_case(),
+                handle.name.to_shouty_snake_case(),
+                variant_name.to_shouty_snake_case()
             ))?;
         }
         DocReference::Interface(interface_name) => {

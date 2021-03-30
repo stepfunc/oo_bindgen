@@ -11,22 +11,22 @@
 static void test_integer_out_parameter()
 {
     uint32_t number = 0;
-    assert(foo_get_special_number(WRONG_PASSWORD, &number) == foo_MyError_BadPassword);
+    assert(foo_get_special_number(WRONG_PASSWORD, &number) == FOO_MY_ERROR_BAD_PASSWORD);
     assert(number == 0);
-    assert(foo_get_special_number(CORRECT_PASSWORD, &number) == foo_MyError_Ok);
+    assert(foo_get_special_number(CORRECT_PASSWORD, &number) == FOO_MY_ERROR_OK);
     assert(number == MAGIC_NUMBER);
 }
 
 static void test_allocation_via_out_parameter()
 {
     foo_class_with_password_t* instance = NULL;
-    assert(foo_create_class_with_password(WRONG_PASSWORD, &instance) == foo_MyError_BadPassword);
+    assert(foo_create_class_with_password(WRONG_PASSWORD, &instance) == FOO_MY_ERROR_BAD_PASSWORD);
     assert(!instance);
-    assert(foo_create_class_with_password(CORRECT_PASSWORD, &instance) == foo_MyError_Ok);
+    assert(foo_create_class_with_password(CORRECT_PASSWORD, &instance) == FOO_MY_ERROR_OK);
     assert(instance);
 
     uint32_t number = 0;
-    assert(foo_get_special_value_from_class(instance, &number) == foo_MyError_Ok);
+    assert(foo_get_special_value_from_class(instance, &number) == FOO_MY_ERROR_OK);
     assert(number == MAGIC_NUMBER);
 
     foo_destroy_class_with_password(instance);

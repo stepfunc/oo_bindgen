@@ -108,8 +108,10 @@ pub(crate) fn generate_structs_cache(
                 f.writeln(&ffi_struct_name)?;
                 blocked(f, |f| {
                     for field in &structure.elements {
-                        if let Some(conversion) =
-                            field.element_type.to_type().conversion(&config.ffi_name)
+                        if let Some(conversion) = field
+                            .element_type
+                            .to_type()
+                            .conversion(&config.ffi_name, &lib.c_ffi_prefix)
                         {
                             conversion.convert_to_rust(
                                 f,
@@ -133,8 +135,10 @@ pub(crate) fn generate_structs_cache(
             f.writeln(&format!("pub(crate) fn struct_to_rust_cleanup(&self, _cache: &super::JCache, _env: &jni::JNIEnv, _value: &{})", ffi_struct_name))?;
             blocked(f, |f| {
                 for field in &structure.elements {
-                    if let Some(conversion) =
-                        field.element_type.to_type().conversion(&config.ffi_name)
+                    if let Some(conversion) = field
+                        .element_type
+                        .to_type()
+                        .conversion(&config.ffi_name, &lib.c_ffi_prefix)
                     {
                         conversion.convert_to_rust_cleanup(
                             f,
@@ -152,8 +156,10 @@ pub(crate) fn generate_structs_cache(
             blocked(f, |f| {
                 f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
                 for field in &structure.elements {
-                    if let Some(conversion) =
-                        field.element_type.to_type().conversion(&config.ffi_name)
+                    if let Some(conversion) = field
+                        .element_type
+                        .to_type()
+                        .conversion(&config.ffi_name, &lib.c_ffi_prefix)
                     {
                         conversion.convert_from_rust(
                             f,

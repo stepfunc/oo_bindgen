@@ -16,6 +16,7 @@ mod structure;
 
 pub fn build_lib() -> Result<Library, BindingError> {
     let mut builder = LibraryBuilder::new("foo", oo_bindgen::Version::parse("1.2.3").unwrap());
+    builder.c_ffi_prefix("foo")?;
     builder.description("Foo is an interesting lib")?;
     builder.license(
         [

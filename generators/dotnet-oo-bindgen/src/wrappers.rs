@@ -20,7 +20,7 @@ pub(crate) fn generate_native_functions_class(
         blocked(f, |f| {
             for func in lib.native_functions() {
                 f.newline()?;
-                write_conversion_wrapper(f, func)?;
+                write_conversion_wrapper(f, func, &lib.c_ffi_prefix)?;
             }
             Ok(())
         })?;
@@ -30,7 +30,7 @@ pub(crate) fn generate_native_functions_class(
         blocked(f, |f| {
             for func in lib.native_functions().filter(|x| x.error_type.is_some()) {
                 f.newline()?;
-                write_exception_wrapper(f, func)?;
+                write_exception_wrapper(f, func, &lib.c_ffi_prefix)?;
             }
             Ok(())
         })?;
@@ -40,7 +40,7 @@ pub(crate) fn generate_native_functions_class(
         f.writeln("internal class PInvoke")?;
         blocked(f, |f| {
             for func in lib.native_functions() {
-                write_pinvoke_signature(f, func, config)?;
+                write_pinvoke_signature(f, func, &lib.c_ffi_prefix, config)?;
             }
             Ok(())
         })
@@ -51,6 +51,7 @@ fn write_exception_and_return_block(
     f: &mut dyn Printer,
     func: &NativeFunctionHandle,
     params: &str,
+    prefix: &str,
 ) -> FormattingResult<()> {
     match func.get_type() {
         NativeFunctionType::NoErrorNoReturn => {
@@ -60,7 +61,10 @@ fn write_exception_and_return_block(
             unreachable!()
         }
         NativeFunctionType::ErrorNoReturn(err) => {
-            f.writeln(&format!("var error = PInvoke.{}({});", func.name, params))?;
+            f.writeln(&format!(
+                "var error = PInvoke.{}_{}({});",
+                prefix, func.name, params
+            ))?;
             f.writeln(&format!("if(error != {}.Ok)", err.inner.name))?;
             blocked(f, |f| {
                 f.writeln(&format!("throw new {}(error);", err.exception_name))
@@ -69,8 +73,8 @@ fn write_exception_and_return_block(
         NativeFunctionType::ErrorWithReturn(err, ret, _) => {
             f.writeln(&format!("{} _return_value;", ret.as_native_type()))?;
             f.writeln(&format!(
-                "var _error_result = PInvoke.{}({}, out _return_value);",
-                func.name, params
+                "var _error_result = PInvoke.{}_{}({}, out _return_value);",
+                prefix, func.name, params
             ))?;
             f.writeln(&format!("if(_error_result != {}.Ok)", err.inner.name))?;
             blocked(f, |f| {
@@ -84,6 +88,7 @@ fn write_exception_and_return_block(
 fn write_conversion_wrapper(
     f: &mut dyn Printer,
     func: &NativeFunctionHandle,
+    prefix: &str,
 ) -> FormattingResult<()> {
     f.write(&format!(
         "internal static {} {}(",
@@ -120,18 +125,20 @@ fn write_conversion_wrapper(
         if !func.return_type.is_void() {
             f.write("return ")?;
         }
-        f.write(&format!("{}.{}({});", target, func.name, params))
+        f.write(&format!("{}.{}_{}({});", target, prefix, func.name, params))
     })
 }
 
 fn write_exception_wrapper(
     f: &mut dyn Printer,
     func: &NativeFunctionHandle,
+    prefix: &str,
 ) -> FormattingResult<()> {
     f.write(&format!(
-        "internal static {} {}(",
+        "internal static {} {}_{}(",
         func.return_type.as_native_type(),
-        func.name
+        prefix,
+        func.name,
     ))?;
 
     f.write(
@@ -152,12 +159,15 @@ fn write_exception_wrapper(
         .collect::<Vec<String>>()
         .join(", ");
 
-    blocked(f, |f| write_exception_and_return_block(f, func, &params))
+    blocked(f, |f| {
+        write_exception_and_return_block(f, func, &params, prefix)
+    })
 }
 
 fn write_pinvoke_signature(
     f: &mut dyn Printer,
     handle: &NativeFunctionHandle,
+    prefix: &str,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
     f.writeln(&format!(
@@ -168,15 +178,17 @@ fn write_pinvoke_signature(
 
     if let Some(err) = &handle.error_type {
         f.write(&format!(
-            "internal static extern {} {}(",
+            "internal static extern {} {}_{}(",
             err.to_enum_type().as_native_type(),
-            handle.name
+            prefix,
+            handle.name,
         ))?;
     } else {
         f.write(&format!(
-            "internal static extern {} {}(",
+            "internal static extern {} {}_{}(",
             handle.return_type.as_native_type(),
-            handle.name
+            prefix,
+            handle.name,
         ))?;
     }
 

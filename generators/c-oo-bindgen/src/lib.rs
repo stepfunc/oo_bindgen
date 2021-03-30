@@ -46,7 +46,7 @@ clippy::all
 
 use crate::doc::*;
 use crate::formatting::*;
-use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
+use heck::{ShoutySnakeCase, SnakeCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
@@ -57,7 +57,6 @@ use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
 use oo_bindgen::*;
-use std::fmt::Display;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -67,50 +66,93 @@ mod doc;
 mod formatting;
 
 trait CFormatting {
-    fn to_c_type(&self) -> String;
+    fn to_c_type(&self, prefix: &str) -> String;
 }
 
 impl CFormatting for NativeStructDeclarationHandle {
-    fn to_c_type(&self) -> String {
-        format!("{}_t", self.name.to_snake_case())
+    fn to_c_type(&self, prefix: &str) -> String {
+        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
     }
 }
 
 impl CFormatting for NativeStructHandle {
-    fn to_c_type(&self) -> String {
-        format!("{}_t", self.name().to_snake_case())
+    fn to_c_type(&self, prefix: &str) -> String {
+        format!(
+            "{}_{}_t",
+            prefix.to_snake_case(),
+            self.name().to_snake_case()
+        )
     }
 }
 
 impl CFormatting for NativeEnumHandle {
-    fn to_c_type(&self) -> String {
-        format!("{}_t", self.name.to_snake_case())
+    fn to_c_type(&self, prefix: &str) -> String {
+        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
     }
 }
 
 impl CFormatting for ClassDeclarationHandle {
-    fn to_c_type(&self) -> String {
-        format!("{}_t", self.name.to_snake_case())
+    fn to_c_type(&self, prefix: &str) -> String {
+        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
     }
 }
 
 impl CFormatting for Interface {
-    fn to_c_type(&self) -> String {
-        format!("{}_t", self.name.to_snake_case())
+    fn to_c_type(&self, prefix: &str) -> String {
+        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
     }
 }
 
 impl CFormatting for Symbol {
-    fn to_c_type(&self) -> String {
+    fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            Symbol::NativeFunction(handle) => handle.name.to_owned(),
-            Symbol::Struct(handle) => handle.declaration().to_c_type(),
-            Symbol::Enum(handle) => handle.to_c_type(),
-            Symbol::Class(handle) => handle.declaration().to_c_type(),
+            Symbol::NativeFunction(handle) => format!("{}_{}", prefix.to_snake_case(), handle.name),
+            Symbol::Struct(handle) => handle.declaration().to_c_type(prefix),
+            Symbol::Enum(handle) => handle.to_c_type(prefix),
+            Symbol::Class(handle) => handle.declaration().to_c_type(prefix),
             Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
-            Symbol::Interface(handle) => handle.to_c_type(),
-            Symbol::Iterator(handle) => handle.iter_type.to_c_type(),
-            Symbol::Collection(handle) => handle.collection_type.to_c_type(),
+            Symbol::Interface(handle) => handle.to_c_type(prefix),
+            Symbol::Iterator(handle) => handle.iter_type.to_c_type(prefix),
+            Symbol::Collection(handle) => handle.collection_type.to_c_type(prefix),
+        }
+    }
+}
+
+impl CFormatting for Type {
+    fn to_c_type(&self, prefix: &str) -> String {
+        match self {
+            Type::Bool => "bool".to_string(),
+            Type::Uint8 => "uint8_t".to_string(),
+            Type::Sint8 => "int8_t".to_string(),
+            Type::Uint16 => "uint16_t".to_string(),
+            Type::Sint16 => "int16_t".to_string(),
+            Type::Uint32 => "uint32_t".to_string(),
+            Type::Sint32 => "int32_t".to_string(),
+            Type::Uint64 => "uint64_t".to_string(),
+            Type::Sint64 => "int64_t".to_string(),
+            Type::Float => "float".to_string(),
+            Type::Double => "double".to_string(),
+            Type::String => "const char*".to_string(),
+            Type::Struct(handle) => handle.to_c_type(prefix),
+            Type::StructRef(handle) => format!("{}*", handle.to_c_type(prefix)),
+            Type::Enum(handle) => handle.to_c_type(prefix),
+            Type::ClassRef(handle) => format!("{}*", handle.to_c_type(prefix)),
+            Type::Interface(handle) => handle.to_c_type(prefix),
+            Type::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
+            Type::Collection(handle) => format!("{}*", handle.collection_type.to_c_type(prefix)),
+            Type::Duration(mapping) => match mapping {
+                DurationMapping::Milliseconds | DurationMapping::Seconds => "uint64_t".to_string(),
+                DurationMapping::SecondsFloat => "float".to_string(),
+            },
+        }
+    }
+}
+
+impl CFormatting for ReturnType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        match self {
+            ReturnType::Void => "void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.to_c_type(prefix),
         }
     }
 }
@@ -184,7 +226,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
 }
 
 fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult<()> {
-    let uppercase_name = lib.name.to_uppercase();
+    let uppercase_name = lib.c_ffi_prefix.to_uppercase();
 
     // Open file
     fs::create_dir_all(&path)?;
@@ -243,8 +285,8 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
                 Statement::NativeStructDeclaration(handle) => {
                     f.writeln(&format!(
                         "typedef struct {} {};",
-                        handle.to_c_type(),
-                        handle.to_c_type()
+                        handle.to_c_type(&lib.c_ffi_prefix),
+                        handle.to_c_type(&lib.c_ffi_prefix)
                     ))?;
                 }
                 Statement::NativeStructDefinition(handle) => {
@@ -277,7 +319,8 @@ fn write_constants_definition(
     for item in &handle.values {
         doxygen(f, |f| doxygen_print(f, &item.doc, lib))?;
         f.writeln(&format!(
-            "#define {}_{} {}",
+            "#define {}_{}_{} {}",
+            lib.c_ffi_prefix.to_shouty_snake_case(),
             handle.name.to_shouty_snake_case(),
             item.name.to_shouty_snake_case(),
             get_constant_value(item.value)
@@ -302,7 +345,10 @@ fn write_struct_definition(
     doxygen(f, |f| doxygen_print(f, &doc, lib))?;
 
     // Write the struct definition
-    f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
+    f.writeln(&format!(
+        "typedef struct {}",
+        handle.to_c_type(&lib.c_ffi_prefix)
+    ))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.elements {
@@ -327,7 +373,12 @@ fn write_struct_definition(
                     StructElementType::Struct(_) => None,
                     StructElementType::StructRef(_) => None,
                     StructElementType::Enum(handle, default) => default.clone().map(|x| {
-                        format!("@ref {}_{}", handle.name.to_camel_case(), x.to_camel_case())
+                        format!(
+                            "@ref {}_{}_{}",
+                            lib.c_ffi_prefix.to_shouty_snake_case(),
+                            handle.name.to_shouty_snake_case(),
+                            x.to_shouty_snake_case()
+                        )
                     }),
                     StructElementType::ClassRef(_) => None,
                     StructElementType::Interface(_) => None,
@@ -350,13 +401,13 @@ fn write_struct_definition(
             })?;
             f.writeln(&format!(
                 "{} {};",
-                CType(&element.element_type.to_type()),
+                element.element_type.to_type().to_c_type(&lib.c_ffi_prefix),
                 element.name.to_snake_case(),
             ))?;
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_c_type()))?;
+    f.writeln(&format!("}} {};", handle.to_c_type(&lib.c_ffi_prefix)))?;
 
     // user should never try to initialize opaque structs, so don't suggest this is OK
     if handle.struct_type != NativeStructType::Opaque {
@@ -404,7 +455,7 @@ fn write_struct_initializer(
         .map(|el| {
             format!(
                 "{} {}",
-                CType(&el.element_type.to_type()),
+                el.element_type.to_type().to_c_type(&lib.c_ffi_prefix),
                 el.name.to_snake_case()
             )
         })
@@ -412,13 +463,14 @@ fn write_struct_initializer(
         .join(", ");
 
     f.writeln(&format!(
-        "static {} {}_init({})",
-        handle.to_c_type(),
+        "static {} {}_{}_init({})",
+        handle.to_c_type(&lib.c_ffi_prefix),
+        &lib.c_ffi_prefix,
         handle.name().to_snake_case(),
         params
     ))?;
     blocked(f, |f| {
-        f.writeln(&format!("return ({})", handle.to_c_type()))?;
+        f.writeln(&format!("return ({})", handle.to_c_type(&lib.c_ffi_prefix)))?;
         f.writeln("{")?;
         indented(f, |f| {
             for el in handle.elements() {
@@ -474,7 +526,11 @@ fn write_struct_initializer(
                     },
                     StructElementType::Struct(handle) => {
                         if handle.is_default_constructed() {
-                            format!("{}_init()", handle.name().to_snake_case())
+                            format!(
+                                "{}_{}_init()",
+                                &lib.c_ffi_prefix,
+                                handle.name().to_snake_case()
+                            )
                         } else {
                             el.name.to_snake_case()
                         }
@@ -484,9 +540,10 @@ fn write_struct_initializer(
                         None => el.name.to_snake_case(),
                         Some(value) => match handle.find_variant_by_name(value) {
                             Some(variant) => format!(
-                                "{}_{}",
-                                handle.name.to_camel_case(),
-                                variant.name.to_camel_case()
+                                "{}_{}_{}",
+                                lib.c_ffi_prefix.to_shouty_snake_case(),
+                                handle.name.to_shouty_snake_case(),
+                                variant.name.to_shouty_snake_case()
                             ),
                             None => panic!("Variant {} not found in {}", value, handle.name),
                         },
@@ -519,21 +576,25 @@ fn write_enum_definition(
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    f.writeln(&format!("typedef enum {}", handle.to_c_type()))?;
+    f.writeln(&format!(
+        "typedef enum {}",
+        handle.to_c_type(&lib.c_ffi_prefix)
+    ))?;
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
             doxygen(f, |f| doxygen_print(f, &variant.doc, lib))?;
             f.writeln(&format!(
-                "{}_{} = {},",
-                handle.name.to_camel_case(),
-                variant.name.to_camel_case(),
+                "{}_{}_{} = {},",
+                lib.c_ffi_prefix.to_shouty_snake_case(),
+                handle.name.to_shouty_snake_case(),
+                variant.name.to_shouty_snake_case(),
                 variant.value
             ))?;
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_c_type()))?;
+    f.writeln(&format!("}} {};", handle.to_c_type(&lib.c_ffi_prefix)))?;
 
     f.newline()?;
 
@@ -548,22 +609,24 @@ fn write_enum_definition(
         f.writeln("@returns String representation")
     })?;
     f.writeln(&format!(
-        "static const char* {}_to_string({} value)",
-        handle.name,
-        handle.to_c_type()
+        "static const char* {}_{}_to_string({} value)",
+        &lib.c_ffi_prefix,
+        handle.name.to_snake_case(),
+        handle.to_c_type(&lib.c_ffi_prefix)
     ))?;
     blocked(f, |f| {
         f.writeln("switch (value)")?;
         blocked(f, |f| {
             for variant in &handle.variants {
                 f.writeln(&format!(
-                    "case {}_{}: return \"{}\";",
-                    handle.name.to_camel_case(),
-                    variant.name.to_camel_case(),
+                    "case {}_{}_{}: return \"{}\";",
+                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    handle.name.to_shouty_snake_case(),
+                    variant.name.to_shouty_snake_case(),
                     variant.name
                 ))?;
             }
-            f.writeln("default: return \"\";")
+            f.writeln(&format!("default: return \"Unknown{}\";", handle.name))
         })
     })
 }
@@ -579,8 +642,9 @@ fn write_class_declaration(
             doxygen_print(
                 f,
                 &Doc::from(&*format!(
-                    "Iterator of {{struct:{}}}. See @ref {}.",
+                    "Iterator of {{struct:{}}}. See @ref {}_{}.",
                     handle.item_type.name(),
+                    lib.c_ffi_prefix,
                     handle.native_func.name
                 )),
                 lib,
@@ -590,9 +654,11 @@ fn write_class_declaration(
             doxygen_print(
                 f,
                 &Doc::from(&*format!(
-                    "Collection of {}. See @ref {} and @ref {}.",
-                    CType(&handle.item_type).to_string(),
+                    "Collection of {}. See @ref {}_{} and @ref {}_{}.",
+                    handle.item_type.to_c_type(&lib.c_ffi_prefix),
+                    lib.c_ffi_prefix,
                     handle.add_func.name,
+                    lib.c_ffi_prefix,
                     handle.delete_func.name
                 )),
                 lib,
@@ -603,8 +669,8 @@ fn write_class_declaration(
 
     f.writeln(&format!(
         "typedef struct {} {};",
-        handle.to_c_type(),
-        handle.to_c_type()
+        handle.to_c_type(&lib.c_ffi_prefix),
+        handle.to_c_type(&lib.c_ffi_prefix)
     ))
 }
 
@@ -665,14 +731,16 @@ fn write_function(
 
     if let Some(error_type) = &handle.error_type {
         f.writeln(&format!(
-            "{} {}(",
-            CType(&Type::Enum(error_type.inner.clone())),
+            "{} {}_{}(",
+            error_type.inner.to_c_type(&lib.c_ffi_prefix),
+            &lib.c_ffi_prefix,
             handle.name
         ))?;
     } else {
         f.writeln(&format!(
-            "{} {}(",
-            CReturnType(&handle.return_type),
+            "{} {}_{}(",
+            handle.return_type.to_c_type(&lib.c_ffi_prefix),
+            &lib.c_ffi_prefix,
             handle.name
         ))?;
     }
@@ -684,7 +752,7 @@ fn write_function(
             .map(|param| {
                 format!(
                     "{} {}",
-                    CType(&param.param_type),
+                    param.param_type.to_c_type(&lib.c_ffi_prefix),
                     param.name.to_snake_case()
                 )
             })
@@ -696,7 +764,7 @@ fn write_function(
         if let ReturnType::Type(x, _) = &handle.return_type {
             if !handle.parameters.is_empty() {
                 f.write(", ")?;
-                f.write(&format!("{}* out", CType(x)))?;
+                f.write(&format!("{}* out", x.to_c_type(&lib.c_ffi_prefix)))?;
             }
         }
     }
@@ -707,7 +775,7 @@ fn write_function(
 fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    let struct_name = handle.to_c_type();
+    let struct_name = handle.to_c_type(&lib.c_ffi_prefix);
 
     f.writeln(&format!("typedef struct {}", struct_name))?;
     f.writeln("{")?;
@@ -754,7 +822,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                     // Print function signature
                     f.write(&format!(
                         "{} (*{})(",
-                        CReturnType(&handle.return_type),
+                        handle.return_type.to_c_type(&lib.c_ffi_prefix),
                         handle.name.to_snake_case(),
                     ))?;
 
@@ -765,7 +833,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                             .map(|param| match param {
                                 CallbackParameter::Arg(_) => "void*".to_string(),
                                 CallbackParameter::Parameter(param) => {
-                                    format!("{}", CType(&param.param_type))
+                                    param.param_type.to_c_type(&lib.c_ffi_prefix)
                                 }
                             })
                             .collect::<Vec<String>>()
@@ -814,8 +882,9 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
         Ok(())
     })?;
     f.writeln(&format!(
-        "static {} {}_init(",
+        "static {} {}_{}_init(",
         struct_name,
+        &lib.c_ffi_prefix,
         handle.name.to_snake_case()
     ))?;
     indented(f, |f| {
@@ -827,7 +896,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                 InterfaceElement::CallbackFunction(handle) => {
                     f.writeln(&format!(
                         "{} (*{})(",
-                        CReturnType(&handle.return_type),
+                        handle.return_type.to_c_type(&lib.c_ffi_prefix),
                         handle.name.to_snake_case(),
                     ))?;
 
@@ -838,7 +907,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                             .map(|param| match param {
                                 CallbackParameter::Arg(_) => "void*".to_string(),
                                 CallbackParameter::Parameter(param) => {
-                                    format!("{}", CType(&param.param_type))
+                                    param.param_type.to_c_type(&lib.c_ffi_prefix)
                                 }
                             })
                             .collect::<Vec<String>>()
@@ -989,47 +1058,4 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
         f.writeln("message(FATAL_ERROR \"Platform not supported\")")
     })?;
     f.writeln("endif()")
-}
-
-struct CReturnType<'a>(&'a ReturnType);
-
-impl<'a> Display for CReturnType<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self.0 {
-            ReturnType::Void => write!(f, "void"),
-            ReturnType::Type(return_type, _) => write!(f, "{}", CType(&return_type)),
-        }
-    }
-}
-
-struct CType<'a>(&'a Type);
-
-impl<'a> Display for CType<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self.0 {
-            Type::Bool => write!(f, "bool"),
-            Type::Uint8 => write!(f, "uint8_t"),
-            Type::Sint8 => write!(f, "int8_t"),
-            Type::Uint16 => write!(f, "uint16_t"),
-            Type::Sint16 => write!(f, "int16_t"),
-            Type::Uint32 => write!(f, "uint32_t"),
-            Type::Sint32 => write!(f, "int32_t"),
-            Type::Uint64 => write!(f, "uint64_t"),
-            Type::Sint64 => write!(f, "int64_t"),
-            Type::Float => write!(f, "float"),
-            Type::Double => write!(f, "double"),
-            Type::String => write!(f, "const char*"),
-            Type::Struct(handle) => write!(f, "{}", handle.to_c_type()),
-            Type::StructRef(handle) => write!(f, "{}*", handle.to_c_type()),
-            Type::Enum(handle) => write!(f, "{}", handle.to_c_type()),
-            Type::ClassRef(handle) => write!(f, "{}*", handle.to_c_type()),
-            Type::Interface(handle) => write!(f, "{}", handle.to_c_type()),
-            Type::Iterator(handle) => write!(f, "{}*", handle.iter_type.to_c_type()),
-            Type::Collection(handle) => write!(f, "{}*", handle.collection_type.to_c_type()),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => write!(f, "uint64_t"),
-                DurationMapping::SecondsFloat => write!(f, "float"),
-            },
-        }
-    }
 }

@@ -83,7 +83,7 @@ impl<'a> RustCodegen<'a> {
                 }
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::NativeFunctionDeclaration(handle) => {
-                    Self::write_function(&mut f, handle)?
+                    Self::write_function(&mut f, handle, &self.library.c_ffi_prefix)?
                 }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
                 _ => (),
@@ -331,10 +331,17 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_function(f: &mut dyn Printer, handle: &NativeFunctionHandle) -> FormattingResult<()> {
+    fn write_function(
+        f: &mut dyn Printer,
+        handle: &NativeFunctionHandle,
+        prefix: &str,
+    ) -> FormattingResult<()> {
         f.writeln("#[allow(clippy::missing_safety_doc)]")?;
         f.writeln("#[no_mangle]")?;
-        f.writeln(&format!("pub unsafe extern \"C\" fn {}(", handle.name))?;
+        f.writeln(&format!(
+            "pub unsafe extern \"C\" fn {}_{}(",
+            prefix, handle.name
+        ))?;
 
         f.write(
             &handle

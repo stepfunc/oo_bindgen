@@ -275,7 +275,10 @@ fn generate_functions(
 
             // Perform the conversion of the parameters
             for param in &handle.parameters {
-                if let Some(conversion) = param.param_type.conversion(&config.ffi_name) {
+                if let Some(conversion) = param
+                    .param_type
+                    .conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                {
                     conversion.convert_to_rust(
                         f,
                         &param.name,
@@ -309,8 +312,8 @@ fn generate_functions(
             };
 
             f.write(&format!(
-                "unsafe {{ {}::ffi::{}(",
-                config.ffi_name, handle.name
+                "unsafe {{ {}::ffi::{}_{}(",
+                config.ffi_name, lib.c_ffi_prefix, handle.name
             ))?;
             f.write(
                 &handle
@@ -335,7 +338,9 @@ fn generate_functions(
             match handle.get_type() {
                 NativeFunctionType::NoErrorNoReturn => (),
                 NativeFunctionType::NoErrorWithReturn(return_type, _) => {
-                    if let Some(conversion) = return_type.conversion(&config.ffi_name) {
+                    if let Some(conversion) =
+                        return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                    {
                         conversion.convert_from_rust(f, "_result", "let _result = ")?;
                         f.write(";")?;
                     }
@@ -359,7 +364,9 @@ fn generate_functions(
                     f.writeln("let _result = if _result == 0")?;
                     blocked(f, |f| {
                         f.writeln("let _result = unsafe { _out.assume_init() };")?;
-                        if let Some(conversion) = return_type.conversion(&config.ffi_name) {
+                        if let Some(conversion) =
+                            return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                        {
                             conversion.convert_from_rust(f, "_result", "")?;
                         }
                         Ok(())
@@ -386,7 +393,10 @@ fn generate_functions(
 
             // Conversion cleanup
             for param in &handle.parameters {
-                if let Some(conversion) = param.param_type.conversion(&config.ffi_name) {
+                if let Some(conversion) = param
+                    .param_type
+                    .conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                {
                     conversion.convert_to_rust_cleanup(f, &param.name.to_snake_case())?;
                 }
 

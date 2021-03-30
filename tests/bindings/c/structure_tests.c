@@ -6,9 +6,9 @@
 
 #define ENGLISH_STRING_1 "I like to be home with my monkey and my dog"
 
-static structure_t create_struct()
+static foo_structure_t create_struct()
 {
-    structure_t result =
+    foo_structure_t result =
     {
         .boolean_value = true,
         .uint8_value = 1,
@@ -27,7 +27,7 @@ static structure_t create_struct()
         {
             .test = 41
         },
-        .enum_value = StructureEnum_Var2,
+        .enum_value = foo_StructureEnum_Var2,
 
         .duration_millis = 4200,
         .duration_seconds = 76,
@@ -37,7 +37,7 @@ static structure_t create_struct()
     return result;
 }
 
-static void check_struct(structure_t* structure)
+static void check_struct(foo_structure_t* structure)
 {
     assert(structure->boolean_value == true);
     assert(structure->uint8_value == 1);
@@ -53,7 +53,7 @@ static void check_struct(structure_t* structure)
     assert(fabs(structure->double_value + 56.78) < 0.001);
 
     assert(structure->structure_value.test == 41);
-    assert(structure->enum_value == StructureEnum_Var2);
+    assert(structure->enum_value == foo_StructureEnum_Var2);
 
     assert(structure->duration_millis == 4200);
     assert(structure->duration_seconds == 76);
@@ -62,21 +62,21 @@ static void check_struct(structure_t* structure)
 
 static void test_struct_by_value()
 {
-    structure_t test = create_struct();
-    structure_t result = struct_by_value_echo(test);
+    foo_structure_t test = create_struct();
+    foo_structure_t result = foo_struct_by_value_echo(test);
     check_struct(&result);
 }
 
 static void test_struct_by_reference()
 {
-    structure_t test = create_struct();
-    structure_t result = struct_by_reference_echo(&test);
+    foo_structure_t test = create_struct();
+    foo_structure_t result = foo_struct_by_reference_echo(&test);
     check_struct(&result);
 }
 
 static void test_struct_init()
 {
-    structure_t test = structure_init((structure_interface_t) {NULL, NULL, NULL});
+    foo_structure_t test = foo_structure_init((foo_structure_interface_t) {NULL, NULL, NULL});
     assert(strcmp("Hello", test.string_value) == 0);
     test.string_value = ENGLISH_STRING_1;
     check_struct(&test);

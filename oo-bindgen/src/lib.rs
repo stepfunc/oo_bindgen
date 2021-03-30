@@ -84,6 +84,8 @@ pub enum BindingError {
     // Global errors
     #[error("Symbol '{}' already used in the library", name)]
     SymbolAlreadyUsed { name: String },
+    #[error("C FFI prefix already set")]
+    FfiPrefixAlreadySet,
     #[error("Description already set")]
     DescriptionAlreadySet,
 
@@ -354,6 +356,7 @@ pub enum Statement {
 pub struct Library {
     pub name: String,
     pub version: Version,
+    pub c_ffi_prefix: String,
     pub description: Option<String>,
     pub license: Vec<String>,
     statements: Vec<Statement>,
@@ -563,6 +566,7 @@ impl<'a> IntoIterator for &'a Library {
 pub struct LibraryBuilder {
     name: String,
     version: Version,
+    c_ffi_prefix: Option<String>,
     description: Option<String>,
     license: Vec<String>,
 
@@ -592,6 +596,7 @@ impl LibraryBuilder {
         Self {
             name: name.into(),
             version,
+            c_ffi_prefix: None,
             description: None,
             license: Vec::new(),
 
@@ -675,8 +680,9 @@ impl LibraryBuilder {
         }
 
         let lib = Library {
-            name: self.name,
+            name: self.name.clone(),
             version: self.version,
+            c_ffi_prefix: self.c_ffi_prefix.unwrap_or(self.name),
             description: self.description,
             license: self.license,
             statements: self.statements,
@@ -688,6 +694,16 @@ impl LibraryBuilder {
         doc::validate_library_docs(&lib)?;
 
         Ok(lib)
+    }
+
+    pub fn c_ffi_prefix<T: Into<String>>(&mut self, c_ffi_prefix: T) -> Result<()> {
+        match self.c_ffi_prefix {
+            Some(_) => Err(BindingError::FfiPrefixAlreadySet),
+            None => {
+                self.c_ffi_prefix = Some(c_ffi_prefix.into());
+                Ok(())
+            }
+        }
     }
 
     pub fn description<T: Into<String>>(&mut self, description: T) -> Result<()> {

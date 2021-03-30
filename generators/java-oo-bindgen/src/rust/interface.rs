@@ -158,6 +158,7 @@ pub(crate) fn generate_interfaces_cache(
                             &callback.name.to_snake_case(),
                             &lib_path,
                             &config.ffi_name,
+                            &lib.c_ffi_prefix,
                             &callback.arg_name,
                             callback.params().collect(),
                             &callback.return_type,
@@ -165,7 +166,9 @@ pub(crate) fn generate_interfaces_cache(
 
                         // Convert return value
                         if let ReturnType::Type(return_type, _) = &callback.return_type {
-                            if let Some(conversion) = return_type.conversion(&config.ffi_name) {
+                            if let Some(conversion) =
+                                return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                            {
                                 conversion.convert_to_rust(
                                     f,
                                     &format!("_result.{}", return_type.convert_jvalue()),
@@ -244,6 +247,7 @@ fn call_java_callback<'a>(
     callback_name: &str,
     lib_path: &str,
     ffi_name: &str,
+    prefix: &str,
     arg_name: &str,
     params: Vec<&'a Parameter>,
     return_type: &ReturnType,
@@ -265,7 +269,7 @@ fn call_java_callback<'a>(
 
     // Perform the conversion of the parameters
     for param in &params {
-        if let Some(conversion) = param.param_type.conversion(ffi_name) {
+        if let Some(conversion) = param.param_type.conversion(ffi_name, prefix) {
             conversion.convert_from_rust(
                 f,
                 &param.name,

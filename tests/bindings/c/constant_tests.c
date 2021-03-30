@@ -5,6 +5,6 @@
 
 void constant_tests()
 {
-    assert(SPECIAL_VALUES_ONE == 1);
-    assert(SPECIAL_VALUES_TWO == 2);
+    assert(FOO_SPECIAL_VALUES_ONE == 1);
+    assert(FOO_SPECIAL_VALUES_TWO == 2);
 }

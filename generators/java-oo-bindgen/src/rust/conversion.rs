@@ -28,9 +28,10 @@ pub(crate) trait JniType {
         from: &str,
         to: &str,
         lib_name: &str,
+        prefix: &str,
     ) -> FormattingResult<()>;
     /// Returns converter is required by the type
-    fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>>;
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
     fn requires_local_ref_cleanup(&self) -> bool;
     /// Check the parameter for null value. Must return an `Err(String)` if it's the case.
@@ -157,6 +158,7 @@ impl JniType for Type {
         from: &str,
         to: &str,
         lib_name: &str,
+        prefix: &str,
     ) -> FormattingResult<()> {
         match self {
             Type::Bool => f.writeln(&format!(
@@ -202,15 +204,18 @@ impl JniType for Type {
                 InterfaceConverter(handle.clone()).convert_to_rust(f, from, to)
             }
             Type::Iterator(handle) => {
-                IteratorConverter(handle.clone(), lib_name.to_string()).convert_to_rust(f, from, to)
+                IteratorConverter(handle.clone(), lib_name.to_string(), prefix.to_string())
+                    .convert_to_rust(f, from, to)
             }
-            Type::Collection(handle) => CollectionConverter(handle.clone(), lib_name.to_string())
-                .convert_to_rust(f, from, to),
+            Type::Collection(handle) => {
+                CollectionConverter(handle.clone(), lib_name.to_string(), prefix.to_string())
+                    .convert_to_rust(f, from, to)
+            }
             Type::Duration(mapping) => DurationConverter(*mapping).convert_to_rust(f, from, to),
         }
     }
 
-    fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>> {
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
             Type::Bool => Some(Box::new(BooleanConverter)),
             Type::Uint8 => Some(Box::new(UnsignedConverter("ubyte".to_string()))),
@@ -232,10 +237,12 @@ impl JniType for Type {
             Type::Iterator(handle) => Some(Box::new(IteratorConverter(
                 handle.clone(),
                 lib_name.to_string(),
+                prefix.to_string(),
             ))),
             Type::Collection(handle) => Some(Box::new(CollectionConverter(
                 handle.clone(),
                 lib_name.to_string(),
+                prefix.to_string(),
             ))),
             Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
@@ -360,19 +367,20 @@ impl JniType for ReturnType {
         from: &str,
         to: &str,
         lib_name: &str,
+        prefix: &str,
     ) -> FormattingResult<()> {
         match self {
             ReturnType::Void => Ok(()),
             ReturnType::Type(return_type, _) => {
-                return_type.convert_to_rust_from_object(f, from, to, lib_name)
+                return_type.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
     }
 
-    fn conversion(&self, lib_name: &str) -> Option<Box<dyn TypeConverter>> {
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
             ReturnType::Void => None,
-            ReturnType::Type(return_type, _) => return_type.conversion(lib_name),
+            ReturnType::Type(return_type, _) => return_type.conversion(lib_name, prefix),
         }
     }
 
@@ -607,7 +615,7 @@ impl TypeConverter for InterfaceConverter {
     }
 }
 
-struct IteratorConverter(IteratorHandle, String);
+struct IteratorConverter(IteratorHandle, String, String);
 impl TypeConverter for IteratorConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}std::ptr::null_mut()", to))
@@ -618,8 +626,8 @@ impl TypeConverter for IteratorConverter {
         blocked(f, |f| {
             f.writeln("let array_list = _cache.collection.new_array_list(&_env);")?;
             f.writeln(&format!(
-                "while let it = unsafe {{ {}::ffi::{}({}) }}",
-                self.1, self.0.native_func.name, from
+                "while let it = unsafe {{ {}::ffi::{}_{}({}) }}",
+                self.1, self.2, self.0.native_func.name, from
             ))?;
             blocked(f, |f| {
                 f.writeln("match unsafe { it.as_ref() }")?;
@@ -647,7 +655,7 @@ impl TypeConverter for IteratorConverter {
     }
 }
 
-struct CollectionConverter(CollectionHandle, String);
+struct CollectionConverter(CollectionHandle, String, String);
 impl TypeConverter for CollectionConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(to)?;
@@ -658,13 +666,13 @@ impl TypeConverter for CollectionConverter {
                     from
                 ))?;
                 f.writeln(&format!(
-                    "let result = unsafe {{ {}::ffi::{}(_size) }};",
-                    self.1, self.0.create_func.name
+                    "let result = unsafe {{ {}::ffi::{}_{}(_size) }};",
+                    self.1, self.2, self.0.create_func.name
                 ))?;
             } else {
                 f.writeln(&format!(
-                    "let result = unsafe {{ {}::ffi::{}() }};",
-                    self.1, self.0.create_func.name
+                    "let result = unsafe {{ {}::ffi::{}_{}() }};",
+                    self.1, self.2, self.0.create_func.name
                 ))?;
             }
             f.writeln(&format!(
@@ -681,15 +689,16 @@ impl TypeConverter for CollectionConverter {
                         "next.into_inner()",
                         "let _next = ",
                         &self.1,
+                        &self.2,
                     )?;
                     f.write(";")?;
 
                     f.writeln(&format!(
-                        "unsafe {{ {}::ffi::{}(result, _next) }};",
-                        self.1, self.0.add_func.name
+                        "unsafe {{ {}::ffi::{}_{}(result, _next) }};",
+                        self.1, self.2, self.0.add_func.name
                     ))?;
 
-                    if let Some(converter) = self.0.item_type.conversion(&self.1) {
+                    if let Some(converter) = self.0.item_type.conversion(&self.1, &self.2) {
                         converter.convert_to_rust_cleanup(f, "_next")?;
                     }
 

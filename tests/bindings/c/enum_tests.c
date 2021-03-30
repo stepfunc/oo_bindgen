@@ -5,117 +5,117 @@
 
 static void test_enum_zero_to_five()
 {
-    enum_zero_to_five_t value = EnumZeroToFive_Zero;
-    enum_zero_to_five_t result = enum_zero_to_five_echo(value);
+    foo_enum_zero_to_five_t value = foo_EnumZeroToFive_Zero;
+    foo_enum_zero_to_five_t result = foo_enum_zero_to_five_echo(value);
     assert(result == value);
     assert(result == 0);
 
-    value = EnumZeroToFive_One;
-    result = enum_zero_to_five_echo(value);
+    value = foo_EnumZeroToFive_One;
+    result = foo_enum_zero_to_five_echo(value);
     assert(result == value);
     assert(result == 1);
 
-    value = EnumZeroToFive_Two;
-    result = enum_zero_to_five_echo(value);
+    value = foo_EnumZeroToFive_Two;
+    result = foo_enum_zero_to_five_echo(value);
     assert(result == value);
     assert(result == 2);
 
-    value = EnumZeroToFive_Three;
-    result = enum_zero_to_five_echo(value);
+    value = foo_EnumZeroToFive_Three;
+    result = foo_enum_zero_to_five_echo(value);
     assert(result == value);
     assert(result == 3);
 
-    value = EnumZeroToFive_Four;
-    result = enum_zero_to_five_echo(value);
+    value = foo_EnumZeroToFive_Four;
+    result = foo_enum_zero_to_five_echo(value);
     assert(result == value);
     assert(result == 4);
 
-    value = EnumZeroToFive_Five;
-    result = enum_zero_to_five_echo(value);
+    value = foo_EnumZeroToFive_Five;
+    result = foo_enum_zero_to_five_echo(value);
     assert(result == value);
     assert(result == 5);
 }
 
 static void test_enum_one_to_six()
 {
-    enum_one_to_six_t value = EnumOneToSix_One;
-    enum_one_to_six_t result = enum_one_to_six_echo(value);
+    foo_enum_one_to_six_t value = foo_EnumOneToSix_One;
+    foo_enum_one_to_six_t result = foo_enum_one_to_six_echo(value);
     assert(result == value);
     assert(result == 1);
 
-    value = EnumOneToSix_Two;
-    result = enum_one_to_six_echo(value);
+    value = foo_EnumOneToSix_Two;
+    result = foo_enum_one_to_six_echo(value);
     assert(result == value);
     assert(result == 2);
 
-    value = EnumOneToSix_Three;
-    result = enum_one_to_six_echo(value);
+    value = foo_EnumOneToSix_Three;
+    result = foo_enum_one_to_six_echo(value);
     assert(result == value);
     assert(result == 3);
 
-    value = EnumOneToSix_Four;
-    result = enum_one_to_six_echo(value);
+    value = foo_EnumOneToSix_Four;
+    result = foo_enum_one_to_six_echo(value);
     assert(result == value);
     assert(result == 4);
 
-    value = EnumOneToSix_Five;
-    result = enum_one_to_six_echo(value);
+    value = foo_EnumOneToSix_Five;
+    result = foo_enum_one_to_six_echo(value);
     assert(result == value);
     assert(result == 5);
 
-    value = EnumOneToSix_Six;
-    result = enum_one_to_six_echo(value);
+    value = foo_EnumOneToSix_Six;
+    result = foo_enum_one_to_six_echo(value);
     assert(result == value);
     assert(result == 6);
 }
 
 static void test_enum_disjoint()
 {
-    enum_disjoint_t value = EnumDisjoint_Five;
-    enum_disjoint_t result = enum_disjoint_echo(value);
+    foo_enum_disjoint_t value = foo_EnumDisjoint_Five;
+    foo_enum_disjoint_t result = foo_enum_disjoint_echo(value);
     assert(result == value);
     assert(result == 5);
 
-    value = EnumDisjoint_One;
-    result = enum_disjoint_echo(value);
+    value = foo_EnumDisjoint_One;
+    result = foo_enum_disjoint_echo(value);
     assert(result == value);
     assert(result == 1);
 
-    value = EnumDisjoint_Twenty;
-    result = enum_disjoint_echo(value);
+    value = foo_EnumDisjoint_Twenty;
+    result = foo_enum_disjoint_echo(value);
     assert(result == value);
     assert(result == 20);
 
-    value = EnumDisjoint_Four;
-    result = enum_disjoint_echo(value);
+    value = foo_EnumDisjoint_Four;
+    result = foo_enum_disjoint_echo(value);
     assert(result == value);
     assert(result == 4);
 
-    value = EnumDisjoint_Seven;
-    result = enum_disjoint_echo(value);
+    value = foo_EnumDisjoint_Seven;
+    result = foo_enum_disjoint_echo(value);
     assert(result == value);
     assert(result == 7);
 
-    value = EnumDisjoint_Two;
-    result = enum_disjoint_echo(value);
+    value = foo_EnumDisjoint_Two;
+    result = foo_enum_disjoint_echo(value);
     assert(result == value);
     assert(result == 2);
 }
 
 static void test_enum_single()
 {
-    enum_single_t value = EnumSingle_Single;
-    enum_single_t result = enum_single_echo(value);
+    foo_enum_single_t value = foo_EnumSingle_Single;
+    foo_enum_single_t result = foo_enum_single_echo(value);
     assert(result == value);
     assert(result == 0);
 }
 
 static void test_enum_to_string()
 {
-    assert(strcmp("Two", EnumZeroToFive_to_string(EnumZeroToFive_Two)) == 0);
-    assert(strcmp("Five", EnumDisjoint_to_string(EnumDisjoint_Five)) == 0);
-    assert(strcmp("Single", EnumSingle_to_string(EnumSingle_Single)) == 0);
-    assert(strcmp("", EnumSingle_to_string((enum_single_t)EnumZeroToFive_Four)) == 0);
+    assert(strcmp("Two", foo_EnumZeroToFive_to_string(foo_EnumZeroToFive_Two)) == 0);
+    assert(strcmp("Five", foo_EnumDisjoint_to_string(foo_EnumDisjoint_Five)) == 0);
+    assert(strcmp("Single", foo_EnumSingle_to_string(foo_EnumSingle_Single)) == 0);
+    assert(strcmp("", foo_EnumSingle_to_string((foo_enum_single_t)foo_EnumZeroToFive_Four)) == 0);
 }
 
 void enum_tests()

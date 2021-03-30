@@ -6,16 +6,16 @@
 static void test_next()
 {
     #define SOME_STRING "ABCDE"
-    string_iterator_t* it = iterator_create(SOME_STRING);
+    foo_string_iterator_t* it = foo_iterator_create(SOME_STRING);
 
-    assert(iterator_next(it)->value == 65);
-    assert(iterator_next(it)->value == 66);
-    assert(iterator_next(it)->value == 67);
-    assert(iterator_next(it)->value == 68);
-    assert(iterator_next(it)->value == 69);
-    assert(iterator_next(it) == NULL);
+    assert(foo_iterator_next(it)->value == 65);
+    assert(foo_iterator_next(it)->value == 66);
+    assert(foo_iterator_next(it)->value == 67);
+    assert(foo_iterator_next(it)->value == 68);
+    assert(foo_iterator_next(it)->value == 69);
+    assert(foo_iterator_next(it) == NULL);
 
-    iterator_destroy(it);
+    foo_iterator_destroy(it);
 }
 
 void iterator_tests()

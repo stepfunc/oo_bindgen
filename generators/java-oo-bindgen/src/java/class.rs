@@ -16,7 +16,7 @@ pub(crate) fn generate(
 
     // Class definition
     f.writeln(&format!("public final class {}", classname))?;
-    if class.destructor.is_some() {
+    if class.is_manual_destruction() {
         f.write(" implements AutoCloseable")?;
     }
 
@@ -39,7 +39,7 @@ pub(crate) fn generate(
         }
 
         if let Some(destructor) = &class.destructor {
-            generate_destructor(f, destructor, lib)?;
+            generate_destructor(f, destructor, class.is_manual_destruction(), lib)?;
             f.newline()?;
         }
 
@@ -145,25 +145,33 @@ fn generate_constructor(
 fn generate_destructor(
     f: &mut dyn Printer,
     destructor: &NativeFunctionHandle,
+    is_manual_destruction: bool,
     lib: &Library,
 ) -> FormattingResult<()> {
-    documentation(f, |f| {
-        // Print top-level documentation
-        javadoc_print(f, &destructor.doc, lib)?;
-        f.newline()?;
+    if is_manual_destruction {
+        documentation(f, |f| {
+            // Print top-level documentation
+            javadoc_print(f, &destructor.doc, lib)?;
+            f.newline()?;
 
-        // Print each parameter value
-        for param in destructor.parameters.iter().skip(1) {
-            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
-        }
+            // Print each parameter value
+            for param in destructor.parameters.iter().skip(1) {
+                f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
+                docstring_print(f, &param.doc, lib)?;
+            }
 
-        Ok(())
-    })?;
+            Ok(())
+        })?;
+    }
 
-    // AutoCloseable implementation
-    f.writeln("@Override")?;
-    f.writeln("public void close()")?;
+    if is_manual_destruction {
+        // AutoCloseable implementation
+        f.writeln("@Override")?;
+        f.writeln("public void close()")?;
+    } else {
+        f.writeln("private void close()")?;
+    }
+
     blocked(f, |f| {
         f.writeln("if (this.disposed.getAndSet(true))")?;
         f.writeln("    return;")?;

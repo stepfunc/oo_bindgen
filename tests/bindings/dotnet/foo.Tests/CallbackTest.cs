@@ -59,7 +59,7 @@ namespace foo.Tests
         [Fact]
         public void CallbackTest()
         {
-            using (var cbSource = new CallbackSource())
+            using(var cbSource = new CallbackSource())
             {
                 var cb = new CallbackImpl();
                 cbSource.SetInterface(cb);
@@ -78,7 +78,7 @@ namespace foo.Tests
 
         private void singleRun(Counters counters)
         {
-            using (var cbSource = new CallbackSource())
+            using(var cbSource = new CallbackSource())
             {
                 cbSource.SetInterface(new CallbackFinalizerCounterImpl(counters));
                 cbSource.SetValue(76);

@@ -102,6 +102,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .method("IncrementValue", &testclass_increment_value_func)?
         .async_method("GetValueAsync", &testclass_get_value_async_func)?
         .static_method("ConstructionCounter", &testclass_construction_counter)?
+        .manual_destroy()?
         .doc("TestClass")?
         .build()?;
 

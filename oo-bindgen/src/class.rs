@@ -33,6 +33,18 @@ pub struct AsyncMethod {
     pub callback_param_name: String,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+pub enum DestructionMode {
+    /// Object is automatically deleted by the GC
+    Automatic,
+    /// Object is disposed of manually by calling a dispose()/close() method
+    ///
+    /// For safety, if the user never calls the destruction method, the object
+    /// will still be deleted by the GC at some point. However, it is
+    /// strongly advised to take care of the destruction manually.
+    Manual,
+}
+
 /// Object-oriented class definition
 #[derive(Debug)]
 pub struct Class {
@@ -43,6 +55,7 @@ pub struct Class {
     pub static_methods: Vec<Method>,
     pub async_methods: Vec<AsyncMethod>,
     pub doc: Doc,
+    pub destruction_mode: DestructionMode,
 }
 
 impl Class {
@@ -52,6 +65,10 @@ impl Class {
 
     pub fn declaration(&self) -> ClassDeclarationHandle {
         self.declaration.clone()
+    }
+
+    pub fn is_manual_destruction(&self) -> bool {
+        self.destruction_mode == DestructionMode::Manual && self.destructor.is_some()
     }
 
     pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&NativeFunctionHandle> {
@@ -88,6 +105,7 @@ pub struct ClassBuilder<'a> {
     static_methods: Vec<Method>,
     async_methods: Vec<AsyncMethod>,
     doc: Option<Doc>,
+    destruction_mode: DestructionMode,
 }
 
 impl<'a> ClassBuilder<'a> {
@@ -101,6 +119,7 @@ impl<'a> ClassBuilder<'a> {
             static_methods: Vec::new(),
             async_methods: Vec::new(),
             doc: None,
+            destruction_mode: DestructionMode::Automatic,
         }
     }
 
@@ -272,6 +291,11 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
+    pub fn manual_destroy(mut self) -> Result<Self> {
+        self.destruction_mode = DestructionMode::Manual;
+        Ok(self)
+    }
+
     pub fn build(self) -> Result<ClassHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
@@ -290,6 +314,7 @@ impl<'a> ClassBuilder<'a> {
             static_methods: self.static_methods,
             async_methods: self.async_methods,
             doc,
+            destruction_mode: self.destruction_mode,
         });
 
         self.lib

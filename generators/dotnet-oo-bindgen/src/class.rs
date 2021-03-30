@@ -20,7 +20,7 @@ pub(crate) fn generate(
         })?;
 
         f.writeln(&format!("public sealed class {}", classname))?;
-        if class.destructor.is_some() {
+        if class.is_manual_destruction() {
             f.write(": IDisposable")?;
         }
 
@@ -55,7 +55,13 @@ pub(crate) fn generate(
             }
 
             if let Some(destructor) = &class.destructor {
-                generate_destructor(f, &classname, destructor, lib)?;
+                generate_destructor(
+                    f,
+                    &classname,
+                    destructor,
+                    class.is_manual_destruction(),
+                    lib,
+                )?;
                 f.newline()?;
             }
 
@@ -171,23 +177,26 @@ fn generate_destructor(
     f: &mut dyn Printer,
     classname: &str,
     destructor: &NativeFunctionHandle,
+    is_manual_destruction: bool,
     lib: &Library,
 ) -> FormattingResult<()> {
-    // Public Dispose method
-    documentation(f, |f| xmldoc_print(f, &destructor.doc, lib))?;
+    if is_manual_destruction {
+        // Public Dispose method
+        documentation(f, |f| xmldoc_print(f, &destructor.doc, lib))?;
 
-    f.writeln("public void Dispose()")?;
-    blocked(f, |f| {
-        f.writeln("Dispose(true);")?;
-        f.writeln("GC.SuppressFinalize(this);")
-    })?;
+        f.writeln("public void Dispose()")?;
+        blocked(f, |f| {
+            f.writeln("Dispose(true);")?;
+            f.writeln("GC.SuppressFinalize(this);")
+        })?;
 
-    f.newline()?;
+        f.newline()?;
+    }
 
     // Finalizer
     documentation(f, |f| {
         f.writeln("<summary>")?;
-        f.writeln("Finalizer")?;
+        f.write("Finalizer")?;
         f.write("</summary>")
     })?;
     f.writeln(&format!("~{}()", classname))?;

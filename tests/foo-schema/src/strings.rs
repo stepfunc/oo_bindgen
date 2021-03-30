@@ -52,6 +52,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .destructor(&stringclass_destroy_func)?
         .method("Echo", &stringclass_echo_func)?
         .static_method("GetLength", &stringclass_length_func)?
+        .manual_destroy()?
         .doc("StringClass")?
         .build()?;
 

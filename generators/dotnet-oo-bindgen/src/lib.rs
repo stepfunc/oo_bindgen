@@ -69,6 +69,8 @@ mod wrappers;
 
 pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
+const SUPPORTED_PLATFORMS: &[Platform] = &[Platform::WinX64Msvc, Platform::LinuxX64Gnu];
+
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
@@ -130,11 +132,11 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     for p in config
         .platforms
         .iter()
-        .filter(|x| x.platform != Platform::LinuxMusl)
+        .filter(|x| SUPPORTED_PLATFORMS.iter().any(|y| *y == x.platform))
     {
         let filename = p.bin_filename(&config.ffi_name);
         let filepath = dunce::canonicalize(p.location.join(&filename))?;
-        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, p.platform.to_string()))?;
+        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, dotnet_platform_string(p.platform)))?;
     }
 
     f.writeln("  </ItemGroup>")?;
@@ -405,4 +407,13 @@ fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("using System.Runtime.InteropServices;")?;
     f.writeln("using System.Threading.Tasks;")?;
     f.writeln("using System.Collections.Immutable;")
+}
+
+fn dotnet_platform_string(platform: Platform) -> &'static str {
+    // Names taken from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
+    match platform {
+        Platform::WinX64Msvc => "win-x64",
+        Platform::LinuxX64Gnu => "linux-x64",
+        _ => panic!("Unsupported platform"),
+    }
 }

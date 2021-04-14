@@ -20,6 +20,8 @@ mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
+const SUPPORTED_PLATFORMS: &[Platform] = &[Platform::WinX64Msvc, Platform::LinuxX64Gnu];
+
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.java_output_dir)?;
 
@@ -32,7 +34,7 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     for platform in config
         .platforms
         .iter()
-        .filter(|x| x.platform != Platform::LinuxMusl)
+        .filter(|x| SUPPORTED_PLATFORMS.iter().any(|y| *y == x.platform))
     {
         let mut target_dir = config.java_resource_dir();
         target_dir.push(platform.platform.to_string());
@@ -121,7 +123,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 let libname = format!("{}_java", config.ffi_name);
                 for platform in config.platforms.iter() {
                     match platform.platform {
-                        Platform::Win64 => {
+                        Platform::WinX64Msvc => {
                             f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
                             blocked(f, |f| {
                                 f.writeln(&format!(
@@ -131,7 +133,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                 ))
                             })?;
                         }
-                        Platform::Linux => {
+                        Platform::LinuxX64Gnu => {
                             f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_LINUX && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
                             blocked(f, |f| {
                                 f.writeln(&format!(
@@ -141,7 +143,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                 ))
                             })?;
                         }
-                        Platform::LinuxMusl => (), // We do not generate Java bindings for Linux musl
+                        _ => (), // Other platforms are not supported
                     }
                 }
                 Ok(())

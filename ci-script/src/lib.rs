@@ -82,28 +82,27 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 ) -> B {
     let mut platforms = PlatformLocations::new();
     if let Some(package_src) = package_src {
-        let platform_path = [package_src, Platform::Win64.to_string()]
-            .iter()
-            .collect::<PathBuf>();
-        if platform_path.is_dir() {
-            platforms.add(Platform::Win64, platform_path);
-        }
+        let mut check_platform = |platform: Platform| {
+            let platform_path = [package_src, platform.to_string()]
+                .iter()
+                .collect::<PathBuf>();
+            if platform_path.is_dir() {
+                platforms.add(platform, platform_path);
+            }
+        };
 
-        let platform_path = [package_src, Platform::Linux.to_string()]
-            .iter()
-            .collect::<PathBuf>();
-        if platform_path.is_dir() {
-            platforms.add(Platform::Linux, platform_path);
-        }
-
-        let platform_path = [package_src, Platform::LinuxMusl.to_string()]
-            .iter()
-            .collect::<PathBuf>();
-        if platform_path.is_dir() {
-            platforms.add(Platform::LinuxMusl, platform_path);
-        }
+        check_platform(Platform::WinX64Msvc);
+        check_platform(Platform::LinuxX64Gnu);
+        check_platform(Platform::LinuxX64Musl);
+        check_platform(Platform::LinuxArm6Gnueabi);
+        check_platform(Platform::LinuxArm6GnueabiHf);
+        check_platform(Platform::LinuxArm7GnueabiHf);
+        check_platform(Platform::LinuxArm8Gnu);
     } else {
-        platforms.add(Platform::current(), ffi_path());
+        platforms.add(
+            Platform::from_target_triple(env!("TARGET_TRIPLE")).expect("Unsupported platform"),
+            ffi_path(),
+        );
     }
 
     if platforms.is_empty() {
@@ -124,11 +123,9 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 
     builder.generate(package);
 
-    if !package {
+    if !package && run_tests {
         builder.build();
-        if run_tests {
-            builder.test();
-        }
+        builder.test();
     } else {
         builder.package();
     }
@@ -161,13 +158,10 @@ struct CBindingBuilder<'a> {
 
 impl<'a> CBindingBuilder<'a> {
     fn build_doxygen(&self) {
-        let mut platforms = PlatformLocations::new();
-        platforms.add(Platform::current(), ffi_path());
-
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
-            platforms,
+            platforms: self.platforms.clone(),
         };
 
         c_oo_bindgen::generate_doxygen(&self.settings.library, &config)
@@ -206,9 +200,6 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
     }
 
     fn generate(&mut self, _is_packaging: bool) {
-        let mut platforms = PlatformLocations::new();
-        platforms.add(Platform::current(), ffi_path());
-
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
@@ -255,7 +246,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
     }
 
     fn package(&mut self) {
-        // Already done in build
+        // Already done in generate
     }
 }
 

@@ -164,35 +164,47 @@ pub struct CBindgenConfig {
 }
 
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+    for platform in config.platforms.iter() {
+        generate_single_package(lib, config, &platform)?;
+    }
+
+    Ok(())
+}
+
+fn generate_single_package(
+    lib: &Library,
+    config: &CBindgenConfig,
+    platform_location: &PlatformLocation,
+) -> FormattingResult<()> {
+    let output_dir = config
+        .output_dir
+        .join(platform_location.platform.to_string());
+
     // Create header file
-    let mut include_path = config.output_dir.clone();
-    include_path.push("include");
+    let include_path = output_dir.join("include");
     generate_c_header(lib, include_path)?;
 
     // Generate CMake config file
-    generate_cmake_config(lib, config)?;
+    generate_cmake_config(lib, config, &platform_location)?;
 
-    // Copy lib files (lib and DLL on Windows, so on Linux)
-    let lib_path = config.output_dir.join("lib");
+    // Copy lib files (lib and DLL on Windows, .so on Linux)
+    let lib_path = output_dir
+        .join("lib")
+        .join(platform_location.platform.to_string());
     fs::create_dir_all(&lib_path)?;
-    for p in config.platforms.iter() {
-        let lib_filename = p.lib_filename(&config.ffi_name);
-        let destination_path = lib_path.join(p.platform.to_string());
-        fs::create_dir_all(&destination_path)?;
-        fs::copy(
-            p.location.join(&lib_filename),
-            destination_path.join(&lib_filename),
-        )?;
 
-        // Copy DLL on Windows
-        let bin_filename = p.bin_filename(&config.ffi_name);
-        let destination_path = lib_path.join(p.platform.to_string());
-        fs::create_dir_all(&destination_path)?;
-        fs::copy(
-            p.location.join(&bin_filename),
-            destination_path.join(&bin_filename),
-        )?;
-    }
+    let lib_filename = platform_location.lib_filename(&config.ffi_name);
+    fs::copy(
+        platform_location.location.join(&lib_filename),
+        lib_path.join(&lib_filename),
+    )?;
+
+    // Copy DLL on Windows
+    let bin_filename = platform_location.bin_filename(&config.ffi_name);
+    fs::copy(
+        platform_location.location.join(&bin_filename),
+        lib_path.join(&bin_filename),
+    )?;
 
     Ok(())
 }
@@ -964,9 +976,16 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
     Ok(())
 }
 
-fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+fn generate_cmake_config(
+    lib: &Library,
+    config: &CBindgenConfig,
+    platform_location: &PlatformLocation,
+) -> FormattingResult<()> {
     // Create file
-    let cmake_path = config.output_dir.join("cmake");
+    let cmake_path = config
+        .output_dir
+        .join(platform_location.platform.to_string())
+        .join("cmake");
     fs::create_dir_all(&cmake_path)?;
     let filename = cmake_path.join(format!("{}-config.cmake", lib.name));
     let mut f = FilePrinter::new(filename)?;
@@ -975,87 +994,20 @@ fn generate_cmake_config(lib: &Library, config: &CBindgenConfig) -> FormattingRe
     f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/../\")")?;
     f.newline()?;
 
-    let mut is_first_if = true;
-
-    // Windows platform
-    if let Some(p) = &config.platforms.win64 {
-        f.writeln("if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)")?;
-        is_first_if = false;
-
-        indented(&mut f, |f| {
-            f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
-            f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
-            indented(f, |f| {
-                f.writeln(&format!(
-                    "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-                    p.platform.to_string(),
-                    p.bin_filename(&config.ffi_name)
-                ))?;
-                f.writeln(&format!(
-                    "IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"",
-                    p.platform.to_string(),
-                    p.lib_filename(&config.ffi_name)
-                ))?;
-                f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
-            })?;
-            f.writeln(")")
-        })?;
-    }
-
-    const LINUX_PLATFORM_CHECK: &str = "UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8";
-
-    // Linux dynamic lib
-    if config.platforms.linux.is_some() || config.platforms.linux_musl.is_some() {
-        if is_first_if {
-            f.writeln(&format!("if({})", LINUX_PLATFORM_CHECK))?;
-            //is_first_if = false;
-        } else {
-            f.writeln(&format!("elseif({})", LINUX_PLATFORM_CHECK))?;
-        }
-
-        if let Some(p) = &config.platforms.linux {
-            indented(&mut f, |f| {
-                f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
-                f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
-                indented(f, |f| {
-                    f.writeln(&format!(
-                        "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-                        p.platform.to_string(),
-                        p.bin_filename(&config.ffi_name)
-                    ))?;
-                    f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
-                })?;
-                f.writeln(")")
-            })?;
-        }
-
-        if let Some(p) = &config.platforms.linux_musl {
-            indented(&mut f, |f| {
-                f.writeln(&format!(
-                    "add_library({}_static STATIC IMPORTED GLOBAL)",
-                    lib.name
-                ))?;
-                f.writeln(&format!(
-                    "set_target_properties({}_static PROPERTIES",
-                    lib.name
-                ))?;
-                indented(f, |f| {
-                    f.writeln(&format!(
-                        "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-                        p.platform.to_string(),
-                        p.bin_filename(&config.ffi_name)
-                    ))?;
-                    f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
-                })?;
-                f.writeln(")")
-            })?;
-        }
-    }
-
-    // Write error message if platform not found
-    f.writeln("else()")?;
+    f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
+    f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
     indented(&mut f, |f| {
-        f.writeln("message(FATAL_ERROR \"Platform not supported\")")
+        f.writeln(&format!(
+            "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
+            platform_location.platform.to_string(),
+            platform_location.bin_filename(&config.ffi_name)
+        ))?;
+        f.writeln(&format!(
+            "IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"",
+            platform_location.platform.to_string(),
+            platform_location.lib_filename(&config.ffi_name)
+        ))?;
+        f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
     })?;
-    f.writeln("endif()")
+    f.writeln(")")
 }

@@ -3,7 +3,12 @@ cmake_minimum_required(VERSION 3.8)
 project(foo_c LANGUAGES C)
 
 # Find foo_ffi
-set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/generated/cmake)
+if(WIN32)
+    set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/generated/x86_64-pc-windows-msvc/cmake)
+endif()
+if(UNIX)
+    set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/generated/x86_64-unknown-linux-gnu/cmake)
+endif()
 find_package(foo REQUIRED)
 
 # You probably don't need do this, just pick either the dynamic or the static

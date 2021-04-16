@@ -160,6 +160,7 @@ impl CFormatting for ReturnType {
 pub struct CBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
+    pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
 }
 
@@ -205,6 +206,11 @@ fn generate_single_package(
         platform_location.location.join(&bin_filename),
         lib_path.join(&bin_filename),
     )?;
+
+    // Copy extra files
+    for path in &config.extra_files {
+        fs::copy(path, output_dir.join(path.file_name().unwrap()))?;
+    }
 
     Ok(())
 }

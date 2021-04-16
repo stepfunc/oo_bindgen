@@ -43,6 +43,13 @@ pub fn run(settings: BindingBuilderSettings) {
                 .takes_value(true)
                 .help("Generate package with the provided modules"),
         )
+        .arg(
+            Arg::with_name("extra-files")
+                .short("f")
+                .long("extra-files")
+                .takes_value(true)
+                .help("Path to extra files to include in the generated bindings"),
+        )
         .get_matches();
 
     let run_tests = !matches.is_present("no-tests");
@@ -55,18 +62,34 @@ pub fn run(settings: BindingBuilderSettings) {
     let package = matches.is_present("package");
     let package_src = matches.value_of("package");
 
+    let extra_files = matches
+        .values_of("extra-files")
+        .map_or(Vec::new(), |v| v.map(PathBuf::from).collect());
+
     if run_c || run_all {
-        let builder = run_builder::<CBindingBuilder>(&settings, run_tests, package, package_src);
+        let builder = run_builder::<CBindingBuilder>(
+            &settings,
+            run_tests,
+            package,
+            package_src,
+            &extra_files,
+        );
 
         if matches.is_present("doxygen") {
             builder.build_doxygen();
         }
     }
     if run_dotnet || run_all {
-        run_builder::<DotnetBindingBuilder>(&settings, run_tests, package, package_src);
+        run_builder::<DotnetBindingBuilder>(
+            &settings,
+            run_tests,
+            package,
+            package_src,
+            &extra_files,
+        );
     }
     if run_java || run_all {
-        run_builder::<JavaBindingBuilder>(&settings, run_tests, package, package_src);
+        run_builder::<JavaBindingBuilder>(&settings, run_tests, package, package_src, &extra_files);
     }
 }
 
@@ -79,6 +102,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
     run_tests: bool,
     package: bool,
     package_src: Option<&str>,
+    extra_files: &[PathBuf],
 ) -> B {
     let mut platforms = PlatformLocations::new();
     if let Some(package_src) = package_src {
@@ -111,7 +135,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 
     let has_dynamic_libs = platforms.has_dynamic_lib();
 
-    let mut builder = B::new(settings, platforms);
+    let mut builder = B::new(settings, platforms, extra_files);
 
     if B::requires_dynamic_lib() && !has_dynamic_libs {
         println!(
@@ -138,13 +162,18 @@ pub struct BindingBuilderSettings<'a> {
     pub ffi_path: &'a Path,
     pub java_group_id: &'a str,
     pub destination_path: &'a Path,
+    pub license_path: &'a Path,
     pub library: &'a Library,
 }
 
 trait BindingBuilder<'a> {
     fn name() -> &'static str;
     fn requires_dynamic_lib() -> bool;
-    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self;
+    fn new(
+        settings: &'a BindingBuilderSettings<'a>,
+        platforms: PlatformLocations,
+        extra_files: &[PathBuf],
+    ) -> Self;
     fn generate(&mut self, is_packaging: bool);
     fn build(&mut self);
     fn test(&mut self);
@@ -154,6 +183,7 @@ trait BindingBuilder<'a> {
 struct CBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
     platforms: PlatformLocations,
+    extra_files: Vec<PathBuf>,
 }
 
 impl<'a> CBindingBuilder<'a> {
@@ -161,6 +191,7 @@ impl<'a> CBindingBuilder<'a> {
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
+            extra_files: Vec::new(),
             platforms: self.platforms.clone(),
         };
 
@@ -192,17 +223,26 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         false
     }
 
-    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
+    fn new(
+        settings: &'a BindingBuilderSettings<'a>,
+        platforms: PlatformLocations,
+        extra_files: &[PathBuf],
+    ) -> Self {
         Self {
             settings,
             platforms,
+            extra_files: extra_files.to_vec(),
         }
     }
 
     fn generate(&mut self, _is_packaging: bool) {
+        let mut extra_files = self.extra_files.clone();
+        extra_files.push(self.settings.license_path.to_owned());
+
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
+            extra_files,
             platforms: self.platforms.clone(),
         };
 
@@ -253,6 +293,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
 struct DotnetBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
     platforms: PlatformLocations,
+    extra_files: Vec<PathBuf>,
 }
 
 impl<'a> DotnetBindingBuilder<'a> {
@@ -278,10 +319,15 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         true
     }
 
-    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
+    fn new(
+        settings: &'a BindingBuilderSettings<'a>,
+        platforms: PlatformLocations,
+        extra_files: &[PathBuf],
+    ) -> Self {
         Self {
             settings,
             platforms,
+            extra_files: extra_files.to_vec(),
         }
     }
 
@@ -296,6 +342,8 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         let config = dotnet_oo_bindgen::DotnetBindgenConfig {
             output_dir: build_dir,
             ffi_name: self.settings.ffi_name.to_owned(),
+            license_file: self.settings.license_path.to_owned(),
+            extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
         };
 
@@ -344,6 +392,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
 struct JavaBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
     platforms: PlatformLocations,
+    extra_files: Vec<PathBuf>,
 }
 
 impl<'a> JavaBindingBuilder<'a> {
@@ -390,20 +439,29 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         true
     }
 
-    fn new(settings: &'a BindingBuilderSettings<'a>, platforms: PlatformLocations) -> Self {
+    fn new(
+        settings: &'a BindingBuilderSettings<'a>,
+        platforms: PlatformLocations,
+        extra_files: &[PathBuf],
+    ) -> Self {
         Self {
             settings,
             platforms,
+            extra_files: extra_files.to_vec(),
         }
     }
 
     fn generate(&mut self, is_packaging: bool) {
+        let mut extra_files = self.extra_files.clone();
+        extra_files.push(self.settings.license_path.to_owned());
+
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
             rust_output_dir: self.rust_build_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
             ffi_path: self.settings.ffi_path.to_owned(),
             group_id: self.settings.java_group_id.to_owned(),
+            extra_files,
             platforms: self.platforms.clone(),
         };
 

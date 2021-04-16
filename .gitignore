@@ -1,6 +1,8 @@
 # Build files
 /target
 Cargo.lock
+dependencies.json
+licenses.txt
 
 # IDEs
 /.vscode

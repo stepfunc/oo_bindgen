@@ -49,6 +49,12 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
         fs::copy(source_file, target_file)?;
     }
 
+    // Copy the extra files
+    for path in &config.extra_files {
+        let dest = config.java_resource_dir().join(path.file_name().unwrap());
+        fs::copy(path, dest)?;
+    }
+
     // Create the source directory
     fs::create_dir_all(&config.java_source_dir(lib))?;
 

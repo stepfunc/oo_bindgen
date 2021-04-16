@@ -62,8 +62,13 @@ pub struct JavaBindgenConfig {
     pub rust_output_dir: PathBuf,
     /// Path to the C FFI target lib (the actual Rust code, not the compiled FFI)
     pub ffi_path: PathBuf,
+    /// Name of the FFI target
     pub ffi_name: String,
+    /// Maven group id (e.g. io.stepfunc)
     pub group_id: String,
+    /// Extra files to include in the distribution
+    pub extra_files: Vec<PathBuf>,
+    /// Platforms to include
     pub platforms: PlatformLocations,
 }
 

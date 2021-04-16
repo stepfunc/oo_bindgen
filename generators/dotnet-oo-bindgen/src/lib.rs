@@ -74,6 +74,8 @@ const SUPPORTED_PLATFORMS: &[Platform] = &[Platform::WinX64Msvc, Platform::Linux
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
+    pub license_file: PathBuf,
+    pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
 }
 
@@ -122,13 +124,22 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
     f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
     f.writeln(&format!(
-        "    <Version>{}</Version>",
+        "    <PackageId>{}</PackageId>",
+        lib.name.to_string()
+    ))?;
+    f.writeln(&format!(
+        "    <PackageVersion>{}</PackageVersion>",
         lib.version.to_string()
+    ))?;
+    f.writeln(&format!(
+        "    <PackageLicenseFile>{}</PackageLicenseFile>",
+        config.license_file.file_name().unwrap().to_string_lossy()
     ))?;
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
     f.writeln("  <ItemGroup>")?;
 
+    // Include each compiled FFI lib
     for p in config
         .platforms
         .iter()
@@ -141,10 +152,21 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
 
     f.writeln("  </ItemGroup>")?;
 
+    // Dependencies and files to include
     f.writeln("  <ItemGroup>")?;
     f.writeln(
         "    <PackageReference Include=\"System.Collections.Immutable\" Version=\"1.7.1\" />",
     )?;
+    f.writeln(&format!(
+        "    <None Include=\"{}\" Pack=\"true\" PackagePath=\"\" />",
+        dunce::canonicalize(&config.license_file)?.to_string_lossy()
+    ))?;
+    for path in &config.extra_files {
+        f.writeln(&format!(
+            "    <None Include=\"{}\" Pack=\"true\" PackagePath=\"\" />",
+            dunce::canonicalize(path)?.to_string_lossy()
+        ))?;
+    }
     f.writeln("  </ItemGroup>")?;
 
     f.writeln("</Project>")

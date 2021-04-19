@@ -2,7 +2,7 @@
 /target
 Cargo.lock
 dependencies.json
-licenses.txt
+dependencies.txt
 
 # IDEs
 /.vscode

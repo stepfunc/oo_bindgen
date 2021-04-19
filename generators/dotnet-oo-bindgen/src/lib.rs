@@ -123,14 +123,20 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("  <PropertyGroup>")?;
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
     f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
+    f.writeln("    <IncludeSymbols>true</IncludeSymbols>")?; // Include symbols
+    f.writeln("    <SymbolPackageFormat>snupkg</SymbolPackageFormat>")?; // Use new file format
     f.writeln(&format!(
         "    <PackageId>{}</PackageId>",
         lib.name.to_string()
     ))?;
-    f.writeln(&format!(
+    /*f.writeln(&format!(
         "    <PackageVersion>{}</PackageVersion>",
         lib.version.to_string()
-    ))?;
+    ))?;*/
+    // TODO: uncomment this
+    if let Some(description) = &lib.description {
+        f.writeln(&format!("    <Description>{}</Description>", description))?;
+    }
     f.writeln(&format!(
         "    <PackageLicenseFile>{}</PackageLicenseFile>",
         config.license_file.file_name().unwrap().to_string_lossy()

@@ -54,6 +54,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::ptr;
 use std::rc::Rc;
 use thiserror::Error;
@@ -86,8 +87,6 @@ pub enum BindingError {
     SymbolAlreadyUsed { name: String },
     #[error("C FFI prefix already set")]
     FfiPrefixAlreadySet,
-    #[error("Description already set")]
-    DescriptionAlreadySet,
 
     // Documentation error
     #[error("Invalid documentation string")]
@@ -353,12 +352,39 @@ pub enum Statement {
     NativeFunctionDeclaration(NativeFunctionHandle),
 }
 
+pub struct DeveloperInfo {
+    /// Full name of the developer
+    pub name: String,
+    /// Email of the developer
+    pub email: String,
+    /// Name of the organization the developer is working for
+    pub organization: String,
+    /// Organization website URL
+    pub organization_url: String,
+}
+
+pub struct LibraryInfo {
+    /// Description of the library
+    pub description: String,
+    /// URL of the project
+    pub project_url: String,
+    /// GitHub organisation and repo name (e.g. stepfunc/oo_bindgen)
+    pub repository: String,
+    /// License name
+    pub license_name: String,
+    /// Short description of the license (to put on every generated file)
+    pub license_description: Vec<String>,
+    /// Path to the license file from the root directory
+    pub license_path: PathBuf,
+    /// List of developers
+    pub developers: Vec<DeveloperInfo>,
+}
+
 pub struct Library {
     pub name: String,
     pub version: Version,
     pub c_ffi_prefix: String,
-    pub description: Option<String>,
-    pub license: Vec<String>,
+    pub info: LibraryInfo,
     statements: Vec<Statement>,
     structs: HashMap<NativeStructDeclarationHandle, StructHandle>,
     _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
@@ -567,8 +593,7 @@ pub struct LibraryBuilder {
     name: String,
     version: Version,
     c_ffi_prefix: Option<String>,
-    description: Option<String>,
-    license: Vec<String>,
+    info: LibraryInfo,
 
     statements: Vec<Statement>,
     symbol_names: HashSet<String>,
@@ -592,13 +617,12 @@ pub struct LibraryBuilder {
 }
 
 impl LibraryBuilder {
-    pub fn new<T: Into<String>>(name: T, version: Version) -> Self {
+    pub fn new<T: Into<String>>(name: T, version: Version, info: LibraryInfo) -> Self {
         Self {
             name: name.into(),
             version,
             c_ffi_prefix: None,
-            description: None,
-            license: Vec::new(),
+            info,
 
             statements: Vec::new(),
             symbol_names: HashSet::new(),
@@ -683,8 +707,7 @@ impl LibraryBuilder {
             name: self.name.clone(),
             version: self.version,
             c_ffi_prefix: self.c_ffi_prefix.unwrap_or(self.name),
-            description: self.description,
-            license: self.license,
+            info: self.info,
             statements: self.statements,
             structs,
             _classes: self.classes,
@@ -704,21 +727,6 @@ impl LibraryBuilder {
                 Ok(())
             }
         }
-    }
-
-    pub fn description<T: Into<String>>(&mut self, description: T) -> Result<()> {
-        match self.description {
-            Some(_) => Err(BindingError::DescriptionAlreadySet),
-            None => {
-                self.description = Some(description.into());
-                Ok(())
-            }
-        }
-    }
-
-    pub fn license(&mut self, license: Vec<String>) -> Result<()> {
-        self.license = license;
-        Ok(())
     }
 
     pub fn define_error_type<T: Into<String>>(

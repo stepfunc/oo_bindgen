@@ -9,7 +9,7 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let interface_name = format!("I{}", interface.name.to_camel_case());
 
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 

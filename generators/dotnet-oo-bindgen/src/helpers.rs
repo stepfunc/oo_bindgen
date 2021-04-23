@@ -8,7 +8,7 @@ pub(crate) fn generate_collection_helpers(
     coll: &CollectionHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
@@ -78,7 +78,7 @@ pub(crate) fn generate_iterator_helpers(
     iter: &iterator::IteratorHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 

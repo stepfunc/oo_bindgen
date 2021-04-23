@@ -74,6 +74,7 @@ const SUPPORTED_PLATFORMS: &[Platform] = &[Platform::WinX64Msvc, Platform::Linux
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
+    pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
 }
 
@@ -106,7 +107,7 @@ fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     filename.set_extension("cs");
     let mut f = FilePrinter::new(filename)?;
 
-    print_license(&mut f, &lib.license)?;
+    print_license(&mut f, &lib.info.license_description)?;
     f.writeln(include_str!("../copy/Helpers.cs"))
 }
 
@@ -121,14 +122,38 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("  <PropertyGroup>")?;
     f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
     f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
+    f.writeln("    <IncludeSymbols>true</IncludeSymbols>")?; // Include symbols
+    f.writeln("    <SymbolPackageFormat>snupkg</SymbolPackageFormat>")?; // Use new file format
     f.writeln(&format!(
-        "    <Version>{}</Version>",
+        "    <PackageId>{}</PackageId>",
+        lib.name.to_string()
+    ))?;
+    f.writeln(&format!(
+        "    <PackageVersion>{}</PackageVersion>",
         lib.version.to_string()
+    ))?;
+    f.writeln(&format!(
+        "    <Description>{}</Description>",
+        lib.info.description
+    ))?;
+    f.writeln(&format!(
+        "    <PackageProjectUrl>{}</PackageProjectUrl>",
+        lib.info.project_url
+    ))?;
+    f.writeln(&format!(
+        "    <RepositoryUrl>https://github.com/{}.git</RepositoryUrl>",
+        lib.info.repository
+    ))?;
+    f.writeln("    <RepositoryType>git</RepositoryType>")?;
+    f.writeln(&format!(
+        "    <PackageLicenseFile>{}</PackageLicenseFile>",
+        lib.info.license_path.file_name().unwrap().to_string_lossy()
     ))?;
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
     f.writeln("  <ItemGroup>")?;
 
+    // Include each compiled FFI lib
     for p in config
         .platforms
         .iter()
@@ -141,10 +166,21 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
 
     f.writeln("  </ItemGroup>")?;
 
+    // Dependencies and files to include
     f.writeln("  <ItemGroup>")?;
     f.writeln(
         "    <PackageReference Include=\"System.Collections.Immutable\" Version=\"1.7.1\" />",
     )?;
+    f.writeln(&format!(
+        "    <None Include=\"{}\" Pack=\"true\" PackagePath=\"\" />",
+        dunce::canonicalize(&lib.info.license_path)?.to_string_lossy()
+    ))?;
+    for path in &config.extra_files {
+        f.writeln(&format!(
+            "    <None Include=\"{}\" Pack=\"true\" PackagePath=\"\" />",
+            dunce::canonicalize(path)?.to_string_lossy()
+        ))?;
+    }
     f.writeln("  </ItemGroup>")?;
 
     f.writeln("</Project>")
@@ -232,7 +268,7 @@ fn generate_constant_set(
         }
     }
 
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
@@ -263,7 +299,7 @@ fn generate_enum(
     native_enum: &NativeEnumHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
@@ -293,7 +329,7 @@ fn generate_exception(
     err: &ErrorType,
     lib: &Library,
 ) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 

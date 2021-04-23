@@ -50,6 +50,12 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     }
 
     // Copy the extra files
+    fs::copy(
+        &lib.info.license_path,
+        config
+            .java_resource_dir()
+            .join(lib.info.license_path.file_name().unwrap()),
+    )?;
     for path in &config.extra_files {
         let dest = config.java_resource_dir().join(path.file_name().unwrap());
         fs::copy(path, dest)?;
@@ -90,14 +96,74 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
             lib.name.to_kebab_case()
         ))?;
         f.writeln(&format!("<version>{}</version>", lib.version.to_string()))?;
+
         f.newline()?;
+
+        // General metadata
+        f.writeln(&format!("<name>{}</name>", lib.name))?;
+        f.writeln(&format!(
+            "<description>{}</description>",
+            lib.info.description
+        ))?;
+        f.writeln(&format!("<url>{}</url>", lib.info.project_url))?;
+        f.writeln("<scm>")?;
+        f.writeln(&format!(
+            "    <connection>scm:git:git://github.com/{}.git</connection>",
+            lib.info.repository
+        ))?;
+        f.writeln(&format!(
+            "    <developerConnection>scm:git:ssh://github.com:{}.git</developerConnection>",
+            lib.info.repository
+        ))?;
+        f.writeln(&format!(
+            "    <url>http://github.com/{}/tree/master</url>",
+            lib.info.repository
+        ))?;
+        f.writeln("</scm>")?;
+        f.writeln("<developers>")?;
+        for developer in &lib.info.developers {
+            f.writeln("<developer>")?;
+            f.writeln(&format!("    <name>{}</name>", developer.name))?;
+            f.writeln(&format!("    <email>{}</email>", developer.email))?;
+            f.writeln(&format!(
+                "    <organization>{}</organization>",
+                developer.organization
+            ))?;
+            f.writeln(&format!(
+                "    <organizationUrl>{}</organizationUrl>",
+                developer.organization_url
+            ))?;
+            f.writeln("</developer>")?;
+        }
+        f.writeln("</developers>")?;
+
+        f.newline()?;
+
+        // License description
+        f.writeln("<licenses>")?;
+        f.writeln("    <license>")?;
+        f.writeln(&format!("        <name>{}</name>", lib.info.license_name))?;
+        f.writeln(&format!(
+            "        <url>https://github.com/{}/blob/master/{}</url>",
+            lib.info.repository,
+            lib.info.license_path.to_string_lossy()
+        ))?;
+        f.writeln("    </license>")?;
+        f.writeln("</licenses>")?;
+
+        f.newline()?;
+
+        // General properties
         f.writeln("<properties>")?;
         f.writeln("    <project.java.version>1.8</project.java.version>")?;
         f.writeln("    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>")?;
         f.writeln("    <maven.compiler.target>1.8</maven.compiler.target>")?;
         f.writeln("    <maven.compiler.source>1.8</maven.compiler.source>")?;
         f.writeln("</properties>")?;
+
         f.newline()?;
+
+        // Dependencies
         f.writeln("<dependencies>")?;
         f.writeln("    <dependency>")?;
         f.writeln("        <groupId>org.jooq</groupId>")?;
@@ -110,6 +176,40 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln("        <version>3.11</version>")?;
         f.writeln("    </dependency>")?;
         f.writeln("</dependencies>")?;
+
+        f.newline()?;
+
+        // Other central repository requirements
+        f.writeln("<build>")?;
+        f.writeln("  <plugins>")?;
+        f.writeln("    <plugin>")?;
+        f.writeln("      <groupId>org.apache.maven.plugins</groupId>")?;
+        f.writeln("      <artifactId>maven-source-plugin</artifactId>")?;
+        f.writeln("      <version>2.2.1</version>")?;
+        f.writeln("      <executions>")?;
+        f.writeln("        <execution>")?;
+        f.writeln("          <id>attach-sources</id>")?;
+        f.writeln("          <goals>")?;
+        f.writeln("            <goal>jar-no-fork</goal>")?;
+        f.writeln("          </goals>")?;
+        f.writeln("        </execution>")?;
+        f.writeln("      </executions>")?;
+        f.writeln("    </plugin>")?;
+        f.writeln("    <plugin>")?;
+        f.writeln("      <groupId>org.apache.maven.plugins</groupId>")?;
+        f.writeln("      <artifactId>maven-javadoc-plugin</artifactId>")?;
+        f.writeln("      <version>2.9.1</version>")?;
+        f.writeln("      <executions>")?;
+        f.writeln("        <execution>")?;
+        f.writeln("        <id>attach-javadocs</id>")?;
+        f.writeln("        <goals>")?;
+        f.writeln("          <goal>jar</goal>")?;
+        f.writeln("        </goals>")?;
+        f.writeln("        </execution>")?;
+        f.writeln("      </executions>")?;
+        f.writeln("    </plugin>")?;
+        f.writeln("  </plugins>")?;
+        f.writeln("</build>")?;
 
         Ok(())
     })?;
@@ -291,7 +391,7 @@ fn create_file(
     filename.set_extension("java");
     let mut f = FilePrinter::new(filename)?;
 
-    print_license(&mut f, &lib.license)?;
+    print_license(&mut f, &lib.info.license_description)?;
     print_package(&mut f, config, lib)?;
     f.newline()?;
 

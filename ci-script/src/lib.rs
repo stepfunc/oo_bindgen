@@ -162,7 +162,6 @@ pub struct BindingBuilderSettings<'a> {
     pub ffi_path: &'a Path,
     pub java_group_id: &'a str,
     pub destination_path: &'a Path,
-    pub license_path: &'a Path,
     pub library: &'a Library,
 }
 
@@ -236,13 +235,10 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
     }
 
     fn generate(&mut self, _is_packaging: bool) {
-        let mut extra_files = self.extra_files.clone();
-        extra_files.push(self.settings.license_path.to_owned());
-
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
-            extra_files,
+            extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
         };
 
@@ -342,7 +338,6 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         let config = dotnet_oo_bindgen::DotnetBindgenConfig {
             output_dir: build_dir,
             ffi_name: self.settings.ffi_name.to_owned(),
-            license_file: self.settings.license_path.to_owned(),
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
         };
@@ -461,16 +456,13 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
     }
 
     fn generate(&mut self, is_packaging: bool) {
-        let mut extra_files = self.extra_files.clone();
-        extra_files.push(self.settings.license_path.to_owned());
-
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
             rust_output_dir: self.rust_build_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
             ffi_path: self.settings.ffi_path.to_owned(),
             group_id: self.settings.java_group_id.to_owned(),
-            extra_files,
+            extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
         };
 

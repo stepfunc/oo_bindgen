@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use oo_bindgen::*;
 
 mod callback;
@@ -15,11 +17,12 @@ mod strings;
 mod structure;
 
 pub fn build_lib() -> Result<Library, BindingError> {
-    let mut builder = LibraryBuilder::new("foo", oo_bindgen::Version::parse("1.2.3").unwrap());
-    builder.c_ffi_prefix("foo")?;
-    builder.description("Foo is an interesting lib")?;
-    builder.license(
-        [
+    let lib_info = LibraryInfo {
+        description: "Foo is an interesting library".to_string(),
+        project_url: "https://stepfunc.io/".to_string(),
+        repository: "stepfunc/oo_bindgen".to_string(),
+        license_name: "Custom license".to_string(),
+        license_description: [
             "foo v1.2.3",
             "Copyright (C) 2020-2021 Step Function I/O",
             "",
@@ -30,7 +33,21 @@ pub fn build_lib() -> Result<Library, BindingError> {
         .iter()
         .map(|s| s.to_string())
         .collect(),
-    )?;
+        license_path: PathBuf::from("LICENSE.txt"),
+        developers: vec![DeveloperInfo {
+            name: "Émile Grégoire".to_string(),
+            email: "emile@stepfunc.io".to_string(),
+            organization: "Step Function I/O".to_string(),
+            organization_url: "https://stepfunc.io/".to_string(),
+        }],
+    };
+
+    let mut builder = LibraryBuilder::new(
+        "foo",
+        oo_bindgen::Version::parse("1.2.3").unwrap(),
+        lib_info,
+    );
+    builder.c_ffi_prefix("foo")?;
 
     let structure = structure::define(&mut builder)?;
     constants::define(&mut builder)?;

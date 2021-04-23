@@ -74,7 +74,6 @@ const SUPPORTED_PLATFORMS: &[Platform] = &[Platform::WinX64Msvc, Platform::Linux
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: String,
-    pub license_file: PathBuf,
     pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
 }
@@ -108,7 +107,7 @@ fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     filename.set_extension("cs");
     let mut f = FilePrinter::new(filename)?;
 
-    print_license(&mut f, &lib.license)?;
+    print_license(&mut f, &lib.info.license_description)?;
     f.writeln(include_str!("../copy/Helpers.cs"))
 }
 
@@ -134,12 +133,22 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
         lib.version.to_string()
     ))?;*/
     // TODO: uncomment this
-    if let Some(description) = &lib.description {
-        f.writeln(&format!("    <Description>{}</Description>", description))?;
-    }
+    f.writeln(&format!(
+        "    <Description>{}</Description>",
+        lib.info.description
+    ))?;
+    f.writeln(&format!(
+        "    <PackageProjectUrl>{}</PackageProjectUrl>",
+        lib.info.project_url
+    ))?;
+    f.writeln(&format!(
+        "    <RepositoryUrl>https://github.com/{}.git</RepositoryUrl>",
+        lib.info.repository
+    ))?;
+    f.writeln("    <RepositoryType>git</RepositoryType>")?;
     f.writeln(&format!(
         "    <PackageLicenseFile>{}</PackageLicenseFile>",
-        config.license_file.file_name().unwrap().to_string_lossy()
+        lib.info.license_path.file_name().unwrap().to_string_lossy()
     ))?;
     f.writeln("  </PropertyGroup>")?;
     f.newline()?;
@@ -165,7 +174,7 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     )?;
     f.writeln(&format!(
         "    <None Include=\"{}\" Pack=\"true\" PackagePath=\"\" />",
-        dunce::canonicalize(&config.license_file)?.to_string_lossy()
+        dunce::canonicalize(&lib.info.license_path)?.to_string_lossy()
     ))?;
     for path in &config.extra_files {
         f.writeln(&format!(
@@ -260,7 +269,7 @@ fn generate_constant_set(
         }
     }
 
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
@@ -291,7 +300,7 @@ fn generate_enum(
     native_enum: &NativeEnumHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
@@ -321,7 +330,7 @@ fn generate_exception(
     err: &ErrorType,
     lib: &Library,
 ) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 

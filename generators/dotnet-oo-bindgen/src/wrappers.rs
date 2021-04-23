@@ -11,7 +11,7 @@ pub(crate) fn generate_native_functions_class(
     lib: &Library,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 

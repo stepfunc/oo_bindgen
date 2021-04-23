@@ -24,7 +24,7 @@ pub(crate) fn generate(
     let struct_name = native_struct.name().to_camel_case();
     let struct_native_name = format!("{}Native", struct_name);
 
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 

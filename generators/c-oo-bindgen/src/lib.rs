@@ -208,6 +208,10 @@ fn generate_single_package(
     )?;
 
     // Copy extra files
+    fs::copy(
+        &lib.info.license_path,
+        output_dir.join(lib.info.license_path.file_name().unwrap()),
+    )?;
     for path in &config.extra_files {
         fs::copy(path, output_dir.join(path.file_name().unwrap()))?;
     }
@@ -253,7 +257,7 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
 
     // Print license
     commented(&mut f, |f| {
-        for line in lib.license.iter() {
+        for line in lib.info.license_description.iter() {
             f.writeln(line)?;
         }
         Ok(())

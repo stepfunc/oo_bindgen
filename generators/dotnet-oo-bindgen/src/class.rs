@@ -9,7 +9,7 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let classname = class.name().to_camel_case();
 
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
@@ -92,7 +92,7 @@ pub(crate) fn generate_static(
 ) -> FormattingResult<()> {
     let classname = class.name.to_camel_case();
 
-    print_license(f, &lib.license)?;
+    print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 

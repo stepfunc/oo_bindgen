@@ -128,11 +128,10 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
         "    <PackageId>{}</PackageId>",
         lib.name.to_string()
     ))?;
-    /*f.writeln(&format!(
+    f.writeln(&format!(
         "    <PackageVersion>{}</PackageVersion>",
         lib.version.to_string()
-    ))?;*/
-    // TODO: uncomment this
+    ))?;
     f.writeln(&format!(
         "    <Description>{}</Description>",
         lib.info.description

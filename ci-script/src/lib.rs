@@ -369,10 +369,6 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
     }
 
     fn package(&mut self) {
-        // TODO: remove this
-        use rand::Rng;
-        let mut rng = rand::thread_rng();
-
         // Produce a nupkg
         let result = Command::new("dotnet")
             .current_dir(&self.output_dir())
@@ -380,11 +376,6 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
             .arg("--configuration")
             .arg("Release")
             .arg("--include-symbols")
-            .arg(format!(
-                "-p:Version=\"{}-test{:06}\"",
-                self.settings.library.version,
-                rng.gen_range(0..1000000)
-            )) // TODO: remove this
             .arg("--output")
             .arg("nupkg")
             .status()

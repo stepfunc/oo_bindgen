@@ -13,25 +13,27 @@ public class ClassTest {
     public void ConstructionDestructionTest() {
         assertThat(TestClass.constructionCounter().intValue()).isZero();
 
-        try(TestClass testclass = new TestClass(uint(41))) {
-            assertThat(TestClass.constructionCounter()).isEqualTo(uint(1));
-            assertThat(testclass.getValue()).isEqualTo(uint(41));
+        TestClass testclass = new TestClass(uint(41));
+        assertThat(TestClass.constructionCounter()).isEqualTo(uint(1));
+        assertThat(testclass.getValue()).isEqualTo(uint(41));
 
-            testclass.incrementValue();
-            assertThat(testclass.getValue()).isEqualTo(uint(42));
-        }
+        testclass.incrementValue();
+        assertThat(testclass.getValue()).isEqualTo(uint(42));
+
+        testclass.delete();
 
         assertThat(TestClass.constructionCounter().intValue()).isZero();
     }
 
     @Test
     public void AsyncMethodTest() throws ExecutionException, InterruptedException {
-        try(TestClass testclass = new TestClass(uint(41))) {
-            assertThat(TestClass.constructionCounter()).isEqualTo(uint(1));
-            assertThat(testclass.getValueAsync().toCompletableFuture().get()).isEqualTo(uint(41));
+        TestClass testclass = new TestClass(uint(41));
+        assertThat(TestClass.constructionCounter()).isEqualTo(uint(1));
+        assertThat(testclass.getValueAsync().toCompletableFuture().get()).isEqualTo(uint(41));
 
-            testclass.incrementValue();
-            assertThat(testclass.getValueAsync().toCompletableFuture().get()).isEqualTo(uint(42));
-        }
+        testclass.incrementValue();
+        assertThat(testclass.getValueAsync().toCompletableFuture().get()).isEqualTo(uint(42));
+
+        testclass.delete();
     }
 }

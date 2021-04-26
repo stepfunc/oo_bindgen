@@ -1,7 +1,7 @@
 [package]
 name = "foo-bindings"
 version = "0.1.0"
-authors = ["Émile Grégoire <emile@automatak.com>"]
+authors = ["Émile Grégoire <emile@stepfunc.io>"]
 edition = "2018"
 
 [dependencies]

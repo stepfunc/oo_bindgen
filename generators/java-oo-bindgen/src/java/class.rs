@@ -16,7 +16,7 @@ pub(crate) fn generate(
 
     // Class definition
     f.writeln(&format!("public final class {}", classname))?;
-    if class.is_manual_destruction() {
+    if matches!(class.destruction_mode, DestructionMode::Dispose) {
         f.write(" implements AutoCloseable")?;
     }
 
@@ -39,7 +39,7 @@ pub(crate) fn generate(
         }
 
         if let Some(destructor) = &class.destructor {
-            generate_destructor(f, destructor, class.is_manual_destruction(), lib)?;
+            generate_destructor(f, destructor, &class.destruction_mode, lib)?;
             f.newline()?;
         }
 
@@ -145,10 +145,10 @@ fn generate_constructor(
 fn generate_destructor(
     f: &mut dyn Printer,
     destructor: &NativeFunctionHandle,
-    is_manual_destruction: bool,
+    destruction_mode: &DestructionMode,
     lib: &Library,
 ) -> FormattingResult<()> {
-    if is_manual_destruction {
+    if destruction_mode.is_manual_destruction() {
         documentation(f, |f| {
             // Print top-level documentation
             javadoc_print(f, &destructor.doc, lib)?;
@@ -164,12 +164,18 @@ fn generate_destructor(
         })?;
     }
 
-    if is_manual_destruction {
-        // AutoCloseable implementation
-        f.writeln("@Override")?;
-        f.writeln("public void close()")?;
-    } else {
-        f.writeln("private void close()")?;
+    match destruction_mode {
+        DestructionMode::Automatic => {
+            f.writeln("private void close()")?;
+        }
+        DestructionMode::Custom(name) => {
+            f.writeln(&format!("public void {}()", name.to_mixed_case()))?;
+        }
+        DestructionMode::Dispose => {
+            // AutoCloseable implementation
+            f.writeln("@Override")?;
+            f.writeln("public void close()")?;
+        }
     }
 
     blocked(f, |f| {
@@ -186,10 +192,16 @@ fn generate_destructor(
 
     f.newline()?;
 
-    // Dispose method
+    // Finalizer method
     f.writeln("@Override")?;
     f.writeln("public void finalize()")?;
-    blocked(f, |f| f.writeln("this.close();"))
+    blocked(f, |f| {
+        if let DestructionMode::Custom(name) = destruction_mode {
+            f.writeln(&format!("this.{}();", name.to_mixed_case()))
+        } else {
+            f.writeln("this.close();")
+        }
+    })
 }
 
 fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {

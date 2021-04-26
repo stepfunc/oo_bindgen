@@ -11,14 +11,14 @@ namespace foo.Tests
         {
             Assert.Equal(0u, TestClass.ConstructionCounter());
 
-            using(var testclass = new TestClass(41))
-            {
-                Assert.Equal(1u, TestClass.ConstructionCounter());
-                Assert.Equal(41u, testclass.GetValue());
+            var testclass = new TestClass(41);
+            Assert.Equal(1u, TestClass.ConstructionCounter());
+            Assert.Equal(41u, testclass.GetValue());
 
-                testclass.IncrementValue();
-                Assert.Equal(42u, testclass.GetValue());
-            }
+            testclass.IncrementValue();
+            Assert.Equal(42u, testclass.GetValue());
+
+            testclass.Delete();
 
             Assert.Equal(0u, TestClass.ConstructionCounter());
         }
@@ -26,14 +26,14 @@ namespace foo.Tests
         [Fact]
         public async void AsyncMethodTest()
         {
-            using (var testclass = new TestClass(41))
-            {
-                Assert.Equal(1u, TestClass.ConstructionCounter());
-                Assert.Equal(41u, await testclass.GetValueAsync());
+            var testclass = new TestClass(41);
+            Assert.Equal(1u, TestClass.ConstructionCounter());
+            Assert.Equal(41u, await testclass.GetValueAsync());
 
-                testclass.IncrementValue();
-                Assert.Equal(42u, await testclass.GetValueAsync());
-            }
+            testclass.IncrementValue();
+            Assert.Equal(42u, await testclass.GetValueAsync());
+
+            testclass.Delete();
         }
     }
 }

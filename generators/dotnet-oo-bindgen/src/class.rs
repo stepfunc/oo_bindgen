@@ -20,7 +20,7 @@ pub(crate) fn generate(
         })?;
 
         f.writeln(&format!("public sealed class {}", classname))?;
-        if class.is_manual_destruction() {
+        if matches!(class.destruction_mode, DestructionMode::Dispose) {
             f.write(": IDisposable")?;
         }
 
@@ -55,13 +55,7 @@ pub(crate) fn generate(
             }
 
             if let Some(destructor) = &class.destructor {
-                generate_destructor(
-                    f,
-                    &classname,
-                    destructor,
-                    class.is_manual_destruction(),
-                    lib,
-                )?;
+                generate_destructor(f, &classname, destructor, &class.destruction_mode, lib)?;
                 f.newline()?;
             }
 
@@ -177,14 +171,20 @@ fn generate_destructor(
     f: &mut dyn Printer,
     classname: &str,
     destructor: &NativeFunctionHandle,
-    is_manual_destruction: bool,
+    destruction_mode: &DestructionMode,
     lib: &Library,
 ) -> FormattingResult<()> {
-    if is_manual_destruction {
+    if destruction_mode.is_manual_destruction() {
         // Public Dispose method
         documentation(f, |f| xmldoc_print(f, &destructor.doc, lib))?;
 
-        f.writeln("public void Dispose()")?;
+        let method_name = if let DestructionMode::Custom(name) = destruction_mode {
+            name.to_camel_case()
+        } else {
+            "Dispose".to_string()
+        };
+
+        f.writeln(&format!("public void {}()", method_name))?;
         blocked(f, |f| {
             f.writeln("Dispose(true);")?;
             f.writeln("GC.SuppressFinalize(this);")

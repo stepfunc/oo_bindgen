@@ -1,5 +1,6 @@
 use crate::conversion::*;
 use heck::{CamelCase, MixedCase};
+use oo_bindgen::class::DestructionMode;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::Library;
@@ -86,9 +87,18 @@ fn reference_print(
             ))?;
         }
         DocReference::ClassDestructor(class_name) => {
+            let class = lib.find_class(class_name).unwrap();
+
+            let method_name = if let DestructionMode::Custom(name) = &class.destruction_mode {
+                name.to_camel_case()
+            } else {
+                "Dispose".to_string()
+            };
+
             f.write(&format!(
-                "<see cref=\"{}.Dispose()\" />",
-                class_name.to_camel_case()
+                "<see cref=\"{}.{}()\" />",
+                class_name.to_camel_case(),
+                method_name,
             ))?;
         }
         DocReference::Struct(struct_name) => {

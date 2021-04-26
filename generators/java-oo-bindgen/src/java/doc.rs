@@ -1,5 +1,6 @@
 use super::conversion::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
+use oo_bindgen::class::DestructionMode;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::Library;
@@ -83,7 +84,19 @@ fn reference_print(
             ))?;
         }
         DocReference::ClassDestructor(class_name) => {
-            f.write(&format!("{{@link {}#close}}", class_name.to_camel_case()))?;
+            let class = lib.find_class(class_name).unwrap();
+
+            let method_name = if let DestructionMode::Custom(name) = &class.destruction_mode {
+                name.to_mixed_case()
+            } else {
+                "close".to_string()
+            };
+
+            f.write(&format!(
+                "{{@link {}#{}}}",
+                class_name.to_camel_case(),
+                method_name
+            ))?;
         }
         DocReference::Struct(struct_name) => {
             f.write(&format!("{{@link {}}}", struct_name.to_camel_case()))?;

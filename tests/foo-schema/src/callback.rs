@@ -101,7 +101,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .method("SetInterface", &cbsource_set_interface)?
         .method("SetValue", &cbsource_set_value_func)?
         .method("SetDuration", &cbsource_set_duration_func)?
-        .manual_destroy()?
+        .disposable_destroy()?
         .doc("CallbackSource class")?
         .build()?;
 

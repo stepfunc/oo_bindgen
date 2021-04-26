@@ -200,6 +200,8 @@ pub enum BindingError {
     },
     #[error("Destructor for class '{}' cannot fail", handle.name)]
     DestructorCannotFail { handle: ClassDeclarationHandle },
+    #[error("No destructor defined for class '{}', but asking for manual/disposable destruction", handle.name)]
+    NoDestructorForManualDestruction { handle: ClassDeclarationHandle },
 
     // Async errors
     #[error("Native function '{}' cannot be used as an async method because it doesn't have a interface parameter", handle.name)]

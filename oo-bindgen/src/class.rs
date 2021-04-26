@@ -33,16 +33,32 @@ pub struct AsyncMethod {
     pub callback_param_name: String,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum DestructionMode {
     /// Object is automatically deleted by the GC
     Automatic,
+    /// Object is disposed of manually by calling a custom method
+    ///
+    /// For safety, if the user never calls the destruction method, the object
+    /// will still be deleted by the GC at some point. However, it is
+    /// strongly advised to take care of the destruction manually.
+    Custom(String),
     /// Object is disposed of manually by calling a dispose()/close() method
     ///
     /// For safety, if the user never calls the destruction method, the object
     /// will still be deleted by the GC at some point. However, it is
     /// strongly advised to take care of the destruction manually.
-    Manual,
+    Dispose,
+}
+
+impl DestructionMode {
+    pub fn is_manual_destruction(&self) -> bool {
+        match self {
+            Self::Automatic => false,
+            Self::Custom(_) => true,
+            Self::Dispose => true,
+        }
+    }
 }
 
 /// Object-oriented class definition
@@ -65,10 +81,6 @@ impl Class {
 
     pub fn declaration(&self) -> ClassDeclarationHandle {
         self.declaration.clone()
-    }
-
-    pub fn is_manual_destruction(&self) -> bool {
-        self.destruction_mode == DestructionMode::Manual && self.destructor.is_some()
     }
 
     pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&NativeFunctionHandle> {
@@ -291,8 +303,25 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn manual_destroy(mut self) -> Result<Self> {
-        self.destruction_mode = DestructionMode::Manual;
+    pub fn custom_destroy<T: Into<String>>(mut self, name: T) -> Result<Self> {
+        if self.destructor.is_none() {
+            return Err(BindingError::NoDestructorForManualDestruction {
+                handle: self.declaration,
+            });
+        }
+
+        self.destruction_mode = DestructionMode::Custom(name.into());
+        Ok(self)
+    }
+
+    pub fn disposable_destroy(mut self) -> Result<Self> {
+        if self.destructor.is_none() {
+            return Err(BindingError::NoDestructorForManualDestruction {
+                handle: self.declaration,
+            });
+        }
+
+        self.destruction_mode = DestructionMode::Dispose;
         Ok(self)
     }
 

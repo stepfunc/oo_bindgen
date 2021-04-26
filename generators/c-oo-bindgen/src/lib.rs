@@ -239,7 +239,15 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
         stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
         stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
         stdin.write_all(b"EXTRACT_STATIC = YES\n").unwrap();
-        stdin.write_all(b"INPUT = include\n").unwrap();
+        stdin
+            .write_all(
+                &format!(
+                    "INPUT = {}/include\n",
+                    config.platforms.iter().next().unwrap().platform.to_string()
+                )
+                .into_bytes(),
+            )
+            .unwrap();
     }
 
     command.wait()?;

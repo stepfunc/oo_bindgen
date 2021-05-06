@@ -6,6 +6,7 @@ members = [
 
     "generators/rust-oo-bindgen",
     "generators/c-oo-bindgen",
+    "generators/cpp-oo-bindgen",
     "generators/dotnet-oo-bindgen",
     "generators/java-oo-bindgen",
 

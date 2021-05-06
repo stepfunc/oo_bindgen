@@ -1,10 +1,9 @@
 [package]
-name = "c-oo-bindgen"
+name = "cpp-oo-bindgen"
 version = "0.1.0"
 authors = ["Émile Grégoire <emile@stepfunc.io>"]
 edition = "2018"
 
 [dependencies]
 oo-bindgen = { path = "../../oo-bindgen" }
-cpp-oo-bindgen = { path = "../cpp-oo-bindgen" }
 heck = "0.3"

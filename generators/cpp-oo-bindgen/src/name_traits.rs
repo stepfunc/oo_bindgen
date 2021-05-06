@@ -44,7 +44,7 @@ impl CppName for ErrorType {
 
 impl CppName for NativeStructElement {
     fn cpp_name(&self) -> String {
-        self.name.to_camel_case()
+        self.name.to_snake_case()
     }
 }
 

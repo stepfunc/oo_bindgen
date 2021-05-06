@@ -61,8 +61,11 @@ use std::path::Path;
 use crate::formatting::namespace;
 use crate::name_traits::*;
 use crate::type_traits::*;
+use oo_bindgen::iterator::IteratorHandle;
 
-pub fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
+
+fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     let name = lib.c_ffi_prefix.to_snake_case();
 
     // Version number
@@ -86,7 +89,7 @@ pub fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()>
     f.newline()
 }
 
-pub fn print_enum(f: &mut dyn Printer, e: &NativeEnumHandle) -> FormattingResult<()> {
+fn print_enum(f: &mut dyn Printer, e: &NativeEnumHandle) -> FormattingResult<()> {
     f.writeln(&format!("enum class {} {{", e.cpp_name()))?;
     indented(f, |f| {
         for v in &e.variants {
@@ -98,7 +101,7 @@ pub fn print_enum(f: &mut dyn Printer, e: &NativeEnumHandle) -> FormattingResult
     f.newline()
 }
 
-pub fn print_constants(f: &mut dyn Printer, c: &ConstantSetHandle) -> FormattingResult<()> {
+fn print_constants(f: &mut dyn Printer, c: &ConstantSetHandle) -> FormattingResult<()> {
     fn get_value(v: ConstantValue) -> String {
         match v {
             ConstantValue::U8(v, Representation::Hex) => format!("0x{:02X}", v),
@@ -127,7 +130,7 @@ pub fn print_constants(f: &mut dyn Printer, c: &ConstantSetHandle) -> Formatting
     f.newline()
 }
 
-pub fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
+fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
     f.writeln(&format!(
         "class {} : public std::logic_error {{",
         e.cpp_name()
@@ -143,12 +146,12 @@ pub fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<(
     f.newline()
 }
 
-pub fn print_struct_decl(f: &mut dyn Printer, s: &NativeStructDeclaration) -> FormattingResult<()> {
+fn print_struct_decl(f: &mut dyn Printer, s: &NativeStructDeclaration) -> FormattingResult<()> {
     f.writeln(&format!("struct {};", s.cpp_name()))?;
     f.newline()
 }
 
-pub fn print_struct(f: &mut dyn Printer, s: &NativeStructHandle) -> FormattingResult<()> {
+fn print_struct(f: &mut dyn Printer, s: &NativeStructHandle) -> FormattingResult<()> {
     f.writeln(&format!("struct {} {{", s.cpp_name()))?;
     indented(f, |f| {
         for field in &s.elements {
@@ -164,7 +167,7 @@ pub fn print_struct(f: &mut dyn Printer, s: &NativeStructHandle) -> FormattingRe
     f.newline()
 }
 
-pub fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingResult<()> {
+fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.cpp_name()))?;
     f.writeln("public:")?;
     indented(f, |f| {
@@ -200,8 +203,43 @@ pub fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> Formatt
     f.newline()
 }
 
-pub fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+    f.writeln("// non-copyable")?;
+    f.writeln(&format!("{}(const {}&) = delete;", name, name))?;
+    f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))
+}
+
+fn print_iterator(f: &mut dyn Printer, handle: &IteratorHandle) -> FormattingResult<()> {
+    f.writeln(&format!("class {} {{", handle.cpp_name()))?;
+    indented(f, |f| {
+        f.writeln("// internal friend class used for construction")?;
+        f.writeln(&format!("friend class {};", FRIEND_CLASS_NAME))?;
+        f.writeln("// pointer to the underlying C iterator type")?;
+        f.writeln("void* self;")?;
+        f.writeln("// pointer to the current C value")?;
+        f.writeln("void* current;")?;
+        f.writeln("// constructor only accessible internally")?;
+        f.writeln(&format!("{}(void* self, void* current): self(self), current(current) {{}}", handle.cpp_name()))?;
+        print_deleted_copy_and_assignment(f, &handle.cpp_name())
+    })?;
+    f.writeln("public:")?;
+    f.newline()?;
+    indented(f, |f| {
+        f.writeln("// @brief move to the next value")?;
+        f.writeln("bool next();")?;
+        f.writeln("// @brief get the current value")?;
+        f.writeln(&format!("{} get() const;", handle.item_type.cpp_name()))
+    })?;
+    f.writeln("};")?;
+    f.newline()
+}
+
+fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
+
+    f.writeln("// forward declare the friend class which can access C++ class internals")?;
+    f.writeln(&format!("class {};", FRIEND_CLASS_NAME))?;
+    f.newline()?;
 
     for statement in lib.into_iter() {
         match statement {
@@ -211,6 +249,7 @@ pub fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formattin
             Statement::NativeStructDeclaration(x) => print_struct_decl(f, &x)?,
             Statement::NativeStructDefinition(x) => print_struct(f, &x)?,
             Statement::InterfaceDefinition(x) => print_interface(f, &x)?,
+            Statement::IteratorDeclaration(x) => print_iterator(f, &x)?,
             _ => {}
         }
     }

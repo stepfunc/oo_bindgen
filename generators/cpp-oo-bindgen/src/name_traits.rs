@@ -1,12 +1,12 @@
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::callback::{CallbackFunction, InterfaceHandle};
-use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method};
 use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::{EnumVariant, NativeEnumHandle};
 use oo_bindgen::native_function::Parameter;
-use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructElement, NativeStructHandle};
+use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructElement, NativeStructHandle, StructHandle};
 
 pub(crate) trait CppName {
     fn cpp_name(&self) -> String;
@@ -56,13 +56,13 @@ impl CppName for InterfaceHandle {
 
 impl CppName for Parameter {
     fn cpp_name(&self) -> String {
-        self.name.to_camel_case()
+        self.name.to_snake_case()
     }
 }
 
 impl CppName for CallbackFunction {
     fn cpp_name(&self) -> String {
-        self.name.to_camel_case()
+        self.name.to_snake_case()
     }
 }
 
@@ -78,8 +78,26 @@ impl CppName for ClassDeclarationHandle {
     }
 }
 
+impl CppName for ClassHandle {
+    fn cpp_name(&self) -> String {
+        self.name().to_camel_case()
+    }
+}
+
 impl CppName for IteratorHandle {
     fn cpp_name(&self) -> String {
         self.name().to_camel_case()
+    }
+}
+
+impl CppName for StructHandle {
+    fn cpp_name(&self) -> String {
+        self.name().to_camel_case()
+    }
+}
+
+impl CppName for Method {
+    fn cpp_name(&self) -> String {
+        self.name.to_snake_case()
     }
 }

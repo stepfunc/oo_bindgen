@@ -54,7 +54,7 @@ use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::native_enum::NativeEnumHandle;
-use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle};
+use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle, NativeStructType};
 use oo_bindgen::{Library, Statement};
 use std::path::Path;
 
@@ -62,6 +62,8 @@ use crate::formatting::namespace;
 use crate::name_traits::*;
 use crate::type_traits::*;
 use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle};
+use oo_bindgen::native_function::Parameter;
 
 const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
 
@@ -146,15 +148,34 @@ fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
     f.newline()
 }
 
-fn print_struct_decl(f: &mut dyn Printer, s: &NativeStructDeclaration) -> FormattingResult<()> {
-    f.writeln(&format!("struct {};", s.cpp_name()))?;
+fn print_native_struct_decl(f: &mut dyn Printer, s: &NativeStructDeclaration) -> FormattingResult<()> {
+    f.writeln(&format!("class {};", s.cpp_name()))?;
     f.newline()
 }
 
-fn print_struct(f: &mut dyn Printer, s: &NativeStructHandle) -> FormattingResult<()> {
-    f.writeln(&format!("struct {} {{", s.cpp_name()))?;
+fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
+    let constructor_args = handle
+        .elements
+        .iter()
+        .flat_map(|x| {
+            if x.element_type.has_default() {
+                None
+            } else {
+                Some(format!("{} {}", x.element_type.to_type().get_cpp_struct_type(), x.name))
+            }
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+
+    f.writeln(&format!("class {} {{", handle.cpp_name()))?;
+    if let NativeStructType::Public  = handle.struct_type {
+        f.writeln("public:")?;
+    }
     indented(f, |f| {
-        for field in &s.elements {
+        f.writeln(&format!("{}({});", handle.cpp_name(), constructor_args))?;
+        f.newline()?;
+        for field in &handle.elements {
             f.writeln(&format!(
                 "{} {};",
                 field.element_type.to_type().get_cpp_struct_type(),
@@ -234,6 +255,54 @@ fn print_iterator(f: &mut dyn Printer, handle: &IteratorHandle) -> FormattingRes
     f.newline()
 }
 
+fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> FormattingResult<()> {
+    f.writeln(&format!("class {};", handle.cpp_name()))?;
+    f.newline()
+}
+
+fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
+    f.writeln(&format!("class {} {{", handle.cpp_name()))?;
+    indented(f, |f| {
+        f.writeln(&format!("friend class {};", FRIEND_CLASS_NAME))?;
+        f.writeln("// pointer to the underlying C type")?;
+        f.writeln("void* self;")?;
+        f.writeln("// constructor only accessible internally")?;
+        f.writeln(&format!("{}(void* self): self(self), {{}}", handle.cpp_name()))?;
+        print_deleted_copy_and_assignment(f, &handle.cpp_name())
+    })?;
+    f.newline()?;
+    f.writeln("public:")?;
+    indented(f, |f| {
+        f.writeln(&format!("~{}();", handle.cpp_name()))?;
+        for method in &handle.methods {
+            let args: String = method.native_function
+                .parameters
+                .iter()
+                .skip(1)
+                .map(|p| {
+                    format!(
+                        "{} {}",
+                        p.param_type.get_cpp_to_native_argument(),
+                        p.cpp_name()
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            f.writeln(&format!(
+                "{} {}({});",
+                method.native_function.return_type.get_cpp_type(),
+                method.cpp_name(),
+                args
+            ))?;
+        }
+        Ok(())
+    })?;
+    f.writeln("};")?;
+    f.newline()
+}
+
+
 fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
 
@@ -246,11 +315,22 @@ fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingRes
             Statement::Constants(x) => print_constants(f, &x)?,
             Statement::EnumDefinition(x) => print_enum(f, &x)?,
             Statement::ErrorType(x) => print_exception(f, &x)?,
-            Statement::NativeStructDeclaration(x) => print_struct_decl(f, &x)?,
-            Statement::NativeStructDefinition(x) => print_struct(f, &x)?,
+            Statement::NativeStructDeclaration(x) => print_native_struct_decl(f, &x)?,
+            Statement::NativeStructDefinition(x) => print_native_struct(f, &x)?,
             Statement::InterfaceDefinition(x) => print_interface(f, &x)?,
             Statement::IteratorDeclaration(x) => print_iterator(f, &x)?,
-            _ => {}
+            // TODO
+            Statement::ClassDeclaration(x) => print_class_decl(f, &x)?,
+            Statement::ClassDefinition(x) => print_class(f, &x)?,
+            Statement::StructDefinition(_) => {
+                // ignoring these for now
+            },
+            Statement::StaticClassDefinition(_) => {},
+            Statement::CollectionDeclaration(_) => {},
+            // not used in C++
+            Statement::NativeFunctionDeclaration(_) => {},
+
+
         }
     }
 

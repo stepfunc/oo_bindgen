@@ -61,9 +61,7 @@ use std::path::Path;
 use crate::formatting::namespace;
 use crate::name_traits::*;
 use crate::type_traits::*;
-use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle};
-use oo_bindgen::native_function::Parameter;
+use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod};
 
 const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
 
@@ -161,7 +159,7 @@ fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> Form
             if x.element_type.has_default() {
                 None
             } else {
-                Some(format!("{} {}", x.element_type.to_type().get_cpp_struct_type(), x.name))
+                Some(format!("{} {}", x.element_type.to_type().get_cpp_struct_member_type(), x.name))
             }
         })
         .collect::<Vec<String>>()
@@ -178,7 +176,7 @@ fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> Form
         for field in &handle.elements {
             f.writeln(&format!(
                 "{} {};",
-                field.element_type.to_type().get_cpp_struct_type(),
+                field.element_type.to_type().get_cpp_struct_member_type(),
                 field.cpp_name()
             ))?;
         }
@@ -230,6 +228,7 @@ fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> Formatt
     f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))
 }
 
+/*
 fn print_iterator(f: &mut dyn Printer, handle: &IteratorHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.cpp_name()))?;
     indented(f, |f| {
@@ -254,10 +253,79 @@ fn print_iterator(f: &mut dyn Printer, handle: &IteratorHandle) -> FormattingRes
     f.writeln("};")?;
     f.newline()
 }
+*/
 
 fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {};", handle.cpp_name()))?;
     f.newline()
+}
+
+fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+    let args: String = method.native_function
+        .parameters
+        .iter()
+        .skip(1)
+        .map(|p| {
+            format!(
+                "{} {}",
+                p.param_type.get_cpp_func_argument_type(),
+                p.cpp_name()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "{} {}({});",
+        method.native_function.return_type.get_cpp_type(),
+        method.cpp_name(),
+        args
+    ))
+}
+
+fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+    let args: String = method.native_function
+        .parameters
+        .iter()
+        .map(|p| {
+            format!(
+                "{} {}",
+                p.param_type.get_cpp_func_argument_type(),
+                p.cpp_name()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "static {} {}({});",
+        method.native_function.return_type.get_cpp_type(),
+        method.cpp_name(),
+        args
+    ))
+}
+
+fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
+    let args: String = method.native_function
+        .parameters
+        .iter()
+        .skip(1)
+        .map(|p| {
+            format!(
+                "{} {}",
+                p.param_type.get_cpp_func_argument_type(),
+                p.cpp_name()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "{} {}({});",
+        method.native_function.return_type.get_cpp_type(),
+        method.cpp_name(),
+        args
+    ))
 }
 
 fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
@@ -267,7 +335,7 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
         f.writeln("// pointer to the underlying C type")?;
         f.writeln("void* self;")?;
         f.writeln("// constructor only accessible internally")?;
-        f.writeln(&format!("{}(void* self): self(self), {{}}", handle.cpp_name()))?;
+        f.writeln(&format!("{}(void* self): self(self) {{}}", handle.cpp_name()))?;
         print_deleted_copy_and_assignment(f, &handle.cpp_name())
     })?;
     f.newline()?;
@@ -275,26 +343,13 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
     indented(f, |f| {
         f.writeln(&format!("~{}();", handle.cpp_name()))?;
         for method in &handle.methods {
-            let args: String = method.native_function
-                .parameters
-                .iter()
-                .skip(1)
-                .map(|p| {
-                    format!(
-                        "{} {}",
-                        p.param_type.get_cpp_to_native_argument(),
-                        p.cpp_name()
-                    )
-                })
-                .collect::<Vec<String>>()
-                .join(", ");
-
-            f.writeln(&format!(
-                "{} {}({});",
-                method.native_function.return_type.get_cpp_type(),
-                method.cpp_name(),
-                args
-            ))?;
+            print_method(f, method)?;
+        }
+        for method in &handle.static_methods {
+            print_static_method(f, method)?;
+        }
+        for method in &handle.async_methods {
+            print_async_method(f, method)?;
         }
         Ok(())
     })?;
@@ -318,8 +373,9 @@ fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingRes
             Statement::NativeStructDeclaration(x) => print_native_struct_decl(f, &x)?,
             Statement::NativeStructDefinition(x) => print_native_struct(f, &x)?,
             Statement::InterfaceDefinition(x) => print_interface(f, &x)?,
-            Statement::IteratorDeclaration(x) => print_iterator(f, &x)?,
-            // TODO
+            Statement::IteratorDeclaration(_) => {
+                // we don't do anything with this ATM b/c we transform to vector
+            },
             Statement::ClassDeclaration(x) => print_class_decl(f, &x)?,
             Statement::ClassDefinition(x) => print_class(f, &x)?,
             Statement::StructDefinition(_) => {
@@ -350,6 +406,7 @@ pub fn generate_cpp_header<P: AsRef<Path>>(lib: &Library, path: P) -> Formatting
     f.writeln("#include <stdexcept>")?;
     f.writeln("#include <chrono>")?;
     f.writeln("#include <memory>")?;
+    f.writeln("#include <vector>")?;
     f.newline()?;
 
     namespace(&mut f, &lib.c_ffi_prefix, |f| {

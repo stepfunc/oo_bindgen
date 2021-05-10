@@ -20,7 +20,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define the iterator item structure
     let iterator_item = lib
         .define_native_struct(&iterator_item)?
-        .add("value", Type::Uint8, "Charater value")?
+        .add("value", Type::Uint8, "Character value")?
         .doc("Single iterator item")?
         .build()?;
 
@@ -28,7 +28,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator = lib.define_iterator(&iterator_next_fn, &iterator_item)?;
 
     // Define test method
-    let iterate_string_fn = lib
+    let iterator_create_fn = lib
         .declare_native_function("iterator_create")?
         .param("value", Type::String, "String to iterate on")?
         .return_type(ReturnType::new(Type::Iterator(iterator), "New iterator"))?
@@ -41,7 +41,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Destroy an iterator")?
         .build()?;
     lib.define_class(&iterator_class)?
-        .static_method("IterateString", &iterate_string_fn)?
+        .static_method("IterateString", &iterator_create_fn)?
         .destructor(&iterator_destroy_fn)?
         .doc("IterateString functions")?
         .build()?;

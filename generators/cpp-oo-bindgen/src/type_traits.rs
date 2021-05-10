@@ -13,7 +13,11 @@ pub(crate) trait CppType {
 }
 
 pub(crate) trait CppStructType {
-    fn get_cpp_struct_type(&self) -> String;
+    fn get_cpp_struct_member_type(&self) -> String;
+}
+
+pub(crate) trait CppFunctionArgumentType {
+    fn get_cpp_func_argument_type(&self) -> String;
 }
 
 pub(crate) trait CppToNativeArgument: CppType {
@@ -48,8 +52,8 @@ impl CppType for Type {
             Type::Enum(x) => x.cpp_name(),
             Type::ClassRef(x) => x.cpp_name(),
             Type::Interface(x) => x.cpp_name(),
-            Type::Iterator(x) => x.cpp_name(),
-            Type::Collection(_) => unimplemented!(),
+            Type::Iterator(x) => format!("std::vector<{}>", x.item_type.cpp_name()),
+            Type::Collection(x) => format!("std::vector<{}>", x.item_type.get_cpp_type()),
             Type::Duration(_) => "std::chrono::steady_clock::duration".to_owned(),
         }
     }
@@ -83,7 +87,16 @@ impl CppToNativeArgument for Type {
 }
 
 impl CppStructType for Type {
-    fn get_cpp_struct_type(&self) -> String {
+    fn get_cpp_struct_member_type(&self) -> String {
+        match self {
+            Type::Interface(_) => format!("std::unique_ptr<{}>", self.get_cpp_type()),
+            _ => self.get_cpp_type(),
+        }
+    }
+}
+
+impl CppFunctionArgumentType for Type {
+    fn get_cpp_func_argument_type(&self) -> String {
         match self {
             Type::Interface(_) => format!("std::unique_ptr<{}>", self.get_cpp_type()),
             _ => self.get_cpp_type(),

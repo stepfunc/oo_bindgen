@@ -61,7 +61,7 @@ use std::path::Path;
 use crate::formatting::namespace;
 use crate::name_traits::*;
 use crate::type_traits::*;
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod};
+use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod, StaticClassHandle};
 use oo_bindgen::native_function::Parameter;
 
 const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
@@ -335,6 +335,21 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
     f.newline()
 }
 
+fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {
+    f.writeln(&format!("class {} {{", handle.cpp_name()))?;
+    indented(f, |f| {
+        f.writeln(&format!("{}() = delete;", handle.cpp_name()))
+    })?;
+    f.writeln("public:")?;
+    indented(f, |f| {
+        for method in &handle.static_methods {
+            print_static_method(f, method)?;
+        }
+        Ok(())
+    })?;
+    f.writeln("};")?;
+    f.newline()
+}
 
 fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
@@ -344,23 +359,21 @@ fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     f.newline()?;
 
     for statement in lib.into_iter() {
-        match statement {
-            Statement::Constants(x) => print_constants(f, &x)?,
-            Statement::EnumDefinition(x) => print_enum(f, &x)?,
-            Statement::ErrorType(x) => print_exception(f, &x)?,
-            Statement::NativeStructDeclaration(x) => print_native_struct_decl(f, &x)?,
-            Statement::NativeStructDefinition(x) => print_native_struct(f, &x)?,
-            Statement::InterfaceDefinition(x) => print_interface(f, &x)?,
+        match &statement {
+            Statement::Constants(x) => print_constants(f, x)?,
+            Statement::EnumDefinition(x) => print_enum(f, x)?,
+            Statement::ErrorType(x) => print_exception(f, x)?,
+            Statement::NativeStructDeclaration(x) => print_native_struct_decl(f, x)?,
+            Statement::NativeStructDefinition(x) => print_native_struct(f, x)?,
+            Statement::InterfaceDefinition(x) => print_interface(f, x)?,
+            Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
+            Statement::ClassDefinition(x) => print_class(f, x)?,
+            Statement::StaticClassDefinition(x) => print_static_class(f,x)?,
             Statement::IteratorDeclaration(_) => {
                 // we don't do anything with this ATM b/c we transform to vector
             },
-            Statement::ClassDeclaration(x) => print_class_decl(f, &x)?,
-            Statement::ClassDefinition(x) => print_class(f, &x)?,
             Statement::StructDefinition(_) => {
                 // ignoring these for now
-            },
-            Statement::StaticClassDefinition(_) => {
-
             },
             Statement::CollectionDeclaration(_) => {
                 // only used for transforms ATM

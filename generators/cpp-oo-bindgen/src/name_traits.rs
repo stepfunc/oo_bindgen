@@ -1,6 +1,6 @@
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::callback::{CallbackFunction, InterfaceHandle};
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod};
+use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod, StaticClassHandle};
 use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::native_enum::{EnumVariant, NativeEnumHandle};
@@ -98,5 +98,11 @@ impl CppName for Method {
 impl CppName for AsyncMethod {
     fn cpp_name(&self) -> String {
         self.name.to_snake_case()
+    }
+}
+
+impl CppName for StaticClassHandle {
+    fn cpp_name(&self) -> String {
+        self.name.to_camel_case()
     }
 }

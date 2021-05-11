@@ -127,7 +127,7 @@ fn print_constants(f: &mut dyn Printer, c: &ConstantSetHandle) -> FormattingResu
         }
         Ok(())
     })?;
-    f.writeln("};")?;
+    f.writeln("}")?;
     f.newline()
 }
 

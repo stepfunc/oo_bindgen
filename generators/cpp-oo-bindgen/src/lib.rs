@@ -62,6 +62,7 @@ use crate::formatting::namespace;
 use crate::name_traits::*;
 use crate::type_traits::*;
 use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod};
+use oo_bindgen::native_function::Parameter;
 
 const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
 
@@ -260,20 +261,20 @@ fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> For
     f.newline()
 }
 
-fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    let args: String = method.native_function
-        .parameters
-        .iter()
-        .skip(1)
-        .map(|p| {
-            format!(
-                "{} {}",
-                p.param_type.get_cpp_func_argument_type(),
-                p.cpp_name()
-            )
-        })
+fn arguments<'a, T>(iter : T) -> String where T: Iterator<Item = &'a Parameter> {
+    iter.map(|p| {
+        format!(
+            "{} {}",
+            p.param_type.get_cpp_func_argument_type(),
+            p.cpp_name()
+        )
+    })
         .collect::<Vec<String>>()
-        .join(", ");
+        .join(", ")
+}
+
+fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+    let args = arguments(method.native_function.parameters.iter().skip(1));
 
     f.writeln(&format!(
         "{} {}({});",
@@ -284,18 +285,7 @@ fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
 }
 
 fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    let args: String = method.native_function
-        .parameters
-        .iter()
-        .map(|p| {
-            format!(
-                "{} {}",
-                p.param_type.get_cpp_func_argument_type(),
-                p.cpp_name()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
+    let args = arguments(method.native_function.parameters.iter());
 
     f.writeln(&format!(
         "static {} {}({});",
@@ -306,19 +296,7 @@ fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult
 }
 
 fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
-    let args: String = method.native_function
-        .parameters
-        .iter()
-        .skip(1)
-        .map(|p| {
-            format!(
-                "{} {}",
-                p.param_type.get_cpp_func_argument_type(),
-                p.cpp_name()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
+    let args: String = arguments(method.native_function.parameters.iter().skip(1));
 
     f.writeln(&format!(
         "{} {}({});",
@@ -381,10 +359,15 @@ fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingRes
             Statement::StructDefinition(_) => {
                 // ignoring these for now
             },
-            Statement::StaticClassDefinition(_) => {},
-            Statement::CollectionDeclaration(_) => {},
-            // not used in C++
-            Statement::NativeFunctionDeclaration(_) => {},
+            Statement::StaticClassDefinition(_) => {
+
+            },
+            Statement::CollectionDeclaration(_) => {
+                // only used for transforms ATM
+            },
+            Statement::NativeFunctionDeclaration(_) => {
+                // not used in C++
+            },
 
 
         }

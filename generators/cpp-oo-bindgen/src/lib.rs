@@ -153,6 +153,8 @@ fn print_native_struct_decl(f: &mut dyn Printer, s: &NativeStructDeclaration) ->
 }
 
 fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
+    let has_members_without_default_value = handle.elements.iter().any(|x| !x.element_type.has_default());
+
     let constructor_args = handle
         .elements
         .iter()
@@ -167,11 +169,14 @@ fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> Form
         .join(", ");
 
 
-    f.writeln(&format!("class {} {{", handle.cpp_name()))?;
-    if let NativeStructType::Public  = handle.struct_type {
-        f.writeln("public:")?;
+    f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
+    if let NativeStructType::Opaque  = handle.struct_type {
+        f.writeln("private:")?;
     }
     indented(f, |f| {
+        if has_members_without_default_value {
+            f.writeln(&format!("{}() = delete;", handle.cpp_name()))?;
+        }
         f.writeln(&format!("{}({});", handle.cpp_name(), constructor_args))?;
         f.newline()?;
         for field in &handle.elements {

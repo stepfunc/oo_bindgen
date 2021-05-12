@@ -148,7 +148,7 @@ fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
 }
 
 fn print_native_struct_decl(f: &mut dyn Printer, s: &NativeStructDeclaration) -> FormattingResult<()> {
-    f.writeln(&format!("class {};", s.cpp_name()))?;
+    f.writeln(&format!("struct {};", s.cpp_name()))?;
     f.newline()
 }
 
@@ -196,7 +196,7 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
     f.writeln(&format!("class {} {{", handle.cpp_name()))?;
     f.writeln("public:")?;
     indented(f, |f| {
-        f.writeln(&format!("virtual ~{}() {{}}", handle.cpp_name()))?;
+        f.writeln(&format!("virtual ~{}() = default;", handle.cpp_name()))?;
         f.newline()?;
         for elem in &handle.elements {
             if let InterfaceElement::CallbackFunction(func) = elem {
@@ -324,7 +324,13 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
     f.newline()?;
     f.writeln("public:")?;
     indented(f, |f| {
-        f.writeln(&format!("~{}();", handle.cpp_name()))?;
+        if let Some(x) = &handle.constructor {
+            let args = arguments(x.parameters.iter());
+            f.writeln(&format!("{}({});", handle.cpp_name(), args))?;
+        };
+        if let Some(x) = &handle.destructor {
+            f.writeln(&format!("~{}();", handle.cpp_name()))?;
+        };
         for method in &handle.methods {
             print_method(f, method)?;
         }

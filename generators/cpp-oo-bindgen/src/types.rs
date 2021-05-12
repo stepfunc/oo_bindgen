@@ -140,7 +140,7 @@ impl CppType {
             CppType::StructRef(x) => format!("const {}&", x.cpp_name()),
             CppType::ClassRef(x) => format!("{}&", x.cpp_name()),
             CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
-            CppType::Iterator(x) => format!("const std::vector<{}>&", x.item_type.cpp_name()),
+            CppType::Iterator(x) => format!("Iterator<{}>&", x.item_type.cpp_name()),
             CppType::Collection(x) => format!("const std::vector<{}>&", x.item_type.get_cpp_struct_member_type()),
         }
     }

@@ -362,8 +362,18 @@ fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> Format
     f.newline()
 }
 
+fn print_iterator_definition(f: &mut dyn Printer) -> FormattingResult<()> {
+    let iterator = include_str!("../snippet/iterator.hpp");
+    for line in iterator.lines() {
+        f.writeln(line)?;
+    }
+    f.newline()
+}
+
 fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
+
+    print_iterator_definition(f)?;
 
     f.writeln("// forward declare the friend class which can access C++ class internals")?;
     f.writeln(&format!("class {};", FRIEND_CLASS_NAME))?;
@@ -400,7 +410,12 @@ fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     Ok(())
 }
 
+
+
 pub fn generate_cpp_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult<()> {
+
+
+
     // Open the file
     std::fs::create_dir_all(&path)?;
     let filename = path.as_ref().join(format!("{}.hpp", lib.name));
@@ -415,6 +430,8 @@ pub fn generate_cpp_header<P: AsRef<Path>>(lib: &Library, path: P) -> Formatting
     f.writeln("#include <memory>")?;
     f.writeln("#include <vector>")?;
     f.newline()?;
+
+
 
     namespace(&mut f, &lib.c_ffi_prefix, |f| {
         print_namespace_contents(lib, f)

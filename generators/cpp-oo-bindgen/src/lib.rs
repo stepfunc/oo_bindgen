@@ -39,14 +39,14 @@ clippy::all
 #![forbid(
     unsafe_code,
     // intra_doc_link_resolution_failure, broken_intra_doc_links
-    safe_packed_borrows,
+    unaligned_references,
     while_true,
     bare_trait_objects
 )]
 
 mod formatting;
-mod name_traits;
-mod type_traits;
+mod names;
+mod types;
 
 use heck::SnakeCase;
 use oo_bindgen::callback::{CallbackParameter, InterfaceElement, InterfaceHandle};
@@ -59,8 +59,8 @@ use oo_bindgen::{Library, Statement};
 use std::path::Path;
 
 use crate::formatting::namespace;
-use crate::name_traits::*;
-use crate::type_traits::*;
+use crate::names::*;
+use crate::types::*;
 use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod, StaticClassHandle};
 use oo_bindgen::native_function::Parameter;
 
@@ -207,7 +207,7 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
                         CallbackParameter::Arg(_) => None,
                         CallbackParameter::Parameter(p) => Some(format!(
                             "{} {}",
-                            p.param_type.get_cpp_to_native_argument(),
+                            p.param_type.get_cpp_func_argument_type(),
                             p.cpp_name()
                         )),
                     })
@@ -216,7 +216,7 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
 
                 f.writeln(&format!(
                     "virtual {} {}({}) = 0;",
-                    func.return_type.get_cpp_type(),
+                    func.return_type.get_cpp_return_type(),
                     func.cpp_name(),
                     args
                 ))?;
@@ -283,7 +283,7 @@ fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
 
     f.writeln(&format!(
         "{} {}({});",
-        method.native_function.return_type.get_cpp_type(),
+        method.native_function.return_type.get_cpp_return_type(),
         method.cpp_name(),
         args
     ))
@@ -294,7 +294,7 @@ fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult
 
     f.writeln(&format!(
         "static {} {}({});",
-        method.native_function.return_type.get_cpp_type(),
+        method.native_function.return_type.get_cpp_return_type(),
         method.cpp_name(),
         args
     ))
@@ -305,7 +305,7 @@ fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingRe
 
     f.writeln(&format!(
         "{} {}({});",
-        method.native_function.return_type.get_cpp_type(),
+        method.native_function.return_type.get_cpp_return_type(),
         method.cpp_name(),
         args
     ))
@@ -328,7 +328,7 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
             let args = arguments(x.parameters.iter());
             f.writeln(&format!("{}({});", handle.cpp_name(), args))?;
         };
-        if let Some(x) = &handle.destructor {
+        if handle.destructor.is_some() {
             f.writeln(&format!("~{}();", handle.cpp_name()))?;
         };
         for method in &handle.methods {

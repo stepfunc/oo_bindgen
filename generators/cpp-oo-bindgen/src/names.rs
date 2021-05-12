@@ -23,6 +23,12 @@ impl CppName for NativeStructHandle {
     }
 }
 
+impl CppName for &NativeStructHandle {
+    fn cpp_name(&self) -> String {
+        self.declaration.cpp_name()
+    }
+}
+
 impl CppName for NativeEnumHandle {
     fn cpp_name(&self) -> String {
         self.name.to_camel_case()

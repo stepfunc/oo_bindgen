@@ -186,7 +186,8 @@ fn generate_single_package(
     generate_c_header(lib, include_path.clone())?;
 
     // Create the C++ header
-    cpp_oo_bindgen::generate_cpp_header(lib, include_path)?;
+    cpp_oo_bindgen::generate_cpp_header(lib, &include_path)?;
+    cpp_oo_bindgen::generate_cpp_impl(lib, &include_path)?;
 
     // Generate CMake config file
     generate_cmake_config(lib, config, &platform_location)?;

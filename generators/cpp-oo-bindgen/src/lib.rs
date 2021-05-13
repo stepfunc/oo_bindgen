@@ -56,13 +56,13 @@ use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::native_enum::NativeEnumHandle;
 use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle, NativeStructType};
 use oo_bindgen::{Library, Statement};
-use std::path::Path;
+use std::path::PathBuf;
 
 use crate::formatting::namespace;
 use crate::names::*;
 use crate::types::*;
 use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod, StaticClassHandle};
-use oo_bindgen::native_function::Parameter;
+use oo_bindgen::native_function::{Parameter, ReturnType};
 
 const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
 
@@ -370,7 +370,7 @@ fn print_iterator_definition(f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()
 }
 
-fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
 
     print_iterator_definition(f)?;
@@ -391,7 +391,7 @@ fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingRes
             Statement::ClassDefinition(x) => print_class(f, x)?,
             Statement::StaticClassDefinition(x) => print_static_class(f,x)?,
             Statement::IteratorDeclaration(_) => {
-                // we don't do anything with this ATM b/c we transform to vector
+                // custom iterator type is only in CPP
             },
             Statement::StructDefinition(_) => {
                 // ignoring these for now
@@ -402,23 +402,55 @@ fn print_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingRes
             Statement::NativeFunctionDeclaration(_) => {
                 // not used in C++
             },
-
-
         }
     }
 
     Ok(())
 }
 
+fn c_type(ret: &ReturnType) -> String {
+    match ret {
+        ReturnType::Type(t, _) => "other".to_owned(),
+        ReturnType::Void => "void".to_owned(),
+    }
+}
 
+fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
 
-pub fn generate_cpp_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult<()> {
+    if !lib.native_functions().any(|f| f.error_type.is_some()) {
+        return Ok(())
+    }
 
+    // write native function wrappers
+    namespace(f, "ex_wrap", |f| {
+        for func in lib.native_functions() {
+            if let Some(ex) = &func.error_type {
+                f.writeln(&format!("{} {}({})", c_type(&func.return_type), func.name, "args.."))?;
+                f.writeln("{")?;
+                indented(f, |f| {
+                   f.writeln("// invoke")?;
+                   Ok(())
+                })?;
+                f.writeln("}")?;
+            }
+        }
+        Ok(())
+    })?;
+    f.newline()
+}
 
+fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+
+    print_exception_wrappers(lib, f)?;
+
+    Ok(())
+}
+
+pub fn generate_cpp_header(lib: &Library, path: &PathBuf) -> FormattingResult<()> {
 
     // Open the file
     std::fs::create_dir_all(&path)?;
-    let filename = path.as_ref().join(format!("{}.hpp", lib.name));
+    let filename = path.join(format!("{}.hpp", lib.name));
     let mut f = FilePrinter::new(filename)?;
 
     // include guard
@@ -431,11 +463,29 @@ pub fn generate_cpp_header<P: AsRef<Path>>(lib: &Library, path: P) -> Formatting
     f.writeln("#include <vector>")?;
     f.newline()?;
 
-
-
     namespace(&mut f, &lib.c_ffi_prefix, |f| {
-        print_namespace_contents(lib, f)
+        print_header_namespace_contents(lib, f)
     })?;
 
     Ok(())
 }
+
+pub fn generate_cpp_impl(lib: &Library, path: &PathBuf) -> FormattingResult<()> {
+
+    // Open the file
+    std::fs::create_dir_all(&path)?;
+    let filename = path.join(format!("{}.cpp", lib.name));
+    let mut f = FilePrinter::new(filename)?;
+
+    // include guard
+    f.writeln(&format!("#include \"{}.hpp\"", lib.name))?;
+    f.writeln(&format!("#include \"{}.h\"", lib.name))?;
+    f.newline()?;
+
+    namespace(&mut f, &lib.c_ffi_prefix, |f| {
+        print_impl_namespace_contents(lib, f)
+    })?;
+
+    Ok(())
+}
+

@@ -6,5 +6,4 @@ edition = "2018"
 
 [dependencies]
 oo-bindgen = { path = "../../oo-bindgen" }
-cpp-oo-bindgen = { path = "../cpp-oo-bindgen" }
 heck = "0.3"

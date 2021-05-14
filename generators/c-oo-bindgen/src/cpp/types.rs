@@ -1,6 +1,6 @@
 use oo_bindgen::native_function::{ReturnType, Type, DurationMapping};
 
-use crate::names::CppName;
+use crate::cpp::names::CppName;
 use oo_bindgen::native_enum::NativeEnumHandle;
 use oo_bindgen::native_struct::{NativeStructHandle, NativeStructDeclarationHandle};
 use oo_bindgen::class::ClassDeclarationHandle;

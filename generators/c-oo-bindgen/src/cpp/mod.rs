@@ -433,7 +433,13 @@ fn get_initializer_value(e: &NativeStructElement) -> String {
         StructElementType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
         StructElementType::Double(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
         StructElementType::String(v) => v.as_ref().map(|x| format!("\"{}\"", x)).unwrap_or(format!("std::move({})", e.cpp_name())),
-        StructElementType::Struct(x) => format!("{}()", x.cpp_name()),
+        StructElementType::Struct(x) => {
+            if x.is_default_constructed() {
+                format!("{}()", x.cpp_name())
+            } else {
+                e.cpp_name()
+            }
+        },
         StructElementType::StructRef(_) => unimplemented!(),
         StructElementType::Enum(x, v) => v.as_ref().map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case())).unwrap_or(e.cpp_name()),
         StructElementType::ClassRef(_) => unimplemented!(),

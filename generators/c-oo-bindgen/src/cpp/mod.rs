@@ -2,7 +2,7 @@ mod formatting;
 mod names;
 mod types;
 
-use heck::SnakeCase;
+use heck::{SnakeCase, CamelCase, ShoutySnakeCase};
 use oo_bindgen::callback::{CallbackParameter, InterfaceElement, InterfaceHandle};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
@@ -16,7 +16,8 @@ use formatting::namespace;
 use names::*;
 use types::*;
 use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod, StaticClassHandle};
-use oo_bindgen::native_function::{Parameter, ReturnType};
+use oo_bindgen::native_function::{Parameter, NativeFunctionHandle, ReturnType};
+use crate::CFormatting;
 
 const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
 
@@ -362,11 +363,24 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
-fn c_type(ret: &ReturnType) -> String {
-    match ret {
-        ReturnType::Type(t, _) => "other".to_owned(),
-        ReturnType::Void => "void".to_owned(),
-    }
+fn print_enum_conversion(lib: &Library, f: &mut dyn Printer, handle: &NativeEnumHandle) -> FormattingResult<()> {
+    f.writeln(&format!("{} convert_native_enum({}_{}_t value)", handle.cpp_name(), lib.c_ffi_prefix, handle.name.to_snake_case()))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln("switch(value)")?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for v in &handle.variants {
+                f.writeln(&format!("case {}_{}_{}: return {}::{};", lib.c_ffi_prefix.to_shouty_snake_case(), handle.name.to_shouty_snake_case(), v.name.to_shouty_snake_case(), handle.name.to_camel_case(), v.name.to_snake_case()))?;
+            }
+            f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
+            Ok(())
+            //f.writeln(&format!("return {}::{};", handle.name.to_camel_case(), handle.variants[0].name.to_snake_case()))
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
+    f.newline()
 }
 
 fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
@@ -375,17 +389,54 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
         return Ok(())
     }
 
+    fn print_check_exception(f: &mut dyn Printer, err: &ErrorType) -> FormattingResult<()> {
+        f.writeln("if(error) {")?;
+        indented(f, |f| {
+           f.writeln(&format!("throw {}(convert_native_enum(error));", err.exception_name.to_camel_case()))
+        })?;
+        f.writeln("}")
+    }
+
+    fn print_with_returned_value(lib: &Library, f: &mut dyn Printer, func: &NativeFunctionHandle, err: &ErrorType) -> FormattingResult<()> {
+        let args = func
+            .parameters
+            .iter()
+            .map(|p| p.name.clone())
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        f.writeln(&format!("{} returned_value;", func.return_type.to_c_type(&lib.c_ffi_prefix)))?;
+        f.writeln(&format!("const auto error = {}_{}({}, &returned_value);", lib.c_ffi_prefix, func.name.to_snake_case(), args))?;
+        print_check_exception(f, err)?;
+        f.writeln("return returned_value;")
+    }
+
     // write native function wrappers
     namespace(f, "ex_wrap", |f| {
         for func in lib.native_functions() {
-            if let Some(ex) = &func.error_type {
-                f.writeln(&format!("{} {}({})", c_type(&func.return_type), func.name, "args.."))?;
+            if let Some(err) = &func.error_type {
+                let args = func
+                    .parameters
+                    .iter()
+                    .map(|p| format!("{} {}", p.param_type.to_c_type(&lib.c_ffi_prefix), p.name.to_snake_case()))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                f.writeln(&format!("{} {}({})", &func.return_type.to_c_type(&lib.c_ffi_prefix), func.name, args))?;
                 f.writeln("{")?;
                 indented(f, |f| {
-                   f.writeln("// invoke")?;
+                   match func.return_type {
+                       ReturnType::Void => {
+
+                       }
+                       ReturnType::Type(_, _) => {
+                           print_with_returned_value(lib, f, func, err)?;
+                       }
+                   }
                    Ok(())
                 })?;
                 f.writeln("}")?;
+                f.newline()?;
             }
         }
         Ok(())
@@ -394,6 +445,10 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 }
 
 fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+
+    for e in lib.native_enums() {
+        print_enum_conversion(lib, f, e)?;
+    }
 
     print_exception_wrappers(lib, f)?;
 

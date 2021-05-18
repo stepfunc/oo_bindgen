@@ -7,7 +7,6 @@ where
     f.writeln(&format!("namespace {} {{", namespace))?;
     f.newline()?;
     cb(f)?;
-    f.newline()?;
-    f.writeln("}")?;
+    f.writeln(&format!("}} // end namespace {}", namespace))?;
     Ok(())
 }

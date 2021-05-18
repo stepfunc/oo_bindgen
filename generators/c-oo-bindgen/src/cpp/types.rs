@@ -1,12 +1,12 @@
-use oo_bindgen::native_function::{ReturnType, Type, DurationMapping};
+use oo_bindgen::native_function::{DurationMapping, ReturnType, Type};
 
 use crate::cpp::names::CppName;
-use oo_bindgen::native_enum::NativeEnumHandle;
-use oo_bindgen::native_struct::{NativeStructHandle, NativeStructDeclarationHandle};
-use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::callback::InterfaceHandle;
-use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::native_enum::NativeEnumHandle;
+use oo_bindgen::native_struct::{NativeStructDeclarationHandle, NativeStructHandle};
 
 /// These types are always be pass-by-value in C++
 #[derive(Clone, Debug, PartialEq)]
@@ -71,13 +71,12 @@ impl CppReturnType for ReturnType {
     fn get_cpp_return_type(&self) -> String {
         match self {
             ReturnType::Void => "void".to_owned(),
-            ReturnType::Type(t, _) => CppType::new(t.clone()).get_cpp_return_type()
+            ReturnType::Type(t, _) => CppType::new(t.clone()).get_cpp_return_type(),
         }
     }
 }
 
 impl CppType {
-
     fn new(x: Type) -> Self {
         match x {
             Type::Bool => Primitive::Bool.into(),
@@ -113,7 +112,9 @@ impl CppType {
             CppType::ClassRef(x) => x.cpp_name(),
             CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
             CppType::Iterator(x) => format!("std::vector<{}>", x.item_type.cpp_name()),
-            CppType::Collection(x) => format!("std::vector<{}>", x.item_type.get_cpp_struct_member_type()),
+            CppType::Collection(x) => {
+                format!("std::vector<{}>", x.item_type.get_cpp_struct_member_type())
+            }
         }
     }
 
@@ -127,7 +128,9 @@ impl CppType {
             CppType::ClassRef(x) => x.cpp_name(),
             CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
             CppType::Iterator(x) => format!("std::vector<{}>", x.item_type.cpp_name()),
-            CppType::Collection(x) => format!("std::vector<{}>", x.item_type.get_cpp_struct_member_type()),
+            CppType::Collection(x) => {
+                format!("std::vector<{}>", x.item_type.get_cpp_struct_member_type())
+            }
         }
     }
 
@@ -141,7 +144,10 @@ impl CppType {
             CppType::ClassRef(x) => format!("{}&", x.cpp_name()),
             CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
             CppType::Iterator(x) => format!("Iterator<{}>&", x.item_type.cpp_name()),
-            CppType::Collection(x) => format!("const std::vector<{}>&", x.item_type.get_cpp_struct_member_type()),
+            CppType::Collection(x) => format!(
+                "const std::vector<{}>&",
+                x.item_type.get_cpp_struct_member_type()
+            ),
         }
     }
 }
@@ -161,10 +167,3 @@ impl From<Primitive> for CppType {
         CppType::Primitive(x)
     }
 }
-
-
-
-
-
-
-

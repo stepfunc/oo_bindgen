@@ -2,7 +2,7 @@ mod formatting;
 mod names;
 mod types;
 
-use heck::{SnakeCase, CamelCase, ShoutySnakeCase};
+use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::callback::{CallbackParameter, InterfaceElement, InterfaceHandle};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
@@ -12,14 +12,16 @@ use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle, Nat
 use oo_bindgen::{Library, Statement};
 use std::path::PathBuf;
 
+use crate::CFormatting;
 use formatting::namespace;
 use names::*;
+use oo_bindgen::class::{
+    AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
+};
+use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType};
 use types::*;
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod, StaticClassHandle};
-use oo_bindgen::native_function::{Parameter, NativeFunctionHandle, ReturnType};
-use crate::CFormatting;
 
-const FRIEND_CLASS_NAME : &'static str = "InternalFriendClass";
+const FRIEND_CLASS_NAME: &'static str = "InternalFriendClass";
 
 fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     let name = lib.c_ffi_prefix.to_snake_case();
@@ -54,6 +56,8 @@ fn print_enum(f: &mut dyn Printer, e: &NativeEnumHandle) -> FormattingResult<()>
         Ok(())
     })?;
     f.writeln("};")?;
+    f.newline()?;
+    f.writeln(&format!("const char* to_string({} value);", e.cpp_name()))?;
     f.newline()
 }
 
@@ -102,13 +106,19 @@ fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
     f.newline()
 }
 
-fn print_native_struct_decl(f: &mut dyn Printer, s: &NativeStructDeclaration) -> FormattingResult<()> {
+fn print_native_struct_decl(
+    f: &mut dyn Printer,
+    s: &NativeStructDeclaration,
+) -> FormattingResult<()> {
     f.writeln(&format!("struct {};", s.cpp_name()))?;
     f.newline()
 }
 
 fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
-    let has_members_without_default_value = handle.elements.iter().any(|x| !x.element_type.has_default());
+    let has_members_without_default_value = handle
+        .elements
+        .iter()
+        .any(|x| !x.element_type.has_default());
 
     let constructor_args = handle
         .elements
@@ -117,15 +127,18 @@ fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> Form
             if x.element_type.has_default() {
                 None
             } else {
-                Some(format!("{} {}", x.element_type.to_type().get_cpp_struct_member_type(), x.name))
+                Some(format!(
+                    "{} {}",
+                    x.element_type.to_type().get_cpp_struct_member_type(),
+                    x.name
+                ))
             }
         })
         .collect::<Vec<String>>()
         .join(", ");
 
-
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
-    if let NativeStructType::Opaque  = handle.struct_type {
+    if let NativeStructType::Opaque = handle.struct_type {
         f.writeln("private:")?;
     }
     indented(f, |f| {
@@ -189,39 +202,15 @@ fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> Formatt
     f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))
 }
 
-/*
-fn print_iterator(f: &mut dyn Printer, handle: &IteratorHandle) -> FormattingResult<()> {
-    f.writeln(&format!("class {} {{", handle.cpp_name()))?;
-    indented(f, |f| {
-        f.writeln("// internal friend class used for construction")?;
-        f.writeln(&format!("friend class {};", FRIEND_CLASS_NAME))?;
-        f.writeln("// pointer to the underlying C iterator type")?;
-        f.writeln("void* self;")?;
-        f.writeln("// pointer to the current C value")?;
-        f.writeln("void* current;")?;
-        f.writeln("// constructor only accessible internally")?;
-        f.writeln(&format!("{}(void* self, void* current): self(self), current(current) {{}}", handle.cpp_name()))?;
-        print_deleted_copy_and_assignment(f, &handle.cpp_name())
-    })?;
-    f.writeln("public:")?;
-    f.newline()?;
-    indented(f, |f| {
-        f.writeln("// @brief move to the next value")?;
-        f.writeln("bool next();")?;
-        f.writeln("// @brief get the current value")?;
-        f.writeln(&format!("{} get() const;", handle.item_type.cpp_name()))
-    })?;
-    f.writeln("};")?;
-    f.newline()
-}
-*/
-
 fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {};", handle.cpp_name()))?;
     f.newline()
 }
 
-fn arguments<'a, T>(iter : T) -> String where T: Iterator<Item = &'a Parameter> {
+fn arguments<'a, T>(iter: T) -> String
+where
+    T: Iterator<Item = &'a Parameter>,
+{
     iter.map(|p| {
         format!(
             "{} {}",
@@ -229,8 +218,8 @@ fn arguments<'a, T>(iter : T) -> String where T: Iterator<Item = &'a Parameter> 
             p.cpp_name()
         )
     })
-        .collect::<Vec<String>>()
-        .join(", ")
+    .collect::<Vec<String>>()
+    .join(", ")
 }
 
 fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
@@ -273,7 +262,10 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
         f.writeln("// pointer to the underlying C type")?;
         f.writeln("void* self;")?;
         f.writeln("// constructor only accessible internally")?;
-        f.writeln(&format!("{}(void* self): self(self) {{}}", handle.cpp_name()))?;
+        f.writeln(&format!(
+            "{}(void* self): self(self) {{}}",
+            handle.cpp_name()
+        ))?;
         print_deleted_copy_and_assignment(f, &handle.cpp_name())
     })?;
     f.newline()?;
@@ -344,34 +336,50 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::InterfaceDefinition(x) => print_interface(f, x)?,
             Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
             Statement::ClassDefinition(x) => print_class(f, x)?,
-            Statement::StaticClassDefinition(x) => print_static_class(f,x)?,
+            Statement::StaticClassDefinition(x) => print_static_class(f, x)?,
             Statement::IteratorDeclaration(_) => {
                 // custom iterator type is only in CPP
-            },
+            }
             Statement::StructDefinition(_) => {
                 // ignoring these for now
-            },
+            }
             Statement::CollectionDeclaration(_) => {
                 // only used for transforms ATM
-            },
+            }
             Statement::NativeFunctionDeclaration(_) => {
                 // not used in C++
-            },
+            }
         }
     }
 
     Ok(())
 }
 
-fn print_enum_conversion(lib: &Library, f: &mut dyn Printer, handle: &NativeEnumHandle) -> FormattingResult<()> {
-    f.writeln(&format!("{} convert_native_enum({}_{}_t value)", handle.cpp_name(), lib.c_ffi_prefix, handle.name.to_snake_case()))?;
+fn print_enum_conversion(
+    lib: &Library,
+    f: &mut dyn Printer,
+    handle: &NativeEnumHandle,
+) -> FormattingResult<()> {
+    f.writeln(&format!(
+        "{} to_cpp({}_{}_t value)",
+        handle.cpp_name(),
+        lib.c_ffi_prefix,
+        handle.name.to_snake_case()
+    ))?;
     f.writeln("{")?;
     indented(f, |f| {
         f.writeln("switch(value)")?;
         f.writeln("{")?;
         indented(f, |f| {
             for v in &handle.variants {
-                f.writeln(&format!("case {}_{}_{}: return {}::{};", lib.c_ffi_prefix.to_shouty_snake_case(), handle.name.to_shouty_snake_case(), v.name.to_shouty_snake_case(), handle.name.to_camel_case(), v.name.to_snake_case()))?;
+                f.writeln(&format!(
+                    "case {}_{}_{}: return {}::{};",
+                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    handle.name.to_shouty_snake_case(),
+                    v.name.to_shouty_snake_case(),
+                    handle.name.to_camel_case(),
+                    v.name.to_snake_case()
+                ))?;
             }
             f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
             Ok(())
@@ -383,21 +391,54 @@ fn print_enum_conversion(lib: &Library, f: &mut dyn Printer, handle: &NativeEnum
     f.newline()
 }
 
-fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+fn print_enum_to_string_impl(
+    f: &mut dyn Printer,
+    handle: &NativeEnumHandle,
+) -> FormattingResult<()> {
+    f.writeln(&format!("const char* to_string({} value)", handle.cpp_name()))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln("switch(value)")?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for v in &handle.variants {
+                f.writeln(&format!(
+                    "case {}::{}: return \"{}\";",
+                    handle.cpp_name(),
+                    v.cpp_name(),
+                    v.name
+                ))?;
+            }
+            f.writeln(&format!("default: throw std::invalid_argument(\"Undefined value for enum '{}'\");", handle.name))
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
+    f.newline()
+}
 
+fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     if !lib.native_functions().any(|f| f.error_type.is_some()) {
-        return Ok(())
+        return Ok(());
     }
 
     fn print_check_exception(f: &mut dyn Printer, err: &ErrorType) -> FormattingResult<()> {
         f.writeln("if(error) {")?;
         indented(f, |f| {
-           f.writeln(&format!("throw {}(convert_native_enum(error));", err.exception_name.to_camel_case()))
+            f.writeln(&format!(
+                "throw {}(convert::to_cpp(error));",
+                err.exception_name.to_camel_case()
+            ))
         })?;
         f.writeln("}")
     }
 
-    fn print_with_returned_value(lib: &Library, f: &mut dyn Printer, func: &NativeFunctionHandle, err: &ErrorType) -> FormattingResult<()> {
+    fn print_with_returned_value(
+        lib: &Library,
+        f: &mut dyn Printer,
+        func: &NativeFunctionHandle,
+        err: &ErrorType,
+    ) -> FormattingResult<()> {
         let args = func
             .parameters
             .iter()
@@ -405,8 +446,16 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
             .collect::<Vec<String>>()
             .join(", ");
 
-        f.writeln(&format!("{} returned_value;", func.return_type.to_c_type(&lib.c_ffi_prefix)))?;
-        f.writeln(&format!("const auto error = {}_{}({}, &returned_value);", lib.c_ffi_prefix, func.name.to_snake_case(), args))?;
+        f.writeln(&format!(
+            "{} returned_value;",
+            func.return_type.to_c_type(&lib.c_ffi_prefix)
+        ))?;
+        f.writeln(&format!(
+            "const auto error = {}_{}({}, &returned_value);",
+            lib.c_ffi_prefix,
+            func.name.to_snake_case(),
+            args
+        ))?;
         print_check_exception(f, err)?;
         f.writeln("return returned_value;")
     }
@@ -418,22 +467,31 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
                 let args = func
                     .parameters
                     .iter()
-                    .map(|p| format!("{} {}", p.param_type.to_c_type(&lib.c_ffi_prefix), p.name.to_snake_case()))
+                    .map(|p| {
+                        format!(
+                            "{} {}",
+                            p.param_type.to_c_type(&lib.c_ffi_prefix),
+                            p.name.to_snake_case()
+                        )
+                    })
                     .collect::<Vec<String>>()
                     .join(", ");
 
-                f.writeln(&format!("{} {}({})", &func.return_type.to_c_type(&lib.c_ffi_prefix), func.name, args))?;
+                f.writeln(&format!(
+                    "{} {}({})",
+                    &func.return_type.to_c_type(&lib.c_ffi_prefix),
+                    func.name,
+                    args
+                ))?;
                 f.writeln("{")?;
                 indented(f, |f| {
-                   match func.return_type {
-                       ReturnType::Void => {
-
-                       }
-                       ReturnType::Type(_, _) => {
-                           print_with_returned_value(lib, f, func, err)?;
-                       }
-                   }
-                   Ok(())
+                    match func.return_type {
+                        ReturnType::Void => {}
+                        ReturnType::Type(_, _) => {
+                            print_with_returned_value(lib, f, func, err)?;
+                        }
+                    }
+                    Ok(())
                 })?;
                 f.writeln("}")?;
                 f.newline()?;
@@ -446,17 +504,25 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 
 fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
 
-    for e in lib.native_enums() {
-        print_enum_conversion(lib, f, e)?;
-    }
+    // enum conversions
+    namespace(f, "convert", |f| {
+        for e in lib.native_enums() {
+            print_enum_conversion(lib, f, e)?;
+        }
+        Ok(())
+    })?;
 
     print_exception_wrappers(lib, f)?;
+
+    // enums to string
+    for e in lib.native_enums() {
+        print_enum_to_string_impl(f, e)?;
+    }
 
     Ok(())
 }
 
 pub(crate) fn generate_cpp_header(lib: &Library, path: &PathBuf) -> FormattingResult<()> {
-
     // Open the file
     std::fs::create_dir_all(&path)?;
     let filename = path.join(format!("{}.hpp", lib.name));
@@ -480,7 +546,6 @@ pub(crate) fn generate_cpp_header(lib: &Library, path: &PathBuf) -> FormattingRe
 }
 
 pub(crate) fn generate_cpp_impl(lib: &Library, path: &PathBuf) -> FormattingResult<()> {
-
     // Open the file
     std::fs::create_dir_all(&path)?;
     let filename = path.join(format!("{}.cpp", lib.name));
@@ -497,4 +562,3 @@ pub(crate) fn generate_cpp_impl(lib: &Library, path: &PathBuf) -> FormattingResu
 
     Ok(())
 }
-

@@ -1,11 +1,15 @@
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::callback::{CallbackFunction, InterfaceHandle};
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, Method, AsyncMethod, StaticClassHandle};
+use oo_bindgen::class::{
+    AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
+};
 use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::native_enum::{EnumVariant, NativeEnumHandle};
 use oo_bindgen::native_function::Parameter;
-use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructElement, NativeStructHandle, StructHandle};
+use oo_bindgen::native_struct::{
+    NativeStructDeclaration, NativeStructElement, NativeStructHandle, StructHandle,
+};
 
 pub(crate) trait CppName {
     fn cpp_name(&self) -> String;

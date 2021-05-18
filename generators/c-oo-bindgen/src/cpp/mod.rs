@@ -8,7 +8,7 @@ use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::native_enum::NativeEnumHandle;
-use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle, NativeStructType};
+use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle, NativeStructType, NativeStructElement, StructElementType};
 use oo_bindgen::{Library, Statement};
 use std::path::PathBuf;
 
@@ -114,13 +114,8 @@ fn print_native_struct_decl(
     f.newline()
 }
 
-fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
-    let has_members_without_default_value = handle
-        .elements
-        .iter()
-        .any(|x| !x.element_type.has_default());
-
-    let constructor_args = handle
+fn get_struct_constructor_args(handle: &NativeStructHandle) -> String {
+    handle
         .elements
         .iter()
         .flat_map(|x| {
@@ -135,7 +130,14 @@ fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> Form
             }
         })
         .collect::<Vec<String>>()
-        .join(", ");
+        .join(", ")
+}
+
+fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
+    let has_members_without_default_value = handle
+        .elements
+        .iter()
+        .any(|x| !x.element_type.has_default());
 
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
     if let NativeStructType::Opaque = handle.struct_type {
@@ -145,7 +147,7 @@ fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> Form
         if has_members_without_default_value {
             f.writeln(&format!("{}() = delete;", handle.cpp_name()))?;
         }
-        f.writeln(&format!("{}({});", handle.cpp_name(), constructor_args))?;
+        f.writeln(&format!("{}({});", handle.cpp_name(), get_struct_constructor_args(handle)))?;
         f.newline()?;
         for field in &handle.elements {
             f.writeln(&format!(
@@ -417,6 +419,57 @@ fn print_enum_to_string_impl(
     f.newline()
 }
 
+fn get_initializer_value(e: &NativeStructElement) -> String {
+    match &e.element_type {
+        StructElementType::Bool(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Uint8(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Sint8(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Uint16(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Sint16(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Uint32(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Sint32(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Uint64(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Sint64(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::Double(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
+        StructElementType::String(v) => v.as_ref().map(|x| format!("\"{}\"", x)).unwrap_or(format!("std::move({})", e.cpp_name())),
+        StructElementType::Struct(x) => format!("{}()", x.cpp_name()),
+        StructElementType::StructRef(_) => unimplemented!(),
+        StructElementType::Enum(x, v) => v.as_ref().map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case())).unwrap_or(e.cpp_name()),
+        StructElementType::ClassRef(_) => unimplemented!(),
+        StructElementType::Interface(_) => format!("std::move({})", e.cpp_name()),
+        StructElementType::Iterator(_) => format!("std::move({})", e.cpp_name()),
+        StructElementType::Collection(_) => format!("std::move({})", e.cpp_name()),
+        StructElementType::Duration(_, v) => v.map(|v| format!("std::chrono::milliseconds({})", v.as_millis())).unwrap_or(e.cpp_name()),
+    }
+}
+
+fn print_struct_constructor_impl(
+    f: &mut dyn Printer,
+    handle: &NativeStructHandle,
+) -> FormattingResult<()> {
+
+    let name = handle.cpp_name();
+    f.writeln(&format!("{}::{}({}) :", name, name, get_struct_constructor_args(handle)))?;
+    indented(f, |f| {
+        let mut i = 0;
+        let last = handle.elements.len() - 1;
+        for e in &handle.elements {
+           if i == last {
+               f.writeln(&format!("{}({})", e.cpp_name(), get_initializer_value(e)))?;
+           } else {
+               f.writeln(&format!("{}({}),", e.cpp_name(), get_initializer_value(e)))?;
+           }
+           i += 1;
+        }
+        Ok(())
+    })?;
+    f.writeln("{")?;
+    f.writeln("}")?;
+    f.newline()
+}
+
+
 fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     if !lib.native_functions().any(|f| f.error_type.is_some()) {
         return Ok(());
@@ -514,9 +567,14 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
 
     print_exception_wrappers(lib, f)?;
 
-    // enums to string
+    // enum to string helpers
     for e in lib.native_enums() {
         print_enum_to_string_impl(f, e)?;
+    }
+
+    // struct constructors
+    for handle in lib.native_structs() {
+        print_struct_constructor_impl(f, handle)?;
     }
 
     Ok(())

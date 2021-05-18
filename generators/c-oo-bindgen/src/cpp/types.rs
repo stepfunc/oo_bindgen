@@ -61,6 +61,7 @@ pub(crate) enum CppType {
 pub(crate) trait CppTypes {
     fn get_cpp_struct_member_type(&self) -> String;
     fn get_cpp_func_argument_type(&self) -> String;
+    fn get_cpp_struct_constructor_type(&self) -> String;
 }
 
 pub(crate) trait CppReturnType {
@@ -150,6 +151,23 @@ impl CppType {
             ),
         }
     }
+
+    fn get_struct_constructor_argument_type(&self) -> String {
+        match self {
+            CppType::Primitive(x) => x.get_cpp_type(),
+            CppType::String => "const std::string&".to_owned(),
+            CppType::Struct(x) => format!("const {}&", x.cpp_name()),
+            // these probably shouldn't be allowed in structs at all
+            CppType::StructRef(x) => format!("const {}&", x.cpp_name()),
+            CppType::ClassRef(x) => format!("{}&", x.cpp_name()),
+            CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
+            CppType::Iterator(x) => format!("const std::vector<{}>&", x.item_type.cpp_name()),
+            CppType::Collection(x) => format!(
+                "const std::vector<{}>&",
+                x.item_type.get_cpp_struct_member_type()
+            ),
+        }
+    }
 }
 
 impl CppTypes for Type {
@@ -159,6 +177,10 @@ impl CppTypes for Type {
 
     fn get_cpp_func_argument_type(&self) -> String {
         CppType::new(self.clone()).get_cpp_function_argument_type()
+    }
+
+    fn get_cpp_struct_constructor_type(&self) -> String {
+        CppType::new(self.clone()).get_struct_constructor_argument_type()
     }
 }
 

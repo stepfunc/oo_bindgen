@@ -124,7 +124,7 @@ fn get_struct_constructor_args(handle: &NativeStructHandle) -> String {
             } else {
                 Some(format!(
                     "{} {}",
-                    x.element_type.to_type().get_cpp_struct_member_type(),
+                    x.element_type.to_type().get_cpp_struct_constructor_type(),
                     x.name
                 ))
             }
@@ -444,8 +444,8 @@ fn get_initializer_value(e: &NativeStructElement) -> String {
         StructElementType::Enum(x, v) => v.as_ref().map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case())).unwrap_or(e.cpp_name()),
         StructElementType::ClassRef(_) => unimplemented!(),
         StructElementType::Interface(_) => format!("std::move({})", e.cpp_name()),
-        StructElementType::Iterator(_) => format!("std::move({})", e.cpp_name()),
-        StructElementType::Collection(_) => format!("std::move({})", e.cpp_name()),
+        StructElementType::Iterator(_) => e.cpp_name(),
+        StructElementType::Collection(_) => e.cpp_name(),
         StructElementType::Duration(_, v) => v.map(|v| format!("std::chrono::milliseconds({})", v.as_millis())).unwrap_or(e.cpp_name()),
     }
 }

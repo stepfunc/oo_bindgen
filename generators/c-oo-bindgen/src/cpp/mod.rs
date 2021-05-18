@@ -464,8 +464,7 @@ fn print_struct_constructor_impl(
         }
         Ok(())
     })?;
-    f.writeln("{")?;
-    f.writeln("}")?;
+    f.writeln("{}")?;
     f.newline()
 }
 
@@ -513,6 +512,28 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
         f.writeln("return returned_value;")
     }
 
+    fn print_without_returned_value(
+        lib: &Library,
+        f: &mut dyn Printer,
+        func: &NativeFunctionHandle,
+        err: &ErrorType,
+    ) -> FormattingResult<()> {
+        let args = func
+            .parameters
+            .iter()
+            .map(|p| p.name.clone())
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        f.writeln(&format!(
+            "const auto error = {}_{}({});",
+            lib.c_ffi_prefix,
+            func.name.to_snake_case(),
+            args
+        ))?;
+        print_check_exception(f, err)
+    }
+
     // write native function wrappers
     namespace(f, "ex_wrap", |f| {
         for func in lib.native_functions() {
@@ -539,7 +560,9 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
                 f.writeln("{")?;
                 indented(f, |f| {
                     match func.return_type {
-                        ReturnType::Void => {}
+                        ReturnType::Void => {
+                            print_without_returned_value(lib, f, func, err)?;
+                        }
                         ReturnType::Type(_, _) => {
                             print_with_returned_value(lib, f, func, err)?;
                         }

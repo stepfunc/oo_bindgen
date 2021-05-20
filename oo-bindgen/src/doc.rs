@@ -420,11 +420,7 @@ fn validate_reference_with_params(
 ) -> Result<(), BindingError> {
     match reference {
         DocReference::Param(param_name) => {
-            if params
-                .iter()
-                .find(|param| &param.name == param_name)
-                .is_none()
-            {
+            if !params.iter().any(|param| &param.name == param_name) {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
                     ref_name: param_name.to_string(),

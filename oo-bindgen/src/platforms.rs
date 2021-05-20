@@ -36,7 +36,7 @@ impl Platform {
         }
     }
 
-    pub fn to_string(&self) -> &'static str {
+    pub fn as_string(&self) -> &'static str {
         match self {
             Self::WinX64Msvc => "x86_64-pc-windows-msvc",
             Self::LinuxX64Gnu => "x86_64-unknown-linux-gnu",
@@ -60,7 +60,14 @@ impl PlatformLocation {
         Self { platform, location }
     }
 
-    pub fn lib_filename<T: AsRef<str>>(&self, libname: T) -> String {
+    pub fn static_lib_filename<T: AsRef<str>>(&self, libname: T) -> String {
+        match self.platform {
+            Platform::WinX64Msvc => format!("{}.lib", libname.as_ref()),
+            _ => format!("lib{}.a", libname.as_ref()),
+        }
+    }
+
+    pub fn dyn_lib_filename<T: AsRef<str>>(&self, libname: T) -> String {
         match self.platform {
             Platform::WinX64Msvc => format!("{}.dll.lib", libname.as_ref()),
             _ => format!("lib{}.so", libname.as_ref()),

@@ -37,7 +37,7 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
         .filter(|x| SUPPORTED_PLATFORMS.iter().any(|y| *y == x.platform))
     {
         let mut target_dir = config.java_resource_dir();
-        target_dir.push(platform.platform.to_string());
+        target_dir.push(platform.platform.as_string());
         fs::create_dir_all(&target_dir)?;
 
         let mut source_file = platform.location.clone();
@@ -234,7 +234,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                             blocked(f, |f| {
                                 f.writeln(&format!(
                                     "loadLibrary(\"{}\", \"{}\", \"dll\");",
-                                    platform.platform.to_string(),
+                                    platform.platform.as_string(),
                                     libname
                                 ))
                             })?;
@@ -244,7 +244,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                             blocked(f, |f| {
                                 f.writeln(&format!(
                                     "loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                    platform.platform.to_string(),
+                                    platform.platform.as_string(),
                                     libname
                                 ))
                             })?;

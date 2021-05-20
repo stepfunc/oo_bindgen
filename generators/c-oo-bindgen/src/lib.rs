@@ -65,6 +65,7 @@ use std::process::Command;
 mod cpp;
 mod doc;
 mod formatting;
+mod chelpers;
 
 trait CFormatting {
     fn to_c_type(&self, prefix: &str) -> String;
@@ -861,19 +862,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                         handle.name.to_snake_case(),
                     ))?;
 
-                    f.write(
-                        &handle
-                            .parameters
-                            .iter()
-                            .map(|param| match param {
-                                CallbackParameter::Arg(_) => "void*".to_string(),
-                                CallbackParameter::Parameter(param) => {
-                                    param.param_type.to_c_type(&lib.c_ffi_prefix)
-                                }
-                            })
-                            .collect::<Vec<String>>()
-                            .join(", "),
-                    )?;
+                    f.write(&chelpers::callback_parameters(lib,handle))?;
 
                     f.write(");")?;
                 }
@@ -935,19 +924,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                         handle.name.to_snake_case(),
                     ))?;
 
-                    f.write(
-                        &handle
-                            .parameters
-                            .iter()
-                            .map(|param| match param {
-                                CallbackParameter::Arg(_) => "void*".to_string(),
-                                CallbackParameter::Parameter(param) => {
-                                    param.param_type.to_c_type(&lib.c_ffi_prefix)
-                                }
-                            })
-                            .collect::<Vec<String>>()
-                            .join(", "),
-                    )?;
+                    f.write(&chelpers::callback_parameters(lib, handle))?;
                     f.write(")")?;
                 }
                 InterfaceElement::DestroyFunction(name) => {

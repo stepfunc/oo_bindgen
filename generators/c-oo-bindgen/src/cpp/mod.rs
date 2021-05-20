@@ -209,7 +209,7 @@ fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> For
     f.newline()
 }
 
-fn arguments<'a, T>(iter: T) -> String
+fn cpp_arguments<'a, T>(iter: T) -> String
 where
     T: Iterator<Item = &'a Parameter>,
 {
@@ -225,7 +225,7 @@ where
 }
 
 fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    let args = arguments(method.native_function.parameters.iter().skip(1));
+    let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
     f.writeln(&format!(
         "{} {}({});",
@@ -236,7 +236,7 @@ fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
 }
 
 fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    let args = arguments(method.native_function.parameters.iter());
+    let args = cpp_arguments(method.native_function.parameters.iter());
 
     f.writeln(&format!(
         "static {} {}({});",
@@ -247,7 +247,7 @@ fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult
 }
 
 fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
-    let args: String = arguments(method.native_function.parameters.iter().skip(1));
+    let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
     f.writeln(&format!(
         "{} {}({});",
@@ -274,7 +274,7 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
     f.writeln("public:")?;
     indented(f, |f| {
         if let Some(x) = &handle.constructor {
-            let args = arguments(x.parameters.iter());
+            let args = cpp_arguments(x.parameters.iter());
             f.writeln(&format!("{}({});", handle.cpp_name(), args))?;
         };
         if handle.destructor.is_some() {
@@ -388,6 +388,51 @@ fn print_enum_conversion(
             //f.writeln(&format!("return {}::{};", handle.name.to_camel_case(), handle.variants[0].name.to_snake_case()))
         })?;
         f.writeln("}")
+    })?;
+    f.writeln("}")?;
+    f.newline()
+}
+
+fn print_interface_conversion(
+    lib: &Library,
+    f: &mut dyn Printer,
+    handle: &InterfaceHandle,
+) -> FormattingResult<()> {
+    f.writeln(&format!(
+        "{}_{}_t from_cpp(std::unique_ptr<{}> value)",
+        lib.c_ffi_prefix,
+        handle.name.to_snake_case(),
+        handle.cpp_name(),
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f|{
+
+        f.writeln(&format!("return ({}) {{", handle.to_c_type(&lib.c_ffi_prefix)))?;
+        indented(f, |f|{
+            for x in&handle.elements {
+                match x {
+                    InterfaceElement::Arg(name) => {
+                        f.writeln(&format!(".{} = value.release(),", name))?;
+                    }
+                    InterfaceElement::DestroyFunction(name) => {
+                        f.writeln(&format!(".{} = [](void* {}) {{ delete reinterpret_cast<{}*>({}); }},", name, handle.arg_name, handle.cpp_name(), handle.arg_name))?;
+                    }
+                    InterfaceElement::CallbackFunction(func) => {
+
+                        f.writeln(
+                            &format!(
+                                ".{} = []({}) -> {} {{ }},",
+                                func.cpp_name(),
+                                crate::chelpers::callback_parameters_with_var_names(lib, func),
+                                func.return_type.to_c_type(&lib.c_ffi_prefix)
+                            )
+                        )?;
+                    }
+                }
+            }
+            Ok(())
+        })?;
+        f.writeln("};")
     })?;
     f.writeln("}")?;
     f.newline()
@@ -590,6 +635,9 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
     namespace(f, "convert", |f| {
         for e in lib.native_enums() {
             print_enum_conversion(lib, f, e)?;
+        }
+        for interface in lib.interfaces() {
+            print_interface_conversion(lib, f, interface)?;
         }
         Ok(())
     })?;

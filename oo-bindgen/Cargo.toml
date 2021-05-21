@@ -1,6 +1,6 @@
 [package]
 name = "oo-bindgen"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Émile Grégoire <emile@stepfunc.io>"]
 edition = "2018"
 

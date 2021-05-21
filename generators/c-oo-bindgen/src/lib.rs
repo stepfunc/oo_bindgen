@@ -39,7 +39,7 @@ clippy::all
 #![forbid(
     unsafe_code,
     // intra_doc_link_resolution_failure, broken_intra_doc_links
-    safe_packed_borrows,
+    unaligned_references,
     while_true,
     bare_trait_objects
 )]
@@ -159,51 +159,49 @@ impl CFormatting for ReturnType {
 
 pub struct CBindgenConfig {
     pub output_dir: PathBuf,
+    pub ffi_target_name: String,
     pub ffi_name: String,
+    pub is_release: bool,
     pub extra_files: Vec<PathBuf>,
-    pub platforms: PlatformLocations,
+    pub platform_location: PlatformLocation,
 }
 
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
-    for platform in config.platforms.iter() {
-        generate_single_package(lib, config, &platform)?;
-    }
-
-    Ok(())
-}
-
-fn generate_single_package(
-    lib: &Library,
-    config: &CBindgenConfig,
-    platform_location: &PlatformLocation,
-) -> FormattingResult<()> {
     let output_dir = config
         .output_dir
-        .join(platform_location.platform.to_string());
+        .join(config.platform_location.platform.as_string());
 
     // Create header file
     let include_path = output_dir.join("include");
     generate_c_header(lib, include_path)?;
 
     // Generate CMake config file
-    generate_cmake_config(lib, config, &platform_location)?;
+    generate_cmake_config(lib, config, &config.platform_location)?;
 
     // Copy lib files (lib and DLL on Windows, .so on Linux)
     let lib_path = output_dir
         .join("lib")
-        .join(platform_location.platform.to_string());
+        .join(config.platform_location.platform.as_string());
     fs::create_dir_all(&lib_path)?;
 
-    let lib_filename = platform_location.lib_filename(&config.ffi_name);
+    let lib_filename = config
+        .platform_location
+        .static_lib_filename(&config.ffi_name);
     fs::copy(
-        platform_location.location.join(&lib_filename),
+        config.platform_location.location.join(&lib_filename),
+        lib_path.join(&lib_filename),
+    )?;
+
+    let lib_filename = config.platform_location.dyn_lib_filename(&config.ffi_name);
+    fs::copy(
+        config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
 
     // Copy DLL on Windows
-    let bin_filename = platform_location.bin_filename(&config.ffi_name);
+    let bin_filename = config.platform_location.bin_filename(&config.ffi_name);
     fs::copy(
-        platform_location.location.join(&bin_filename),
+        config.platform_location.location.join(&bin_filename),
         lib_path.join(&bin_filename),
     )?;
 
@@ -243,7 +241,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
             .write_all(
                 &format!(
                     "INPUT = {}/include\n",
-                    config.platforms.iter().next().unwrap().platform.to_string()
+                    config.platform_location.platform.as_string()
                 )
                 .into_bytes(),
             )
@@ -1002,30 +1000,100 @@ fn generate_cmake_config(
     // Create file
     let cmake_path = config
         .output_dir
-        .join(platform_location.platform.to_string())
+        .join(platform_location.platform.as_string())
         .join("cmake");
     fs::create_dir_all(&cmake_path)?;
     let filename = cmake_path.join(format!("{}-config.cmake", lib.name));
     let mut f = FilePrinter::new(filename)?;
 
+    let link_deps = get_link_dependencies(config);
+
     // Prefix used everywhere else
     f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/../\")")?;
     f.newline()?;
 
+    // Write dynamic library version
     f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
     f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
     indented(&mut f, |f| {
         f.writeln(&format!(
             "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.to_string(),
+            platform_location.platform.as_string(),
             platform_location.bin_filename(&config.ffi_name)
         ))?;
         f.writeln(&format!(
             "IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.to_string(),
-            platform_location.lib_filename(&config.ffi_name)
+            platform_location.platform.as_string(),
+            platform_location.dyn_lib_filename(&config.ffi_name)
         ))?;
         f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
     })?;
+    f.writeln(")")?;
+
+    f.newline()?;
+
+    // Write static library
+    f.writeln(&format!(
+        "add_library({}_static STATIC IMPORTED GLOBAL)",
+        lib.name
+    ))?;
+    f.writeln(&format!(
+        "set_target_properties({}_static PROPERTIES",
+        lib.name
+    ))?;
+    indented(&mut f, |f| {
+        f.writeln(&format!(
+            "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
+            platform_location.platform.as_string(),
+            platform_location.static_lib_filename(&config.ffi_name)
+        ))?;
+        f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")?;
+        f.writeln(&format!(
+            "INTERFACE_LINK_LIBRARIES \"{}\"",
+            link_deps.join(";")
+        ))
+    })?;
     f.writeln(")")
+}
+
+fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {
+    let mut args = Vec::from(["rustc", "-p", &config.ffi_target_name]);
+
+    if config.is_release {
+        args.push("--release");
+    }
+
+    args.extend(&["--", "--print", "native-static-libs"]);
+
+    let output = Command::new("cargo")
+        .args(&args)
+        .output()
+        .expect("failed to run cargo");
+
+    if !output.status.success() {
+        panic!("failed to get the link dependencies");
+    }
+
+    // It prints to stderr for some reason
+    let result = String::from_utf8_lossy(&output.stderr);
+
+    // Find where the libs are written
+    const PATTERN: &str = "native-static-libs: ";
+    let pattern_idx = result
+        .find(PATTERN)
+        .expect("failed to parse link dependencies");
+    let deps = &result[pattern_idx + PATTERN.len()..result.len()];
+    let endline = deps.find('\n').expect("failed to parse link dependencies");
+    let deps = &deps[0..endline];
+
+    // Extract the libs
+    let mut result = deps
+        .split_whitespace()
+        .map(|x| x.to_owned())
+        .collect::<Vec<_>>();
+
+    // Remove duplicates
+    result.dedup();
+
+    result
 }

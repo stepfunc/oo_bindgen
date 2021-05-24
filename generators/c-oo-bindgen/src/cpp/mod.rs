@@ -3,7 +3,7 @@ mod names;
 mod types;
 
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::callback::{CallbackParameter, InterfaceElement, InterfaceHandle};
+use oo_bindgen::callback::{CallbackParameter, InterfaceElement, InterfaceHandle, CallbackFunction};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
@@ -18,7 +18,7 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType};
+use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, Type, DurationMapping};
 use types::*;
 
 const FRIEND_CLASS_NAME: &'static str = "InternalFriendClass";
@@ -393,11 +393,108 @@ fn print_enum_conversion(
     f.newline()
 }
 
+fn covert_to_cpp(typ: &Type, expr: String) -> String {
+
+    match typ {
+        Type::Bool => expr,
+        Type::Uint8 => expr,
+        Type::Sint8 => expr,
+        Type::Uint16 => expr,
+        Type::Sint16 => expr,
+        Type::Uint32 => expr,
+        Type::Sint32 => expr,
+        Type::Uint64 => expr,
+        Type::Sint64 => expr,
+        Type::Float => expr,
+        Type::Double => expr,
+        Type::String => unimplemented!(),
+        Type::Struct(_) => unimplemented!(),
+        Type::StructRef(_) => expr,
+        Type::Enum(_) => unimplemented!(),
+        Type::ClassRef(_) => unimplemented!(),
+        Type::Interface(_) => unimplemented!(),
+        Type::Iterator(_) => unimplemented!(),
+        Type::Collection(_) => unimplemented!(),
+        Type::Duration(mapping) => {
+            match mapping {
+                DurationMapping::Milliseconds => {
+                    format!("convert::from_sec_u64({})", expr)
+                }
+                DurationMapping::Seconds => {
+                    format!("convert::from_msec_u64({})", expr)
+                }
+                DurationMapping::SecondsFloat => {
+                    format!("convert::from_sec_float({})", expr)
+                }
+            }
+        }
+    }
+}
+
+fn covert_to_c(typ: &Type, expr: String) -> String {
+    match typ {
+        Type::Bool => expr,
+        Type::Uint8 => expr,
+        Type::Sint8 => expr,
+        Type::Uint16 => expr,
+        Type::Sint16 => expr,
+        Type::Uint32 => expr,
+        Type::Sint32 => expr,
+        Type::Uint64 => expr,
+        Type::Sint64 => expr,
+        Type::Float => expr,
+        Type::Double => expr,
+        Type::String => unimplemented!(),
+        Type::Struct(_) => unimplemented!(),
+        Type::StructRef(_) => expr,
+        Type::Enum(_) => unimplemented!(),
+        Type::ClassRef(_) => unimplemented!(),
+        Type::Interface(_) => unimplemented!(),
+        Type::Iterator(_) => unimplemented!(),
+        Type::Collection(_) => unimplemented!(),
+        Type::Duration(mapping) => {
+            match mapping {
+                DurationMapping::Milliseconds => {
+                    format!("convert::to_sec_u64({})", expr)
+                }
+                DurationMapping::Seconds => {
+                    format!("convert::to_msec_u64({})", expr)
+                }
+                DurationMapping::SecondsFloat => {
+                    format!("convert::to_sec_float({})", expr)
+                }
+            }
+        }
+    }
+}
+
 fn print_interface_conversion(
     lib: &Library,
     f: &mut dyn Printer,
     handle: &InterfaceHandle,
 ) -> FormattingResult<()> {
+
+    fn get_invocation(handle: &InterfaceHandle, func: &CallbackFunction) -> String {
+        let args = func
+            .parameters
+            .iter()
+            .flat_map(|p|{
+                match p {
+                    CallbackParameter::Parameter(p) => {
+                        Some(covert_to_cpp(&p.param_type, p.cpp_name()))
+                    }
+                    CallbackParameter::Arg(_) => {
+                        None
+                    }
+                }
+            })
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        format!("reinterpret_cast<{}*>({})->{}({})", handle.cpp_name(), func.arg_name.to_snake_case(), func.cpp_name(), args)
+    }
+
+
     f.writeln(&format!(
         "{}_{}_t from_cpp(std::unique_ptr<{}> value)",
         lib.c_ffi_prefix,
@@ -421,12 +518,26 @@ fn print_interface_conversion(
 
                         f.writeln(
                             &format!(
-                                ".{} = []({}) -> {} {{ }},",
+                                ".{} = []({}) -> {} {{",
                                 func.cpp_name(),
                                 crate::chelpers::callback_parameters_with_var_names(lib, func),
                                 func.return_type.to_c_type(&lib.c_ffi_prefix)
                             )
                         )?;
+                        indented(f, |f|{
+                            match &func.return_type {
+                                ReturnType::Type(t,_) => {
+                                    let value = get_invocation(handle, func);
+
+                                    f.writeln(&format!("return {};", covert_to_c(t,value)))?;
+                                }
+                                ReturnType::Void => {
+                                    f.writeln(&format!("{};", get_invocation(handle, func)))?;
+                                }
+                            }
+                            Ok(())
+                        })?;
+                        f.writeln("},")?;
                     }
                 }
             }
@@ -631,8 +742,16 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 
 fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
 
+    let time_conversions = include_str!("./snippet/convert_time.cpp");
+
     // enum conversions
     namespace(f, "convert", |f| {
+
+        for line in time_conversions.lines() {
+            f.writeln(line)?;
+        }
+        f.newline()?;
+
         for e in lib.native_enums() {
             print_enum_conversion(lib, f, e)?;
         }

@@ -422,7 +422,7 @@ impl TypeConverter for BooleanConverter {
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}", to, from))
+        f.writeln(&format!("{}{} as u8", to, from))
     }
 }
 

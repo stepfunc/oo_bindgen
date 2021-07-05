@@ -561,7 +561,7 @@ fn write_struct_initializer(
                         Some(value) => format!("\"{}\"", value),
                     },
                     StructElementType::Struct(handle) => {
-                        if handle.is_default_constructed() {
+                        if handle.all_fields_have_defaults() {
                             format!(
                                 "{}_{}_init()",
                                 &lib.c_ffi_prefix,

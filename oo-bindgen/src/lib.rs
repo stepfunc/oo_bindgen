@@ -73,6 +73,7 @@ pub mod native_enum;
 pub mod native_function;
 pub mod native_struct;
 pub mod platforms;
+pub mod util;
 
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;

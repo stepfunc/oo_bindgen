@@ -83,7 +83,7 @@ impl StructElementType {
             Self::Float(default) => default.is_some(),
             Self::Double(default) => default.is_some(),
             Self::String(default) => default.is_some(),
-            Self::Struct(handle) => handle.is_default_constructed(),
+            Self::Struct(handle) => handle.all_fields_have_defaults(),
             Self::StructRef(_) => false,
             Self::Enum(_, default) => default.is_some(),
             Self::ClassRef(_) => false,
@@ -172,8 +172,14 @@ impl NativeStruct {
         self.declaration.clone()
     }
 
-    pub fn is_default_constructed(&self) -> bool {
+    /// returns true if all struct fields have a default value
+    pub fn all_fields_have_defaults(&self) -> bool {
         self.elements.iter().all(|el| el.element_type.has_default())
+    }
+
+    /// returns true if none of the struct fields have a default value
+    pub fn no_fields_have_defaults(&self) -> bool {
+        self.elements.iter().all(|el| !el.element_type.has_default())
     }
 
     pub fn elements(&self) -> impl Iterator<Item = &NativeStructElement> {

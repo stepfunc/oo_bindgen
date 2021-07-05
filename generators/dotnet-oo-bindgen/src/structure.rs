@@ -161,7 +161,7 @@ pub(crate) fn generate(
                         }
                     }
                     StructElementType::Struct(handle) => {
-                        if handle.is_default_constructed() {
+                        if handle.all_fields_have_defaults() {
                             f.write(&format!(" = new {}()", handle.name().to_camel_case()))?;
                         }
                     }
@@ -208,7 +208,7 @@ pub(crate) fn generate(
             f.newline()?;
 
             // Write constructor
-            if !native_struct.definition().is_default_constructed() {
+            if !native_struct.definition().all_fields_have_defaults() {
                 documentation(f, |f| {
                     f.writeln("<summary>")?;
                     docstring_print(

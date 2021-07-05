@@ -20,6 +20,7 @@ use oo_bindgen::class::{
 };
 use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, Type, DurationMapping};
 use types::*;
+use oo_bindgen::util::WithLastIndication;
 
 const FRIEND_CLASS_NAME: &'static str = "InternalFriendClass";
 
@@ -114,7 +115,7 @@ fn print_native_struct_decl(
     f.newline()
 }
 
-fn get_struct_constructor_args(handle: &NativeStructHandle) -> String {
+fn get_struct_default_constructor_args(handle: &NativeStructHandle) -> String {
     handle
         .elements
         .iter()
@@ -133,22 +134,45 @@ fn get_struct_constructor_args(handle: &NativeStructHandle) -> String {
         .join(", ")
 }
 
-fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
-    let has_members_without_default_value = handle
+fn get_struct_full_constructor_args(handle: &NativeStructHandle) -> String {
+    handle
         .elements
         .iter()
-        .any(|x| !x.element_type.has_default());
+        .map(|x| {
+            format!(
+                    "{} {}",
+                    x.element_type.to_type().get_cpp_struct_constructor_type(),
+                    x.name
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
+fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
 
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
     if let NativeStructType::Opaque = handle.struct_type {
         f.writeln("private:")?;
     }
     indented(f, |f| {
-        if has_members_without_default_value {
+
+        // delete the default constructor unless all fields have default values in which case it'll
+        // be written below
+        if !handle.all_fields_have_defaults() {
             f.writeln(&format!("{}() = delete;", handle.cpp_name()))?;
         }
-        f.writeln(&format!("{}({});", handle.cpp_name(), get_struct_constructor_args(handle)))?;
+
+        // constructor that applies the default values
+        f.writeln(&format!("{}({});", handle.cpp_name(), get_struct_default_constructor_args(handle)))?;
         f.newline()?;
+
+        // write a full constructor unless the one above already takes all the values
+        if !handle.no_fields_have_defaults() {
+            f.writeln(&format!("{}({});", handle.cpp_name(), get_struct_full_constructor_args(handle)))?;
+            f.newline()?;
+        }
+
         for field in &handle.elements {
             f.writeln(&format!(
                 "{} {};",
@@ -357,6 +381,90 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
+fn print_struct_conversion_decl(
+    lib: &Library,
+    f: &mut dyn Printer,
+    handle: &NativeStructHandle,
+) -> FormattingResult<()> {
+    f.writeln(&format!(
+        "{} to_cpp(const {}& x);",
+        handle.declaration().cpp_name(),
+        handle.to_c_type(&lib.c_ffi_prefix)
+    ))?;
+    f.newline()
+}
+
+fn convert_native_struct_elem(elem: &NativeStructElement) -> String {
+    let base_name = format!("x.{}", elem.name);
+
+    match elem.element_type {
+        StructElementType::Bool(_) => base_name.clone(),
+        StructElementType::Uint8(_) => base_name.clone(),
+        StructElementType::Sint8(_) => base_name.clone(),
+        StructElementType::Uint16(_) => base_name.clone(),
+        StructElementType::Sint16(_) => base_name.clone(),
+        StructElementType::Uint32(_) => base_name.clone(),
+        StructElementType::Sint32(_) => base_name.clone(),
+        StructElementType::Uint64(_) => base_name.clone(),
+        StructElementType::Sint64(_) => base_name.clone(),
+        StructElementType::Float(_) => base_name.clone(),
+        StructElementType::Double(_) => base_name.clone(),
+        StructElementType::String(_) => format!("std::string({})", base_name),
+        StructElementType::Struct(_) => format!("to_cpp({})", base_name),
+        StructElementType::StructRef(_) => base_name.clone(),
+        StructElementType::Enum(_, _) => format!("to_cpp({})", base_name),
+        StructElementType::ClassRef(_) => base_name.clone(),
+        StructElementType::Interface(_) => base_name.clone(),
+        StructElementType::Iterator(_) => base_name.clone(),
+        StructElementType::Collection(_) => base_name.clone(),
+        StructElementType::Duration(mapping, _) => {
+            match mapping {
+                DurationMapping::Milliseconds => {
+                    format!("from_sec_u64({})", base_name)
+                }
+                DurationMapping::Seconds => {
+                    format!("from_msec_u64({})", base_name)
+                }
+                DurationMapping::SecondsFloat => {
+                    format!("from_sec_float({})", base_name)
+                }
+            }
+        },
+    }
+}
+
+fn print_struct_conversion_impl(
+    lib: &Library,
+    f: &mut dyn Printer,
+    handle: &NativeStructHandle,
+) -> FormattingResult<()> {
+    f.writeln(&format!(
+        "{} to_cpp(const {}& x)",
+        handle.declaration().cpp_name(),
+        handle.to_c_type(&lib.c_ffi_prefix)
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln(&format!("return {}(", handle.declaration.cpp_name()))?;
+        //let last = handle.elements.len() - 1;
+        //let current = 0;
+        indented(f, |f| {
+            for (elem,last) in handle.elements.iter().with_last() {
+                let conversion = convert_native_struct_elem(elem);
+                if last {
+                    f.writeln(&format!("{}", conversion))?;
+                } else {
+                    f.writeln(&format!("{},", conversion))?;
+                }
+            }
+            Ok(())
+        })?;
+        f.writeln(");")
+    })?;
+    f.writeln("}")?;
+    f.newline()
+}
+
 fn print_enum_conversion(
     lib: &Library,
     f: &mut dyn Printer,
@@ -385,7 +493,6 @@ fn print_enum_conversion(
             }
             f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
             Ok(())
-            //f.writeln(&format!("return {}::{};", handle.name.to_camel_case(), handle.variants[0].name.to_snake_case()))
         })?;
         f.writeln("}")
     })?;
@@ -590,7 +697,7 @@ fn get_initializer_value(e: &NativeStructElement) -> String {
         StructElementType::Double(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
         StructElementType::String(v) => v.as_ref().map(|x| format!("\"{}\"", x)).unwrap_or(format!("std::move({})", e.cpp_name())),
         StructElementType::Struct(x) => {
-            if x.is_default_constructed() {
+            if x.all_fields_have_defaults() {
                 format!("{}()", x.cpp_name())
             } else {
                 e.cpp_name()
@@ -612,7 +719,7 @@ fn print_struct_constructor_impl(
 ) -> FormattingResult<()> {
 
     let name = handle.cpp_name();
-    f.writeln(&format!("{}::{}({}) :", name, name, get_struct_constructor_args(handle)))?;
+    f.writeln(&format!("{}::{}({}) :", name, name, get_struct_default_constructor_args(handle)))?;
     indented(f, |f| {
         let mut i = 0;
         let last = handle.elements.len() - 1;
@@ -755,6 +862,16 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
         for e in lib.native_enums() {
             print_enum_conversion(lib, f, e)?;
         }
+
+        // forward declare the struct conversion functions because structs can contain other structs
+        for s in lib.native_structs() {
+            print_struct_conversion_decl(lib, f, s)?;
+        }
+
+        for s in lib.native_structs() {
+            print_struct_conversion_impl(lib, f, s)?;
+        }
+
         for interface in lib.interfaces() {
             print_interface_conversion(lib, f, interface)?;
         }

@@ -1,10 +1,12 @@
 use oo_bindgen::formatting::{FormattingResult, Printer};
 use oo_bindgen::Library;
+use oo_bindgen::native_function::{NativeFunctionHandle, NativeFunctionType};
 
 use crate::conversion::DotnetType;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
-use oo_bindgen::native_function::{NativeFunctionHandle, NativeFunctionType};
+
+use heck::SnakeCase;
 
 pub(crate) fn generate_native_functions_class(
     f: &mut dyn Printer,
@@ -188,7 +190,7 @@ fn write_pinvoke_signature(
             "internal static extern {} {}_{}(",
             handle.return_type.as_native_type(),
             prefix,
-            handle.name,
+            handle.name.to_snake_case(),
         ))?;
     }
 

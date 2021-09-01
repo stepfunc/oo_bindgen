@@ -7,6 +7,7 @@ use oo_bindgen::callback::{CallbackParameter, InterfaceElement, InterfaceHandle,
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
+use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::NativeEnumHandle;
 use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle, NativeStructType, NativeStructElement, StructElementType};
 use oo_bindgen::{Library, Statement};
@@ -149,9 +150,10 @@ fn get_struct_full_constructor_args(handle: &NativeStructHandle) -> String {
         .join(", ")
 }
 
-fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> FormattingResult<()> {
+fn print_native_struct_header(f: &mut dyn Printer, handle: &NativeStructHandle, lib: &Library) -> FormattingResult<()> {
 
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
+    f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
     if let NativeStructType::Opaque = handle.struct_type {
         f.writeln("private:")?;
     }
@@ -180,8 +182,10 @@ fn print_native_struct(f: &mut dyn Printer, handle: &NativeStructHandle) -> Form
                 field.cpp_name()
             ))?;
         }
+
         Ok(())
     })?;
+
     f.writeln("};")?;
     f.newline()
 }
@@ -358,7 +362,7 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::EnumDefinition(x) => print_enum(f, x)?,
             Statement::ErrorType(x) => print_exception(f, x)?,
             Statement::NativeStructDeclaration(x) => print_native_struct_decl(f, x)?,
-            Statement::NativeStructDefinition(x) => print_native_struct(f, x)?,
+            Statement::NativeStructDefinition(x) => print_native_struct_header(f, x, lib)?,
             Statement::InterfaceDefinition(x) => print_interface(f, x)?,
             Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
             Statement::ClassDefinition(x) => print_class(f, x)?,
@@ -381,56 +385,51 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
-fn print_struct_conversion_decl(
-    lib: &Library,
-    f: &mut dyn Printer,
-    handle: &NativeStructHandle,
-) -> FormattingResult<()> {
-    f.writeln(&format!(
-        "{} to_cpp(const {}& x);",
-        handle.declaration().cpp_name(),
-        handle.to_c_type(&lib.c_ffi_prefix)
-    ))?;
+fn convert_native_struct_elem_to_cpp(elem: &NativeStructElement) -> String {
+    let base_name = format!("x.{}", elem.name);
+    convert_to_cpp(&elem.element_type.to_type(), base_name)
+}
+
+fn convert_native_struct_ptr_elem_to_cpp(elem: &NativeStructElement) -> String {
+    let base_name = format!("x->{}", elem.name);
+    convert_to_cpp(&elem.element_type.to_type(), base_name)
+}
+
+fn convert_native_struct_elem_from_cpp(elem: &NativeStructElement) -> String {
+    let base_name = format!("x.{}", elem.name);
+    convert_to_c(&elem.element_type.to_type(), base_name)
+}
+
+fn convert_native_struct_ptr_elem_from_cpp(elem: &NativeStructElement) -> String {
+    let base_name = format!("x->{}", elem.name);
+    convert_to_c(&elem.element_type.to_type(), base_name)
+}
+
+fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+    f.writeln(&format!("class {} {{", FRIEND_CLASS_NAME))?;
+    indented(f, |f| {
+        f.writeln("public:")?;
+
+        for handle in lib.native_structs() {
+            f.writeln(&format!("static {} to_cpp(const {}& x);", handle.declaration().cpp_name(), handle.to_c_type(&lib.c_ffi_prefix)))?;
+            f.writeln(&format!("static std::unique_ptr<{}> to_cpp_ref(const {}* x);", handle.declaration().cpp_name(), handle.to_c_type(&lib.c_ffi_prefix)))?;
+            f.writeln(&format!("static {} from_cpp(const {}& x);", handle.to_c_type(&lib.c_ffi_prefix), handle.declaration().cpp_name()))?;
+            f.writeln(&format!("static std::unique_ptr<{}> from_cpp_ref(const {}* x);", handle.to_c_type(&lib.c_ffi_prefix), handle.declaration().cpp_name()))?;
+            f.newline()?;
+        }
+
+        Ok(())
+    })?;
+    f.writeln("};")?;
     f.newline()
 }
 
-fn convert_native_struct_elem(elem: &NativeStructElement) -> String {
-    let base_name = format!("x.{}", elem.name);
-
-    match elem.element_type {
-        StructElementType::Bool(_) => base_name.clone(),
-        StructElementType::Uint8(_) => base_name.clone(),
-        StructElementType::Sint8(_) => base_name.clone(),
-        StructElementType::Uint16(_) => base_name.clone(),
-        StructElementType::Sint16(_) => base_name.clone(),
-        StructElementType::Uint32(_) => base_name.clone(),
-        StructElementType::Sint32(_) => base_name.clone(),
-        StructElementType::Uint64(_) => base_name.clone(),
-        StructElementType::Sint64(_) => base_name.clone(),
-        StructElementType::Float(_) => base_name.clone(),
-        StructElementType::Double(_) => base_name.clone(),
-        StructElementType::String(_) => format!("std::string({})", base_name),
-        StructElementType::Struct(_) => format!("to_cpp({})", base_name),
-        StructElementType::StructRef(_) => base_name.clone(),
-        StructElementType::Enum(_, _) => format!("to_cpp({})", base_name),
-        StructElementType::ClassRef(_) => base_name.clone(),
-        StructElementType::Interface(_) => base_name.clone(),
-        StructElementType::Iterator(_) => base_name.clone(),
-        StructElementType::Collection(_) => base_name.clone(),
-        StructElementType::Duration(mapping, _) => {
-            match mapping {
-                DurationMapping::Milliseconds => {
-                    format!("from_sec_u64({})", base_name)
-                }
-                DurationMapping::Seconds => {
-                    format!("from_msec_u64({})", base_name)
-                }
-                DurationMapping::SecondsFloat => {
-                    format!("from_sec_float({})", base_name)
-                }
-            }
-        },
+fn print_friend_class_impl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+    for handle in lib.native_structs() {
+        print_struct_conversion_impl(lib, f, handle)?;
     }
+
+    f.newline()
 }
 
 fn print_struct_conversion_impl(
@@ -439,18 +438,17 @@ fn print_struct_conversion_impl(
     handle: &NativeStructHandle,
 ) -> FormattingResult<()> {
     f.writeln(&format!(
-        "{} to_cpp(const {}& x)",
+        "{} {}::to_cpp(const {}& x)",
         handle.declaration().cpp_name(),
+        FRIEND_CLASS_NAME,
         handle.to_c_type(&lib.c_ffi_prefix)
     ))?;
     f.writeln("{")?;
     indented(f, |f| {
         f.writeln(&format!("return {}(", handle.declaration.cpp_name()))?;
-        //let last = handle.elements.len() - 1;
-        //let current = 0;
         indented(f, |f| {
             for (elem,last) in handle.elements.iter().with_last() {
-                let conversion = convert_native_struct_elem(elem);
+                let conversion = convert_native_struct_elem_to_cpp(elem);
                 if last {
                     f.writeln(&format!("{}", conversion))?;
                 } else {
@@ -462,10 +460,107 @@ fn print_struct_conversion_impl(
         f.writeln(");")
     })?;
     f.writeln("}")?;
+
+    f.newline()?;
+
+    f.writeln(&format!(
+        "std::unique_ptr<{}> {}::to_cpp_ref(const {}* x)",
+        handle.declaration().cpp_name(),
+        FRIEND_CLASS_NAME,
+        handle.to_c_type(&lib.c_ffi_prefix)
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln("if (x) {")?;
+        indented(f, |f| {
+            f.writeln(&format!("return std::make_unique<{}>(", handle.declaration.cpp_name()))?;
+            indented(f, |f| {
+                for (elem,last) in handle.elements.iter().with_last() {
+                    let conversion = convert_native_struct_ptr_elem_to_cpp(elem);
+                    if last {
+                        f.writeln(&format!("{}", conversion))?;
+                    } else {
+                        f.writeln(&format!("{},", conversion))?;
+                    }
+                }
+                Ok(())
+            })?;
+            f.writeln(");")
+        })?;
+        f.writeln("}")?;
+        f.writeln("else {")?;
+        indented(f, |f| {
+            f.writeln("return nullptr;")
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
+
+    f.newline()?;
+
+    f.writeln(&format!(
+        "{} {}::from_cpp(const {}& x)",
+        handle.to_c_type(&lib.c_ffi_prefix),
+        FRIEND_CLASS_NAME,
+        handle.declaration().cpp_name(),
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln("return {")?;
+        indented(f, |f| {
+            for (elem,last) in handle.elements.iter().with_last() {
+                let conversion = convert_native_struct_elem_from_cpp(elem);
+                if last {
+                    f.writeln(&format!("{}", conversion))?;
+                } else {
+                    f.writeln(&format!("{},", conversion))?;
+                }
+            }
+            Ok(())
+        })?;
+        f.writeln("};")
+    })?;
+    f.writeln("}")?;
+
+    f.newline()?;
+
+    f.writeln(&format!(
+        "std::unique_ptr<{}> {}::from_cpp_ref(const {}* x)",
+        handle.to_c_type(&lib.c_ffi_prefix),
+        FRIEND_CLASS_NAME,
+        handle.declaration().cpp_name(),
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln("if (x) {")?;
+        indented(f, |f| {
+            f.writeln(&format!("return std::unique_ptr<{}>(new {} {{", handle.to_c_type(&lib.c_ffi_prefix), handle.to_c_type(&lib.c_ffi_prefix)))?;
+            indented(f, |f| {
+                for (elem,last) in handle.elements.iter().with_last() {
+                    let conversion = convert_native_struct_ptr_elem_from_cpp(elem);
+                    if last {
+                        f.writeln(&format!("{}", conversion))?;
+                    } else {
+                        f.writeln(&format!("{},", conversion))?;
+                    }
+                }
+                Ok(())
+            })?;
+            f.writeln("});")
+        })?;
+        f.writeln("}")?;
+        f.writeln("else {")?;
+        indented(f, |f| {
+            f.writeln("return nullptr;")
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
+
     f.newline()
 }
 
-fn print_enum_conversion(
+fn print_enum_conversions(
     lib: &Library,
     f: &mut dyn Printer,
     handle: &NativeEnumHandle,
@@ -497,10 +592,40 @@ fn print_enum_conversion(
         f.writeln("}")
     })?;
     f.writeln("}")?;
+
+    f.newline()?;
+
+    f.writeln(&format!(
+        "{}_{}_t from_cpp({} value)",
+        lib.c_ffi_prefix,
+        handle.name.to_snake_case(),
+        handle.cpp_name(),
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln("switch(value)")?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for v in &handle.variants {
+                f.writeln(&format!(
+                    "case {}::{}: return {}_{}_{};",
+                    handle.name.to_camel_case(),
+                    v.name.to_snake_case(),
+                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    handle.name.to_shouty_snake_case(),
+                    v.name.to_shouty_snake_case(),
+                ))?;
+            }
+            f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
+            Ok(())
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
     f.newline()
 }
 
-fn covert_to_cpp(typ: &Type, expr: String) -> String {
+fn convert_to_cpp(typ: &Type, expr: String) -> String {
 
     match typ {
         Type::Bool => expr,
@@ -514,14 +639,14 @@ fn covert_to_cpp(typ: &Type, expr: String) -> String {
         Type::Sint64 => expr,
         Type::Float => expr,
         Type::Double => expr,
-        Type::String => unimplemented!(),
-        Type::Struct(_) => unimplemented!(),
-        Type::StructRef(_) => expr,
-        Type::Enum(_) => unimplemented!(),
-        Type::ClassRef(_) => unimplemented!(),
-        Type::Interface(_) => unimplemented!(),
-        Type::Iterator(_) => unimplemented!(),
-        Type::Collection(_) => unimplemented!(),
+        Type::String => format!("std::string({})", expr),
+        Type::Struct(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
+        Type::StructRef(_) => format!("{}::to_cpp_ref({})", FRIEND_CLASS_NAME, expr),
+        Type::Enum(_) => format!("convert::to_cpp({})", expr),
+        Type::ClassRef(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
+        Type::Interface(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
+        Type::Iterator(_) => format!("convert::to_vec({})", expr),
+        Type::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
         Type::Duration(mapping) => {
             match mapping {
                 DurationMapping::Milliseconds => {
@@ -538,7 +663,7 @@ fn covert_to_cpp(typ: &Type, expr: String) -> String {
     }
 }
 
-fn covert_to_c(typ: &Type, expr: String) -> String {
+fn convert_to_c(typ: &Type, expr: String) -> String {
     match typ {
         Type::Bool => expr,
         Type::Uint8 => expr,
@@ -551,13 +676,13 @@ fn covert_to_c(typ: &Type, expr: String) -> String {
         Type::Sint64 => expr,
         Type::Float => expr,
         Type::Double => expr,
-        Type::String => unimplemented!(),
-        Type::Struct(_) => unimplemented!(),
-        Type::StructRef(_) => expr,
-        Type::Enum(_) => unimplemented!(),
+        Type::String => format!("{}.c_str()", expr),
+        Type::Struct(_) => format!("{}::from_cpp({})", FRIEND_CLASS_NAME, expr),
+        Type::StructRef(_) => format!("{}::from_cpp_ref({})", FRIEND_CLASS_NAME, expr),
+        Type::Enum(_) => format!("convert::from_cpp({})", expr),
         Type::ClassRef(_) => unimplemented!(),
-        Type::Interface(_) => unimplemented!(),
-        Type::Iterator(_) => unimplemented!(),
+        Type::Interface(_) => format!("convert::from_cpp({})", expr),
+        Type::Iterator(_) => "nullptr".to_string(), // Conversion not supported
         Type::Collection(_) => unimplemented!(),
         Type::Duration(mapping) => {
             match mapping {
@@ -575,7 +700,7 @@ fn covert_to_c(typ: &Type, expr: String) -> String {
     }
 }
 
-fn print_interface_conversion(
+fn print_interface_conversions(
     lib: &Library,
     f: &mut dyn Printer,
     handle: &InterfaceHandle,
@@ -588,7 +713,7 @@ fn print_interface_conversion(
             .flat_map(|p|{
                 match p {
                     CallbackParameter::Parameter(p) => {
-                        Some(covert_to_cpp(&p.param_type, p.cpp_name()))
+                        Some(convert_to_cpp(&p.param_type, p.cpp_name()))
                     }
                     CallbackParameter::Arg(_) => {
                         None
@@ -601,7 +726,6 @@ fn print_interface_conversion(
         format!("reinterpret_cast<{}*>({})->{}({})", handle.cpp_name(), func.arg_name.to_snake_case(), func.cpp_name(), args)
     }
 
-
     f.writeln(&format!(
         "{}_{}_t from_cpp(std::unique_ptr<{}> value)",
         lib.c_ffi_prefix,
@@ -611,22 +735,23 @@ fn print_interface_conversion(
     f.writeln("{")?;
     indented(f, |f|{
 
-        f.writeln(&format!("return ({}) {{", handle.to_c_type(&lib.c_ffi_prefix)))?;
+        // Note: Designated initializers (i.e. C-style struct initialization) were standardized in C99,
+        // but only to C++ in C++20. Therefore, we cannot use it here as we target a lower version of C++.
+        f.writeln("return {")?;
         indented(f, |f|{
-            for x in&handle.elements {
+            for x in &handle.elements {
                 match x {
-                    InterfaceElement::Arg(name) => {
-                        f.writeln(&format!(".{} = value.release(),", name))?;
+                    InterfaceElement::Arg(_) => {
+                        f.writeln("value.release(),")?;
                     }
-                    InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!(".{} = [](void* {}) {{ delete reinterpret_cast<{}*>({}); }},", name, handle.arg_name, handle.cpp_name(), handle.arg_name))?;
+                    InterfaceElement::DestroyFunction(_) => {
+                        f.writeln(&format!("[](void* {}) {{ delete reinterpret_cast<{}*>({}); }},", handle.arg_name, handle.cpp_name(), handle.arg_name))?;
                     }
                     InterfaceElement::CallbackFunction(func) => {
 
                         f.writeln(
                             &format!(
-                                ".{} = []({}) -> {} {{",
-                                func.cpp_name(),
+                                "[]({}) -> {} {{",
                                 crate::chelpers::callback_parameters_with_var_names(lib, func),
                                 func.return_type.to_c_type(&lib.c_ffi_prefix)
                             )
@@ -636,7 +761,7 @@ fn print_interface_conversion(
                                 ReturnType::Type(t,_) => {
                                     let value = get_invocation(handle, func);
 
-                                    f.writeln(&format!("return {};", covert_to_c(t,value)))?;
+                                    f.writeln(&format!("return {};", convert_to_c(t,value)))?;
                                 }
                                 ReturnType::Void => {
                                     f.writeln(&format!("{};", get_invocation(handle, func)))?;
@@ -651,6 +776,34 @@ fn print_interface_conversion(
             Ok(())
         })?;
         f.writeln("};")
+    })?;
+    f.writeln("}")?;
+    f.newline()
+}
+
+fn print_iterator_conversions(
+    lib: &Library,
+    f: &mut dyn Printer,
+    handle: &IteratorHandle,
+) -> FormattingResult<()> {
+    f.writeln(&format!(
+        "std::vector<{}> to_vec({}* x)",
+        handle.item_type.cpp_name(),
+        handle.iter_type.to_c_type(&lib.c_ffi_prefix)
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        let function_name = format!("{}_{}", lib.c_ffi_prefix, handle.native_func.name);
+        f.writeln(&format!("auto result = std::vector<{}>();", handle.item_type.cpp_name()))?;
+        f.writeln(&format!("auto it = {}(x);", function_name))?;
+        f.writeln("while (it != nullptr) {")?;
+        indented(f, |f| {
+            f.writeln(&format!("result.push_back({});", convert_to_cpp(&Type::Struct(handle.item_type.clone()), "*it".to_string())))?;
+            f.writeln(&format!("it = {}(x);", function_name))
+        })?;
+        f.writeln("}")?;
+        f.newline()?;
+        f.writeln("return result;")
     })?;
     f.writeln("}")?;
     f.newline()
@@ -851,7 +1004,7 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
 
     let time_conversions = include_str!("./snippet/convert_time.cpp");
 
-    // enum conversions
+    // conversions
     namespace(f, "convert", |f| {
 
         for line in time_conversions.lines() {
@@ -860,21 +1013,17 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
         f.newline()?;
 
         for e in lib.native_enums() {
-            print_enum_conversion(lib, f, e)?;
-        }
-
-        // forward declare the struct conversion functions because structs can contain other structs
-        for s in lib.native_structs() {
-            print_struct_conversion_decl(lib, f, s)?;
-        }
-
-        for s in lib.native_structs() {
-            print_struct_conversion_impl(lib, f, s)?;
+            print_enum_conversions(lib, f, e)?;
         }
 
         for interface in lib.interfaces() {
-            print_interface_conversion(lib, f, interface)?;
+            print_interface_conversions(lib, f, interface)?;
         }
+
+        for handle in lib.iterators() {
+            print_iterator_conversions(lib, f, handle)?;
+        }
+
         Ok(())
     })?;
 
@@ -884,6 +1033,9 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
     for e in lib.native_enums() {
         print_enum_to_string_impl(f, e)?;
     }
+
+    print_friend_class_decl(lib, f)?;
+    print_friend_class_impl(lib, f)?;
 
     // struct constructors
     for handle in lib.native_structs() {

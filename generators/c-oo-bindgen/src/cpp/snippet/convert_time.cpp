@@ -16,7 +16,7 @@ uint64_t to_sec_u64(std::chrono::steady_clock::duration value) {
     return std::chrono::duration_cast<std::chrono::seconds>(value).count();
 }
 
-uint64_t to_ms_u64(std::chrono::steady_clock::duration value) {
+uint64_t to_msec_u64(std::chrono::steady_clock::duration value) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(value).count();
 }
 

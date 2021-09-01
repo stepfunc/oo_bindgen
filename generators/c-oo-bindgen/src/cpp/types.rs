@@ -141,7 +141,7 @@ impl CppType {
             CppType::String => "const std::string&".to_owned(),
             CppType::Struct(x) => format!("const {}&", x.cpp_name()),
             // these probably shouldn't be allowed in structs at all
-            CppType::StructRef(x) => format!("const {}&", x.cpp_name()),
+            CppType::StructRef(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
             CppType::ClassRef(x) => format!("{}&", x.cpp_name()),
             CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
             CppType::Iterator(x) => format!("Iterator<{}>&", x.item_type.cpp_name()),

@@ -298,7 +298,7 @@ impl Struct {
     }
 
     pub fn name(&self) -> &str {
-        &self.definition.name()
+        self.definition.name()
     }
 
     pub fn declaration(&self) -> NativeStructDeclarationHandle {

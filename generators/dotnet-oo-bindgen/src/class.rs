@@ -163,7 +163,7 @@ fn generate_constructor(
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &constructor, "this.self = ", None, true)
+        call_native_function(f, constructor, "this.self = ", None, true)
     })
 }
 

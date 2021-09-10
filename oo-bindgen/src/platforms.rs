@@ -155,7 +155,7 @@ impl PlatformLocations {
     }
 
     pub fn has_dynamic_lib(&self) -> bool {
-        self.win_x64_msvc.is_some() || self.linux_x64_gnu.is_some()
+        self.win_x64_msvc.is_some() || self.linux_x64_gnu.is_some() || self.linux_arm8_gnu.is_some()
     }
 }
 

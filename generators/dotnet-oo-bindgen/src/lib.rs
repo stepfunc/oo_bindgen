@@ -69,7 +69,11 @@ mod wrappers;
 
 pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
-const SUPPORTED_PLATFORMS: &[Platform] = &[Platform::WinX64Msvc, Platform::LinuxX64Gnu];
+const SUPPORTED_PLATFORMS: &[Platform] = &[
+    Platform::WinX64Msvc,
+    Platform::LinuxX64Gnu,
+    Platform::LinuxArm8Gnu,
+];
 
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
@@ -450,6 +454,7 @@ fn dotnet_platform_string(platform: Platform) -> &'static str {
     match platform {
         Platform::WinX64Msvc => "win-x64",
         Platform::LinuxX64Gnu => "linux-x64",
+        Platform::LinuxArm8Gnu => "linux-arm64",
         _ => panic!("Unsupported platform"),
     }
 }

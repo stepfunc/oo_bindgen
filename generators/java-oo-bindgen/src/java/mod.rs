@@ -1,6 +1,7 @@
 use self::conversion::*;
 use self::formatting::*;
 use crate::JavaBindgenConfig;
+use heck::ShoutySnakeCase;
 use heck::{CamelCase, KebabCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
@@ -20,7 +21,11 @@ mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
-const SUPPORTED_PLATFORMS: &[Platform] = &[Platform::WinX64Msvc, Platform::LinuxX64Gnu];
+const SUPPORTED_PLATFORMS: &[Platform] = &[
+    Platform::WinX64Msvc,
+    Platform::LinuxX64Gnu,
+    Platform::LinuxArm8Gnu,
+];
 
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.java_output_dir)?;
@@ -46,7 +51,7 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
         let mut target_file = target_dir.clone();
         target_file.push(platform.bin_filename(&ffi_name));
 
-        fs::copy(source_file, target_file)?;
+        fs::copy(&source_file, &target_file)?;
     }
 
     // Copy the extra files
@@ -170,11 +175,6 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln("        <artifactId>joou-java-6</artifactId>")?;
         f.writeln("        <version>0.9.4</version>")?;
         f.writeln("    </dependency>")?;
-        f.writeln("    <dependency>")?;
-        f.writeln("        <groupId>org.apache.commons</groupId>")?;
-        f.writeln("        <artifactId>commons-lang3</artifactId>")?;
-        f.writeln("        <version>3.11</version>")?;
-        f.writeln("    </dependency>")?;
         f.writeln("</dependencies>")?;
 
         f.newline()?;
@@ -226,35 +226,62 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         blocked(f, |f| {
             f.writeln("try")?;
             blocked(f, |f| {
-                let libname = format!("{}_java", config.ffi_name);
-                for platform in config.platforms.iter() {
-                    match platform.platform {
-                        Platform::WinX64Msvc => {
-                            f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
-                            blocked(f, |f| {
-                                f.writeln(&format!(
-                                    "loadLibrary(\"{}\", \"{}\", \"dll\");",
-                                    platform.platform.as_string(),
-                                    libname
-                                ))
-                            })?;
+                let env_variable_name =
+                    format!("{}_NATIVE_LIB_LOCATION", lib.name.to_shouty_snake_case());
+                f.writeln(&format!(
+                    "String nativeLibLocation = System.getenv(\"{}\");",
+                    env_variable_name
+                ))?;
+                f.writeln("if(nativeLibLocation != null)")?;
+                blocked(f, |f| f.writeln("System.load(nativeLibLocation);"))?;
+
+                f.writeln("else")?;
+                blocked(f, |f| {
+                    f.writeln("boolean loaded = false;")?;
+                    let libname = format!("{}_java", config.ffi_name);
+                    for platform in config.platforms.iter() {
+                        match platform.platform {
+                            Platform::WinX64Msvc => {
+                                f.writeln("if(!loaded)")?;
+                                blocked(f, |f| {
+                                    f.writeln(&format!(
+                                        "loaded = loadLibrary(\"{}\", \"{}\", \"dll\");",
+                                        platform.platform.as_string(),
+                                        libname
+                                    ))
+                                })?;
+                            }
+                            Platform::LinuxX64Gnu => {
+                                f.writeln("if(!loaded)")?;
+                                blocked(f, |f| {
+                                    f.writeln(&format!(
+                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
+                                        platform.platform.as_string(),
+                                        libname
+                                    ))
+                                })?;
+                            }
+                            Platform::LinuxArm8Gnu => {
+                                f.writeln("if(!loaded)")?;
+                                blocked(f, |f| {
+                                    f.writeln(&format!(
+                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
+                                        platform.platform.as_string(),
+                                        libname
+                                    ))
+                                })?;
+                            }
+                            _ => (), // Other platforms are not supported
                         }
-                        Platform::LinuxX64Gnu => {
-                            f.writeln("if(org.apache.commons.lang3.SystemUtils.IS_OS_LINUX && org.apache.commons.lang3.ArchUtils.getProcessor().is64Bit())")?;
-                            blocked(f, |f| {
-                                f.writeln(&format!(
-                                    "loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                    platform.platform.as_string(),
-                                    libname
-                                ))
-                            })?;
-                        }
-                        _ => (), // Other platforms are not supported
                     }
-                }
-                Ok(())
+
+                    f.writeln("if(!loaded)")?;
+                    blocked(f, |f| {
+                        f.writeln("throw new Exception(\"Unable to load any of the included native library\");")
+                    })
+                })
             })?;
-            f.writeln("catch(java.io.IOException e)")?;
+            f.writeln("catch(Exception e)")?;
             blocked(f, |f| {
                 f.writeln("System.err.println(\"Native code library failed to load: \" + e);")?;
                 f.writeln("System.exit(1);")
@@ -264,13 +291,20 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         f.newline()?;
 
         // Load library helper function
-        f.writeln("private static void loadLibrary(String directory, String name, String extension) throws java.io.IOException {")?;
-        f.writeln("    java.io.InputStream stream = NativeFunctions.class.getResourceAsStream(\"/\" + directory + \"/\" + name + \".\" + extension);")?;
-        f.writeln("    java.nio.file.Path tempFilePath = java.nio.file.Files.createTempFile(name, \".\" + extension);")?;
-        f.writeln("    tempFilePath.toFile().deleteOnExit();")?;
-        f.writeln("    java.nio.file.Files.copy(stream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);")?;
-        f.writeln("    System.load(tempFilePath.toString());")?;
-        f.writeln("}")?;
+        f.writeln("private static boolean loadLibrary(String directory, String name, String extension) throws Exception")?;
+        blocked(f, |f| {
+            f.writeln("try")?;
+            blocked(f, |f| {
+                f.writeln("java.io.InputStream stream = NativeFunctions.class.getResourceAsStream(\"/\" + directory + \"/\" + name + \".\" + extension);")?;
+                f.writeln("java.nio.file.Path tempFilePath = java.nio.file.Files.createTempFile(name, \".\" + extension);")?;
+                f.writeln("tempFilePath.toFile().deleteOnExit();")?;
+                f.writeln("java.nio.file.Files.copy(stream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);")?;
+                f.writeln("System.load(tempFilePath.toString());")?;
+                f.writeln("return true;")
+            })?;
+            f.writeln("catch(Exception e)")?;
+            blocked(f, |f| f.writeln("return false;"))
+        })?;
 
         f.newline()?;
 

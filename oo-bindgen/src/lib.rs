@@ -655,7 +655,7 @@ impl LibraryBuilder {
             structs.insert(structure.declaration(), structure.clone());
         }
         for native_struct in self.native_structs.values() {
-            if !self.defined_structs.contains_key(&native_struct) {
+            if !self.defined_structs.contains_key(native_struct) {
                 structs.insert(
                     native_struct.declaration(),
                     StructHandle::new(Struct::new(native_struct.clone())),
@@ -671,7 +671,7 @@ impl LibraryBuilder {
                 Statement::NativeStructDeclaration(handle) => {
                     symbols.insert(
                         handle.name.clone(),
-                        Symbol::Struct(structs.get(&handle).unwrap().clone()),
+                        Symbol::Struct(structs.get(handle).unwrap().clone()),
                     );
                 }
                 Statement::NativeStructDefinition(_) => (),
@@ -774,7 +774,7 @@ impl LibraryBuilder {
         declaration: &NativeStructDeclarationHandle,
     ) -> Result<NativeStructBuilder> {
         self.validate_native_struct_declaration(declaration)?;
-        if !self.native_structs.contains_key(&declaration) {
+        if !self.native_structs.contains_key(declaration) {
             Ok(NativeStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::NativeStructAlreadyDefined {
@@ -785,7 +785,7 @@ impl LibraryBuilder {
 
     pub fn define_struct(&mut self, definition: &NativeStructHandle) -> Result<StructBuilder> {
         self.validate_native_struct(definition)?;
-        if !self.defined_structs.contains_key(&definition) {
+        if !self.defined_structs.contains_key(definition) {
             Ok(StructBuilder::new(self, definition.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
@@ -822,7 +822,7 @@ impl LibraryBuilder {
 
     pub fn define_class(&mut self, declaration: &ClassDeclarationHandle) -> Result<ClassBuilder> {
         self.validate_class_declaration(declaration)?;
-        if !self.classes.contains_key(&declaration) {
+        if !self.classes.contains_key(declaration) {
             Ok(ClassBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::ClassAlreadyDefined {

@@ -81,12 +81,7 @@ pub(crate) fn generate(
 
         // Write the Action<>/Func<> based implementation if it's a functional interface
         if interface.is_functional() {
-            generate_functional_callback(
-                f,
-                &interface,
-                interface.callbacks().next().unwrap(),
-                lib,
-            )?;
+            generate_functional_callback(f, interface, interface.callbacks().next().unwrap(), lib)?;
             f.newline()?;
         }
 

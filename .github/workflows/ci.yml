@@ -300,7 +300,7 @@ jobs:
           path: tests/bindings/c/generated
   # Package all the generated bindings
   packaging:
-    needs: [lock, bindings, cross]
+    needs: [lock, bindings, bindings-aarch64, cross]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

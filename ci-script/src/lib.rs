@@ -147,9 +147,11 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 
     builder.generate(package);
 
-    if !package && run_tests {
-        builder.build();
-        builder.test();
+    if !package {
+        if run_tests {
+            builder.build();
+            builder.test();
+        }
     } else {
         builder.package();
     }
@@ -203,7 +205,7 @@ impl<'a> CBindingBuilder<'a> {
             platform_location: self.platforms.iter().next().unwrap(),
         };
 
-        c_oo_bindgen::generate_doxygen(&self.settings.library, &config)
+        c_oo_bindgen::generate_doxygen(self.settings.library, &config)
             .expect("failed to package C lib");
     }
 
@@ -254,7 +256,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
                 platform_location: platform.clone(),
             };
 
-            c_oo_bindgen::generate_c_package(&self.settings.library, &config)
+            c_oo_bindgen::generate_c_package(self.settings.library, &config)
                 .expect("failed to package C lib");
         }
     }
@@ -493,11 +495,20 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
             // You: *still puzzled about the situation, but accepting this hack*
             let target_dir = pathdiff::diff_paths("./target", self.rust_build_dir()).unwrap();
             let mut cmd = Command::new("cargo");
+
+            let current_platform = Platform::from_target_triple(env!("TARGET_TRIPLE")).unwrap();
+
             cmd.current_dir(self.rust_build_dir()).args(&[
                 "build",
                 "--target-dir",
                 &target_dir.to_string_lossy(),
             ]);
+
+            if current_platform == Platform::LinuxArm8Gnu {
+                // This is a hack in order to have the CI properly work
+                // It is due to how `cross` works.
+                cmd.args(&["--target", env!("TARGET_TRIPLE")]);
+            }
 
             if env!("PROFILE") == "release" {
                 cmd.arg("--release");

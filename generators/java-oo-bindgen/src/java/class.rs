@@ -136,7 +136,7 @@ fn generate_constructor(
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, &constructor, &format!("{} object = ", classname), false)?;
+        call_native_function(f, constructor, &format!("{} object = ", classname), false)?;
         f.writeln("this.self = object.self;")?;
         f.writeln("object.disposed.set(true);")
     })

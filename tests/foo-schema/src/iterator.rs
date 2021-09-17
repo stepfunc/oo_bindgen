@@ -1,4 +1,5 @@
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -20,7 +21,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define the iterator item structure
     let iterator_item = lib
         .define_native_struct(&iterator_item)?
-        .add("value", Type::Basic(BasicType::Uint8), "Character value")?
+        .add("value", BasicType::Uint8, "Character value")?
         .doc("Single iterator item")?
         .build()?;
 

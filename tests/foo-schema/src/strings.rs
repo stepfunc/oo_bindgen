@@ -1,4 +1,5 @@
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -41,7 +42,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let stringclass_length_func = lib
         .declare_native_function("string_length")?
         .param("value", Type::String, "String")?
-        .return_type(ReturnType::new(BasicType::Uint32.into(), "String length"))?
+        .return_type(ReturnType::new(BasicType::Uint32, "String length"))?
         .doc("Get the string length")?
         .build()?;
 

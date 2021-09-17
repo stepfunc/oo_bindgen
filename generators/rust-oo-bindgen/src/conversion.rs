@@ -4,6 +4,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::types::BasicType;
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -20,17 +21,17 @@ pub(crate) trait RustType {
 impl RustType for BasicType {
     fn as_rust_type(&self) -> String {
         match self {
-            BasicType::Bool => "bool".to_string(),
-            BasicType::Uint8 => "u8".to_string(),
-            BasicType::Sint8 => "i8".to_string(),
-            BasicType::Uint16 => "u16".to_string(),
-            BasicType::Sint16 => "i16".to_string(),
-            BasicType::Uint32 => "u32".to_string(),
-            BasicType::Sint32 => "i32".to_string(),
-            BasicType::Uint64 => "u64".to_string(),
-            BasicType::Sint64 => "i64".to_string(),
-            BasicType::Float => "f32".to_string(),
-            BasicType::Double => "f64".to_string(),
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "u8".to_string(),
+            Self::Sint8 => "i8".to_string(),
+            Self::Uint16 => "u16".to_string(),
+            Self::Sint16 => "i16".to_string(),
+            Self::Uint32 => "u32".to_string(),
+            Self::Sint32 => "i32".to_string(),
+            Self::Uint64 => "u64".to_string(),
+            Self::Sint64 => "i64".to_string(),
+            Self::Float => "f32".to_string(),
+            Self::Double => "f64".to_string(),
         }
     }
 

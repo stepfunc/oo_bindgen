@@ -1,43 +1,9 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
+use crate::types::BasicType;
 use crate::*;
 use std::time::Duration;
-
-/// Basic (primitive) types are easily convertible without any kind of allocation
-/// or cleanup issues in the target language
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum BasicType {
-    Bool,
-    Uint8,
-    Sint8,
-    Uint16,
-    Sint16,
-    Uint32,
-    Sint32,
-    Uint64,
-    Sint64,
-    Float,
-    Double,
-}
-
-impl BasicType {
-    pub fn is_unsigned_integer(&self) -> bool {
-        match self {
-            Self::Bool => false,
-            Self::Uint8 => true,
-            Self::Sint8 => false,
-            Self::Uint16 => true,
-            Self::Sint16 => false,
-            Self::Uint32 => true,
-            Self::Sint32 => false,
-            Self::Uint64 => true,
-            Self::Sint64 => false,
-            Self::Float => false,
-            Self::Double => false,
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
@@ -55,12 +21,6 @@ pub enum Type {
 
     // Not native types
     Duration(DurationMapping),
-}
-
-impl From<BasicType> for Type {
-    fn from(t: BasicType) -> Self {
-        Type::Basic(t)
-    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
@@ -108,8 +68,8 @@ impl ReturnType {
         ReturnType::Void
     }
 
-    pub fn new<D: Into<DocString>>(return_type: Type, doc: D) -> Self {
-        ReturnType::Type(return_type, doc.into())
+    pub fn new<D: Into<DocString>, T: Into<Type>>(return_type: T, doc: D) -> Self {
+        ReturnType::Type(return_type.into(), doc.into())
     }
 
     pub fn is_void(&self) -> bool {
@@ -191,12 +151,14 @@ impl<'a> NativeFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<T: Into<String>, D: Into<DocString>>(
+    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<Type>>(
         mut self,
         name: T,
-        param_type: Type,
+        param_type: P,
         doc: D,
     ) -> Result<Self> {
+        let param_type = param_type.into();
+
         self.lib.validate_type(&param_type)?;
         self.params.push(Parameter {
             name: name.into(),

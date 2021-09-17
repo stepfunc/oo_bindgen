@@ -4,6 +4,7 @@ use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 
 pub(crate) trait DotnetType {
     fn as_dotnet_type(&self) -> String;
@@ -16,17 +17,17 @@ pub(crate) trait DotnetType {
 impl DotnetType for BasicType {
     fn as_dotnet_type(&self) -> String {
         match self {
-            BasicType::Bool => "bool".to_string(),
-            BasicType::Uint8 => "byte".to_string(),
-            BasicType::Sint8 => "sbyte".to_string(),
-            BasicType::Uint16 => "ushort".to_string(),
-            BasicType::Sint16 => "short".to_string(),
-            BasicType::Uint32 => "uint".to_string(),
-            BasicType::Sint32 => "int".to_string(),
-            BasicType::Uint64 => "ulong".to_string(),
-            BasicType::Sint64 => "long".to_string(),
-            BasicType::Float => "float".to_string(),
-            BasicType::Double => "double".to_string(),
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "byte".to_string(),
+            Self::Sint8 => "sbyte".to_string(),
+            Self::Uint16 => "ushort".to_string(),
+            Self::Sint16 => "short".to_string(),
+            Self::Uint32 => "uint".to_string(),
+            Self::Sint32 => "int".to_string(),
+            Self::Uint64 => "ulong".to_string(),
+            Self::Sint64 => "long".to_string(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
         }
     }
 

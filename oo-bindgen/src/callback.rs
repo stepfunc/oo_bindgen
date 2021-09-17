@@ -190,12 +190,14 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: Into<String>, D: Into<DocString>>(
+    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<Type>>(
         mut self,
         name: S,
-        param_type: Type,
+        param_type: P,
         doc: D,
     ) -> Result<Self> {
+        let param_type: Type = param_type.into();
+
         self.builder.lib.validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.into(),

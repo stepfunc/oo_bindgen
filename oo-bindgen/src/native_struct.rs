@@ -1,6 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
+use crate::types::BasicType;
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -114,17 +115,7 @@ impl StructElementType {
 impl From<Type> for StructElementType {
     fn from(from: Type) -> Self {
         match from {
-            Type::Basic(BasicType::Bool) => Self::Bool(None),
-            Type::Basic(BasicType::Uint8) => Self::Uint8(None),
-            Type::Basic(BasicType::Sint8) => Self::Sint8(None),
-            Type::Basic(BasicType::Uint16) => Self::Uint16(None),
-            Type::Basic(BasicType::Sint16) => Self::Sint16(None),
-            Type::Basic(BasicType::Uint32) => Self::Uint32(None),
-            Type::Basic(BasicType::Sint32) => Self::Sint32(None),
-            Type::Basic(BasicType::Uint64) => Self::Uint64(None),
-            Type::Basic(BasicType::Sint64) => Self::Sint64(None),
-            Type::Basic(BasicType::Float) => Self::Float(None),
-            Type::Basic(BasicType::Double) => Self::Double(None),
+            Type::Basic(x) => x.into(),
             Type::String => Self::String(None),
             Type::Struct(handle) => Self::Struct(handle),
             Type::StructRef(handle) => Self::StructRef(handle),

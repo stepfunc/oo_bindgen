@@ -2,6 +2,7 @@ use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -11,17 +12,17 @@ pub(crate) trait JavaType {
 impl JavaType for BasicType {
     fn as_java_primitive(&self) -> String {
         match self {
-            BasicType::Bool => "boolean".to_string(),
-            BasicType::Uint8 => "UByte".to_string(),
-            BasicType::Sint8 => "byte".to_string(),
-            BasicType::Uint16 => "UShort".to_string(),
-            BasicType::Sint16 => "short".to_string(),
-            BasicType::Uint32 => "UInteger".to_string(),
-            BasicType::Sint32 => "int".to_string(),
-            BasicType::Uint64 => "ULong".to_string(),
-            BasicType::Sint64 => "long".to_string(),
-            BasicType::Float => "float".to_string(),
-            BasicType::Double => "double".to_string(),
+            Self::Bool => "boolean".to_string(),
+            Self::Uint8 => "UByte".to_string(),
+            Self::Sint8 => "byte".to_string(),
+            Self::Uint16 => "UShort".to_string(),
+            Self::Sint16 => "short".to_string(),
+            Self::Uint32 => "UInteger".to_string(),
+            Self::Sint32 => "int".to_string(),
+            Self::Uint64 => "ULong".to_string(),
+            Self::Sint64 => "long".to_string(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
         }
     }
 

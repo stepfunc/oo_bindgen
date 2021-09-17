@@ -56,6 +56,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 use std::fs;
 use std::io::Write;
@@ -121,17 +122,17 @@ impl CFormatting for Symbol {
 impl CFormatting for BasicType {
     fn to_c_type(&self, _: &str) -> String {
         match self {
-            BasicType::Bool => "bool".to_string(),
-            BasicType::Uint8 => "uint8_t".to_string(),
-            BasicType::Sint8 => "int8_t".to_string(),
-            BasicType::Uint16 => "uint16_t".to_string(),
-            BasicType::Sint16 => "int16_t".to_string(),
-            BasicType::Uint32 => "uint32_t".to_string(),
-            BasicType::Sint32 => "int32_t".to_string(),
-            BasicType::Uint64 => "uint64_t".to_string(),
-            BasicType::Sint64 => "int64_t".to_string(),
-            BasicType::Float => "float".to_string(),
-            BasicType::Double => "double".to_string(),
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "uint8_t".to_string(),
+            Self::Sint8 => "int8_t".to_string(),
+            Self::Uint16 => "uint16_t".to_string(),
+            Self::Sint16 => "int16_t".to_string(),
+            Self::Uint32 => "uint32_t".to_string(),
+            Self::Sint32 => "int32_t".to_string(),
+            Self::Uint64 => "uint64_t".to_string(),
+            Self::Sint64 => "int64_t".to_string(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
         }
     }
 }

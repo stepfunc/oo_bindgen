@@ -1,4 +1,5 @@
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -69,9 +70,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::ClassRef(cbsource.clone()),
             "Callback source",
         )?
-        .param("value", BasicType::Uint32.into(), "New value")?
+        .param("value", BasicType::Uint32, "New value")?
         .return_type(ReturnType::new(
-            BasicType::Uint32.into(),
+            BasicType::Uint32,
             "Value returned by the callback",
         ))?
         .doc("Set the value and call all the callbacks")?

@@ -118,20 +118,28 @@ impl CFormatting for Symbol {
     }
 }
 
+impl CFormatting for BasicType {
+    fn to_c_type(&self, _: &str) -> String {
+        match self {
+            BasicType::Bool => "bool".to_string(),
+            BasicType::Uint8 => "uint8_t".to_string(),
+            BasicType::Sint8 => "int8_t".to_string(),
+            BasicType::Uint16 => "uint16_t".to_string(),
+            BasicType::Sint16 => "int16_t".to_string(),
+            BasicType::Uint32 => "uint32_t".to_string(),
+            BasicType::Sint32 => "int32_t".to_string(),
+            BasicType::Uint64 => "uint64_t".to_string(),
+            BasicType::Sint64 => "int64_t".to_string(),
+            BasicType::Float => "float".to_string(),
+            BasicType::Double => "double".to_string(),
+        }
+    }
+}
+
 impl CFormatting for Type {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "uint8_t".to_string(),
-            Type::Sint8 => "int8_t".to_string(),
-            Type::Uint16 => "uint16_t".to_string(),
-            Type::Sint16 => "int16_t".to_string(),
-            Type::Uint32 => "uint32_t".to_string(),
-            Type::Sint32 => "int32_t".to_string(),
-            Type::Uint64 => "uint64_t".to_string(),
-            Type::Sint64 => "int64_t".to_string(),
-            Type::Float => "float".to_string(),
-            Type::Double => "double".to_string(),
+            Type::Basic(b) => b.to_c_type(prefix),
             Type::String => "const char*".to_string(),
             Type::Struct(handle) => handle.to_c_type(prefix),
             Type::StructRef(handle) => format!("{}*", handle.to_c_type(prefix)),

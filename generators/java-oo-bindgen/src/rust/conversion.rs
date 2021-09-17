@@ -40,20 +40,173 @@ pub(crate) trait JniType {
     fn default_value(&self) -> &str;
 }
 
+impl JniType for BasicType {
+    fn as_raw_jni_type(&self) -> &str {
+        match self {
+            Self::Bool => "jni::sys::jboolean",
+            Self::Uint8 => "jni::sys::jobject",
+            Self::Sint8 => "jni::sys::jbyte",
+            Self::Uint16 => "jni::sys::jobject",
+            Self::Sint16 => "jni::sys::jshort",
+            Self::Uint32 => "jni::sys::jobject",
+            Self::Sint32 => "jni::sys::jint",
+            Self::Uint64 => "jni::sys::jobject",
+            Self::Sint64 => "jni::sys::jlong",
+            Self::Float => "jni::sys::jfloat",
+            Self::Double => "jni::sys::jdouble",
+        }
+    }
+
+    fn as_jni_sig(&self, _lib_path: &str) -> String {
+        match self {
+            Self::Bool => "Z".to_string(),
+            Self::Uint8 => "Lorg/joou/UByte;".to_string(),
+            Self::Sint8 => "B".to_string(),
+            Self::Uint16 => "Lorg/joou/UShort;".to_string(),
+            Self::Sint16 => "S".to_string(),
+            Self::Uint32 => "Lorg/joou/UInteger;".to_string(),
+            Self::Sint32 => "I".to_string(),
+            Self::Uint64 => "Lorg/joou/ULong;".to_string(),
+            Self::Sint64 => "J".to_string(),
+            Self::Float => "F".to_string(),
+            Self::Double => "D".to_string(),
+        }
+    }
+
+    fn as_rust_type(&self, _ffi_name: &str) -> String {
+        match self {
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "u8".to_string(),
+            Self::Sint8 => "i8".to_string(),
+            Self::Uint16 => "u16".to_string(),
+            Self::Sint16 => "i16".to_string(),
+            Self::Uint32 => "u32".to_string(),
+            Self::Sint32 => "i32".to_string(),
+            Self::Uint64 => "u64".to_string(),
+            Self::Sint64 => "i64".to_string(),
+            Self::Float => "f32".to_string(),
+            Self::Double => "f64".to_string(),
+        }
+    }
+
+    fn convert_jvalue(&self) -> &str {
+        match self {
+            Self::Bool => "z().unwrap() as u8",
+            Self::Uint8 => "l().unwrap().into_inner()",
+            Self::Sint8 => "b().unwrap()",
+            Self::Uint16 => "l().unwrap().into_inner()",
+            Self::Sint16 => "s().unwrap()",
+            Self::Uint32 => "l().unwrap().into_inner()",
+            Self::Sint32 => "i().unwrap()",
+            Self::Uint64 => "l().unwrap().into_inner()",
+            Self::Sint64 => "j().unwrap()",
+            Self::Float => "f().unwrap()",
+            Self::Double => "d().unwrap()",
+        }
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        _lib_name: &str,
+        _prefix: &str,
+    ) -> FormattingResult<()> {
+        match self {
+            Self::Bool => f.writeln(&format!(
+                "{}_cache.primitives.boolean_value(&_env, {})",
+                to, from
+            )),
+            Self::Uint8 => UnsignedConverter("ubyte".to_string()).convert_to_rust(f, from, to),
+            Self::Sint8 => f.writeln(&format!(
+                "{}_cache.primitives.byte_value(&_env, {})",
+                to, from
+            )),
+            Self::Uint16 => UnsignedConverter("ushort".to_string()).convert_to_rust(f, from, to),
+            Self::Sint16 => f.writeln(&format!(
+                "{}_cache.primitives.short_value(&_env, {})",
+                to, from
+            )),
+            Self::Uint32 => UnsignedConverter("uinteger".to_string()).convert_to_rust(f, from, to),
+            Self::Sint32 => f.writeln(&format!(
+                "{}_cache.primitives.integer_value(&_env, {})",
+                to, from
+            )),
+            Self::Uint64 => UnsignedConverter("ulong".to_string()).convert_to_rust(f, from, to),
+            Self::Sint64 => f.writeln(&format!(
+                "{}_cache.primitives.long_value(&_env, {})",
+                to, from
+            )),
+            Self::Float => f.writeln(&format!(
+                "{}_cache.primitives.float_value(&_env, {})",
+                to, from
+            )),
+            Self::Double => f.writeln(&format!(
+                "{}_cache.primitives.double_value(&_env, {})",
+                to, from
+            )),
+        }
+    }
+
+    fn conversion(&self, _lib_name: &str, _prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        match self {
+            Self::Bool => Some(Box::new(BooleanConverter)),
+            Self::Uint8 => Some(Box::new(UnsignedConverter("ubyte".to_string()))),
+            Self::Sint8 => None,
+            Self::Uint16 => Some(Box::new(UnsignedConverter("ushort".to_string()))),
+            Self::Sint16 => None,
+            Self::Uint32 => Some(Box::new(UnsignedConverter("uinteger".to_string()))),
+            Self::Sint32 => None,
+            Self::Uint64 => Some(Box::new(UnsignedConverter("ulong".to_string()))),
+            Self::Sint64 => None,
+            Self::Float => None,
+            Self::Double => None,
+        }
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        // only unsigned integers require special cleanup since they're wrapped
+        self.is_unsigned_integer()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        match self {
+            Self::Bool => Ok(()),
+            Self::Uint8 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Sint8 => Ok(()),
+            Self::Uint16 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Sint16 => Ok(()),
+            Self::Uint32 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Sint32 => Ok(()),
+            Self::Uint64 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Sint64 => Ok(()),
+            Self::Float => Ok(()),
+            Self::Double => Ok(()),
+        }
+    }
+
+    fn default_value(&self) -> &str {
+        match self {
+            Self::Bool => "0",
+            Self::Uint8 => "jni::objects::JObject::null().into_inner()",
+            Self::Sint8 => "0",
+            Self::Uint16 => "jni::objects::JObject::null().into_inner()",
+            Self::Sint16 => "0",
+            Self::Uint32 => "jni::objects::JObject::null().into_inner()",
+            Self::Sint32 => "0",
+            Self::Uint64 => "jni::objects::JObject::null().into_inner()",
+            Self::Sint64 => "0",
+            Self::Float => "0.0",
+            Self::Double => "0.0",
+        }
+    }
+}
+
 impl JniType for Type {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            Type::Bool => "jni::sys::jboolean",
-            Type::Uint8 => "jni::sys::jobject",
-            Type::Sint8 => "jni::sys::jbyte",
-            Type::Uint16 => "jni::sys::jobject",
-            Type::Sint16 => "jni::sys::jshort",
-            Type::Uint32 => "jni::sys::jobject",
-            Type::Sint32 => "jni::sys::jint",
-            Type::Uint64 => "jni::sys::jobject",
-            Type::Sint64 => "jni::sys::jlong",
-            Type::Float => "jni::sys::jfloat",
-            Type::Double => "jni::sys::jdouble",
+            Type::Basic(x) => x.as_raw_jni_type(),
             Type::String => "jni::sys::jstring",
             Type::Struct(_) => "jni::sys::jobject",
             Type::StructRef(_) => "jni::sys::jobject",
@@ -68,17 +221,7 @@ impl JniType for Type {
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            Type::Bool => "Z".to_string(),
-            Type::Uint8 => "Lorg/joou/UByte;".to_string(),
-            Type::Sint8 => "B".to_string(),
-            Type::Uint16 => "Lorg/joou/UShort;".to_string(),
-            Type::Sint16 => "S".to_string(),
-            Type::Uint32 => "Lorg/joou/UInteger;".to_string(),
-            Type::Sint32 => "I".to_string(),
-            Type::Uint64 => "Lorg/joou/ULong;".to_string(),
-            Type::Sint64 => "J".to_string(),
-            Type::Float => "F".to_string(),
-            Type::Double => "D".to_string(),
+            Type::Basic(x) => x.as_jni_sig(lib_path),
             Type::String => "Ljava/lang/String;".to_string(),
             Type::Struct(handle) => format!("L{}/{};", lib_path, handle.name().to_camel_case()),
             Type::StructRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
@@ -93,17 +236,7 @@ impl JniType for Type {
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "u8".to_string(),
-            Type::Sint8 => "i8".to_string(),
-            Type::Uint16 => "u16".to_string(),
-            Type::Sint16 => "i16".to_string(),
-            Type::Uint32 => "u32".to_string(),
-            Type::Sint32 => "i32".to_string(),
-            Type::Uint64 => "u64".to_string(),
-            Type::Sint64 => "i64".to_string(),
-            Type::Float => "f32".to_string(),
-            Type::Double => "f64".to_string(),
+            Type::Basic(x) => x.as_rust_type(ffi_name),
             Type::String => "*const std::os::raw::c_char".to_string(),
             Type::Struct(handle) => format!("{}::ffi::{}", ffi_name, handle.name().to_camel_case()),
             Type::StructRef(handle) => {
@@ -129,17 +262,7 @@ impl JniType for Type {
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            Type::Bool => "z().unwrap() as u8",
-            Type::Uint8 => "l().unwrap().into_inner()",
-            Type::Sint8 => "b().unwrap()",
-            Type::Uint16 => "l().unwrap().into_inner()",
-            Type::Sint16 => "s().unwrap()",
-            Type::Uint32 => "l().unwrap().into_inner()",
-            Type::Sint32 => "i().unwrap()",
-            Type::Uint64 => "l().unwrap().into_inner()",
-            Type::Sint64 => "j().unwrap()",
-            Type::Float => "f().unwrap()",
-            Type::Double => "d().unwrap()",
+            Type::Basic(x) => x.convert_jvalue(),
             Type::String => "l().unwrap().into_inner()",
             Type::Struct(_) => "l().unwrap().into_inner()",
             Type::StructRef(_) => "l().unwrap().into_inner()",
@@ -161,38 +284,7 @@ impl JniType for Type {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            Type::Bool => f.writeln(&format!(
-                "{}_cache.primitives.boolean_value(&_env, {})",
-                to, from
-            )),
-            Type::Uint8 => UnsignedConverter("ubyte".to_string()).convert_to_rust(f, from, to),
-            Type::Sint8 => f.writeln(&format!(
-                "{}_cache.primitives.byte_value(&_env, {})",
-                to, from
-            )),
-            Type::Uint16 => UnsignedConverter("ushort".to_string()).convert_to_rust(f, from, to),
-            Type::Sint16 => f.writeln(&format!(
-                "{}_cache.primitives.short_value(&_env, {})",
-                to, from
-            )),
-            Type::Uint32 => UnsignedConverter("uinteger".to_string()).convert_to_rust(f, from, to),
-            Type::Sint32 => f.writeln(&format!(
-                "{}_cache.primitives.integer_value(&_env, {})",
-                to, from
-            )),
-            Type::Uint64 => UnsignedConverter("ulong".to_string()).convert_to_rust(f, from, to),
-            Type::Sint64 => f.writeln(&format!(
-                "{}_cache.primitives.long_value(&_env, {})",
-                to, from
-            )),
-            Type::Float => f.writeln(&format!(
-                "{}_cache.primitives.float_value(&_env, {})",
-                to, from
-            )),
-            Type::Double => f.writeln(&format!(
-                "{}_cache.primitives.double_value(&_env, {})",
-                to, from
-            )),
+            Type::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Type::String => StringConverter.convert_to_rust(f, from, to),
             Type::Struct(handle) => StructConverter(handle.clone()).convert_to_rust(f, from, to),
             Type::StructRef(handle) => {
@@ -217,17 +309,7 @@ impl JniType for Type {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            Type::Bool => Some(Box::new(BooleanConverter)),
-            Type::Uint8 => Some(Box::new(UnsignedConverter("ubyte".to_string()))),
-            Type::Sint8 => None,
-            Type::Uint16 => Some(Box::new(UnsignedConverter("ushort".to_string()))),
-            Type::Sint16 => None,
-            Type::Uint32 => Some(Box::new(UnsignedConverter("uinteger".to_string()))),
-            Type::Sint32 => None,
-            Type::Uint64 => Some(Box::new(UnsignedConverter("ulong".to_string()))),
-            Type::Sint64 => None,
-            Type::Float => None,
-            Type::Double => None,
+            Type::Basic(x) => x.conversion(lib_name, prefix),
             Type::String => Some(Box::new(StringConverter)),
             Type::Struct(handle) => Some(Box::new(StructConverter(handle.clone()))),
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
@@ -250,17 +332,7 @@ impl JniType for Type {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            Type::Bool => false,
-            Type::Uint8 => true,
-            Type::Sint8 => false,
-            Type::Uint16 => true,
-            Type::Sint16 => false,
-            Type::Uint32 => true,
-            Type::Sint32 => false,
-            Type::Uint64 => true,
-            Type::Sint64 => false,
-            Type::Float => false,
-            Type::Double => false,
+            Type::Basic(x) => x.requires_local_ref_cleanup(),
             Type::String => true,
             Type::Struct(_) => true,
             Type::StructRef(_) => true,
@@ -275,17 +347,7 @@ impl JniType for Type {
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            Type::Bool => Ok(()),
-            Type::Uint8 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Sint8 => Ok(()),
-            Type::Uint16 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Sint16 => Ok(()),
-            Type::Uint32 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Sint32 => Ok(()),
-            Type::Uint64 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Sint64 => Ok(()),
-            Type::Float => Ok(()),
-            Type::Double => Ok(()),
+            Type::Basic(x) => x.check_null(f, param_name),
             Type::String => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::Struct(handle) => {
                 f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name))?;
@@ -308,17 +370,7 @@ impl JniType for Type {
 
     fn default_value(&self) -> &str {
         match self {
-            Type::Bool => "0",
-            Type::Uint8 => "jni::objects::JObject::null().into_inner()",
-            Type::Sint8 => "0",
-            Type::Uint16 => "jni::objects::JObject::null().into_inner()",
-            Type::Sint16 => "0",
-            Type::Uint32 => "jni::objects::JObject::null().into_inner()",
-            Type::Sint32 => "0",
-            Type::Uint64 => "jni::objects::JObject::null().into_inner()",
-            Type::Sint64 => "0",
-            Type::Float => "0.0",
-            Type::Double => "0.0",
+            Type::Basic(x) => x.default_value(),
             Type::String => "jni::objects::JObject::null().into_inner()",
             Type::Struct(_) => "jni::objects::JObject::null().into_inner()",
             Type::StructRef(_) => "jni::objects::JObject::null().into_inner()",

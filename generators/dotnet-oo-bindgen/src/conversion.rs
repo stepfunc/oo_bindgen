@@ -13,21 +13,93 @@ pub(crate) trait DotnetType {
     fn convert_from_native(&self, from: &str) -> Option<String>;
 }
 
+impl DotnetType for BasicType {
+    fn as_dotnet_type(&self) -> String {
+        match self {
+            BasicType::Bool => "bool".to_string(),
+            BasicType::Uint8 => "byte".to_string(),
+            BasicType::Sint8 => "sbyte".to_string(),
+            BasicType::Uint16 => "ushort".to_string(),
+            BasicType::Sint16 => "short".to_string(),
+            BasicType::Uint32 => "uint".to_string(),
+            BasicType::Sint32 => "int".to_string(),
+            BasicType::Uint64 => "ulong".to_string(),
+            BasicType::Sint64 => "long".to_string(),
+            BasicType::Float => "float".to_string(),
+            BasicType::Double => "double".to_string(),
+        }
+    }
+
+    fn as_native_type(&self) -> String {
+        match self {
+            BasicType::Bool => "byte".to_string(),
+            BasicType::Uint8 => "byte".to_string(),
+            BasicType::Sint8 => "sbyte".to_string(),
+            BasicType::Uint16 => "ushort".to_string(),
+            BasicType::Sint16 => "short".to_string(),
+            BasicType::Uint32 => "uint".to_string(),
+            BasicType::Sint32 => "int".to_string(),
+            BasicType::Uint64 => "ulong".to_string(),
+            BasicType::Sint64 => "long".to_string(),
+            BasicType::Float => "float".to_string(),
+            BasicType::Double => "double".to_string(),
+        }
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        match self {
+            BasicType::Bool => Some(format!("Convert.ToByte({})", from)),
+            BasicType::Uint8 => None,
+            BasicType::Sint8 => None,
+            BasicType::Uint16 => None,
+            BasicType::Sint16 => None,
+            BasicType::Uint32 => None,
+            BasicType::Sint32 => None,
+            BasicType::Uint64 => None,
+            BasicType::Sint64 => None,
+            BasicType::Float => None,
+            BasicType::Double => None,
+        }
+    }
+
+    fn cleanup(&self, _: &str) -> Option<String> {
+        match self {
+            BasicType::Bool => None,
+            BasicType::Uint8 => None,
+            BasicType::Sint8 => None,
+            BasicType::Uint16 => None,
+            BasicType::Sint16 => None,
+            BasicType::Uint32 => None,
+            BasicType::Sint32 => None,
+            BasicType::Uint64 => None,
+            BasicType::Sint64 => None,
+            BasicType::Float => None,
+            BasicType::Double => None,
+        }
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        match self {
+            BasicType::Bool => Some(format!("Convert.ToBoolean({})", from)),
+            BasicType::Uint8 => None,
+            BasicType::Sint8 => None,
+            BasicType::Uint16 => None,
+            BasicType::Sint16 => None,
+            BasicType::Uint32 => None,
+            BasicType::Sint32 => None,
+            BasicType::Uint64 => None,
+            BasicType::Sint64 => None,
+            BasicType::Float => None,
+            BasicType::Double => None,
+        }
+    }
+}
+
 impl DotnetType for Type {
     /// Returns the .NET natural type
     fn as_dotnet_type(&self) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "byte".to_string(),
-            Type::Sint8 => "sbyte".to_string(),
-            Type::Uint16 => "ushort".to_string(),
-            Type::Sint16 => "short".to_string(),
-            Type::Uint32 => "uint".to_string(),
-            Type::Sint32 => "int".to_string(),
-            Type::Uint64 => "ulong".to_string(),
-            Type::Sint64 => "long".to_string(),
-            Type::Float => "float".to_string(),
-            Type::Double => "double".to_string(),
+            Type::Basic(x) => x.as_dotnet_type(),
             Type::String => "string".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(handle) => handle.name.to_camel_case(),
@@ -49,17 +121,7 @@ impl DotnetType for Type {
     /// Return the .NET representation of the native C type
     fn as_native_type(&self) -> String {
         match self {
-            Type::Bool => "byte".to_string(),
-            Type::Uint8 => "byte".to_string(),
-            Type::Sint8 => "sbyte".to_string(),
-            Type::Uint16 => "ushort".to_string(),
-            Type::Sint16 => "short".to_string(),
-            Type::Uint32 => "uint".to_string(),
-            Type::Sint32 => "int".to_string(),
-            Type::Uint64 => "ulong".to_string(),
-            Type::Sint64 => "long".to_string(),
-            Type::Float => "float".to_string(),
-            Type::Double => "double".to_string(),
+            Type::Basic(x) => x.as_dotnet_type(),
             Type::String => "IntPtr".to_string(),
             Type::Struct(handle) => format!("{}Native", handle.name().to_camel_case()),
             Type::StructRef(_) => "IntPtr".to_string(),
@@ -77,17 +139,7 @@ impl DotnetType for Type {
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            Type::Bool => Some(format!("Convert.ToByte({})", from)),
-            Type::Uint8 => None,
-            Type::Sint8 => None,
-            Type::Uint16 => None,
-            Type::Sint16 => None,
-            Type::Uint32 => None,
-            Type::Sint32 => None,
-            Type::Uint64 => None,
-            Type::Sint64 => None,
-            Type::Float => None,
-            Type::Double => None,
+            Type::Basic(x) => x.convert_to_native(from),
             Type::String => Some(format!("Helpers.RustString.ToNative({})", from)),
             Type::Struct(handle) => Some(format!(
                 "{}Native.ToNative({})",
@@ -122,17 +174,7 @@ impl DotnetType for Type {
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            Type::Bool => None,
-            Type::Uint8 => None,
-            Type::Sint8 => None,
-            Type::Uint16 => None,
-            Type::Sint16 => None,
-            Type::Uint32 => None,
-            Type::Sint32 => None,
-            Type::Uint64 => None,
-            Type::Sint64 => None,
-            Type::Float => None,
-            Type::Double => None,
+            Type::Basic(t) => t.cleanup(from),
             Type::String => Some(format!("Helpers.RustString.Destroy({});", from)),
             Type::Struct(_) => Some(format!("{}.Dispose();", from)),
             Type::StructRef(handle) => Some(format!(
@@ -155,17 +197,7 @@ impl DotnetType for Type {
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            Type::Bool => Some(format!("Convert.ToBoolean({})", from)),
-            Type::Uint8 => None,
-            Type::Sint8 => None,
-            Type::Uint16 => None,
-            Type::Sint16 => None,
-            Type::Uint32 => None,
-            Type::Sint32 => None,
-            Type::Uint64 => None,
-            Type::Sint64 => None,
-            Type::Float => None,
-            Type::Double => None,
+            Type::Basic(x) => x.convert_from_native(from),
             Type::String => Some(format!("Helpers.RustString.FromNative({})", from)),
             Type::Struct(handle) => Some(format!(
                 "{}Native.FromNative({})",

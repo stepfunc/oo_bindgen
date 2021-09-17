@@ -18,7 +18,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("collection_create_with_reserve")?
         .param(
             "reserve",
-            Type::Uint32,
+            BasicType::Uint32.into(),
             "Number of elements to pre-allocate",
         )?
         .return_type(ReturnType::new(
@@ -68,14 +68,17 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let collection_size_func = lib
         .declare_native_function("collection_size")?
         .param("col", Type::Collection(collection.clone()), "Collection")?
-        .return_type(ReturnType::new(Type::Uint32, "Size of the collection"))?
+        .return_type(ReturnType::new(
+            BasicType::Uint32.into(),
+            "Size of the collection",
+        ))?
         .doc("Get the size of a collection")?
         .build()?;
 
     let collection_get_func = lib
         .declare_native_function("collection_get")?
         .param("col", Type::Collection(collection), "Collection")?
-        .param("idx", Type::Uint32, "Index")?
+        .param("idx", BasicType::Uint32.into(), "Index")?
         .return_type(ReturnType::new(Type::String, "Value"))?
         .doc("Get an item from the collection")?
         .build()?;
@@ -87,7 +90,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::Collection(collection_with_reserve.clone()),
             "Collection",
         )?
-        .return_type(ReturnType::new(Type::Uint32, "Size of the collection"))?
+        .return_type(ReturnType::new(
+            BasicType::Uint32.into(),
+            "Size of the collection",
+        ))?
         .doc("Get the size of a collection")?
         .build()?;
 
@@ -98,7 +104,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::Collection(collection_with_reserve),
             "Collection",
         )?
-        .param("idx", Type::Uint32, "Index")?
+        .param("idx", BasicType::Uint32.into(), "Index")?
         .return_type(ReturnType::new(Type::String, "Value"))?
         .doc("Get an item from the collection")?
         .build()?;

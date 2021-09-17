@@ -8,21 +8,45 @@ pub(crate) trait JavaType {
     fn as_java_object(&self) -> String;
 }
 
+impl JavaType for BasicType {
+    fn as_java_primitive(&self) -> String {
+        match self {
+            BasicType::Bool => "boolean".to_string(),
+            BasicType::Uint8 => "UByte".to_string(),
+            BasicType::Sint8 => "byte".to_string(),
+            BasicType::Uint16 => "UShort".to_string(),
+            BasicType::Sint16 => "short".to_string(),
+            BasicType::Uint32 => "UInteger".to_string(),
+            BasicType::Sint32 => "int".to_string(),
+            BasicType::Uint64 => "ULong".to_string(),
+            BasicType::Sint64 => "long".to_string(),
+            BasicType::Float => "float".to_string(),
+            BasicType::Double => "double".to_string(),
+        }
+    }
+
+    fn as_java_object(&self) -> String {
+        match self {
+            Self::Bool => "Boolean".to_string(),
+            Self::Uint8 => "UByte".to_string(),
+            Self::Sint8 => "Byte".to_string(),
+            Self::Uint16 => "UShort".to_string(),
+            Self::Sint16 => "Short".to_string(),
+            Self::Uint32 => "UInteger".to_string(),
+            Self::Sint32 => "Integer".to_string(),
+            Self::Uint64 => "ULong".to_string(),
+            Self::Sint64 => "Long".to_string(),
+            Self::Float => "Float".to_string(),
+            Self::Double => "Double".to_string(),
+        }
+    }
+}
+
 impl JavaType for Type {
     /// Return the Java primitive type
     fn as_java_primitive(&self) -> String {
         match self {
-            Type::Bool => "boolean".to_string(),
-            Type::Uint8 => "UByte".to_string(),
-            Type::Sint8 => "byte".to_string(),
-            Type::Uint16 => "UShort".to_string(),
-            Type::Sint16 => "short".to_string(),
-            Type::Uint32 => "UInteger".to_string(),
-            Type::Sint32 => "int".to_string(),
-            Type::Uint64 => "ULong".to_string(),
-            Type::Sint64 => "long".to_string(),
-            Type::Float => "float".to_string(),
-            Type::Double => "double".to_string(),
+            Type::Basic(x) => x.as_java_primitive(),
             Type::String => "String".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(handle) => handle.name.to_camel_case(),
@@ -43,17 +67,7 @@ impl JavaType for Type {
     /// Returns the Java object type (for type parameter)
     fn as_java_object(&self) -> String {
         match self {
-            Type::Bool => "Boolean".to_string(),
-            Type::Uint8 => "UByte".to_string(),
-            Type::Sint8 => "Byte".to_string(),
-            Type::Uint16 => "UShort".to_string(),
-            Type::Sint16 => "Short".to_string(),
-            Type::Uint32 => "UInteger".to_string(),
-            Type::Sint32 => "Integer".to_string(),
-            Type::Uint64 => "ULong".to_string(),
-            Type::Sint64 => "Long".to_string(),
-            Type::Float => "Float".to_string(),
-            Type::Double => "Double".to_string(),
+            Type::Basic(x) => x.as_java_object(),
             Type::String => "String".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(handle) => handle.name.to_camel_case(),

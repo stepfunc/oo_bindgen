@@ -16,7 +16,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let iterator_item = lib
         .define_native_struct(&iterator_item)?
-        .add("value", Type::Uint8, "test")?
+        .add("value", Type::Basic(BasicType::Uint8), "test")?
         .doc("item type for iterator")?
         .build()?;
 

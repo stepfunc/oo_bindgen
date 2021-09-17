@@ -8,7 +8,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare each native function
     let testclass_new_func = lib
         .declare_native_function("testclass_new")?
-        .param("value", Type::Uint32, "Value")?
+        .param("value", BasicType::Uint32.into(), "Value")?
         .return_type(ReturnType::new(
             Type::ClassRef(testclass.clone()),
             "New TestClass",
@@ -42,7 +42,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::ClassRef(testclass.clone()),
             "TestClass handle",
         )?
-        .return_type(ReturnType::new(Type::Uint32, "Current value"))?
+        .return_type(ReturnType::new(BasicType::Uint32.into(), "Current value"))?
         .doc("Get value (don't forget the {param:testclass}!)")?
         .build()?;
 
@@ -60,7 +60,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let get_value_cb = lib
         .define_interface("GetValueCallback", "GetValue callback handler")?
         .callback("on_value", "On value callback")?
-        .param("value", Type::Uint32, "Value")?
+        .param("value", BasicType::Uint32.into(), "Value")?
         .ctx("data")?
         .return_type(ReturnType::void())?
         .build()?
@@ -87,7 +87,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let testclass_construction_counter = lib
         .declare_native_function("testclass_construction_counter")?
         .return_type(ReturnType::new(
-            Type::Uint32,
+            BasicType::Uint32.into(),
             "Number of calls to the constructor",
         ))?
         .doc("Get number of calls to the constructor")?

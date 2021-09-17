@@ -17,20 +17,60 @@ pub(crate) trait RustType {
     }
 }
 
+impl RustType for BasicType {
+    fn as_rust_type(&self) -> String {
+        match self {
+            BasicType::Bool => "bool".to_string(),
+            BasicType::Uint8 => "u8".to_string(),
+            BasicType::Sint8 => "i8".to_string(),
+            BasicType::Uint16 => "u16".to_string(),
+            BasicType::Sint16 => "i16".to_string(),
+            BasicType::Uint32 => "u32".to_string(),
+            BasicType::Sint32 => "i32".to_string(),
+            BasicType::Uint64 => "u64".to_string(),
+            BasicType::Sint64 => "i64".to_string(),
+            BasicType::Float => "f32".to_string(),
+            BasicType::Double => "f64".to_string(),
+        }
+    }
+
+    fn as_c_type(&self) -> String {
+        match self {
+            BasicType::Bool => "bool".to_string(),
+            BasicType::Uint8 => "u8".to_string(),
+            BasicType::Sint8 => "i8".to_string(),
+            BasicType::Uint16 => "u16".to_string(),
+            BasicType::Sint16 => "i16".to_string(),
+            BasicType::Uint32 => "u32".to_string(),
+            BasicType::Sint32 => "i32".to_string(),
+            BasicType::Uint64 => "u64".to_string(),
+            BasicType::Sint64 => "i64".to_string(),
+            BasicType::Float => "f32".to_string(),
+            BasicType::Double => "f64".to_string(),
+        }
+    }
+
+    fn is_copyable(&self) -> bool {
+        true
+    }
+
+    fn rust_requires_lifetime(&self) -> bool {
+        false
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        false
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        None
+    }
+}
+
 impl RustType for Type {
     fn as_rust_type(&self) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "u8".to_string(),
-            Type::Sint8 => "i8".to_string(),
-            Type::Uint16 => "u16".to_string(),
-            Type::Sint16 => "i16".to_string(),
-            Type::Uint32 => "u32".to_string(),
-            Type::Sint32 => "i32".to_string(),
-            Type::Uint64 => "u64".to_string(),
-            Type::Sint64 => "i64".to_string(),
-            Type::Float => "f32".to_string(),
-            Type::Double => "f64".to_string(),
+            Type::Basic(x) => x.as_rust_type(),
             Type::String => "&'a std::ffi::CStr".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
@@ -52,17 +92,7 @@ impl RustType for Type {
 
     fn as_c_type(&self) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "u8".to_string(),
-            Type::Sint8 => "i8".to_string(),
-            Type::Uint16 => "u16".to_string(),
-            Type::Sint16 => "i16".to_string(),
-            Type::Uint32 => "u32".to_string(),
-            Type::Sint32 => "i32".to_string(),
-            Type::Uint64 => "u64".to_string(),
-            Type::Sint64 => "i64".to_string(),
-            Type::Float => "f32".to_string(),
-            Type::Double => "f64".to_string(),
+            Type::Basic(x) => x.as_c_type(),
             Type::String => "*const std::os::raw::c_char".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
@@ -87,17 +117,7 @@ impl RustType for Type {
 
     fn is_copyable(&self) -> bool {
         match self {
-            Type::Bool => true,
-            Type::Uint8 => true,
-            Type::Sint8 => true,
-            Type::Uint16 => true,
-            Type::Sint16 => true,
-            Type::Uint32 => true,
-            Type::Sint32 => true,
-            Type::Uint64 => true,
-            Type::Sint64 => true,
-            Type::Float => true,
-            Type::Double => true,
+            Type::Basic(x) => x.is_copyable(),
             Type::String => true, // Just copying the reference
             Type::Struct(_) => false,
             Type::StructRef(_) => true,
@@ -112,17 +132,7 @@ impl RustType for Type {
 
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            Type::Bool => false,
-            Type::Uint8 => false,
-            Type::Sint8 => false,
-            Type::Uint16 => false,
-            Type::Sint16 => false,
-            Type::Uint32 => false,
-            Type::Sint32 => false,
-            Type::Uint64 => false,
-            Type::Sint64 => false,
-            Type::Float => false,
-            Type::Double => false,
+            Type::Basic(x) => x.rust_requires_lifetime(),
             Type::String => true,
             Type::Struct(_) => false,
             Type::StructRef(_) => false,
@@ -137,17 +147,7 @@ impl RustType for Type {
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            Type::Bool => false,
-            Type::Uint8 => false,
-            Type::Sint8 => false,
-            Type::Uint16 => false,
-            Type::Sint16 => false,
-            Type::Uint32 => false,
-            Type::Sint32 => false,
-            Type::Uint64 => false,
-            Type::Sint64 => false,
-            Type::Float => false,
-            Type::Double => false,
+            Type::Basic(x) => x.c_requires_lifetime(),
             Type::String => false,
             Type::Struct(_) => false,
             Type::StructRef(_) => false,
@@ -162,17 +162,7 @@ impl RustType for Type {
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self {
-            Type::Bool => None,
-            Type::Uint8 => None,
-            Type::Sint8 => None,
-            Type::Uint16 => None,
-            Type::Sint16 => None,
-            Type::Uint32 => None,
-            Type::Sint32 => None,
-            Type::Uint64 => None,
-            Type::Sint64 => None,
-            Type::Float => None,
-            Type::Double => None,
+            Type::Basic(x) => x.conversion(),
             Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),

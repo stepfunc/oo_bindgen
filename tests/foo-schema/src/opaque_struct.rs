@@ -1,4 +1,4 @@
-use oo_bindgen::native_function::{ReturnType, Type};
+use oo_bindgen::native_function::{BasicType, ReturnType, Type};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -7,7 +7,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let opaque_struct = lib
         .define_native_struct(&opaque_struct)?
         .make_opaque()
-        .add("id", Type::Uint64, "64-bit id")?
+        .add("id", Type::Basic(BasicType::Uint64), "64-bit id")?
         .doc("Opaque structure")?
         .build()?;
 
@@ -18,7 +18,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::StructRef(opaque_struct.declaration.clone()),
             "struct value",
         )?
-        .return_type(ReturnType::Type(Type::Uint64, "value of id field".into()))?
+        .return_type(ReturnType::Type(
+            BasicType::Uint64.into(),
+            "value of id field".into(),
+        ))?
         .doc("Get the id field of the struct")?
         .build()?;
 

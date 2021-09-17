@@ -1,5 +1,5 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::native_function::{ReturnType, Type};
+use oo_bindgen::native_function::{BasicType, ReturnType, Type};
 use oo_bindgen::native_struct::NativeStructHandle;
 use oo_bindgen::{BindingError, LibraryBuilder};
 
@@ -19,7 +19,7 @@ pub(crate) fn define(
     let get_special_number_fb = lib
         .declare_native_function("get_special_number")?
         .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::new(Type::Uint32, "unlocked value"))?
+        .return_type(ReturnType::new(BasicType::Uint32.into(), "unlocked value"))?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
         .build()?;
@@ -58,7 +58,10 @@ pub(crate) fn define(
             Type::ClassRef(my_class.clone()),
             "class instance",
         )?
-        .return_type(ReturnType::Type(Type::Uint32, "special value".into()))?
+        .return_type(ReturnType::Type(
+            BasicType::Uint32.into(),
+            "special value".into(),
+        ))?
         .fails_with(error_type)?
         .doc("extract a special value from the class instance")?
         .build()?;

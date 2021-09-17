@@ -6,8 +6,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let interface = lib
         .define_interface("CallbackInterface", "Test interface")?
         .callback("on_value", "On value callback")?
-        .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::new(Type::Uint32, "Some value"))?
+        .param("value", Type::Basic(BasicType::Uint32), "Value")?
+        .return_type(ReturnType::new(
+            Type::Basic(BasicType::Uint32),
+            "Some value",
+        ))?
         .build()?
         .callback("on_duration", "On duration callback")?
         .param(
@@ -66,9 +69,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             Type::ClassRef(cbsource.clone()),
             "Callback source",
         )?
-        .param("value", Type::Uint32, "New value")?
+        .param("value", BasicType::Uint32.into(), "New value")?
         .return_type(ReturnType::new(
-            Type::Uint32,
+            BasicType::Uint32.into(),
             "Value returned by the callback",
         ))?
         .doc("Set the value and call all the callbacks")?

@@ -4,8 +4,10 @@ use crate::iterator::IteratorHandle;
 use crate::*;
 use std::time::Duration;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Type {
+/// Basic (primitive) types are easily convertible without any kind of allocation
+/// or cleanup issues in the target language
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum BasicType {
     Bool,
     Uint8,
     Sint8,
@@ -17,6 +19,29 @@ pub enum Type {
     Sint64,
     Float,
     Double,
+}
+
+impl BasicType {
+    pub fn is_unsigned_integer(&self) -> bool {
+        match self {
+            Self::Bool => false,
+            Self::Uint8 => true,
+            Self::Sint8 => false,
+            Self::Uint16 => true,
+            Self::Sint16 => false,
+            Self::Uint32 => true,
+            Self::Sint32 => false,
+            Self::Uint64 => true,
+            Self::Sint64 => false,
+            Self::Float => false,
+            Self::Double => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+    Basic(BasicType),
     String,
 
     // Complex types
@@ -30,6 +55,12 @@ pub enum Type {
 
     // Not native types
     Duration(DurationMapping),
+}
+
+impl From<BasicType> for Type {
+    fn from(t: BasicType) -> Self {
+        Type::Basic(t)
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]

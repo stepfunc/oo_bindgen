@@ -122,7 +122,7 @@ impl DotnetType for Type {
     /// Return the .NET representation of the native C type
     fn as_native_type(&self) -> String {
         match self {
-            Type::Basic(x) => x.as_dotnet_type(),
+            Type::Basic(x) => x.as_native_type(),
             Type::String => "IntPtr".to_string(),
             Type::Struct(handle) => format!("{}Native", handle.name().to_camel_case()),
             Type::StructRef(_) => "IntPtr".to_string(),

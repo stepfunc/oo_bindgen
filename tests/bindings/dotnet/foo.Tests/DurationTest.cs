@@ -11,8 +11,7 @@ namespace foo.Tests
         {
             var zero = TimeSpan.Zero;
             Assert.Equal(zero, DurationEchoFunctions.MillisecondsEcho(zero));
-            Assert.Equal(zero, DurationEchoFunctions.SecondsEcho(zero));
-            Assert.Equal(zero, DurationEchoFunctions.SecondsFloatEcho(zero));
+            Assert.Equal(zero, DurationEchoFunctions.SecondsEcho(zero));            
         }
 
         [Fact]
@@ -20,8 +19,7 @@ namespace foo.Tests
         {
             var fiveS = TimeSpan.FromSeconds(5);
             Assert.Equal(fiveS, DurationEchoFunctions.MillisecondsEcho(fiveS));
-            Assert.Equal(fiveS, DurationEchoFunctions.SecondsEcho(fiveS));
-            Assert.Equal(fiveS, DurationEchoFunctions.SecondsFloatEcho(fiveS));
+            Assert.Equal(fiveS, DurationEchoFunctions.SecondsEcho(fiveS));            
         }
 
         [Fact]
@@ -29,8 +27,7 @@ namespace foo.Tests
         {
             var test = TimeSpan.FromMilliseconds(250);
             Assert.Equal(test, DurationEchoFunctions.MillisecondsEcho(test));
-            Assert.Equal(TimeSpan.FromSeconds(0), DurationEchoFunctions.SecondsEcho(test));
-            Assert.Equal(test, DurationEchoFunctions.SecondsFloatEcho(test));
+            Assert.Equal(TimeSpan.FromSeconds(0), DurationEchoFunctions.SecondsEcho(test));            
         }
 
         [Fact]
@@ -38,8 +35,7 @@ namespace foo.Tests
         {
             var test = TimeSpan.FromDays(41);
             Assert.Equal(test, DurationEchoFunctions.MillisecondsEcho(test));
-            Assert.Equal(test, DurationEchoFunctions.SecondsEcho(test));
-            Assert.Equal(test, DurationEchoFunctions.SecondsFloatEcho(test));
+            Assert.Equal(test, DurationEchoFunctions.SecondsEcho(test));            
         }
     }
 }

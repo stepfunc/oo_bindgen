@@ -113,11 +113,4 @@ public class NullTest {
             DurationEchoFunctions.secondsEcho(null);
         }).withMessage("value");
     }
-
-    @Test
-    public void NullDurationSecondsFloat() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            DurationEchoFunctions.secondsFloatEcho(null);
-        }).withMessage("value");
-    }
 }

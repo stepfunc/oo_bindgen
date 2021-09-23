@@ -131,10 +131,7 @@ impl DotnetType for Type {
             Type::Interface(handle) => format!("I{}NativeAdapter", handle.name.to_camel_case()),
             Type::Iterator(_) => "IntPtr".to_string(),
             Type::Collection(_) => "IntPtr".to_string(),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => "ulong".to_string(),
-                DurationMapping::SecondsFloat => "float".to_string(),
-            },
+            Type::Duration(_) => "ulong".to_string(),
         }
     }
 
@@ -168,7 +165,6 @@ impl DotnetType for Type {
             Type::Duration(mapping) => match mapping {
                 DurationMapping::Milliseconds => Some(format!("(ulong){}.TotalMilliseconds", from)),
                 DurationMapping::Seconds => Some(format!("(ulong){}.TotalSeconds", from)),
-                DurationMapping::SecondsFloat => Some(format!("(float){}.TotalSeconds", from)),
             },
         }
     }
@@ -236,7 +232,6 @@ impl DotnetType for Type {
                     Some(format!("TimeSpan.FromMilliseconds({})", from))
                 }
                 DurationMapping::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
-                DurationMapping::SecondsFloat => Some(format!("TimeSpan.FromSeconds({})", from)),
             },
         }
     }

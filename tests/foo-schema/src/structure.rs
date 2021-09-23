@@ -144,14 +144,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
             StructElementType::Duration(DurationMapping::Seconds, Some(Duration::from_secs(76))),
             "duration_seconds",
         )?
-        .add(
-            "duration_seconds_float",
-            StructElementType::Duration(
-                DurationMapping::SecondsFloat,
-                Some(Duration::from_millis(15250)),
-            ),
-            "duration_seconds_float",
-        )?
         .doc("Test structure")?
         .build()?;
 

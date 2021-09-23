@@ -193,10 +193,6 @@ pub(crate) fn generate(
                                     " = TimeSpan.FromSeconds({})",
                                     value.as_secs()
                                 ))?,
-                                DurationMapping::SecondsFloat => f.write(&format!(
-                                    " = TimeSpan.FromSeconds({}f)",
-                                    value.as_secs_f32()
-                                ))?,
                             }
                         }
                     }

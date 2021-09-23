@@ -149,10 +149,7 @@ impl CFormatting for Type {
             Type::Interface(handle) => handle.to_c_type(prefix),
             Type::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
             Type::Collection(handle) => format!("{}*", handle.collection_type.to_c_type(prefix)),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => "uint64_t".to_string(),
-                DurationMapping::SecondsFloat => "float".to_string(),
-            },
+            Type::Duration(_) => "uint64_t".to_string(),
         }
     }
 }
@@ -593,8 +590,7 @@ fn write_struct_initializer(
                         None => el.name.to_snake_case(),
                         Some(value) => match mapping {
                             DurationMapping::Milliseconds => value.as_millis().to_string(),
-                            DurationMapping::Seconds => value.as_secs().to_string(),
-                            DurationMapping::SecondsFloat => value.as_secs_f32().to_string(),
+                            DurationMapping::Seconds => value.as_secs().to_string()
                         },
                     },
                 };

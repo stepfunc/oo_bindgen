@@ -184,10 +184,6 @@ pub(crate) fn generate(
                                 " = java.time.Duration.ofSeconds({})",
                                 value.as_secs()
                             ))?,
-                            DurationMapping::SecondsFloat => f.write(&format!(
-                                " = java.time.Duration.ofMillis({})",
-                                value.as_millis()
-                            ))?,
                         }
                     }
                 }

@@ -254,10 +254,7 @@ impl JniType for Type {
             Type::Collection(handle) => {
                 format!("*mut {}::{}", ffi_name, handle.name().to_camel_case())
             }
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => "u64".to_string(),
-                DurationMapping::SecondsFloat => "f32".to_string(),
-            },
+            Type::Duration(_) => "u64".to_string()
         }
     }
 
@@ -784,7 +781,6 @@ impl TypeConverter for DurationConverter {
         let method = match self.0 {
             DurationMapping::Milliseconds => "duration_to_millis",
             DurationMapping::Seconds => "duration_to_seconds",
-            DurationMapping::SecondsFloat => "duration_to_seconds_float",
         };
 
         f.writeln(&format!(
@@ -797,7 +793,6 @@ impl TypeConverter for DurationConverter {
         let method = match self.0 {
             DurationMapping::Milliseconds => "duration_from_millis",
             DurationMapping::Seconds => "duration_from_seconds",
-            DurationMapping::SecondsFloat => "duration_from_seconds_float",
         };
 
         f.writeln(&format!(

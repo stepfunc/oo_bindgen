@@ -109,10 +109,7 @@ impl RustType for Type {
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
             Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => "u64".to_string(),
-                DurationMapping::SecondsFloat => "f32".to_string(),
-            },
+            Type::Duration(_) => "u64".to_string(),
         }
     }
 
@@ -287,7 +284,6 @@ impl TypeConverter for DurationConverter {
                 f.writeln(&format!("{}{}.as_millis() as u64", to, from))
             }
             DurationMapping::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
-            DurationMapping::SecondsFloat => f.writeln(&format!("{}{}.as_secs_f32()", to, from)),
         }
     }
 
@@ -299,10 +295,6 @@ impl TypeConverter for DurationConverter {
             DurationMapping::Seconds => {
                 f.writeln(&format!("{}std::time::Duration::from_secs({})", to, from))
             }
-            DurationMapping::SecondsFloat => f.writeln(&format!(
-                "{}std::time::Duration::from_secs_f32({})",
-                to, from
-            )),
         }
     }
 }

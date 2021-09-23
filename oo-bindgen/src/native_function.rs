@@ -29,8 +29,6 @@ pub enum DurationMapping {
     Milliseconds,
     // Duration is the number of seconds in a u64 value
     Seconds,
-    // Duration is the number of seconds and fractional part in a f32 value
-    SecondsFloat,
 }
 
 impl DurationMapping {
@@ -38,7 +36,6 @@ impl DurationMapping {
         match self {
             DurationMapping::Milliseconds => "milliseconds",
             DurationMapping::Seconds => "seconds",
-            DurationMapping::SecondsFloat => "fractional seconds",
         }
     }
 
@@ -49,9 +46,6 @@ impl DurationMapping {
             }
             DurationMapping::Seconds => {
                 format!("{}", duration.as_secs())
-            }
-            DurationMapping::SecondsFloat => {
-                format!("{}", duration.as_secs_f32())
             }
         }
     }

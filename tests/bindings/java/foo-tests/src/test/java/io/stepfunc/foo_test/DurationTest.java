@@ -13,7 +13,6 @@ public class DurationTest {
         Duration zero = Duration.ZERO;
         assertThat(DurationEchoFunctions.millisecondsEcho(zero)).isEqualTo(zero);
         assertThat(DurationEchoFunctions.secondsEcho(zero)).isEqualTo(zero);
-        assertThat(DurationEchoFunctions.secondsFloatEcho(zero)).isEqualTo(zero);
     }
 
     @Test
@@ -21,7 +20,6 @@ public class DurationTest {
         Duration test = Duration.ofSeconds(5);
         assertThat(DurationEchoFunctions.millisecondsEcho(test)).isEqualTo(test);
         assertThat(DurationEchoFunctions.secondsEcho(test)).isEqualTo(test);
-        assertThat(DurationEchoFunctions.secondsFloatEcho(test)).isEqualTo(test);
     }
 
     @Test
@@ -29,7 +27,6 @@ public class DurationTest {
         Duration test = Duration.ofMillis(250);
         assertThat(DurationEchoFunctions.millisecondsEcho(test)).isEqualTo(test);
         assertThat(DurationEchoFunctions.secondsEcho(test)).isEqualTo(Duration.ZERO);
-        assertThat(DurationEchoFunctions.secondsFloatEcho(test)).isEqualTo(test);
     }
 
     @Test
@@ -37,6 +34,5 @@ public class DurationTest {
         Duration test = Duration.ofDays(41);
         assertThat(DurationEchoFunctions.millisecondsEcho(test)).isEqualTo(test);
         assertThat(DurationEchoFunctions.secondsEcho(test)).isEqualTo(test);
-        assertThat(DurationEchoFunctions.secondsFloatEcho(test)).isEqualTo(test);
     }
 }

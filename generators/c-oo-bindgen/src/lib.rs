@@ -56,7 +56,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{BasicType, DurationMapping};
 use oo_bindgen::*;
 use std::fs;
 use std::io::Write;
@@ -133,6 +133,7 @@ impl CFormatting for BasicType {
             Self::Sint64 => "int64_t".to_string(),
             Self::Float => "float".to_string(),
             Self::Double => "double".to_string(),
+            Self::Duration(_) => "uint64_t".to_string(),
         }
     }
 }
@@ -149,7 +150,6 @@ impl CFormatting for Type {
             Type::Interface(handle) => handle.to_c_type(prefix),
             Type::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
             Type::Collection(handle) => format!("{}*", handle.collection_type.to_c_type(prefix)),
-            Type::Duration(_) => "uint64_t".to_string(),
         }
     }
 }
@@ -590,7 +590,7 @@ fn write_struct_initializer(
                         None => el.name.to_snake_case(),
                         Some(value) => match mapping {
                             DurationMapping::Milliseconds => value.as_millis().to_string(),
-                            DurationMapping::Seconds => value.as_secs().to_string()
+                            DurationMapping::Seconds => value.as_secs().to_string(),
                         },
                     },
                 };
@@ -720,7 +720,7 @@ fn write_function_docs(
         for param in &handle.parameters {
             f.writeln(&format!("@param {} ", param.name))?;
             docstring_print(f, &param.doc, lib)?;
-            if let Type::Duration(mapping) = param.param_type {
+            if let Type::Basic(BasicType::Duration(mapping)) = param.param_type {
                 f.write(&format!(" ({})", mapping.unit()))?;
             }
         }
@@ -734,7 +734,7 @@ fn write_function_docs(
             NativeFunctionType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
-                if let Type::Duration(mapping) = ret {
+                if let Type::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
             }
@@ -744,7 +744,7 @@ fn write_function_docs(
             NativeFunctionType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
-                if let Type::Duration(mapping) = ret {
+                if let Type::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
                 write_error_return_doc(f)?;

@@ -1,4 +1,5 @@
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::{BasicType, DurationMapping};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -7,11 +8,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("duration_ms_echo")?
         .param(
             "value",
-            Type::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationMapping::Milliseconds),
             "Duration",
         )?
         .return_type(ReturnType::new(
-            Type::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationMapping::Milliseconds),
             "Duration",
         ))?
         .doc("Echo duration as count of milliseconds")?
@@ -21,11 +22,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("duration_s_echo")?
         .param(
             "value",
-            Type::Duration(DurationMapping::Seconds),
+            BasicType::Duration(DurationMapping::Seconds),
             "Duration",
         )?
         .return_type(ReturnType::new(
-            Type::Duration(DurationMapping::Seconds),
+            BasicType::Duration(DurationMapping::Seconds),
             "Duration",
         ))?
         .doc("Echo duration as count of seconds")?

@@ -1,5 +1,5 @@
 use oo_bindgen::native_function::*;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{BasicType, DurationMapping};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -16,11 +16,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .callback("on_duration", "On duration callback")?
         .param(
             "value",
-            Type::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationMapping::Milliseconds),
             "Value",
         )?
         .return_type(ReturnType::new(
-            Type::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationMapping::Milliseconds),
             "Some value",
         ))?
         .build()?
@@ -87,11 +87,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .param(
             "value",
-            Type::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationMapping::Milliseconds),
             "New duration",
         )?
         .return_type(ReturnType::new(
-            Type::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationMapping::Milliseconds),
             "Some value",
         ))?
         .doc("Set the duration and call all the callbacks")?

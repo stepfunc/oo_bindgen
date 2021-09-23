@@ -23,6 +23,7 @@ impl JavaType for BasicType {
             Self::Sint64 => "long".to_string(),
             Self::Float => "float".to_string(),
             Self::Double => "double".to_string(),
+            Self::Duration(_) => "java.time.Duration".to_string(),
         }
     }
 
@@ -39,6 +40,7 @@ impl JavaType for BasicType {
             Self::Sint64 => "Long".to_string(),
             Self::Float => "Float".to_string(),
             Self::Double => "Double".to_string(),
+            Self::Duration(_) => "java.time.Duration".to_string(),
         }
     }
 }
@@ -61,7 +63,6 @@ impl JavaType for Type {
             Type::Collection(handle) => {
                 format!("java.util.List<{}>", handle.item_type.as_java_object())
             }
-            Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
 
@@ -82,7 +83,6 @@ impl JavaType for Type {
             Type::Collection(handle) => {
                 format!("java.util.List<{}>", handle.item_type.as_java_object())
             }
-            Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
 }

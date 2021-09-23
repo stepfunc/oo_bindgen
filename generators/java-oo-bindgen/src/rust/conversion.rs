@@ -8,7 +8,7 @@ use oo_bindgen::iterator::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{BasicType, DurationMapping};
 
 pub(crate) trait JniType {
     /// Returns raw JNI type (from jni::sys::* module)
@@ -55,6 +55,7 @@ impl JniType for BasicType {
             Self::Sint64 => "jni::sys::jlong",
             Self::Float => "jni::sys::jfloat",
             Self::Double => "jni::sys::jdouble",
+            Self::Duration(_) => "jni::sys::jobject",
         }
     }
 
@@ -71,6 +72,7 @@ impl JniType for BasicType {
             Self::Sint64 => "J".to_string(),
             Self::Float => "F".to_string(),
             Self::Double => "D".to_string(),
+            Self::Duration(_) => "Ljava/time/Duration;".to_string(),
         }
     }
 
@@ -87,6 +89,7 @@ impl JniType for BasicType {
             Self::Sint64 => "i64".to_string(),
             Self::Float => "f32".to_string(),
             Self::Double => "f64".to_string(),
+            Self::Duration(_) => "u64".to_string(),
         }
     }
 
@@ -103,6 +106,7 @@ impl JniType for BasicType {
             Self::Sint64 => "j().unwrap()",
             Self::Float => "f().unwrap()",
             Self::Double => "d().unwrap()",
+            Self::Duration(_) => "l().unwrap().into_inner()",
         }
     }
 
@@ -147,6 +151,7 @@ impl JniType for BasicType {
                 "{}_cache.primitives.double_value(&_env, {})",
                 to, from
             )),
+            Self::Duration(mapping) => DurationConverter(*mapping).convert_to_rust(f, from, to),
         }
     }
 
@@ -163,12 +168,26 @@ impl JniType for BasicType {
             Self::Sint64 => None,
             Self::Float => None,
             Self::Double => None,
+            Self::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
-        // only unsigned integers require special cleanup since they're wrapped
-        self.is_unsigned_integer()
+        // unsigned integers require cleanup since they're wrapped
+        match self {
+            Self::Bool => false,
+            Self::Uint8 => true,
+            Self::Sint8 => false,
+            Self::Uint16 => true,
+            Self::Sint16 => false,
+            Self::Uint32 => true,
+            Self::Sint32 => false,
+            Self::Uint64 => true,
+            Self::Sint64 => false,
+            Self::Float => false,
+            Self::Double => false,
+            Self::Duration(_) => true,
+        }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
@@ -184,6 +203,7 @@ impl JniType for BasicType {
             Self::Sint64 => Ok(()),
             Self::Float => Ok(()),
             Self::Double => Ok(()),
+            Self::Duration(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
         }
     }
 
@@ -200,6 +220,7 @@ impl JniType for BasicType {
             Self::Sint64 => "0",
             Self::Float => "0.0",
             Self::Double => "0.0",
+            Self::Duration(_) => "jni::objects::JObject::null().into_inner()",
         }
     }
 }
@@ -216,7 +237,6 @@ impl JniType for Type {
             Type::Interface(_) => "jni::sys::jobject",
             Type::Iterator(_) => "jni::sys::jobject",
             Type::Collection(_) => "jni::sys::jobject",
-            Type::Duration(_) => "jni::sys::jobject",
         }
     }
 
@@ -231,7 +251,6 @@ impl JniType for Type {
             Type::Interface(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
             Type::Iterator(_) => "Ljava/util/List;".to_string(),
             Type::Collection(_) => "Ljava/util/List;".to_string(),
-            Type::Duration(_) => "Ljava/time/Duration;".to_string(),
         }
     }
 
@@ -254,7 +273,6 @@ impl JniType for Type {
             Type::Collection(handle) => {
                 format!("*mut {}::{}", ffi_name, handle.name().to_camel_case())
             }
-            Type::Duration(_) => "u64".to_string()
         }
     }
 
@@ -269,7 +287,6 @@ impl JniType for Type {
             Type::Interface(_) => "l().unwrap().into_inner()",
             Type::Iterator(_) => "l().unwrap().into_inner()",
             Type::Collection(_) => "l().unwrap().into_inner()",
-            Type::Duration(_) => "l().unwrap().into_inner()",
         }
     }
 
@@ -301,7 +318,6 @@ impl JniType for Type {
                 CollectionConverter(handle.clone(), lib_name.to_string(), prefix.to_string())
                     .convert_to_rust(f, from, to)
             }
-            Type::Duration(mapping) => DurationConverter(*mapping).convert_to_rust(f, from, to),
         }
     }
 
@@ -324,7 +340,6 @@ impl JniType for Type {
                 lib_name.to_string(),
                 prefix.to_string(),
             ))),
-            Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
 
@@ -339,7 +354,6 @@ impl JniType for Type {
             Type::Interface(_) => false, // This is freed by Rust
             Type::Iterator(_) => true,
             Type::Collection(_) => true,
-            Type::Duration(_) => true,
         }
     }
 
@@ -362,7 +376,6 @@ impl JniType for Type {
             Type::Interface(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::Iterator(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
             Type::Collection(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Duration(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
         }
     }
 
@@ -377,7 +390,6 @@ impl JniType for Type {
             Type::Interface(_) => "jni::objects::JObject::null().into_inner()",
             Type::Iterator(_) => "jni::objects::JObject::null().into_inner()",
             Type::Collection(_) => "jni::objects::JObject::null().into_inner()",
-            Type::Duration(_) => "jni::objects::JObject::null().into_inner()",
         }
     }
 }

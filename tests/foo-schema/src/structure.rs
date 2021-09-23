@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::{NativeStructHandle, StructElementType};
+use oo_bindgen::types::DurationMapping;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {

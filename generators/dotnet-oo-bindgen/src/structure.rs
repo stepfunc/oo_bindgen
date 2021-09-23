@@ -1,6 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::native_struct::*;
+use oo_bindgen::types::DurationMapping;
 
 fn field_visibility(struct_type: NativeStructType) -> &'static str {
     match struct_type {

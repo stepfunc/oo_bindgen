@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
-use crate::types::BasicType;
+use crate::types::{BasicType, DurationMapping};
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -66,7 +66,7 @@ impl StructElementType {
             Self::Interface(handle) => Type::Interface(handle.clone()),
             Self::Iterator(handle) => Type::Iterator(handle.clone()),
             Self::Collection(handle) => Type::Collection(handle.clone()),
-            Self::Duration(mapping, _) => Type::Duration(*mapping),
+            Self::Duration(mapping, _) => Type::Basic(BasicType::Duration(*mapping)),
         }
     }
 
@@ -124,7 +124,6 @@ impl From<Type> for StructElementType {
             Type::Interface(handle) => Self::Interface(handle),
             Type::Iterator(handle) => Self::Iterator(handle),
             Type::Collection(handle) => Self::Collection(handle),
-            Type::Duration(mapping) => Self::Duration(mapping, None),
         }
     }
 }

@@ -4,7 +4,7 @@ use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{BasicType, DurationMapping};
 
 pub(crate) trait DotnetType {
     fn as_dotnet_type(&self) -> String;
@@ -28,70 +28,83 @@ impl DotnetType for BasicType {
             Self::Sint64 => "long".to_string(),
             Self::Float => "float".to_string(),
             Self::Double => "double".to_string(),
+            Self::Duration(_) => "TimeSpan".to_string(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            BasicType::Bool => "byte".to_string(),
-            BasicType::Uint8 => "byte".to_string(),
-            BasicType::Sint8 => "sbyte".to_string(),
-            BasicType::Uint16 => "ushort".to_string(),
-            BasicType::Sint16 => "short".to_string(),
-            BasicType::Uint32 => "uint".to_string(),
-            BasicType::Sint32 => "int".to_string(),
-            BasicType::Uint64 => "ulong".to_string(),
-            BasicType::Sint64 => "long".to_string(),
-            BasicType::Float => "float".to_string(),
-            BasicType::Double => "double".to_string(),
+            Self::Bool => "byte".to_string(),
+            Self::Uint8 => "byte".to_string(),
+            Self::Sint8 => "sbyte".to_string(),
+            Self::Uint16 => "ushort".to_string(),
+            Self::Sint16 => "short".to_string(),
+            Self::Uint32 => "uint".to_string(),
+            Self::Sint32 => "int".to_string(),
+            Self::Uint64 => "ulong".to_string(),
+            Self::Sint64 => "long".to_string(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
+            Self::Duration(_) => "ulong".to_string(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            BasicType::Bool => Some(format!("Convert.ToByte({})", from)),
-            BasicType::Uint8 => None,
-            BasicType::Sint8 => None,
-            BasicType::Uint16 => None,
-            BasicType::Sint16 => None,
-            BasicType::Uint32 => None,
-            BasicType::Sint32 => None,
-            BasicType::Uint64 => None,
-            BasicType::Sint64 => None,
-            BasicType::Float => None,
-            BasicType::Double => None,
+            Self::Bool => Some(format!("Convert.ToByte({})", from)),
+            Self::Uint8 => None,
+            Self::Sint8 => None,
+            Self::Uint16 => None,
+            Self::Sint16 => None,
+            Self::Uint32 => None,
+            Self::Sint32 => None,
+            Self::Uint64 => None,
+            Self::Sint64 => None,
+            Self::Float => None,
+            Self::Double => None,
+            Self::Duration(mapping) => match mapping {
+                DurationMapping::Milliseconds => Some(format!("(ulong){}.TotalMilliseconds", from)),
+                DurationMapping::Seconds => Some(format!("(ulong){}.TotalSeconds", from)),
+            },
         }
     }
 
     fn cleanup(&self, _: &str) -> Option<String> {
         match self {
-            BasicType::Bool => None,
-            BasicType::Uint8 => None,
-            BasicType::Sint8 => None,
-            BasicType::Uint16 => None,
-            BasicType::Sint16 => None,
-            BasicType::Uint32 => None,
-            BasicType::Sint32 => None,
-            BasicType::Uint64 => None,
-            BasicType::Sint64 => None,
-            BasicType::Float => None,
-            BasicType::Double => None,
+            Self::Bool => None,
+            Self::Uint8 => None,
+            Self::Sint8 => None,
+            Self::Uint16 => None,
+            Self::Sint16 => None,
+            Self::Uint32 => None,
+            Self::Sint32 => None,
+            Self::Uint64 => None,
+            Self::Sint64 => None,
+            Self::Float => None,
+            Self::Double => None,
+            Self::Duration(_) => None,
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            BasicType::Bool => Some(format!("Convert.ToBoolean({})", from)),
-            BasicType::Uint8 => None,
-            BasicType::Sint8 => None,
-            BasicType::Uint16 => None,
-            BasicType::Sint16 => None,
-            BasicType::Uint32 => None,
-            BasicType::Sint32 => None,
-            BasicType::Uint64 => None,
-            BasicType::Sint64 => None,
-            BasicType::Float => None,
-            BasicType::Double => None,
+            Self::Bool => Some(format!("Convert.ToBoolean({})", from)),
+            Self::Uint8 => None,
+            Self::Sint8 => None,
+            Self::Uint16 => None,
+            Self::Sint16 => None,
+            Self::Uint32 => None,
+            Self::Sint32 => None,
+            Self::Uint64 => None,
+            Self::Sint64 => None,
+            Self::Float => None,
+            Self::Double => None,
+            Self::Duration(mapping) => match mapping {
+                DurationMapping::Milliseconds => {
+                    Some(format!("TimeSpan.FromMilliseconds({})", from))
+                }
+                DurationMapping::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
+            },
         }
     }
 }
@@ -115,7 +128,6 @@ impl DotnetType for Type {
                 "System.Collections.Generic.ICollection<{}>",
                 handle.item_type.as_dotnet_type()
             ),
-            Type::Duration(_) => "TimeSpan".to_string(),
         }
     }
 
@@ -131,7 +143,6 @@ impl DotnetType for Type {
             Type::Interface(handle) => format!("I{}NativeAdapter", handle.name.to_camel_case()),
             Type::Iterator(_) => "IntPtr".to_string(),
             Type::Collection(_) => "IntPtr".to_string(),
-            Type::Duration(_) => "ulong".to_string(),
         }
     }
 
@@ -162,10 +173,6 @@ impl DotnetType for Type {
                 handle.collection_type.name.to_camel_case(),
                 from
             )),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds => Some(format!("(ulong){}.TotalMilliseconds", from)),
-                DurationMapping::Seconds => Some(format!("(ulong){}.TotalSeconds", from)),
-            },
         }
     }
 
@@ -188,7 +195,6 @@ impl DotnetType for Type {
                 handle.collection_type.name.to_camel_case(),
                 from
             )),
-            Type::Duration(_) => None,
         }
     }
 
@@ -227,12 +233,6 @@ impl DotnetType for Type {
                 "System.Collections.Immutable.ImmutableArray<{}>.Empty",
                 handle.item_type.as_dotnet_type()
             )),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds => {
-                    Some(format!("TimeSpan.FromMilliseconds({})", from))
-                }
-                DurationMapping::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
-            },
         }
     }
 }

@@ -1,8 +1,38 @@
 use crate::native_function::Type;
 use crate::native_struct::StructElementType;
+use std::time::Duration;
 
-/// Basic (primitive) types are easily convertible without any kind of allocation
-/// or cleanup issues in the target language
+/// Durations may be mapped in multiple ways
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+pub enum DurationMapping {
+    /// Duration is the number of milliseconds in a u64 value
+    Milliseconds,
+    /// Duration is the number of seconds in a u64 value
+    Seconds,
+}
+
+impl DurationMapping {
+    pub fn unit(&self) -> &'static str {
+        match self {
+            DurationMapping::Milliseconds => "milliseconds",
+            DurationMapping::Seconds => "seconds",
+        }
+    }
+
+    pub fn get_value_string(&self, duration: Duration) -> String {
+        match self {
+            DurationMapping::Milliseconds => {
+                format!("{}", duration.as_millis())
+            }
+            DurationMapping::Seconds => {
+                format!("{}", duration.as_secs())
+            }
+        }
+    }
+}
+
+/// Basic types are trivially copyable. They can be used
+/// in almost any context within the model
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BasicType {
     Bool,
@@ -16,9 +46,11 @@ pub enum BasicType {
     Sint64,
     Float,
     Double,
+    Duration(DurationMapping),
 }
 
 impl BasicType {
+    /// Helper function that indicates if the type is an unsigned integer
     pub fn is_unsigned_integer(&self) -> bool {
         match self {
             Self::Bool => false,
@@ -32,6 +64,7 @@ impl BasicType {
             Self::Sint64 => false,
             Self::Float => false,
             Self::Double => false,
+            Self::Duration(_) => false,
         }
     }
 }
@@ -56,6 +89,7 @@ impl From<BasicType> for StructElementType {
             BasicType::Sint64 => StructElementType::Sint64(None),
             BasicType::Float => StructElementType::Float(None),
             BasicType::Double => StructElementType::Double(None),
+            BasicType::Duration(mapping) => StructElementType::Duration(mapping, None),
         }
     }
 }

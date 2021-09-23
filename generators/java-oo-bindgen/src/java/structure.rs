@@ -3,6 +3,7 @@ use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::error_type::ExceptionType;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::types::DurationMapping;
 
 fn constructor_visibility(struct_type: NativeStructType) -> &'static str {
     match struct_type {

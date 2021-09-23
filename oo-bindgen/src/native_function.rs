@@ -3,7 +3,6 @@ use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::types::BasicType;
 use crate::*;
-use std::time::Duration;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
@@ -18,37 +17,6 @@ pub enum Type {
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),
     Collection(CollectionHandle),
-
-    // Not native types
-    Duration(DurationMapping),
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub enum DurationMapping {
-    // Duration is the number of milliseconds in a u64 value
-    Milliseconds,
-    // Duration is the number of seconds in a u64 value
-    Seconds,
-}
-
-impl DurationMapping {
-    pub fn unit(&self) -> &'static str {
-        match self {
-            DurationMapping::Milliseconds => "milliseconds",
-            DurationMapping::Seconds => "seconds",
-        }
-    }
-
-    pub fn get_value_string(&self, duration: Duration) -> String {
-        match self {
-            DurationMapping::Milliseconds => {
-                format!("{}", duration.as_millis())
-            }
-            DurationMapping::Seconds => {
-                format!("{}", duration.as_secs())
-            }
-        }
-    }
 }
 
 #[derive(Debug)]

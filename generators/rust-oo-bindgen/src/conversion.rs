@@ -4,7 +4,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{BasicType, DurationMapping};
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -32,22 +32,24 @@ impl RustType for BasicType {
             Self::Sint64 => "i64".to_string(),
             Self::Float => "f32".to_string(),
             Self::Double => "f64".to_string(),
+            Self::Duration(_) => "std::time::Duration".to_string(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            BasicType::Bool => "bool".to_string(),
-            BasicType::Uint8 => "u8".to_string(),
-            BasicType::Sint8 => "i8".to_string(),
-            BasicType::Uint16 => "u16".to_string(),
-            BasicType::Sint16 => "i16".to_string(),
-            BasicType::Uint32 => "u32".to_string(),
-            BasicType::Sint32 => "i32".to_string(),
-            BasicType::Uint64 => "u64".to_string(),
-            BasicType::Sint64 => "i64".to_string(),
-            BasicType::Float => "f32".to_string(),
-            BasicType::Double => "f64".to_string(),
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "u8".to_string(),
+            Self::Sint8 => "i8".to_string(),
+            Self::Uint16 => "u16".to_string(),
+            Self::Sint16 => "i16".to_string(),
+            Self::Uint32 => "u32".to_string(),
+            Self::Sint32 => "i32".to_string(),
+            Self::Uint64 => "u64".to_string(),
+            Self::Sint64 => "i64".to_string(),
+            Self::Float => "f32".to_string(),
+            Self::Double => "f64".to_string(),
+            Self::Duration(_) => "u64".to_string(),
         }
     }
 
@@ -64,7 +66,20 @@ impl RustType for BasicType {
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        None
+        match self {
+            Self::Bool => None,
+            Self::Uint8 => None,
+            Self::Sint8 => None,
+            Self::Uint16 => None,
+            Self::Sint16 => None,
+            Self::Uint32 => None,
+            Self::Sint32 => None,
+            Self::Uint64 => None,
+            Self::Sint64 => None,
+            Self::Float => None,
+            Self::Double => None,
+            Self::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
+        }
     }
 }
 
@@ -87,7 +102,6 @@ impl RustType for Type {
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
             Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
-            Type::Duration(_) => "std::time::Duration".to_string(),
         }
     }
 
@@ -109,7 +123,6 @@ impl RustType for Type {
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
             Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
-            Type::Duration(_) => "u64".to_string(),
         }
     }
 
@@ -124,7 +137,6 @@ impl RustType for Type {
             Type::Interface(_) => false,
             Type::Iterator(_) => true,   // Just copying the pointer
             Type::Collection(_) => true, // Just copying the pointer
-            Type::Duration(_) => true,
         }
     }
 
@@ -139,7 +151,6 @@ impl RustType for Type {
             Type::Interface(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
-            Type::Duration(_) => false,
         }
     }
 
@@ -154,7 +165,6 @@ impl RustType for Type {
             Type::Interface(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
-            Type::Duration(_) => false,
         }
     }
 
@@ -169,7 +179,6 @@ impl RustType for Type {
             Type::Interface(_) => None,
             Type::Iterator(_) => None,
             Type::Collection(_) => None,
-            Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
 }

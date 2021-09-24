@@ -4,32 +4,44 @@ use crate::native_enum::NativeEnumHandle;
 
 use std::time::Duration;
 
-/// Durations may be mapped in multiple ways
+/// Durations may be represented in multiple ways in the underlying C API
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub enum DurationMapping {
-    /// Duration is the number of milliseconds in a u64 value
+pub enum DurationType {
+    /// Duration is represented as a count of milliseconds in a u64 value
     Milliseconds,
-    /// Duration is the number of seconds in a u64 value
+    /// Duration is represented as a count of seconds in a u64 value
     Seconds,
 }
 
-impl DurationMapping {
+impl DurationType {
     pub fn unit(&self) -> &'static str {
         match self {
-            DurationMapping::Milliseconds => "milliseconds",
-            DurationMapping::Seconds => "seconds",
+            DurationType::Milliseconds => "milliseconds",
+            DurationType::Seconds => "seconds",
         }
     }
 
     pub fn get_value_string(&self, duration: Duration) -> String {
         match self {
-            DurationMapping::Milliseconds => {
+            DurationType::Milliseconds => {
                 format!("{}", duration.as_millis())
             }
-            DurationMapping::Seconds => {
+            DurationType::Seconds => {
                 format!("{}", duration.as_secs())
             }
         }
+    }
+}
+
+impl From<DurationType> for BasicType {
+    fn from(x: DurationType) -> Self {
+        BasicType::Duration(x)
+    }
+}
+
+impl From<DurationType> for Type {
+    fn from(x: DurationType) -> Self {
+        BasicType::Duration(x).into()
     }
 }
 
@@ -48,7 +60,7 @@ pub enum BasicType {
     Sint64,
     Float,
     Double,
-    Duration(DurationMapping),
+    Duration(DurationType),
     Enum(NativeEnumHandle)
 }
 

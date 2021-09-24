@@ -4,7 +4,7 @@ use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::types::{BasicType, DurationMapping};
+use oo_bindgen::types::{BasicType, DurationType};
 
 pub(crate) trait DotnetType {
     /// Returns the .NET natural type
@@ -67,8 +67,8 @@ impl DotnetType for BasicType {
             Self::Float => None,
             Self::Double => None,
             Self::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds => Some(format!("(ulong){}.TotalMilliseconds", from)),
-                DurationMapping::Seconds => Some(format!("(ulong){}.TotalSeconds", from)),
+                DurationType::Milliseconds => Some(format!("(ulong){}.TotalMilliseconds", from)),
+                DurationType::Seconds => Some(format!("(ulong){}.TotalSeconds", from)),
             },
             Self::Enum(_) => None,
         }
@@ -106,10 +106,10 @@ impl DotnetType for BasicType {
             Self::Float => None,
             Self::Double => None,
             Self::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds => {
+                DurationType::Milliseconds => {
                     Some(format!("TimeSpan.FromMilliseconds({})", from))
                 }
-                DurationMapping::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
+                DurationType::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
             },
             Self::Enum(_) => None,
         }

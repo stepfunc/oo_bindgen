@@ -11,7 +11,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("testclass_new")?
         .param("value", BasicType::Uint32, "Value")?
         .return_type(ReturnType::new(
-            Type::ClassRef(testclass.clone()),
+            testclass.clone(),
             "New TestClass",
         ))?
         .doc(doc("Create a new {class:TestClass}")
@@ -29,7 +29,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("testclass_destroy")?
         .param(
             "testclass",
-            Type::ClassRef(testclass.clone()),
+            testclass.clone(),
             "Class handle",
         )?
         .return_type(ReturnType::void())?
@@ -40,7 +40,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("testclass_get_value")?
         .param(
             "testclass",
-            Type::ClassRef(testclass.clone()),
+            testclass.clone(),
             "TestClass handle",
         )?
         .return_type(ReturnType::new(BasicType::Uint32, "Current value"))?
@@ -51,7 +51,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("testclass_increment_value")?
         .param(
             "testclass",
-            Type::ClassRef(testclass.clone()),
+            testclass.clone(),
             "TestClass handle",
         )?
         .return_type(ReturnType::void())?
@@ -73,7 +73,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("testclass_get_value_async")?
         .param(
             "testclass",
-            Type::ClassRef(testclass.clone()),
+            testclass.clone(),
             "TestClass handle",
         )?
         .param(

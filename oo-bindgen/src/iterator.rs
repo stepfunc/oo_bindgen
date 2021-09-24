@@ -69,3 +69,15 @@ impl Iterator {
 }
 
 pub type IteratorHandle = Handle<Iterator>;
+
+impl From<IteratorHandle> for Type {
+    fn from(x: IteratorHandle) -> Self {
+        Self::Iterator(x)
+    }
+}
+
+impl From<IteratorHandle> for StructElementType {
+    fn from(x: IteratorHandle) -> Self {
+        StructElementType::Iterator(x)
+    }
+}

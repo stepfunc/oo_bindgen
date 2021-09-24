@@ -10,7 +10,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let stringclass_new_func = lib
         .declare_native_function("string_new")?
         .return_type(ReturnType::new(
-            Type::ClassRef(stringclass.clone()),
+            stringclass.clone(),
             "New StringClass",
         ))?
         .doc("Create a new StringClass")?
@@ -20,7 +20,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("string_destroy")?
         .param(
             "stringclass",
-            Type::ClassRef(stringclass.clone()),
+            stringclass.clone(),
             "StringClass",
         )?
         .return_type(ReturnType::void())?
@@ -31,7 +31,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("string_echo")?
         .param(
             "stringclass",
-            Type::ClassRef(stringclass.clone()),
+            stringclass.clone(),
             "StringClass",
         )?
         .param("value", Type::String, "String to echo")?

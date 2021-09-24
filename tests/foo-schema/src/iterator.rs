@@ -10,9 +10,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_item = lib.declare_native_struct("StringIteratorItem")?;
     let iterator_next_fn = lib
         .declare_native_function("iterator_next")?
-        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
+        .param("it", iterator_class.clone(), "Iterator")?
         .return_type(ReturnType::new(
-            Type::StructRef(iterator_item.clone()),
+            iterator_item.clone(),
             "Iterator value",
         ))?
         .doc("Get the next value, or NULL if the iterator reached the end")?
@@ -32,12 +32,12 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterate_string_fn = lib
         .declare_native_function("iterator_create")?
         .param("value", Type::String, "String to iterate on")?
-        .return_type(ReturnType::new(Type::Iterator(iterator), "New iterator"))?
+        .return_type(ReturnType::new(iterator, "New iterator"))?
         .doc("Create an iterator")?
         .build()?;
     let iterator_destroy_fn = lib
         .declare_native_function("iterator_destroy")?
-        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
+        .param("it", iterator_class.clone(), "Iterator")?
         .return_type(ReturnType::Void)?
         .doc("Destroy an iterator")?
         .build()?;

@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
-use crate::types::{BasicType, DurationMapping};
+use crate::types::{BasicType, DurationType};
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -19,6 +19,12 @@ impl NativeStructDeclaration {
 }
 
 pub type NativeStructDeclarationHandle = Handle<NativeStructDeclaration>;
+
+impl From<NativeStructDeclarationHandle> for Type {
+    fn from(x: NativeStructDeclarationHandle) -> Self {
+        Self::StructRef(x)
+    }
+}
 
 #[derive(Debug)]
 pub enum StructElementType {
@@ -41,7 +47,7 @@ pub enum StructElementType {
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),
     Collection(CollectionHandle),
-    Duration(DurationMapping, Option<Duration>),
+    Duration(DurationType, Option<Duration>),
 }
 
 impl StructElementType {
@@ -171,6 +177,12 @@ impl NativeStruct {
 }
 
 pub type NativeStructHandle = Handle<NativeStruct>;
+
+impl From<NativeStructHandle> for Type {
+    fn from(x: NativeStructHandle) -> Self {
+        Self::Struct(x)
+    }
+}
 
 pub struct NativeStructBuilder<'a> {
     lib: &'a mut LibraryBuilder,

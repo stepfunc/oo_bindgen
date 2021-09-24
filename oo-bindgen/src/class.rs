@@ -15,6 +15,12 @@ impl ClassDeclaration {
 
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
+impl From<ClassDeclarationHandle> for Type {
+    fn from(x: ClassDeclarationHandle) -> Self {
+        Type::ClassRef(x)
+    }
+}
+
 #[derive(Debug)]
 pub struct Method {
     pub name: String,

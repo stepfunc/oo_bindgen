@@ -4,7 +4,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::types::{BasicType, DurationMapping};
+use oo_bindgen::types::{BasicType, DurationType};
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -281,24 +281,24 @@ impl TypeConverter for StructRefConverter {
     }
 }
 
-struct DurationConverter(DurationMapping);
+struct DurationConverter(DurationType);
 
 impl TypeConverter for DurationConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self.0 {
-            DurationMapping::Milliseconds => {
+            DurationType::Milliseconds => {
                 f.writeln(&format!("{}{}.as_millis() as u64", to, from))
             }
-            DurationMapping::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
+            DurationType::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
         }
     }
 
     fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self.0 {
-            DurationMapping::Milliseconds => {
+            DurationType::Milliseconds => {
                 f.writeln(&format!("{}std::time::Duration::from_millis({})", to, from))
             }
-            DurationMapping::Seconds => {
+            DurationType::Seconds => {
                 f.writeln(&format!("{}std::time::Duration::from_secs({})", to, from))
             }
         }

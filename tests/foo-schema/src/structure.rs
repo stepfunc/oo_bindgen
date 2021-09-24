@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::{NativeStructHandle, StructElementType};
-use oo_bindgen::types::DurationMapping;
+use oo_bindgen::types::DurationType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {
@@ -39,7 +39,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
     let structure_interface = lib
         .define_interface("StructureInterface", "Interface within a structure")?
         .callback("on_value", "Callback on value")?
-        .param("value", Type::StructRef(structure.clone()), "New value")?
+        .param("value", structure.clone(), "New value")?
         .return_type(ReturnType::Void)?
         .build()?
         .destroy_callback("on_destroy")?
@@ -135,14 +135,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
         .add(
             "duration_millis",
             StructElementType::Duration(
-                DurationMapping::Milliseconds,
+                DurationType::Milliseconds,
                 Some(Duration::from_millis(4200)),
             ),
             "duration_millis",
         )?
         .add(
             "duration_seconds",
-            StructElementType::Duration(DurationMapping::Seconds, Some(Duration::from_secs(76))),
+            StructElementType::Duration(DurationType::Seconds, Some(Duration::from_secs(76))),
             "duration_seconds",
         )?
         .doc("Test structure")?

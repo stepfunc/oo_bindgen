@@ -56,7 +56,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::types::{BasicType, DurationMapping};
+use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::*;
 use std::fs;
 use std::io::Write;
@@ -589,8 +589,8 @@ fn write_struct_initializer(
                     StructElementType::Duration(mapping, default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => match mapping {
-                            DurationMapping::Milliseconds => value.as_millis().to_string(),
-                            DurationMapping::Seconds => value.as_secs().to_string(),
+                            DurationType::Milliseconds => value.as_millis().to_string(),
+                            DurationType::Seconds => value.as_secs().to_string(),
                         },
                     },
                 };

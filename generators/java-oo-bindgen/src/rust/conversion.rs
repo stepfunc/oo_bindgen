@@ -8,7 +8,7 @@ use oo_bindgen::iterator::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::types::{BasicType, DurationMapping};
+use oo_bindgen::types::{BasicType, DurationType};
 
 pub(crate) trait JniType {
     /// Returns raw JNI type (from jni::sys::* module)
@@ -799,12 +799,12 @@ impl TypeConverter for CollectionConverter {
     }
 }
 
-struct DurationConverter(DurationMapping);
+struct DurationConverter(DurationType);
 impl TypeConverter for DurationConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let method = match self.0 {
-            DurationMapping::Milliseconds => "duration_to_millis",
-            DurationMapping::Seconds => "duration_to_seconds",
+            DurationType::Milliseconds => "duration_to_millis",
+            DurationType::Seconds => "duration_to_seconds",
         };
 
         f.writeln(&format!(
@@ -815,8 +815,8 @@ impl TypeConverter for DurationConverter {
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let method = match self.0 {
-            DurationMapping::Milliseconds => "duration_from_millis",
-            DurationMapping::Seconds => "duration_from_seconds",
+            DurationType::Milliseconds => "duration_from_millis",
+            DurationType::Seconds => "duration_from_seconds",
         };
 
         f.writeln(&format!(

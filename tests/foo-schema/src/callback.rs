@@ -1,5 +1,5 @@
 use oo_bindgen::native_function::*;
-use oo_bindgen::types::{BasicType, DurationMapping};
+use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -7,20 +7,20 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let interface = lib
         .define_interface("CallbackInterface", "Test interface")?
         .callback("on_value", "On value callback")?
-        .param("value", Type::Basic(BasicType::Uint32), "Value")?
+        .param("value", BasicType::Uint32, "Value")?
         .return_type(ReturnType::new(
-            Type::Basic(BasicType::Uint32),
+            BasicType::Uint32,
             "Some value",
         ))?
         .build()?
         .callback("on_duration", "On duration callback")?
         .param(
             "value",
-            BasicType::Duration(DurationMapping::Milliseconds),
+            DurationType::Milliseconds,
             "Value",
         )?
         .return_type(ReturnType::new(
-            BasicType::Duration(DurationMapping::Milliseconds),
+            DurationType::Milliseconds,
             "Some value",
         ))?
         .build()?
@@ -34,7 +34,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let cbsource_new_func = lib
         .declare_native_function("cbsource_new")?
         .return_type(ReturnType::new(
-            Type::ClassRef(cbsource.clone()),
+            cbsource.clone(),
             "Handle to a CallbackSource",
         ))?
         .doc("Create a new CallbackSource")?
@@ -44,7 +44,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("cbsource_destroy")?
         .param(
             "cbsource",
-            Type::ClassRef(cbsource.clone()),
+            cbsource.clone(),
             "Callback source",
         )?
         .return_type(ReturnType::void())?
@@ -55,7 +55,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("cbsource_set_interface")?
         .param(
             "cbsource",
-            Type::ClassRef(cbsource.clone()),
+            cbsource.clone(),
             "Callback source",
         )?
         .param("cb", Type::Interface(interface), "Callback to add")?
@@ -67,7 +67,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("cbsource_set_value")?
         .param(
             "cbsource",
-            Type::ClassRef(cbsource.clone()),
+            cbsource.clone(),
             "Callback source",
         )?
         .param("value", BasicType::Uint32, "New value")?
@@ -82,16 +82,16 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("cbsource_set_duration")?
         .param(
             "cbsource",
-            Type::ClassRef(cbsource.clone()),
+            cbsource.clone(),
             "Callback source",
         )?
         .param(
             "value",
-            BasicType::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationType::Milliseconds),
             "New duration",
         )?
         .return_type(ReturnType::new(
-            BasicType::Duration(DurationMapping::Milliseconds),
+            BasicType::Duration(DurationType::Milliseconds),
             "Some value",
         ))?
         .doc("Set the duration and call all the callbacks")?

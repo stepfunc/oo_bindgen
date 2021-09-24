@@ -7,9 +7,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_item = lib.declare_native_struct("IteratorItem")?;
     let iterator_next_fn = lib
         .declare_native_function("next_value_with_lifetime")?
-        .param("it", Type::ClassRef(iterator_class), "Iterator")?
+        .param("it", iterator_class, "Iterator")?
         .return_type(ReturnType::new(
-            Type::StructRef(iterator_item.clone()),
+            iterator_item.clone(),
             "Iterator Value",
         ))?
         .doc("test")?
@@ -26,7 +26,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let outer = lib.declare_native_struct("StructWithIteratorWithLifeTime")?;
 
     lib.define_native_struct(&outer)?
-        .add("iter", Type::Iterator(iter), "test")?
+        .add("iter", iter, "test")?
         .doc("Structure with an iterator with a lifetime")?
         .build()?;
 

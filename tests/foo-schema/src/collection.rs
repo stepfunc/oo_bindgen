@@ -9,7 +9,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let collection_create_fn = lib
         .declare_native_function("collection_create")?
         .return_type(ReturnType::new(
-            Type::ClassRef(collection_class.clone()),
+            collection_class.clone(),
             "New collection",
         ))?
         .doc("Create a collection")?
@@ -23,7 +23,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "Number of elements to pre-allocate",
         )?
         .return_type(ReturnType::new(
-            Type::ClassRef(collection_class.clone()),
+            collection_class.clone(),
             "New collection (with reserve optimization)",
         ))?
         .doc("Create a collection")?
@@ -34,7 +34,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("collection_destroy")?
         .param(
             "col",
-            Type::ClassRef(collection_class.clone()),
+            collection_class.clone(),
             "Collection",
         )?
         .return_type(ReturnType::Void)?
@@ -45,7 +45,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("collection_add")?
         .param(
             "col",
-            Type::ClassRef(collection_class.clone()),
+            collection_class.clone(),
             "Collection",
         )?
         .param("item", Type::String, "Item")?
@@ -68,14 +68,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define test method
     let collection_size_func = lib
         .declare_native_function("collection_size")?
-        .param("col", Type::Collection(collection.clone()), "Collection")?
+        .param("col", collection.clone(), "Collection")?
         .return_type(ReturnType::new(BasicType::Uint32, "Size of the collection"))?
         .doc("Get the size of a collection")?
         .build()?;
 
     let collection_get_func = lib
         .declare_native_function("collection_get")?
-        .param("col", Type::Collection(collection), "Collection")?
+        .param("col", collection, "Collection")?
         .param("idx", BasicType::Uint32, "Index")?
         .return_type(ReturnType::new(Type::String, "Value"))?
         .doc("Get an item from the collection")?
@@ -85,7 +85,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("collection_with_reserve_size")?
         .param(
             "col",
-            Type::Collection(collection_with_reserve.clone()),
+            collection_with_reserve.clone(),
             "Collection",
         )?
         .return_type(ReturnType::new(BasicType::Uint32, "Size of the collection"))?
@@ -96,7 +96,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("collection_with_reserve_get")?
         .param(
             "col",
-            Type::Collection(collection_with_reserve),
+            collection_with_reserve,
             "Collection",
         )?
         .param("idx", BasicType::Uint32, "Index")?

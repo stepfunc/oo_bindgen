@@ -144,3 +144,9 @@ impl Collection {
 }
 
 pub type CollectionHandle = Handle<Collection>;
+
+impl From<CollectionHandle> for Type {
+    fn from(x: CollectionHandle) -> Self {
+        Type::Collection(x)
+    }
+}

@@ -156,10 +156,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
             Type::Struct(structure.clone()),
             "Structure to echo",
         )?
-        .return_type(ReturnType::new(
-            Type::Struct(structure.clone()),
-            "Echoed structure",
-        ))?
+        .returns(structure.clone(), "Echoed structure")?
         .doc("Echo structure by value")?
         .build()?;
 
@@ -170,10 +167,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
             Type::StructRef(structure.declaration()),
             "Structure to echo",
         )?
-        .return_type(ReturnType::new(
-            Type::Struct(structure.clone()),
-            "Echoed structure",
-        ))?
+        .returns(structure.clone(), "Echoed structure")?
         .doc("Echo structure by reference")?
         .build()?;
 

@@ -106,9 +106,7 @@ impl DotnetType for BasicType {
             Self::Float => None,
             Self::Double => None,
             Self::Duration(mapping) => match mapping {
-                DurationType::Milliseconds => {
-                    Some(format!("TimeSpan.FromMilliseconds({})", from))
-                }
+                DurationType::Milliseconds => Some(format!("TimeSpan.FromMilliseconds({})", from)),
                 DurationType::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
             },
             Self::Enum(_) => None,
@@ -117,7 +115,6 @@ impl DotnetType for BasicType {
 }
 
 impl DotnetType for Type {
-
     fn as_dotnet_type(&self) -> String {
         match self {
             Self::Basic(x) => x.as_dotnet_type(),
@@ -136,7 +133,6 @@ impl DotnetType for Type {
             ),
         }
     }
-
 
     fn as_native_type(&self) -> String {
         match self {

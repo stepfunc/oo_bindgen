@@ -129,11 +129,19 @@ impl<'a> NativeFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn return_nothing(self) -> Result<Self> {
+    pub fn returns_nothing(self) -> Result<Self> {
         self.return_type(ReturnType::Void)
     }
 
-    pub fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
+    pub fn returns<D: Into<DocString>, T: Into<Type>>(
+        self,
+        return_type: T,
+        doc: D,
+    ) -> Result<Self> {
+        self.return_type(ReturnType::new(return_type, doc))
+    }
+
+    fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

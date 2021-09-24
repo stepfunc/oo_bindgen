@@ -286,9 +286,7 @@ struct DurationConverter(DurationType);
 impl TypeConverter for DurationConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self.0 {
-            DurationType::Milliseconds => {
-                f.writeln(&format!("{}{}.as_millis() as u64", to, from))
-            }
+            DurationType::Milliseconds => f.writeln(&format!("{}{}.as_millis() as u64", to, from)),
             DurationType::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
         }
     }

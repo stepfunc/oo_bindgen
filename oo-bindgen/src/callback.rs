@@ -64,6 +64,12 @@ impl Interface {
 
 pub type InterfaceHandle = Handle<Interface>;
 
+impl From<InterfaceHandle> for Type {
+    fn from(x: InterfaceHandle) -> Self {
+        Type::Interface(x)
+    }
+}
+
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,

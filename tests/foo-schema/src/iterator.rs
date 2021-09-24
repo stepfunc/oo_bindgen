@@ -11,10 +11,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_next_fn = lib
         .declare_native_function("iterator_next")?
         .param("it", iterator_class.clone(), "Iterator")?
-        .return_type(ReturnType::new(
-            iterator_item.clone(),
-            "Iterator value",
-        ))?
+        .returns(iterator_item.clone(), "Iterator value")?
         .doc("Get the next value, or NULL if the iterator reached the end")?
         .build()?;
 
@@ -32,13 +29,13 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterate_string_fn = lib
         .declare_native_function("iterator_create")?
         .param("value", Type::String, "String to iterate on")?
-        .return_type(ReturnType::new(iterator, "New iterator"))?
+        .returns(iterator, "New iterator")?
         .doc("Create an iterator")?
         .build()?;
     let iterator_destroy_fn = lib
         .declare_native_function("iterator_destroy")?
         .param("it", iterator_class.clone(), "Iterator")?
-        .return_type(ReturnType::Void)?
+        .returns_nothing()?
         .doc("Destroy an iterator")?
         .build()?;
     lib.define_class(&iterator_class)?

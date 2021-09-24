@@ -197,10 +197,7 @@ impl JniType for BasicType {
         }
     }
 
-
-
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-
         fn perform_null_check(f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
             f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name))
         }
@@ -223,7 +220,6 @@ impl JniType for BasicType {
     }
 
     fn default_value(&self) -> &str {
-
         const NULL: &str = "jni::objects::JObject::null().into_inner()";
 
         match self {

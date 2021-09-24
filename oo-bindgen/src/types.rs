@@ -1,6 +1,6 @@
+use crate::native_enum::NativeEnumHandle;
 use crate::native_function::Type;
 use crate::native_struct::StructElementType;
-use crate::native_enum::NativeEnumHandle;
 
 use std::time::Duration;
 
@@ -61,7 +61,7 @@ pub enum BasicType {
     Float,
     Double,
     Duration(DurationType),
-    Enum(NativeEnumHandle)
+    Enum(NativeEnumHandle),
 }
 
 impl From<BasicType> for Type {

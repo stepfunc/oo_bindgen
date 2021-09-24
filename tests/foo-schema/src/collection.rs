@@ -8,10 +8,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Constructor method
     let collection_create_fn = lib
         .declare_native_function("collection_create")?
-        .return_type(ReturnType::new(
-            collection_class.clone(),
-            "New collection",
-        ))?
+        .returns(collection_class.clone(), "New collection")?
         .doc("Create a collection")?
         .build()?;
 
@@ -22,34 +19,26 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             BasicType::Uint32,
             "Number of elements to pre-allocate",
         )?
-        .return_type(ReturnType::new(
+        .returns(
             collection_class.clone(),
             "New collection (with reserve optimization)",
-        ))?
+        )?
         .doc("Create a collection")?
         .build()?;
 
     // Destructor method
     let collection_destroy_fn = lib
         .declare_native_function("collection_destroy")?
-        .param(
-            "col",
-            collection_class.clone(),
-            "Collection",
-        )?
-        .return_type(ReturnType::Void)?
+        .param("col", collection_class.clone(), "Collection")?
+        .returns_nothing()?
         .doc("Destroy a collection")?
         .build()?;
 
     let collection_add_fn = lib
         .declare_native_function("collection_add")?
-        .param(
-            "col",
-            collection_class.clone(),
-            "Collection",
-        )?
+        .param("col", collection_class.clone(), "Collection")?
         .param("item", Type::String, "Item")?
-        .return_type(ReturnType::void())?
+        .returns_nothing()?
         .doc("Add an item to the collection")?
         .build()?;
 
@@ -69,7 +58,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let collection_size_func = lib
         .declare_native_function("collection_size")?
         .param("col", collection.clone(), "Collection")?
-        .return_type(ReturnType::new(BasicType::Uint32, "Size of the collection"))?
+        .returns(BasicType::Uint32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build()?;
 
@@ -77,30 +66,22 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .declare_native_function("collection_get")?
         .param("col", collection, "Collection")?
         .param("idx", BasicType::Uint32, "Index")?
-        .return_type(ReturnType::new(Type::String, "Value"))?
+        .returns(Type::String, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
 
     let collection_with_reserve_size_func = lib
         .declare_native_function("collection_with_reserve_size")?
-        .param(
-            "col",
-            collection_with_reserve.clone(),
-            "Collection",
-        )?
-        .return_type(ReturnType::new(BasicType::Uint32, "Size of the collection"))?
+        .param("col", collection_with_reserve.clone(), "Collection")?
+        .returns(BasicType::Uint32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build()?;
 
     let collection_with_reserve_get_func = lib
         .declare_native_function("collection_with_reserve_get")?
-        .param(
-            "col",
-            collection_with_reserve,
-            "Collection",
-        )?
+        .param("col", collection_with_reserve, "Collection")?
         .param("idx", BasicType::Uint32, "Index")?
-        .return_type(ReturnType::new(Type::String, "Value"))?
+        .returns(Type::String, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
 

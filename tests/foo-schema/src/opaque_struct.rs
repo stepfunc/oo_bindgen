@@ -1,4 +1,3 @@
-use oo_bindgen::native_function::ReturnType;
 use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
@@ -14,21 +13,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let get_id_fn = lib
         .declare_native_function("opaque_struct_get_id")?
-        .param(
-            "value",
-            opaque_struct.declaration.clone(),
-            "struct value",
-        )?
-        .return_type(ReturnType::new(BasicType::Uint64, "value of id field"))?
+        .param("value", opaque_struct.declaration.clone(), "struct value")?
+        .returns(BasicType::Uint64, "value of id field")?
         .doc("Get the id field of the struct")?
         .build()?;
 
     let opaque_struct_magic_init_fn = lib
         .declare_native_function("opaque_struct_magic_init")?
-        .return_type(ReturnType::new(
-            opaque_struct.clone(),
-            "initialized value",
-        ))?
+        .returns(opaque_struct.clone(), "initialized value")?
         .doc("Create an OpaqueStruct initialized with a magic id")?
         .build()?;
 

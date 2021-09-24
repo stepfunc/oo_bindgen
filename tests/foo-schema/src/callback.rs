@@ -8,21 +8,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_interface("CallbackInterface", "Test interface")?
         .callback("on_value", "On value callback")?
         .param("value", BasicType::Uint32, "Value")?
-        .return_type(ReturnType::new(
-            BasicType::Uint32,
-            "Some value",
-        ))?
+        .return_type(ReturnType::new(BasicType::Uint32, "Some value"))?
         .build()?
         .callback("on_duration", "On duration callback")?
-        .param(
-            "value",
-            DurationType::Milliseconds,
-            "Value",
-        )?
-        .return_type(ReturnType::new(
-            DurationType::Milliseconds,
-            "Some value",
-        ))?
+        .param("value", DurationType::Milliseconds, "Value")?
+        .return_type(ReturnType::new(DurationType::Milliseconds, "Some value"))?
         .build()?
         .destroy_callback("on_destroy")?
         .build()?;
@@ -33,67 +23,38 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare each native function
     let cbsource_new_func = lib
         .declare_native_function("cbsource_new")?
-        .return_type(ReturnType::new(
-            cbsource.clone(),
-            "Handle to a CallbackSource",
-        ))?
+        .returns(cbsource.clone(), "Handle to a CallbackSource")?
         .doc("Create a new CallbackSource")?
         .build()?;
 
     let cbsource_destroy_func = lib
         .declare_native_function("cbsource_destroy")?
-        .param(
-            "cbsource",
-            cbsource.clone(),
-            "Callback source",
-        )?
-        .return_type(ReturnType::void())?
+        .param("cbsource", cbsource.clone(), "Callback source")?
+        .returns_nothing()?
         .doc("Destroy a callback source")?
         .build()?;
 
     let cbsource_set_interface = lib
         .declare_native_function("cbsource_set_interface")?
-        .param(
-            "cbsource",
-            cbsource.clone(),
-            "Callback source",
-        )?
-        .param("cb", Type::Interface(interface), "Callback to add")?
-        .return_type(ReturnType::void())?
+        .param("cbsource", cbsource.clone(), "Callback source")?
+        .param("cb", interface, "Callback to add")?
+        .returns_nothing()?
         .doc("Add a callback")?
         .build()?;
 
     let cbsource_set_value_func = lib
         .declare_native_function("cbsource_set_value")?
-        .param(
-            "cbsource",
-            cbsource.clone(),
-            "Callback source",
-        )?
+        .param("cbsource", cbsource.clone(), "Callback source")?
         .param("value", BasicType::Uint32, "New value")?
-        .return_type(ReturnType::new(
-            BasicType::Uint32,
-            "Value returned by the callback",
-        ))?
+        .returns(BasicType::Uint32, "Value returned by the callback")?
         .doc("Set the value and call all the callbacks")?
         .build()?;
 
     let cbsource_set_duration_func = lib
         .declare_native_function("cbsource_set_duration")?
-        .param(
-            "cbsource",
-            cbsource.clone(),
-            "Callback source",
-        )?
-        .param(
-            "value",
-            BasicType::Duration(DurationType::Milliseconds),
-            "New duration",
-        )?
-        .return_type(ReturnType::new(
-            BasicType::Duration(DurationType::Milliseconds),
-            "Some value",
-        ))?
+        .param("cbsource", cbsource.clone(), "Callback source")?
+        .param("value", DurationType::Milliseconds, "New duration")?
+        .returns(DurationType::Milliseconds, "Some value")?
         .doc("Set the duration and call all the callbacks")?
         .build()?;
 

@@ -1,5 +1,7 @@
 use crate::native_function::Type;
 use crate::native_struct::StructElementType;
+use crate::native_enum::NativeEnumHandle;
+
 use std::time::Duration;
 
 /// Durations may be mapped in multiple ways
@@ -32,8 +34,8 @@ impl DurationMapping {
 }
 
 /// Basic types are trivially copyable. They can be used
-/// in almost any context within the model
-#[derive(Debug, Copy, Clone, PartialEq)]
+/// in almost any context within the API model
+#[derive(Debug, Clone, PartialEq)]
 pub enum BasicType {
     Bool,
     Uint8,
@@ -47,6 +49,7 @@ pub enum BasicType {
     Float,
     Double,
     Duration(DurationMapping),
+    Enum(NativeEnumHandle)
 }
 
 impl From<BasicType> for Type {
@@ -70,6 +73,7 @@ impl From<BasicType> for StructElementType {
             BasicType::Float => StructElementType::Float(None),
             BasicType::Double => StructElementType::Double(None),
             BasicType::Duration(mapping) => StructElementType::Duration(mapping, None),
+            BasicType::Enum(handle) => StructElementType::Enum(handle, None),
         }
     }
 }

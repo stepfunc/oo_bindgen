@@ -12,7 +12,6 @@ pub enum Type {
     // Complex types
     Struct(NativeStructHandle),
     StructRef(NativeStructDeclarationHandle),
-    Enum(NativeEnumHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),

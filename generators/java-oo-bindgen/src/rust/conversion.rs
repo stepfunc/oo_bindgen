@@ -56,10 +56,11 @@ impl JniType for BasicType {
             Self::Float => "jni::sys::jfloat",
             Self::Double => "jni::sys::jdouble",
             Self::Duration(_) => "jni::sys::jobject",
+            Self::Enum(_) => "jni::sys::jobject",
         }
     }
 
-    fn as_jni_sig(&self, _lib_path: &str) -> String {
+    fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Bool => "Z".to_string(),
             Self::Uint8 => "Lorg/joou/UByte;".to_string(),
@@ -73,6 +74,7 @@ impl JniType for BasicType {
             Self::Float => "F".to_string(),
             Self::Double => "D".to_string(),
             Self::Duration(_) => "Ljava/time/Duration;".to_string(),
+            Self::Enum(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
         }
     }
 
@@ -90,6 +92,7 @@ impl JniType for BasicType {
             Self::Float => "f32".to_string(),
             Self::Double => "f64".to_string(),
             Self::Duration(_) => "u64".to_string(),
+            Self::Enum(_) => "std::os::raw::c_int".to_string(),
         }
     }
 
@@ -107,6 +110,7 @@ impl JniType for BasicType {
             Self::Float => "f().unwrap()",
             Self::Double => "d().unwrap()",
             Self::Duration(_) => "l().unwrap().into_inner()",
+            Self::Enum(_) => "l().unwrap().into_inner()",
         }
     }
 
@@ -152,6 +156,7 @@ impl JniType for BasicType {
                 to, from
             )),
             Self::Duration(mapping) => DurationConverter(*mapping).convert_to_rust(f, from, to),
+            Self::Enum(handle) => EnumConverter(handle.clone()).convert_to_rust(f, from, to),
         }
     }
 
@@ -169,6 +174,7 @@ impl JniType for BasicType {
             Self::Float => None,
             Self::Double => None,
             Self::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
+            Self::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
         }
     }
 
@@ -187,90 +193,102 @@ impl JniType for BasicType {
             Self::Float => false,
             Self::Double => false,
             Self::Duration(_) => true,
+            Self::Enum(_) => false, // We re-use a global ref here
         }
     }
 
+
+
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+
+        fn perform_null_check(f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+            f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name))
+        }
+
         match self {
             Self::Bool => Ok(()),
-            Self::Uint8 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Uint8 => perform_null_check(f, param_name),
             Self::Sint8 => Ok(()),
-            Self::Uint16 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Uint16 => perform_null_check(f, param_name),
             Self::Sint16 => Ok(()),
-            Self::Uint32 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Uint32 => perform_null_check(f, param_name),
             Self::Sint32 => Ok(()),
-            Self::Uint64 => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Uint64 => perform_null_check(f, param_name),
             Self::Sint64 => Ok(()),
             Self::Float => Ok(()),
             Self::Double => Ok(()),
-            Self::Duration(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Duration(_) => perform_null_check(f, param_name),
+            Self::Enum(_) => perform_null_check(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
+
+        const NULL: &str = "jni::objects::JObject::null().into_inner()";
+
         match self {
             Self::Bool => "0",
-            Self::Uint8 => "jni::objects::JObject::null().into_inner()",
+            Self::Uint8 => NULL,
             Self::Sint8 => "0",
-            Self::Uint16 => "jni::objects::JObject::null().into_inner()",
+            Self::Uint16 => NULL,
             Self::Sint16 => "0",
-            Self::Uint32 => "jni::objects::JObject::null().into_inner()",
+            Self::Uint32 => NULL,
             Self::Sint32 => "0",
-            Self::Uint64 => "jni::objects::JObject::null().into_inner()",
+            Self::Uint64 => NULL,
             Self::Sint64 => "0",
             Self::Float => "0.0",
             Self::Double => "0.0",
-            Self::Duration(_) => "jni::objects::JObject::null().into_inner()",
+            Self::Duration(_) => NULL,
+            Self::Enum(_) => NULL,
         }
     }
 }
 
 impl JniType for Type {
     fn as_raw_jni_type(&self) -> &str {
+        const JOBJECT: &str = "jni::sys::jobject";
+
         match self {
-            Type::Basic(x) => x.as_raw_jni_type(),
-            Type::String => "jni::sys::jstring",
-            Type::Struct(_) => "jni::sys::jobject",
-            Type::StructRef(_) => "jni::sys::jobject",
-            Type::Enum(_) => "jni::sys::jobject",
-            Type::ClassRef(_) => "jni::sys::jobject",
-            Type::Interface(_) => "jni::sys::jobject",
-            Type::Iterator(_) => "jni::sys::jobject",
-            Type::Collection(_) => "jni::sys::jobject",
+            Self::Basic(x) => x.as_raw_jni_type(),
+            Self::String => "jni::sys::jstring",
+            Self::Struct(_) => JOBJECT,
+            Self::StructRef(_) => JOBJECT,
+            Self::ClassRef(_) => JOBJECT,
+            Self::Interface(_) => JOBJECT,
+            Self::Iterator(_) => JOBJECT,
+            Self::Collection(_) => JOBJECT,
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            Type::Basic(x) => x.as_jni_sig(lib_path),
-            Type::String => "Ljava/lang/String;".to_string(),
-            Type::Struct(handle) => format!("L{}/{};", lib_path, handle.name().to_camel_case()),
-            Type::StructRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::Enum(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::ClassRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::Interface(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
-            Type::Iterator(_) => "Ljava/util/List;".to_string(),
-            Type::Collection(_) => "Ljava/util/List;".to_string(),
+            Self::Basic(x) => x.as_jni_sig(lib_path),
+            Self::String => "Ljava/lang/String;".to_string(),
+            Self::Struct(handle) => format!("L{}/{};", lib_path, handle.name().to_camel_case()),
+            Self::StructRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
+            Self::ClassRef(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
+            Self::Interface(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
+            Self::Iterator(_) => "Ljava/util/List;".to_string(),
+            Self::Collection(_) => "Ljava/util/List;".to_string(),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            Type::Basic(x) => x.as_rust_type(ffi_name),
-            Type::String => "*const std::os::raw::c_char".to_string(),
-            Type::Struct(handle) => format!("{}::ffi::{}", ffi_name, handle.name().to_camel_case()),
-            Type::StructRef(handle) => {
+            Self::Basic(x) => x.as_rust_type(ffi_name),
+            Self::String => "*const std::os::raw::c_char".to_string(),
+            Self::Struct(handle) => format!("{}::ffi::{}", ffi_name, handle.name().to_camel_case()),
+            Self::StructRef(handle) => {
                 format!("*const {}::ffi::{}", ffi_name, handle.name.to_camel_case())
             }
-            Type::Enum(_) => "std::os::raw::c_int".to_string(),
-            Type::ClassRef(handle) => format!("*mut {}::{}", ffi_name, handle.name.to_camel_case()),
-            Type::Interface(handle) => {
+            Self::ClassRef(handle) => format!("*mut {}::{}", ffi_name, handle.name.to_camel_case()),
+            Self::Interface(handle) => {
                 format!("{}::ffi::{}", ffi_name, handle.name.to_camel_case())
             }
-            Type::Iterator(handle) => {
+            Self::Iterator(handle) => {
                 format!("*mut {}::{}", ffi_name, handle.name().to_camel_case())
             }
-            Type::Collection(handle) => {
+            Self::Collection(handle) => {
                 format!("*mut {}::{}", ffi_name, handle.name().to_camel_case())
             }
         }
@@ -278,15 +296,14 @@ impl JniType for Type {
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            Type::Basic(x) => x.convert_jvalue(),
-            Type::String => "l().unwrap().into_inner()",
-            Type::Struct(_) => "l().unwrap().into_inner()",
-            Type::StructRef(_) => "l().unwrap().into_inner()",
-            Type::Enum(_) => "l().unwrap().into_inner()",
-            Type::ClassRef(_) => "l().unwrap().into_inner()",
-            Type::Interface(_) => "l().unwrap().into_inner()",
-            Type::Iterator(_) => "l().unwrap().into_inner()",
-            Type::Collection(_) => "l().unwrap().into_inner()",
+            Self::Basic(x) => x.convert_jvalue(),
+            Self::String => "l().unwrap().into_inner()",
+            Self::Struct(_) => "l().unwrap().into_inner()",
+            Self::StructRef(_) => "l().unwrap().into_inner()",
+            Self::ClassRef(_) => "l().unwrap().into_inner()",
+            Self::Interface(_) => "l().unwrap().into_inner()",
+            Self::Iterator(_) => "l().unwrap().into_inner()",
+            Self::Collection(_) => "l().unwrap().into_inner()",
         }
     }
 
@@ -299,22 +316,21 @@ impl JniType for Type {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            Type::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            Type::String => StringConverter.convert_to_rust(f, from, to),
-            Type::Struct(handle) => StructConverter(handle.clone()).convert_to_rust(f, from, to),
-            Type::StructRef(handle) => {
+            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::String => StringConverter.convert_to_rust(f, from, to),
+            Self::Struct(handle) => StructConverter(handle.clone()).convert_to_rust(f, from, to),
+            Self::StructRef(handle) => {
                 StructRefConverter(handle.clone()).convert_to_rust(f, from, to)
             }
-            Type::Enum(handle) => EnumConverter(handle.clone()).convert_to_rust(f, from, to),
-            Type::ClassRef(handle) => ClassConverter(handle.clone()).convert_to_rust(f, from, to),
-            Type::Interface(handle) => {
+            Self::ClassRef(handle) => ClassConverter(handle.clone()).convert_to_rust(f, from, to),
+            Self::Interface(handle) => {
                 InterfaceConverter(handle.clone()).convert_to_rust(f, from, to)
             }
-            Type::Iterator(handle) => {
+            Self::Iterator(handle) => {
                 IteratorConverter(handle.clone(), lib_name.to_string(), prefix.to_string())
                     .convert_to_rust(f, from, to)
             }
-            Type::Collection(handle) => {
+            Self::Collection(handle) => {
                 CollectionConverter(handle.clone(), lib_name.to_string(), prefix.to_string())
                     .convert_to_rust(f, from, to)
             }
@@ -323,19 +339,18 @@ impl JniType for Type {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            Type::Basic(x) => x.conversion(lib_name, prefix),
-            Type::String => Some(Box::new(StringConverter)),
-            Type::Struct(handle) => Some(Box::new(StructConverter(handle.clone()))),
-            Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
-            Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
-            Type::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
-            Type::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
-            Type::Iterator(handle) => Some(Box::new(IteratorConverter(
+            Self::Basic(x) => x.conversion(lib_name, prefix),
+            Self::String => Some(Box::new(StringConverter)),
+            Self::Struct(handle) => Some(Box::new(StructConverter(handle.clone()))),
+            Self::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
+            Self::ClassRef(handle) => Some(Box::new(ClassConverter(handle.clone()))),
+            Self::Interface(handle) => Some(Box::new(InterfaceConverter(handle.clone()))),
+            Self::Iterator(handle) => Some(Box::new(IteratorConverter(
                 handle.clone(),
                 lib_name.to_string(),
                 prefix.to_string(),
             ))),
-            Type::Collection(handle) => Some(Box::new(CollectionConverter(
+            Self::Collection(handle) => Some(Box::new(CollectionConverter(
                 handle.clone(),
                 lib_name.to_string(),
                 prefix.to_string(),
@@ -345,51 +360,48 @@ impl JniType for Type {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            Type::Basic(x) => x.requires_local_ref_cleanup(),
-            Type::String => true,
-            Type::Struct(_) => true,
-            Type::StructRef(_) => true,
-            Type::Enum(_) => false, // We re-use a global ref here
-            Type::ClassRef(_) => true,
-            Type::Interface(_) => false, // This is freed by Rust
-            Type::Iterator(_) => true,
-            Type::Collection(_) => true,
+            Self::Basic(x) => x.requires_local_ref_cleanup(),
+            Self::String => true,
+            Self::Struct(_) => true,
+            Self::StructRef(_) => true,
+            Self::ClassRef(_) => true,
+            Self::Interface(_) => false, // This is freed by Rust
+            Self::Iterator(_) => true,
+            Self::Collection(_) => true,
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            Type::Basic(x) => x.check_null(f, param_name),
-            Type::String => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Struct(handle) => {
+            Self::Basic(x) => x.check_null(f, param_name),
+            Self::String => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Struct(handle) => {
                 f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name))?;
                 f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", handle.name().to_snake_case(), param_name, param_name))
             },
-            Type::StructRef(handle) => {
+            Self::StructRef(handle) => {
                 f.writeln(&format!("if !_env.is_same_object({}, jni::objects::JObject::null()).unwrap()", param_name))?;
                 blocked(f, |f| {
                     f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", handle.name.to_snake_case(), param_name, param_name))
                 })
             },
-            Type::Enum(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::ClassRef(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Interface(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Iterator(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
-            Type::Collection(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::ClassRef(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Interface(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Iterator(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
+            Self::Collection(_) => f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name)),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            Type::Basic(x) => x.default_value(),
-            Type::String => "jni::objects::JObject::null().into_inner()",
-            Type::Struct(_) => "jni::objects::JObject::null().into_inner()",
-            Type::StructRef(_) => "jni::objects::JObject::null().into_inner()",
-            Type::Enum(_) => "jni::objects::JObject::null().into_inner()",
-            Type::ClassRef(_) => "jni::objects::JObject::null().into_inner()",
-            Type::Interface(_) => "jni::objects::JObject::null().into_inner()",
-            Type::Iterator(_) => "jni::objects::JObject::null().into_inner()",
-            Type::Collection(_) => "jni::objects::JObject::null().into_inner()",
+            Self::Basic(x) => x.default_value(),
+            Self::String => "jni::objects::JObject::null().into_inner()",
+            Self::Struct(_) => "jni::objects::JObject::null().into_inner()",
+            Self::StructRef(_) => "jni::objects::JObject::null().into_inner()",
+            Self::ClassRef(_) => "jni::objects::JObject::null().into_inner()",
+            Self::Interface(_) => "jni::objects::JObject::null().into_inner()",
+            Self::Iterator(_) => "jni::objects::JObject::null().into_inner()",
+            Self::Collection(_) => "jni::objects::JObject::null().into_inner()",
         }
     }
 }

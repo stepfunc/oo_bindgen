@@ -78,6 +78,7 @@ pub mod types;
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
+use crate::types::BasicType;
 
 type Result<T> = std::result::Result<T, BindingError>;
 
@@ -924,7 +925,7 @@ impl LibraryBuilder {
                 self.validate_native_struct_declaration(native_struct)
             }
             Type::Struct(native_struct) => self.validate_native_struct(native_struct),
-            Type::Enum(native_enum) => self.validate_native_enum(native_enum),
+            Type::Basic(BasicType::Enum(native_enum)) => self.validate_native_enum(native_enum),
             Type::Interface(interface) => self.validate_interface(interface),
             Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
             Type::Iterator(iter) => self.validate_iterator(iter),

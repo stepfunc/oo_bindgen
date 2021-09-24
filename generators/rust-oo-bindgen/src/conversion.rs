@@ -33,6 +33,7 @@ impl RustType for BasicType {
             Self::Float => "f32".to_string(),
             Self::Double => "f64".to_string(),
             Self::Duration(_) => "std::time::Duration".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
         }
     }
 
@@ -50,6 +51,7 @@ impl RustType for BasicType {
             Self::Float => "f32".to_string(),
             Self::Double => "f64".to_string(),
             Self::Duration(_) => "u64".to_string(),
+            Self::Enum(_) => "std::os::raw::c_int".to_string(),
         }
     }
 
@@ -79,6 +81,7 @@ impl RustType for BasicType {
             Self::Float => None,
             Self::Double => None,
             Self::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
+            Self::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
         }
     }
 }
@@ -90,7 +93,6 @@ impl RustType for Type {
             Type::String => "&'a std::ffi::CStr".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
-            Type::Enum(handle) => handle.name.to_camel_case(),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => {
@@ -111,7 +113,6 @@ impl RustType for Type {
             Type::String => "*const std::os::raw::c_char".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
             Type::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
-            Type::Enum(_) => "std::os::raw::c_int".to_string(),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => {
@@ -132,7 +133,6 @@ impl RustType for Type {
             Type::String => true, // Just copying the reference
             Type::Struct(_) => false,
             Type::StructRef(_) => true,
-            Type::Enum(_) => true,
             Type::ClassRef(_) => true, // Just copying the opaque pointer
             Type::Interface(_) => false,
             Type::Iterator(_) => true,   // Just copying the pointer
@@ -146,7 +146,6 @@ impl RustType for Type {
             Type::String => true,
             Type::Struct(_) => false,
             Type::StructRef(_) => false,
-            Type::Enum(_) => false,
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
@@ -160,7 +159,6 @@ impl RustType for Type {
             Type::String => false,
             Type::Struct(_) => false,
             Type::StructRef(_) => false,
-            Type::Enum(_) => false,
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
@@ -174,7 +172,6 @@ impl RustType for Type {
             Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
-            Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(_) => None,
             Type::Interface(_) => None,
             Type::Iterator(_) => None,

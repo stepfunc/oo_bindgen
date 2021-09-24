@@ -29,6 +29,12 @@ impl NativeEnum {
 
 pub type NativeEnumHandle = Handle<NativeEnum>;
 
+impl From<NativeEnumHandle> for Type {
+    fn from(x: NativeEnumHandle) -> Self {
+        BasicType::Enum(x).into()
+    }
+}
+
 pub struct NativeEnumBuilder<'a> {
     pub(crate) lib: &'a mut LibraryBuilder,
     name: String,

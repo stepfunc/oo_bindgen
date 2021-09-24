@@ -120,7 +120,7 @@ impl CFormatting for Symbol {
 }
 
 impl CFormatting for BasicType {
-    fn to_c_type(&self, _: &str) -> String {
+    fn to_c_type(&self, prefix: &str) -> String {
         match self {
             Self::Bool => "bool".to_string(),
             Self::Uint8 => "uint8_t".to_string(),
@@ -134,6 +134,7 @@ impl CFormatting for BasicType {
             Self::Float => "float".to_string(),
             Self::Double => "double".to_string(),
             Self::Duration(_) => "uint64_t".to_string(),
+            Self::Enum(handle) => handle.to_c_type(prefix),
         }
     }
 }
@@ -145,7 +146,6 @@ impl CFormatting for Type {
             Type::String => "const char*".to_string(),
             Type::Struct(handle) => handle.to_c_type(prefix),
             Type::StructRef(handle) => format!("{}*", handle.to_c_type(prefix)),
-            Type::Enum(handle) => handle.to_c_type(prefix),
             Type::ClassRef(handle) => format!("{}*", handle.to_c_type(prefix)),
             Type::Interface(handle) => handle.to_c_type(prefix),
             Type::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),

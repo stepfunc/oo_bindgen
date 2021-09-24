@@ -7,7 +7,9 @@ use oo_bindgen::native_function::*;
 use oo_bindgen::types::{BasicType, DurationMapping};
 
 pub(crate) trait DotnetType {
+    /// Returns the .NET natural type
     fn as_dotnet_type(&self) -> String;
+    /// Return the .NET representation of the native C type
     fn as_native_type(&self) -> String;
     fn convert_to_native(&self, from: &str) -> Option<String>;
     fn cleanup(&self, from: &str) -> Option<String>;
@@ -29,6 +31,7 @@ impl DotnetType for BasicType {
             Self::Float => "float".to_string(),
             Self::Double => "double".to_string(),
             Self::Duration(_) => "TimeSpan".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
         }
     }
 
@@ -46,6 +49,7 @@ impl DotnetType for BasicType {
             Self::Float => "float".to_string(),
             Self::Double => "double".to_string(),
             Self::Duration(_) => "ulong".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
         }
     }
 
@@ -66,6 +70,7 @@ impl DotnetType for BasicType {
                 DurationMapping::Milliseconds => Some(format!("(ulong){}.TotalMilliseconds", from)),
                 DurationMapping::Seconds => Some(format!("(ulong){}.TotalSeconds", from)),
             },
+            Self::Enum(_) => None,
         }
     }
 
@@ -83,6 +88,7 @@ impl DotnetType for BasicType {
             Self::Float => None,
             Self::Double => None,
             Self::Duration(_) => None,
+            Self::Enum(_) => None,
         }
     }
 
@@ -105,70 +111,68 @@ impl DotnetType for BasicType {
                 }
                 DurationMapping::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
             },
+            Self::Enum(_) => None,
         }
     }
 }
 
 impl DotnetType for Type {
-    /// Returns the .NET natural type
+
     fn as_dotnet_type(&self) -> String {
         match self {
-            Type::Basic(x) => x.as_dotnet_type(),
-            Type::String => "string".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => handle.name.to_camel_case(),
-            Type::Enum(handle) => handle.name.to_camel_case(),
-            Type::ClassRef(handle) => handle.name.to_camel_case(),
-            Type::Interface(handle) => format!("I{}", handle.name.to_camel_case()),
-            Type::Iterator(handle) => format!(
+            Self::Basic(x) => x.as_dotnet_type(),
+            Self::String => "string".to_string(),
+            Self::Struct(handle) => handle.name().to_camel_case(),
+            Self::StructRef(handle) => handle.name.to_camel_case(),
+            Self::ClassRef(handle) => handle.name.to_camel_case(),
+            Self::Interface(handle) => format!("I{}", handle.name.to_camel_case()),
+            Self::Iterator(handle) => format!(
                 "System.Collections.Generic.ICollection<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => format!(
+            Self::Collection(handle) => format!(
                 "System.Collections.Generic.ICollection<{}>",
                 handle.item_type.as_dotnet_type()
             ),
         }
     }
 
-    /// Return the .NET representation of the native C type
+
     fn as_native_type(&self) -> String {
         match self {
-            Type::Basic(x) => x.as_native_type(),
-            Type::String => "IntPtr".to_string(),
-            Type::Struct(handle) => format!("{}Native", handle.name().to_camel_case()),
-            Type::StructRef(_) => "IntPtr".to_string(),
-            Type::Enum(handle) => handle.name.to_camel_case(),
-            Type::ClassRef(_) => "IntPtr".to_string(),
-            Type::Interface(handle) => format!("I{}NativeAdapter", handle.name.to_camel_case()),
-            Type::Iterator(_) => "IntPtr".to_string(),
-            Type::Collection(_) => "IntPtr".to_string(),
+            Self::Basic(x) => x.as_native_type(),
+            Self::String => "IntPtr".to_string(),
+            Self::Struct(handle) => format!("{}Native", handle.name().to_camel_case()),
+            Self::StructRef(_) => "IntPtr".to_string(),
+            Self::ClassRef(_) => "IntPtr".to_string(),
+            Self::Interface(handle) => format!("I{}NativeAdapter", handle.name.to_camel_case()),
+            Self::Iterator(_) => "IntPtr".to_string(),
+            Self::Collection(_) => "IntPtr".to_string(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            Type::Basic(x) => x.convert_to_native(from),
-            Type::String => Some(format!("Helpers.RustString.ToNative({})", from)),
-            Type::Struct(handle) => Some(format!(
+            Self::Basic(x) => x.convert_to_native(from),
+            Self::String => Some(format!("Helpers.RustString.ToNative({})", from)),
+            Self::Struct(handle) => Some(format!(
                 "{}Native.ToNative({})",
                 handle.name().to_camel_case(),
                 from
             )),
-            Type::StructRef(handle) => Some(format!(
+            Self::StructRef(handle) => Some(format!(
                 "{}Native.ToNativeRef({})",
                 handle.name.to_camel_case(),
                 from
             )),
-            Type::Enum(_) => None,
-            Type::ClassRef(_) => Some(format!("{}.self", from)),
-            Type::Interface(handle) => Some(format!(
+            Self::ClassRef(_) => Some(format!("{}.self", from)),
+            Self::Interface(handle) => Some(format!(
                 "new I{}NativeAdapter({})",
                 handle.name.to_camel_case(),
                 from
             )),
-            Type::Iterator(_) => Some("IntPtr.Zero".to_string()),
-            Type::Collection(handle) => Some(format!(
+            Self::Iterator(_) => Some("IntPtr.Zero".to_string()),
+            Self::Collection(handle) => Some(format!(
                 "{}Helpers.ToNative({})",
                 handle.collection_type.name.to_camel_case(),
                 from
@@ -178,19 +182,18 @@ impl DotnetType for Type {
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            Type::Basic(t) => t.cleanup(from),
-            Type::String => Some(format!("Helpers.RustString.Destroy({});", from)),
-            Type::Struct(_) => Some(format!("{}.Dispose();", from)),
-            Type::StructRef(handle) => Some(format!(
+            Self::Basic(t) => t.cleanup(from),
+            Self::String => Some(format!("Helpers.RustString.Destroy({});", from)),
+            Self::Struct(_) => Some(format!("{}.Dispose();", from)),
+            Self::StructRef(handle) => Some(format!(
                 "{}Native.NativeRefCleanup({});",
                 handle.name.to_camel_case(),
                 from
             )),
-            Type::Enum(_) => None,
-            Type::ClassRef(_) => None,
-            Type::Interface(_) => None,
-            Type::Iterator(_) => None,
-            Type::Collection(handle) => Some(format!(
+            Self::ClassRef(_) => None,
+            Self::Interface(_) => None,
+            Self::Iterator(_) => None,
+            Self::Collection(handle) => Some(format!(
                 "{}Helpers.Cleanup({});",
                 handle.collection_type.name.to_camel_case(),
                 from
@@ -200,36 +203,35 @@ impl DotnetType for Type {
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            Type::Basic(x) => x.convert_from_native(from),
-            Type::String => Some(format!("Helpers.RustString.FromNative({})", from)),
-            Type::Struct(handle) => Some(format!(
+            Self::Basic(x) => x.convert_from_native(from),
+            Self::String => Some(format!("Helpers.RustString.FromNative({})", from)),
+            Self::Struct(handle) => Some(format!(
                 "{}Native.FromNative({})",
                 handle.name().to_camel_case(),
                 from
             )),
-            Type::StructRef(handle) => Some(format!(
+            Self::StructRef(handle) => Some(format!(
                 "{}Native.FromNativeRef({})",
                 handle.name.to_camel_case(),
                 from
             )),
-            Type::Enum(_) => None,
-            Type::ClassRef(handle) => Some(format!(
+            Self::ClassRef(handle) => Some(format!(
                 "{}.FromNative({})",
                 handle.name.to_camel_case(),
                 from
             )),
-            Type::Interface(handle) => Some(format!(
+            Self::Interface(handle) => Some(format!(
                 "I{}NativeAdapter.FromNative({}.{})",
                 handle.name.to_camel_case(),
                 from,
                 handle.arg_name.to_mixed_case()
             )),
-            Type::Iterator(handle) => Some(format!(
+            Self::Iterator(handle) => Some(format!(
                 "{}Helpers.FromNative({})",
                 handle.iter_type.name.to_camel_case(),
                 from
             )),
-            Type::Collection(handle) => Some(format!(
+            Self::Collection(handle) => Some(format!(
                 "System.Collections.Immutable.ImmutableArray<{}>.Empty",
                 handle.item_type.as_dotnet_type()
             )),

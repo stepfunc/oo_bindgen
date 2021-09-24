@@ -24,6 +24,7 @@ impl JavaType for BasicType {
             Self::Float => "float".to_string(),
             Self::Double => "double".to_string(),
             Self::Duration(_) => "java.time.Duration".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
         }
     }
 
@@ -41,6 +42,7 @@ impl JavaType for BasicType {
             Self::Float => "Float".to_string(),
             Self::Double => "Double".to_string(),
             Self::Duration(_) => "java.time.Duration".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
         }
     }
 }
@@ -49,18 +51,17 @@ impl JavaType for Type {
     /// Return the Java primitive type
     fn as_java_primitive(&self) -> String {
         match self {
-            Type::Basic(x) => x.as_java_primitive(),
-            Type::String => "String".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => handle.name.to_camel_case(),
-            Type::Enum(handle) => handle.name.to_camel_case(),
-            Type::ClassRef(handle) => handle.name.to_camel_case(),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => format!(
+            Self::Basic(x) => x.as_java_primitive(),
+            Self::String => "String".to_string(),
+            Self::Struct(handle) => handle.name().to_camel_case(),
+            Self::StructRef(handle) => handle.name.to_camel_case(),
+            Self::ClassRef(handle) => handle.name.to_camel_case(),
+            Self::Interface(handle) => handle.name.to_camel_case(),
+            Self::Iterator(handle) => format!(
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => {
+            Self::Collection(handle) => {
                 format!("java.util.List<{}>", handle.item_type.as_java_object())
             }
         }
@@ -69,18 +70,17 @@ impl JavaType for Type {
     /// Returns the Java object type (for type parameter)
     fn as_java_object(&self) -> String {
         match self {
-            Type::Basic(x) => x.as_java_object(),
-            Type::String => "String".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => handle.name.to_camel_case(),
-            Type::Enum(handle) => handle.name.to_camel_case(),
-            Type::ClassRef(handle) => handle.name.to_camel_case(),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => format!(
+            Self::Basic(x) => x.as_java_object(),
+            Self::String => "String".to_string(),
+            Self::Struct(handle) => handle.name().to_camel_case(),
+            Self::StructRef(handle) => handle.name.to_camel_case(),
+            Self::ClassRef(handle) => handle.name.to_camel_case(),
+            Self::Interface(handle) => handle.name.to_camel_case(),
+            Self::Iterator(handle) => format!(
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => {
+            Self::Collection(handle) => {
                 format!("java.util.List<{}>", handle.item_type.as_java_object())
             }
         }

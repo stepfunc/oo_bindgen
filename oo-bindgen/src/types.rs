@@ -45,6 +45,12 @@ impl From<DurationType> for Type {
     }
 }
 
+impl From<DurationType> for StructElementType {
+    fn from(x: DurationType) -> Self {
+        BasicType::Duration(x).into()
+    }
+}
+
 /// Basic types are trivially copyable. They can be used
 /// in almost any context within the API model
 #[derive(Debug, Clone, PartialEq)]

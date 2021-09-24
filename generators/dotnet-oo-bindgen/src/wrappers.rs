@@ -1,6 +1,6 @@
 use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::Library;
 use oo_bindgen::native_function::{NativeFunctionHandle, NativeFunctionType};
+use oo_bindgen::Library;
 
 use crate::conversion::DotnetType;
 use crate::formatting::*;

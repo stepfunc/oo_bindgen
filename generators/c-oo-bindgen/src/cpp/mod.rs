@@ -3,13 +3,18 @@ mod names;
 mod types;
 
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::callback::{CallbackParameter, InterfaceElement, InterfaceHandle, CallbackFunction};
+use oo_bindgen::callback::{
+    CallbackFunction, CallbackParameter, InterfaceElement, InterfaceHandle,
+};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::NativeEnumHandle;
-use oo_bindgen::native_struct::{NativeStructDeclaration, NativeStructHandle, NativeStructType, NativeStructElement, StructElementType};
+use oo_bindgen::native_struct::{
+    NativeStructDeclaration, NativeStructElement, NativeStructHandle, NativeStructType,
+    StructElementType,
+};
 use oo_bindgen::{Library, Statement};
 use std::path::PathBuf;
 
@@ -19,11 +24,12 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, Type, DurationMapping};
-use types::*;
+use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, Type};
+use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
+use types::*;
 
-const FRIEND_CLASS_NAME: &'static str = "InternalFriendClass";
+const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
 fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     let name = lib.c_ffi_prefix.to_snake_case();
@@ -141,24 +147,26 @@ fn get_struct_full_constructor_args(handle: &NativeStructHandle) -> String {
         .iter()
         .map(|x| {
             format!(
-                    "{} {}",
-                    x.element_type.to_type().get_cpp_struct_constructor_type(),
-                    x.name
+                "{} {}",
+                x.element_type.to_type().get_cpp_struct_constructor_type(),
+                x.name
             )
         })
         .collect::<Vec<String>>()
         .join(", ")
 }
 
-fn print_native_struct_header(f: &mut dyn Printer, handle: &NativeStructHandle, lib: &Library) -> FormattingResult<()> {
-
+fn print_native_struct_header(
+    f: &mut dyn Printer,
+    handle: &NativeStructHandle,
+    _lib: &Library,
+) -> FormattingResult<()> {
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
     f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
     if let NativeStructType::Opaque = handle.struct_type {
         f.writeln("private:")?;
     }
     indented(f, |f| {
-
         // delete the default constructor unless all fields have default values in which case it'll
         // be written below
         if !handle.all_fields_have_defaults() {
@@ -166,12 +174,20 @@ fn print_native_struct_header(f: &mut dyn Printer, handle: &NativeStructHandle, 
         }
 
         // constructor that applies the default values
-        f.writeln(&format!("{}({});", handle.cpp_name(), get_struct_default_constructor_args(handle)))?;
+        f.writeln(&format!(
+            "{}({});",
+            handle.cpp_name(),
+            get_struct_default_constructor_args(handle)
+        ))?;
         f.newline()?;
 
         // write a full constructor unless the one above already takes all the values
         if !handle.no_fields_have_defaults() {
-            f.writeln(&format!("{}({});", handle.cpp_name(), get_struct_full_constructor_args(handle)))?;
+            f.writeln(&format!(
+                "{}({});",
+                handle.cpp_name(),
+                get_struct_full_constructor_args(handle)
+            ))?;
             f.newline()?;
         }
 
@@ -411,10 +427,26 @@ fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
         f.writeln("public:")?;
 
         for handle in lib.native_structs() {
-            f.writeln(&format!("static {} to_cpp(const {}& x);", handle.declaration().cpp_name(), handle.to_c_type(&lib.c_ffi_prefix)))?;
-            f.writeln(&format!("static std::unique_ptr<{}> to_cpp_ref(const {}* x);", handle.declaration().cpp_name(), handle.to_c_type(&lib.c_ffi_prefix)))?;
-            f.writeln(&format!("static {} from_cpp(const {}& x);", handle.to_c_type(&lib.c_ffi_prefix), handle.declaration().cpp_name()))?;
-            f.writeln(&format!("static std::unique_ptr<{}> from_cpp_ref(const {}* x);", handle.to_c_type(&lib.c_ffi_prefix), handle.declaration().cpp_name()))?;
+            f.writeln(&format!(
+                "static {} to_cpp(const {}& x);",
+                handle.declaration().cpp_name(),
+                handle.to_c_type(&lib.c_ffi_prefix)
+            ))?;
+            f.writeln(&format!(
+                "static std::unique_ptr<{}> to_cpp_ref(const {}* x);",
+                handle.declaration().cpp_name(),
+                handle.to_c_type(&lib.c_ffi_prefix)
+            ))?;
+            f.writeln(&format!(
+                "static {} from_cpp(const {}& x);",
+                handle.to_c_type(&lib.c_ffi_prefix),
+                handle.declaration().cpp_name()
+            ))?;
+            f.writeln(&format!(
+                "static std::unique_ptr<{}> from_cpp_ref(const {}* x);",
+                handle.to_c_type(&lib.c_ffi_prefix),
+                handle.declaration().cpp_name()
+            ))?;
             f.newline()?;
         }
 
@@ -447,13 +479,9 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln(&format!("return {}(", handle.declaration.cpp_name()))?;
         indented(f, |f| {
-            for (elem,last) in handle.elements.iter().with_last() {
+            for (elem, _last) in handle.elements.iter().with_last() {
                 let conversion = convert_native_struct_elem_to_cpp(elem);
-                if last {
-                    f.writeln(&format!("{}", conversion))?;
-                } else {
-                    f.writeln(&format!("{},", conversion))?;
-                }
+                f.writeln(&conversion.to_string())?;
             }
             Ok(())
         })?;
@@ -473,14 +501,17 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln("if (x) {")?;
         indented(f, |f| {
-            f.writeln(&format!("return std::make_unique<{}>(", handle.declaration.cpp_name()))?;
+            f.writeln(&format!(
+                "return std::make_unique<{}>(",
+                handle.declaration.cpp_name()
+            ))?;
             indented(f, |f| {
-                for (elem,last) in handle.elements.iter().with_last() {
+                for (elem, last) in handle.elements.iter().with_last() {
                     let conversion = convert_native_struct_ptr_elem_to_cpp(elem);
                     if last {
-                        f.writeln(&format!("{}", conversion))?;
+                        f.writeln(&conversion.to_string())?;
                     } else {
-                        f.writeln(&format!("{},", conversion))?;
+                        f.writeln(&conversion.to_string())?;
                     }
                 }
                 Ok(())
@@ -489,9 +520,7 @@ fn print_struct_conversion_impl(
         })?;
         f.writeln("}")?;
         f.writeln("else {")?;
-        indented(f, |f| {
-            f.writeln("return nullptr;")
-        })?;
+        indented(f, |f| f.writeln("return nullptr;"))?;
         f.writeln("}")
     })?;
     f.writeln("}")?;
@@ -508,7 +537,7 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln("return {")?;
         indented(f, |f| {
-            for (elem,last) in handle.elements.iter().with_last() {
+            for (elem, last) in handle.elements.iter().with_last() {
                 let conversion = convert_native_struct_elem_from_cpp(elem);
                 if last {
                     f.writeln(&format!("{}", conversion))?;
@@ -534,9 +563,13 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln("if (x) {")?;
         indented(f, |f| {
-            f.writeln(&format!("return std::unique_ptr<{}>(new {} {{", handle.to_c_type(&lib.c_ffi_prefix), handle.to_c_type(&lib.c_ffi_prefix)))?;
+            f.writeln(&format!(
+                "return std::unique_ptr<{}>(new {} {{",
+                handle.to_c_type(&lib.c_ffi_prefix),
+                handle.to_c_type(&lib.c_ffi_prefix)
+            ))?;
             indented(f, |f| {
-                for (elem,last) in handle.elements.iter().with_last() {
+                for (elem, last) in handle.elements.iter().with_last() {
                     let conversion = convert_native_struct_ptr_elem_from_cpp(elem);
                     if last {
                         f.writeln(&format!("{}", conversion))?;
@@ -550,9 +583,7 @@ fn print_struct_conversion_impl(
         })?;
         f.writeln("}")?;
         f.writeln("else {")?;
-        indented(f, |f| {
-            f.writeln("return nullptr;")
-        })?;
+        indented(f, |f| f.writeln("return nullptr;"))?;
         f.writeln("}")
     })?;
     f.writeln("}")?;
@@ -625,78 +656,79 @@ fn print_enum_conversions(
     f.newline()
 }
 
-fn convert_to_cpp(typ: &Type, expr: String) -> String {
-
+fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
     match typ {
-        Type::Bool => expr,
-        Type::Uint8 => expr,
-        Type::Sint8 => expr,
-        Type::Uint16 => expr,
-        Type::Sint16 => expr,
-        Type::Uint32 => expr,
-        Type::Sint32 => expr,
-        Type::Uint64 => expr,
-        Type::Sint64 => expr,
-        Type::Float => expr,
-        Type::Double => expr,
+        BasicType::Bool => expr,
+        BasicType::Uint8 => expr,
+        BasicType::Sint8 => expr,
+        BasicType::Uint16 => expr,
+        BasicType::Sint16 => expr,
+        BasicType::Uint32 => expr,
+        BasicType::Sint32 => expr,
+        BasicType::Uint64 => expr,
+        BasicType::Sint64 => expr,
+        BasicType::Float => expr,
+        BasicType::Double => expr,
+        BasicType::Duration(t) => match t {
+            DurationType::Milliseconds => {
+                format!("convert::from_sec_u64({})", expr)
+            }
+            DurationType::Seconds => {
+                format!("convert::from_msec_u64({})", expr)
+            }
+        },
+        BasicType::Enum(_) => format!("convert::to_cpp({})", expr),
+    }
+}
+
+fn convert_to_cpp(typ: &Type, expr: String) -> String {
+    match typ {
+        Type::Basic(x) => convert_basic_type_to_cpp(x, expr),
         Type::String => format!("std::string({})", expr),
         Type::Struct(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
         Type::StructRef(_) => format!("{}::to_cpp_ref({})", FRIEND_CLASS_NAME, expr),
-        Type::Enum(_) => format!("convert::to_cpp({})", expr),
         Type::ClassRef(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
         Type::Interface(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
         Type::Iterator(_) => format!("convert::to_vec({})", expr),
         Type::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
-        Type::Duration(mapping) => {
-            match mapping {
-                DurationMapping::Milliseconds => {
-                    format!("convert::from_sec_u64({})", expr)
-                }
-                DurationMapping::Seconds => {
-                    format!("convert::from_msec_u64({})", expr)
-                }
-                DurationMapping::SecondsFloat => {
-                    format!("convert::from_sec_float({})", expr)
-                }
+    }
+}
+
+fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
+    match t {
+        BasicType::Bool => expr,
+        BasicType::Uint8 => expr,
+        BasicType::Sint8 => expr,
+        BasicType::Uint16 => expr,
+        BasicType::Sint16 => expr,
+        BasicType::Uint32 => expr,
+        BasicType::Sint32 => expr,
+        BasicType::Uint64 => expr,
+        BasicType::Sint64 => expr,
+        BasicType::Float => expr,
+        BasicType::Double => expr,
+        BasicType::Duration(t) => match t {
+            DurationType::Milliseconds => {
+                format!("convert::to_sec_u64({})", expr)
             }
-        }
+            DurationType::Seconds => {
+                format!("convert::to_msec_u64({})", expr)
+            }
+        },
+        BasicType::Enum(_) => format!("convert::from_cpp({})", expr),
     }
 }
 
 fn convert_to_c(typ: &Type, expr: String) -> String {
     match typ {
-        Type::Bool => expr,
-        Type::Uint8 => expr,
-        Type::Sint8 => expr,
-        Type::Uint16 => expr,
-        Type::Sint16 => expr,
-        Type::Uint32 => expr,
-        Type::Sint32 => expr,
-        Type::Uint64 => expr,
-        Type::Sint64 => expr,
-        Type::Float => expr,
-        Type::Double => expr,
+        Type::Basic(t) => convert_basic_type_to_c(t, expr),
         Type::String => format!("{}.c_str()", expr),
         Type::Struct(_) => format!("{}::from_cpp({})", FRIEND_CLASS_NAME, expr),
         Type::StructRef(_) => format!("{}::from_cpp_ref({})", FRIEND_CLASS_NAME, expr),
-        Type::Enum(_) => format!("convert::from_cpp({})", expr),
         Type::ClassRef(_) => unimplemented!(),
         Type::Interface(_) => format!("convert::from_cpp({})", expr),
         Type::Iterator(_) => "nullptr".to_string(), // Conversion not supported
         Type::Collection(_) => unimplemented!(),
-        Type::Duration(mapping) => {
-            match mapping {
-                DurationMapping::Milliseconds => {
-                    format!("convert::to_sec_u64({})", expr)
-                }
-                DurationMapping::Seconds => {
-                    format!("convert::to_msec_u64({})", expr)
-                }
-                DurationMapping::SecondsFloat => {
-                    format!("convert::to_sec_float({})", expr)
-                }
-            }
-        }
     }
 }
 
@@ -705,25 +737,26 @@ fn print_interface_conversions(
     f: &mut dyn Printer,
     handle: &InterfaceHandle,
 ) -> FormattingResult<()> {
-
     fn get_invocation(handle: &InterfaceHandle, func: &CallbackFunction) -> String {
         let args = func
             .parameters
             .iter()
-            .flat_map(|p|{
-                match p {
-                    CallbackParameter::Parameter(p) => {
-                        Some(convert_to_cpp(&p.param_type, p.cpp_name()))
-                    }
-                    CallbackParameter::Arg(_) => {
-                        None
-                    }
+            .flat_map(|p| match p {
+                CallbackParameter::Parameter(p) => {
+                    Some(convert_to_cpp(&p.param_type, p.cpp_name()))
                 }
+                CallbackParameter::Arg(_) => None,
             })
             .collect::<Vec<String>>()
             .join(", ");
 
-        format!("reinterpret_cast<{}*>({})->{}({})", handle.cpp_name(), func.arg_name.to_snake_case(), func.cpp_name(), args)
+        format!(
+            "reinterpret_cast<{}*>({})->{}({})",
+            handle.cpp_name(),
+            func.arg_name.to_snake_case(),
+            func.cpp_name(),
+            args
+        )
     }
 
     f.writeln(&format!(
@@ -733,35 +766,36 @@ fn print_interface_conversions(
         handle.cpp_name(),
     ))?;
     f.writeln("{")?;
-    indented(f, |f|{
-
+    indented(f, |f| {
         // Note: Designated initializers (i.e. C-style struct initialization) were standardized in C99,
         // but only to C++ in C++20. Therefore, we cannot use it here as we target a lower version of C++.
         f.writeln("return {")?;
-        indented(f, |f|{
+        indented(f, |f| {
             for x in &handle.elements {
                 match x {
                     InterfaceElement::Arg(_) => {
                         f.writeln("value.release(),")?;
                     }
                     InterfaceElement::DestroyFunction(_) => {
-                        f.writeln(&format!("[](void* {}) {{ delete reinterpret_cast<{}*>({}); }},", handle.arg_name, handle.cpp_name(), handle.arg_name))?;
+                        f.writeln(&format!(
+                            "[](void* {}) {{ delete reinterpret_cast<{}*>({}); }},",
+                            handle.arg_name,
+                            handle.cpp_name(),
+                            handle.arg_name
+                        ))?;
                     }
                     InterfaceElement::CallbackFunction(func) => {
-
-                        f.writeln(
-                            &format!(
-                                "[]({}) -> {} {{",
-                                crate::chelpers::callback_parameters_with_var_names(lib, func),
-                                func.return_type.to_c_type(&lib.c_ffi_prefix)
-                            )
-                        )?;
-                        indented(f, |f|{
+                        f.writeln(&format!(
+                            "[]({}) -> {} {{",
+                            crate::chelpers::callback_parameters_with_var_names(lib, func),
+                            func.return_type.to_c_type(&lib.c_ffi_prefix)
+                        ))?;
+                        indented(f, |f| {
                             match &func.return_type {
-                                ReturnType::Type(t,_) => {
+                                ReturnType::Type(t, _) => {
                                     let value = get_invocation(handle, func);
 
-                                    f.writeln(&format!("return {};", convert_to_c(t,value)))?;
+                                    f.writeln(&format!("return {};", convert_to_c(t, value)))?;
                                 }
                                 ReturnType::Void => {
                                     f.writeln(&format!("{};", get_invocation(handle, func)))?;
@@ -794,11 +828,17 @@ fn print_iterator_conversions(
     f.writeln("{")?;
     indented(f, |f| {
         let function_name = format!("{}_{}", lib.c_ffi_prefix, handle.native_func.name);
-        f.writeln(&format!("auto result = std::vector<{}>();", handle.item_type.cpp_name()))?;
+        f.writeln(&format!(
+            "auto result = std::vector<{}>();",
+            handle.item_type.cpp_name()
+        ))?;
         f.writeln(&format!("auto it = {}(x);", function_name))?;
         f.writeln("while (it != nullptr) {")?;
         indented(f, |f| {
-            f.writeln(&format!("result.push_back({});", convert_to_cpp(&Type::Struct(handle.item_type.clone()), "*it".to_string())))?;
+            f.writeln(&format!(
+                "result.push_back({});",
+                convert_to_cpp(&Type::Struct(handle.item_type.clone()), "*it".to_string())
+            ))?;
             f.writeln(&format!("it = {}(x);", function_name))
         })?;
         f.writeln("}")?;
@@ -813,7 +853,10 @@ fn print_enum_to_string_impl(
     f: &mut dyn Printer,
     handle: &NativeEnumHandle,
 ) -> FormattingResult<()> {
-    f.writeln(&format!("const char* to_string({} value)", handle.cpp_name()))?;
+    f.writeln(&format!(
+        "const char* to_string({} value)",
+        handle.cpp_name()
+    ))?;
     f.writeln("{")?;
     indented(f, |f| {
         f.writeln("switch(value)")?;
@@ -827,7 +870,10 @@ fn print_enum_to_string_impl(
                     v.name
                 ))?;
             }
-            f.writeln(&format!("default: throw std::invalid_argument(\"Undefined value for enum '{}'\");", handle.name))
+            f.writeln(&format!(
+                "default: throw std::invalid_argument(\"Undefined value for enum '{}'\");",
+                handle.name
+            ))
         })?;
         f.writeln("}")
     })?;
@@ -848,21 +894,29 @@ fn get_initializer_value(e: &NativeStructElement) -> String {
         StructElementType::Sint64(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
         StructElementType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
         StructElementType::Double(v) => v.map(|x| format!("{}", x)).unwrap_or(e.cpp_name()),
-        StructElementType::String(v) => v.as_ref().map(|x| format!("\"{}\"", x)).unwrap_or(format!("std::move({})", e.cpp_name())),
+        StructElementType::String(v) => v
+            .as_ref()
+            .map(|x| format!("\"{}\"", x))
+            .unwrap_or(format!("std::move({})", e.cpp_name())),
         StructElementType::Struct(x) => {
             if x.all_fields_have_defaults() {
                 format!("{}()", x.cpp_name())
             } else {
                 e.cpp_name()
             }
-        },
+        }
         StructElementType::StructRef(_) => unimplemented!(),
-        StructElementType::Enum(x, v) => v.as_ref().map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case())).unwrap_or(e.cpp_name()),
+        StructElementType::Enum(x, v) => v
+            .as_ref()
+            .map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case()))
+            .unwrap_or(e.cpp_name()),
         StructElementType::ClassRef(_) => unimplemented!(),
         StructElementType::Interface(_) => format!("std::move({})", e.cpp_name()),
         StructElementType::Iterator(_) => e.cpp_name(),
         StructElementType::Collection(_) => e.cpp_name(),
-        StructElementType::Duration(_, v) => v.map(|v| format!("std::chrono::milliseconds({})", v.as_millis())).unwrap_or(e.cpp_name()),
+        StructElementType::Duration(_, v) => v
+            .map(|v| format!("std::chrono::milliseconds({})", v.as_millis()))
+            .unwrap_or(e.cpp_name()),
     }
 }
 
@@ -870,26 +924,29 @@ fn print_struct_constructor_impl(
     f: &mut dyn Printer,
     handle: &NativeStructHandle,
 ) -> FormattingResult<()> {
-
     let name = handle.cpp_name();
-    f.writeln(&format!("{}::{}({}) :", name, name, get_struct_default_constructor_args(handle)))?;
+    f.writeln(&format!(
+        "{}::{}({}) :",
+        name,
+        name,
+        get_struct_default_constructor_args(handle)
+    ))?;
     indented(f, |f| {
         let mut i = 0;
         let last = handle.elements.len() - 1;
         for e in &handle.elements {
-           if i == last {
-               f.writeln(&format!("{}({})", e.cpp_name(), get_initializer_value(e)))?;
-           } else {
-               f.writeln(&format!("{}({}),", e.cpp_name(), get_initializer_value(e)))?;
-           }
-           i += 1;
+            if i == last {
+                f.writeln(&format!("{}({})", e.cpp_name(), get_initializer_value(e)))?;
+            } else {
+                f.writeln(&format!("{}({}),", e.cpp_name(), get_initializer_value(e)))?;
+            }
+            i += 1;
         }
         Ok(())
     })?;
     f.writeln("{}")?;
     f.newline()
 }
-
 
 fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     if !lib.native_functions().any(|f| f.error_type.is_some()) {
@@ -1001,12 +1058,10 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 }
 
 fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
-
     let time_conversions = include_str!("./snippet/convert_time.cpp");
 
     // conversions
     namespace(f, "convert", |f| {
-
         for line in time_conversions.lines() {
             f.writeln(line)?;
         }

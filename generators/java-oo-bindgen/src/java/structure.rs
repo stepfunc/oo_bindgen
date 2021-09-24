@@ -3,6 +3,7 @@ use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::error_type::ExceptionType;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::types::DurationType;
 
 fn constructor_visibility(struct_type: NativeStructType) -> &'static str {
     match struct_type {
@@ -176,17 +177,13 @@ pub(crate) fn generate(
                 StructElementType::Duration(mapping, default) => {
                     if let Some(value) = default {
                         match mapping {
-                            DurationMapping::Milliseconds => f.write(&format!(
+                            DurationType::Milliseconds => f.write(&format!(
                                 " = java.time.Duration.ofMillis({})",
                                 value.as_millis()
                             ))?,
-                            DurationMapping::Seconds => f.write(&format!(
+                            DurationType::Seconds => f.write(&format!(
                                 " = java.time.Duration.ofSeconds({})",
                                 value.as_secs()
-                            ))?,
-                            DurationMapping::SecondsFloat => f.write(&format!(
-                                " = java.time.Duration.ofMillis({})",
-                                value.as_millis()
                             ))?,
                         }
                     }

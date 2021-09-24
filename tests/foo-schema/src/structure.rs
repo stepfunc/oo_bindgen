@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::{NativeStructHandle, StructElementType};
+use oo_bindgen::types::DurationType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {
@@ -38,8 +39,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
     let structure_interface = lib
         .define_interface("StructureInterface", "Interface within a structure")?
         .callback("on_value", "Callback on value")?
-        .param("value", Type::StructRef(structure.clone()), "New value")?
-        .return_type(ReturnType::Void)?
+        .param("value", structure.clone(), "New value")?
+        .returns_nothing()?
         .build()?
         .destroy_callback("on_destroy")?
         .build()?;
@@ -134,23 +135,15 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
         .add(
             "duration_millis",
             StructElementType::Duration(
-                DurationMapping::Milliseconds,
+                DurationType::Milliseconds,
                 Some(Duration::from_millis(4200)),
             ),
             "duration_millis",
         )?
         .add(
             "duration_seconds",
-            StructElementType::Duration(DurationMapping::Seconds, Some(Duration::from_secs(76))),
+            StructElementType::Duration(DurationType::Seconds, Some(Duration::from_secs(76))),
             "duration_seconds",
-        )?
-        .add(
-            "duration_seconds_float",
-            StructElementType::Duration(
-                DurationMapping::SecondsFloat,
-                Some(Duration::from_millis(15250)),
-            ),
-            "duration_seconds_float",
         )?
         .doc("Test structure")?
         .build()?;
@@ -163,10 +156,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
             Type::Struct(structure.clone()),
             "Structure to echo",
         )?
-        .return_type(ReturnType::new(
-            Type::Struct(structure.clone()),
-            "Echoed structure",
-        ))?
+        .returns(structure.clone(), "Echoed structure")?
         .doc("Echo structure by value")?
         .build()?;
 
@@ -177,10 +167,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
             Type::StructRef(structure.declaration()),
             "Structure to echo",
         )?
-        .return_type(ReturnType::new(
-            Type::Struct(structure.clone()),
-            "Echoed structure",
-        ))?
+        .returns(structure.clone(), "Echoed structure")?
         .doc("Echo structure by reference")?
         .build()?;
 

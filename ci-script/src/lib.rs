@@ -107,7 +107,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
     let mut platforms = PlatformLocations::new();
     if let Some(package_src) = package_src {
         let mut check_platform = |platform: Platform| {
-            let platform_path = [package_src, platform.to_string()]
+            let platform_path = [package_src, platform.as_string()]
                 .iter()
                 .collect::<PathBuf>();
             if platform_path.is_dir() {
@@ -147,9 +147,11 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 
     builder.generate(package);
 
-    if !package && run_tests {
-        builder.build();
-        builder.test();
+    if !package {
+        if run_tests {
+            builder.build();
+            builder.test();
+        }
     } else {
         builder.package();
     }
@@ -158,10 +160,17 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
 }
 
 pub struct BindingBuilderSettings<'a> {
+    /// FFI target name (as specified in with `cargo build -p <...>`)
+    pub ffi_target_name: &'a str,
+    /// Compiled FFI name (usually the same as `ffi_target_name`, but with hyphens replaced by underscores)
     pub ffi_name: &'a str,
+    /// Path to the FFI target
     pub ffi_path: &'a Path,
+    /// Name of the Java group (e.g. `io.stepfunc`)
     pub java_group_id: &'a str,
+    /// Destination path
     pub destination_path: &'a Path,
+    /// Library to build
     pub library: &'a Library,
 }
 
@@ -189,12 +198,14 @@ impl<'a> CBindingBuilder<'a> {
     fn build_doxygen(&self) {
         let config = c_oo_bindgen::CBindgenConfig {
             output_dir: self.output_dir(),
+            ffi_target_name: self.settings.ffi_target_name.to_owned(),
             ffi_name: self.settings.ffi_name.to_owned(),
+            is_release: env!("PROFILE") == "release",
             extra_files: Vec::new(),
-            platforms: self.platforms.clone(),
+            platform_location: self.platforms.iter().next().unwrap(),
         };
 
-        c_oo_bindgen::generate_doxygen(&self.settings.library, &config)
+        c_oo_bindgen::generate_doxygen(self.settings.library, &config)
             .expect("failed to package C lib");
     }
 
@@ -235,15 +246,19 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
     }
 
     fn generate(&mut self, _is_packaging: bool) {
-        let config = c_oo_bindgen::CBindgenConfig {
-            output_dir: self.output_dir(),
-            ffi_name: self.settings.ffi_name.to_owned(),
-            extra_files: self.extra_files.clone(),
-            platforms: self.platforms.clone(),
-        };
+        for platform in self.platforms.iter() {
+            let config = c_oo_bindgen::CBindgenConfig {
+                output_dir: self.output_dir(),
+                ffi_target_name: self.settings.ffi_target_name.to_owned(),
+                ffi_name: self.settings.ffi_name.to_owned(),
+                is_release: env!("PROFILE") == "release",
+                extra_files: self.extra_files.clone(),
+                platform_location: platform.clone(),
+            };
 
-        c_oo_bindgen::generate_c_package(&self.settings.library, &config)
-            .expect("failed to package C lib");
+            c_oo_bindgen::generate_c_package(self.settings.library, &config)
+                .expect("failed to package C lib");
+        }
     }
 
     fn build(&mut self) {
@@ -265,7 +280,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         // CMake build
         let result = Command::new("cmake")
             .current_dir(&build_dir)
-            .args(&["--build", "."])
+            .args(&["--build", ".", "--config", "Debug"])
             .status()
             .unwrap();
         assert!(result.success());
@@ -480,11 +495,20 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
             // You: *still puzzled about the situation, but accepting this hack*
             let target_dir = pathdiff::diff_paths("./target", self.rust_build_dir()).unwrap();
             let mut cmd = Command::new("cargo");
+
+            let current_platform = Platform::from_target_triple(env!("TARGET_TRIPLE")).unwrap();
+
             cmd.current_dir(self.rust_build_dir()).args(&[
                 "build",
                 "--target-dir",
                 &target_dir.to_string_lossy(),
             ]);
+
+            if current_platform == Platform::LinuxArm8Gnu {
+                // This is a hack in order to have the CI properly work
+                // It is due to how `cross` works.
+                cmd.args(&["--target", env!("TARGET_TRIPLE")]);
+            }
 
             if env!("PROFILE") == "release" {
                 cmd.arg("--release");

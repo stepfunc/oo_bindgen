@@ -1,60 +1,60 @@
-use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let uint8_echo = lib
         .declare_native_function("uint8_echo")?
-        .param("value", Type::Uint8, "Uint8")?
-        .return_type(ReturnType::new(Type::Uint8, "Uint8"))?
+        .param("value", BasicType::Uint8, "Uint8")?
+        .returns(BasicType::Uint8, "Uint8")?
         .doc("Echo a Uint8 value")?
         .build()?;
 
     let sint8_echo = lib
         .declare_native_function("sint8_echo")?
-        .param("value", Type::Sint8, "Sint8")?
-        .return_type(ReturnType::new(Type::Sint8, "Sint8"))?
+        .param("value", BasicType::Sint8, "Sint8")?
+        .returns(BasicType::Sint8, "Sint8")?
         .doc("Echo a Sint8 value")?
         .build()?;
 
     let uint16_echo = lib
         .declare_native_function("uint16_echo")?
-        .param("value", Type::Uint16, "Uint16")?
-        .return_type(ReturnType::new(Type::Uint16, "Uint16"))?
+        .param("value", BasicType::Uint16, "Uint16")?
+        .returns(BasicType::Uint16, "Uint16")?
         .doc("Echo a Uint16 value")?
         .build()?;
 
     let sint16_echo = lib
         .declare_native_function("sint16_echo")?
-        .param("value", Type::Sint16, "Sint16")?
-        .return_type(ReturnType::new(Type::Sint16, "Sint16"))?
+        .param("value", BasicType::Sint16, "Sint16")?
+        .returns(BasicType::Sint16, "Sint16")?
         .doc("Echo a Sint16 value")?
         .build()?;
 
     let uint32_echo = lib
         .declare_native_function("uint32_echo")?
-        .param("value", Type::Uint32, "Uint32")?
-        .return_type(ReturnType::new(Type::Uint32, "Uint32"))?
+        .param("value", BasicType::Uint32, "Uint32")?
+        .returns(BasicType::Uint32, "Uint32")?
         .doc("Echo a Uint32 value")?
         .build()?;
 
     let sint32_echo = lib
         .declare_native_function("sint32_echo")?
-        .param("value", Type::Sint32, "Sint32")?
-        .return_type(ReturnType::new(Type::Sint32, "Sint32"))?
+        .param("value", BasicType::Sint32, "Sint32")?
+        .returns(BasicType::Sint32, "Sint32")?
         .doc("Echo a Sint32 value")?
         .build()?;
 
     let uint64_echo = lib
         .declare_native_function("uint64_echo")?
-        .param("value", Type::Uint64, "Uint64")?
-        .return_type(ReturnType::new(Type::Uint64, "Uint64"))?
+        .param("value", BasicType::Uint64, "Uint64")?
+        .returns(BasicType::Uint64, "Uint64")?
         .doc("Echo a Uint64 value")?
         .build()?;
 
     let sint64_echo = lib
         .declare_native_function("sint64_echo")?
-        .param("value", Type::Sint64, "Sint64")?
-        .return_type(ReturnType::new(Type::Sint64, "Sint64"))?
+        .param("value", BasicType::Sint64, "Sint64")?
+        .returns(BasicType::Sint64, "Sint64")?
         .doc("Echo a Sint64 value")?
         .build()?;
 

@@ -64,6 +64,12 @@ impl Interface {
 
 pub type InterfaceHandle = Handle<Interface>;
 
+impl From<InterfaceHandle> for Type {
+    fn from(x: InterfaceHandle) -> Self {
+        Type::Interface(x)
+    }
+}
+
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
@@ -190,12 +196,14 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: Into<String>, D: Into<DocString>>(
+    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<Type>>(
         mut self,
         name: S,
-        param_type: Type,
+        param_type: P,
         doc: D,
     ) -> Result<Self> {
+        let param_type: Type = param_type.into();
+
         self.builder.lib.validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
             name: name.into(),
@@ -219,7 +227,15 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
+    pub fn returns<T: Into<Type>, D: Into<DocString>>(self, t: T, d: D) -> Result<Self> {
+        self.return_type(ReturnType::new(t, d))
+    }
+
+    pub fn returns_nothing(self) -> Result<Self> {
+        self.return_type(ReturnType::Void)
+    }
+
+    fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

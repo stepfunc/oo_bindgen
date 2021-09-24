@@ -1,4 +1,5 @@
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -8,11 +9,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare each native function
     let testclass_new_func = lib
         .declare_native_function("testclass_new")?
-        .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::new(
-            Type::ClassRef(testclass.clone()),
-            "New TestClass",
-        ))?
+        .param("value", BasicType::Uint32, "Value")?
+        .returns(testclass.clone(), "New TestClass")?
         .doc(doc("Create a new {class:TestClass}")
             .details("Here are some details about {class:TestClass}. You can call {class:TestClass.GetValue()} method.")
             .details("Here is a reference to a constructor {class:TestClass.[constructor]} and to a destructor {class:TestClass.[destructor]}.")
@@ -26,43 +24,31 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let testclass_destroy_func = lib
         .declare_native_function("testclass_destroy")?
-        .param(
-            "testclass",
-            Type::ClassRef(testclass.clone()),
-            "Class handle",
-        )?
-        .return_type(ReturnType::void())?
+        .param("testclass", testclass.clone(), "Class handle")?
+        .returns_nothing()?
         .doc("Destroy a test class")?
         .build()?;
 
     let testclass_get_value_func = lib
         .declare_native_function("testclass_get_value")?
-        .param(
-            "testclass",
-            Type::ClassRef(testclass.clone()),
-            "TestClass handle",
-        )?
-        .return_type(ReturnType::new(Type::Uint32, "Current value"))?
+        .param("testclass", testclass.clone(), "TestClass handle")?
+        .returns(BasicType::Uint32, "Current value")?
         .doc("Get value (don't forget the {param:testclass}!)")?
         .build()?;
 
     let testclass_increment_value_func = lib
         .declare_native_function("testclass_increment_value")?
-        .param(
-            "testclass",
-            Type::ClassRef(testclass.clone()),
-            "TestClass handle",
-        )?
-        .return_type(ReturnType::void())?
+        .param("testclass", testclass.clone(), "TestClass handle")?
+        .returns_nothing()?
         .doc("Increment value")?
         .build()?;
 
     let get_value_cb = lib
         .define_interface("GetValueCallback", "GetValue callback handler")?
         .callback("on_value", "On value callback")?
-        .param("value", Type::Uint32, "Value")?
+        .param("value", BasicType::Uint32, "Value")?
         .ctx("data")?
-        .return_type(ReturnType::void())?
+        .returns_nothing()?
         .build()?
         .destroy_callback("on_destroy")?
         .ctx("data")?
@@ -70,26 +56,19 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let testclass_get_value_async_func = lib
         .declare_native_function("testclass_get_value_async")?
-        .param(
-            "testclass",
-            Type::ClassRef(testclass.clone()),
-            "TestClass handle",
-        )?
+        .param("testclass", testclass.clone(), "TestClass handle")?
         .param(
             "cb",
             Type::Interface(get_value_cb),
             "Callback to call with the value",
         )?
-        .return_type(ReturnType::void())?
+        .returns_nothing()?
         .doc("Get value through a callback")?
         .build()?;
 
     let testclass_construction_counter = lib
         .declare_native_function("testclass_construction_counter")?
-        .return_type(ReturnType::new(
-            Type::Uint32,
-            "Number of calls to the constructor",
-        ))?
+        .returns(BasicType::Uint32, "Number of calls to the constructor")?
         .doc("Get number of calls to the constructor")?
         .build()?;
 

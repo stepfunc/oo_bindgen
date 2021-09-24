@@ -2,72 +2,87 @@ use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
     fn as_java_object(&self) -> String;
 }
 
+impl JavaType for BasicType {
+    fn as_java_primitive(&self) -> String {
+        match self {
+            Self::Bool => "boolean".to_string(),
+            Self::Uint8 => "UByte".to_string(),
+            Self::Sint8 => "byte".to_string(),
+            Self::Uint16 => "UShort".to_string(),
+            Self::Sint16 => "short".to_string(),
+            Self::Uint32 => "UInteger".to_string(),
+            Self::Sint32 => "int".to_string(),
+            Self::Uint64 => "ULong".to_string(),
+            Self::Sint64 => "long".to_string(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
+            Self::Duration(_) => "java.time.Duration".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
+        }
+    }
+
+    fn as_java_object(&self) -> String {
+        match self {
+            Self::Bool => "Boolean".to_string(),
+            Self::Uint8 => "UByte".to_string(),
+            Self::Sint8 => "Byte".to_string(),
+            Self::Uint16 => "UShort".to_string(),
+            Self::Sint16 => "Short".to_string(),
+            Self::Uint32 => "UInteger".to_string(),
+            Self::Sint32 => "Integer".to_string(),
+            Self::Uint64 => "ULong".to_string(),
+            Self::Sint64 => "Long".to_string(),
+            Self::Float => "Float".to_string(),
+            Self::Double => "Double".to_string(),
+            Self::Duration(_) => "java.time.Duration".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
+        }
+    }
+}
+
 impl JavaType for Type {
     /// Return the Java primitive type
     fn as_java_primitive(&self) -> String {
         match self {
-            Type::Bool => "boolean".to_string(),
-            Type::Uint8 => "UByte".to_string(),
-            Type::Sint8 => "byte".to_string(),
-            Type::Uint16 => "UShort".to_string(),
-            Type::Sint16 => "short".to_string(),
-            Type::Uint32 => "UInteger".to_string(),
-            Type::Sint32 => "int".to_string(),
-            Type::Uint64 => "ULong".to_string(),
-            Type::Sint64 => "long".to_string(),
-            Type::Float => "float".to_string(),
-            Type::Double => "double".to_string(),
-            Type::String => "String".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => handle.name.to_camel_case(),
-            Type::Enum(handle) => handle.name.to_camel_case(),
-            Type::ClassRef(handle) => handle.name.to_camel_case(),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => format!(
+            Self::Basic(x) => x.as_java_primitive(),
+            Self::String => "String".to_string(),
+            Self::Struct(handle) => handle.name().to_camel_case(),
+            Self::StructRef(handle) => handle.name.to_camel_case(),
+            Self::ClassRef(handle) => handle.name.to_camel_case(),
+            Self::Interface(handle) => handle.name.to_camel_case(),
+            Self::Iterator(handle) => format!(
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => {
+            Self::Collection(handle) => {
                 format!("java.util.List<{}>", handle.item_type.as_java_object())
             }
-            Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
 
     /// Returns the Java object type (for type parameter)
     fn as_java_object(&self) -> String {
         match self {
-            Type::Bool => "Boolean".to_string(),
-            Type::Uint8 => "UByte".to_string(),
-            Type::Sint8 => "Byte".to_string(),
-            Type::Uint16 => "UShort".to_string(),
-            Type::Sint16 => "Short".to_string(),
-            Type::Uint32 => "UInteger".to_string(),
-            Type::Sint32 => "Integer".to_string(),
-            Type::Uint64 => "ULong".to_string(),
-            Type::Sint64 => "Long".to_string(),
-            Type::Float => "Float".to_string(),
-            Type::Double => "Double".to_string(),
-            Type::String => "String".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => handle.name.to_camel_case(),
-            Type::Enum(handle) => handle.name.to_camel_case(),
-            Type::ClassRef(handle) => handle.name.to_camel_case(),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => format!(
+            Self::Basic(x) => x.as_java_object(),
+            Self::String => "String".to_string(),
+            Self::Struct(handle) => handle.name().to_camel_case(),
+            Self::StructRef(handle) => handle.name.to_camel_case(),
+            Self::ClassRef(handle) => handle.name.to_camel_case(),
+            Self::Interface(handle) => handle.name.to_camel_case(),
+            Self::Iterator(handle) => format!(
                 "java.util.List<{}>",
                 handle.item_type.name().to_camel_case()
             ),
-            Type::Collection(handle) => {
+            Self::Collection(handle) => {
                 format!("java.util.List<{}>", handle.item_type.as_java_object())
             }
-            Type::Duration(_) => "java.time.Duration".to_string(),
         }
     }
 }

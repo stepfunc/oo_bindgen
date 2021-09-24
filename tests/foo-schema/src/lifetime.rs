@@ -1,4 +1,4 @@
-use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -6,17 +6,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_item = lib.declare_native_struct("IteratorItem")?;
     let iterator_next_fn = lib
         .declare_native_function("next_value_with_lifetime")?
-        .param("it", Type::ClassRef(iterator_class), "Iterator")?
-        .return_type(ReturnType::new(
-            Type::StructRef(iterator_item.clone()),
-            "Iterator Value",
-        ))?
+        .param("it", iterator_class, "Iterator")?
+        .returns(iterator_item.clone(), "Iterator Value")?
         .doc("test")?
         .build()?;
 
     let iterator_item = lib
         .define_native_struct(&iterator_item)?
-        .add("value", Type::Uint8, "test")?
+        .add("value", BasicType::Uint8, "test")?
         .doc("item type for iterator")?
         .build()?;
 
@@ -25,7 +22,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let outer = lib.declare_native_struct("StructWithIteratorWithLifeTime")?;
 
     lib.define_native_struct(&outer)?
-        .add("iter", Type::Iterator(iter), "test")?
+        .add("iter", iter, "test")?
         .doc("Structure with an iterator with a lifetime")?
         .build()?;
 

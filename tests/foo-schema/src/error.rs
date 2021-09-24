@@ -1,6 +1,7 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::native_function::{ReturnType, Type};
+use oo_bindgen::native_function::Type;
 use oo_bindgen::native_struct::NativeStructHandle;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::{BindingError, LibraryBuilder};
 
 pub(crate) fn define(
@@ -19,7 +20,7 @@ pub(crate) fn define(
     let get_special_number_fb = lib
         .declare_native_function("get_special_number")?
         .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::new(Type::Uint32, "unlocked value"))?
+        .returns(BasicType::Uint32, "unlocked value")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
         .build()?;
@@ -27,7 +28,7 @@ pub(crate) fn define(
     let get_struct_fn = lib
         .declare_native_function("get_struct")?
         .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::new(Type::Struct(structure), "A struct"))?
+        .returns(structure, "A struct")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a struct")?
         .build()?;
@@ -35,7 +36,7 @@ pub(crate) fn define(
     let echo_password_fn = lib
         .declare_native_function("echo_password")?
         .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::new(Type::String, "The password"))?
+        .returns(Type::String, "The password")?
         .fails_with(error_type.clone())?
         .doc("Use a password and echoes it if it's valid")?
         .build()?;
@@ -43,10 +44,7 @@ pub(crate) fn define(
     let constructor_fn = lib
         .declare_native_function("create_class_with_password")?
         .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::Type(
-            Type::ClassRef(my_class.clone()),
-            "allocated class".into(),
-        ))?
+        .returns(my_class.clone(), "allocated class")?
         .fails_with(error_type.clone())?
         .doc("Use a password to allocate a class")?
         .build()?;
@@ -58,7 +56,7 @@ pub(crate) fn define(
             Type::ClassRef(my_class.clone()),
             "class instance",
         )?
-        .return_type(ReturnType::Type(Type::Uint32, "special value".into()))?
+        .returns(BasicType::Uint32, "special value")?
         .fails_with(error_type)?
         .doc("extract a special value from the class instance")?
         .build()?;
@@ -70,7 +68,7 @@ pub(crate) fn define(
             Type::ClassRef(my_class.clone()),
             "class to destroy",
         )?
-        .return_nothing()?
+        .returns_nothing()?
         .doc("Destroy an instance")?
         .build()?;
 

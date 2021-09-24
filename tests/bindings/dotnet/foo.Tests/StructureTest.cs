@@ -81,8 +81,7 @@ namespace foo.Tests
             Assert.Equal(StructureEnum.Var2, structure.EnumValue);
 
             Assert.Equal(TimeSpan.FromMilliseconds(4200), structure.DurationMillis);
-            Assert.Equal(TimeSpan.FromSeconds(76), structure.DurationSeconds);
-            Assert.Equal(TimeSpan.FromSeconds(15.25f), structure.DurationSecondsFloat);
+            Assert.Equal(TimeSpan.FromSeconds(76), structure.DurationSeconds);            
         }
     }
 }

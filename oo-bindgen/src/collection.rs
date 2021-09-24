@@ -1,3 +1,4 @@
+use crate::types::BasicType;
 use crate::Result;
 use crate::*;
 
@@ -36,7 +37,7 @@ impl Collection {
 
         let mut iter = create_func.parameters.iter();
         let has_reserve = if let Some(param) = iter.next() {
-            if param.param_type != Type::Uint32 {
+            if param.param_type != Type::Basic(BasicType::Uint32) {
                 return Err(BindingError::CollectionCreateFuncInvalidSignature {
                     handle: create_func.clone(),
                 });
@@ -143,3 +144,9 @@ impl Collection {
 }
 
 pub type CollectionHandle = Handle<Collection>;
+
+impl From<CollectionHandle> for Type {
+    fn from(x: CollectionHandle) -> Self {
+        Type::Collection(x)
+    }
+}

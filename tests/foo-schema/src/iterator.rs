@@ -1,4 +1,5 @@
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -9,18 +10,15 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_item = lib.declare_native_struct("StringIteratorItem")?;
     let iterator_next_fn = lib
         .declare_native_function("iterator_next")?
-        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
-        .return_type(ReturnType::new(
-            Type::StructRef(iterator_item.clone()),
-            "Iterator value",
-        ))?
+        .param("it", iterator_class.clone(), "Iterator")?
+        .returns(iterator_item.clone(), "Iterator value")?
         .doc("Get the next value, or NULL if the iterator reached the end")?
         .build()?;
 
     // Define the iterator item structure
     let iterator_item = lib
         .define_native_struct(&iterator_item)?
-        .add("value", Type::Uint8, "Character value")?
+        .add("value", BasicType::Uint8, "Character value")?
         .doc("Single iterator item")?
         .build()?;
 
@@ -31,13 +29,13 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_create_fn = lib
         .declare_native_function("iterator_create")?
         .param("value", Type::String, "String to iterate on")?
-        .return_type(ReturnType::new(Type::Iterator(iterator), "New iterator"))?
+        .returns(iterator, "New iterator")?
         .doc("Create an iterator")?
         .build()?;
     let iterator_destroy_fn = lib
         .declare_native_function("iterator_destroy")?
-        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
-        .return_type(ReturnType::Void)?
+        .param("it", iterator_class.clone(), "Iterator")?
+        .returns_nothing()?
         .doc("Destroy an iterator")?
         .build()?;
     lib.define_class(&iterator_class)?

@@ -56,16 +56,17 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
+use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::*;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod chelpers;
 mod cpp;
 mod doc;
 mod formatting;
-mod chelpers;
 
 trait CFormatting {
     fn to_c_type(&self, prefix: &str) -> String;
@@ -120,32 +121,37 @@ impl CFormatting for Symbol {
     }
 }
 
+impl CFormatting for BasicType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        match self {
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "uint8_t".to_string(),
+            Self::Sint8 => "int8_t".to_string(),
+            Self::Uint16 => "uint16_t".to_string(),
+            Self::Sint16 => "int16_t".to_string(),
+            Self::Uint32 => "uint32_t".to_string(),
+            Self::Sint32 => "int32_t".to_string(),
+            Self::Uint64 => "uint64_t".to_string(),
+            Self::Sint64 => "int64_t".to_string(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
+            Self::Duration(_) => "uint64_t".to_string(),
+            Self::Enum(handle) => handle.to_c_type(prefix),
+        }
+    }
+}
+
 impl CFormatting for Type {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "uint8_t".to_string(),
-            Type::Sint8 => "int8_t".to_string(),
-            Type::Uint16 => "uint16_t".to_string(),
-            Type::Sint16 => "int16_t".to_string(),
-            Type::Uint32 => "uint32_t".to_string(),
-            Type::Sint32 => "int32_t".to_string(),
-            Type::Uint64 => "uint64_t".to_string(),
-            Type::Sint64 => "int64_t".to_string(),
-            Type::Float => "float".to_string(),
-            Type::Double => "double".to_string(),
+            Type::Basic(b) => b.to_c_type(prefix),
             Type::String => "const char*".to_string(),
             Type::Struct(handle) => handle.to_c_type(prefix),
             Type::StructRef(handle) => format!("{}*", handle.to_c_type(prefix)),
-            Type::Enum(handle) => handle.to_c_type(prefix),
             Type::ClassRef(handle) => format!("{}*", handle.to_c_type(prefix)),
             Type::Interface(handle) => handle.to_c_type(prefix),
             Type::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
             Type::Collection(handle) => format!("{}*", handle.collection_type.to_c_type(prefix)),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => "uint64_t".to_string(),
-                DurationMapping::SecondsFloat => "float".to_string(),
-            },
         }
     }
 }
@@ -161,27 +167,17 @@ impl CFormatting for ReturnType {
 
 pub struct CBindgenConfig {
     pub output_dir: PathBuf,
+    pub ffi_target_name: String,
     pub ffi_name: String,
+    pub is_release: bool,
     pub extra_files: Vec<PathBuf>,
-    pub platforms: PlatformLocations,
+    pub platform_location: PlatformLocation,
 }
 
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
-    for platform in config.platforms.iter() {
-        generate_single_package(lib, config, &platform)?;
-    }
-
-    Ok(())
-}
-
-fn generate_single_package(
-    lib: &Library,
-    config: &CBindgenConfig,
-    platform_location: &PlatformLocation,
-) -> FormattingResult<()> {
     let output_dir = config
         .output_dir
-        .join(platform_location.platform.to_string());
+        .join(config.platform_location.platform.as_string());
 
     // Create header file
     let include_path = output_dir.join("include");
@@ -192,24 +188,32 @@ fn generate_single_package(
     crate::cpp::generate_cpp_impl(lib, &include_path)?;
 
     // Generate CMake config file
-    generate_cmake_config(lib, config, &platform_location)?;
+    generate_cmake_config(lib, config, &config.platform_location)?;
 
     // Copy lib files (lib and DLL on Windows, .so on Linux)
     let lib_path = output_dir
         .join("lib")
-        .join(platform_location.platform.to_string());
+        .join(config.platform_location.platform.as_string());
     fs::create_dir_all(&lib_path)?;
 
-    let lib_filename = platform_location.lib_filename(&config.ffi_name);
+    let lib_filename = config
+        .platform_location
+        .static_lib_filename(&config.ffi_name);
     fs::copy(
-        platform_location.location.join(&lib_filename),
+        config.platform_location.location.join(&lib_filename),
+        lib_path.join(&lib_filename),
+    )?;
+
+    let lib_filename = config.platform_location.dyn_lib_filename(&config.ffi_name);
+    fs::copy(
+        config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
 
     // Copy DLL on Windows
-    let bin_filename = platform_location.bin_filename(&config.ffi_name);
+    let bin_filename = config.platform_location.bin_filename(&config.ffi_name);
     fs::copy(
-        platform_location.location.join(&bin_filename),
+        config.platform_location.location.join(&bin_filename),
         lib_path.join(&bin_filename),
     )?;
 
@@ -249,7 +253,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
             .write_all(
                 &format!(
                     "INPUT = {}/include\n",
-                    config.platforms.iter().next().unwrap().platform.to_string()
+                    config.platform_location.platform.as_string()
                 )
                 .into_bytes(),
             )
@@ -591,9 +595,8 @@ fn write_struct_initializer(
                     StructElementType::Duration(mapping, default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => match mapping {
-                            DurationMapping::Milliseconds => value.as_millis().to_string(),
-                            DurationMapping::Seconds => value.as_secs().to_string(),
-                            DurationMapping::SecondsFloat => value.as_secs_f32().to_string(),
+                            DurationType::Milliseconds => value.as_millis().to_string(),
+                            DurationType::Seconds => value.as_secs().to_string(),
                         },
                     },
                 };
@@ -723,7 +726,7 @@ fn write_function_docs(
         for param in &handle.parameters {
             f.writeln(&format!("@param {} ", param.name))?;
             docstring_print(f, &param.doc, lib)?;
-            if let Type::Duration(mapping) = param.param_type {
+            if let Type::Basic(BasicType::Duration(mapping)) = param.param_type {
                 f.write(&format!(" ({})", mapping.unit()))?;
             }
         }
@@ -737,7 +740,7 @@ fn write_function_docs(
             NativeFunctionType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
-                if let Type::Duration(mapping) = ret {
+                if let Type::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
             }
@@ -747,7 +750,7 @@ fn write_function_docs(
             NativeFunctionType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
-                if let Type::Duration(mapping) = ret {
+                if let Type::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
                 write_error_return_doc(f)?;
@@ -862,7 +865,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                         handle.name.to_snake_case(),
                     ))?;
 
-                    f.write(&chelpers::callback_parameters(lib,handle))?;
+                    f.write(&chelpers::callback_parameters(lib, handle))?;
 
                     f.write(");")?;
                 }
@@ -984,30 +987,100 @@ fn generate_cmake_config(
     // Create file
     let cmake_path = config
         .output_dir
-        .join(platform_location.platform.to_string())
+        .join(platform_location.platform.as_string())
         .join("cmake");
     fs::create_dir_all(&cmake_path)?;
     let filename = cmake_path.join(format!("{}-config.cmake", lib.name));
     let mut f = FilePrinter::new(filename)?;
 
+    let link_deps = get_link_dependencies(config);
+
     // Prefix used everywhere else
     f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/../\")")?;
     f.newline()?;
 
+    // Write dynamic library version
     f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
     f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
     indented(&mut f, |f| {
         f.writeln(&format!(
             "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.to_string(),
+            platform_location.platform.as_string(),
             platform_location.bin_filename(&config.ffi_name)
         ))?;
         f.writeln(&format!(
             "IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.to_string(),
-            platform_location.lib_filename(&config.ffi_name)
+            platform_location.platform.as_string(),
+            platform_location.dyn_lib_filename(&config.ffi_name)
         ))?;
         f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
     })?;
+    f.writeln(")")?;
+
+    f.newline()?;
+
+    // Write static library
+    f.writeln(&format!(
+        "add_library({}_static STATIC IMPORTED GLOBAL)",
+        lib.name
+    ))?;
+    f.writeln(&format!(
+        "set_target_properties({}_static PROPERTIES",
+        lib.name
+    ))?;
+    indented(&mut f, |f| {
+        f.writeln(&format!(
+            "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
+            platform_location.platform.as_string(),
+            platform_location.static_lib_filename(&config.ffi_name)
+        ))?;
+        f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")?;
+        f.writeln(&format!(
+            "INTERFACE_LINK_LIBRARIES \"{}\"",
+            link_deps.join(";")
+        ))
+    })?;
     f.writeln(")")
+}
+
+fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {
+    let mut args = Vec::from(["rustc", "-p", &config.ffi_target_name]);
+
+    if config.is_release {
+        args.push("--release");
+    }
+
+    args.extend(&["--", "--print", "native-static-libs"]);
+
+    let output = Command::new("cargo")
+        .args(&args)
+        .output()
+        .expect("failed to run cargo");
+
+    if !output.status.success() {
+        panic!("failed to get the link dependencies");
+    }
+
+    // It prints to stderr for some reason
+    let result = String::from_utf8_lossy(&output.stderr);
+
+    // Find where the libs are written
+    const PATTERN: &str = "native-static-libs: ";
+    let pattern_idx = result
+        .find(PATTERN)
+        .expect("failed to parse link dependencies");
+    let deps = &result[pattern_idx + PATTERN.len()..result.len()];
+    let endline = deps.find('\n').expect("failed to parse link dependencies");
+    let deps = &deps[0..endline];
+
+    // Extract the libs
+    let mut result = deps
+        .split_whitespace()
+        .map(|x| x.to_owned())
+        .collect::<Vec<_>>();
+
+    // Remove duplicates
+    result.dedup();
+
+    result
 }

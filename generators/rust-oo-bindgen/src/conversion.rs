@@ -4,6 +4,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::types::{BasicType, DurationType};
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -17,56 +18,81 @@ pub(crate) trait RustType {
     }
 }
 
-impl RustType for Type {
+impl RustType for BasicType {
     fn as_rust_type(&self) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "u8".to_string(),
-            Type::Sint8 => "i8".to_string(),
-            Type::Uint16 => "u16".to_string(),
-            Type::Sint16 => "i16".to_string(),
-            Type::Uint32 => "u32".to_string(),
-            Type::Sint32 => "i32".to_string(),
-            Type::Uint64 => "u64".to_string(),
-            Type::Sint64 => "i64".to_string(),
-            Type::Float => "f32".to_string(),
-            Type::Double => "f64".to_string(),
-            Type::String => "&'a std::ffi::CStr".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
-            Type::Enum(handle) => handle.name.to_camel_case(),
-            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => {
-                let lifetime = if handle.has_lifetime_annotation {
-                    "<'a>"
-                } else {
-                    ""
-                };
-                format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
-            }
-            Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
-            Type::Duration(_) => "std::time::Duration".to_string(),
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "u8".to_string(),
+            Self::Sint8 => "i8".to_string(),
+            Self::Uint16 => "u16".to_string(),
+            Self::Sint16 => "i16".to_string(),
+            Self::Uint32 => "u32".to_string(),
+            Self::Sint32 => "i32".to_string(),
+            Self::Uint64 => "u64".to_string(),
+            Self::Sint64 => "i64".to_string(),
+            Self::Float => "f32".to_string(),
+            Self::Double => "f64".to_string(),
+            Self::Duration(_) => "std::time::Duration".to_string(),
+            Self::Enum(handle) => handle.name.to_camel_case(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            Type::Bool => "bool".to_string(),
-            Type::Uint8 => "u8".to_string(),
-            Type::Sint8 => "i8".to_string(),
-            Type::Uint16 => "u16".to_string(),
-            Type::Sint16 => "i16".to_string(),
-            Type::Uint32 => "u32".to_string(),
-            Type::Sint32 => "i32".to_string(),
-            Type::Uint64 => "u64".to_string(),
-            Type::Sint64 => "i64".to_string(),
-            Type::Float => "f32".to_string(),
-            Type::Double => "f64".to_string(),
-            Type::String => "*const std::os::raw::c_char".to_string(),
+            Self::Bool => "bool".to_string(),
+            Self::Uint8 => "u8".to_string(),
+            Self::Sint8 => "i8".to_string(),
+            Self::Uint16 => "u16".to_string(),
+            Self::Sint16 => "i16".to_string(),
+            Self::Uint32 => "u32".to_string(),
+            Self::Sint32 => "i32".to_string(),
+            Self::Uint64 => "u64".to_string(),
+            Self::Sint64 => "i64".to_string(),
+            Self::Float => "f32".to_string(),
+            Self::Double => "f64".to_string(),
+            Self::Duration(_) => "u64".to_string(),
+            Self::Enum(_) => "std::os::raw::c_int".to_string(),
+        }
+    }
+
+    fn is_copyable(&self) -> bool {
+        true
+    }
+
+    fn rust_requires_lifetime(&self) -> bool {
+        false
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        false
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        match self {
+            Self::Bool => None,
+            Self::Uint8 => None,
+            Self::Sint8 => None,
+            Self::Uint16 => None,
+            Self::Sint16 => None,
+            Self::Uint32 => None,
+            Self::Sint32 => None,
+            Self::Uint64 => None,
+            Self::Sint64 => None,
+            Self::Float => None,
+            Self::Double => None,
+            Self::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
+            Self::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
+        }
+    }
+}
+
+impl RustType for Type {
+    fn as_rust_type(&self) -> String {
+        match self {
+            Type::Basic(x) => x.as_rust_type(),
+            Type::String => "&'a std::ffi::CStr".to_string(),
             Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
-            Type::Enum(_) => "std::os::raw::c_int".to_string(),
+            Type::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
             Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
             Type::Interface(handle) => handle.name.to_camel_case(),
             Type::Iterator(handle) => {
@@ -78,110 +104,78 @@ impl RustType for Type {
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
             Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
-            Type::Duration(mapping) => match mapping {
-                DurationMapping::Milliseconds | DurationMapping::Seconds => "u64".to_string(),
-                DurationMapping::SecondsFloat => "f32".to_string(),
-            },
+        }
+    }
+
+    fn as_c_type(&self) -> String {
+        match self {
+            Type::Basic(x) => x.as_c_type(),
+            Type::String => "*const std::os::raw::c_char".to_string(),
+            Type::Struct(handle) => handle.name().to_camel_case(),
+            Type::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
+            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
+            Type::Interface(handle) => handle.name.to_camel_case(),
+            Type::Iterator(handle) => {
+                let lifetime = if handle.has_lifetime_annotation {
+                    "<'a>"
+                } else {
+                    ""
+                };
+                format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
+            }
+            Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            Type::Bool => true,
-            Type::Uint8 => true,
-            Type::Sint8 => true,
-            Type::Uint16 => true,
-            Type::Sint16 => true,
-            Type::Uint32 => true,
-            Type::Sint32 => true,
-            Type::Uint64 => true,
-            Type::Sint64 => true,
-            Type::Float => true,
-            Type::Double => true,
+            Type::Basic(x) => x.is_copyable(),
             Type::String => true, // Just copying the reference
             Type::Struct(_) => false,
             Type::StructRef(_) => true,
-            Type::Enum(_) => true,
             Type::ClassRef(_) => true, // Just copying the opaque pointer
             Type::Interface(_) => false,
             Type::Iterator(_) => true,   // Just copying the pointer
             Type::Collection(_) => true, // Just copying the pointer
-            Type::Duration(_) => true,
         }
     }
 
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            Type::Bool => false,
-            Type::Uint8 => false,
-            Type::Sint8 => false,
-            Type::Uint16 => false,
-            Type::Sint16 => false,
-            Type::Uint32 => false,
-            Type::Sint32 => false,
-            Type::Uint64 => false,
-            Type::Sint64 => false,
-            Type::Float => false,
-            Type::Double => false,
+            Type::Basic(x) => x.rust_requires_lifetime(),
             Type::String => true,
             Type::Struct(_) => false,
             Type::StructRef(_) => false,
-            Type::Enum(_) => false,
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
-            Type::Duration(_) => false,
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            Type::Bool => false,
-            Type::Uint8 => false,
-            Type::Sint8 => false,
-            Type::Uint16 => false,
-            Type::Sint16 => false,
-            Type::Uint32 => false,
-            Type::Sint32 => false,
-            Type::Uint64 => false,
-            Type::Sint64 => false,
-            Type::Float => false,
-            Type::Double => false,
+            Type::Basic(x) => x.c_requires_lifetime(),
             Type::String => false,
             Type::Struct(_) => false,
             Type::StructRef(_) => false,
-            Type::Enum(_) => false,
             Type::ClassRef(_) => false,
             Type::Interface(_) => false,
             Type::Iterator(handle) => handle.has_lifetime_annotation,
             Type::Collection(_) => false,
-            Type::Duration(_) => false,
         }
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self {
-            Type::Bool => None,
-            Type::Uint8 => None,
-            Type::Sint8 => None,
-            Type::Uint16 => None,
-            Type::Sint16 => None,
-            Type::Uint32 => None,
-            Type::Sint32 => None,
-            Type::Uint64 => None,
-            Type::Sint64 => None,
-            Type::Float => None,
-            Type::Double => None,
+            Type::Basic(x) => x.conversion(),
             Type::String => Some(Box::new(StringConverter)),
             Type::Struct(_) => None,
             Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
-            Type::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
             Type::ClassRef(_) => None,
             Type::Interface(_) => None,
             Type::Iterator(_) => None,
             Type::Collection(_) => None,
-            Type::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
         }
     }
 }
@@ -287,31 +281,24 @@ impl TypeConverter for StructRefConverter {
     }
 }
 
-struct DurationConverter(DurationMapping);
+struct DurationConverter(DurationType);
 
 impl TypeConverter for DurationConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self.0 {
-            DurationMapping::Milliseconds => {
-                f.writeln(&format!("{}{}.as_millis() as u64", to, from))
-            }
-            DurationMapping::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
-            DurationMapping::SecondsFloat => f.writeln(&format!("{}{}.as_secs_f32()", to, from)),
+            DurationType::Milliseconds => f.writeln(&format!("{}{}.as_millis() as u64", to, from)),
+            DurationType::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
         }
     }
 
     fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self.0 {
-            DurationMapping::Milliseconds => {
+            DurationType::Milliseconds => {
                 f.writeln(&format!("{}std::time::Duration::from_millis({})", to, from))
             }
-            DurationMapping::Seconds => {
+            DurationType::Seconds => {
                 f.writeln(&format!("{}std::time::Duration::from_secs({})", to, from))
             }
-            DurationMapping::SecondsFloat => f.writeln(&format!(
-                "{}std::time::Duration::from_secs_f32({})",
-                to, from
-            )),
         }
     }
 }

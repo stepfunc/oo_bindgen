@@ -1,69 +1,21 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
+use crate::types::BasicType;
 use crate::*;
-use std::time::Duration;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Bool,
-    Uint8,
-    Sint8,
-    Uint16,
-    Sint16,
-    Uint32,
-    Sint32,
-    Uint64,
-    Sint64,
-    Float,
-    Double,
+    Basic(BasicType),
     String,
 
     // Complex types
     Struct(NativeStructHandle),
     StructRef(NativeStructDeclarationHandle),
-    Enum(NativeEnumHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),
     Collection(CollectionHandle),
-
-    // Not native types
-    Duration(DurationMapping),
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-pub enum DurationMapping {
-    // Duration is the number of milliseconds in a u64 value
-    Milliseconds,
-    // Duration is the number of seconds in a u64 value
-    Seconds,
-    // Duration is the number of seconds and fractional part in a f32 value
-    SecondsFloat,
-}
-
-impl DurationMapping {
-    pub fn unit(&self) -> &'static str {
-        match self {
-            DurationMapping::Milliseconds => "milliseconds",
-            DurationMapping::Seconds => "seconds",
-            DurationMapping::SecondsFloat => "fractional seconds",
-        }
-    }
-
-    pub fn get_value_string(&self, duration: Duration) -> String {
-        match self {
-            DurationMapping::Milliseconds => {
-                format!("{}", duration.as_millis())
-            }
-            DurationMapping::Seconds => {
-                format!("{}", duration.as_secs())
-            }
-            DurationMapping::SecondsFloat => {
-                format!("{}", duration.as_secs_f32())
-            }
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -77,8 +29,8 @@ impl ReturnType {
         ReturnType::Void
     }
 
-    pub fn new<D: Into<DocString>>(return_type: Type, doc: D) -> Self {
-        ReturnType::Type(return_type, doc.into())
+    pub fn new<D: Into<DocString>, T: Into<Type>>(return_type: T, doc: D) -> Self {
+        ReturnType::Type(return_type.into(), doc.into())
     }
 
     pub fn is_void(&self) -> bool {
@@ -160,12 +112,14 @@ impl<'a> NativeFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<T: Into<String>, D: Into<DocString>>(
+    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<Type>>(
         mut self,
         name: T,
-        param_type: Type,
+        param_type: P,
         doc: D,
     ) -> Result<Self> {
+        let param_type = param_type.into();
+
         self.lib.validate_type(&param_type)?;
         self.params.push(Parameter {
             name: name.into(),
@@ -175,11 +129,19 @@ impl<'a> NativeFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn return_nothing(self) -> Result<Self> {
+    pub fn returns_nothing(self) -> Result<Self> {
         self.return_type(ReturnType::Void)
     }
 
-    pub fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
+    pub fn returns<D: Into<DocString>, T: Into<Type>>(
+        self,
+        return_type: T,
+        doc: D,
+    ) -> Result<Self> {
+        self.return_type(ReturnType::new(return_type, doc))
+    }
+
+    fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

@@ -1,4 +1,3 @@
-use oo_bindgen::native_function::*;
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -45,29 +44,29 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare each echo function
     let enum_zero_to_five_echo_function = lib
         .declare_native_function("enum_zero_to_five_echo")?
-        .param("value", Type::Enum(enum_zero_to_five.clone()), "Enum value")?
-        .return_type(ReturnType::new(Type::Enum(enum_zero_to_five), "Enum value"))?
+        .param("value", enum_zero_to_five.clone(), "Enum value")?
+        .returns(enum_zero_to_five, "Enum value")?
         .doc("Echo a EnumZeroToFive enum")?
         .build()?;
 
     let enum_one_to_six_echo_function = lib
         .declare_native_function("enum_one_to_six_echo")?
-        .param("value", Type::Enum(enum_one_to_six.clone()), "Enum value")?
-        .return_type(ReturnType::new(Type::Enum(enum_one_to_six), "Enum value"))?
+        .param("value", enum_one_to_six.clone(), "Enum value")?
+        .returns(enum_one_to_six, "Enum value")?
         .doc("Echo a EnumOneToSix enum")?
         .build()?;
 
     let enum_disjoint_echo_function = lib
         .declare_native_function("enum_disjoint_echo")?
-        .param("value", Type::Enum(enum_disjoint.clone()), "Enum value")?
-        .return_type(ReturnType::new(Type::Enum(enum_disjoint), "Enum value"))?
+        .param("value", enum_disjoint.clone(), "Enum value")?
+        .returns(enum_disjoint, "Enum value")?
         .doc("Echo a EnumDisjoint enum")?
         .build()?;
 
     let enum_single_echo_function = lib
         .declare_native_function("enum_single_echo")?
-        .param("value", Type::Enum(enum_single.clone()), "Enum value")?
-        .return_type(ReturnType::new(Type::Enum(enum_single), "Enum value"))?
+        .param("value", enum_single.clone(), "Enum value")?
+        .returns(enum_single, "Enum value")?
         .doc("Echo a EnumSingle enum")?
         .build()?;
 

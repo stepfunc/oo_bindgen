@@ -27,18 +27,8 @@ static void test_duration_s()
     assert(result == UINT64_MAX);
 }
 
-static void test_duration_s_float()
-{
-    float result = foo_duration_s_float_echo(0.0f);
-    assert(fabs(result - 0.0f) < 0.001f);
-
-    result = foo_duration_s_float_echo(2000.5f);
-    assert(fabs(result - 2000.5f) < 0.001f);
-}
-
 void duration_tests()
 {
     test_duration_ms();
-    test_duration_s();
-    test_duration_s_float();
+    test_duration_s();    
 }

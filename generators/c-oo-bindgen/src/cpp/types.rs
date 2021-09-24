@@ -1,4 +1,4 @@
-use oo_bindgen::native_function::{DurationMapping, ReturnType, Type};
+use oo_bindgen::native_function::{ReturnType, Type};
 
 use crate::cpp::names::CppName;
 use oo_bindgen::callback::InterfaceHandle;
@@ -7,6 +7,7 @@ use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::NativeEnumHandle;
 use oo_bindgen::native_struct::{NativeStructDeclarationHandle, NativeStructHandle};
+use oo_bindgen::types::{BasicType, DurationType};
 
 /// These types are always be pass-by-value in C++
 #[derive(Clone, Debug, PartialEq)]
@@ -23,7 +24,7 @@ pub(crate) enum Primitive {
     Float,
     Double,
     Enum(NativeEnumHandle),
-    Duration(DurationMapping),
+    Duration(DurationType),
 }
 
 impl Primitive {
@@ -80,26 +81,28 @@ impl CppReturnType for ReturnType {
 impl CppType {
     fn new(x: Type) -> Self {
         match x {
-            Type::Bool => Primitive::Bool.into(),
-            Type::Uint8 => Primitive::Uint8.into(),
-            Type::Sint8 => Primitive::Sint8.into(),
-            Type::Uint16 => Primitive::Uint16.into(),
-            Type::Sint16 => Primitive::Sint16.into(),
-            Type::Uint32 => Primitive::Uint32.into(),
-            Type::Sint32 => Primitive::Sint32.into(),
-            Type::Uint64 => Primitive::Uint64.into(),
-            Type::Sint64 => Primitive::Sint64.into(),
-            Type::Float => Primitive::Float.into(),
-            Type::Double => Primitive::Double.into(),
+            Type::Basic(x) => match x {
+                BasicType::Bool => Primitive::Bool.into(),
+                BasicType::Uint8 => Primitive::Uint8.into(),
+                BasicType::Sint8 => Primitive::Sint8.into(),
+                BasicType::Uint16 => Primitive::Uint16.into(),
+                BasicType::Sint16 => Primitive::Sint16.into(),
+                BasicType::Uint32 => Primitive::Uint32.into(),
+                BasicType::Sint32 => Primitive::Sint32.into(),
+                BasicType::Uint64 => Primitive::Uint64.into(),
+                BasicType::Sint64 => Primitive::Sint64.into(),
+                BasicType::Float => Primitive::Float.into(),
+                BasicType::Double => Primitive::Double.into(),
+                BasicType::Duration(x) => Primitive::Duration(x).into(),
+                BasicType::Enum(x) => Primitive::Enum(x).into(),
+            },
             Type::String => Self::String,
             Type::Struct(x) => Self::Struct(x),
             Type::StructRef(x) => Self::StructRef(x),
-            Type::Enum(x) => Primitive::Enum(x).into(),
             Type::ClassRef(x) => Self::ClassRef(x),
             Type::Interface(x) => Self::Interface(x),
             Type::Iterator(x) => Self::Iterator(x),
             Type::Collection(x) => Self::Collection(x),
-            Type::Duration(x) => Primitive::Duration(x).into(),
         }
     }
 

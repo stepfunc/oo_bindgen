@@ -1,6 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::native_struct::*;
+use oo_bindgen::types::DurationType;
 
 fn field_visibility(struct_type: NativeStructType) -> &'static str {
     match struct_type {
@@ -185,17 +186,13 @@ pub(crate) fn generate(
                     StructElementType::Duration(mapping, default) => {
                         if let Some(value) = default {
                             match mapping {
-                                DurationMapping::Milliseconds => f.write(&format!(
+                                DurationType::Milliseconds => f.write(&format!(
                                     " = TimeSpan.FromMilliseconds({})",
                                     value.as_millis()
                                 ))?,
-                                DurationMapping::Seconds => f.write(&format!(
+                                DurationType::Seconds => f.write(&format!(
                                     " = TimeSpan.FromSeconds({})",
                                     value.as_secs()
-                                ))?,
-                                DurationMapping::SecondsFloat => f.write(&format!(
-                                    " = TimeSpan.FromSeconds({}f)",
-                                    value.as_secs_f32()
                                 ))?,
                             }
                         }

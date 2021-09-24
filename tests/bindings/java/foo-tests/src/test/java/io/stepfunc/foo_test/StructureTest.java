@@ -73,6 +73,5 @@ public class StructureTest {
 
         assertThat(structure.durationMillis).isEqualTo(Duration.ofMillis(4200));
         assertThat(structure.durationSeconds).isEqualTo(Duration.ofSeconds(76));
-        assertThat(structure.durationSecondsFloat).isEqualTo(Duration.ofSeconds(15).plusMillis(250));
     }
 }

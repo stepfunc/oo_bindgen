@@ -1,6 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
+use crate::types::{BasicType, DurationType};
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -18,6 +19,12 @@ impl NativeStructDeclaration {
 }
 
 pub type NativeStructDeclarationHandle = Handle<NativeStructDeclaration>;
+
+impl From<NativeStructDeclarationHandle> for Type {
+    fn from(x: NativeStructDeclarationHandle) -> Self {
+        Self::StructRef(x)
+    }
+}
 
 #[derive(Debug)]
 pub enum StructElementType {
@@ -40,32 +47,32 @@ pub enum StructElementType {
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),
     Collection(CollectionHandle),
-    Duration(DurationMapping, Option<Duration>),
+    Duration(DurationType, Option<Duration>),
 }
 
 impl StructElementType {
     pub fn to_type(&self) -> Type {
         match self {
-            Self::Bool(_) => Type::Bool,
-            Self::Uint8(_) => Type::Uint8,
-            Self::Sint8(_) => Type::Sint8,
-            Self::Uint16(_) => Type::Uint16,
-            Self::Sint16(_) => Type::Sint16,
-            Self::Uint32(_) => Type::Uint32,
-            Self::Sint32(_) => Type::Sint32,
-            Self::Uint64(_) => Type::Uint64,
-            Self::Sint64(_) => Type::Sint64,
-            Self::Float(_) => Type::Float,
-            Self::Double(_) => Type::Double,
+            Self::Bool(_) => BasicType::Bool.into(),
+            Self::Uint8(_) => BasicType::Uint8.into(),
+            Self::Sint8(_) => BasicType::Sint8.into(),
+            Self::Uint16(_) => BasicType::Uint16.into(),
+            Self::Sint16(_) => BasicType::Sint16.into(),
+            Self::Uint32(_) => BasicType::Uint32.into(),
+            Self::Sint32(_) => BasicType::Sint32.into(),
+            Self::Uint64(_) => BasicType::Uint64.into(),
+            Self::Sint64(_) => BasicType::Sint64.into(),
+            Self::Float(_) => BasicType::Float.into(),
+            Self::Double(_) => BasicType::Double.into(),
             Self::String(_) => Type::String,
             Self::Struct(handle) => Type::Struct(handle.clone()),
             Self::StructRef(handle) => Type::StructRef(handle.clone()),
-            Self::Enum(handle, _) => Type::Enum(handle.clone()),
+            Self::Enum(handle, _) => BasicType::Enum(handle.clone()).into(),
             Self::ClassRef(handle) => Type::ClassRef(handle.clone()),
             Self::Interface(handle) => Type::Interface(handle.clone()),
             Self::Iterator(handle) => Type::Iterator(handle.clone()),
             Self::Collection(handle) => Type::Collection(handle.clone()),
-            Self::Duration(mapping, _) => Type::Duration(*mapping),
+            Self::Duration(mapping, _) => Type::Basic(BasicType::Duration(*mapping)),
         }
     }
 
@@ -114,26 +121,14 @@ impl StructElementType {
 impl From<Type> for StructElementType {
     fn from(from: Type) -> Self {
         match from {
-            Type::Bool => Self::Bool(None),
-            Type::Uint8 => Self::Uint8(None),
-            Type::Sint8 => Self::Sint8(None),
-            Type::Uint16 => Self::Uint16(None),
-            Type::Sint16 => Self::Sint16(None),
-            Type::Uint32 => Self::Uint32(None),
-            Type::Sint32 => Self::Sint32(None),
-            Type::Uint64 => Self::Uint64(None),
-            Type::Sint64 => Self::Sint64(None),
-            Type::Float => Self::Float(None),
-            Type::Double => Self::Double(None),
+            Type::Basic(x) => x.into(),
             Type::String => Self::String(None),
             Type::Struct(handle) => Self::Struct(handle),
             Type::StructRef(handle) => Self::StructRef(handle),
-            Type::Enum(handle) => Self::Enum(handle, None),
             Type::ClassRef(handle) => Self::ClassRef(handle),
             Type::Interface(handle) => Self::Interface(handle),
             Type::Iterator(handle) => Self::Iterator(handle),
             Type::Collection(handle) => Self::Collection(handle),
-            Type::Duration(mapping) => Self::Duration(mapping, None),
         }
     }
 }
@@ -179,7 +174,9 @@ impl NativeStruct {
 
     /// returns true if none of the struct fields have a default value
     pub fn no_fields_have_defaults(&self) -> bool {
-        self.elements.iter().all(|el| !el.element_type.has_default())
+        self.elements
+            .iter()
+            .all(|el| !el.element_type.has_default())
     }
 
     pub fn elements(&self) -> impl Iterator<Item = &NativeStructElement> {
@@ -188,6 +185,18 @@ impl NativeStruct {
 }
 
 pub type NativeStructHandle = Handle<NativeStruct>;
+
+impl From<NativeStructHandle> for Type {
+    fn from(x: NativeStructHandle) -> Self {
+        Self::Struct(x)
+    }
+}
+
+impl From<NativeStructHandle> for StructElementType {
+    fn from(x: NativeStructHandle) -> Self {
+        StructElementType::Struct(x)
+    }
+}
 
 pub struct NativeStructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
@@ -304,7 +313,7 @@ impl Struct {
     }
 
     pub fn name(&self) -> &str {
-        &self.definition.name()
+        self.definition.name()
     }
 
     pub fn declaration(&self) -> NativeStructDeclarationHandle {

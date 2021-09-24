@@ -27,6 +27,7 @@ use oo_bindgen::class::{
 use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, Type};
 use oo_bindgen::types::{BasicType, DurationType};
 use types::*;
+use oo_bindgen::util::WithLastIndication;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
@@ -478,9 +479,14 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln(&format!("return {}(", handle.declaration.cpp_name()))?;
         indented(f, |f| {
-            for elem in handle.elements.iter() {
+            for (elem, last) in handle.elements.iter().with_last() {
                 let conversion = convert_native_struct_elem_to_cpp(elem);
-                f.writeln(&conversion)?;
+
+                if last {
+                    f.writeln(&conversion)?;
+                } else {
+                    f.writeln(&format!("{},", conversion))?;
+                }
             }
             Ok(())
         })?;
@@ -505,9 +511,13 @@ fn print_struct_conversion_impl(
                 handle.declaration.cpp_name()
             ))?;
             indented(f, |f| {
-                for elem in handle.elements.iter() {
+                for (elem, last) in handle.elements.iter().with_last() {
                     let conversion = convert_native_struct_ptr_elem_to_cpp(elem);
-                    f.writeln(&conversion)?;
+                    if last {
+                        f.writeln(&conversion)?;
+                    } else {
+                        f.writeln(&format!("{},", conversion))?;
+                    }
                 }
                 Ok(())
             })?;
@@ -532,9 +542,13 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln("return {")?;
         indented(f, |f| {
-            for elem in handle.elements.iter() {
+            for (elem, last) in handle.elements.iter().with_last() {
                 let conversion = convert_native_struct_elem_from_cpp(elem);
-                f.writeln(&conversion)?;
+                if last {
+                    f.writeln(&conversion)?;
+                } else {
+                    f.writeln(&format!("{},", conversion))?;
+                }
             }
             Ok(())
         })?;
@@ -560,9 +574,13 @@ fn print_struct_conversion_impl(
                 handle.to_c_type(&lib.c_ffi_prefix)
             ))?;
             indented(f, |f| {
-                for elem in handle.elements.iter() {
+                for (elem, last) in handle.elements.iter().with_last() {
                     let conversion = convert_native_struct_ptr_elem_from_cpp(elem);
-                    f.writeln(&conversion)?;
+                    if last {
+                        f.writeln(&conversion)?;
+                    } else {
+                        f.writeln(&format!("{},", conversion))?;
+                    }
                 }
                 Ok(())
             })?;
@@ -1045,6 +1063,8 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     let time_conversions = include_str!("./snippet/convert_time.cpp");
 
+    print_friend_class_decl(lib, f)?;
+
     // conversions
     namespace(f, "convert", |f| {
         for line in time_conversions.lines() {
@@ -1074,7 +1094,6 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
         print_enum_to_string_impl(f, e)?;
     }
 
-    print_friend_class_decl(lib, f)?;
     print_friend_class_impl(lib, f)?;
 
     // struct constructors

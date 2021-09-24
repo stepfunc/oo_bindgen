@@ -5,7 +5,7 @@ use oo_bindgen::callback::InterfaceHandle;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::native_enum::NativeEnumHandle;
+use oo_bindgen::native_enum::EnumHandle;
 use oo_bindgen::native_struct::{NativeStructDeclarationHandle, NativeStructHandle};
 use oo_bindgen::types::{BasicType, DurationType};
 
@@ -23,7 +23,7 @@ pub(crate) enum Primitive {
     Sint64,
     Float,
     Double,
-    Enum(NativeEnumHandle),
+    Enum(EnumHandle),
     Duration(DurationType),
 }
 

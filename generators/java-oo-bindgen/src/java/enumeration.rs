@@ -5,7 +5,7 @@ use oo_bindgen::native_enum::*;
 
 pub(crate) fn generate(
     f: &mut impl Printer,
-    native_enum: &NativeEnumHandle,
+    native_enum: &EnumHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
     let enum_name = native_enum.name.to_camel_case();

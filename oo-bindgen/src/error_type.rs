@@ -15,7 +15,7 @@ pub enum ExceptionType {
 pub struct ErrorType {
     pub exception_name: String,
     pub exception_type: ExceptionType,
-    pub inner: NativeEnumHandle,
+    pub inner: EnumHandle,
 }
 
 impl ErrorType {
@@ -27,14 +27,14 @@ impl ErrorType {
 pub struct ErrorTypeBuilder<'a> {
     exception_name: String,
     exception_type: ExceptionType,
-    inner: NativeEnumBuilder<'a>,
+    inner: EnumBuilder<'a>,
 }
 
 impl<'a> ErrorTypeBuilder<'a> {
     pub(crate) fn new(
         exception_name: String,
         exception_type: ExceptionType,
-        inner: NativeEnumBuilder<'a>,
+        inner: EnumBuilder<'a>,
     ) -> Self {
         Self {
             exception_name,

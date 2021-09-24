@@ -88,7 +88,7 @@ impl CFormatting for NativeStructHandle {
     }
 }
 
-impl CFormatting for NativeEnumHandle {
+impl CFormatting for EnumHandle {
     fn to_c_type(&self, prefix: &str) -> String {
         format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
     }
@@ -610,7 +610,7 @@ fn write_struct_initializer(
 
 fn write_enum_definition(
     f: &mut dyn Printer,
-    handle: &NativeEnumHandle,
+    handle: &EnumHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;

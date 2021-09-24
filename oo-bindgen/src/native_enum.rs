@@ -9,13 +9,13 @@ pub struct EnumVariant {
 }
 
 #[derive(Debug)]
-pub struct NativeEnum {
+pub struct Enum {
     pub name: String,
     pub variants: Vec<EnumVariant>,
     pub doc: Doc,
 }
 
-impl NativeEnum {
+impl Enum {
     pub fn find_variant_by_name<T: AsRef<str>>(&self, variant_name: T) -> Option<&EnumVariant> {
         self.variants
             .iter()
@@ -27,21 +27,21 @@ impl NativeEnum {
     }
 }
 
-pub type NativeEnumHandle = Handle<NativeEnum>;
+pub type EnumHandle = Handle<Enum>;
 
-impl From<NativeEnumHandle> for Type {
-    fn from(x: NativeEnumHandle) -> Self {
+impl From<EnumHandle> for Type {
+    fn from(x: EnumHandle) -> Self {
         BasicType::Enum(x).into()
     }
 }
 
-impl From<NativeEnumHandle> for StructElementType {
-    fn from(x: NativeEnumHandle) -> Self {
+impl From<EnumHandle> for StructElementType {
+    fn from(x: EnumHandle) -> Self {
         StructElementType::Enum(x, None)
     }
 }
 
-pub struct NativeEnumBuilder<'a> {
+pub struct EnumBuilder<'a> {
     pub(crate) lib: &'a mut LibraryBuilder,
     name: String,
     variants: Vec<EnumVariant>,
@@ -51,7 +51,7 @@ pub struct NativeEnumBuilder<'a> {
     doc: Option<Doc>,
 }
 
-impl<'a> NativeEnumBuilder<'a> {
+impl<'a> EnumBuilder<'a> {
     pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
         Self {
             lib,
@@ -113,7 +113,7 @@ impl<'a> NativeEnumBuilder<'a> {
         }
     }
 
-    pub(crate) fn build_and_release(self) -> Result<(NativeEnumHandle, &'a mut LibraryBuilder)> {
+    pub(crate) fn build_and_release(self) -> Result<(EnumHandle, &'a mut LibraryBuilder)> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -123,7 +123,7 @@ impl<'a> NativeEnumBuilder<'a> {
             }
         };
 
-        let handle = NativeEnumHandle::new(NativeEnum {
+        let handle = EnumHandle::new(Enum {
             name: self.name,
             variants: self.variants,
             doc,
@@ -137,7 +137,7 @@ impl<'a> NativeEnumBuilder<'a> {
         Ok((handle, self.lib))
     }
 
-    pub fn build(self) -> Result<NativeEnumHandle> {
+    pub fn build(self) -> Result<EnumHandle> {
         let (ret, _) = self.build_and_release()?;
         Ok(ret)
     }

@@ -7,7 +7,7 @@ use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {
     let structure_enum = lib
-        .define_native_enum("StructureEnum")?
+        .define_enum("StructureEnum")?
         .push("Var1", "Var1")?
         .push("Var2", "Var2")?
         .push("Var3", "Var3")?

@@ -5,7 +5,7 @@ use oo_bindgen::class::{
 };
 use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::native_enum::{EnumVariant, NativeEnumHandle};
+use oo_bindgen::native_enum::{EnumHandle, EnumVariant};
 use oo_bindgen::native_function::Parameter;
 use oo_bindgen::native_struct::{
     NativeStructDeclaration, NativeStructElement, NativeStructHandle, StructHandle,
@@ -33,7 +33,7 @@ impl CppName for &NativeStructHandle {
     }
 }
 
-impl CppName for NativeEnumHandle {
+impl CppName for EnumHandle {
     fn cpp_name(&self) -> String {
         self.name.to_camel_case()
     }

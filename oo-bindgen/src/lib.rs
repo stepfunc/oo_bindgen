@@ -128,7 +128,7 @@ pub enum BindingError {
 
     // Native enum errors
     #[error("Native enum '{}' is not part of this library", handle.name)]
-    NativeEnumNotPartOfThisLib { handle: NativeEnumHandle },
+    NativeEnumNotPartOfThisLib { handle: EnumHandle },
     #[error(
         "Native enum '{}' already contains a variant with name '{}'",
         name,
@@ -332,7 +332,7 @@ impl<T> Deref for Handle<T> {
 pub enum Symbol {
     NativeFunction(NativeFunctionHandle),
     Struct(StructHandle),
-    Enum(NativeEnumHandle),
+    Enum(EnumHandle),
     Class(ClassHandle),
     StaticClass(StaticClassHandle),
     Interface(InterfaceHandle),
@@ -346,7 +346,7 @@ pub enum Statement {
     NativeStructDeclaration(NativeStructDeclarationHandle),
     NativeStructDefinition(NativeStructHandle),
     StructDefinition(StructHandle),
-    EnumDefinition(NativeEnumHandle),
+    EnumDefinition(EnumHandle),
     ErrorType(ErrorType),
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(ClassHandle),
@@ -435,7 +435,7 @@ impl Library {
         })
     }
 
-    pub fn native_enums(&self) -> impl Iterator<Item = &NativeEnumHandle> {
+    pub fn native_enums(&self) -> impl Iterator<Item = &EnumHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::EnumDefinition(handle) => Some(handle),
             _ => None,
@@ -449,7 +449,7 @@ impl Library {
         })
     }
 
-    pub fn find_enum<T: AsRef<str>>(&self, name: T) -> Option<&NativeEnumHandle> {
+    pub fn find_enum<T: AsRef<str>>(&self, name: T) -> Option<&EnumHandle> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -607,7 +607,7 @@ pub struct LibraryBuilder {
     native_structs: HashMap<NativeStructDeclarationHandle, NativeStructHandle>,
     defined_structs: HashMap<NativeStructHandle, StructHandle>,
 
-    native_enums: HashSet<NativeEnumHandle>,
+    native_enums: HashSet<EnumHandle>,
 
     class_declarations: HashSet<ClassDeclarationHandle>,
     classes: HashMap<ClassDeclarationHandle, ClassHandle>,
@@ -741,7 +741,7 @@ impl LibraryBuilder {
         exception_type: ExceptionType,
     ) -> Result<ErrorTypeBuilder> {
         let builder = self
-            .define_native_enum(error_name)?
+            .define_enum(error_name)?
             .push("Ok", "Success, i.e. no error occurred")?;
 
         Ok(ErrorTypeBuilder::new(
@@ -798,10 +798,10 @@ impl LibraryBuilder {
     }
 
     /// Define an enumeration
-    pub fn define_native_enum<T: Into<String>>(&mut self, name: T) -> Result<NativeEnumBuilder> {
+    pub fn define_enum<T: Into<String>>(&mut self, name: T) -> Result<EnumBuilder> {
         let name = name.into();
         self.check_unique_symbol(&name)?;
-        Ok(NativeEnumBuilder::new(self, name))
+        Ok(EnumBuilder::new(self, name))
     }
 
     pub fn declare_native_function<T: Into<String>>(
@@ -958,7 +958,7 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_native_enum(&self, native_enum: &NativeEnumHandle) -> Result<()> {
+    fn validate_native_enum(&self, native_enum: &EnumHandle) -> Result<()> {
         if self.native_enums.contains(native_enum) {
             Ok(())
         } else {

@@ -300,7 +300,7 @@ fn generate_constant_set(
 
 fn generate_enum(
     f: &mut impl Printer,
-    native_enum: &NativeEnumHandle,
+    native_enum: &EnumHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;

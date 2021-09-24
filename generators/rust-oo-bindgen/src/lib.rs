@@ -279,7 +279,7 @@ impl<'a> RustCodegen<'a> {
     fn write_enum_definition(
         &self,
         f: &mut dyn Printer,
-        handle: &NativeEnumHandle,
+        handle: &EnumHandle,
     ) -> FormattingResult<()> {
         let enum_name = handle.name.to_camel_case();
         f.writeln("#[repr(C)]")?;

@@ -10,7 +10,7 @@ use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::native_enum::NativeEnumHandle;
+use oo_bindgen::native_enum::EnumHandle;
 use oo_bindgen::native_struct::{
     NativeStructDeclaration, NativeStructElement, NativeStructHandle, NativeStructType,
     StructElementType,
@@ -26,8 +26,8 @@ use oo_bindgen::class::{
 };
 use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, Type};
 use oo_bindgen::types::{BasicType, DurationType};
-use types::*;
 use oo_bindgen::util::WithLastIndication;
+use types::*;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
@@ -55,7 +55,7 @@ fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()
 }
 
-fn print_enum(f: &mut dyn Printer, e: &NativeEnumHandle) -> FormattingResult<()> {
+fn print_enum(f: &mut dyn Printer, e: &EnumHandle) -> FormattingResult<()> {
     f.writeln(&format!("enum class {} {{", e.cpp_name()))?;
     indented(f, |f| {
         for v in &e.variants {
@@ -599,7 +599,7 @@ fn print_struct_conversion_impl(
 fn print_enum_conversions(
     lib: &Library,
     f: &mut dyn Printer,
-    handle: &NativeEnumHandle,
+    handle: &EnumHandle,
 ) -> FormattingResult<()> {
     f.writeln(&format!(
         "{} to_cpp({}_{}_t value)",
@@ -854,10 +854,7 @@ fn print_iterator_conversions(
     f.newline()
 }
 
-fn print_enum_to_string_impl(
-    f: &mut dyn Printer,
-    handle: &NativeEnumHandle,
-) -> FormattingResult<()> {
+fn print_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> FormattingResult<()> {
     f.writeln(&format!(
         "const char* to_string({} value)",
         handle.cpp_name()

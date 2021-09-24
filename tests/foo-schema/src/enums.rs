@@ -3,7 +3,7 @@ use oo_bindgen::*;
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define each enum
     let enum_zero_to_five = lib
-        .define_native_enum("EnumZeroToFive")?
+        .define_enum("EnumZeroToFive")?
         .push("Zero", "Zero")?
         .push("One", "One")?
         .push("Two", "Two")?
@@ -14,7 +14,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let enum_one_to_six = lib
-        .define_native_enum("EnumOneToSix")?
+        .define_enum("EnumOneToSix")?
         .variant("One", 1, "One")?
         .push("Two", "Two")?
         .push("Three", "Three")?
@@ -25,7 +25,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let enum_disjoint = lib
-        .define_native_enum("EnumDisjoint")?
+        .define_enum("EnumDisjoint")?
         .variant("Five", 5, "Five")?
         .variant("One", 1, "One")?
         .variant("Twenty", 20, "Twenty")?
@@ -36,7 +36,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let enum_single = lib
-        .define_native_enum("EnumSingle")?
+        .define_enum("EnumSingle")?
         .push("Single", "Single")?
         .doc("Single")?
         .build()?;

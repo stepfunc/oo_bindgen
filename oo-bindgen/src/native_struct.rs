@@ -42,7 +42,7 @@ pub enum StructElementType {
     String(Option<String>),
     Struct(NativeStructHandle),
     StructRef(NativeStructDeclarationHandle),
-    Enum(NativeEnumHandle, Option<String>),
+    Enum(EnumHandle, Option<String>),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),

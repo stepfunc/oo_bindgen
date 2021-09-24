@@ -254,7 +254,7 @@ impl TypeConverter for StringConverter {
     }
 }
 
-pub(crate) struct EnumConverter(pub(crate) NativeEnumHandle);
+pub(crate) struct EnumConverter(pub(crate) EnumHandle);
 
 impl TypeConverter for EnumConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {

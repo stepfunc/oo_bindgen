@@ -72,6 +72,7 @@ pub mod iterator;
 pub mod native_enum;
 pub mod native_function;
 pub mod native_struct;
+pub mod struct_common;
 pub mod platforms;
 pub mod types;
 pub mod util;
@@ -80,6 +81,7 @@ use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::types::BasicType;
+use crate::struct_common::{NativeStructDeclarationHandle, NativeStructDeclaration};
 
 type Result<T> = std::result::Result<T, BindingError>;
 

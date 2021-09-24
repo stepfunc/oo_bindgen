@@ -12,7 +12,7 @@ use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
 use oo_bindgen::native_struct::{
-    NativeStructDeclaration, NativeStructElement, NativeStructHandle, NativeStructType,
+    NativeStructElement, NativeStructHandle, NativeStructType,
     StructElementType,
 };
 use oo_bindgen::{Library, Statement};
@@ -28,6 +28,7 @@ use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, T
 use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
+use oo_bindgen::struct_common::NativeStructDeclaration;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 

@@ -3,6 +3,7 @@ use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::types::BasicType;
 use crate::*;
+use crate::struct_common::NativeStructDeclarationHandle;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {

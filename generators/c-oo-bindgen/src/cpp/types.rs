@@ -6,8 +6,9 @@ use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
-use oo_bindgen::native_struct::{NativeStructDeclarationHandle, NativeStructHandle};
+use oo_bindgen::native_struct::NativeStructHandle;
 use oo_bindgen::types::{BasicType, DurationType};
+use oo_bindgen::struct_common::NativeStructDeclarationHandle;
 
 /// These types are always be pass-by-value in C++
 #[derive(Clone, Debug, PartialEq)]

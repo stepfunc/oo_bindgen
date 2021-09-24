@@ -62,6 +62,7 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use oo_bindgen::struct_common::NativeStructDeclarationHandle;
 
 mod chelpers;
 mod cpp;

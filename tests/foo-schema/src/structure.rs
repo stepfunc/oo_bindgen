@@ -40,7 +40,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
         .define_interface("StructureInterface", "Interface within a structure")?
         .callback("on_value", "Callback on value")?
         .param("value", structure.clone(), "New value")?
-        .return_type(ReturnType::Void)?
+        .returns_nothing()?
         .build()?
         .destroy_callback("on_destroy")?
         .build()?;

@@ -1,4 +1,3 @@
-use oo_bindgen::native_function::*;
 use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::*;
 
@@ -8,11 +7,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_interface("CallbackInterface", "Test interface")?
         .callback("on_value", "On value callback")?
         .param("value", BasicType::Uint32, "Value")?
-        .return_type(ReturnType::new(BasicType::Uint32, "Some value"))?
+        .returns(BasicType::Uint32, "Some value")?
         .build()?
         .callback("on_duration", "On duration callback")?
         .param("value", DurationType::Milliseconds, "Value")?
-        .return_type(ReturnType::new(DurationType::Milliseconds, "Some value"))?
+        .returns(DurationType::Milliseconds, "Some value")?
         .build()?
         .destroy_callback("on_destroy")?
         .build()?;

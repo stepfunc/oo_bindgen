@@ -48,7 +48,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .callback("on_value", "On value callback")?
         .param("value", BasicType::Uint32, "Value")?
         .ctx("data")?
-        .return_type(ReturnType::void())?
+        .returns_nothing()?
         .build()?
         .destroy_callback("on_destroy")?
         .ctx("data")?

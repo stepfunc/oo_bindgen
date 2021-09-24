@@ -227,7 +227,15 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
+    pub fn returns<T: Into<Type>, D: Into<DocString>>(self, t: T, d: D) -> Result<Self> {
+        self.return_type(ReturnType::new(t, d))
+    }
+
+    pub fn returns_nothing(self) -> Result<Self> {
+        self.return_type(ReturnType::Void)
+    }
+
+    fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

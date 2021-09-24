@@ -184,6 +184,12 @@ impl From<NativeStructHandle> for Type {
     }
 }
 
+impl From<NativeStructHandle> for StructElementType {
+    fn from(x: NativeStructHandle) -> Self {
+        StructElementType::Struct(x)
+    }
+}
+
 pub struct NativeStructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     struct_type: NativeStructType,

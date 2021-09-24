@@ -49,26 +49,6 @@ pub enum BasicType {
     Duration(DurationMapping),
 }
 
-impl BasicType {
-    /// Helper function that indicates if the type is an unsigned integer
-    pub fn is_unsigned_integer(&self) -> bool {
-        match self {
-            Self::Bool => false,
-            Self::Uint8 => true,
-            Self::Sint8 => false,
-            Self::Uint16 => true,
-            Self::Sint16 => false,
-            Self::Uint32 => true,
-            Self::Sint32 => false,
-            Self::Uint64 => true,
-            Self::Sint64 => false,
-            Self::Float => false,
-            Self::Double => false,
-            Self::Duration(_) => false,
-        }
-    }
-}
-
 impl From<BasicType> for Type {
     fn from(t: BasicType) -> Self {
         Type::Basic(t)

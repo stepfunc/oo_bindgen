@@ -546,7 +546,7 @@ impl TypeConverter for StringConverter {
     }
 }
 
-struct StructConverter(NativeStructHandle);
+struct StructConverter(AllStructHandle);
 impl TypeConverter for StructConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(

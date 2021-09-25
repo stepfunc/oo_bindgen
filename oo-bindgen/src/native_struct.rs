@@ -1,14 +1,14 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
-use crate::struct_common::NativeStructDeclarationHandle;
+use crate::struct_common::{NativeStructDeclarationHandle, Visibility};
 use crate::types::{AllTypes, BasicType, DurationType};
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub enum StructElementType {
+pub enum AllStructFieldType {
     Bool(Option<bool>),
     Uint8(Option<u8>),
     Sint8(Option<i8>),
@@ -21,7 +21,7 @@ pub enum StructElementType {
     Float(Option<f32>),
     Double(Option<f64>),
     String(Option<String>),
-    Struct(NativeStructHandle),
+    Struct(AllStructHandle),
     StructRef(NativeStructDeclarationHandle),
     Enum(EnumHandle, Option<String>),
     ClassRef(ClassDeclarationHandle),
@@ -31,8 +31,8 @@ pub enum StructElementType {
     Duration(DurationType, Option<Duration>),
 }
 
-impl StructElementType {
-    pub fn to_type(&self) -> AllTypes {
+impl AllStructFieldType {
+    pub fn to_all_types(&self) -> AllTypes {
         match self {
             Self::Bool(_) => BasicType::Bool.into(),
             Self::Uint8(_) => BasicType::Uint8.into(),
@@ -85,61 +85,30 @@ impl StructElementType {
     fn validate(&self) -> Result<()> {
         match self {
             Self::Enum(handle, Some(default)) => {
-                if handle.find_variant_by_name(default).is_none() {
-                    Err(BindingError::NativeEnumDoesNotContainVariant {
-                        name: handle.name.to_string(),
-                        variant_name: default.to_string(),
-                    })
-                } else {
-                    Ok(())
-                }
+                return handle.validate_contains_variant_name(default)
             }
             _ => Ok(()),
         }
     }
 }
 
-impl From<AllTypes> for StructElementType {
-    fn from(from: AllTypes) -> Self {
-        match from {
-            AllTypes::Basic(x) => x.into(),
-            AllTypes::String => Self::String(None),
-            AllTypes::Struct(handle) => Self::Struct(handle),
-            AllTypes::StructRef(handle) => Self::StructRef(handle),
-            AllTypes::ClassRef(handle) => Self::ClassRef(handle),
-            AllTypes::Interface(handle) => Self::Interface(handle),
-            AllTypes::Iterator(handle) => Self::Iterator(handle),
-            AllTypes::Collection(handle) => Self::Collection(handle),
-        }
-    }
-}
-
-/// struct type affects the type of code the backend will generate
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum NativeStructType {
-    /// struct members are public
-    Public,
-    /// struct members are private (except C of course), and the struct is just an opaque "token"
-    Opaque,
-}
-
 #[derive(Debug)]
-pub struct NativeStructElement {
+pub struct AllStructField {
     pub name: String,
-    pub element_type: StructElementType,
+    pub field_type: AllStructFieldType,
     pub doc: Doc,
 }
 
 /// C-style structure definition
 #[derive(Debug)]
-pub struct NativeStruct {
-    pub struct_type: NativeStructType,
+pub struct AllStruct {
+    pub visibility: Visibility,
     pub declaration: NativeStructDeclarationHandle,
-    pub elements: Vec<NativeStructElement>,
+    pub fields: Vec<AllStructField>,
     pub doc: Doc,
 }
 
-impl NativeStruct {
+impl AllStruct {
     pub fn name(&self) -> &str {
         &self.declaration.name
     }
@@ -150,52 +119,50 @@ impl NativeStruct {
 
     /// returns true if all struct fields have a default value
     pub fn all_fields_have_defaults(&self) -> bool {
-        self.elements.iter().all(|el| el.element_type.has_default())
+        self.fields.iter().all(|el| el.field_type.has_default())
     }
 
     /// returns true if none of the struct fields have a default value
     pub fn no_fields_have_defaults(&self) -> bool {
-        self.elements
-            .iter()
-            .all(|el| !el.element_type.has_default())
+        self.fields.iter().all(|el| !el.field_type.has_default())
     }
 
-    pub fn elements(&self) -> impl Iterator<Item = &NativeStructElement> {
-        self.elements.iter()
+    pub fn fields(&self) -> impl Iterator<Item = &AllStructField> {
+        self.fields.iter()
     }
 }
 
-pub type NativeStructHandle = Handle<NativeStruct>;
+pub type AllStructHandle = Handle<AllStruct>;
 
-impl From<NativeStructHandle> for AllTypes {
-    fn from(x: NativeStructHandle) -> Self {
+impl From<AllStructHandle> for AllTypes {
+    fn from(x: AllStructHandle) -> Self {
         Self::Struct(x)
     }
 }
 
-impl From<NativeStructHandle> for StructElementType {
-    fn from(x: NativeStructHandle) -> Self {
-        StructElementType::Struct(x)
+impl From<AllStructHandle> for AllStructFieldType {
+    fn from(x: AllStructHandle) -> Self {
+        AllStructFieldType::Struct(x)
     }
 }
 
-pub struct NativeStructBuilder<'a> {
+pub struct AllStructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
-    struct_type: NativeStructType,
+    struct_type: Visibility,
     declaration: NativeStructDeclarationHandle,
-    elements: Vec<NativeStructElement>,
+    elements: Vec<AllStructField>,
     element_names_set: HashSet<String>,
     doc: Option<Doc>,
 }
 
-impl<'a> NativeStructBuilder<'a> {
+impl<'a> AllStructBuilder<'a> {
     pub(crate) fn new(
         lib: &'a mut LibraryBuilder,
         declaration: NativeStructDeclarationHandle,
     ) -> Self {
         Self {
             lib,
-            struct_type: NativeStructType::Public, // defaults to a public struct
+            struct_type: Visibility::Public, // defaults to a public struct
             declaration,
             elements: Vec::new(),
             element_names_set: HashSet::new(),
@@ -204,11 +171,11 @@ impl<'a> NativeStructBuilder<'a> {
     }
 
     pub fn make_opaque(mut self) -> Self {
-        self.struct_type = NativeStructType::Opaque;
+        self.struct_type = Visibility::Private;
         self
     }
 
-    pub fn add<S: Into<String>, T: Into<StructElementType>, D: Into<Doc>>(
+    pub fn add<S: Into<String>, T: Into<AllStructFieldType>, D: Into<Doc>>(
         mut self,
         name: S,
         element_type: T,
@@ -218,11 +185,11 @@ impl<'a> NativeStructBuilder<'a> {
         let element_type = element_type.into();
         element_type.validate()?;
 
-        self.lib.validate_type(&element_type.to_type())?;
+        self.lib.validate_type(&element_type.to_all_types())?;
         if self.element_names_set.insert(name.to_string()) {
-            self.elements.push(NativeStructElement {
+            self.elements.push(AllStructField {
                 name,
-                element_type,
+                field_type: element_type,
                 doc: doc.into(),
             });
             Ok(self)
@@ -248,7 +215,7 @@ impl<'a> NativeStructBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<NativeStructHandle> {
+    pub fn build(self) -> Result<AllStructHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -258,16 +225,17 @@ impl<'a> NativeStructBuilder<'a> {
             }
         };
 
-        let handle = NativeStructHandle::new(NativeStruct {
-            struct_type: self.struct_type,
+        let handle = AllStructHandle::new(AllStruct {
+            visibility: self.struct_type,
             declaration: self.declaration.clone(),
-            elements: self.elements,
+            fields: self.elements,
             doc,
         });
 
-        self.lib
-            .native_structs
-            .insert(handle.declaration.clone(), handle.clone());
+        self.lib.native_structs.insert(
+            handle.declaration.clone(),
+            NativeStructType::All(handle.clone()),
+        );
         self.lib
             .statements
             .push(Statement::NativeStructDefinition(handle.clone()));
@@ -279,13 +247,13 @@ impl<'a> NativeStructBuilder<'a> {
 /// Associated method for structures
 #[derive(Debug)]
 pub struct Struct {
-    pub definition: NativeStructHandle,
+    pub definition: NativeStructType,
     pub methods: Vec<Method>,
     pub static_methods: Vec<Method>,
 }
 
 impl Struct {
-    pub(crate) fn new(definition: NativeStructHandle) -> Self {
+    pub(crate) fn new(definition: NativeStructType) -> Self {
         Self {
             definition,
             methods: Vec::new(),
@@ -301,16 +269,25 @@ impl Struct {
         self.definition.declaration()
     }
 
-    pub fn definition(&self) -> NativeStructHandle {
-        self.definition.clone()
+    pub fn definition(&self) -> AllStructHandle {
+        match &self.definition {
+            NativeStructType::All(x) => x.clone(),
+            NativeStructType::FStruct(_, x) => x.clone(),
+        }
     }
 
-    pub fn elements(&self) -> impl Iterator<Item = &NativeStructElement> {
-        self.definition.elements()
+    pub fn elements(&self) -> impl Iterator<Item = &AllStructField> {
+        match &self.definition {
+            NativeStructType::All(x) => x.fields(),
+            NativeStructType::FStruct(_, x) => x.fields(),
+        }
     }
 
     pub fn doc(&self) -> &Doc {
-        &self.definition.doc
+        match &self.definition {
+            NativeStructType::All(x) => &x.doc,
+            NativeStructType::FStruct(_, x) => &x.doc,
+        }
     }
 
     pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&NativeFunctionHandle> {
@@ -329,7 +306,7 @@ impl Struct {
         None
     }
 
-    pub fn find_element<T: AsRef<str>>(&self, element_name: T) -> Option<&NativeStructElement> {
+    pub fn find_element<T: AsRef<str>>(&self, element_name: T) -> Option<&AllStructField> {
         self.elements().find(|el| el.name == element_name.as_ref())
     }
 }
@@ -338,16 +315,16 @@ pub type StructHandle = Handle<Struct>;
 
 pub struct StructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
-    definition: NativeStructHandle,
+    definition: AllStructHandle,
     element_names_set: HashSet<String>,
     methods: Vec<Method>,
     static_methods: Vec<Method>,
 }
 
 impl<'a> StructBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, definition: NativeStructHandle) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, definition: AllStructHandle) -> Self {
         let mut element_names_set = HashSet::new();
-        for el in &definition.elements {
+        for el in &definition.fields {
             element_names_set.insert(el.name.clone());
         }
 
@@ -407,7 +384,7 @@ impl<'a> StructBuilder<'a> {
 
     pub fn build(self) -> StructHandle {
         let handle = StructHandle::new(Struct {
-            definition: self.definition.clone(),
+            definition: NativeStructType::All(self.definition.clone()),
             methods: self.methods,
             static_methods: self.static_methods,
         });

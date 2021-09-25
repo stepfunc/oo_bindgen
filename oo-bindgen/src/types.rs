@@ -1,5 +1,5 @@
 use crate::native_enum::EnumHandle;
-use crate::native_struct::{NativeStructHandle, StructElementType};
+use crate::native_struct::{AllStructFieldType, AllStructHandle};
 
 use crate::callback::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;
@@ -49,7 +49,7 @@ impl From<DurationType> for AllTypes {
     }
 }
 
-impl From<DurationType> for StructElementType {
+impl From<DurationType> for AllStructFieldType {
     fn from(x: DurationType) -> Self {
         BasicType::Duration(x).into()
     }
@@ -80,7 +80,7 @@ pub enum AllTypes {
     String,
 
     // Complex types
-    Struct(NativeStructHandle),
+    Struct(AllStructHandle),
     StructRef(NativeStructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
@@ -94,22 +94,22 @@ impl From<BasicType> for AllTypes {
     }
 }
 
-impl From<BasicType> for StructElementType {
+impl From<BasicType> for AllStructFieldType {
     fn from(t: BasicType) -> Self {
         match t {
-            BasicType::Bool => StructElementType::Bool(None),
-            BasicType::Uint8 => StructElementType::Uint8(None),
-            BasicType::Sint8 => StructElementType::Sint8(None),
-            BasicType::Uint16 => StructElementType::Uint16(None),
-            BasicType::Sint16 => StructElementType::Sint16(None),
-            BasicType::Uint32 => StructElementType::Uint32(None),
-            BasicType::Sint32 => StructElementType::Sint32(None),
-            BasicType::Uint64 => StructElementType::Uint64(None),
-            BasicType::Sint64 => StructElementType::Sint64(None),
-            BasicType::Float => StructElementType::Float(None),
-            BasicType::Double => StructElementType::Double(None),
-            BasicType::Duration(mapping) => StructElementType::Duration(mapping, None),
-            BasicType::Enum(handle) => StructElementType::Enum(handle, None),
+            BasicType::Bool => AllStructFieldType::Bool(None),
+            BasicType::Uint8 => AllStructFieldType::Uint8(None),
+            BasicType::Sint8 => AllStructFieldType::Sint8(None),
+            BasicType::Uint16 => AllStructFieldType::Uint16(None),
+            BasicType::Sint16 => AllStructFieldType::Sint16(None),
+            BasicType::Uint32 => AllStructFieldType::Uint32(None),
+            BasicType::Sint32 => AllStructFieldType::Sint32(None),
+            BasicType::Uint64 => AllStructFieldType::Uint64(None),
+            BasicType::Sint64 => AllStructFieldType::Sint64(None),
+            BasicType::Float => AllStructFieldType::Float(None),
+            BasicType::Double => AllStructFieldType::Double(None),
+            BasicType::Duration(mapping) => AllStructFieldType::Duration(mapping, None),
+            BasicType::Enum(handle) => AllStructFieldType::Enum(handle, None),
         }
     }
 }

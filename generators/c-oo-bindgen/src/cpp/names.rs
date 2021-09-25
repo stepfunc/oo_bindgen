@@ -7,7 +7,7 @@ use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::native_enum::{EnumHandle, EnumVariant};
 use oo_bindgen::native_function::Parameter;
-use oo_bindgen::native_struct::{NativeStructElement, NativeStructHandle, StructHandle};
+use oo_bindgen::native_struct::{AllStructField, AllStructHandle, StructHandle};
 use oo_bindgen::struct_common::NativeStructDeclaration;
 
 pub(crate) trait CppName {
@@ -20,13 +20,13 @@ impl CppName for NativeStructDeclaration {
     }
 }
 
-impl CppName for NativeStructHandle {
+impl CppName for AllStructHandle {
     fn cpp_name(&self) -> String {
         self.declaration.cpp_name()
     }
 }
 
-impl CppName for &NativeStructHandle {
+impl CppName for &AllStructHandle {
     fn cpp_name(&self) -> String {
         self.declaration.cpp_name()
     }
@@ -50,7 +50,7 @@ impl CppName for ErrorType {
     }
 }
 
-impl CppName for NativeStructElement {
+impl CppName for AllStructField {
     fn cpp_name(&self) -> String {
         self.name.to_snake_case()
     }

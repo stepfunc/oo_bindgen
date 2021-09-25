@@ -97,7 +97,7 @@ impl<'a> RustCodegen<'a> {
     fn write_struct_definition(
         &self,
         f: &mut dyn Printer,
-        handle: &NativeStructHandle,
+        handle: &AllStructHandle,
     ) -> FormattingResult<()> {
         let struct_name = handle.name().to_camel_case();
         let c_lifetime = if handle.c_requires_lifetime() {
@@ -118,12 +118,12 @@ impl<'a> RustCodegen<'a> {
         f.writeln(&format!("pub struct {}{}", struct_name, c_lifetime))?;
 
         blocked(f, |f| {
-            for element in &handle.elements {
+            for element in &handle.fields {
                 f.writeln(&format!(
                     "{}{}: {},",
                     public,
                     element.name,
-                    element.element_type.to_type().as_c_type()
+                    element.field_type.to_all_types().as_c_type()
                 ))?;
             }
             Ok(())
@@ -138,7 +138,7 @@ impl<'a> RustCodegen<'a> {
             lifetime = c_lifetime
         ))?;
         blocked(f, |f| {
-            for element in &handle.elements {
+            for element in &handle.fields {
                 let el_lifetime = if element.rust_requires_lifetime() {
                     "'a "
                 } else {
@@ -150,7 +150,7 @@ impl<'a> RustCodegen<'a> {
                     } else {
                         ""
                     };
-                let ampersand = if element.element_type.to_type().is_copyable() {
+                let ampersand = if element.field_type.to_all_types().is_copyable() {
                     ""
                 } else {
                     "&"
@@ -161,13 +161,13 @@ impl<'a> RustCodegen<'a> {
                 f.writeln(&format!(
                     "pub fn {name}{fn_lifetime}(&{lifetime}self) -> {ampersand}{return_type}",
                     name = element.name,
-                    return_type = element.element_type.to_type().as_rust_type(),
+                    return_type = element.field_type.to_all_types().as_rust_type(),
                     fn_lifetime = fn_lifetime,
                     lifetime = el_lifetime,
                     ampersand = ampersand
                 ))?;
                 blocked(f, |f| {
-                    if let Some(conversion) = element.element_type.to_type().conversion() {
+                    if let Some(conversion) = element.field_type.to_all_types().conversion() {
                         if conversion.is_unsafe() {
                             f.writeln("unsafe {")?;
                         }
@@ -200,12 +200,12 @@ impl<'a> RustCodegen<'a> {
                 f.writeln(&format!(
                     "pub fn set_{name}{fn_lifetime}(&{lifetime}mut self, value: {element_type})",
                     name = element.name,
-                    element_type = element.element_type.to_type().as_rust_type(),
+                    element_type = element.field_type.to_all_types().as_rust_type(),
                     fn_lifetime = fn_lifetime,
                     lifetime = el_lifetime
                 ))?;
                 blocked(f, |f| {
-                    if let Some(conversion) = element.element_type.to_type().conversion() {
+                    if let Some(conversion) = element.field_type.to_all_types().conversion() {
                         conversion.convert_to_c(
                             f,
                             "value",
@@ -227,11 +227,11 @@ impl<'a> RustCodegen<'a> {
         if handle.has_conversion() {
             f.writeln(&format!("pub struct {}{}", rust_struct_name, rust_lifetime))?;
             blocked(f, |f| {
-                for element in &handle.elements {
+                for element in &handle.fields {
                     f.writeln(&format!(
                         "pub {}: {},",
                         element.name,
-                        element.element_type.to_type().as_rust_type()
+                        element.field_type.to_all_types().as_rust_type()
                     ))?;
                 }
                 Ok(())
@@ -250,8 +250,9 @@ impl<'a> RustCodegen<'a> {
                 blocked(f, |f| {
                     f.writeln("Self")?;
                     blocked(f, |f| {
-                        for element in &handle.elements {
-                            if let Some(conversion) = element.element_type.to_type().conversion() {
+                        for element in &handle.fields {
+                            if let Some(conversion) = element.field_type.to_all_types().conversion()
+                            {
                                 conversion.convert_to_c(
                                     f,
                                     &format!("from.{}", element.name),

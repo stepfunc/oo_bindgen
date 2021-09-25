@@ -22,6 +22,18 @@ impl Enum {
             .find(|variant| variant.name == variant_name.as_ref())
     }
 
+    pub fn validate_contains_variant_name<T: AsRef<str>>(&self, variant_name: T) -> Result<()> {
+        let var_name = variant_name.as_ref();
+        if self.find_variant_by_name(var_name).is_none() {
+            Err(BindingError::NativeEnumDoesNotContainVariant {
+                name: self.name.to_string(),
+                variant_name: var_name.to_string(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn find_variant_by_value(&self, value: i32) -> Option<&EnumVariant> {
         self.variants.iter().find(|variant| variant.value == value)
     }
@@ -35,9 +47,9 @@ impl From<EnumHandle> for AllTypes {
     }
 }
 
-impl From<EnumHandle> for StructElementType {
+impl From<EnumHandle> for AllStructFieldType {
     fn from(x: EnumHandle) -> Self {
-        StructElementType::Enum(x, None)
+        AllStructFieldType::Enum(x, None)
     }
 }
 

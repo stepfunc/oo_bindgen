@@ -1,11 +1,11 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::native_struct::NativeStructHandle;
+use oo_bindgen::native_struct::AllStructHandle;
 use oo_bindgen::types::{AllTypes, BasicType};
 use oo_bindgen::{BindingError, LibraryBuilder};
 
 pub(crate) fn define(
     lib: &mut LibraryBuilder,
-    structure: NativeStructHandle,
+    structure: AllStructHandle,
 ) -> Result<(), BindingError> {
     let error_type = lib
         .define_error_type("MyError", "MyException", ExceptionType::UncheckedException)?

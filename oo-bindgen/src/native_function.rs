@@ -1,3 +1,4 @@
+use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::*;
 
@@ -22,6 +23,17 @@ impl ReturnType {
         }
         false
     }
+}
+
+/// Function types are those that can be used as native function parameters
+pub enum FunctionType {
+    Basic(BasicType),
+    String,
+    Collection(CollectionHandle),
+    Struct(AllStructHandle),
+    StructRef(NativeStructDeclarationHandle),
+    ClassRef(ClassDeclarationHandle),
+    Interface(InterfaceHandle),
 }
 
 #[derive(Debug, Clone)]

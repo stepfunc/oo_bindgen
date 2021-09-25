@@ -68,6 +68,7 @@ pub mod constants;
 pub mod doc;
 pub mod error_type;
 pub mod formatting;
+pub mod function_struct;
 pub mod iterator;
 pub mod native_enum;
 pub mod native_function;
@@ -80,7 +81,8 @@ pub mod util;
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
-use crate::struct_common::{NativeStructDeclaration, NativeStructDeclarationHandle};
+use crate::function_struct::{FStructBuilder, FStructHandle};
+use crate::struct_common::{NativeStructDeclaration, NativeStructDeclarationHandle, Visibility};
 use crate::types::{AllTypes, BasicType};
 
 type Result<T> = std::result::Result<T, BindingError>;
@@ -346,7 +348,7 @@ pub enum Symbol {
 pub enum Statement {
     Constants(ConstantSetHandle),
     NativeStructDeclaration(NativeStructDeclarationHandle),
-    NativeStructDefinition(NativeStructHandle),
+    NativeStructDefinition(AllStructHandle),
     StructDefinition(StructHandle),
     EnumDefinition(EnumHandle),
     ErrorType(ErrorType),
@@ -406,7 +408,7 @@ impl Library {
         })
     }
 
-    pub fn native_structs(&self) -> impl Iterator<Item = &NativeStructHandle> {
+    pub fn native_structs(&self) -> impl Iterator<Item = &AllStructHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::NativeStructDefinition(handle) => Some(handle),
             _ => None,
@@ -596,6 +598,37 @@ impl<'a> IntoIterator for &'a Library {
     }
 }
 
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum NativeStructType {
+    /// this will disappear when we only have specialized structs
+    All(AllStructHandle),
+    /// structs that may be used as native function parameters
+    FStruct(FStructHandle, AllStructHandle),
+}
+
+impl NativeStructType {
+    fn declaration(&self) -> NativeStructDeclarationHandle {
+        match self {
+            NativeStructType::All(x) => x.declaration.clone(),
+            NativeStructType::FStruct(_, x) => x.declaration.clone(),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            NativeStructType::All(x) => x.name(),
+            NativeStructType::FStruct(_, x) => x.name(),
+        }
+    }
+
+    pub fn visibility(&self) -> Visibility {
+        match self {
+            NativeStructType::All(x) => x.visibility,
+            NativeStructType::FStruct(_, x) => x.visibility,
+        }
+    }
+}
+
 pub struct LibraryBuilder {
     name: String,
     version: Version,
@@ -606,8 +639,8 @@ pub struct LibraryBuilder {
     symbol_names: HashSet<String>,
 
     native_structs_declarations: HashSet<NativeStructDeclarationHandle>,
-    native_structs: HashMap<NativeStructDeclarationHandle, NativeStructHandle>,
-    defined_structs: HashMap<NativeStructHandle, StructHandle>,
+    native_structs: HashMap<NativeStructDeclarationHandle, NativeStructType>,
+    defined_structs: HashMap<NativeStructType, StructHandle>,
 
     native_enums: HashSet<EnumHandle>,
 
@@ -777,10 +810,10 @@ impl LibraryBuilder {
     pub fn define_native_struct(
         &mut self,
         declaration: &NativeStructDeclarationHandle,
-    ) -> Result<NativeStructBuilder> {
+    ) -> Result<AllStructBuilder> {
         self.validate_native_struct_declaration(declaration)?;
         if !self.native_structs.contains_key(declaration) {
-            Ok(NativeStructBuilder::new(self, declaration.clone()))
+            Ok(AllStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::NativeStructAlreadyDefined {
                 handle: declaration.clone(),
@@ -788,9 +821,27 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn define_struct(&mut self, definition: &NativeStructHandle) -> Result<StructBuilder> {
+    /// Define a structure that can be used in native function arguments
+    pub fn define_fstruct(
+        &mut self,
+        declaration: &NativeStructDeclarationHandle,
+    ) -> Result<FStructBuilder> {
+        self.validate_native_struct_declaration(declaration)?;
+        if !self.native_structs.contains_key(declaration) {
+            Ok(FStructBuilder::new(self, declaration.clone()))
+        } else {
+            Err(BindingError::NativeStructAlreadyDefined {
+                handle: declaration.clone(),
+            })
+        }
+    }
+
+    pub fn define_struct(&mut self, definition: &AllStructHandle) -> Result<StructBuilder> {
         self.validate_native_struct(definition)?;
-        if !self.defined_structs.contains_key(definition) {
+        if !self
+            .defined_structs
+            .contains_key(&NativeStructType::All(definition.clone()))
+        {
             Ok(StructBuilder::new(self, definition.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
@@ -855,7 +906,7 @@ impl LibraryBuilder {
     pub fn define_iterator(
         &mut self,
         native_func: &NativeFunctionHandle,
-        item_type: &NativeStructHandle,
+        item_type: &AllStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         self.define_iterator_impl(false, native_func, item_type)
     }
@@ -863,7 +914,7 @@ impl LibraryBuilder {
     pub fn define_iterator_with_lifetime(
         &mut self,
         native_func: &NativeFunctionHandle,
-        item_type: &NativeStructHandle,
+        item_type: &AllStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         self.define_iterator_impl(true, native_func, item_type)
     }
@@ -872,7 +923,7 @@ impl LibraryBuilder {
         &mut self,
         has_lifetime: bool,
         native_func: &NativeFunctionHandle,
-        item_type: &NativeStructHandle,
+        item_type: &AllStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         let iter = iterator::IteratorHandle::new(iterator::Iterator::new(
             has_lifetime,
@@ -952,7 +1003,7 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_native_struct(&self, native_struct: &NativeStructHandle) -> Result<()> {
+    fn validate_native_struct(&self, native_struct: &AllStructHandle) -> Result<()> {
         if self.native_structs.contains_key(&native_struct.declaration) {
             Ok(())
         } else {

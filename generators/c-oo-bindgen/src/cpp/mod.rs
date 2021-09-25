@@ -11,9 +11,7 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
-use oo_bindgen::native_struct::{
-    NativeStructElement, NativeStructHandle, NativeStructType, StructElementType,
-};
+use oo_bindgen::native_struct::{AllStructField, AllStructFieldType, AllStructHandle};
 use oo_bindgen::{Library, Statement};
 use std::path::Path;
 
@@ -24,7 +22,7 @@ use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
 use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType};
-use oo_bindgen::struct_common::NativeStructDeclaration;
+use oo_bindgen::struct_common::{NativeStructDeclaration, Visibility};
 use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
@@ -122,17 +120,19 @@ fn print_native_struct_decl(
     f.newline()
 }
 
-fn get_struct_default_constructor_args(handle: &NativeStructHandle) -> String {
+fn get_struct_default_constructor_args(handle: &AllStructHandle) -> String {
     handle
-        .elements
+        .fields
         .iter()
         .flat_map(|x| {
-            if x.element_type.has_default() {
+            if x.field_type.has_default() {
                 None
             } else {
                 Some(format!(
                     "{} {}",
-                    x.element_type.to_type().get_cpp_struct_constructor_type(),
+                    x.field_type
+                        .to_all_types()
+                        .get_cpp_struct_constructor_type(),
                     x.name
                 ))
             }
@@ -141,14 +141,16 @@ fn get_struct_default_constructor_args(handle: &NativeStructHandle) -> String {
         .join(", ")
 }
 
-fn get_struct_full_constructor_args(handle: &NativeStructHandle) -> String {
+fn get_struct_full_constructor_args(handle: &AllStructHandle) -> String {
     handle
-        .elements
+        .fields
         .iter()
         .map(|x| {
             format!(
                 "{} {}",
-                x.element_type.to_type().get_cpp_struct_constructor_type(),
+                x.field_type
+                    .to_all_types()
+                    .get_cpp_struct_constructor_type(),
                 x.name
             )
         })
@@ -158,12 +160,12 @@ fn get_struct_full_constructor_args(handle: &NativeStructHandle) -> String {
 
 fn print_native_struct_header(
     f: &mut dyn Printer,
-    handle: &NativeStructHandle,
+    handle: &AllStructHandle,
     _lib: &Library,
 ) -> FormattingResult<()> {
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
     f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
-    if let NativeStructType::Opaque = handle.struct_type {
+    if let Visibility::Private = handle.visibility {
         f.writeln("private:")?;
     }
     indented(f, |f| {
@@ -191,10 +193,10 @@ fn print_native_struct_header(
             f.newline()?;
         }
 
-        for field in &handle.elements {
+        for field in &handle.fields {
             f.writeln(&format!(
                 "{} {};",
-                field.element_type.to_type().get_cpp_struct_member_type(),
+                field.field_type.to_all_types().get_cpp_struct_member_type(),
                 field.cpp_name()
             ))?;
         }
@@ -401,24 +403,24 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
-fn convert_native_struct_elem_to_cpp(elem: &NativeStructElement) -> String {
+fn convert_native_struct_elem_to_cpp(elem: &AllStructField) -> String {
     let base_name = format!("x.{}", elem.name);
-    convert_to_cpp(&elem.element_type.to_type(), base_name)
+    convert_to_cpp(&elem.field_type.to_all_types(), base_name)
 }
 
-fn convert_native_struct_ptr_elem_to_cpp(elem: &NativeStructElement) -> String {
+fn convert_native_struct_ptr_elem_to_cpp(elem: &AllStructField) -> String {
     let base_name = format!("x->{}", elem.name);
-    convert_to_cpp(&elem.element_type.to_type(), base_name)
+    convert_to_cpp(&elem.field_type.to_all_types(), base_name)
 }
 
-fn convert_native_struct_elem_from_cpp(elem: &NativeStructElement) -> String {
+fn convert_native_struct_elem_from_cpp(elem: &AllStructField) -> String {
     let base_name = format!("x.{}", elem.name);
-    convert_to_c(&elem.element_type.to_type(), base_name)
+    convert_to_c(&elem.field_type.to_all_types(), base_name)
 }
 
-fn convert_native_struct_ptr_elem_from_cpp(elem: &NativeStructElement) -> String {
+fn convert_native_struct_ptr_elem_from_cpp(elem: &AllStructField) -> String {
     let base_name = format!("x->{}", elem.name);
-    convert_to_c(&elem.element_type.to_type(), base_name)
+    convert_to_c(&elem.field_type.to_all_types(), base_name)
 }
 
 fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
@@ -467,7 +469,7 @@ fn print_friend_class_impl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
 fn print_struct_conversion_impl(
     lib: &Library,
     f: &mut dyn Printer,
-    handle: &NativeStructHandle,
+    handle: &AllStructHandle,
 ) -> FormattingResult<()> {
     f.writeln(&format!(
         "{} {}::to_cpp(const {}& x)",
@@ -479,7 +481,7 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln(&format!("return {}(", handle.declaration.cpp_name()))?;
         indented(f, |f| {
-            for (elem, last) in handle.elements.iter().with_last() {
+            for (elem, last) in handle.fields.iter().with_last() {
                 let conversion = convert_native_struct_elem_to_cpp(elem);
 
                 if last {
@@ -511,7 +513,7 @@ fn print_struct_conversion_impl(
                 handle.declaration.cpp_name()
             ))?;
             indented(f, |f| {
-                for (elem, last) in handle.elements.iter().with_last() {
+                for (elem, last) in handle.fields.iter().with_last() {
                     let conversion = convert_native_struct_ptr_elem_to_cpp(elem);
                     if last {
                         f.writeln(&conversion)?;
@@ -542,7 +544,7 @@ fn print_struct_conversion_impl(
     indented(f, |f| {
         f.writeln("return {")?;
         indented(f, |f| {
-            for (elem, last) in handle.elements.iter().with_last() {
+            for (elem, last) in handle.fields.iter().with_last() {
                 let conversion = convert_native_struct_elem_from_cpp(elem);
                 if last {
                     f.writeln(&conversion)?;
@@ -574,7 +576,7 @@ fn print_struct_conversion_impl(
                 handle.to_c_type(&lib.c_ffi_prefix)
             ))?;
             indented(f, |f| {
-                for (elem, last) in handle.elements.iter().with_last() {
+                for (elem, last) in handle.fields.iter().with_last() {
                     let conversion = convert_native_struct_ptr_elem_from_cpp(elem);
                     if last {
                         f.writeln(&conversion)?;
@@ -886,40 +888,54 @@ fn print_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
     f.newline()
 }
 
-fn get_initializer_value(e: &NativeStructElement) -> String {
-    match &e.element_type {
-        StructElementType::Bool(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Uint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Sint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Uint16(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Sint16(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Uint32(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Sint32(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Uint64(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Sint64(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::Double(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        StructElementType::String(v) => v
+fn get_initializer_value(e: &AllStructField) -> String {
+    match &e.field_type {
+        AllStructFieldType::Bool(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AllStructFieldType::Uint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AllStructFieldType::Sint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AllStructFieldType::Uint16(v) => {
+            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
+        }
+        AllStructFieldType::Sint16(v) => {
+            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
+        }
+        AllStructFieldType::Uint32(v) => {
+            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
+        }
+        AllStructFieldType::Sint32(v) => {
+            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
+        }
+        AllStructFieldType::Uint64(v) => {
+            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
+        }
+        AllStructFieldType::Sint64(v) => {
+            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
+        }
+        AllStructFieldType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AllStructFieldType::Double(v) => {
+            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
+        }
+        AllStructFieldType::String(v) => v
             .as_ref()
             .map(|x| format!("\"{}\"", x))
             .unwrap_or(format!("std::move({})", e.cpp_name())),
-        StructElementType::Struct(x) => {
+        AllStructFieldType::Struct(x) => {
             if x.all_fields_have_defaults() {
                 format!("{}()", x.cpp_name())
             } else {
                 e.cpp_name()
             }
         }
-        StructElementType::StructRef(_) => unimplemented!(),
-        StructElementType::Enum(x, v) => v
+        AllStructFieldType::StructRef(_) => unimplemented!(),
+        AllStructFieldType::Enum(x, v) => v
             .as_ref()
             .map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case()))
             .unwrap_or_else(|| e.cpp_name()),
-        StructElementType::ClassRef(_) => unimplemented!(),
-        StructElementType::Interface(_) => format!("std::move({})", e.cpp_name()),
-        StructElementType::Iterator(_) => e.cpp_name(),
-        StructElementType::Collection(_) => e.cpp_name(),
-        StructElementType::Duration(_, v) => v
+        AllStructFieldType::ClassRef(_) => unimplemented!(),
+        AllStructFieldType::Interface(_) => format!("std::move({})", e.cpp_name()),
+        AllStructFieldType::Iterator(_) => e.cpp_name(),
+        AllStructFieldType::Collection(_) => e.cpp_name(),
+        AllStructFieldType::Duration(_, v) => v
             .map(|v| format!("std::chrono::milliseconds({})", v.as_millis()))
             .unwrap_or_else(|| e.cpp_name()),
     }
@@ -927,7 +943,7 @@ fn get_initializer_value(e: &NativeStructElement) -> String {
 
 fn print_struct_constructor_impl(
     f: &mut dyn Printer,
-    handle: &NativeStructHandle,
+    handle: &AllStructHandle,
 ) -> FormattingResult<()> {
     let name = handle.cpp_name();
     f.writeln(&format!(
@@ -937,8 +953,8 @@ fn print_struct_constructor_impl(
         get_struct_default_constructor_args(handle)
     ))?;
     indented(f, |f| {
-        let last = handle.elements.len() - 1;
-        for (i, e) in handle.elements.iter().enumerate() {
+        let last = handle.fields.len() - 1;
+        for (i, e) in handle.fields.iter().enumerate() {
             if i == last {
                 f.writeln(&format!("{}({})", e.cpp_name(), get_initializer_value(e)))?;
             } else {

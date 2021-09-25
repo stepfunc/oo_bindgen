@@ -7,14 +7,14 @@ pub struct Iterator {
     pub has_lifetime_annotation: bool,
     pub native_func: NativeFunctionHandle,
     pub iter_type: ClassDeclarationHandle,
-    pub item_type: NativeStructHandle,
+    pub item_type: AllStructHandle,
 }
 
 impl Iterator {
     pub(crate) fn new(
         has_lifetime_annotation: bool,
         native_func: &NativeFunctionHandle,
-        item_type: &NativeStructHandle,
+        item_type: &AllStructHandle,
     ) -> Result<Iterator> {
         match &native_func.return_type {
             ReturnType::Void => {
@@ -77,8 +77,8 @@ impl From<IteratorHandle> for AllTypes {
     }
 }
 
-impl From<IteratorHandle> for StructElementType {
+impl From<IteratorHandle> for AllStructFieldType {
     fn from(x: IteratorHandle) -> Self {
-        StructElementType::Iterator(x)
+        AllStructFieldType::Iterator(x)
     }
 }

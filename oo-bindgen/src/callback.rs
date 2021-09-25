@@ -70,9 +70,9 @@ impl From<InterfaceHandle> for AllTypes {
     }
 }
 
-impl From<InterfaceHandle> for StructElementType {
+impl From<InterfaceHandle> for AllStructFieldType {
     fn from(x: InterfaceHandle) -> Self {
-        StructElementType::Interface(x)
+        AllStructFieldType::Interface(x)
     }
 }
 

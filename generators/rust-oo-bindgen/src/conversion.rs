@@ -314,19 +314,19 @@ pub(crate) trait RustStruct {
     fn has_conversion(&self) -> bool;
 }
 
-impl RustStruct for NativeStructHandle {
+impl RustStruct for AllStructHandle {
     fn rust_requires_lifetime(&self) -> bool {
-        self.elements.iter().any(|e| e.rust_requires_lifetime())
+        self.fields.iter().any(|e| e.rust_requires_lifetime())
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        self.elements.iter().any(|e| e.c_requires_lifetime())
+        self.fields.iter().any(|e| e.c_requires_lifetime())
     }
 
     fn has_conversion(&self) -> bool {
-        self.elements
+        self.fields
             .iter()
-            .any(|e| e.element_type.to_type().has_conversion())
+            .any(|e| e.field_type.to_all_types().has_conversion())
     }
 }
 
@@ -335,13 +335,13 @@ pub(crate) trait RustStructField {
     fn c_requires_lifetime(&self) -> bool;
 }
 
-impl RustStructField for NativeStructElement {
+impl RustStructField for AllStructField {
     fn rust_requires_lifetime(&self) -> bool {
-        self.element_type.to_type().rust_requires_lifetime()
+        self.field_type.to_all_types().rust_requires_lifetime()
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        self.element_type.to_type().c_requires_lifetime()
+        self.field_type.to_all_types().c_requires_lifetime()
     }
 }
 

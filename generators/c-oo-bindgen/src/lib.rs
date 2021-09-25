@@ -56,7 +56,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::struct_common::{NativeStructDeclarationHandle, Visibility};
 use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 use oo_bindgen::*;
 use std::fs;
@@ -79,7 +79,7 @@ impl CFormatting for NativeStructDeclarationHandle {
     }
 }
 
-impl CFormatting for NativeStructHandle {
+impl CFormatting for AllStructHandle {
     fn to_c_type(&self, prefix: &str) -> String {
         format!(
             "{}_{}_t",
@@ -374,12 +374,12 @@ fn write_constants_definition(
 
 fn write_struct_definition(
     f: &mut dyn Printer,
-    handle: &NativeStructHandle,
+    handle: &AllStructHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let doc = match handle.struct_type {
-        NativeStructType::Public => handle.doc.clone(),
-        NativeStructType::Opaque => handle
+    let doc = match handle.visibility {
+        Visibility::Public => handle.doc.clone(),
+        Visibility::Private => handle
             .doc
             .clone()
             .warning("This struct should never be initialized or modified by user code"),
@@ -394,28 +394,28 @@ fn write_struct_definition(
     ))?;
     f.writeln("{")?;
     indented(f, |f| {
-        for element in &handle.elements {
+        for element in &handle.fields {
             doxygen(f, |f| {
                 doxygen_print(f, &element.doc, lib)?;
 
-                let default_value = match &element.element_type {
-                    StructElementType::Bool(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint8(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint8(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint16(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint16(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint32(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint32(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint64(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint64(default) => default.map(|x| x.to_string()),
-                    StructElementType::Float(default) => default.map(|x| x.to_string()),
-                    StructElementType::Double(default) => default.map(|x| x.to_string()),
-                    StructElementType::String(default) => {
+                let default_value = match &element.field_type {
+                    AllStructFieldType::Bool(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint8(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint8(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint16(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint16(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint32(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint32(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint64(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint64(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Float(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Double(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::String(default) => {
                         default.clone().map(|x| format!("\"{}\"", x))
                     }
-                    StructElementType::Struct(_) => None,
-                    StructElementType::StructRef(_) => None,
-                    StructElementType::Enum(handle, default) => default.clone().map(|x| {
+                    AllStructFieldType::Struct(_) => None,
+                    AllStructFieldType::StructRef(_) => None,
+                    AllStructFieldType::Enum(handle, default) => default.clone().map(|x| {
                         format!(
                             "@ref {}_{}_{}",
                             lib.c_ffi_prefix.to_shouty_snake_case(),
@@ -423,11 +423,11 @@ fn write_struct_definition(
                             x.to_shouty_snake_case()
                         )
                     }),
-                    StructElementType::ClassRef(_) => None,
-                    StructElementType::Interface(_) => None,
-                    StructElementType::Iterator(_) => None,
-                    StructElementType::Collection(_) => None,
-                    StructElementType::Duration(mapping, default) => {
+                    AllStructFieldType::ClassRef(_) => None,
+                    AllStructFieldType::Interface(_) => None,
+                    AllStructFieldType::Iterator(_) => None,
+                    AllStructFieldType::Collection(_) => None,
+                    AllStructFieldType::Duration(mapping, default) => {
                         default.map(|x| mapping.get_value_string(x))
                     }
                 };
@@ -436,7 +436,7 @@ fn write_struct_definition(
                     f.writeln(&format!("@note Default value is {}", default_value))?;
                 }
 
-                if let StructElementType::Duration(mapping, _) = &element.element_type {
+                if let AllStructFieldType::Duration(mapping, _) = &element.field_type {
                     f.writeln(&format!("@note The unit is {}", mapping.unit()))?;
                 }
 
@@ -444,7 +444,10 @@ fn write_struct_definition(
             })?;
             f.writeln(&format!(
                 "{} {};",
-                element.element_type.to_type().to_c_type(&lib.c_ffi_prefix),
+                element
+                    .field_type
+                    .to_all_types()
+                    .to_c_type(&lib.c_ffi_prefix),
                 element.name.to_snake_case(),
             ))?;
         }
@@ -453,7 +456,7 @@ fn write_struct_definition(
     f.writeln(&format!("}} {};", handle.to_c_type(&lib.c_ffi_prefix)))?;
 
     // user should never try to initialize opaque structs, so don't suggest this is OK
-    if handle.struct_type != NativeStructType::Opaque {
+    if handle.visibility != Visibility::Private {
         f.newline()?;
         write_struct_initializer(f, handle, lib)?;
     }
@@ -463,7 +466,7 @@ fn write_struct_definition(
 
 fn write_struct_initializer(
     f: &mut dyn Printer,
-    handle: &NativeStructHandle,
+    handle: &AllStructHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
     doxygen(f, |f| {
@@ -474,10 +477,7 @@ fn write_struct_initializer(
             lib,
         )?;
 
-        for param in handle
-            .elements()
-            .filter(|el| !el.element_type.has_default())
-        {
+        for param in handle.fields().filter(|el| !el.field_type.has_default()) {
             f.writeln(&format!("@param {} ", param.name.to_snake_case()))?;
             docstring_print(f, &param.doc.brief, lib)?;
         }
@@ -493,12 +493,12 @@ fn write_struct_initializer(
     })?;
 
     let params = handle
-        .elements()
-        .filter(|el| !el.element_type.has_default())
+        .fields()
+        .filter(|el| !el.field_type.has_default())
         .map(|el| {
             format!(
                 "{} {}",
-                el.element_type.to_type().to_c_type(&lib.c_ffi_prefix),
+                el.field_type.to_all_types().to_c_type(&lib.c_ffi_prefix),
                 el.name.to_snake_case()
             )
         })
@@ -516,58 +516,58 @@ fn write_struct_initializer(
         f.writeln(&format!("return ({})", handle.to_c_type(&lib.c_ffi_prefix)))?;
         f.writeln("{")?;
         indented(f, |f| {
-            for el in handle.elements() {
-                let value = match &el.element_type {
-                    StructElementType::Bool(default) => match default {
+            for el in handle.fields() {
+                let value = match &el.field_type {
+                    AllStructFieldType::Bool(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(false) => "false".to_string(),
                         Some(true) => "true".to_string(),
                     },
-                    StructElementType::Uint8(default) => match default {
+                    AllStructFieldType::Uint8(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Sint8(default) => match default {
+                    AllStructFieldType::Sint8(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Uint16(default) => match default {
+                    AllStructFieldType::Uint16(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Sint16(default) => match default {
+                    AllStructFieldType::Sint16(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Uint32(default) => match default {
+                    AllStructFieldType::Uint32(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Sint32(default) => match default {
+                    AllStructFieldType::Sint32(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Uint64(default) => match default {
+                    AllStructFieldType::Uint64(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Sint64(default) => match default {
+                    AllStructFieldType::Sint64(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => value.to_string(),
                     },
-                    StructElementType::Float(default) => match default {
+                    AllStructFieldType::Float(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => format!("{:.}f", value),
                     },
-                    StructElementType::Double(default) => match default {
+                    AllStructFieldType::Double(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => format!("{:.}", value),
                     },
-                    StructElementType::String(default) => match default {
+                    AllStructFieldType::String(default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => format!("\"{}\"", value),
                     },
-                    StructElementType::Struct(handle) => {
+                    AllStructFieldType::Struct(handle) => {
                         if handle.all_fields_have_defaults() {
                             format!(
                                 "{}_{}_init()",
@@ -578,8 +578,8 @@ fn write_struct_initializer(
                             el.name.to_snake_case()
                         }
                     }
-                    StructElementType::StructRef(_) => el.name.to_snake_case(),
-                    StructElementType::Enum(handle, default) => match default {
+                    AllStructFieldType::StructRef(_) => el.name.to_snake_case(),
+                    AllStructFieldType::Enum(handle, default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => match handle.find_variant_by_name(value) {
                             Some(variant) => format!(
@@ -591,11 +591,11 @@ fn write_struct_initializer(
                             None => panic!("Variant {} not found in {}", value, handle.name),
                         },
                     },
-                    StructElementType::ClassRef(_) => el.name.to_snake_case(),
-                    StructElementType::Interface(_) => el.name.to_snake_case(),
-                    StructElementType::Iterator(_) => el.name.to_snake_case(),
-                    StructElementType::Collection(_) => el.name.to_snake_case(),
-                    StructElementType::Duration(mapping, default) => match default {
+                    AllStructFieldType::ClassRef(_) => el.name.to_snake_case(),
+                    AllStructFieldType::Interface(_) => el.name.to_snake_case(),
+                    AllStructFieldType::Iterator(_) => el.name.to_snake_case(),
+                    AllStructFieldType::Collection(_) => el.name.to_snake_case(),
+                    AllStructFieldType::Duration(mapping, default) => match default {
                         None => el.name.to_snake_case(),
                         Some(value) => match mapping {
                             DurationType::Milliseconds => value.as_millis().to_string(),

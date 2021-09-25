@@ -3,19 +3,20 @@ use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::error_type::ExceptionType;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::struct_common::Visibility;
 use oo_bindgen::types::DurationType;
 
-fn constructor_visibility(struct_type: NativeStructType) -> &'static str {
+fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
-        NativeStructType::Public => "public",
-        NativeStructType::Opaque => "private",
+        Visibility::Public => "public",
+        Visibility::Private => "private",
     }
 }
 
-fn field_visibility(struct_type: NativeStructType) -> &'static str {
+fn field_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
-        NativeStructType::Public => "public",
-        NativeStructType::Opaque => "private final",
+        Visibility::Public => "public",
+        Visibility::Private => "private final",
     }
 }
 
@@ -26,9 +27,9 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let struct_name = native_struct.name().to_camel_case();
 
-    let doc = match native_struct.definition.struct_type {
-        NativeStructType::Public => native_struct.doc().clone(),
-        NativeStructType::Opaque => native_struct
+    let doc = match native_struct.definition.visibility() {
+        Visibility::Public => native_struct.doc().clone(),
+        Visibility::Private => native_struct
             .doc()
             .clone()
             .warning("This class is an opaque handle and cannot be constructed by user code"),
@@ -45,35 +46,35 @@ pub(crate) fn generate(
             documentation(f, |f| {
                 javadoc_print(f, &el.doc, lib)?;
 
-                let default_value = match &el.element_type {
-                    StructElementType::Bool(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint8(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint8(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint16(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint16(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint32(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint32(default) => default.map(|x| x.to_string()),
-                    StructElementType::Uint64(default) => default.map(|x| x.to_string()),
-                    StructElementType::Sint64(default) => default.map(|x| x.to_string()),
-                    StructElementType::Float(default) => default.map(|x| x.to_string()),
-                    StructElementType::Double(default) => default.map(|x| x.to_string()),
-                    StructElementType::String(default) => {
+                let default_value = match &el.field_type {
+                    AllStructFieldType::Bool(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint8(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint8(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint16(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint16(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint32(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint32(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Uint64(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Sint64(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Float(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::Double(default) => default.map(|x| x.to_string()),
+                    AllStructFieldType::String(default) => {
                         default.clone().map(|x| format!("\"{}\"", x))
                     }
-                    StructElementType::Struct(_) => None,
-                    StructElementType::StructRef(_) => None,
-                    StructElementType::Enum(handle, default) => default.clone().map(|x| {
+                    AllStructFieldType::Struct(_) => None,
+                    AllStructFieldType::StructRef(_) => None,
+                    AllStructFieldType::Enum(handle, default) => default.clone().map(|x| {
                         format!(
                             "{{@link {}#{}}}",
                             handle.name.to_camel_case(),
                             x.to_shouty_snake_case()
                         )
                     }),
-                    StructElementType::ClassRef(_) => None,
-                    StructElementType::Interface(_) => None,
-                    StructElementType::Iterator(_) => None,
-                    StructElementType::Collection(_) => None,
-                    StructElementType::Duration(_, default) => {
+                    AllStructFieldType::ClassRef(_) => None,
+                    AllStructFieldType::Interface(_) => None,
+                    AllStructFieldType::Iterator(_) => None,
+                    AllStructFieldType::Collection(_) => None,
+                    AllStructFieldType::Duration(_, default) => {
                         default.map(|x| format!("{}s", x.as_secs_f32()))
                     }
                 };
@@ -87,78 +88,78 @@ pub(crate) fn generate(
 
             f.writeln(&format!(
                 "{} {} {}",
-                field_visibility(native_struct.definition.struct_type),
-                el.element_type.to_type().as_java_primitive(),
+                field_visibility(native_struct.definition.visibility()),
+                el.field_type.to_all_types().as_java_primitive(),
                 el.name.to_mixed_case()
             ))?;
-            match &el.element_type {
-                StructElementType::Bool(default) => match default {
+            match &el.field_type {
+                AllStructFieldType::Bool(default) => match default {
                     None => (),
                     Some(false) => f.write(" = false")?,
                     Some(true) => f.write(" = true")?,
                 },
-                StructElementType::Uint8(default) => {
+                AllStructFieldType::Uint8(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = UByte.valueOf({})", value))?;
                     }
                 }
-                StructElementType::Sint8(default) => {
+                AllStructFieldType::Sint8(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = (byte){}", value))?;
                     }
                 }
-                StructElementType::Uint16(default) => {
+                AllStructFieldType::Uint16(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = UShort.valueOf({})", value))?;
                     }
                 }
-                StructElementType::Sint16(default) => {
+                AllStructFieldType::Sint16(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = (short){}", value))?;
                     }
                 }
-                StructElementType::Uint32(default) => {
+                AllStructFieldType::Uint32(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = UInteger.valueOf({}L)", value))?;
                     }
                 }
-                StructElementType::Sint32(default) => {
+                AllStructFieldType::Sint32(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = {}", value))?;
                     }
                 }
-                StructElementType::Uint64(default) => {
+                AllStructFieldType::Uint64(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = ULong.valueOf({}L)", value))?;
                     }
                 }
-                StructElementType::Sint64(default) => {
+                AllStructFieldType::Sint64(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = {}L", value))?;
                     }
                 }
-                StructElementType::Float(default) => {
+                AllStructFieldType::Float(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = {}f", value))?;
                     }
                 }
-                StructElementType::Double(default) => {
+                AllStructFieldType::Double(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = {}", value))?;
                     }
                 }
-                StructElementType::String(default) => {
+                AllStructFieldType::String(default) => {
                     if let Some(value) = default {
                         f.write(&format!(" = \"{}\"", &value))?;
                     }
                 }
-                StructElementType::Struct(handle) => {
+                AllStructFieldType::Struct(handle) => {
                     if handle.all_fields_have_defaults() {
                         f.write(&format!(" = new {}()", handle.name().to_camel_case()))?;
                     }
                 }
-                StructElementType::StructRef(_) => (),
-                StructElementType::Enum(handle, default) => {
+                AllStructFieldType::StructRef(_) => (),
+                AllStructFieldType::Enum(handle, default) => {
                     if let Some(value) = default {
                         match handle.find_variant_by_name(value) {
                             Some(variant) => f.write(&format!(
@@ -170,11 +171,11 @@ pub(crate) fn generate(
                         }
                     }
                 }
-                StructElementType::ClassRef(_) => (),
-                StructElementType::Interface(_) => (),
-                StructElementType::Iterator(_) => (),
-                StructElementType::Collection(_) => (),
-                StructElementType::Duration(mapping, default) => {
+                AllStructFieldType::ClassRef(_) => (),
+                AllStructFieldType::Interface(_) => (),
+                AllStructFieldType::Iterator(_) => (),
+                AllStructFieldType::Collection(_) => (),
+                AllStructFieldType::Duration(mapping, default) => {
                     if let Some(value) = default {
                         match mapping {
                             DurationType::Milliseconds => f.write(&format!(
@@ -211,7 +212,7 @@ pub(crate) fn generate(
 
                 for param in native_struct
                     .elements()
-                    .filter(|el| !el.element_type.has_default())
+                    .filter(|el| !el.field_type.has_default())
                 {
                     f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
                     docstring_print(f, &param.doc.brief, lib)?;
@@ -222,17 +223,17 @@ pub(crate) fn generate(
 
             f.writeln(&format!(
                 "{} {}(",
-                constructor_visibility(native_struct.definition.struct_type),
+                constructor_visibility(native_struct.definition.visibility()),
                 struct_name,
             ))?;
             f.write(
                 &native_struct
                     .elements()
-                    .filter(|el| !el.element_type.has_default())
+                    .filter(|el| !el.field_type.has_default())
                     .map(|el| {
                         format!(
                             "{} {}",
-                            el.element_type.to_type().as_java_primitive(),
+                            el.field_type.to_all_types().as_java_primitive(),
                             el.name.to_mixed_case()
                         )
                     })
@@ -243,7 +244,7 @@ pub(crate) fn generate(
 
             blocked(f, |f| {
                 for el in native_struct.elements() {
-                    if !el.element_type.has_default() {
+                    if !el.field_type.has_default() {
                         f.writeln(&format!(
                             "this.{} = {};",
                             el.name.to_mixed_case(),

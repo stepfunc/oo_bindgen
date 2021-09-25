@@ -6,7 +6,7 @@ use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
-use oo_bindgen::native_struct::NativeStructHandle;
+use oo_bindgen::native_struct::AllStructHandle;
 use oo_bindgen::struct_common::NativeStructDeclarationHandle;
 use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 
@@ -52,7 +52,7 @@ impl Primitive {
 pub(crate) enum CppType {
     Primitive(Primitive),
     String,
-    Struct(NativeStructHandle),
+    Struct(AllStructHandle),
     StructRef(NativeStructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),

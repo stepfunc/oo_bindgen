@@ -114,7 +114,7 @@ impl DotnetType for BasicType {
     }
 }
 
-impl DotnetType for Type {
+impl DotnetType for AllTypes {
     fn as_dotnet_type(&self) -> String {
         match self {
             Self::Basic(x) => x.as_dotnet_type(),

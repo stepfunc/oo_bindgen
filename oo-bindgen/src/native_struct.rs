@@ -32,7 +32,7 @@ pub enum StructElementType {
 }
 
 impl StructElementType {
-    pub fn to_type(&self) -> Type {
+    pub fn to_type(&self) -> AllTypes {
         match self {
             Self::Bool(_) => BasicType::Bool.into(),
             Self::Uint8(_) => BasicType::Uint8.into(),
@@ -45,15 +45,15 @@ impl StructElementType {
             Self::Sint64(_) => BasicType::Sint64.into(),
             Self::Float(_) => BasicType::Float.into(),
             Self::Double(_) => BasicType::Double.into(),
-            Self::String(_) => Type::String,
-            Self::Struct(handle) => Type::Struct(handle.clone()),
-            Self::StructRef(handle) => Type::StructRef(handle.clone()),
+            Self::String(_) => AllTypes::String,
+            Self::Struct(handle) => AllTypes::Struct(handle.clone()),
+            Self::StructRef(handle) => AllTypes::StructRef(handle.clone()),
             Self::Enum(handle, _) => BasicType::Enum(handle.clone()).into(),
-            Self::ClassRef(handle) => Type::ClassRef(handle.clone()),
-            Self::Interface(handle) => Type::Interface(handle.clone()),
-            Self::Iterator(handle) => Type::Iterator(handle.clone()),
-            Self::Collection(handle) => Type::Collection(handle.clone()),
-            Self::Duration(mapping, _) => Type::Basic(BasicType::Duration(*mapping)),
+            Self::ClassRef(handle) => AllTypes::ClassRef(handle.clone()),
+            Self::Interface(handle) => AllTypes::Interface(handle.clone()),
+            Self::Iterator(handle) => AllTypes::Iterator(handle.clone()),
+            Self::Collection(handle) => AllTypes::Collection(handle.clone()),
+            Self::Duration(mapping, _) => AllTypes::Basic(BasicType::Duration(*mapping)),
         }
     }
 
@@ -99,17 +99,17 @@ impl StructElementType {
     }
 }
 
-impl From<Type> for StructElementType {
-    fn from(from: Type) -> Self {
+impl From<AllTypes> for StructElementType {
+    fn from(from: AllTypes) -> Self {
         match from {
-            Type::Basic(x) => x.into(),
-            Type::String => Self::String(None),
-            Type::Struct(handle) => Self::Struct(handle),
-            Type::StructRef(handle) => Self::StructRef(handle),
-            Type::ClassRef(handle) => Self::ClassRef(handle),
-            Type::Interface(handle) => Self::Interface(handle),
-            Type::Iterator(handle) => Self::Iterator(handle),
-            Type::Collection(handle) => Self::Collection(handle),
+            AllTypes::Basic(x) => x.into(),
+            AllTypes::String => Self::String(None),
+            AllTypes::Struct(handle) => Self::Struct(handle),
+            AllTypes::StructRef(handle) => Self::StructRef(handle),
+            AllTypes::ClassRef(handle) => Self::ClassRef(handle),
+            AllTypes::Interface(handle) => Self::Interface(handle),
+            AllTypes::Iterator(handle) => Self::Iterator(handle),
+            AllTypes::Collection(handle) => Self::Collection(handle),
         }
     }
 }
@@ -167,7 +167,7 @@ impl NativeStruct {
 
 pub type NativeStructHandle = Handle<NativeStruct>;
 
-impl From<NativeStructHandle> for Type {
+impl From<NativeStructHandle> for AllTypes {
     fn from(x: NativeStructHandle) -> Self {
         Self::Struct(x)
     }
@@ -424,7 +424,7 @@ impl<'a> StructBuilder<'a> {
 
     fn validate_first_param(&self, native_function: &NativeFunctionHandle) -> Result<()> {
         if let Some(first_param) = native_function.parameters.first() {
-            if let Type::StructRef(first_param_type) = &first_param.param_type {
+            if let AllTypes::StructRef(first_param_type) = &first_param.param_type {
                 if first_param_type == &self.definition.declaration() {
                     return Ok(());
                 }

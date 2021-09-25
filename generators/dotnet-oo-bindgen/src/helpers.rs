@@ -111,7 +111,7 @@ pub(crate) fn generate_iterator_helpers(
                     ))?;
                     f.writeln(&format!(
                         "itValue = {};",
-                        Type::StructRef(iter.item_type.declaration())
+                        AllTypes::StructRef(iter.item_type.declaration())
                             .convert_from_native("itRawValue")
                             .unwrap()
                     ))?;

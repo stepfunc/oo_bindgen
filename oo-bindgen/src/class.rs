@@ -15,9 +15,9 @@ impl ClassDeclaration {
 
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
-impl From<ClassDeclarationHandle> for Type {
+impl From<ClassDeclarationHandle> for AllTypes {
     fn from(x: ClassDeclarationHandle) -> Self {
-        Type::ClassRef(x)
+        AllTypes::ClassRef(x)
     }
 }
 
@@ -31,7 +31,7 @@ pub struct Method {
 pub struct AsyncMethod {
     pub name: String,
     pub native_function: NativeFunctionHandle,
-    pub return_type: Type,
+    pub return_type: AllTypes,
     pub return_type_doc: DocString,
     pub one_time_callback_name: String,
     pub one_time_callback_param_name: String,
@@ -161,7 +161,7 @@ impl<'a> ClassBuilder<'a> {
         }
         self.lib.validate_native_function(native_function)?;
 
-        if let ReturnType::Type(Type::ClassRef(return_type), _) = &native_function.return_type {
+        if let ReturnType::Type(AllTypes::ClassRef(return_type), _) = &native_function.return_type {
             if return_type == &self.declaration {
                 self.constructor = Some(native_function.clone());
                 return Ok(self);
@@ -246,7 +246,7 @@ impl<'a> ClassBuilder<'a> {
         let name = name.into();
         let mut async_method = None;
         for param in &native_function.parameters {
-            if let Type::Interface(ot_cb) = &param.param_type {
+            if let AllTypes::Interface(ot_cb) = &param.param_type {
                 if async_method.is_some() {
                     return Err(BindingError::AsyncNativeMethodTooManyInterface {
                         handle: native_function.clone(),
@@ -364,7 +364,7 @@ impl<'a> ClassBuilder<'a> {
 
     fn validate_first_param(&self, native_function: &NativeFunctionHandle) -> Result<()> {
         if let Some(first_param) = native_function.parameters.first() {
-            if let Type::ClassRef(first_param_type) = &first_param.param_type {
+            if let AllTypes::ClassRef(first_param_type) = &first_param.param_type {
                 if first_param_type == &self.declaration {
                     return Ok(());
                 }

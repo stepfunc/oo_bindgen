@@ -87,16 +87,16 @@ impl RustType for BasicType {
     }
 }
 
-impl RustType for Type {
+impl RustType for AllTypes {
     fn as_rust_type(&self) -> String {
         match self {
-            Type::Basic(x) => x.as_rust_type(),
-            Type::String => "&'a std::ffi::CStr".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
-            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => {
+            AllTypes::Basic(x) => x.as_rust_type(),
+            AllTypes::String => "&'a std::ffi::CStr".to_string(),
+            AllTypes::Struct(handle) => handle.name().to_camel_case(),
+            AllTypes::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
+            AllTypes::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
+            AllTypes::Interface(handle) => handle.name.to_camel_case(),
+            AllTypes::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
                 } else {
@@ -104,19 +104,19 @@ impl RustType for Type {
                 };
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
+            AllTypes::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            Type::Basic(x) => x.as_c_type(),
-            Type::String => "*const std::os::raw::c_char".to_string(),
-            Type::Struct(handle) => handle.name().to_camel_case(),
-            Type::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
-            Type::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
-            Type::Interface(handle) => handle.name.to_camel_case(),
-            Type::Iterator(handle) => {
+            AllTypes::Basic(x) => x.as_c_type(),
+            AllTypes::String => "*const std::os::raw::c_char".to_string(),
+            AllTypes::Struct(handle) => handle.name().to_camel_case(),
+            AllTypes::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
+            AllTypes::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
+            AllTypes::Interface(handle) => handle.name.to_camel_case(),
+            AllTypes::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
                 } else {
@@ -124,59 +124,59 @@ impl RustType for Type {
                 };
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            Type::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
+            AllTypes::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            Type::Basic(x) => x.is_copyable(),
-            Type::String => true, // Just copying the reference
-            Type::Struct(_) => false,
-            Type::StructRef(_) => true,
-            Type::ClassRef(_) => true, // Just copying the opaque pointer
-            Type::Interface(_) => false,
-            Type::Iterator(_) => true,   // Just copying the pointer
-            Type::Collection(_) => true, // Just copying the pointer
+            AllTypes::Basic(x) => x.is_copyable(),
+            AllTypes::String => true, // Just copying the reference
+            AllTypes::Struct(_) => false,
+            AllTypes::StructRef(_) => true,
+            AllTypes::ClassRef(_) => true, // Just copying the opaque pointer
+            AllTypes::Interface(_) => false,
+            AllTypes::Iterator(_) => true,   // Just copying the pointer
+            AllTypes::Collection(_) => true, // Just copying the pointer
         }
     }
 
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            Type::Basic(x) => x.rust_requires_lifetime(),
-            Type::String => true,
-            Type::Struct(_) => false,
-            Type::StructRef(_) => false,
-            Type::ClassRef(_) => false,
-            Type::Interface(_) => false,
-            Type::Iterator(handle) => handle.has_lifetime_annotation,
-            Type::Collection(_) => false,
+            AllTypes::Basic(x) => x.rust_requires_lifetime(),
+            AllTypes::String => true,
+            AllTypes::Struct(_) => false,
+            AllTypes::StructRef(_) => false,
+            AllTypes::ClassRef(_) => false,
+            AllTypes::Interface(_) => false,
+            AllTypes::Iterator(handle) => handle.has_lifetime_annotation,
+            AllTypes::Collection(_) => false,
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            Type::Basic(x) => x.c_requires_lifetime(),
-            Type::String => false,
-            Type::Struct(_) => false,
-            Type::StructRef(_) => false,
-            Type::ClassRef(_) => false,
-            Type::Interface(_) => false,
-            Type::Iterator(handle) => handle.has_lifetime_annotation,
-            Type::Collection(_) => false,
+            AllTypes::Basic(x) => x.c_requires_lifetime(),
+            AllTypes::String => false,
+            AllTypes::Struct(_) => false,
+            AllTypes::StructRef(_) => false,
+            AllTypes::ClassRef(_) => false,
+            AllTypes::Interface(_) => false,
+            AllTypes::Iterator(handle) => handle.has_lifetime_annotation,
+            AllTypes::Collection(_) => false,
         }
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self {
-            Type::Basic(x) => x.conversion(),
-            Type::String => Some(Box::new(StringConverter)),
-            Type::Struct(_) => None,
-            Type::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
-            Type::ClassRef(_) => None,
-            Type::Interface(_) => None,
-            Type::Iterator(_) => None,
-            Type::Collection(_) => None,
+            AllTypes::Basic(x) => x.conversion(),
+            AllTypes::String => Some(Box::new(StringConverter)),
+            AllTypes::Struct(_) => None,
+            AllTypes::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
+            AllTypes::ClassRef(_) => None,
+            AllTypes::Interface(_) => None,
+            AllTypes::Iterator(_) => None,
+            AllTypes::Collection(_) => None,
         }
     }
 }

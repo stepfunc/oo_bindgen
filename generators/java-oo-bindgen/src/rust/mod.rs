@@ -192,7 +192,7 @@ fn generate_functions(
 ) -> FormattingResult<()> {
     for handle in lib.native_functions() {
         if let Some(first_param) = handle.parameters.first() {
-            if let Type::ClassRef(class_handle) = &first_param.param_type {
+            if let AllTypes::ClassRef(class_handle) = &first_param.param_type {
                 // We don't want to generate the `next` methods of iterators
                 if let Some(it) = lib.find_iterator(&class_handle.name) {
                     if &it.native_func == handle {
@@ -208,7 +208,7 @@ fn generate_functions(
             }
         }
 
-        if let ReturnType::Type(Type::ClassRef(class_handle), _) = &handle.return_type {
+        if let ReturnType::Type(AllTypes::ClassRef(class_handle), _) = &handle.return_type {
             // We don't want to generate the `create` method of collections
             if lib.find_collection(&class_handle.name).is_some() {
                 continue;
@@ -320,7 +320,7 @@ fn generate_functions(
                     .parameters
                     .iter()
                     .map(|param| {
-                        if matches!(param.param_type, Type::Struct(_)) {
+                        if matches!(param.param_type, AllTypes::Struct(_)) {
                             format!("{}.clone()", &param.name.to_snake_case())
                         } else {
                             param.name.to_snake_case()
@@ -401,7 +401,7 @@ fn generate_functions(
                 }
 
                 // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
-                if matches!(param.param_type, Type::Struct(_)) {
+                if matches!(param.param_type, AllTypes::Struct(_)) {
                     f.writeln(&format!(
                         "std::mem::forget({});",
                         param.name.to_snake_case()

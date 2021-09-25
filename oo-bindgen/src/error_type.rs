@@ -19,7 +19,7 @@ pub struct ErrorType {
 }
 
 impl ErrorType {
-    pub fn to_enum_type(&self) -> Type {
+    pub fn to_enum_type(&self) -> AllTypes {
         BasicType::Enum(self.inner.clone()).into()
     }
 }

@@ -6,7 +6,7 @@ use crate::*;
 use crate::struct_common::NativeStructDeclarationHandle;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Type {
+pub enum AllTypes {
     Basic(BasicType),
     String,
 
@@ -22,7 +22,7 @@ pub enum Type {
 #[derive(Debug)]
 pub enum ReturnType {
     Void,
-    Type(Type, DocString),
+    Type(AllTypes, DocString),
 }
 
 impl ReturnType {
@@ -30,7 +30,7 @@ impl ReturnType {
         ReturnType::Void
     }
 
-    pub fn new<D: Into<DocString>, T: Into<Type>>(return_type: T, doc: D) -> Self {
+    pub fn new<D: Into<DocString>, T: Into<AllTypes>>(return_type: T, doc: D) -> Self {
         ReturnType::Type(return_type.into(), doc.into())
     }
 
@@ -45,7 +45,7 @@ impl ReturnType {
 #[derive(Debug, Clone)]
 pub struct Parameter {
     pub name: String,
-    pub param_type: Type,
+    pub param_type: AllTypes,
     pub doc: DocString,
 }
 
@@ -64,11 +64,11 @@ pub enum NativeFunctionType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
-    NoErrorWithReturn(Type, DocString),
+    NoErrorWithReturn(AllTypes, DocString),
     /// function that can fail, but does not return a value
     ErrorNoReturn(ErrorType),
     /// function that can fail and returns something via an out parameter
-    ErrorWithReturn(ErrorType, Type, DocString),
+    ErrorWithReturn(ErrorType, AllTypes, DocString),
 }
 
 impl NativeFunction {
@@ -113,7 +113,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<Type>>(
+    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<AllTypes>>(
         mut self,
         name: T,
         param_type: P,
@@ -134,7 +134,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         self.return_type(ReturnType::Void)
     }
 
-    pub fn returns<D: Into<DocString>, T: Into<Type>>(
+    pub fn returns<D: Into<DocString>, T: Into<AllTypes>>(
         self,
         return_type: T,
         doc: D,

@@ -29,7 +29,7 @@ impl Enum {
 
 pub type EnumHandle = Handle<Enum>;
 
-impl From<EnumHandle> for Type {
+impl From<EnumHandle> for AllTypes {
     fn from(x: EnumHandle) -> Self {
         BasicType::Enum(x).into()
     }

@@ -1,5 +1,5 @@
 use crate::Handle;
-use crate::native_function::Type;
+use crate::native_function::AllTypes;
 
 /// C-style structure forward declaration
 #[derive(Debug)]
@@ -15,7 +15,7 @@ impl NativeStructDeclaration {
 
 pub type NativeStructDeclarationHandle = Handle<NativeStructDeclaration>;
 
-impl From<NativeStructDeclarationHandle> for Type {
+impl From<NativeStructDeclarationHandle> for AllTypes {
     fn from(x: NativeStructDeclarationHandle) -> Self {
         Self::StructRef(x)
     }

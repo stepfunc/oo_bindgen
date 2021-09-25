@@ -395,7 +395,7 @@ fn generate_async_method(
             .parameters
             .iter()
             .skip(1)
-            .filter(|param| !matches!(param.param_type, Type::Interface(_)))
+            .filter(|param| !matches!(param.param_type, AllTypes::Interface(_)))
         {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
@@ -429,7 +429,7 @@ fn generate_async_method(
             .parameters
             .iter()
             .skip(1)
-            .filter(|param| !matches!(param.param_type, Type::Interface(_)))
+            .filter(|param| !matches!(param.param_type, AllTypes::Interface(_)))
             .map(|param| {
                 format!(
                     "{} {}",

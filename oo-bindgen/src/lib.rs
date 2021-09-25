@@ -922,17 +922,17 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_type(&self, type_to_validate: &Type) -> Result<()> {
+    fn validate_type(&self, type_to_validate: &AllTypes) -> Result<()> {
         match type_to_validate {
-            Type::StructRef(native_struct) => {
+            AllTypes::StructRef(native_struct) => {
                 self.validate_native_struct_declaration(native_struct)
             }
-            Type::Struct(native_struct) => self.validate_native_struct(native_struct),
-            Type::Basic(BasicType::Enum(native_enum)) => self.validate_native_enum(native_enum),
-            Type::Interface(interface) => self.validate_interface(interface),
-            Type::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
-            Type::Iterator(iter) => self.validate_iterator(iter),
-            Type::Collection(collection) => self.validate_collection(collection),
+            AllTypes::Struct(native_struct) => self.validate_native_struct(native_struct),
+            AllTypes::Basic(BasicType::Enum(native_enum)) => self.validate_native_enum(native_enum),
+            AllTypes::Interface(interface) => self.validate_interface(interface),
+            AllTypes::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
+            AllTypes::Iterator(iter) => self.validate_iterator(iter),
+            AllTypes::Collection(collection) => self.validate_collection(collection),
             _ => Ok(()),
         }
     }

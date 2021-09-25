@@ -59,7 +59,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .param("testclass", testclass.clone(), "TestClass handle")?
         .param(
             "cb",
-            Type::Interface(get_value_cb),
+            AllTypes::Interface(get_value_cb),
             "Callback to call with the value",
         )?
         .returns_nothing()?

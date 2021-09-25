@@ -23,14 +23,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let stringclass_echo_func = lib
         .declare_native_function("string_echo")?
         .param("stringclass", stringclass.clone(), "StringClass")?
-        .param("value", Type::String, "String to echo")?
-        .returns(Type::String, "Echoed string")?
+        .param("value", AllTypes::String, "String to echo")?
+        .returns(AllTypes::String, "Echoed string")?
         .doc("Echo a string")?
         .build()?;
 
     let stringclass_length_func = lib
         .declare_native_function("string_length")?
-        .param("value", Type::String, "String")?
+        .param("value", AllTypes::String, "String")?
         .returns(BasicType::Uint32, "String length")?
         .doc("Get the string length")?
         .build()?;

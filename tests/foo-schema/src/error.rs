@@ -1,5 +1,5 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::native_function::Type;
+use oo_bindgen::native_function::AllTypes;
 use oo_bindgen::native_struct::NativeStructHandle;
 use oo_bindgen::types::BasicType;
 use oo_bindgen::{BindingError, LibraryBuilder};
@@ -19,7 +19,7 @@ pub(crate) fn define(
 
     let get_special_number_fb = lib
         .declare_native_function("get_special_number")?
-        .param("password", Type::String, "secret password")?
+        .param("password", AllTypes::String, "secret password")?
         .returns(BasicType::Uint32, "unlocked value")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
@@ -27,7 +27,7 @@ pub(crate) fn define(
 
     let get_struct_fn = lib
         .declare_native_function("get_struct")?
-        .param("password", Type::String, "secret password")?
+        .param("password", AllTypes::String, "secret password")?
         .returns(structure, "A struct")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a struct")?
@@ -35,15 +35,15 @@ pub(crate) fn define(
 
     let echo_password_fn = lib
         .declare_native_function("echo_password")?
-        .param("password", Type::String, "secret password")?
-        .returns(Type::String, "The password")?
+        .param("password", AllTypes::String, "secret password")?
+        .returns(AllTypes::String, "The password")?
         .fails_with(error_type.clone())?
         .doc("Use a password and echoes it if it's valid")?
         .build()?;
 
     let constructor_fn = lib
         .declare_native_function("create_class_with_password")?
-        .param("password", Type::String, "secret password")?
+        .param("password", AllTypes::String, "secret password")?
         .returns(my_class.clone(), "allocated class")?
         .fails_with(error_type.clone())?
         .doc("Use a password to allocate a class")?
@@ -53,7 +53,7 @@ pub(crate) fn define(
         .declare_native_function("get_special_value_from_class")?
         .param(
             "instance",
-            Type::ClassRef(my_class.clone()),
+            AllTypes::ClassRef(my_class.clone()),
             "class instance",
         )?
         .returns(BasicType::Uint32, "special value")?
@@ -65,7 +65,7 @@ pub(crate) fn define(
         .declare_native_function("destroy_class_with_password")?
         .param(
             "instance",
-            Type::ClassRef(my_class.clone()),
+            AllTypes::ClassRef(my_class.clone()),
             "class to destroy",
         )?
         .returns_nothing()?

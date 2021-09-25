@@ -241,7 +241,7 @@ impl JniType for BasicType {
     }
 }
 
-impl JniType for Type {
+impl JniType for AllTypes {
     fn as_raw_jni_type(&self) -> &str {
         const JOBJECT: &str = "jni::sys::jobject";
 

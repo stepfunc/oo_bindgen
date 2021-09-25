@@ -142,17 +142,17 @@ impl CFormatting for BasicType {
     }
 }
 
-impl CFormatting for Type {
+impl CFormatting for AllTypes {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            Type::Basic(b) => b.to_c_type(prefix),
-            Type::String => "const char*".to_string(),
-            Type::Struct(handle) => handle.to_c_type(prefix),
-            Type::StructRef(handle) => format!("{}*", handle.to_c_type(prefix)),
-            Type::ClassRef(handle) => format!("{}*", handle.to_c_type(prefix)),
-            Type::Interface(handle) => handle.to_c_type(prefix),
-            Type::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
-            Type::Collection(handle) => format!("{}*", handle.collection_type.to_c_type(prefix)),
+            AllTypes::Basic(b) => b.to_c_type(prefix),
+            AllTypes::String => "const char*".to_string(),
+            AllTypes::Struct(handle) => handle.to_c_type(prefix),
+            AllTypes::StructRef(handle) => format!("{}*", handle.to_c_type(prefix)),
+            AllTypes::ClassRef(handle) => format!("{}*", handle.to_c_type(prefix)),
+            AllTypes::Interface(handle) => handle.to_c_type(prefix),
+            AllTypes::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
+            AllTypes::Collection(handle) => format!("{}*", handle.collection_type.to_c_type(prefix)),
         }
     }
 }
@@ -727,7 +727,7 @@ fn write_function_docs(
         for param in &handle.parameters {
             f.writeln(&format!("@param {} ", param.name))?;
             docstring_print(f, &param.doc, lib)?;
-            if let Type::Basic(BasicType::Duration(mapping)) = param.param_type {
+            if let AllTypes::Basic(BasicType::Duration(mapping)) = param.param_type {
                 f.write(&format!(" ({})", mapping.unit()))?;
             }
         }
@@ -741,7 +741,7 @@ fn write_function_docs(
             NativeFunctionType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
-                if let Type::Basic(BasicType::Duration(mapping)) = ret {
+                if let AllTypes::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
             }
@@ -751,7 +751,7 @@ fn write_function_docs(
             NativeFunctionType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
-                if let Type::Basic(BasicType::Duration(mapping)) = ret {
+                if let AllTypes::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
                 write_error_return_doc(f)?;

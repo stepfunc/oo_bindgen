@@ -8,7 +8,7 @@ pub struct Collection {
     pub delete_func: NativeFunctionHandle,
     pub add_func: NativeFunctionHandle,
     pub collection_type: ClassDeclarationHandle,
-    pub item_type: Type,
+    pub item_type: AllTypes,
     pub has_reserve: bool,
 }
 
@@ -19,7 +19,7 @@ impl Collection {
         add_func: &NativeFunctionHandle,
     ) -> Result<Collection> {
         // Validate constructor
-        let collection_type = if let ReturnType::Type(Type::ClassRef(collection_type), _) =
+        let collection_type = if let ReturnType::Type(AllTypes::ClassRef(collection_type), _) =
             &create_func.return_type
         {
             collection_type
@@ -37,7 +37,7 @@ impl Collection {
 
         let mut iter = create_func.parameters.iter();
         let has_reserve = if let Some(param) = iter.next() {
-            if param.param_type != Type::Basic(BasicType::Uint32) {
+            if param.param_type != AllTypes::Basic(BasicType::Uint32) {
                 return Err(BindingError::CollectionCreateFuncInvalidSignature {
                     handle: create_func.clone(),
                 });
@@ -57,7 +57,7 @@ impl Collection {
         // Validate destructor
         let mut iter = delete_func.parameters.iter();
         if let Some(param) = iter.next() {
-            if let Type::ClassRef(iter_type) = &param.param_type {
+            if let AllTypes::ClassRef(iter_type) = &param.param_type {
                 if iter_type != collection_type {
                     return Err(BindingError::CollectionDeleteFuncInvalidSignature {
                         handle: delete_func.clone(),
@@ -89,7 +89,7 @@ impl Collection {
         // Validate add function
         let mut iter = add_func.parameters.iter();
         let item_type = if let Some(param) = iter.next() {
-            if let Type::ClassRef(iter_type) = &param.param_type {
+            if let AllTypes::ClassRef(iter_type) = &param.param_type {
                 if iter_type != collection_type {
                     return Err(BindingError::CollectionAddFuncInvalidSignature {
                         handle: add_func.clone(),
@@ -145,8 +145,8 @@ impl Collection {
 
 pub type CollectionHandle = Handle<Collection>;
 
-impl From<CollectionHandle> for Type {
+impl From<CollectionHandle> for AllTypes {
     fn from(x: CollectionHandle) -> Self {
-        Type::Collection(x)
+        AllTypes::Collection(x)
     }
 }

@@ -24,7 +24,7 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, Type};
+use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, AllTypes};
 use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
@@ -687,16 +687,16 @@ fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
     }
 }
 
-fn convert_to_cpp(typ: &Type, expr: String) -> String {
+fn convert_to_cpp(typ: &AllTypes, expr: String) -> String {
     match typ {
-        Type::Basic(x) => convert_basic_type_to_cpp(x, expr),
-        Type::String => format!("std::string({})", expr),
-        Type::Struct(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
-        Type::StructRef(_) => format!("{}::to_cpp_ref({})", FRIEND_CLASS_NAME, expr),
-        Type::ClassRef(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
-        Type::Interface(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
-        Type::Iterator(_) => format!("convert::to_vec({})", expr),
-        Type::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
+        AllTypes::Basic(x) => convert_basic_type_to_cpp(x, expr),
+        AllTypes::String => format!("std::string({})", expr),
+        AllTypes::Struct(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
+        AllTypes::StructRef(_) => format!("{}::to_cpp_ref({})", FRIEND_CLASS_NAME, expr),
+        AllTypes::ClassRef(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
+        AllTypes::Interface(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
+        AllTypes::Iterator(_) => format!("convert::to_vec({})", expr),
+        AllTypes::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
     }
 }
 
@@ -725,16 +725,16 @@ fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
     }
 }
 
-fn convert_to_c(typ: &Type, expr: String) -> String {
+fn convert_to_c(typ: &AllTypes, expr: String) -> String {
     match typ {
-        Type::Basic(t) => convert_basic_type_to_c(t, expr),
-        Type::String => format!("{}.c_str()", expr),
-        Type::Struct(_) => format!("{}::from_cpp({})", FRIEND_CLASS_NAME, expr),
-        Type::StructRef(_) => format!("{}::from_cpp_ref({})", FRIEND_CLASS_NAME, expr),
-        Type::ClassRef(_) => unimplemented!(),
-        Type::Interface(_) => format!("convert::from_cpp({})", expr),
-        Type::Iterator(_) => "nullptr".to_string(), // Conversion not supported
-        Type::Collection(_) => unimplemented!(),
+        AllTypes::Basic(t) => convert_basic_type_to_c(t, expr),
+        AllTypes::String => format!("{}.c_str()", expr),
+        AllTypes::Struct(_) => format!("{}::from_cpp({})", FRIEND_CLASS_NAME, expr),
+        AllTypes::StructRef(_) => format!("{}::from_cpp_ref({})", FRIEND_CLASS_NAME, expr),
+        AllTypes::ClassRef(_) => unimplemented!(),
+        AllTypes::Interface(_) => format!("convert::from_cpp({})", expr),
+        AllTypes::Iterator(_) => "nullptr".to_string(), // Conversion not supported
+        AllTypes::Collection(_) => unimplemented!(),
     }
 }
 
@@ -843,7 +843,7 @@ fn print_iterator_conversions(
         indented(f, |f| {
             f.writeln(&format!(
                 "result.push_back({});",
-                convert_to_cpp(&Type::Struct(handle.item_type.clone()), "*it".to_string())
+                convert_to_cpp(&AllTypes::Struct(handle.item_type.clone()), "*it".to_string())
             ))?;
             f.writeln(&format!("it = {}(x);", function_name))
         })?;

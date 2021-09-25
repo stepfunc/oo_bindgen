@@ -1,4 +1,4 @@
-use oo_bindgen::native_function::{ReturnType, Type};
+use oo_bindgen::native_function::{ReturnType, AllTypes};
 
 use crate::cpp::names::CppName;
 use oo_bindgen::callback::InterfaceHandle;
@@ -80,9 +80,9 @@ impl CppReturnType for ReturnType {
 }
 
 impl CppType {
-    fn new(x: Type) -> Self {
+    fn new(x: AllTypes) -> Self {
         match x {
-            Type::Basic(x) => match x {
+            AllTypes::Basic(x) => match x {
                 BasicType::Bool => Primitive::Bool.into(),
                 BasicType::Uint8 => Primitive::Uint8.into(),
                 BasicType::Sint8 => Primitive::Sint8.into(),
@@ -97,13 +97,13 @@ impl CppType {
                 BasicType::Duration(x) => Primitive::Duration(x).into(),
                 BasicType::Enum(x) => Primitive::Enum(x).into(),
             },
-            Type::String => Self::String,
-            Type::Struct(x) => Self::Struct(x),
-            Type::StructRef(x) => Self::StructRef(x),
-            Type::ClassRef(x) => Self::ClassRef(x),
-            Type::Interface(x) => Self::Interface(x),
-            Type::Iterator(x) => Self::Iterator(x),
-            Type::Collection(x) => Self::Collection(x),
+            AllTypes::String => Self::String,
+            AllTypes::Struct(x) => Self::Struct(x),
+            AllTypes::StructRef(x) => Self::StructRef(x),
+            AllTypes::ClassRef(x) => Self::ClassRef(x),
+            AllTypes::Interface(x) => Self::Interface(x),
+            AllTypes::Iterator(x) => Self::Iterator(x),
+            AllTypes::Collection(x) => Self::Collection(x),
         }
     }
 
@@ -174,7 +174,7 @@ impl CppType {
     }
 }
 
-impl CppTypes for Type {
+impl CppTypes for AllTypes {
     fn get_cpp_struct_member_type(&self) -> String {
         CppType::new(self.clone()).get_cpp_struct_member_type()
     }

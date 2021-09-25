@@ -1,5 +1,5 @@
 use crate::native_enum::EnumHandle;
-use crate::native_function::Type;
+use crate::native_function::AllTypes;
 use crate::native_struct::StructElementType;
 
 use std::time::Duration;
@@ -39,7 +39,7 @@ impl From<DurationType> for BasicType {
     }
 }
 
-impl From<DurationType> for Type {
+impl From<DurationType> for AllTypes {
     fn from(x: DurationType) -> Self {
         BasicType::Duration(x).into()
     }
@@ -70,9 +70,9 @@ pub enum BasicType {
     Enum(EnumHandle),
 }
 
-impl From<BasicType> for Type {
+impl From<BasicType> for AllTypes {
     fn from(t: BasicType) -> Self {
-        Type::Basic(t)
+        AllTypes::Basic(t)
     }
 }
 

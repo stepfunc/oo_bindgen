@@ -47,7 +47,7 @@ impl JavaType for BasicType {
     }
 }
 
-impl JavaType for Type {
+impl JavaType for AllTypes {
     /// Return the Java primitive type
     fn as_java_primitive(&self) -> String {
         match self {

@@ -22,7 +22,7 @@ impl Iterator {
                 })
             }
             ReturnType::Type(return_type, _) => {
-                if *return_type != Type::StructRef(item_type.declaration()) {
+                if *return_type != AllTypes::StructRef(item_type.declaration()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: native_func.clone(),
                     });
@@ -38,7 +38,7 @@ impl Iterator {
 
         let mut iter = native_func.parameters.iter();
         if let Some(param) = iter.next() {
-            if let Type::ClassRef(iter_type) = &param.param_type {
+            if let AllTypes::ClassRef(iter_type) = &param.param_type {
                 if iter.next().is_some() {
                     return Err(BindingError::IteratorNotSingleClassRefParam {
                         handle: native_func.clone(),
@@ -70,7 +70,7 @@ impl Iterator {
 
 pub type IteratorHandle = Handle<Iterator>;
 
-impl From<IteratorHandle> for Type {
+impl From<IteratorHandle> for AllTypes {
     fn from(x: IteratorHandle) -> Self {
         Self::Iterator(x)
     }

@@ -124,12 +124,12 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
         )?
         .add(
             "structure_value",
-            Type::Struct(other_structure.clone()),
+            AllTypes::Struct(other_structure.clone()),
             "structure_value",
         )?
         .add(
             "interface_value",
-            Type::Interface(structure_interface),
+            AllTypes::Interface(structure_interface),
             "interface_value",
         )?
         .add(
@@ -153,7 +153,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
         .declare_native_function("struct_by_value_echo")?
         .param(
             "value",
-            Type::Struct(structure.clone()),
+            AllTypes::Struct(structure.clone()),
             "Structure to echo",
         )?
         .returns(structure.clone(), "Echoed structure")?
@@ -164,7 +164,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
         .declare_native_function("struct_by_reference_echo")?
         .param(
             "value",
-            Type::StructRef(structure.declaration()),
+            AllTypes::StructRef(structure.declaration()),
             "Structure to echo",
         )?
         .returns(structure.clone(), "Echoed structure")?

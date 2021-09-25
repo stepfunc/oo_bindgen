@@ -64,9 +64,9 @@ impl Interface {
 
 pub type InterfaceHandle = Handle<Interface>;
 
-impl From<InterfaceHandle> for Type {
+impl From<InterfaceHandle> for AllTypes {
     fn from(x: InterfaceHandle) -> Self {
-        Type::Interface(x)
+        AllTypes::Interface(x)
     }
 }
 
@@ -196,13 +196,13 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<Type>>(
+    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<AllTypes>>(
         mut self,
         name: S,
         param_type: P,
         doc: D,
     ) -> Result<Self> {
-        let param_type: Type = param_type.into();
+        let param_type: AllTypes = param_type.into();
 
         self.builder.lib.validate_type(&param_type)?;
         self.params.push(CallbackParameter::Parameter(Parameter {
@@ -227,7 +227,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn returns<T: Into<Type>, D: Into<DocString>>(self, t: T, d: D) -> Result<Self> {
+    pub fn returns<T: Into<AllTypes>, D: Into<DocString>>(self, t: T, d: D) -> Result<Self> {
         self.return_type(ReturnType::new(t, d))
     }
 

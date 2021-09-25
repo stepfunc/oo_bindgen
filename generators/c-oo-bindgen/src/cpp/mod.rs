@@ -12,8 +12,7 @@ use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
 use oo_bindgen::native_struct::{
-    NativeStructElement, NativeStructHandle, NativeStructType,
-    StructElementType,
+    NativeStructElement, NativeStructHandle, NativeStructType, StructElementType,
 };
 use oo_bindgen::{Library, Statement};
 use std::path::Path;
@@ -24,11 +23,11 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType, AllTypes};
-use oo_bindgen::types::{BasicType, DurationType};
+use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType};
+use oo_bindgen::struct_common::NativeStructDeclaration;
+use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
-use oo_bindgen::struct_common::NativeStructDeclaration;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
@@ -843,7 +842,10 @@ fn print_iterator_conversions(
         indented(f, |f| {
             f.writeln(&format!(
                 "result.push_back({});",
-                convert_to_cpp(&AllTypes::Struct(handle.item_type.clone()), "*it".to_string())
+                convert_to_cpp(
+                    &AllTypes::Struct(handle.item_type.clone()),
+                    "*it".to_string()
+                )
             ))?;
             f.writeln(&format!("it = {}(x);", function_name))
         })?;

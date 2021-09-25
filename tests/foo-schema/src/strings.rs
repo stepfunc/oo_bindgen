@@ -1,5 +1,4 @@
-use oo_bindgen::native_function::*;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{AllTypes, BasicType};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {

@@ -7,8 +7,7 @@ use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::native_enum::{EnumHandle, EnumVariant};
 use oo_bindgen::native_function::Parameter;
-use oo_bindgen::native_struct::{ NativeStructElement, NativeStructHandle, StructHandle,
-};
+use oo_bindgen::native_struct::{NativeStructElement, NativeStructHandle, StructHandle};
 use oo_bindgen::struct_common::NativeStructDeclaration;
 
 pub(crate) trait CppName {

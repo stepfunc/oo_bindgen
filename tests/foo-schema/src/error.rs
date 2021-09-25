@@ -1,7 +1,6 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::native_function::AllTypes;
 use oo_bindgen::native_struct::NativeStructHandle;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{AllTypes, BasicType};
 use oo_bindgen::{BindingError, LibraryBuilder};
 
 pub(crate) fn define(

@@ -56,13 +56,13 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::types::{BasicType, DurationType};
+use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 use oo_bindgen::*;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use oo_bindgen::struct_common::NativeStructDeclarationHandle;
 
 mod chelpers;
 mod cpp;
@@ -152,7 +152,9 @@ impl CFormatting for AllTypes {
             AllTypes::ClassRef(handle) => format!("{}*", handle.to_c_type(prefix)),
             AllTypes::Interface(handle) => handle.to_c_type(prefix),
             AllTypes::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
-            AllTypes::Collection(handle) => format!("{}*", handle.collection_type.to_c_type(prefix)),
+            AllTypes::Collection(handle) => {
+                format!("{}*", handle.collection_type.to_c_type(prefix))
+            }
         }
     }
 }

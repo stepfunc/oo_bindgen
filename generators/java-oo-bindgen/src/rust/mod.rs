@@ -4,6 +4,7 @@ use conversion::*;
 use heck::SnakeCase;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::AllTypes;
 use std::fs;
 
 mod classes;

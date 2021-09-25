@@ -1,11 +1,11 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
-use crate::types::{BasicType, DurationType};
+use crate::struct_common::NativeStructDeclarationHandle;
+use crate::types::{AllTypes, BasicType, DurationType};
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
-use crate::struct_common::NativeStructDeclarationHandle;
 
 #[derive(Debug)]
 pub enum StructElementType {

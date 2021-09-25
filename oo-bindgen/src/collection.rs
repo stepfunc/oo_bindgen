@@ -1,4 +1,4 @@
-use crate::types::BasicType;
+use crate::types::{AllTypes, BasicType};
 use crate::Result;
 use crate::*;
 

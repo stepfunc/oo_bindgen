@@ -8,8 +8,8 @@ use oo_bindgen::iterator::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 
 pub(crate) trait JniType {
     /// Returns raw JNI type (from jni::sys::* module)

@@ -70,6 +70,12 @@ impl From<InterfaceHandle> for AllTypes {
     }
 }
 
+impl From<InterfaceHandle> for StructElementType {
+    fn from(x: InterfaceHandle) -> Self {
+        StructElementType::Interface(x)
+    }
+}
+
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,

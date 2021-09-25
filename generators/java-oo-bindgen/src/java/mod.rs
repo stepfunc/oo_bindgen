@@ -6,6 +6,7 @@ use heck::{CamelCase, KebabCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::platforms::Platform;
+use oo_bindgen::types::AllTypes;
 use oo_bindgen::*;
 use std::fs;
 

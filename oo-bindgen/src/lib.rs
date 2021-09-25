@@ -72,16 +72,16 @@ pub mod iterator;
 pub mod native_enum;
 pub mod native_function;
 pub mod native_struct;
-pub mod struct_common;
 pub mod platforms;
+pub mod struct_common;
 pub mod types;
 pub mod util;
 
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
-use crate::types::BasicType;
-use crate::struct_common::{NativeStructDeclarationHandle, NativeStructDeclaration};
+use crate::struct_common::{NativeStructDeclaration, NativeStructDeclarationHandle};
+use crate::types::{AllTypes, BasicType};
 
 type Result<T> = std::result::Result<T, BindingError>;
 
@@ -930,7 +930,9 @@ impl LibraryBuilder {
             AllTypes::Struct(native_struct) => self.validate_native_struct(native_struct),
             AllTypes::Basic(BasicType::Enum(native_enum)) => self.validate_native_enum(native_enum),
             AllTypes::Interface(interface) => self.validate_interface(interface),
-            AllTypes::ClassRef(class_declaration) => self.validate_class_declaration(class_declaration),
+            AllTypes::ClassRef(class_declaration) => {
+                self.validate_class_declaration(class_declaration)
+            }
             AllTypes::Iterator(iter) => self.validate_iterator(iter),
             AllTypes::Collection(collection) => self.validate_collection(collection),
             _ => Ok(()),

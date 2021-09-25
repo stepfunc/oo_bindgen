@@ -1,7 +1,11 @@
 use crate::native_enum::EnumHandle;
-use crate::native_function::AllTypes;
-use crate::native_struct::StructElementType;
+use crate::native_struct::{NativeStructHandle, StructElementType};
 
+use crate::callback::InterfaceHandle;
+use crate::class::ClassDeclarationHandle;
+use crate::collection::CollectionHandle;
+use crate::iterator::IteratorHandle;
+use crate::struct_common::NativeStructDeclarationHandle;
 use std::time::Duration;
 
 /// Durations may be represented in multiple ways in the underlying C API
@@ -68,6 +72,20 @@ pub enum BasicType {
     Double,
     Duration(DurationType),
     Enum(EnumHandle),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum AllTypes {
+    Basic(BasicType),
+    String,
+
+    // Complex types
+    Struct(NativeStructHandle),
+    StructRef(NativeStructDeclarationHandle),
+    ClassRef(ClassDeclarationHandle),
+    Interface(InterfaceHandle),
+    Iterator(IteratorHandle),
+    Collection(CollectionHandle),
 }
 
 impl From<BasicType> for AllTypes {

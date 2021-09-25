@@ -1,23 +1,5 @@
-use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
-use crate::iterator::IteratorHandle;
-use crate::types::BasicType;
 use crate::*;
-use crate::struct_common::NativeStructDeclarationHandle;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum AllTypes {
-    Basic(BasicType),
-    String,
-
-    // Complex types
-    Struct(NativeStructHandle),
-    StructRef(NativeStructDeclarationHandle),
-    ClassRef(ClassDeclarationHandle),
-    Interface(InterfaceHandle),
-    Iterator(IteratorHandle),
-    Collection(CollectionHandle),
-}
 
 #[derive(Debug)]
 pub enum ReturnType {

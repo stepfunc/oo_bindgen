@@ -1,6 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
+use oo_bindgen::types::AllTypes;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

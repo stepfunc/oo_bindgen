@@ -2,6 +2,7 @@ use crate::conversion::DotnetType;
 use crate::*;
 use heck::CamelCase;
 use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::types::AllTypes;
 
 pub(crate) fn generate_collection_helpers(
     f: &mut dyn Printer,

@@ -1,5 +1,5 @@
+use crate::types::AllTypes;
 use crate::Handle;
-use crate::native_function::AllTypes;
 
 /// C-style structure forward declaration
 #[derive(Debug)]

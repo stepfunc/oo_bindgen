@@ -1,4 +1,4 @@
-use oo_bindgen::native_function::{ReturnType, AllTypes};
+use oo_bindgen::native_function::ReturnType;
 
 use crate::cpp::names::CppName;
 use oo_bindgen::callback::InterfaceHandle;
@@ -7,8 +7,8 @@ use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
 use oo_bindgen::native_struct::NativeStructHandle;
-use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 
 /// These types are always be pass-by-value in C++
 #[derive(Clone, Debug, PartialEq)]

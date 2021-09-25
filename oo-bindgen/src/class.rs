@@ -1,4 +1,5 @@
 use crate::doc::DocString;
+use crate::types::AllTypes;
 use crate::*;
 
 /// C-style structure forward declaration

@@ -4,8 +4,8 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::types::{AllTypes, BasicType, DurationType};
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -104,7 +104,9 @@ impl RustType for AllTypes {
                 };
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            AllTypes::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
+            AllTypes::Collection(handle) => {
+                format!("*mut crate::{}", handle.name().to_camel_case())
+            }
         }
     }
 
@@ -124,7 +126,9 @@ impl RustType for AllTypes {
                 };
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            AllTypes::Collection(handle) => format!("*mut crate::{}", handle.name().to_camel_case()),
+            AllTypes::Collection(handle) => {
+                format!("*mut crate::{}", handle.name().to_camel_case())
+            }
         }
     }
 
@@ -136,7 +140,7 @@ impl RustType for AllTypes {
             AllTypes::StructRef(_) => true,
             AllTypes::ClassRef(_) => true, // Just copying the opaque pointer
             AllTypes::Interface(_) => false,
-            AllTypes::Iterator(_) => true,   // Just copying the pointer
+            AllTypes::Iterator(_) => true, // Just copying the pointer
             AllTypes::Collection(_) => true, // Just copying the pointer
         }
     }

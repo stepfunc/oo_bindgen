@@ -1,8 +1,7 @@
 use std::time::Duration;
 
-use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::{NativeStructHandle, StructElementType};
-use oo_bindgen::types::DurationType;
+use oo_bindgen::types::{AllTypes, DurationType};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingError> {
@@ -124,14 +123,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<NativeStructHandle, BindingErr
         )?
         .add(
             "structure_value",
-            AllTypes::Struct(other_structure.clone()),
+            other_structure.clone(),
             "structure_value",
         )?
-        .add(
-            "interface_value",
-            AllTypes::Interface(structure_interface),
-            "interface_value",
-        )?
+        .add("interface_value", structure_interface, "interface_value")?
         .add(
             "duration_millis",
             StructElementType::Duration(

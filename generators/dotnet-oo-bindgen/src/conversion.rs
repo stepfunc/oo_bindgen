@@ -4,7 +4,7 @@ use heck::{CamelCase, MixedCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::types::{AllTypes, BasicType, DurationType};
+use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait DotnetType {
     /// Returns the .NET natural type
@@ -114,7 +114,7 @@ impl DotnetType for BasicType {
     }
 }
 
-impl DotnetType for AllTypes {
+impl DotnetType for AnyType {
     fn as_dotnet_type(&self) -> String {
         match self {
             Self::Basic(x) => x.as_dotnet_type(),
@@ -288,8 +288,7 @@ pub(crate) fn call_native_function(
             }
         }
 
-        let conversion = param
-            .param_type
+        let conversion = AnyType::from(param.arg_type.clone())
             .convert_to_native(&param_name)
             .unwrap_or(param_name);
         f.writeln(&format!(
@@ -344,10 +343,11 @@ pub(crate) fn call_native_function(
         Ok(())
     };
 
-    let has_cleanup = method
-        .parameters
-        .iter()
-        .any(|param| param.param_type.cleanup("temp").is_some());
+    let has_cleanup = method.parameters.iter().any(|param| {
+        AnyType::from(param.arg_type.clone())
+            .cleanup("temp")
+            .is_some()
+    });
 
     if has_cleanup {
         f.writeln("try")?;
@@ -356,8 +356,7 @@ pub(crate) fn call_native_function(
         blocked(f, |f| {
             // Cleanup type conversions
             for param in method.parameters.iter() {
-                if let Some(cleanup) = param
-                    .param_type
+                if let Some(cleanup) = AnyType::from(param.arg_type.clone())
                     .cleanup(&format!("_{}", param.name.to_mixed_case()))
                 {
                     f.writeln(&cleanup)?;
@@ -380,7 +379,7 @@ pub(crate) fn call_dotnet_function(
     // Write the type conversions
     for param in method.params() {
         let conversion = param
-            .param_type
+            .arg_type
             .convert_from_native(&param.name.to_mixed_case())
             .unwrap_or_else(|| param.name.to_mixed_case());
         f.writeln(&format!(

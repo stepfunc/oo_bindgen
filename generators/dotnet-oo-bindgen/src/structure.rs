@@ -53,34 +53,34 @@ pub(crate) fn generate(
                     xmldoc_print(f, &el.doc, lib)?;
 
                     let default_value = match &el.field_type {
-                        AllStructFieldType::Bool(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Uint8(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Sint8(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Uint16(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Sint16(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Uint32(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Sint32(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Uint64(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Sint64(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Float(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::Double(default) => default.map(|x| x.to_string()),
-                        AllStructFieldType::String(default) => {
+                        AnyStructFieldType::Bool(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Uint8(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Sint8(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Uint16(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Sint16(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Uint32(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Sint32(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Uint64(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Sint64(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Float(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::Double(default) => default.map(|x| x.to_string()),
+                        AnyStructFieldType::String(default) => {
                             default.clone().map(|x| format!("\"{}\"", x))
                         }
-                        AllStructFieldType::Struct(_) => None,
-                        AllStructFieldType::StructRef(_) => None,
-                        AllStructFieldType::Enum(handle, default) => default.clone().map(|x| {
+                        AnyStructFieldType::Struct(_) => None,
+                        AnyStructFieldType::StructRef(_) => None,
+                        AnyStructFieldType::Enum(handle, default) => default.clone().map(|x| {
                             format!(
                                 "<see cref=\"{}.{}\" />",
                                 handle.name.to_camel_case(),
                                 x.to_camel_case()
                             )
                         }),
-                        AllStructFieldType::ClassRef(_) => None,
-                        AllStructFieldType::Interface(_) => None,
-                        AllStructFieldType::Iterator(_) => None,
-                        AllStructFieldType::Collection(_) => None,
-                        AllStructFieldType::Duration(_, default) => {
+                        AnyStructFieldType::ClassRef(_) => None,
+                        AnyStructFieldType::Interface(_) => None,
+                        AnyStructFieldType::Iterator(_) => None,
+                        AnyStructFieldType::Collection(_) => None,
+                        AnyStructFieldType::Duration(_, default) => {
                             default.map(|x| format!("{}s", x.as_secs_f32()))
                         }
                     };
@@ -102,73 +102,73 @@ pub(crate) fn generate(
                     el.name.to_camel_case()
                 ))?;
                 match &el.field_type {
-                    AllStructFieldType::Bool(default) => match default {
+                    AnyStructFieldType::Bool(default) => match default {
                         None => (),
                         Some(false) => f.write(" = false")?,
                         Some(true) => f.write(" = true")?,
                     },
-                    AllStructFieldType::Uint8(default) => {
+                    AnyStructFieldType::Uint8(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (byte){}", value))?;
                         }
                     }
-                    AllStructFieldType::Sint8(default) => {
+                    AnyStructFieldType::Sint8(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (sbyte){}", value))?;
                         }
                     }
-                    AllStructFieldType::Uint16(default) => {
+                    AnyStructFieldType::Uint16(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (ushort){}", value))?;
                         }
                     }
-                    AllStructFieldType::Sint16(default) => {
+                    AnyStructFieldType::Sint16(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (short){}", value))?;
                         }
                     }
-                    AllStructFieldType::Uint32(default) => {
+                    AnyStructFieldType::Uint32(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (uint){}", value))?;
                         }
                     }
-                    AllStructFieldType::Sint32(default) => {
+                    AnyStructFieldType::Sint32(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (int){}", value))?;
                         }
                     }
-                    AllStructFieldType::Uint64(default) => {
+                    AnyStructFieldType::Uint64(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (ulong){}", value))?;
                         }
                     }
-                    AllStructFieldType::Sint64(default) => {
+                    AnyStructFieldType::Sint64(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = (long){}", value))?;
                         }
                     }
-                    AllStructFieldType::Float(default) => {
+                    AnyStructFieldType::Float(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = {}f", value))?;
                         }
                     }
-                    AllStructFieldType::Double(default) => {
+                    AnyStructFieldType::Double(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = {}", value))?;
                         }
                     }
-                    AllStructFieldType::String(default) => {
+                    AnyStructFieldType::String(default) => {
                         if let Some(value) = default {
                             f.write(&format!(" = \"{}\"", &value))?;
                         }
                     }
-                    AllStructFieldType::Struct(handle) => {
+                    AnyStructFieldType::Struct(handle) => {
                         if handle.all_fields_have_defaults() {
                             f.write(&format!(" = new {}()", handle.name().to_camel_case()))?;
                         }
                     }
-                    AllStructFieldType::StructRef(_) => (),
-                    AllStructFieldType::Enum(handle, default) => {
+                    AnyStructFieldType::StructRef(_) => (),
+                    AnyStructFieldType::Enum(handle, default) => {
                         if let Some(value) = default {
                             match handle.find_variant_by_name(value) {
                                 Some(variant) => f.write(&format!(
@@ -180,11 +180,11 @@ pub(crate) fn generate(
                             }
                         }
                     }
-                    AllStructFieldType::ClassRef(_) => (),
-                    AllStructFieldType::Interface(_) => (),
-                    AllStructFieldType::Iterator(_) => (),
-                    AllStructFieldType::Collection(_) => (),
-                    AllStructFieldType::Duration(mapping, default) => {
+                    AnyStructFieldType::ClassRef(_) => (),
+                    AnyStructFieldType::Interface(_) => (),
+                    AnyStructFieldType::Iterator(_) => (),
+                    AnyStructFieldType::Collection(_) => (),
+                    AnyStructFieldType::Duration(mapping, default) => {
                         if let Some(value) = default {
                             match mapping {
                                 DurationType::Milliseconds => f.write(&format!(
@@ -319,7 +319,7 @@ pub(crate) fn generate(
                         .map(|param| {
                             format!(
                                 "{} {}",
-                                param.param_type.as_dotnet_type(),
+                                param.arg_type.to_any_type().as_dotnet_type(),
                                 param.name.to_mixed_case()
                             )
                         })
@@ -386,7 +386,7 @@ pub(crate) fn generate(
                         .map(|param| {
                             format!(
                                 "{} {}",
-                                param.param_type.as_dotnet_type(),
+                                param.arg_type.to_any_type().as_dotnet_type(),
                                 param.name.to_mixed_case()
                             )
                         })

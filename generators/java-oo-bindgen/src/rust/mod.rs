@@ -4,7 +4,7 @@ use conversion::*;
 use heck::SnakeCase;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::types::AllTypes;
+use oo_bindgen::types::AnyType;
 use std::fs;
 
 mod classes;
@@ -193,7 +193,7 @@ fn generate_functions(
 ) -> FormattingResult<()> {
     for handle in lib.native_functions() {
         if let Some(first_param) = handle.parameters.first() {
-            if let AllTypes::ClassRef(class_handle) = &first_param.param_type {
+            if let FArgument::ClassRef(class_handle) = &first_param.arg_type {
                 // We don't want to generate the `next` methods of iterators
                 if let Some(it) = lib.find_iterator(&class_handle.name) {
                     if &it.native_func == handle {
@@ -209,7 +209,7 @@ fn generate_functions(
             }
         }
 
-        if let ReturnType::Type(AllTypes::ClassRef(class_handle), _) = &handle.return_type {
+        if let ReturnType::Type(AnyType::ClassRef(class_handle), _) = &handle.return_type {
             // We don't want to generate the `create` method of collections
             if lib.find_collection(&class_handle.name).is_some() {
                 continue;
@@ -226,7 +226,7 @@ fn generate_functions(
                     format!(
                         "{}: {}",
                         param.name.to_snake_case(),
-                        param.param_type.as_raw_jni_type()
+                        param.arg_type.to_any_type().as_raw_jni_type()
                     )
                 })
                 .collect::<Vec<String>>()
@@ -256,7 +256,8 @@ fn generate_functions(
             blocked(f, |f| {
                 for param in &handle.parameters {
                     param
-                        .param_type
+                        .arg_type
+                        .to_any_type()
                         .check_null(f, &param.name.to_snake_case())?;
                 }
                 f.writeln("Ok(())")
@@ -277,7 +278,8 @@ fn generate_functions(
             // Perform the conversion of the parameters
             for param in &handle.parameters {
                 if let Some(conversion) = param
-                    .param_type
+                    .arg_type
+                    .to_any_type()
                     .conversion(&config.ffi_name, &lib.c_ffi_prefix)
                 {
                     conversion.convert_to_rust(
@@ -321,7 +323,7 @@ fn generate_functions(
                     .parameters
                     .iter()
                     .map(|param| {
-                        if matches!(param.param_type, AllTypes::Struct(_)) {
+                        if matches!(param.arg_type, FArgument::Struct(_)) {
                             format!("{}.clone()", &param.name.to_snake_case())
                         } else {
                             param.name.to_snake_case()
@@ -395,14 +397,15 @@ fn generate_functions(
             // Conversion cleanup
             for param in &handle.parameters {
                 if let Some(conversion) = param
-                    .param_type
+                    .arg_type
+                    .to_any_type()
                     .conversion(&config.ffi_name, &lib.c_ffi_prefix)
                 {
                     conversion.convert_to_rust_cleanup(f, &param.name.to_snake_case())?;
                 }
 
                 // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
-                if matches!(param.param_type, AllTypes::Struct(_)) {
+                if matches!(param.arg_type, FArgument::Struct(_)) {
                     f.writeln(&format!(
                         "std::mem::forget({});",
                         param.name.to_snake_case()

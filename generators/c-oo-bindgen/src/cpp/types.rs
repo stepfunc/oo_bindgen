@@ -6,9 +6,9 @@ use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
-use oo_bindgen::native_struct::AllStructHandle;
+use oo_bindgen::native_struct::AnyStructHandle;
 use oo_bindgen::struct_common::NativeStructDeclarationHandle;
-use oo_bindgen::types::{AllTypes, BasicType, DurationType};
+use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 /// These types are always be pass-by-value in C++
 #[derive(Clone, Debug, PartialEq)]
@@ -52,7 +52,7 @@ impl Primitive {
 pub(crate) enum CppType {
     Primitive(Primitive),
     String,
-    Struct(AllStructHandle),
+    Struct(AnyStructHandle),
     StructRef(NativeStructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
@@ -80,9 +80,9 @@ impl CppReturnType for ReturnType {
 }
 
 impl CppType {
-    fn new(x: AllTypes) -> Self {
+    fn new(x: AnyType) -> Self {
         match x {
-            AllTypes::Basic(x) => match x {
+            AnyType::Basic(x) => match x {
                 BasicType::Bool => Primitive::Bool.into(),
                 BasicType::Uint8 => Primitive::Uint8.into(),
                 BasicType::Sint8 => Primitive::Sint8.into(),
@@ -97,13 +97,13 @@ impl CppType {
                 BasicType::Duration(x) => Primitive::Duration(x).into(),
                 BasicType::Enum(x) => Primitive::Enum(x).into(),
             },
-            AllTypes::String => Self::String,
-            AllTypes::Struct(x) => Self::Struct(x),
-            AllTypes::StructRef(x) => Self::StructRef(x),
-            AllTypes::ClassRef(x) => Self::ClassRef(x),
-            AllTypes::Interface(x) => Self::Interface(x),
-            AllTypes::Iterator(x) => Self::Iterator(x),
-            AllTypes::Collection(x) => Self::Collection(x),
+            AnyType::String => Self::String,
+            AnyType::Struct(x) => Self::Struct(x),
+            AnyType::StructRef(x) => Self::StructRef(x),
+            AnyType::ClassRef(x) => Self::ClassRef(x),
+            AnyType::Interface(x) => Self::Interface(x),
+            AnyType::Iterator(x) => Self::Iterator(x),
+            AnyType::Collection(x) => Self::Collection(x),
         }
     }
 
@@ -174,7 +174,7 @@ impl CppType {
     }
 }
 
-impl CppTypes for AllTypes {
+impl CppTypes for AnyType {
     fn get_cpp_struct_member_type(&self) -> String {
         CppType::new(self.clone()).get_cpp_struct_member_type()
     }

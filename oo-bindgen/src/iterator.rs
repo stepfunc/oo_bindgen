@@ -1,4 +1,4 @@
-use crate::types::AllTypes;
+use crate::types::AnyType;
 use crate::Result;
 use crate::*;
 
@@ -7,14 +7,14 @@ pub struct Iterator {
     pub has_lifetime_annotation: bool,
     pub native_func: NativeFunctionHandle,
     pub iter_type: ClassDeclarationHandle,
-    pub item_type: AllStructHandle,
+    pub item_type: AnyStructHandle,
 }
 
 impl Iterator {
     pub(crate) fn new(
         has_lifetime_annotation: bool,
         native_func: &NativeFunctionHandle,
-        item_type: &AllStructHandle,
+        item_type: &AnyStructHandle,
     ) -> Result<Iterator> {
         match &native_func.return_type {
             ReturnType::Void => {
@@ -23,7 +23,7 @@ impl Iterator {
                 })
             }
             ReturnType::Type(return_type, _) => {
-                if *return_type != AllTypes::StructRef(item_type.declaration()) {
+                if *return_type != AnyType::StructRef(item_type.declaration()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: native_func.clone(),
                     });
@@ -39,7 +39,7 @@ impl Iterator {
 
         let mut iter = native_func.parameters.iter();
         if let Some(param) = iter.next() {
-            if let AllTypes::ClassRef(iter_type) = &param.param_type {
+            if let FArgument::ClassRef(iter_type) = &param.arg_type {
                 if iter.next().is_some() {
                     return Err(BindingError::IteratorNotSingleClassRefParam {
                         handle: native_func.clone(),
@@ -71,14 +71,14 @@ impl Iterator {
 
 pub type IteratorHandle = Handle<Iterator>;
 
-impl From<IteratorHandle> for AllTypes {
+impl From<IteratorHandle> for AnyType {
     fn from(x: IteratorHandle) -> Self {
         Self::Iterator(x)
     }
 }
 
-impl From<IteratorHandle> for AllStructFieldType {
+impl From<IteratorHandle> for AnyStructFieldType {
     fn from(x: IteratorHandle) -> Self {
-        AllStructFieldType::Iterator(x)
+        AnyStructFieldType::Iterator(x)
     }
 }

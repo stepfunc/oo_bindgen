@@ -24,7 +24,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Create an OpaqueStruct initialized with a magic id")?
         .build()?;
 
-    lib.define_struct(&opaque_struct)?
+    lib.define_struct(opaque_struct)?
         .method("GetId", &get_id_fn)?
         .static_method("CreateMagicValue", &opaque_struct_magic_init_fn)?
         .build();

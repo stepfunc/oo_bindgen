@@ -83,7 +83,7 @@ pub use crate::doc::doc;
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function_struct::{FStructBuilder, FStructHandle};
 use crate::struct_common::{NativeStructDeclaration, NativeStructDeclarationHandle, Visibility};
-use crate::types::{AllTypes, BasicType};
+use crate::types::{AnyType, BasicType};
 
 type Result<T> = std::result::Result<T, BindingError>;
 
@@ -348,7 +348,7 @@ pub enum Symbol {
 pub enum Statement {
     Constants(ConstantSetHandle),
     NativeStructDeclaration(NativeStructDeclarationHandle),
-    NativeStructDefinition(AllStructHandle),
+    NativeStructDefinition(AnyStructHandle),
     StructDefinition(StructHandle),
     EnumDefinition(EnumHandle),
     ErrorType(ErrorType),
@@ -408,7 +408,7 @@ impl Library {
         })
     }
 
-    pub fn native_structs(&self) -> impl Iterator<Item = &AllStructHandle> {
+    pub fn native_structs(&self) -> impl Iterator<Item = &AnyStructHandle> {
         self.into_iter().filter_map(|statement| match statement {
             Statement::NativeStructDefinition(handle) => Some(handle),
             _ => None,
@@ -601,30 +601,49 @@ impl<'a> IntoIterator for &'a Library {
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum NativeStructType {
     /// this will disappear when we only have specialized structs
-    All(AllStructHandle),
+    Any(AnyStructHandle),
     /// structs that may be used as native function parameters
-    FStruct(FStructHandle, AllStructHandle),
+    FStruct(FStructHandle, AnyStructHandle),
+}
+
+impl From<AnyStructHandle> for NativeStructType {
+    fn from(x: AnyStructHandle) -> Self {
+        NativeStructType::Any(x)
+    }
+}
+
+impl From<FStructHandle> for NativeStructType {
+    fn from(x: FStructHandle) -> Self {
+        NativeStructType::FStruct(x.clone(), x.to_any_struct())
+    }
 }
 
 impl NativeStructType {
     fn declaration(&self) -> NativeStructDeclarationHandle {
         match self {
-            NativeStructType::All(x) => x.declaration.clone(),
+            NativeStructType::Any(x) => x.declaration.clone(),
             NativeStructType::FStruct(_, x) => x.declaration.clone(),
         }
     }
 
     pub fn name(&self) -> &str {
         match self {
-            NativeStructType::All(x) => x.name(),
+            NativeStructType::Any(x) => x.name(),
             NativeStructType::FStruct(_, x) => x.name(),
         }
     }
 
     pub fn visibility(&self) -> Visibility {
         match self {
-            NativeStructType::All(x) => x.visibility,
+            NativeStructType::Any(x) => x.visibility,
             NativeStructType::FStruct(_, x) => x.visibility,
+        }
+    }
+
+    pub fn fields(&self) -> &Vec<AnyStructField> {
+        match self {
+            NativeStructType::Any(x) => &x.fields,
+            NativeStructType::FStruct(_, x) => &x.fields,
         }
     }
 }
@@ -806,14 +825,14 @@ impl LibraryBuilder {
         Ok(handle)
     }
 
-    /// Define a native structure
+    /// Define ANY native structure - TODO - this will be removed in favor of specialized struct types
     pub fn define_native_struct(
         &mut self,
         declaration: &NativeStructDeclarationHandle,
-    ) -> Result<AllStructBuilder> {
+    ) -> Result<AnyStructBuilder> {
         self.validate_native_struct_declaration(declaration)?;
         if !self.native_structs.contains_key(declaration) {
-            Ok(AllStructBuilder::new(self, declaration.clone()))
+            Ok(AnyStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::NativeStructAlreadyDefined {
                 handle: declaration.clone(),
@@ -836,13 +855,14 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn define_struct(&mut self, definition: &AllStructHandle) -> Result<StructBuilder> {
-        self.validate_native_struct(definition)?;
-        if !self
-            .defined_structs
-            .contains_key(&NativeStructType::All(definition.clone()))
-        {
-            Ok(StructBuilder::new(self, definition.clone()))
+    pub fn define_struct<T>(&mut self, definition: T) -> Result<StructBuilder>
+    where
+        T: Into<NativeStructType>,
+    {
+        let definition = definition.into();
+        self.validate_native_struct(&definition)?;
+        if !self.defined_structs.contains_key(&definition) {
+            Ok(StructBuilder::new(self, definition))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: definition.declaration(),
@@ -906,7 +926,7 @@ impl LibraryBuilder {
     pub fn define_iterator(
         &mut self,
         native_func: &NativeFunctionHandle,
-        item_type: &AllStructHandle,
+        item_type: &AnyStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         self.define_iterator_impl(false, native_func, item_type)
     }
@@ -914,7 +934,7 @@ impl LibraryBuilder {
     pub fn define_iterator_with_lifetime(
         &mut self,
         native_func: &NativeFunctionHandle,
-        item_type: &AllStructHandle,
+        item_type: &AnyStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         self.define_iterator_impl(true, native_func, item_type)
     }
@@ -923,7 +943,7 @@ impl LibraryBuilder {
         &mut self,
         has_lifetime: bool,
         native_func: &NativeFunctionHandle,
-        item_type: &AllStructHandle,
+        item_type: &AnyStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         let iter = iterator::IteratorHandle::new(iterator::Iterator::new(
             has_lifetime,
@@ -973,19 +993,21 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_type(&self, type_to_validate: &AllTypes) -> Result<()> {
+    fn validate_type(&self, type_to_validate: &AnyType) -> Result<()> {
         match type_to_validate {
-            AllTypes::StructRef(native_struct) => {
+            AnyType::StructRef(native_struct) => {
                 self.validate_native_struct_declaration(native_struct)
             }
-            AllTypes::Struct(native_struct) => self.validate_native_struct(native_struct),
-            AllTypes::Basic(BasicType::Enum(native_enum)) => self.validate_native_enum(native_enum),
-            AllTypes::Interface(interface) => self.validate_interface(interface),
-            AllTypes::ClassRef(class_declaration) => {
+            AnyType::Struct(native_struct) => {
+                self.validate_native_struct(&NativeStructType::Any(native_struct.clone()))
+            }
+            AnyType::Basic(BasicType::Enum(native_enum)) => self.validate_native_enum(native_enum),
+            AnyType::Interface(interface) => self.validate_interface(interface),
+            AnyType::ClassRef(class_declaration) => {
                 self.validate_class_declaration(class_declaration)
             }
-            AllTypes::Iterator(iter) => self.validate_iterator(iter),
-            AllTypes::Collection(collection) => self.validate_collection(collection),
+            AnyType::Iterator(iter) => self.validate_iterator(iter),
+            AnyType::Collection(collection) => self.validate_collection(collection),
             _ => Ok(()),
         }
     }
@@ -1003,12 +1025,15 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_native_struct(&self, native_struct: &AllStructHandle) -> Result<()> {
-        if self.native_structs.contains_key(&native_struct.declaration) {
+    fn validate_native_struct(&self, native_struct: &NativeStructType) -> Result<()> {
+        if self
+            .native_structs
+            .contains_key(&native_struct.declaration())
+        {
             Ok(())
         } else {
             Err(BindingError::NativeStructNotPartOfThisLib {
-                handle: native_struct.declaration.clone(),
+                handle: native_struct.declaration(),
             })
         }
     }

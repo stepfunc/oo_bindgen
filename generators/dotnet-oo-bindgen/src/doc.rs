@@ -3,6 +3,7 @@ use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::DestructionMode;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::types::AnyType;
 use oo_bindgen::Library;
 
 pub(crate) fn xmldoc_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
@@ -78,7 +79,7 @@ fn reference_print(
             let params = func
                 .parameters
                 .iter()
-                .map(|param| param.param_type.as_dotnet_type())
+                .map(|param| AnyType::from(param.arg_type.clone()).as_dotnet_type())
                 .collect::<Vec<_>>()
                 .join(", ");
             f.write(&format!(

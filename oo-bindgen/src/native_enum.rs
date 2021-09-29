@@ -41,15 +41,15 @@ impl Enum {
 
 pub type EnumHandle = Handle<Enum>;
 
-impl From<EnumHandle> for AllTypes {
+impl From<EnumHandle> for AnyType {
     fn from(x: EnumHandle) -> Self {
         BasicType::Enum(x).into()
     }
 }
 
-impl From<EnumHandle> for AllStructFieldType {
+impl From<EnumHandle> for AnyStructFieldType {
     fn from(x: EnumHandle) -> Self {
-        AllStructFieldType::Enum(x, None)
+        AnyStructFieldType::Enum(x, None)
     }
 }
 

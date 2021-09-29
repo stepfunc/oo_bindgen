@@ -1,12 +1,20 @@
 use crate::native_enum::EnumHandle;
-use crate::native_struct::{AllStructFieldType, AllStructHandle};
+use crate::native_struct::{AnyStructFieldType, AnyStructHandle};
 
 use crate::callback::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
+use crate::doc::DocString;
+use crate::function_struct::FStructHandle;
 use crate::iterator::IteratorHandle;
 use crate::struct_common::NativeStructDeclarationHandle;
 use std::time::Duration;
+
+/// Marker class used to denote the String type with conversions to more specialized types
+#[derive(Copy, Clone, Debug)]
+pub struct StringType;
+
+pub const STRING_TYPE: StringType = StringType {};
 
 /// Durations may be represented in multiple ways in the underlying C API
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
@@ -43,15 +51,50 @@ impl From<DurationType> for BasicType {
     }
 }
 
-impl From<DurationType> for AllTypes {
+impl From<DurationType> for AnyType {
     fn from(x: DurationType) -> Self {
         BasicType::Duration(x).into()
     }
 }
 
-impl From<DurationType> for AllStructFieldType {
+impl From<StringType> for AnyType {
+    fn from(_: StringType) -> Self {
+        AnyType::String
+    }
+}
+
+impl From<FStructHandle> for AnyType {
+    fn from(x: FStructHandle) -> Self {
+        AnyType::Struct(x.to_any_struct())
+    }
+}
+
+impl From<DurationType> for AnyStructFieldType {
     fn from(x: DurationType) -> Self {
         BasicType::Duration(x).into()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Arg<T>
+where
+    T: Into<AnyType>,
+{
+    pub arg_type: T,
+    pub name: String,
+    pub doc: DocString,
+}
+
+impl<T> Arg<T>
+where
+    T: Into<AnyType> + Clone,
+{
+    pub fn new(arg_type: T, name: String, doc: DocString) -> Self {
+        Self {
+            arg_type,
+            name,
+            doc,
+        }
     }
 }
 
@@ -74,13 +117,14 @@ pub enum BasicType {
     Enum(EnumHandle),
 }
 
+/// This is just sticking around until we refactor existing backends
 #[derive(Debug, Clone, PartialEq)]
-pub enum AllTypes {
+pub enum AnyType {
     Basic(BasicType),
     String,
 
     // Complex types
-    Struct(AllStructHandle),
+    Struct(AnyStructHandle),
     StructRef(NativeStructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
@@ -88,28 +132,28 @@ pub enum AllTypes {
     Collection(CollectionHandle),
 }
 
-impl From<BasicType> for AllTypes {
+impl From<BasicType> for AnyType {
     fn from(t: BasicType) -> Self {
-        AllTypes::Basic(t)
+        AnyType::Basic(t)
     }
 }
 
-impl From<BasicType> for AllStructFieldType {
+impl From<BasicType> for AnyStructFieldType {
     fn from(t: BasicType) -> Self {
         match t {
-            BasicType::Bool => AllStructFieldType::Bool(None),
-            BasicType::Uint8 => AllStructFieldType::Uint8(None),
-            BasicType::Sint8 => AllStructFieldType::Sint8(None),
-            BasicType::Uint16 => AllStructFieldType::Uint16(None),
-            BasicType::Sint16 => AllStructFieldType::Sint16(None),
-            BasicType::Uint32 => AllStructFieldType::Uint32(None),
-            BasicType::Sint32 => AllStructFieldType::Sint32(None),
-            BasicType::Uint64 => AllStructFieldType::Uint64(None),
-            BasicType::Sint64 => AllStructFieldType::Sint64(None),
-            BasicType::Float => AllStructFieldType::Float(None),
-            BasicType::Double => AllStructFieldType::Double(None),
-            BasicType::Duration(mapping) => AllStructFieldType::Duration(mapping, None),
-            BasicType::Enum(handle) => AllStructFieldType::Enum(handle, None),
+            BasicType::Bool => AnyStructFieldType::Bool(None),
+            BasicType::Uint8 => AnyStructFieldType::Uint8(None),
+            BasicType::Sint8 => AnyStructFieldType::Sint8(None),
+            BasicType::Uint16 => AnyStructFieldType::Uint16(None),
+            BasicType::Sint16 => AnyStructFieldType::Sint16(None),
+            BasicType::Uint32 => AnyStructFieldType::Uint32(None),
+            BasicType::Sint32 => AnyStructFieldType::Sint32(None),
+            BasicType::Uint64 => AnyStructFieldType::Uint64(None),
+            BasicType::Sint64 => AnyStructFieldType::Sint64(None),
+            BasicType::Float => AnyStructFieldType::Float(None),
+            BasicType::Double => AnyStructFieldType::Double(None),
+            BasicType::Duration(mapping) => AnyStructFieldType::Duration(mapping, None),
+            BasicType::Enum(handle) => AnyStructFieldType::Enum(handle, None),
         }
     }
 }

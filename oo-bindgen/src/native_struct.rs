@@ -2,13 +2,13 @@ use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
 use crate::struct_common::{NativeStructDeclarationHandle, Visibility};
-use crate::types::{AllTypes, BasicType, DurationType};
+use crate::types::{AnyType, BasicType, DurationType};
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub enum AllStructFieldType {
+pub enum AnyStructFieldType {
     Bool(Option<bool>),
     Uint8(Option<u8>),
     Sint8(Option<i8>),
@@ -21,7 +21,7 @@ pub enum AllStructFieldType {
     Float(Option<f32>),
     Double(Option<f64>),
     String(Option<String>),
-    Struct(AllStructHandle),
+    Struct(AnyStructHandle),
     StructRef(NativeStructDeclarationHandle),
     Enum(EnumHandle, Option<String>),
     ClassRef(ClassDeclarationHandle),
@@ -31,8 +31,8 @@ pub enum AllStructFieldType {
     Duration(DurationType, Option<Duration>),
 }
 
-impl AllStructFieldType {
-    pub fn to_all_types(&self) -> AllTypes {
+impl AnyStructFieldType {
+    pub fn to_all_types(&self) -> AnyType {
         match self {
             Self::Bool(_) => BasicType::Bool.into(),
             Self::Uint8(_) => BasicType::Uint8.into(),
@@ -45,15 +45,15 @@ impl AllStructFieldType {
             Self::Sint64(_) => BasicType::Sint64.into(),
             Self::Float(_) => BasicType::Float.into(),
             Self::Double(_) => BasicType::Double.into(),
-            Self::String(_) => AllTypes::String,
-            Self::Struct(handle) => AllTypes::Struct(handle.clone()),
-            Self::StructRef(handle) => AllTypes::StructRef(handle.clone()),
+            Self::String(_) => AnyType::String,
+            Self::Struct(handle) => AnyType::Struct(handle.clone()),
+            Self::StructRef(handle) => AnyType::StructRef(handle.clone()),
             Self::Enum(handle, _) => BasicType::Enum(handle.clone()).into(),
-            Self::ClassRef(handle) => AllTypes::ClassRef(handle.clone()),
-            Self::Interface(handle) => AllTypes::Interface(handle.clone()),
-            Self::Iterator(handle) => AllTypes::Iterator(handle.clone()),
-            Self::Collection(handle) => AllTypes::Collection(handle.clone()),
-            Self::Duration(mapping, _) => AllTypes::Basic(BasicType::Duration(*mapping)),
+            Self::ClassRef(handle) => AnyType::ClassRef(handle.clone()),
+            Self::Interface(handle) => AnyType::Interface(handle.clone()),
+            Self::Iterator(handle) => AnyType::Iterator(handle.clone()),
+            Self::Collection(handle) => AnyType::Collection(handle.clone()),
+            Self::Duration(mapping, _) => AnyType::Basic(BasicType::Duration(*mapping)),
         }
     }
 
@@ -84,31 +84,29 @@ impl AllStructFieldType {
 
     fn validate(&self) -> Result<()> {
         match self {
-            Self::Enum(handle, Some(default)) => {
-                return handle.validate_contains_variant_name(default)
-            }
+            Self::Enum(handle, Some(default)) => handle.validate_contains_variant_name(default),
             _ => Ok(()),
         }
     }
 }
 
 #[derive(Debug)]
-pub struct AllStructField {
+pub struct AnyStructField {
     pub name: String,
-    pub field_type: AllStructFieldType,
+    pub field_type: AnyStructFieldType,
     pub doc: Doc,
 }
 
 /// C-style structure definition
 #[derive(Debug)]
-pub struct AllStruct {
+pub struct AnyStruct {
     pub visibility: Visibility,
     pub declaration: NativeStructDeclarationHandle,
-    pub fields: Vec<AllStructField>,
+    pub fields: Vec<AnyStructField>,
     pub doc: Doc,
 }
 
-impl AllStruct {
+impl AnyStruct {
     pub fn name(&self) -> &str {
         &self.declaration.name
     }
@@ -127,35 +125,41 @@ impl AllStruct {
         self.fields.iter().all(|el| !el.field_type.has_default())
     }
 
-    pub fn fields(&self) -> impl Iterator<Item = &AllStructField> {
+    pub fn fields(&self) -> impl Iterator<Item = &AnyStructField> {
         self.fields.iter()
     }
 }
 
-pub type AllStructHandle = Handle<AllStruct>;
+pub type AnyStructHandle = Handle<AnyStruct>;
 
-impl From<AllStructHandle> for AllTypes {
-    fn from(x: AllStructHandle) -> Self {
+impl From<AnyStructHandle> for AnyType {
+    fn from(x: AnyStructHandle) -> Self {
         Self::Struct(x)
     }
 }
 
-impl From<AllStructHandle> for AllStructFieldType {
-    fn from(x: AllStructHandle) -> Self {
-        AllStructFieldType::Struct(x)
+impl From<AnyStructHandle> for AnyStructFieldType {
+    fn from(x: AnyStructHandle) -> Self {
+        AnyStructFieldType::Struct(x)
     }
 }
 
-pub struct AllStructBuilder<'a> {
+impl From<FStructHandle> for AnyStructHandle {
+    fn from(x: FStructHandle) -> Self {
+        x.to_any_struct()
+    }
+}
+
+pub struct AnyStructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     struct_type: Visibility,
     declaration: NativeStructDeclarationHandle,
-    elements: Vec<AllStructField>,
+    elements: Vec<AnyStructField>,
     element_names_set: HashSet<String>,
     doc: Option<Doc>,
 }
 
-impl<'a> AllStructBuilder<'a> {
+impl<'a> AnyStructBuilder<'a> {
     pub(crate) fn new(
         lib: &'a mut LibraryBuilder,
         declaration: NativeStructDeclarationHandle,
@@ -175,7 +179,7 @@ impl<'a> AllStructBuilder<'a> {
         self
     }
 
-    pub fn add<S: Into<String>, T: Into<AllStructFieldType>, D: Into<Doc>>(
+    pub fn add<S: Into<String>, T: Into<AnyStructFieldType>, D: Into<Doc>>(
         mut self,
         name: S,
         element_type: T,
@@ -187,7 +191,7 @@ impl<'a> AllStructBuilder<'a> {
 
         self.lib.validate_type(&element_type.to_all_types())?;
         if self.element_names_set.insert(name.to_string()) {
-            self.elements.push(AllStructField {
+            self.elements.push(AnyStructField {
                 name,
                 field_type: element_type,
                 doc: doc.into(),
@@ -215,7 +219,7 @@ impl<'a> AllStructBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<AllStructHandle> {
+    pub fn build(self) -> Result<AnyStructHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -225,7 +229,7 @@ impl<'a> AllStructBuilder<'a> {
             }
         };
 
-        let handle = AllStructHandle::new(AllStruct {
+        let handle = AnyStructHandle::new(AnyStruct {
             visibility: self.struct_type,
             declaration: self.declaration.clone(),
             fields: self.elements,
@@ -234,7 +238,7 @@ impl<'a> AllStructBuilder<'a> {
 
         self.lib.native_structs.insert(
             handle.declaration.clone(),
-            NativeStructType::All(handle.clone()),
+            NativeStructType::Any(handle.clone()),
         );
         self.lib
             .statements
@@ -269,23 +273,23 @@ impl Struct {
         self.definition.declaration()
     }
 
-    pub fn definition(&self) -> AllStructHandle {
+    pub fn definition(&self) -> AnyStructHandle {
         match &self.definition {
-            NativeStructType::All(x) => x.clone(),
+            NativeStructType::Any(x) => x.clone(),
             NativeStructType::FStruct(_, x) => x.clone(),
         }
     }
 
-    pub fn elements(&self) -> impl Iterator<Item = &AllStructField> {
+    pub fn elements(&self) -> impl Iterator<Item = &AnyStructField> {
         match &self.definition {
-            NativeStructType::All(x) => x.fields(),
+            NativeStructType::Any(x) => x.fields(),
             NativeStructType::FStruct(_, x) => x.fields(),
         }
     }
 
     pub fn doc(&self) -> &Doc {
         match &self.definition {
-            NativeStructType::All(x) => &x.doc,
+            NativeStructType::Any(x) => &x.doc,
             NativeStructType::FStruct(_, x) => &x.doc,
         }
     }
@@ -306,7 +310,7 @@ impl Struct {
         None
     }
 
-    pub fn find_element<T: AsRef<str>>(&self, element_name: T) -> Option<&AllStructField> {
+    pub fn find_element<T: AsRef<str>>(&self, element_name: T) -> Option<&AnyStructField> {
         self.elements().find(|el| el.name == element_name.as_ref())
     }
 }
@@ -315,16 +319,16 @@ pub type StructHandle = Handle<Struct>;
 
 pub struct StructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
-    definition: AllStructHandle,
+    definition: NativeStructType,
     element_names_set: HashSet<String>,
     methods: Vec<Method>,
     static_methods: Vec<Method>,
 }
 
 impl<'a> StructBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, definition: AllStructHandle) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, definition: NativeStructType) -> Self {
         let mut element_names_set = HashSet::new();
-        for el in &definition.fields {
+        for el in definition.fields() {
             element_names_set.insert(el.name.clone());
         }
 
@@ -384,7 +388,7 @@ impl<'a> StructBuilder<'a> {
 
     pub fn build(self) -> StructHandle {
         let handle = StructHandle::new(Struct {
-            definition: NativeStructType::All(self.definition.clone()),
+            definition: self.definition.clone(),
             methods: self.methods,
             static_methods: self.static_methods,
         });
@@ -401,7 +405,7 @@ impl<'a> StructBuilder<'a> {
 
     fn validate_first_param(&self, native_function: &NativeFunctionHandle) -> Result<()> {
         if let Some(first_param) = native_function.parameters.first() {
-            if let AllTypes::StructRef(first_param_type) = &first_param.param_type {
+            if let FArgument::StructRef(first_param_type) = &first_param.arg_type {
                 if first_param_type == &self.definition.declaration() {
                     return Ok(());
                 }
@@ -409,7 +413,7 @@ impl<'a> StructBuilder<'a> {
         }
 
         Err(BindingError::FirstMethodParameterIsNotStructType {
-            handle: self.definition.declaration.clone(),
+            handle: self.definition.declaration(),
             native_func: native_function.clone(),
         })
     }

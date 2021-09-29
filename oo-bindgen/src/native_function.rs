@@ -1,11 +1,12 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
+use crate::types::{Arg, DurationType, StringType};
 use crate::*;
 
 #[derive(Debug)]
 pub enum ReturnType {
     Void,
-    Type(AllTypes, DocString),
+    Type(AnyType, DocString),
 }
 
 impl ReturnType {
@@ -13,7 +14,7 @@ impl ReturnType {
         ReturnType::Void
     }
 
-    pub fn new<D: Into<DocString>, T: Into<AllTypes>>(return_type: T, doc: D) -> Self {
+    pub fn new<D: Into<DocString>, T: Into<AnyType>>(return_type: T, doc: D) -> Self {
         ReturnType::Type(return_type.into(), doc.into())
     }
 
@@ -25,22 +26,90 @@ impl ReturnType {
     }
 }
 
-/// Function types are those that can be used as native function parameters
-pub enum FunctionType {
+/// Types that can be used as native function arguments
+#[derive(Debug, Clone, PartialEq)]
+pub enum FArgument {
     Basic(BasicType),
     String,
     Collection(CollectionHandle),
-    Struct(AllStructHandle),
+    Struct(FStructHandle),
     StructRef(NativeStructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
 }
 
-#[derive(Debug, Clone)]
-pub struct Parameter {
-    pub name: String,
-    pub param_type: AllTypes,
-    pub doc: DocString,
+impl FArgument {
+    pub fn to_any_type(&self) -> AnyType {
+        match self {
+            Self::Basic(x) => AnyType::Basic(x.clone()),
+            Self::String => AnyType::String,
+            Self::Collection(x) => AnyType::Collection(x.clone()),
+            Self::Struct(x) => AnyType::Struct(x.to_any_struct()),
+            Self::StructRef(x) => AnyType::StructRef(x.clone()),
+            Self::ClassRef(x) => AnyType::ClassRef(x.clone()),
+            Self::Interface(x) => AnyType::Interface(x.clone()),
+        }
+    }
+}
+
+impl From<ClassDeclarationHandle> for FArgument {
+    fn from(x: ClassDeclarationHandle) -> Self {
+        FArgument::ClassRef(x)
+    }
+}
+
+impl From<InterfaceHandle> for FArgument {
+    fn from(x: InterfaceHandle) -> Self {
+        FArgument::Interface(x)
+    }
+}
+
+impl From<BasicType> for FArgument {
+    fn from(x: BasicType) -> Self {
+        FArgument::Basic(x)
+    }
+}
+
+impl From<DurationType> for FArgument {
+    fn from(x: DurationType) -> Self {
+        FArgument::Basic(x.into())
+    }
+}
+
+impl From<StringType> for FArgument {
+    fn from(_: StringType) -> Self {
+        FArgument::String
+    }
+}
+
+impl From<CollectionHandle> for FArgument {
+    fn from(x: CollectionHandle) -> Self {
+        FArgument::Collection(x)
+    }
+}
+
+impl From<EnumHandle> for FArgument {
+    fn from(x: EnumHandle) -> Self {
+        FArgument::Basic(BasicType::Enum(x))
+    }
+}
+
+impl From<NativeStructDeclarationHandle> for FArgument {
+    fn from(x: NativeStructDeclarationHandle) -> Self {
+        FArgument::StructRef(x)
+    }
+}
+
+impl From<FStructHandle> for FArgument {
+    fn from(x: FStructHandle) -> Self {
+        FArgument::Struct(x)
+    }
+}
+
+impl From<FArgument> for AnyType {
+    fn from(x: FArgument) -> Self {
+        x.to_any_type()
+    }
 }
 
 /// C function
@@ -48,7 +117,7 @@ pub struct Parameter {
 pub struct NativeFunction {
     pub name: String,
     pub return_type: ReturnType,
-    pub parameters: Vec<Parameter>,
+    pub parameters: Vec<Arg<FArgument>>,
     pub error_type: Option<ErrorType>,
     pub doc: Doc,
 }
@@ -58,11 +127,11 @@ pub enum NativeFunctionType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
-    NoErrorWithReturn(AllTypes, DocString),
+    NoErrorWithReturn(AnyType, DocString),
     /// function that can fail, but does not return a value
     ErrorNoReturn(ErrorType),
     /// function that can fail and returns something via an out parameter
-    ErrorWithReturn(ErrorType, AllTypes, DocString),
+    ErrorWithReturn(ErrorType, AnyType, DocString),
 }
 
 impl NativeFunction {
@@ -90,7 +159,7 @@ pub struct NativeFunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
     return_type: Option<ReturnType>,
-    params: Vec<Parameter>,
+    params: Vec<Arg<FArgument>>,
     doc: Option<Doc>,
     error_type: Option<ErrorType>,
 }
@@ -107,7 +176,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<AllTypes>>(
+    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<FArgument>>(
         mut self,
         name: T,
         param_type: P,
@@ -115,10 +184,10 @@ impl<'a> NativeFunctionBuilder<'a> {
     ) -> Result<Self> {
         let param_type = param_type.into();
 
-        self.lib.validate_type(&param_type)?;
-        self.params.push(Parameter {
+        self.lib.validate_type(&param_type.clone().into())?; // TODO
+        self.params.push(Arg {
             name: name.into(),
-            param_type,
+            arg_type: param_type,
             doc: doc.into(),
         });
         Ok(self)
@@ -128,7 +197,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         self.return_type(ReturnType::Void)
     }
 
-    pub fn returns<D: Into<DocString>, T: Into<AllTypes>>(
+    pub fn returns<D: Into<DocString>, T: Into<AnyType>>(
         self,
         return_type: T,
         doc: D,

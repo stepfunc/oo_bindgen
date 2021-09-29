@@ -1,4 +1,4 @@
-use oo_bindgen::types::{AllTypes, BasicType};
+use oo_bindgen::types::{BasicType, STRING_TYPE};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -27,7 +27,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define test method
     let iterator_create_fn = lib
         .declare_native_function("iterator_create")?
-        .param("value", AllTypes::String, "String to iterate on")?
+        .param("value", STRING_TYPE, "String to iterate on")?
         .returns(iterator, "New iterator")?
         .doc("Create an iterator")?
         .build()?;

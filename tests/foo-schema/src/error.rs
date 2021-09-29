@@ -1,11 +1,11 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::native_struct::AllStructHandle;
-use oo_bindgen::types::{AllTypes, BasicType};
+use oo_bindgen::function_struct::FStructHandle;
+use oo_bindgen::types::{BasicType, STRING_TYPE};
 use oo_bindgen::{BindingError, LibraryBuilder};
 
 pub(crate) fn define(
     lib: &mut LibraryBuilder,
-    structure: AllStructHandle,
+    structure: FStructHandle,
 ) -> Result<(), BindingError> {
     let error_type = lib
         .define_error_type("MyError", "MyException", ExceptionType::UncheckedException)?
@@ -18,7 +18,7 @@ pub(crate) fn define(
 
     let get_special_number_fb = lib
         .declare_native_function("get_special_number")?
-        .param("password", AllTypes::String, "secret password")?
+        .param("password", STRING_TYPE, "secret password")?
         .returns(BasicType::Uint32, "unlocked value")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
@@ -26,7 +26,7 @@ pub(crate) fn define(
 
     let get_struct_fn = lib
         .declare_native_function("get_struct")?
-        .param("password", AllTypes::String, "secret password")?
+        .param("password", STRING_TYPE, "secret password")?
         .returns(structure, "A struct")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a struct")?
@@ -34,15 +34,15 @@ pub(crate) fn define(
 
     let echo_password_fn = lib
         .declare_native_function("echo_password")?
-        .param("password", AllTypes::String, "secret password")?
-        .returns(AllTypes::String, "The password")?
+        .param("password", STRING_TYPE, "secret password")?
+        .returns(STRING_TYPE, "The password")?
         .fails_with(error_type.clone())?
         .doc("Use a password and echoes it if it's valid")?
         .build()?;
 
     let constructor_fn = lib
         .declare_native_function("create_class_with_password")?
-        .param("password", AllTypes::String, "secret password")?
+        .param("password", STRING_TYPE, "secret password")?
         .returns(my_class.clone(), "allocated class")?
         .fails_with(error_type.clone())?
         .doc("Use a password to allocate a class")?
@@ -50,11 +50,7 @@ pub(crate) fn define(
 
     let get_special_value_fn = lib
         .declare_native_function("get_special_value_from_class")?
-        .param(
-            "instance",
-            AllTypes::ClassRef(my_class.clone()),
-            "class instance",
-        )?
+        .param("instance", my_class.clone(), "class instance")?
         .returns(BasicType::Uint32, "special value")?
         .fails_with(error_type)?
         .doc("extract a special value from the class instance")?
@@ -62,11 +58,7 @@ pub(crate) fn define(
 
     let destructor_fn = lib
         .declare_native_function("destroy_class_with_password")?
-        .param(
-            "instance",
-            AllTypes::ClassRef(my_class.clone()),
-            "class to destroy",
-        )?
+        .param("instance", my_class.clone(), "class to destroy")?
         .returns_nothing()?
         .doc("Destroy an instance")?
         .build()?;

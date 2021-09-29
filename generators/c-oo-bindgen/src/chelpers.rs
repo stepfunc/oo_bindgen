@@ -8,7 +8,7 @@ pub(crate) fn callback_parameters(lib: &Library, func: &CallbackFunction) -> Str
         .iter()
         .map(|param| match param {
             CallbackParameter::Arg(_) => "void*".to_string(),
-            CallbackParameter::Parameter(param) => param.param_type.to_c_type(&lib.c_ffi_prefix),
+            CallbackParameter::Parameter(param) => param.arg_type.to_c_type(&lib.c_ffi_prefix),
         })
         .collect::<Vec<String>>()
         .join(", ")
@@ -22,7 +22,7 @@ pub(crate) fn callback_parameters_with_var_names(lib: &Library, func: &CallbackF
             CallbackParameter::Parameter(param) => {
                 format!(
                     "{} {}",
-                    param.param_type.to_c_type(&lib.c_ffi_prefix),
+                    param.arg_type.to_c_type(&lib.c_ffi_prefix),
                     param.name.to_snake_case()
                 )
             }

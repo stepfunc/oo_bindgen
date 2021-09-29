@@ -1,4 +1,4 @@
-use crate::types::AllTypes;
+use crate::types::AnyType;
 use crate::Handle;
 
 /// struct type affects the type of code the backend will generate
@@ -24,7 +24,7 @@ impl NativeStructDeclaration {
 
 pub type NativeStructDeclarationHandle = Handle<NativeStructDeclaration>;
 
-impl From<NativeStructDeclarationHandle> for AllTypes {
+impl From<NativeStructDeclarationHandle> for AnyType {
     fn from(x: NativeStructDeclarationHandle) -> Self {
         Self::StructRef(x)
     }

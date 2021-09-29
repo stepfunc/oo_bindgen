@@ -11,7 +11,7 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
-use oo_bindgen::native_struct::{AllStructField, AllStructFieldType, AllStructHandle};
+use oo_bindgen::native_struct::{AnyStructField, AnyStructFieldType, AnyStructHandle};
 use oo_bindgen::{Library, Statement};
 use std::path::Path;
 
@@ -21,9 +21,9 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::native_function::{NativeFunctionHandle, Parameter, ReturnType};
+use oo_bindgen::native_function::{FArgument, NativeFunctionHandle, ReturnType};
 use oo_bindgen::struct_common::{NativeStructDeclaration, Visibility};
-use oo_bindgen::types::{AllTypes, BasicType, DurationType};
+use oo_bindgen::types::{AnyType, Arg, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
 
@@ -120,7 +120,7 @@ fn print_native_struct_decl(
     f.newline()
 }
 
-fn get_struct_default_constructor_args(handle: &AllStructHandle) -> String {
+fn get_struct_default_constructor_args(handle: &AnyStructHandle) -> String {
     handle
         .fields
         .iter()
@@ -141,7 +141,7 @@ fn get_struct_default_constructor_args(handle: &AllStructHandle) -> String {
         .join(", ")
 }
 
-fn get_struct_full_constructor_args(handle: &AllStructHandle) -> String {
+fn get_struct_full_constructor_args(handle: &AnyStructHandle) -> String {
     handle
         .fields
         .iter()
@@ -160,7 +160,7 @@ fn get_struct_full_constructor_args(handle: &AllStructHandle) -> String {
 
 fn print_native_struct_header(
     f: &mut dyn Printer,
-    handle: &AllStructHandle,
+    handle: &AnyStructHandle,
     _lib: &Library,
 ) -> FormattingResult<()> {
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
@@ -223,7 +223,7 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
                         CallbackParameter::Arg(_) => None,
                         CallbackParameter::Parameter(p) => Some(format!(
                             "{} {}",
-                            p.param_type.get_cpp_func_argument_type(),
+                            p.arg_type.get_cpp_func_argument_type(),
                             p.cpp_name()
                         )),
                     })
@@ -257,12 +257,12 @@ fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> For
 
 fn cpp_arguments<'a, T>(iter: T) -> String
 where
-    T: Iterator<Item = &'a Parameter>,
+    T: Iterator<Item = &'a Arg<FArgument>>,
 {
     iter.map(|p| {
         format!(
             "{} {}",
-            p.param_type.get_cpp_func_argument_type(),
+            p.arg_type.to_any_type().get_cpp_func_argument_type(),
             p.cpp_name()
         )
     })
@@ -403,22 +403,22 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
-fn convert_native_struct_elem_to_cpp(elem: &AllStructField) -> String {
+fn convert_native_struct_elem_to_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x.{}", elem.name);
     convert_to_cpp(&elem.field_type.to_all_types(), base_name)
 }
 
-fn convert_native_struct_ptr_elem_to_cpp(elem: &AllStructField) -> String {
+fn convert_native_struct_ptr_elem_to_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x->{}", elem.name);
     convert_to_cpp(&elem.field_type.to_all_types(), base_name)
 }
 
-fn convert_native_struct_elem_from_cpp(elem: &AllStructField) -> String {
+fn convert_native_struct_elem_from_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x.{}", elem.name);
     convert_to_c(&elem.field_type.to_all_types(), base_name)
 }
 
-fn convert_native_struct_ptr_elem_from_cpp(elem: &AllStructField) -> String {
+fn convert_native_struct_ptr_elem_from_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x->{}", elem.name);
     convert_to_c(&elem.field_type.to_all_types(), base_name)
 }
@@ -469,7 +469,7 @@ fn print_friend_class_impl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
 fn print_struct_conversion_impl(
     lib: &Library,
     f: &mut dyn Printer,
-    handle: &AllStructHandle,
+    handle: &AnyStructHandle,
 ) -> FormattingResult<()> {
     f.writeln(&format!(
         "{} {}::to_cpp(const {}& x)",
@@ -688,16 +688,16 @@ fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
     }
 }
 
-fn convert_to_cpp(typ: &AllTypes, expr: String) -> String {
+fn convert_to_cpp(typ: &AnyType, expr: String) -> String {
     match typ {
-        AllTypes::Basic(x) => convert_basic_type_to_cpp(x, expr),
-        AllTypes::String => format!("std::string({})", expr),
-        AllTypes::Struct(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
-        AllTypes::StructRef(_) => format!("{}::to_cpp_ref({})", FRIEND_CLASS_NAME, expr),
-        AllTypes::ClassRef(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
-        AllTypes::Interface(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
-        AllTypes::Iterator(_) => format!("convert::to_vec({})", expr),
-        AllTypes::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
+        AnyType::Basic(x) => convert_basic_type_to_cpp(x, expr),
+        AnyType::String => format!("std::string({})", expr),
+        AnyType::Struct(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
+        AnyType::StructRef(_) => format!("{}::to_cpp_ref({})", FRIEND_CLASS_NAME, expr),
+        AnyType::ClassRef(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
+        AnyType::Interface(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
+        AnyType::Iterator(_) => format!("convert::to_vec({})", expr),
+        AnyType::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
     }
 }
 
@@ -726,16 +726,16 @@ fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
     }
 }
 
-fn convert_to_c(typ: &AllTypes, expr: String) -> String {
+fn convert_to_c(typ: &AnyType, expr: String) -> String {
     match typ {
-        AllTypes::Basic(t) => convert_basic_type_to_c(t, expr),
-        AllTypes::String => format!("{}.c_str()", expr),
-        AllTypes::Struct(_) => format!("{}::from_cpp({})", FRIEND_CLASS_NAME, expr),
-        AllTypes::StructRef(_) => format!("{}::from_cpp_ref({})", FRIEND_CLASS_NAME, expr),
-        AllTypes::ClassRef(_) => unimplemented!(),
-        AllTypes::Interface(_) => format!("convert::from_cpp({})", expr),
-        AllTypes::Iterator(_) => "nullptr".to_string(), // Conversion not supported
-        AllTypes::Collection(_) => unimplemented!(),
+        AnyType::Basic(t) => convert_basic_type_to_c(t, expr),
+        AnyType::String => format!("{}.c_str()", expr),
+        AnyType::Struct(_) => format!("{}::from_cpp({})", FRIEND_CLASS_NAME, expr),
+        AnyType::StructRef(_) => format!("{}::from_cpp_ref({})", FRIEND_CLASS_NAME, expr),
+        AnyType::ClassRef(_) => unimplemented!(),
+        AnyType::Interface(_) => format!("convert::from_cpp({})", expr),
+        AnyType::Iterator(_) => "nullptr".to_string(), // Conversion not supported
+        AnyType::Collection(_) => unimplemented!(),
     }
 }
 
@@ -749,9 +749,7 @@ fn print_interface_conversions(
             .parameters
             .iter()
             .flat_map(|p| match p {
-                CallbackParameter::Parameter(p) => {
-                    Some(convert_to_cpp(&p.param_type, p.cpp_name()))
-                }
+                CallbackParameter::Parameter(p) => Some(convert_to_cpp(&p.arg_type, p.cpp_name())),
                 CallbackParameter::Arg(_) => None,
             })
             .collect::<Vec<String>>()
@@ -845,7 +843,7 @@ fn print_iterator_conversions(
             f.writeln(&format!(
                 "result.push_back({});",
                 convert_to_cpp(
-                    &AllTypes::Struct(handle.item_type.clone()),
+                    &AnyType::Struct(handle.item_type.clone()),
                     "*it".to_string()
                 )
             ))?;
@@ -888,54 +886,54 @@ fn print_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
     f.newline()
 }
 
-fn get_initializer_value(e: &AllStructField) -> String {
+fn get_initializer_value(e: &AnyStructField) -> String {
     match &e.field_type {
-        AllStructFieldType::Bool(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AllStructFieldType::Uint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AllStructFieldType::Sint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AllStructFieldType::Uint16(v) => {
+        AnyStructFieldType::Bool(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AnyStructFieldType::Uint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AnyStructFieldType::Sint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AnyStructFieldType::Uint16(v) => {
             v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
         }
-        AllStructFieldType::Sint16(v) => {
+        AnyStructFieldType::Sint16(v) => {
             v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
         }
-        AllStructFieldType::Uint32(v) => {
+        AnyStructFieldType::Uint32(v) => {
             v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
         }
-        AllStructFieldType::Sint32(v) => {
+        AnyStructFieldType::Sint32(v) => {
             v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
         }
-        AllStructFieldType::Uint64(v) => {
+        AnyStructFieldType::Uint64(v) => {
             v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
         }
-        AllStructFieldType::Sint64(v) => {
+        AnyStructFieldType::Sint64(v) => {
             v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
         }
-        AllStructFieldType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AllStructFieldType::Double(v) => {
+        AnyStructFieldType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
+        AnyStructFieldType::Double(v) => {
             v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
         }
-        AllStructFieldType::String(v) => v
+        AnyStructFieldType::String(v) => v
             .as_ref()
             .map(|x| format!("\"{}\"", x))
             .unwrap_or(format!("std::move({})", e.cpp_name())),
-        AllStructFieldType::Struct(x) => {
+        AnyStructFieldType::Struct(x) => {
             if x.all_fields_have_defaults() {
                 format!("{}()", x.cpp_name())
             } else {
                 e.cpp_name()
             }
         }
-        AllStructFieldType::StructRef(_) => unimplemented!(),
-        AllStructFieldType::Enum(x, v) => v
+        AnyStructFieldType::StructRef(_) => unimplemented!(),
+        AnyStructFieldType::Enum(x, v) => v
             .as_ref()
             .map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case()))
             .unwrap_or_else(|| e.cpp_name()),
-        AllStructFieldType::ClassRef(_) => unimplemented!(),
-        AllStructFieldType::Interface(_) => format!("std::move({})", e.cpp_name()),
-        AllStructFieldType::Iterator(_) => e.cpp_name(),
-        AllStructFieldType::Collection(_) => e.cpp_name(),
-        AllStructFieldType::Duration(_, v) => v
+        AnyStructFieldType::ClassRef(_) => unimplemented!(),
+        AnyStructFieldType::Interface(_) => format!("std::move({})", e.cpp_name()),
+        AnyStructFieldType::Iterator(_) => e.cpp_name(),
+        AnyStructFieldType::Collection(_) => e.cpp_name(),
+        AnyStructFieldType::Duration(_, v) => v
             .map(|v| format!("std::chrono::milliseconds({})", v.as_millis()))
             .unwrap_or_else(|| e.cpp_name()),
     }
@@ -943,7 +941,7 @@ fn get_initializer_value(e: &AllStructField) -> String {
 
 fn print_struct_constructor_impl(
     f: &mut dyn Printer,
-    handle: &AllStructHandle,
+    handle: &AnyStructHandle,
 ) -> FormattingResult<()> {
     let name = handle.cpp_name();
     f.writeln(&format!(
@@ -1042,7 +1040,7 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
                     .map(|p| {
                         format!(
                             "{} {}",
-                            p.param_type.to_c_type(&lib.c_ffi_prefix),
+                            p.arg_type.to_any_type().to_c_type(&lib.c_ffi_prefix),
                             p.name.to_snake_case()
                         )
                     })

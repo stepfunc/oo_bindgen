@@ -40,7 +40,7 @@
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
 use crate::callback::*;
-use crate::native_function::Parameter;
+use crate::types::{AnyType, Arg};
 use crate::{BindingError, Library};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -383,15 +383,18 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 }
 
 fn validate_doc(symbol_name: &str, doc: &Doc, lib: &Library) -> Result<(), BindingError> {
-    validate_doc_with_params(symbol_name, doc, &[], lib)
+    validate_doc_with_params::<AnyType>(symbol_name, doc, &[], lib)
 }
 
-fn validate_doc_with_params(
+fn validate_doc_with_params<T>(
     symbol_name: &str,
     doc: &Doc,
-    params: &[Parameter],
+    params: &[Arg<T>],
     lib: &Library,
-) -> Result<(), BindingError> {
+) -> Result<(), BindingError>
+where
+    T: Into<AnyType>,
+{
     for reference in doc.references() {
         validate_reference_with_params(symbol_name, reference, params, lib)?;
     }
@@ -399,12 +402,15 @@ fn validate_doc_with_params(
     Ok(())
 }
 
-fn validate_docstring_with_params(
+fn validate_docstring_with_params<T>(
     symbol_name: &str,
     doc: &DocString,
-    params: &[Parameter],
+    params: &[Arg<T>],
     lib: &Library,
-) -> Result<(), BindingError> {
+) -> Result<(), BindingError>
+where
+    T: Into<AnyType>,
+{
     for reference in doc.references() {
         validate_reference_with_params(symbol_name, reference, params, lib)?;
     }
@@ -412,12 +418,15 @@ fn validate_docstring_with_params(
     Ok(())
 }
 
-fn validate_reference_with_params(
+fn validate_reference_with_params<T>(
     symbol_name: &str,
     reference: &DocReference,
-    params: &[Parameter],
+    params: &[Arg<T>],
     lib: &Library,
-) -> Result<(), BindingError> {
+) -> Result<(), BindingError>
+where
+    T: Into<AnyType>,
+{
     match reference {
         DocReference::Param(param_name) => {
             if !params.iter().any(|param| &param.name == param_name) {

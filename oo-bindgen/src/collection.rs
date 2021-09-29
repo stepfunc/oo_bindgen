@@ -1,4 +1,4 @@
-use crate::types::{AllTypes, BasicType};
+use crate::types::{AnyType, BasicType};
 use crate::Result;
 use crate::*;
 
@@ -8,7 +8,7 @@ pub struct Collection {
     pub delete_func: NativeFunctionHandle,
     pub add_func: NativeFunctionHandle,
     pub collection_type: ClassDeclarationHandle,
-    pub item_type: AllTypes,
+    pub item_type: AnyType,
     pub has_reserve: bool,
 }
 
@@ -19,7 +19,7 @@ impl Collection {
         add_func: &NativeFunctionHandle,
     ) -> Result<Collection> {
         // Validate constructor
-        let collection_type = if let ReturnType::Type(AllTypes::ClassRef(collection_type), _) =
+        let collection_type = if let ReturnType::Type(AnyType::ClassRef(collection_type), _) =
             &create_func.return_type
         {
             collection_type
@@ -37,7 +37,7 @@ impl Collection {
 
         let mut iter = create_func.parameters.iter();
         let has_reserve = if let Some(param) = iter.next() {
-            if param.param_type != AllTypes::Basic(BasicType::Uint32) {
+            if param.arg_type != FArgument::Basic(BasicType::Uint32) {
                 return Err(BindingError::CollectionCreateFuncInvalidSignature {
                     handle: create_func.clone(),
                 });
@@ -57,7 +57,7 @@ impl Collection {
         // Validate destructor
         let mut iter = delete_func.parameters.iter();
         if let Some(param) = iter.next() {
-            if let AllTypes::ClassRef(iter_type) = &param.param_type {
+            if let FArgument::ClassRef(iter_type) = &param.arg_type {
                 if iter_type != collection_type {
                     return Err(BindingError::CollectionDeleteFuncInvalidSignature {
                         handle: delete_func.clone(),
@@ -89,7 +89,7 @@ impl Collection {
         // Validate add function
         let mut iter = add_func.parameters.iter();
         let item_type = if let Some(param) = iter.next() {
-            if let AllTypes::ClassRef(iter_type) = &param.param_type {
+            if let FArgument::ClassRef(iter_type) = &param.arg_type {
                 if iter_type != collection_type {
                     return Err(BindingError::CollectionAddFuncInvalidSignature {
                         handle: add_func.clone(),
@@ -97,7 +97,7 @@ impl Collection {
                 }
 
                 let item_type = if let Some(item_type) = iter.next() {
-                    item_type.param_type.clone()
+                    item_type.arg_type.clone()
                 } else {
                     return Err(BindingError::CollectionAddFuncInvalidSignature {
                         handle: add_func.clone(),
@@ -133,7 +133,7 @@ impl Collection {
             delete_func: delete_func.clone(),
             add_func: add_func.clone(),
             collection_type: collection_type.clone(),
-            item_type,
+            item_type: item_type.into(),
             has_reserve,
         })
     }
@@ -145,8 +145,8 @@ impl Collection {
 
 pub type CollectionHandle = Handle<Collection>;
 
-impl From<CollectionHandle> for AllTypes {
+impl From<CollectionHandle> for AnyType {
     fn from(x: CollectionHandle) -> Self {
-        AllTypes::Collection(x)
+        AnyType::Collection(x)
     }
 }

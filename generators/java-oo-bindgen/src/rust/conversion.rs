@@ -9,7 +9,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::struct_common::NativeStructDeclarationHandle;
-use oo_bindgen::types::{AllTypes, BasicType, DurationType};
+use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait JniType {
     /// Returns raw JNI type (from jni::sys::* module)
@@ -241,7 +241,7 @@ impl JniType for BasicType {
     }
 }
 
-impl JniType for AllTypes {
+impl JniType for AnyType {
     fn as_raw_jni_type(&self) -> &str {
         const JOBJECT: &str = "jni::sys::jobject";
 
@@ -546,7 +546,7 @@ impl TypeConverter for StringConverter {
     }
 }
 
-struct StructConverter(AllStructHandle);
+struct StructConverter(AnyStructHandle);
 impl TypeConverter for StructConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(

@@ -6,9 +6,9 @@ use oo_bindgen::class::{
 use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::native_enum::{EnumHandle, EnumVariant};
-use oo_bindgen::native_function::Parameter;
-use oo_bindgen::native_struct::{AllStructField, AllStructHandle, StructHandle};
+use oo_bindgen::native_struct::{AnyStructField, AnyStructHandle, StructHandle};
 use oo_bindgen::struct_common::NativeStructDeclaration;
+use oo_bindgen::types::{AnyType, Arg};
 
 pub(crate) trait CppName {
     fn cpp_name(&self) -> String;
@@ -20,13 +20,13 @@ impl CppName for NativeStructDeclaration {
     }
 }
 
-impl CppName for AllStructHandle {
+impl CppName for AnyStructHandle {
     fn cpp_name(&self) -> String {
         self.declaration.cpp_name()
     }
 }
 
-impl CppName for &AllStructHandle {
+impl CppName for &AnyStructHandle {
     fn cpp_name(&self) -> String {
         self.declaration.cpp_name()
     }
@@ -50,7 +50,7 @@ impl CppName for ErrorType {
     }
 }
 
-impl CppName for AllStructField {
+impl CppName for AnyStructField {
     fn cpp_name(&self) -> String {
         self.name.to_snake_case()
     }
@@ -62,7 +62,10 @@ impl CppName for InterfaceHandle {
     }
 }
 
-impl CppName for Parameter {
+impl<T> CppName for Arg<T>
+where
+    T: Into<AnyType>,
+{
     fn cpp_name(&self) -> String {
         self.name.to_snake_case()
     }

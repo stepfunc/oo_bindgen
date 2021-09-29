@@ -66,7 +66,7 @@ pub(crate) fn generate(
                             .map(|param| {
                                 format!(
                                     "{} {}",
-                                    param.param_type.as_dotnet_type(),
+                                    param.arg_type.as_dotnet_type(),
                                     param.name.to_mixed_case()
                                 )
                             })
@@ -105,7 +105,7 @@ pub(crate) fn generate(
                                 .map(|param| match param {
                                     CallbackParameter::Parameter(param) => format!(
                                         "{} {}",
-                                        param.param_type.as_native_type(),
+                                        param.arg_type.as_native_type(),
                                         param.name.to_mixed_case()
                                     ),
                                     CallbackParameter::Arg(name) => format!("IntPtr {}", name),
@@ -195,7 +195,7 @@ pub(crate) fn generate(
                                 .map(|param| match param {
                                     CallbackParameter::Parameter(param) => format!(
                                         "{} {}",
-                                        param.param_type.as_native_type(),
+                                        param.arg_type.as_native_type(),
                                         param.name.to_mixed_case()
                                     ),
                                     CallbackParameter::Arg(name) => format!("IntPtr {}", name),
@@ -262,7 +262,7 @@ pub(crate) fn generate_functional_callback(
     // Build the Action<>/Func<> signature
     let param_types = function
         .params()
-        .map(|param| param.param_type.as_dotnet_type())
+        .map(|param| param.arg_type.as_dotnet_type())
         .collect::<Vec<_>>()
         .join(", ");
     let action_type = match &function.return_type {
@@ -346,7 +346,7 @@ pub(crate) fn generate_functional_callback(
                 .map(|param| {
                     format!(
                         "{} {}",
-                        param.param_type.as_dotnet_type(),
+                        param.arg_type.as_dotnet_type(),
                         param.name.to_mixed_case()
                     )
                 })

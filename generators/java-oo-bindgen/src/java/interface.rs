@@ -61,7 +61,7 @@ pub(crate) fn generate(
                     .filter_map(|param| match param {
                         CallbackParameter::Parameter(param) => Some(format!(
                             "{} {}",
-                            param.param_type.as_java_primitive(),
+                            param.arg_type.as_java_primitive(),
                             param.name.to_mixed_case()
                         )),
                         _ => None,

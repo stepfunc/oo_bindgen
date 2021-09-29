@@ -6,7 +6,7 @@ use heck::{CamelCase, KebabCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::platforms::Platform;
-use oo_bindgen::types::AllTypes;
+use oo_bindgen::types::AnyType;
 use oo_bindgen::*;
 use std::fs;
 
@@ -312,7 +312,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         // Write each native functions
         for handle in lib.native_functions() {
             if let Some(first_param) = handle.parameters.first() {
-                if let AllTypes::ClassRef(class_handle) = &first_param.param_type {
+                if let FArgument::ClassRef(class_handle) = &first_param.arg_type {
                     // We don't want to generate the `next` methods of iterators
                     if let Some(it) = lib.find_iterator(&class_handle.name) {
                         if &it.native_func == handle {
@@ -327,7 +327,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     }
                 }
             }
-            if let ReturnType::Type(AllTypes::ClassRef(class_handle), _) = &handle.return_type {
+            if let ReturnType::Type(AnyType::ClassRef(class_handle), _) = &handle.return_type {
                 // We don't want to generate the `create` method of collections
                 if lib.find_collection(&class_handle.name).is_some() {
                     continue;
@@ -344,7 +344,13 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 &handle
                     .parameters
                     .iter()
-                    .map(|param| format!("{} {}", param.param_type.as_java_primitive(), param.name))
+                    .map(|param| {
+                        format!(
+                            "{} {}",
+                            AnyType::from(param.arg_type.clone()).as_java_primitive(),
+                            param.name
+                        )
+                    })
                     .collect::<Vec<String>>()
                     .join(", "),
             )?;

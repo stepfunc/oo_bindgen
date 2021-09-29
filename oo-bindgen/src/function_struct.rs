@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::struct_common::{NativeStructDeclarationHandle, Visibility};
-use crate::types::{AllTypes, DurationType};
+use crate::types::{AnyType, DurationType};
 use crate::*;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -25,11 +25,23 @@ pub enum FStructFieldType {
     Interface(InterfaceHandle),
     Collection(CollectionHandle),
     Duration(DurationType, Option<Duration>),
-    //Struct(FStructHandle),
+    Struct(FStructHandle),
+}
+
+impl From<FStructHandle> for FStructFieldType {
+    fn from(x: FStructHandle) -> Self {
+        FStructFieldType::Struct(x)
+    }
+}
+
+impl From<InterfaceHandle> for FStructFieldType {
+    fn from(x: InterfaceHandle) -> Self {
+        FStructFieldType::Interface(x)
+    }
 }
 
 impl FStructFieldType {
-    pub fn to_all_types(&self) -> AllTypes {
+    pub fn to_any_type(&self) -> AnyType {
         match self {
             Self::Bool(_) => BasicType::Bool.into(),
             Self::Uint8(_) => BasicType::Uint8.into(),
@@ -42,32 +54,34 @@ impl FStructFieldType {
             Self::Sint64(_) => BasicType::Sint64.into(),
             Self::Float(_) => BasicType::Float.into(),
             Self::Double(_) => BasicType::Double.into(),
-            Self::String(_) => AllTypes::String,
+            Self::String(_) => AnyType::String,
             Self::Enum(handle, _) => BasicType::Enum(handle.clone()).into(),
-            Self::Interface(handle) => AllTypes::Interface(handle.clone()),
-            Self::Collection(handle) => AllTypes::Collection(handle.clone()),
-            Self::Duration(t, _) => AllTypes::Basic(BasicType::Duration(*t)),
+            Self::Interface(handle) => AnyType::Interface(handle.clone()),
+            Self::Collection(handle) => AnyType::Collection(handle.clone()),
+            Self::Duration(t, _) => AnyType::Basic(BasicType::Duration(*t)),
+            Self::Struct(x) => AnyType::Struct(x.to_any_struct()),
         }
     }
 
-    pub fn to_all_struct_field_type(&self) -> AllStructFieldType {
+    pub fn to_any_struct_field_type(&self) -> AnyStructFieldType {
         match self {
-            Self::Bool(d) => AllStructFieldType::Bool(*d),
-            Self::Uint8(d) => AllStructFieldType::Uint8(*d),
-            Self::Sint8(d) => AllStructFieldType::Sint8(*d),
-            Self::Uint16(d) => AllStructFieldType::Uint16(*d),
-            Self::Sint16(d) => AllStructFieldType::Sint16(*d),
-            Self::Uint32(d) => AllStructFieldType::Uint32(*d),
-            Self::Sint32(d) => AllStructFieldType::Sint32(*d),
-            Self::Uint64(d) => AllStructFieldType::Uint64(*d),
-            Self::Sint64(d) => AllStructFieldType::Sint64(*d),
-            Self::Float(d) => AllStructFieldType::Float(*d),
-            Self::Double(d) => AllStructFieldType::Double(*d),
-            Self::String(d) => AllStructFieldType::String(d.clone()),
-            Self::Enum(h, d) => AllStructFieldType::Enum(h.clone(), d.clone()),
-            Self::Interface(h) => AllStructFieldType::Interface(h.clone()),
-            Self::Collection(h) => AllStructFieldType::Collection(h.clone()),
-            Self::Duration(t, d) => AllStructFieldType::Duration(*t, *d),
+            Self::Bool(d) => AnyStructFieldType::Bool(*d),
+            Self::Uint8(d) => AnyStructFieldType::Uint8(*d),
+            Self::Sint8(d) => AnyStructFieldType::Sint8(*d),
+            Self::Uint16(d) => AnyStructFieldType::Uint16(*d),
+            Self::Sint16(d) => AnyStructFieldType::Sint16(*d),
+            Self::Uint32(d) => AnyStructFieldType::Uint32(*d),
+            Self::Sint32(d) => AnyStructFieldType::Sint32(*d),
+            Self::Uint64(d) => AnyStructFieldType::Uint64(*d),
+            Self::Sint64(d) => AnyStructFieldType::Sint64(*d),
+            Self::Float(d) => AnyStructFieldType::Float(*d),
+            Self::Double(d) => AnyStructFieldType::Double(*d),
+            Self::String(d) => AnyStructFieldType::String(d.clone()),
+            Self::Enum(h, d) => AnyStructFieldType::Enum(h.clone(), d.clone()),
+            Self::Interface(h) => AnyStructFieldType::Interface(h.clone()),
+            Self::Collection(h) => AnyStructFieldType::Collection(h.clone()),
+            Self::Duration(t, d) => AnyStructFieldType::Duration(*t, *d),
+            Self::Struct(x) => AnyStructFieldType::Struct(x.to_any_struct()),
         }
     }
 
@@ -89,14 +103,13 @@ impl FStructFieldType {
             Self::Interface(_) => false,
             Self::Collection(_) => false,
             Self::Duration(_, default) => default.is_some(),
+            Self::Struct(x) => x.all_fields_have_defaults(),
         }
     }
 
     fn validate(&self) -> Result<()> {
         match self {
-            Self::Enum(handle, Some(default)) => {
-                return handle.validate_contains_variant_name(default)
-            }
+            Self::Enum(handle, Some(default)) => handle.validate_contains_variant_name(default),
             _ => Ok(()),
         }
     }
@@ -110,10 +123,10 @@ pub struct FStructField {
 }
 
 impl FStructField {
-    pub(crate) fn to_all_struct_field(&self) -> AllStructField {
-        AllStructField {
+    pub(crate) fn to_any_struct_field(&self) -> AnyStructField {
+        AnyStructField {
             name: self.name.clone(),
-            field_type: self.field_type.to_all_struct_field_type(),
+            field_type: self.field_type.to_any_struct_field_type(),
             doc: self.doc.clone(),
         }
     }
@@ -129,14 +142,14 @@ pub struct FStruct {
 }
 
 impl FStruct {
-    pub(crate) fn to_all_struct(&self) -> Handle<AllStruct> {
-        Handle::new(AllStruct {
+    pub(crate) fn to_any_struct(&self) -> Handle<AnyStruct> {
+        Handle::new(AnyStruct {
             visibility: self.visibility,
             declaration: self.declaration.clone(),
             fields: self
                 .fields
                 .iter()
-                .map(|x| x.to_all_struct_field())
+                .map(|x| x.to_any_struct_field())
                 .collect(),
             doc: self.doc.clone(),
         })
@@ -206,7 +219,7 @@ impl<'a> FStructBuilder<'a> {
         let field_type = field_type.into();
         field_type.validate()?;
 
-        self.lib.validate_type(&field_type.to_all_types())?;
+        self.lib.validate_type(&field_type.to_any_type())?;
         if self.field_names.insert(name.to_string()) {
             self.fields.push(FStructField {
                 name,
@@ -253,16 +266,16 @@ impl<'a> FStructBuilder<'a> {
             doc,
         });
 
-        let all_struct_repr = handle.to_all_struct();
+        let any_struct_repr = handle.to_any_struct();
 
         self.lib.native_structs.insert(
             handle.declaration.clone(),
-            NativeStructType::FStruct(handle.clone(), all_struct_repr.clone()),
+            NativeStructType::FStruct(handle.clone(), any_struct_repr.clone()),
         );
 
         self.lib
             .statements
-            .push(Statement::NativeStructDefinition(all_struct_repr.clone()));
+            .push(Statement::NativeStructDefinition(any_struct_repr));
 
         Ok(handle)
     }

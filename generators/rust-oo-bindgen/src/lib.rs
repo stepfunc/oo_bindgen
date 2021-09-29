@@ -53,6 +53,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
+use oo_bindgen::types::AnyType;
 use oo_bindgen::*;
 use std::env;
 use std::path::{Path, PathBuf};
@@ -97,7 +98,7 @@ impl<'a> RustCodegen<'a> {
     fn write_struct_definition(
         &self,
         f: &mut dyn Printer,
-        handle: &AllStructHandle,
+        handle: &AnyStructHandle,
     ) -> FormattingResult<()> {
         let struct_name = handle.name().to_camel_case();
         let c_lifetime = if handle.c_requires_lifetime() {
@@ -348,7 +349,13 @@ impl<'a> RustCodegen<'a> {
             &handle
                 .parameters
                 .iter()
-                .map(|param| format!("{}: {}", param.name, param.param_type.as_c_type()))
+                .map(|param| {
+                    format!(
+                        "{}: {}",
+                        param.name,
+                        AnyType::from(param.arg_type.clone()).as_c_type()
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
@@ -380,7 +387,7 @@ impl<'a> RustCodegen<'a> {
 
         blocked(f, |f| {
             for param in &handle.parameters {
-                if let Some(converter) = param.param_type.conversion() {
+                if let Some(converter) = AnyType::from(param.arg_type.clone()).conversion() {
                     converter.convert_from_c(f, &param.name, &format!("let {} = ", param.name))?;
                     f.write(";")?;
                 }
@@ -494,7 +501,7 @@ impl<'a> RustCodegen<'a> {
                                         format!("{}: *mut std::os::raw::c_void", name)
                                     }
                                     CallbackParameter::Parameter(param) => {
-                                        format!("{}: {}", param.name, param.param_type.as_c_type())
+                                        format!("{}: {}", param.name, param.arg_type.as_c_type())
                                     }
                                 })
                                 .collect::<Vec<String>>()
@@ -566,11 +573,9 @@ impl<'a> RustCodegen<'a> {
                         .iter()
                         .filter_map(|param| match param {
                             CallbackParameter::Arg(_) => None,
-                            CallbackParameter::Parameter(param) => Some(format!(
-                                "{}: {}",
-                                param.name,
-                                param.param_type.as_rust_type()
-                            )),
+                            CallbackParameter::Parameter(param) => {
+                                Some(format!("{}: {}", param.name, param.arg_type.as_rust_type()))
+                            }
                         })
                         .collect::<Vec<_>>()
                         .join(", "),
@@ -585,7 +590,7 @@ impl<'a> RustCodegen<'a> {
                 blocked(f, |f| {
                     for param in &callback.parameters {
                         if let CallbackParameter::Parameter(param) = param {
-                            if let Some(converter) = param.param_type.conversion() {
+                            if let Some(converter) = param.arg_type.conversion() {
                                 converter.convert_to_c(
                                     f,
                                     &param.name,

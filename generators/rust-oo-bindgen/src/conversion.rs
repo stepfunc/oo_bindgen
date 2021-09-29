@@ -5,7 +5,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::struct_common::NativeStructDeclarationHandle;
-use oo_bindgen::types::{AllTypes, BasicType, DurationType};
+use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -87,16 +87,16 @@ impl RustType for BasicType {
     }
 }
 
-impl RustType for AllTypes {
+impl RustType for AnyType {
     fn as_rust_type(&self) -> String {
         match self {
-            AllTypes::Basic(x) => x.as_rust_type(),
-            AllTypes::String => "&'a std::ffi::CStr".to_string(),
-            AllTypes::Struct(handle) => handle.name().to_camel_case(),
-            AllTypes::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
-            AllTypes::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
-            AllTypes::Interface(handle) => handle.name.to_camel_case(),
-            AllTypes::Iterator(handle) => {
+            AnyType::Basic(x) => x.as_rust_type(),
+            AnyType::String => "&'a std::ffi::CStr".to_string(),
+            AnyType::Struct(handle) => handle.name().to_camel_case(),
+            AnyType::StructRef(handle) => format!("Option<&{}>", handle.name.to_camel_case()),
+            AnyType::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
+            AnyType::Interface(handle) => handle.name.to_camel_case(),
+            AnyType::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
                 } else {
@@ -104,7 +104,7 @@ impl RustType for AllTypes {
                 };
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            AllTypes::Collection(handle) => {
+            AnyType::Collection(handle) => {
                 format!("*mut crate::{}", handle.name().to_camel_case())
             }
         }
@@ -112,13 +112,13 @@ impl RustType for AllTypes {
 
     fn as_c_type(&self) -> String {
         match self {
-            AllTypes::Basic(x) => x.as_c_type(),
-            AllTypes::String => "*const std::os::raw::c_char".to_string(),
-            AllTypes::Struct(handle) => handle.name().to_camel_case(),
-            AllTypes::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
-            AllTypes::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
-            AllTypes::Interface(handle) => handle.name.to_camel_case(),
-            AllTypes::Iterator(handle) => {
+            AnyType::Basic(x) => x.as_c_type(),
+            AnyType::String => "*const std::os::raw::c_char".to_string(),
+            AnyType::Struct(handle) => handle.name().to_camel_case(),
+            AnyType::StructRef(handle) => format!("*const {}", handle.name.to_camel_case()),
+            AnyType::ClassRef(handle) => format!("*mut crate::{}", handle.name.to_camel_case()),
+            AnyType::Interface(handle) => handle.name.to_camel_case(),
+            AnyType::Iterator(handle) => {
                 let lifetime = if handle.has_lifetime_annotation {
                     "<'a>"
                 } else {
@@ -126,7 +126,7 @@ impl RustType for AllTypes {
                 };
                 format!("*mut crate::{}{}", handle.name().to_camel_case(), lifetime)
             }
-            AllTypes::Collection(handle) => {
+            AnyType::Collection(handle) => {
                 format!("*mut crate::{}", handle.name().to_camel_case())
             }
         }
@@ -134,53 +134,53 @@ impl RustType for AllTypes {
 
     fn is_copyable(&self) -> bool {
         match self {
-            AllTypes::Basic(x) => x.is_copyable(),
-            AllTypes::String => true, // Just copying the reference
-            AllTypes::Struct(_) => false,
-            AllTypes::StructRef(_) => true,
-            AllTypes::ClassRef(_) => true, // Just copying the opaque pointer
-            AllTypes::Interface(_) => false,
-            AllTypes::Iterator(_) => true, // Just copying the pointer
-            AllTypes::Collection(_) => true, // Just copying the pointer
+            AnyType::Basic(x) => x.is_copyable(),
+            AnyType::String => true, // Just copying the reference
+            AnyType::Struct(_) => false,
+            AnyType::StructRef(_) => true,
+            AnyType::ClassRef(_) => true, // Just copying the opaque pointer
+            AnyType::Interface(_) => false,
+            AnyType::Iterator(_) => true,   // Just copying the pointer
+            AnyType::Collection(_) => true, // Just copying the pointer
         }
     }
 
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            AllTypes::Basic(x) => x.rust_requires_lifetime(),
-            AllTypes::String => true,
-            AllTypes::Struct(_) => false,
-            AllTypes::StructRef(_) => false,
-            AllTypes::ClassRef(_) => false,
-            AllTypes::Interface(_) => false,
-            AllTypes::Iterator(handle) => handle.has_lifetime_annotation,
-            AllTypes::Collection(_) => false,
+            AnyType::Basic(x) => x.rust_requires_lifetime(),
+            AnyType::String => true,
+            AnyType::Struct(_) => false,
+            AnyType::StructRef(_) => false,
+            AnyType::ClassRef(_) => false,
+            AnyType::Interface(_) => false,
+            AnyType::Iterator(handle) => handle.has_lifetime_annotation,
+            AnyType::Collection(_) => false,
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            AllTypes::Basic(x) => x.c_requires_lifetime(),
-            AllTypes::String => false,
-            AllTypes::Struct(_) => false,
-            AllTypes::StructRef(_) => false,
-            AllTypes::ClassRef(_) => false,
-            AllTypes::Interface(_) => false,
-            AllTypes::Iterator(handle) => handle.has_lifetime_annotation,
-            AllTypes::Collection(_) => false,
+            AnyType::Basic(x) => x.c_requires_lifetime(),
+            AnyType::String => false,
+            AnyType::Struct(_) => false,
+            AnyType::StructRef(_) => false,
+            AnyType::ClassRef(_) => false,
+            AnyType::Interface(_) => false,
+            AnyType::Iterator(handle) => handle.has_lifetime_annotation,
+            AnyType::Collection(_) => false,
         }
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self {
-            AllTypes::Basic(x) => x.conversion(),
-            AllTypes::String => Some(Box::new(StringConverter)),
-            AllTypes::Struct(_) => None,
-            AllTypes::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
-            AllTypes::ClassRef(_) => None,
-            AllTypes::Interface(_) => None,
-            AllTypes::Iterator(_) => None,
-            AllTypes::Collection(_) => None,
+            AnyType::Basic(x) => x.conversion(),
+            AnyType::String => Some(Box::new(StringConverter)),
+            AnyType::Struct(_) => None,
+            AnyType::StructRef(handle) => Some(Box::new(StructRefConverter(handle.clone()))),
+            AnyType::ClassRef(_) => None,
+            AnyType::Interface(_) => None,
+            AnyType::Iterator(_) => None,
+            AnyType::Collection(_) => None,
         }
     }
 }
@@ -314,7 +314,7 @@ pub(crate) trait RustStruct {
     fn has_conversion(&self) -> bool;
 }
 
-impl RustStruct for AllStructHandle {
+impl RustStruct for AnyStructHandle {
     fn rust_requires_lifetime(&self) -> bool {
         self.fields.iter().any(|e| e.rust_requires_lifetime())
     }
@@ -335,7 +335,7 @@ pub(crate) trait RustStructField {
     fn c_requires_lifetime(&self) -> bool;
 }
 
-impl RustStructField for AllStructField {
+impl RustStructField for AnyStructField {
     fn rust_requires_lifetime(&self) -> bool {
         self.field_type.to_all_types().rust_requires_lifetime()
     }
@@ -354,7 +354,7 @@ impl RustCallbackFunction for CallbackFunction {
     fn rust_requires_lifetime(&self) -> bool {
         self.parameters.iter().any(|param| {
             if let CallbackParameter::Parameter(param) = param {
-                param.param_type.rust_requires_lifetime()
+                param.arg_type.rust_requires_lifetime()
             } else {
                 false
             }
@@ -364,7 +364,7 @@ impl RustCallbackFunction for CallbackFunction {
     fn c_requires_lifetime(&self) -> bool {
         self.parameters.iter().any(|param| {
             if let CallbackParameter::Parameter(param) = param {
-                param.param_type.c_requires_lifetime()
+                param.arg_type.c_requires_lifetime()
             } else {
                 false
             }

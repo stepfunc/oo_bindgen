@@ -2,7 +2,7 @@ use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::types::{AllTypes, BasicType};
+use oo_bindgen::types::{AnyType, BasicType};
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -47,7 +47,7 @@ impl JavaType for BasicType {
     }
 }
 
-impl JavaType for AllTypes {
+impl JavaType for AnyType {
     /// Return the Java primitive type
     fn as_java_primitive(&self) -> String {
         match self {

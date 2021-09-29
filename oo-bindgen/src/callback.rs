@@ -1,4 +1,5 @@
 use crate::doc::{Doc, DocString};
+use crate::types::Arg;
 use crate::*;
 use std::collections::HashSet;
 
@@ -7,7 +8,7 @@ const DEFAULT_CTX_NAME: &str = "ctx";
 #[derive(Debug)]
 pub enum CallbackParameter {
     Arg(String),
-    Parameter(Parameter),
+    Parameter(Arg<AnyType>),
 }
 
 #[derive(Debug)]
@@ -20,7 +21,7 @@ pub struct CallbackFunction {
 }
 
 impl CallbackFunction {
-    pub fn params(&self) -> impl Iterator<Item = &Parameter> {
+    pub fn params(&self) -> impl Iterator<Item = &Arg<AnyType>> {
         self.parameters.iter().filter_map(|param| match param {
             CallbackParameter::Parameter(param) => Some(param),
             _ => None,
@@ -64,15 +65,15 @@ impl Interface {
 
 pub type InterfaceHandle = Handle<Interface>;
 
-impl From<InterfaceHandle> for AllTypes {
+impl From<InterfaceHandle> for AnyType {
     fn from(x: InterfaceHandle) -> Self {
-        AllTypes::Interface(x)
+        AnyType::Interface(x)
     }
 }
 
-impl From<InterfaceHandle> for AllStructFieldType {
+impl From<InterfaceHandle> for AnyStructFieldType {
     fn from(x: InterfaceHandle) -> Self {
-        AllStructFieldType::Interface(x)
+        AnyStructFieldType::Interface(x)
     }
 }
 
@@ -202,20 +203,19 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<AllTypes>>(
+    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<AnyType>>(
         mut self,
         name: S,
-        param_type: P,
+        arg_type: P,
         doc: D,
     ) -> Result<Self> {
-        let param_type: AllTypes = param_type.into();
-
-        self.builder.lib.validate_type(&param_type)?;
-        self.params.push(CallbackParameter::Parameter(Parameter {
-            name: name.into(),
-            param_type,
-            doc: doc.into(),
-        }));
+        let arg_type = arg_type.into();
+        self.builder.lib.validate_type(&arg_type)?;
+        self.params.push(CallbackParameter::Parameter(Arg::new(
+            arg_type,
+            name.into(),
+            doc.into(),
+        )));
         Ok(self)
     }
 
@@ -233,7 +233,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn returns<T: Into<AllTypes>, D: Into<DocString>>(self, t: T, d: D) -> Result<Self> {
+    pub fn returns<T: Into<AnyType>, D: Into<DocString>>(self, t: T, d: D) -> Result<Self> {
         self.return_type(ReturnType::new(t, d))
     }
 

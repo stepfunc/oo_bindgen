@@ -1,7 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
-use oo_bindgen::types::AllTypes;
+use oo_bindgen::types::AnyType;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -154,7 +154,7 @@ fn generate_constructor(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
+                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -265,7 +265,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
+                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -333,7 +333,7 @@ fn generate_static_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
+                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -396,7 +396,7 @@ fn generate_async_method(
             .parameters
             .iter()
             .skip(1)
-            .filter(|param| !matches!(param.param_type, AllTypes::Interface(_)))
+            .filter(|param| !matches!(param.arg_type, FArgument::Interface(_)))
         {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
@@ -430,11 +430,11 @@ fn generate_async_method(
             .parameters
             .iter()
             .skip(1)
-            .filter(|param| !matches!(param.param_type, AllTypes::Interface(_)))
+            .filter(|param| !matches!(param.arg_type, FArgument::Interface(_)))
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
+                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })

@@ -1,5 +1,5 @@
 use crate::doc::DocString;
-use crate::types::AllTypes;
+use crate::types::AnyType;
 use crate::*;
 
 /// C-style structure forward declaration
@@ -16,9 +16,9 @@ impl ClassDeclaration {
 
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
-impl From<ClassDeclarationHandle> for AllTypes {
+impl From<ClassDeclarationHandle> for AnyType {
     fn from(x: ClassDeclarationHandle) -> Self {
-        AllTypes::ClassRef(x)
+        AnyType::ClassRef(x)
     }
 }
 
@@ -32,7 +32,7 @@ pub struct Method {
 pub struct AsyncMethod {
     pub name: String,
     pub native_function: NativeFunctionHandle,
-    pub return_type: AllTypes,
+    pub return_type: AnyType,
     pub return_type_doc: DocString,
     pub one_time_callback_name: String,
     pub one_time_callback_param_name: String,
@@ -162,7 +162,7 @@ impl<'a> ClassBuilder<'a> {
         }
         self.lib.validate_native_function(native_function)?;
 
-        if let ReturnType::Type(AllTypes::ClassRef(return_type), _) = &native_function.return_type {
+        if let ReturnType::Type(AnyType::ClassRef(return_type), _) = &native_function.return_type {
             if return_type == &self.declaration {
                 self.constructor = Some(native_function.clone());
                 return Ok(self);
@@ -247,7 +247,7 @@ impl<'a> ClassBuilder<'a> {
         let name = name.into();
         let mut async_method = None;
         for param in &native_function.parameters {
-            if let AllTypes::Interface(ot_cb) = &param.param_type {
+            if let FArgument::Interface(ot_cb) = &param.arg_type {
                 if async_method.is_some() {
                     return Err(BindingError::AsyncNativeMethodTooManyInterface {
                         handle: native_function.clone(),
@@ -267,7 +267,7 @@ impl<'a> ClassBuilder<'a> {
                         async_method = Some(AsyncMethod {
                             name: name.to_string(),
                             native_function: native_function.clone(),
-                            return_type: cb_param.param_type.clone(),
+                            return_type: cb_param.arg_type.clone(),
                             return_type_doc: cb_param.doc.clone(),
                             one_time_callback_name: ot_cb.name.clone(),
                             one_time_callback_param_name: param.name.clone(),
@@ -365,7 +365,7 @@ impl<'a> ClassBuilder<'a> {
 
     fn validate_first_param(&self, native_function: &NativeFunctionHandle) -> Result<()> {
         if let Some(first_param) = native_function.parameters.first() {
-            if let AllTypes::ClassRef(first_param_type) = &first_param.param_type {
+            if let FArgument::ClassRef(first_param_type) = &first_param.arg_type {
                 if first_param_type == &self.declaration {
                     return Ok(());
                 }

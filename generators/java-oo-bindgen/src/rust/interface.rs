@@ -5,6 +5,7 @@ use heck::{CamelCase, MixedCase, SnakeCase};
 use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_function::*;
+use oo_bindgen::types::{AnyType, Arg};
 
 pub(crate) fn generate_interfaces_cache(
     lib: &Library,
@@ -136,7 +137,7 @@ pub(crate) fn generate_interfaces_cache(
                             CallbackParameter::Parameter(param) => format!(
                                 "{}: {}",
                                 param.name.to_snake_case(),
-                                param.param_type.as_rust_type(&config.ffi_name)
+                                param.arg_type.as_rust_type(&config.ffi_name)
                             ),
                             CallbackParameter::Arg(name) => {
                                 format!("{}: *mut std::ffi::c_void", name)
@@ -222,7 +223,7 @@ fn write_interface_init<'a>(
                 "({}){}",
                 callback
                     .params()
-                    .map(|param| { param.param_type.as_jni_sig(lib_path) })
+                    .map(|param| { param.arg_type.as_jni_sig(lib_path) })
                     .collect::<Vec<_>>()
                     .join(""),
                 callback.return_type.as_jni_sig(lib_path)
@@ -249,7 +250,7 @@ fn call_java_callback<'a>(
     ffi_name: &str,
     prefix: &str,
     arg_name: &str,
-    params: Vec<&'a Parameter>,
+    params: Vec<&'a Arg<AnyType>>,
     return_type: &ReturnType,
 ) -> FormattingResult<()> {
     // Extract the global ref
@@ -269,7 +270,7 @@ fn call_java_callback<'a>(
 
     // Perform the conversion of the parameters
     for param in &params {
-        if let Some(conversion) = param.param_type.conversion(ffi_name, prefix) {
+        if let Some(conversion) = param.arg_type.conversion(ffi_name, prefix) {
             conversion.convert_from_rust(
                 f,
                 &param.name,
@@ -295,7 +296,7 @@ fn call_java_callback<'a>(
 
     // Release the local refs
     for param in params {
-        if param.param_type.requires_local_ref_cleanup() {
+        if param.arg_type.requires_local_ref_cleanup() {
             f.writeln(&format!(
                 "_env.delete_local_ref({}.into()).unwrap();",
                 param.name.to_snake_case()

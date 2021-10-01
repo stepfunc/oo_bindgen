@@ -7,7 +7,7 @@ use crate::collection::CollectionHandle;
 use crate::doc::DocString;
 use crate::function_struct::FStructHandle;
 use crate::iterator::IteratorHandle;
-use crate::struct_common::NativeStructDeclarationHandle;
+use crate::struct_common::StructDeclarationHandle;
 use std::time::Duration;
 
 /// Marker class used to denote the String type with conversions to more specialized types
@@ -125,7 +125,7 @@ pub enum AnyType {
 
     // Complex types
     Struct(AnyStructHandle),
-    StructRef(NativeStructDeclarationHandle),
+    StructRef(StructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),

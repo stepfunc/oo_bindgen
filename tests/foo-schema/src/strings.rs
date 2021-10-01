@@ -7,20 +7,20 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     // Declare each native function
     let stringclass_new_func = lib
-        .declare_native_function("string_new")?
+        .define_function("string_new")?
         .returns(stringclass.clone(), "New StringClass")?
         .doc("Create a new StringClass")?
         .build()?;
 
     let stringclass_destroy_func = lib
-        .declare_native_function("string_destroy")?
+        .define_function("string_destroy")?
         .param("stringclass", stringclass.clone(), "StringClass")?
         .returns_nothing()?
         .doc("Destroy a StringClass")?
         .build()?;
 
     let stringclass_echo_func = lib
-        .declare_native_function("string_echo")?
+        .define_function("string_echo")?
         .param("stringclass", stringclass.clone(), "StringClass")?
         .param("value", STRING_TYPE, "String to echo")?
         .returns(STRING_TYPE, "Echoed string")?
@@ -28,7 +28,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let stringclass_length_func = lib
-        .declare_native_function("string_length")?
+        .define_function("string_length")?
         .param("value", STRING_TYPE, "String")?
         .returns(BasicType::Uint32, "String length")?
         .doc("Get the string length")?

@@ -1,5 +1,5 @@
 use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::native_function::{NativeFunctionHandle, NativeFunctionType};
+use oo_bindgen::native_function::{FunctionHandle, SignatureType};
 use oo_bindgen::Library;
 
 use crate::conversion::DotnetType;
@@ -20,7 +20,7 @@ pub(crate) fn generate_native_functions_class(
     namespaced(f, &lib.name, |f| {
         f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
         blocked(f, |f| {
-            for func in lib.native_functions() {
+            for func in lib.functions() {
                 f.newline()?;
                 write_conversion_wrapper(f, func, &lib.c_ffi_prefix)?;
             }
@@ -30,7 +30,7 @@ pub(crate) fn generate_native_functions_class(
         f.newline()?;
         f.writeln("internal class ExceptionWrappers")?;
         blocked(f, |f| {
-            for func in lib.native_functions().filter(|x| x.error_type.is_some()) {
+            for func in lib.functions().filter(|x| x.error_type.is_some()) {
                 f.newline()?;
                 write_exception_wrapper(f, func, &lib.c_ffi_prefix)?;
             }
@@ -41,7 +41,7 @@ pub(crate) fn generate_native_functions_class(
 
         f.writeln("internal class PInvoke")?;
         blocked(f, |f| {
-            for func in lib.native_functions() {
+            for func in lib.functions() {
                 write_pinvoke_signature(f, func, &lib.c_ffi_prefix, config)?;
             }
             Ok(())
@@ -51,18 +51,18 @@ pub(crate) fn generate_native_functions_class(
 
 fn write_exception_and_return_block(
     f: &mut dyn Printer,
-    func: &NativeFunctionHandle,
+    func: &FunctionHandle,
     params: &str,
     prefix: &str,
 ) -> FormattingResult<()> {
-    match func.get_type() {
-        NativeFunctionType::NoErrorNoReturn => {
+    match func.get_signature_type() {
+        SignatureType::NoErrorNoReturn => {
             unreachable!()
         }
-        NativeFunctionType::NoErrorWithReturn(_, _) => {
+        SignatureType::NoErrorWithReturn(_, _) => {
             unreachable!()
         }
-        NativeFunctionType::ErrorNoReturn(err) => {
+        SignatureType::ErrorNoReturn(err) => {
             f.writeln(&format!(
                 "var error = PInvoke.{}_{}({});",
                 prefix, func.name, params
@@ -72,7 +72,7 @@ fn write_exception_and_return_block(
                 f.writeln(&format!("throw new {}(error);", err.exception_name))
             })
         }
-        NativeFunctionType::ErrorWithReturn(err, ret, _) => {
+        SignatureType::ErrorWithReturn(err, ret, _) => {
             f.writeln(&format!("{} _return_value;", ret.as_native_type()))?;
             f.writeln(&format!(
                 "var _error_result = PInvoke.{}_{}({}, out _return_value);",
@@ -89,7 +89,7 @@ fn write_exception_and_return_block(
 
 fn write_conversion_wrapper(
     f: &mut dyn Printer,
-    func: &NativeFunctionHandle,
+    func: &FunctionHandle,
     prefix: &str,
 ) -> FormattingResult<()> {
     f.write(&format!(
@@ -139,7 +139,7 @@ fn write_conversion_wrapper(
 
 fn write_exception_wrapper(
     f: &mut dyn Printer,
-    func: &NativeFunctionHandle,
+    func: &FunctionHandle,
     prefix: &str,
 ) -> FormattingResult<()> {
     f.write(&format!(
@@ -180,7 +180,7 @@ fn write_exception_wrapper(
 
 fn write_pinvoke_signature(
     f: &mut dyn Printer,
-    handle: &NativeFunctionHandle,
+    handle: &FunctionHandle,
     prefix: &str,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
@@ -221,7 +221,7 @@ fn write_pinvoke_signature(
             .join(", "),
     )?;
 
-    if let NativeFunctionType::ErrorWithReturn(_, ret, _) = handle.get_type() {
+    if let SignatureType::ErrorWithReturn(_, ret, _) = handle.get_signature_type() {
         if !handle.parameters.is_empty() {
             f.write(", ")?;
         }

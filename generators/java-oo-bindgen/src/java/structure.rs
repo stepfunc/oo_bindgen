@@ -21,7 +21,7 @@ fn field_visibility(struct_type: Visibility) -> &'static str {
 
 pub(crate) fn generate(
     f: &mut impl Printer,
-    native_struct: &NativeStructType,
+    native_struct: &StructType,
     lib: &Library,
 ) -> FormattingResult<()> {
     let struct_name = native_struct.name().to_camel_case();

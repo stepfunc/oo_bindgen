@@ -82,7 +82,7 @@ use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 pub use crate::doc::doc;
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function_struct::{FStructBuilder, FStructHandle};
-use crate::struct_common::{NativeStructDeclaration, NativeStructDeclarationHandle, Visibility};
+use crate::struct_common::{StructDeclaration, StructDeclarationHandle, Visibility};
 use crate::types::{AnyType, BasicType};
 
 type Result<T> = std::result::Result<T, BindingError>;
@@ -114,7 +114,7 @@ pub enum BindingError {
 
     // Native function errors
     #[error("Native struct '{}' is not part of this library", handle.name)]
-    NativeFunctionNotPartOfThisLib { handle: NativeFunctionHandle },
+    NativeFunctionNotPartOfThisLib { handle: FunctionHandle },
     #[error(
         "Return type of native function '{}' was already defined to '{:?}'",
         native_func_name,
@@ -154,30 +154,24 @@ pub enum BindingError {
 
     // Structure errors
     #[error("Native struct '{}' was already defined", handle.name)]
-    NativeStructAlreadyDefined {
-        handle: NativeStructDeclarationHandle,
-    },
+    NativeStructAlreadyDefined { handle: StructDeclarationHandle },
     #[error("Native struct '{}' is not part of this library", handle.name)]
-    NativeStructNotPartOfThisLib {
-        handle: NativeStructDeclarationHandle,
-    },
+    NativeStructNotPartOfThisLib { handle: StructDeclarationHandle },
     #[error("Native struct '{}' already contains element with name '{}'", handle.name, element_name)]
     NativeStructAlreadyContainsElementWithSameName {
-        handle: NativeStructDeclarationHandle,
+        handle: StructDeclarationHandle,
         element_name: String,
     },
     #[error("First parameter of native function '{}' is not of type '{}' as expected for a method of a struct", native_func.name, handle.name)]
     FirstMethodParameterIsNotStructType {
-        handle: NativeStructDeclarationHandle,
-        native_func: NativeFunctionHandle,
+        handle: StructDeclarationHandle,
+        native_func: FunctionHandle,
     },
     #[error("Struct '{}' was already defined", handle.name)]
-    StructAlreadyDefined {
-        handle: NativeStructDeclarationHandle,
-    },
+    StructAlreadyDefined { handle: StructDeclarationHandle },
     #[error("Struct '{}' already contains element or method with name '{}'", handle.name, element_name)]
     StructAlreadyContainsElementWithSameName {
-        handle: NativeStructDeclarationHandle,
+        handle: StructDeclarationHandle,
         element_name: String,
     },
 
@@ -189,21 +183,21 @@ pub enum BindingError {
     #[error("First parameter of native function '{}' is not of type '{}' as expected for a method of a class", native_func.name, handle.name)]
     FirstMethodParameterIsNotClassType {
         handle: ClassDeclarationHandle,
-        native_func: NativeFunctionHandle,
+        native_func: FunctionHandle,
     },
     #[error("Constructor for class '{}' was already defined", handle.name)]
     ConstructorAlreadyDefined { handle: ClassDeclarationHandle },
     #[error("Native function '{}' does not return '{}' as expected for a constructor", native_func.name, handle.name)]
     ConstructorReturnTypeDoesNotMatch {
         handle: ClassDeclarationHandle,
-        native_func: NativeFunctionHandle,
+        native_func: FunctionHandle,
     },
     #[error("Destructor for class '{}' was already defined", handle.name)]
     DestructorAlreadyDefined { handle: ClassDeclarationHandle },
     #[error("Native function '{}' does not take a single '{}' parameter as expected for a destructor", native_func.name, handle.name)]
     DestructorTakesMoreThanOneParameter {
         handle: ClassDeclarationHandle,
-        native_func: NativeFunctionHandle,
+        native_func: FunctionHandle,
     },
     #[error("Destructor for class '{}' cannot fail", handle.name)]
     DestructorCannotFail { handle: ClassDeclarationHandle },
@@ -212,15 +206,15 @@ pub enum BindingError {
 
     // Async errors
     #[error("Native function '{}' cannot be used as an async method because it doesn't have a interface parameter", handle.name)]
-    AsyncNativeMethodNoInterface { handle: NativeFunctionHandle },
+    AsyncNativeMethodNoInterface { handle: FunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because it has too many interface parameters", handle.name)]
-    AsyncNativeMethodTooManyInterface { handle: NativeFunctionHandle },
+    AsyncNativeMethodTooManyInterface { handle: FunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because its interface parameter doesn't have a single callback", handle.name)]
-    AsyncInterfaceNotSingleCallback { handle: NativeFunctionHandle },
+    AsyncInterfaceNotSingleCallback { handle: FunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because its interface parameter single callback does not have a single parameter (other than the arg param)", handle.name)]
-    AsyncCallbackNotSingleParam { handle: NativeFunctionHandle },
+    AsyncCallbackNotSingleParam { handle: FunctionHandle },
     #[error("Native function '{}' cannot be used as an async method because its interface parameter single callback does not return void", handle.name)]
-    AsyncCallbackReturnTypeNotVoid { handle: NativeFunctionHandle },
+    AsyncCallbackReturnTypeNotVoid { handle: FunctionHandle },
 
     // Interface errors
     #[error(
@@ -249,23 +243,23 @@ pub enum BindingError {
 
     // Iterator errors
     #[error("Iterator native function '{}' does not take a single class ref parameter", handle.name)]
-    IteratorNotSingleClassRefParam { handle: NativeFunctionHandle },
+    IteratorNotSingleClassRefParam { handle: FunctionHandle },
     #[error("Iterator native function '{}' does not return a struct ref value", handle.name)]
-    IteratorReturnTypeNotStructRef { handle: NativeFunctionHandle },
+    IteratorReturnTypeNotStructRef { handle: FunctionHandle },
     #[error("Iterator '{}' is not part of this library", handle.name())]
     IteratorNotPartOfThisLib { handle: iterator::IteratorHandle },
     #[error("Iterator native functions '{}' cannot fail", handle.name)]
-    IteratorFunctionsCannotFail { handle: NativeFunctionHandle },
+    IteratorFunctionsCannotFail { handle: FunctionHandle },
 
     // Collection errors
     #[error("Invalid native function '{}' signature for create_func of collection", handle.name)]
-    CollectionCreateFuncInvalidSignature { handle: NativeFunctionHandle },
+    CollectionCreateFuncInvalidSignature { handle: FunctionHandle },
     #[error("Invalid native function '{}' signature for delete_func of collection", handle.name)]
-    CollectionDeleteFuncInvalidSignature { handle: NativeFunctionHandle },
+    CollectionDeleteFuncInvalidSignature { handle: FunctionHandle },
     #[error("Invalid native function '{}' signature for add_func of collection", handle.name)]
-    CollectionAddFuncInvalidSignature { handle: NativeFunctionHandle },
+    CollectionAddFuncInvalidSignature { handle: FunctionHandle },
     #[error("Collection native functions '{}' cannot fail", handle.name)]
-    CollectionFunctionsCannotFail { handle: NativeFunctionHandle },
+    CollectionFunctionsCannotFail { handle: FunctionHandle },
     #[error("Collection '{}' is not part of this library", handle.name())]
     CollectionNotPartOfThisLib {
         handle: collection::CollectionHandle,
@@ -334,8 +328,8 @@ impl<T> Deref for Handle<T> {
 
 #[derive(Debug, Clone)]
 pub enum Symbol {
-    NativeFunction(NativeFunctionHandle),
-    Struct(NativeStructType),
+    Function(FunctionHandle),
+    Struct(StructType),
     Enum(EnumHandle),
     Class(ClassHandle),
     StaticClass(StaticClassHandle),
@@ -347,9 +341,8 @@ pub enum Symbol {
 #[derive(Debug)]
 pub enum Statement {
     Constants(ConstantSetHandle),
-    NativeStructDeclaration(NativeStructDeclarationHandle),
-    NativeStructDefinition(AnyStructHandle),
-    StructDefinition(NativeStructType),
+    StructDeclaration(StructDeclarationHandle),
+    StructDefinition(StructType),
     EnumDefinition(EnumHandle),
     ErrorType(ErrorType),
     ClassDeclaration(ClassDeclarationHandle),
@@ -358,7 +351,7 @@ pub enum Statement {
     InterfaceDefinition(InterfaceHandle),
     IteratorDeclaration(iterator::IteratorHandle),
     CollectionDeclaration(collection::CollectionHandle),
-    NativeFunctionDeclaration(NativeFunctionHandle),
+    FunctionDefinition(FunctionHandle),
 }
 
 pub struct DeveloperInfo {
@@ -395,31 +388,28 @@ pub struct Library {
     pub c_ffi_prefix: String,
     pub info: LibraryInfo,
     statements: Vec<Statement>,
-    structs: HashMap<NativeStructDeclarationHandle, NativeStructType>,
+    structs: HashMap<StructDeclarationHandle, StructType>,
     _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
     symbols: HashMap<String, Symbol>,
 }
 
 impl Library {
-    pub fn native_functions(&self) -> impl Iterator<Item = &NativeFunctionHandle> {
-        self.into_iter().filter_map(|statement| match statement {
-            Statement::NativeFunctionDeclaration(handle) => Some(handle),
+    pub fn statements(&self) -> impl Iterator<Item = &Statement> {
+        self.statements.iter()
+    }
+
+    pub fn functions(&self) -> impl Iterator<Item = &FunctionHandle> {
+        self.statements().filter_map(|statement| match statement {
+            Statement::FunctionDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn native_structs(&self) -> impl Iterator<Item = &AnyStructHandle> {
-        self.into_iter().filter_map(|statement| match statement {
-            Statement::NativeStructDefinition(handle) => Some(handle),
-            _ => None,
-        })
-    }
-
-    pub fn structs(&self) -> impl Iterator<Item = &NativeStructType> {
+    pub fn structs(&self) -> impl Iterator<Item = &StructType> {
         self.structs.values()
     }
 
-    pub fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&NativeStructType> {
+    pub fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&StructType> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -433,21 +423,21 @@ impl Library {
     }
 
     pub fn constants(&self) -> impl Iterator<Item = &ConstantSetHandle> {
-        self.into_iter().filter_map(|statement| match statement {
+        self.statements().filter_map(|statement| match statement {
             Statement::Constants(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn native_enums(&self) -> impl Iterator<Item = &EnumHandle> {
-        self.into_iter().filter_map(|statement| match statement {
+    pub fn enums(&self) -> impl Iterator<Item = &EnumHandle> {
+        self.statements().filter_map(|statement| match statement {
             Statement::EnumDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
     pub fn error_types(&self) -> impl Iterator<Item = &ErrorType> {
-        self.into_iter().filter_map(|statement| match statement {
+        self.statements().filter_map(|statement| match statement {
             Statement::ErrorType(err) => Some(err),
             _ => None,
         })
@@ -467,7 +457,7 @@ impl Library {
     }
 
     pub fn classes(&self) -> impl Iterator<Item = &ClassHandle> {
-        self.into_iter().filter_map(|statement| match statement {
+        self.statements().filter_map(|statement| match statement {
             Statement::ClassDefinition(handle) => Some(handle),
             _ => None,
         })
@@ -502,7 +492,7 @@ impl Library {
     }
 
     pub fn static_classes(&self) -> impl Iterator<Item = &StaticClassHandle> {
-        self.into_iter().filter_map(|statement| match statement {
+        self.statements().filter_map(|statement| match statement {
             Statement::StaticClassDefinition(handle) => Some(handle),
             _ => None,
         })
@@ -522,7 +512,7 @@ impl Library {
     }
 
     pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
-        self.into_iter().filter_map(|statement| match statement {
+        self.statements().filter_map(|statement| match statement {
             Statement::InterfaceDefinition(handle) => Some(handle),
             _ => None,
         })
@@ -542,7 +532,7 @@ impl Library {
     }
 
     pub fn iterators(&self) -> impl Iterator<Item = &iterator::IteratorHandle> {
-        self.into_iter().filter_map(|statement| match statement {
+        self.statements().filter_map(|statement| match statement {
             Statement::IteratorDeclaration(handle) => Some(handle),
             _ => None,
         })
@@ -564,7 +554,7 @@ impl Library {
     }
 
     pub fn collections(&self) -> impl Iterator<Item = &collection::CollectionHandle> {
-        self.into_iter().filter_map(|statement| match statement {
+        self.statements().filter_map(|statement| match statement {
             Statement::CollectionDeclaration(handle) => Some(handle),
             _ => None,
         })
@@ -590,74 +580,73 @@ impl Library {
     }
 }
 
-impl<'a> IntoIterator for &'a Library {
-    type Item = &'a Statement;
-    type IntoIter = std::slice::Iter<'a, Statement>;
-    fn into_iter(self) -> Self::IntoIter {
-        self.statements.iter()
-    }
-}
-
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum NativeStructType {
+pub enum StructType {
     /// this will disappear when we only have specialized structs
     Any(AnyStructHandle),
     /// structs that may be used as native function parameters
     FStruct(FStructHandle, AnyStructHandle),
 }
 
-impl From<AnyStructHandle> for NativeStructType {
+impl From<AnyStructHandle> for StructType {
     fn from(x: AnyStructHandle) -> Self {
-        NativeStructType::Any(x)
+        StructType::Any(x)
     }
 }
 
-impl From<FStructHandle> for NativeStructType {
+impl From<FStructHandle> for StructType {
     fn from(x: FStructHandle) -> Self {
-        NativeStructType::FStruct(x.clone(), x.to_any_struct())
+        StructType::FStruct(x.clone(), x.to_any_struct())
     }
 }
 
-impl NativeStructType {
-    pub fn declaration(&self) -> NativeStructDeclarationHandle {
+impl StructType {
+    pub fn get_any_struct(&self) -> &AnyStructHandle {
         match self {
-            NativeStructType::Any(x) => x.declaration.clone(),
-            NativeStructType::FStruct(_, x) => x.declaration.clone(),
+            StructType::Any(x) => x,
+            StructType::FStruct(_, x) => x,
+        }
+    }
+
+    pub fn declaration(&self) -> StructDeclarationHandle {
+        match self {
+            StructType::Any(x) => x.declaration.clone(),
+            StructType::FStruct(_, x) => x.declaration.clone(),
         }
     }
 
     pub fn doc(&self) -> &Doc {
         match self {
-            NativeStructType::Any(x) => &x.doc,
-            NativeStructType::FStruct(_, x) => &x.doc,
+            StructType::Any(x) => &x.doc,
+            StructType::FStruct(_, x) => &x.doc,
         }
     }
 
     pub fn name(&self) -> &str {
         match self {
-            NativeStructType::Any(x) => x.name(),
-            NativeStructType::FStruct(_, x) => x.name(),
+            StructType::Any(x) => x.name(),
+            StructType::FStruct(_, x) => x.name(),
         }
     }
 
     pub fn visibility(&self) -> Visibility {
         match self {
-            NativeStructType::Any(x) => x.visibility,
-            NativeStructType::FStruct(_, x) => x.visibility,
+            StructType::Any(x) => x.visibility,
+            StructType::FStruct(_, x) => x.visibility,
         }
     }
 
     pub fn fields(&self) -> impl Iterator<Item = &AnyStructField> {
         match self {
-            NativeStructType::Any(x) => x.fields.iter(),
-            NativeStructType::FStruct(_, x) => x.fields.iter(),
+            StructType::Any(x) => x.fields.iter(),
+            StructType::FStruct(_, x) => x.fields.iter(),
         }
     }
 
     pub fn all_fields_have_defaults(&self) -> bool {
         match self {
-            NativeStructType::Any(x) => x.all_fields_have_defaults(),
-            NativeStructType::FStruct(_, x) => x.all_fields_have_defaults(),
+            StructType::Any(x) => x.all_fields_have_defaults(),
+            StructType::FStruct(_, x) => x.all_fields_have_defaults(),
         }
     }
 
@@ -675,8 +664,8 @@ pub struct LibraryBuilder {
     statements: Vec<Statement>,
     symbol_names: HashSet<String>,
 
-    native_structs_declarations: HashSet<NativeStructDeclarationHandle>,
-    native_structs: HashMap<NativeStructDeclarationHandle, NativeStructType>,
+    structs_declarations: HashSet<StructDeclarationHandle>,
+    structs: HashMap<StructDeclarationHandle, StructType>,
 
     native_enums: HashSet<EnumHandle>,
 
@@ -689,7 +678,7 @@ pub struct LibraryBuilder {
     iterators: HashSet<iterator::IteratorHandle>,
     collections: HashSet<collection::CollectionHandle>,
 
-    native_functions: HashSet<NativeFunctionHandle>,
+    native_functions: HashSet<FunctionHandle>,
 }
 
 impl LibraryBuilder {
@@ -703,8 +692,8 @@ impl LibraryBuilder {
             statements: Vec::new(),
             symbol_names: HashSet::new(),
 
-            native_structs_declarations: HashSet::new(),
-            native_structs: HashMap::new(),
+            structs_declarations: HashSet::new(),
+            structs: HashMap::new(),
 
             native_enums: HashSet::new(),
 
@@ -727,13 +716,12 @@ impl LibraryBuilder {
         for statement in &self.statements {
             match statement {
                 Statement::Constants(_) => {}
-                Statement::NativeStructDeclaration(handle) => {
+                Statement::StructDeclaration(handle) => {
                     symbols.insert(
                         handle.name.clone(),
-                        Symbol::Struct(self.native_structs.get(handle).unwrap().clone()),
+                        Symbol::Struct(self.structs.get(handle).unwrap().clone()),
                     );
                 }
-                Statement::NativeStructDefinition(_) => (),
                 Statement::StructDefinition(_) => (),
                 Statement::EnumDefinition(handle) => {
                     symbols.insert(handle.name.clone(), Symbol::Enum(handle.clone()));
@@ -758,8 +746,8 @@ impl LibraryBuilder {
                         Symbol::Collection(handle.clone()),
                     );
                 }
-                Statement::NativeFunctionDeclaration(handle) => {
-                    symbols.insert(handle.name.clone(), Symbol::NativeFunction(handle.clone()));
+                Statement::FunctionDefinition(handle) => {
+                    symbols.insert(handle.name.clone(), Symbol::Function(handle.clone()));
                 }
             }
         }
@@ -770,7 +758,7 @@ impl LibraryBuilder {
             c_ffi_prefix: self.c_ffi_prefix.unwrap_or(self.name),
             info: self.info,
             statements: self.statements,
-            structs: self.native_structs,
+            structs: self.structs,
             _classes: self.classes,
             symbols,
         };
@@ -813,27 +801,24 @@ impl LibraryBuilder {
         Ok(ConstantSetBuilder::new(self, name))
     }
 
-    /// Forward declare a native structure
-    pub fn declare_native_struct<T: Into<String>>(
-        &mut self,
-        name: T,
-    ) -> Result<NativeStructDeclarationHandle> {
+    /// Forward declare a struct
+    pub fn declare_struct<T: Into<String>>(&mut self, name: T) -> Result<StructDeclarationHandle> {
         let name = name.into();
         self.check_unique_symbol(&name)?;
-        let handle = NativeStructDeclarationHandle::new(NativeStructDeclaration::new(name));
-        self.native_structs_declarations.insert(handle.clone());
+        let handle = StructDeclarationHandle::new(StructDeclaration::new(name));
+        self.structs_declarations.insert(handle.clone());
         self.statements
-            .push(Statement::NativeStructDeclaration(handle.clone()));
+            .push(Statement::StructDeclaration(handle.clone()));
         Ok(handle)
     }
 
     /// Define ANY native structure - TODO - this will be removed in favor of specialized struct types
-    pub fn define_native_struct(
+    pub fn define_any_struct(
         &mut self,
-        declaration: &NativeStructDeclarationHandle,
+        declaration: &StructDeclarationHandle,
     ) -> Result<AnyStructBuilder> {
-        self.validate_native_struct_declaration(declaration)?;
-        if !self.native_structs.contains_key(declaration) {
+        self.validate_struct_declaration(declaration)?;
+        if !self.structs.contains_key(declaration) {
             Ok(AnyStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::NativeStructAlreadyDefined {
@@ -845,10 +830,10 @@ impl LibraryBuilder {
     /// Define a structure that can be used in native function arguments
     pub fn define_fstruct(
         &mut self,
-        declaration: &NativeStructDeclarationHandle,
+        declaration: &StructDeclarationHandle,
     ) -> Result<FStructBuilder> {
-        self.validate_native_struct_declaration(declaration)?;
-        if !self.native_structs.contains_key(declaration) {
+        self.validate_struct_declaration(declaration)?;
+        if !self.structs.contains_key(declaration) {
             Ok(FStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::NativeStructAlreadyDefined {
@@ -864,13 +849,10 @@ impl LibraryBuilder {
         Ok(EnumBuilder::new(self, name))
     }
 
-    pub fn declare_native_function<T: Into<String>>(
-        &mut self,
-        name: T,
-    ) -> Result<NativeFunctionBuilder> {
+    pub fn define_function<T: Into<String>>(&mut self, name: T) -> Result<FunctionBuilder> {
         let name = name.into();
         self.check_unique_symbol(&name)?;
-        Ok(NativeFunctionBuilder::new(self, name))
+        Ok(FunctionBuilder::new(self, name))
     }
 
     pub fn declare_class<T: Into<String>>(&mut self, name: T) -> Result<ClassDeclarationHandle> {
@@ -912,7 +894,7 @@ impl LibraryBuilder {
 
     pub fn define_iterator(
         &mut self,
-        native_func: &NativeFunctionHandle,
+        native_func: &FunctionHandle,
         item_type: &AnyStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         self.define_iterator_impl(false, native_func, item_type)
@@ -920,7 +902,7 @@ impl LibraryBuilder {
 
     pub fn define_iterator_with_lifetime(
         &mut self,
-        native_func: &NativeFunctionHandle,
+        native_func: &FunctionHandle,
         item_type: &AnyStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         self.define_iterator_impl(true, native_func, item_type)
@@ -929,7 +911,7 @@ impl LibraryBuilder {
     fn define_iterator_impl(
         &mut self,
         has_lifetime: bool,
-        native_func: &NativeFunctionHandle,
+        native_func: &FunctionHandle,
         item_type: &AnyStructHandle,
     ) -> Result<iterator::IteratorHandle> {
         let iter = iterator::IteratorHandle::new(iterator::Iterator::new(
@@ -945,9 +927,9 @@ impl LibraryBuilder {
 
     pub fn define_collection(
         &mut self,
-        create_func: &NativeFunctionHandle,
-        delete_func: &NativeFunctionHandle,
-        add_func: &NativeFunctionHandle,
+        create_func: &FunctionHandle,
+        delete_func: &FunctionHandle,
+        add_func: &FunctionHandle,
     ) -> Result<collection::CollectionHandle> {
         let collection = collection::CollectionHandle::new(collection::Collection::new(
             create_func,
@@ -970,7 +952,7 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_native_function(&self, native_function: &NativeFunctionHandle) -> Result<()> {
+    fn validate_function(&self, native_function: &FunctionHandle) -> Result<()> {
         if self.native_functions.contains(native_function) {
             Ok(())
         } else {
@@ -982,13 +964,11 @@ impl LibraryBuilder {
 
     fn validate_type(&self, type_to_validate: &AnyType) -> Result<()> {
         match type_to_validate {
-            AnyType::StructRef(native_struct) => {
-                self.validate_native_struct_declaration(native_struct)
-            }
+            AnyType::StructRef(native_struct) => self.validate_struct_declaration(native_struct),
             AnyType::Struct(native_struct) => {
-                self.validate_native_struct(&NativeStructType::Any(native_struct.clone()))
+                self.validate_struct(&StructType::Any(native_struct.clone()))
             }
-            AnyType::Basic(BasicType::Enum(native_enum)) => self.validate_native_enum(native_enum),
+            AnyType::Basic(BasicType::Enum(native_enum)) => self.validate_enum(native_enum),
             AnyType::Interface(interface) => self.validate_interface(interface),
             AnyType::ClassRef(class_declaration) => {
                 self.validate_class_declaration(class_declaration)
@@ -999,11 +979,8 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_native_struct_declaration(
-        &self,
-        native_struct: &NativeStructDeclarationHandle,
-    ) -> Result<()> {
-        if self.native_structs_declarations.contains(native_struct) {
+    fn validate_struct_declaration(&self, native_struct: &StructDeclarationHandle) -> Result<()> {
+        if self.structs_declarations.contains(native_struct) {
             Ok(())
         } else {
             Err(BindingError::NativeStructNotPartOfThisLib {
@@ -1012,11 +989,8 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_native_struct(&self, native_struct: &NativeStructType) -> Result<()> {
-        if self
-            .native_structs
-            .contains_key(&native_struct.declaration())
-        {
+    fn validate_struct(&self, native_struct: &StructType) -> Result<()> {
+        if self.structs.contains_key(&native_struct.declaration()) {
             Ok(())
         } else {
             Err(BindingError::NativeStructNotPartOfThisLib {
@@ -1025,7 +999,7 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_native_enum(&self, native_enum: &EnumHandle) -> Result<()> {
+    fn validate_enum(&self, native_enum: &EnumHandle) -> Result<()> {
         if self.native_enums.contains(native_enum) {
             Ok(())
         } else {

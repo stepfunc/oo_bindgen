@@ -4,9 +4,9 @@ use crate::*;
 
 #[derive(Debug)]
 pub struct Collection {
-    pub create_func: NativeFunctionHandle,
-    pub delete_func: NativeFunctionHandle,
-    pub add_func: NativeFunctionHandle,
+    pub create_func: FunctionHandle,
+    pub delete_func: FunctionHandle,
+    pub add_func: FunctionHandle,
     pub collection_type: ClassDeclarationHandle,
     pub item_type: AnyType,
     pub has_reserve: bool,
@@ -14,9 +14,9 @@ pub struct Collection {
 
 impl Collection {
     pub(crate) fn new(
-        create_func: &NativeFunctionHandle,
-        delete_func: &NativeFunctionHandle,
-        add_func: &NativeFunctionHandle,
+        create_func: &FunctionHandle,
+        delete_func: &FunctionHandle,
+        add_func: &FunctionHandle,
     ) -> Result<Collection> {
         // Validate constructor
         let collection_type = if let ReturnType::Type(AnyType::ClassRef(collection_type), _) =

@@ -228,7 +228,7 @@ fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
 }
 
 fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-    for native_enum in lib.native_enums() {
+    for native_enum in lib.enums() {
         // Open file
         let mut filename = config.output_dir.clone();
         filename.push(&native_enum.name);

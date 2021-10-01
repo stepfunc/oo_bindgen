@@ -17,7 +17,7 @@ pub(crate) fn generate_enums_cache(
     // Top-level enums struct
     f.writeln("pub struct Enums")?;
     blocked(&mut f, |f| {
-        for enumeration in lib.native_enums() {
+        for enumeration in lib.enums() {
             f.writeln(&format!(
                 "pub enum_{}: Enum{},",
                 enumeration.name.to_snake_case(),
@@ -36,7 +36,7 @@ pub(crate) fn generate_enums_cache(
         blocked(f, |f| {
             f.writeln("Self")?;
             blocked(f, |f| {
-                for enumeration in lib.native_enums() {
+                for enumeration in lib.enums() {
                     f.writeln(&format!(
                         "enum_{}: Enum{}::init(env),",
                         enumeration.name.to_snake_case(),
@@ -49,7 +49,7 @@ pub(crate) fn generate_enums_cache(
     })?;
 
     // Each enum implementation
-    for enumeration in lib.native_enums() {
+    for enumeration in lib.enums() {
         let enum_name = enumeration.name.to_camel_case();
         let enum_sig = format!("\"L{}/{};\"", lib_path, enum_name);
 

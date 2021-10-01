@@ -7,7 +7,7 @@ use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
 use oo_bindgen::native_struct::AnyStructHandle;
-use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::struct_common::StructDeclarationHandle;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 /// These types are always be pass-by-value in C++
@@ -53,7 +53,7 @@ pub(crate) enum CppType {
     Primitive(Primitive),
     String,
     Struct(AnyStructHandle),
-    StructRef(NativeStructDeclarationHandle),
+    StructRef(StructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),

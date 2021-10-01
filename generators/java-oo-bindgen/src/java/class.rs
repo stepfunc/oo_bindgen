@@ -93,7 +93,7 @@ pub(crate) fn generate_static(
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
-    constructor: &NativeFunctionHandle,
+    constructor: &FunctionHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
@@ -145,7 +145,7 @@ fn generate_constructor(
 
 fn generate_destructor(
     f: &mut dyn Printer,
-    destructor: &NativeFunctionHandle,
+    destructor: &FunctionHandle,
     destruction_mode: &DestructionMode,
     lib: &Library,
 ) -> FormattingResult<()> {

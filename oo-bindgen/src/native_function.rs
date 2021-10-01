@@ -33,7 +33,7 @@ pub enum FArgument {
     String,
     Collection(CollectionHandle),
     Struct(FStructHandle),
-    StructRef(NativeStructDeclarationHandle),
+    StructRef(StructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
 }
@@ -94,8 +94,8 @@ impl From<EnumHandle> for FArgument {
     }
 }
 
-impl From<NativeStructDeclarationHandle> for FArgument {
-    fn from(x: NativeStructDeclarationHandle) -> Self {
+impl From<StructDeclarationHandle> for FArgument {
+    fn from(x: StructDeclarationHandle) -> Self {
         FArgument::StructRef(x)
     }
 }
@@ -114,7 +114,7 @@ impl From<FArgument> for AnyType {
 
 /// C function
 #[derive(Debug)]
-pub struct NativeFunction {
+pub struct Function {
     pub name: String,
     pub return_type: ReturnType,
     pub parameters: Vec<Arg<FArgument>>,
@@ -123,7 +123,7 @@ pub struct NativeFunction {
 }
 
 #[derive(Debug, Clone)]
-pub enum NativeFunctionType {
+pub enum SignatureType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
@@ -134,28 +134,26 @@ pub enum NativeFunctionType {
     ErrorWithReturn(ErrorType, AnyType, DocString),
 }
 
-impl NativeFunction {
-    pub fn get_type(&self) -> NativeFunctionType {
+impl Function {
+    pub fn get_signature_type(&self) -> SignatureType {
         match &self.error_type {
             Some(e) => match &self.return_type {
-                ReturnType::Void => NativeFunctionType::ErrorNoReturn(e.clone()),
+                ReturnType::Void => SignatureType::ErrorNoReturn(e.clone()),
                 ReturnType::Type(t, d) => {
-                    NativeFunctionType::ErrorWithReturn(e.clone(), t.clone(), d.clone())
+                    SignatureType::ErrorWithReturn(e.clone(), t.clone(), d.clone())
                 }
             },
             None => match &self.return_type {
-                ReturnType::Void => NativeFunctionType::NoErrorNoReturn,
-                ReturnType::Type(t, d) => {
-                    NativeFunctionType::NoErrorWithReturn(t.clone(), d.clone())
-                }
+                ReturnType::Void => SignatureType::NoErrorNoReturn,
+                ReturnType::Type(t, d) => SignatureType::NoErrorWithReturn(t.clone(), d.clone()),
             },
         }
     }
 }
 
-pub type NativeFunctionHandle = Handle<NativeFunction>;
+pub type FunctionHandle = Handle<Function>;
 
-pub struct NativeFunctionBuilder<'a> {
+pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
     return_type: Option<ReturnType>,
@@ -164,7 +162,7 @@ pub struct NativeFunctionBuilder<'a> {
     error_type: Option<ErrorType>,
 }
 
-impl<'a> NativeFunctionBuilder<'a> {
+impl<'a> FunctionBuilder<'a> {
     pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
         Self {
             lib,
@@ -242,7 +240,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<NativeFunctionHandle> {
+    pub fn build(self) -> Result<FunctionHandle> {
         let return_type = match self.return_type {
             Some(return_type) => return_type,
             None => {
@@ -261,7 +259,7 @@ impl<'a> NativeFunctionBuilder<'a> {
             }
         };
 
-        let handle = NativeFunctionHandle::new(NativeFunction {
+        let handle = FunctionHandle::new(Function {
             name: self.name,
             return_type,
             parameters: self.params,
@@ -272,7 +270,7 @@ impl<'a> NativeFunctionBuilder<'a> {
         self.lib.native_functions.insert(handle.clone());
         self.lib
             .statements
-            .push(Statement::NativeFunctionDeclaration(handle.clone()));
+            .push(Statement::FunctionDefinition(handle.clone()));
 
         Ok(handle)
     }

@@ -21,8 +21,8 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::native_function::{FArgument, NativeFunctionHandle, ReturnType};
-use oo_bindgen::struct_common::{NativeStructDeclaration, Visibility};
+use oo_bindgen::native_function::{FArgument, FunctionHandle, ReturnType};
+use oo_bindgen::struct_common::{StructDeclaration, Visibility};
 use oo_bindgen::types::{AnyType, Arg, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
@@ -112,10 +112,7 @@ fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
     f.newline()
 }
 
-fn print_native_struct_decl(
-    f: &mut dyn Printer,
-    s: &NativeStructDeclaration,
-) -> FormattingResult<()> {
+fn print_struct_decl(f: &mut dyn Printer, s: &StructDeclaration) -> FormattingResult<()> {
     f.writeln(&format!("struct {};", s.cpp_name()))?;
     f.newline()
 }
@@ -158,7 +155,7 @@ fn get_struct_full_constructor_args(handle: &AnyStructHandle) -> String {
         .join(", ")
 }
 
-fn print_native_struct_header(
+fn print_struct_header(
     f: &mut dyn Printer,
     handle: &AnyStructHandle,
     _lib: &Library,
@@ -374,13 +371,13 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     f.writeln(&format!("class {};", FRIEND_CLASS_NAME))?;
     f.newline()?;
 
-    for statement in lib.into_iter() {
+    for statement in lib.statements() {
         match &statement {
             Statement::Constants(x) => print_constants(f, x)?,
             Statement::EnumDefinition(x) => print_enum(f, x)?,
             Statement::ErrorType(x) => print_exception(f, x)?,
-            Statement::NativeStructDeclaration(x) => print_native_struct_decl(f, x)?,
-            Statement::NativeStructDefinition(x) => print_native_struct_header(f, x, lib)?,
+            Statement::StructDeclaration(x) => print_struct_decl(f, x)?,
+            Statement::StructDefinition(x) => print_struct_header(f, x.get_any_struct(), lib)?,
             Statement::InterfaceDefinition(x) => print_interface(f, x)?,
             Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
             Statement::ClassDefinition(x) => print_class(f, x)?,
@@ -388,13 +385,10 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::IteratorDeclaration(_) => {
                 // custom iterator type is only in CPP
             }
-            Statement::StructDefinition(_) => {
-                // ignoring these for now
-            }
             Statement::CollectionDeclaration(_) => {
                 // only used for transforms ATM
             }
-            Statement::NativeFunctionDeclaration(_) => {
+            Statement::FunctionDefinition(_) => {
                 // not used in C++
             }
         }
@@ -428,7 +422,7 @@ fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
     indented(f, |f| {
         f.writeln("public:")?;
 
-        for handle in lib.native_structs() {
+        for handle in lib.structs() {
             f.writeln(&format!(
                 "static {} to_cpp(const {}& x);",
                 handle.declaration().cpp_name(),
@@ -459,8 +453,8 @@ fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
 }
 
 fn print_friend_class_impl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
-    for handle in lib.native_structs() {
-        print_struct_conversion_impl(lib, f, handle)?;
+    for handle in lib.structs() {
+        print_struct_conversion_impl(lib, f, handle.get_any_struct())?;
     }
 
     f.newline()
@@ -966,7 +960,7 @@ fn print_struct_constructor_impl(
 }
 
 fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
-    if !lib.native_functions().any(|f| f.error_type.is_some()) {
+    if !lib.functions().any(|f| f.error_type.is_some()) {
         return Ok(());
     }
 
@@ -984,7 +978,7 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     fn print_with_returned_value(
         lib: &Library,
         f: &mut dyn Printer,
-        func: &NativeFunctionHandle,
+        func: &FunctionHandle,
         err: &ErrorType,
     ) -> FormattingResult<()> {
         let args = func
@@ -1011,7 +1005,7 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     fn print_without_returned_value(
         lib: &Library,
         f: &mut dyn Printer,
-        func: &NativeFunctionHandle,
+        func: &FunctionHandle,
         err: &ErrorType,
     ) -> FormattingResult<()> {
         let args = func
@@ -1032,7 +1026,7 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 
     // write native function wrappers
     namespace(f, "ex_wrap", |f| {
-        for func in lib.native_functions() {
+        for func in lib.functions() {
             if let Some(err) = &func.error_type {
                 let args = func
                     .parameters
@@ -1086,7 +1080,7 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
         }
         f.newline()?;
 
-        for e in lib.native_enums() {
+        for e in lib.enums() {
             print_enum_conversions(lib, f, e)?;
         }
 
@@ -1104,15 +1098,15 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
     print_exception_wrappers(lib, f)?;
 
     // enum to string helpers
-    for e in lib.native_enums() {
+    for e in lib.enums() {
         print_enum_to_string_impl(f, e)?;
     }
 
     print_friend_class_impl(lib, f)?;
 
     // struct constructors
-    for handle in lib.native_structs() {
-        print_struct_constructor_impl(f, handle)?;
+    for handle in lib.structs() {
+        print_struct_constructor_impl(f, handle.get_any_struct())?;
     }
 
     Ok(())

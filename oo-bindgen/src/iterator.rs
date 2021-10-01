@@ -5,7 +5,7 @@ use crate::*;
 #[derive(Debug)]
 pub struct Iterator {
     pub has_lifetime_annotation: bool,
-    pub native_func: NativeFunctionHandle,
+    pub native_func: FunctionHandle,
     pub iter_type: ClassDeclarationHandle,
     pub item_type: AnyStructHandle,
 }
@@ -13,7 +13,7 @@ pub struct Iterator {
 impl Iterator {
     pub(crate) fn new(
         has_lifetime_annotation: bool,
-        native_func: &NativeFunctionHandle,
+        native_func: &FunctionHandle,
         item_type: &AnyStructHandle,
     ) -> Result<Iterator> {
         match &native_func.return_type {

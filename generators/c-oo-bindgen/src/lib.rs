@@ -56,7 +56,7 @@ use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::struct_common::{NativeStructDeclarationHandle, Visibility};
+use oo_bindgen::struct_common::{StructDeclarationHandle, Visibility};
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 use oo_bindgen::*;
 use std::fs;
@@ -73,16 +73,16 @@ trait CFormatting {
     fn to_c_type(&self, prefix: &str) -> String;
 }
 
-impl CFormatting for NativeStructType {
+impl CFormatting for StructType {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            NativeStructType::Any(x) => x.to_c_type(prefix),
-            NativeStructType::FStruct(_, x) => x.to_c_type(prefix),
+            StructType::Any(x) => x.to_c_type(prefix),
+            StructType::FStruct(_, x) => x.to_c_type(prefix),
         }
     }
 }
 
-impl CFormatting for NativeStructDeclarationHandle {
+impl CFormatting for StructDeclarationHandle {
     fn to_c_type(&self, prefix: &str) -> String {
         format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
     }
@@ -119,7 +119,7 @@ impl CFormatting for Interface {
 impl CFormatting for Symbol {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            Symbol::NativeFunction(handle) => format!("{}_{}", prefix.to_snake_case(), handle.name),
+            Symbol::Function(handle) => format!("{}_{}", prefix.to_snake_case(), handle.name),
             Symbol::Struct(handle) => handle.declaration().to_c_type(prefix),
             Symbol::Enum(handle) => handle.to_c_type(prefix),
             Symbol::Class(handle) => handle.declaration().to_c_type(prefix),
@@ -331,22 +331,22 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
         f.newline()?;
 
         // Iterate through each statement and print them
-        for statement in lib.into_iter() {
+        for statement in lib.statements() {
             match statement {
                 Statement::Constants(handle) => write_constants_definition(f, handle, lib)?,
-                Statement::NativeStructDeclaration(handle) => {
+                Statement::StructDeclaration(handle) => {
                     f.writeln(&format!(
                         "typedef struct {} {};",
                         handle.to_c_type(&lib.c_ffi_prefix),
                         handle.to_c_type(&lib.c_ffi_prefix)
                     ))?;
                 }
-                Statement::NativeStructDefinition(handle) => {
-                    write_struct_definition(f, handle, lib)?
+                Statement::StructDefinition(handle) => {
+                    write_struct_definition(f, handle.get_any_struct(), lib)?
                 }
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
                 Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
-                Statement::NativeFunctionDeclaration(handle) => write_function(f, handle, lib)?,
+                Statement::FunctionDefinition(handle) => write_function(f, handle, lib)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
                 _ => (),
             }
@@ -727,7 +727,7 @@ fn write_class_declaration(
 
 fn write_function_docs(
     f: &mut dyn Printer,
-    handle: &NativeFunctionHandle,
+    handle: &FunctionHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
     doxygen(f, |f| {
@@ -747,19 +747,19 @@ fn write_function_docs(
             f.writeln("@return Error code")
         }
 
-        match handle.get_type() {
-            NativeFunctionType::NoErrorNoReturn => {}
-            NativeFunctionType::NoErrorWithReturn(ret, doc) => {
+        match handle.get_signature_type() {
+            SignatureType::NoErrorNoReturn => {}
+            SignatureType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
                 if let AnyType::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
             }
-            NativeFunctionType::ErrorNoReturn(_) => {
+            SignatureType::ErrorNoReturn(_) => {
                 write_error_return_doc(f)?;
             }
-            NativeFunctionType::ErrorWithReturn(_, ret, doc) => {
+            SignatureType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
                 if let AnyType::Basic(BasicType::Duration(mapping)) = ret {
@@ -775,7 +775,7 @@ fn write_function_docs(
 
 fn write_function(
     f: &mut dyn Printer,
-    handle: &NativeFunctionHandle,
+    handle: &FunctionHandle,
     lib: &Library,
 ) -> FormattingResult<()> {
     write_function_docs(f, handle, lib)?;

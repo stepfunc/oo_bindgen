@@ -304,7 +304,7 @@ impl TryFrom<&str> for DocStringElement {
 }
 
 pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
-    for native_function in lib.native_functions() {
+    for native_function in lib.functions() {
         validate_doc_with_params(
             &native_function.name,
             &native_function.doc,
@@ -337,7 +337,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
         }
     }
 
-    for enumeration in lib.native_enums() {
+    for enumeration in lib.enums() {
         validate_doc(&enumeration.name, &enumeration.doc, lib)?;
         for variant in &enumeration.variants {
             validate_doc(

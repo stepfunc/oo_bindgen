@@ -8,7 +8,7 @@ use oo_bindgen::iterator::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::struct_common::StructDeclarationHandle;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait JniType {
@@ -575,7 +575,7 @@ impl TypeConverter for StructConverter {
     }
 }
 
-struct StructRefConverter(NativeStructDeclarationHandle);
+struct StructRefConverter(StructDeclarationHandle);
 impl TypeConverter for StructRefConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(

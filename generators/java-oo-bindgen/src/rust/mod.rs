@@ -191,7 +191,7 @@ fn generate_functions(
     lib: &Library,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
-    for handle in lib.native_functions() {
+    for handle in lib.functions() {
         if let Some(first_param) = handle.parameters.first() {
             if let FArgument::ClassRef(class_handle) = &first_param.arg_type {
                 // We don't want to generate the `next` methods of iterators
@@ -294,20 +294,20 @@ fn generate_functions(
             f.newline()?;
 
             // Call the C FFI
-            let extra_param = match handle.get_type() {
-                NativeFunctionType::NoErrorNoReturn => {
+            let extra_param = match handle.get_signature_type() {
+                SignatureType::NoErrorNoReturn => {
                     f.newline()?;
                     None
                 }
-                NativeFunctionType::NoErrorWithReturn(_, _) => {
+                SignatureType::NoErrorWithReturn(_, _) => {
                     f.writeln("let _result = ")?;
                     None
                 }
-                NativeFunctionType::ErrorNoReturn(_) => {
+                SignatureType::ErrorNoReturn(_) => {
                     f.writeln("let _result = ")?;
                     None
                 }
-                NativeFunctionType::ErrorWithReturn(_, _, _) => {
+                SignatureType::ErrorWithReturn(_, _, _) => {
                     f.writeln("let mut _out = std::mem::MaybeUninit::uninit();")?;
                     f.writeln("let _result = ")?;
                     Some("_out.as_mut_ptr()".to_string())
@@ -338,9 +338,9 @@ fn generate_functions(
             f.newline()?;
 
             // Convert return value
-            match handle.get_type() {
-                NativeFunctionType::NoErrorNoReturn => (),
-                NativeFunctionType::NoErrorWithReturn(return_type, _) => {
+            match handle.get_signature_type() {
+                SignatureType::NoErrorNoReturn => (),
+                SignatureType::NoErrorWithReturn(return_type, _) => {
                     if let Some(conversion) =
                         return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
                     {
@@ -348,7 +348,7 @@ fn generate_functions(
                         f.write(";")?;
                     }
                 }
-                NativeFunctionType::ErrorNoReturn(error_type) => {
+                SignatureType::ErrorNoReturn(error_type) => {
                     f.writeln("if _result != 0")?;
                     blocked(f, |f| {
                         EnumConverter(error_type.inner).convert_from_rust(
@@ -363,7 +363,7 @@ fn generate_functions(
                         ))
                     })?;
                 }
-                NativeFunctionType::ErrorWithReturn(error_type, return_type, _) => {
+                SignatureType::ErrorWithReturn(error_type, return_type, _) => {
                     f.writeln("let _result = if _result == 0")?;
                     blocked(f, |f| {
                         f.writeln("let _result = unsafe { _out.assume_init() };")?;

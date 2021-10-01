@@ -310,7 +310,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         f.newline()?;
 
         // Write each native functions
-        for handle in lib.native_functions() {
+        for handle in lib.functions() {
             if let Some(first_param) = handle.parameters.first() {
                 if let FArgument::ClassRef(class_handle) = &first_param.arg_type {
                     // We don't want to generate the `next` methods of iterators
@@ -390,7 +390,7 @@ fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
 }
 
 fn generate_enums(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for native_enum in lib.native_enums() {
+    for native_enum in lib.enums() {
         let mut f = create_file(&native_enum.name.to_camel_case(), config, lib)?;
         enumeration::generate(&mut f, native_enum, lib)?;
     }

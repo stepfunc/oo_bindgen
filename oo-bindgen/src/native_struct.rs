@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
 use crate::iterator::IteratorHandle;
-use crate::struct_common::{NativeStructDeclarationHandle, Visibility};
+use crate::struct_common::{StructDeclarationHandle, Visibility};
 use crate::types::{AnyType, BasicType, DurationType};
 use crate::*;
 use std::collections::HashSet;
@@ -22,7 +22,7 @@ pub enum AnyStructFieldType {
     Double(Option<f64>),
     String(Option<String>),
     Struct(AnyStructHandle),
-    StructRef(NativeStructDeclarationHandle),
+    StructRef(StructDeclarationHandle),
     Enum(EnumHandle, Option<String>),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
@@ -101,7 +101,7 @@ pub struct AnyStructField {
 #[derive(Debug)]
 pub struct AnyStruct {
     pub visibility: Visibility,
-    pub declaration: NativeStructDeclarationHandle,
+    pub declaration: StructDeclarationHandle,
     pub fields: Vec<AnyStructField>,
     pub doc: Doc,
 }
@@ -111,7 +111,7 @@ impl AnyStruct {
         &self.declaration.name
     }
 
-    pub fn declaration(&self) -> NativeStructDeclarationHandle {
+    pub fn declaration(&self) -> StructDeclarationHandle {
         self.declaration.clone()
     }
 
@@ -153,17 +153,14 @@ impl From<FStructHandle> for AnyStructHandle {
 pub struct AnyStructBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     struct_type: Visibility,
-    declaration: NativeStructDeclarationHandle,
+    declaration: StructDeclarationHandle,
     elements: Vec<AnyStructField>,
     element_names_set: HashSet<String>,
     doc: Option<Doc>,
 }
 
 impl<'a> AnyStructBuilder<'a> {
-    pub(crate) fn new(
-        lib: &'a mut LibraryBuilder,
-        declaration: NativeStructDeclarationHandle,
-    ) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, declaration: StructDeclarationHandle) -> Self {
         Self {
             lib,
             struct_type: Visibility::Public, // defaults to a public struct
@@ -236,13 +233,14 @@ impl<'a> AnyStructBuilder<'a> {
             doc,
         });
 
-        self.lib.native_structs.insert(
-            handle.declaration.clone(),
-            NativeStructType::Any(handle.clone()),
-        );
+        let struct_type = StructType::Any(handle.clone());
+
+        self.lib
+            .structs
+            .insert(handle.declaration.clone(), struct_type.clone());
         self.lib
             .statements
-            .push(Statement::NativeStructDefinition(handle.clone()));
+            .push(Statement::StructDefinition(struct_type));
 
         Ok(handle)
     }

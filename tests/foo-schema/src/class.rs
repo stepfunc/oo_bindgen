@@ -7,7 +7,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     // Declare each native function
     let testclass_new_func = lib
-        .declare_native_function("testclass_new")?
+        .define_function("testclass_new")?
         .param("value", BasicType::Uint32, "Value")?
         .returns(testclass.clone(), "New TestClass")?
         .doc(doc("Create a new {class:TestClass}")
@@ -24,21 +24,21 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let testclass_destroy_func = lib
-        .declare_native_function("testclass_destroy")?
+        .define_function("testclass_destroy")?
         .param("testclass", testclass.clone(), "Class handle")?
         .returns_nothing()?
         .doc("Destroy a test class")?
         .build()?;
 
     let testclass_get_value_func = lib
-        .declare_native_function("testclass_get_value")?
+        .define_function("testclass_get_value")?
         .param("testclass", testclass.clone(), "TestClass handle")?
         .returns(BasicType::Uint32, "Current value")?
         .doc("Get value (don't forget the {param:testclass}!)")?
         .build()?;
 
     let testclass_increment_value_func = lib
-        .declare_native_function("testclass_increment_value")?
+        .define_function("testclass_increment_value")?
         .param("testclass", testclass.clone(), "TestClass handle")?
         .returns_nothing()?
         .doc("Increment value")?
@@ -56,7 +56,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let testclass_get_value_async_func = lib
-        .declare_native_function("testclass_get_value_async")?
+        .define_function("testclass_get_value_async")?
         .param("testclass", testclass.clone(), "TestClass handle")?
         .param("cb", get_value_cb, "Callback to call with the value")?
         .returns_nothing()?
@@ -64,7 +64,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let testclass_construction_counter = lib
-        .declare_native_function("testclass_construction_counter")?
+        .define_function("testclass_construction_counter")?
         .returns(BasicType::Uint32, "Number of calls to the constructor")?
         .doc("Get number of calls to the constructor")?
         .build()?;

@@ -7,15 +7,15 @@ use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::native_enum::{EnumHandle, EnumVariant};
 use oo_bindgen::native_struct::{AnyStructField, AnyStructHandle};
-use oo_bindgen::struct_common::NativeStructDeclaration;
+use oo_bindgen::struct_common::StructDeclaration;
 use oo_bindgen::types::{AnyType, Arg};
-use oo_bindgen::NativeStructType;
+use oo_bindgen::StructType;
 
 pub(crate) trait CppName {
     fn cpp_name(&self) -> String;
 }
 
-impl CppName for NativeStructDeclaration {
+impl CppName for StructDeclaration {
     fn cpp_name(&self) -> String {
         self.name.to_camel_case()
     }
@@ -96,7 +96,7 @@ impl CppName for ClassHandle {
     }
 }
 
-impl CppName for NativeStructType {
+impl CppName for StructType {
     fn cpp_name(&self) -> String {
         self.name().to_camel_case()
     }

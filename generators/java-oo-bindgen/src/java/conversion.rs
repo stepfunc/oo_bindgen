@@ -105,7 +105,7 @@ impl JavaType for ReturnType {
 
 pub(crate) fn call_native_function(
     f: &mut dyn Printer,
-    method: &NativeFunction,
+    method: &Function,
     return_destination: &str,
     first_param_is_this: bool,
 ) -> FormattingResult<()> {

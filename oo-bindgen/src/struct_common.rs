@@ -12,20 +12,20 @@ pub enum Visibility {
 
 /// C-style structure forward declaration
 #[derive(Debug)]
-pub struct NativeStructDeclaration {
+pub struct StructDeclaration {
     pub name: String,
 }
 
-impl NativeStructDeclaration {
+impl StructDeclaration {
     pub(crate) fn new(name: String) -> Self {
         Self { name }
     }
 }
 
-pub type NativeStructDeclarationHandle = Handle<NativeStructDeclaration>;
+pub type StructDeclarationHandle = Handle<StructDeclaration>;
 
-impl From<NativeStructDeclarationHandle> for AnyType {
-    fn from(x: NativeStructDeclarationHandle) -> Self {
+impl From<StructDeclarationHandle> for AnyType {
+    fn from(x: StructDeclarationHandle) -> Self {
         Self::StructRef(x)
     }
 }

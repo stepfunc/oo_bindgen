@@ -4,7 +4,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
 use oo_bindgen::native_struct::*;
-use oo_bindgen::struct_common::NativeStructDeclarationHandle;
+use oo_bindgen::struct_common::StructDeclarationHandle;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait RustType {
@@ -271,7 +271,7 @@ impl TypeConverter for EnumConverter {
     }
 }
 
-struct StructRefConverter(NativeStructDeclarationHandle);
+struct StructRefConverter(StructDeclarationHandle);
 
 impl TypeConverter for StructRefConverter {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {

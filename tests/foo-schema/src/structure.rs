@@ -13,7 +13,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
         .doc("Enum")?
         .build()?;
 
-    let other_structure = lib.declare_native_struct("OtherStructure")?;
+    let other_structure = lib.declare_struct("OtherStructure")?;
     let other_structure = lib
         .define_fstruct(&other_structure)?
         .add("test", FStructFieldType::Uint16(Some(41)), "test")?
@@ -33,7 +33,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
         .doc("Structure within a structure")?
         .build()?;
 
-    let structure = lib.declare_native_struct("Structure")?;
+    let structure = lib.declare_struct("Structure")?;
 
     let empty_interface = lib
         .define_interface("EmptyInterface", "Interface within a structure")?

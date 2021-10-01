@@ -25,13 +25,13 @@ impl From<ClassDeclarationHandle> for AnyType {
 #[derive(Debug)]
 pub struct Method {
     pub name: String,
-    pub native_function: NativeFunctionHandle,
+    pub native_function: FunctionHandle,
 }
 
 #[derive(Debug)]
 pub struct AsyncMethod {
     pub name: String,
-    pub native_function: NativeFunctionHandle,
+    pub native_function: FunctionHandle,
     pub return_type: AnyType,
     pub return_type_doc: DocString,
     pub one_time_callback_name: String,
@@ -72,8 +72,8 @@ impl DestructionMode {
 #[derive(Debug)]
 pub struct Class {
     pub declaration: ClassDeclarationHandle,
-    pub constructor: Option<NativeFunctionHandle>,
-    pub destructor: Option<NativeFunctionHandle>,
+    pub constructor: Option<FunctionHandle>,
+    pub destructor: Option<FunctionHandle>,
     pub methods: Vec<Method>,
     pub static_methods: Vec<Method>,
     pub async_methods: Vec<AsyncMethod>,
@@ -90,7 +90,7 @@ impl Class {
         self.declaration.clone()
     }
 
-    pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&NativeFunctionHandle> {
+    pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&FunctionHandle> {
         for method in &self.methods {
             if method.name == method_name.as_ref() {
                 return Some(&method.native_function);
@@ -118,8 +118,8 @@ pub type ClassHandle = Handle<Class>;
 pub struct ClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     declaration: ClassDeclarationHandle,
-    constructor: Option<NativeFunctionHandle>,
-    destructor: Option<NativeFunctionHandle>,
+    constructor: Option<FunctionHandle>,
+    destructor: Option<FunctionHandle>,
     methods: Vec<Method>,
     static_methods: Vec<Method>,
     async_methods: Vec<AsyncMethod>,
@@ -154,13 +154,13 @@ impl<'a> ClassBuilder<'a> {
         }
     }
 
-    pub fn constructor(mut self, native_function: &NativeFunctionHandle) -> Result<Self> {
+    pub fn constructor(mut self, native_function: &FunctionHandle) -> Result<Self> {
         if self.constructor.is_some() {
             return Err(BindingError::ConstructorAlreadyDefined {
                 handle: self.declaration,
             });
         }
-        self.lib.validate_native_function(native_function)?;
+        self.lib.validate_function(native_function)?;
 
         if let ReturnType::Type(AnyType::ClassRef(return_type), _) = &native_function.return_type {
             if return_type == &self.declaration {
@@ -175,13 +175,13 @@ impl<'a> ClassBuilder<'a> {
         })
     }
 
-    pub fn destructor(mut self, native_function: &NativeFunctionHandle) -> Result<Self> {
+    pub fn destructor(mut self, native_function: &FunctionHandle) -> Result<Self> {
         if self.destructor.is_some() {
             return Err(BindingError::DestructorAlreadyDefined {
                 handle: self.declaration,
             });
         }
-        self.lib.validate_native_function(native_function)?;
+        self.lib.validate_function(native_function)?;
         self.validate_first_param(native_function)?;
 
         if native_function.error_type.is_some() {
@@ -205,9 +205,9 @@ impl<'a> ClassBuilder<'a> {
     pub fn method<T: Into<String>>(
         mut self,
         name: T,
-        native_function: &NativeFunctionHandle,
+        native_function: &FunctionHandle,
     ) -> Result<Self> {
-        self.lib.validate_native_function(native_function)?;
+        self.lib.validate_function(native_function)?;
         self.validate_first_param(native_function)?;
 
         self.methods.push(Method {
@@ -221,9 +221,9 @@ impl<'a> ClassBuilder<'a> {
     pub fn static_method<T: Into<String>>(
         mut self,
         name: T,
-        native_function: &NativeFunctionHandle,
+        native_function: &FunctionHandle,
     ) -> Result<Self> {
-        self.lib.validate_native_function(native_function)?;
+        self.lib.validate_function(native_function)?;
 
         self.static_methods.push(Method {
             name: name.into(),
@@ -236,9 +236,9 @@ impl<'a> ClassBuilder<'a> {
     pub fn async_method<T: Into<String>>(
         mut self,
         name: T,
-        native_function: &NativeFunctionHandle,
+        native_function: &FunctionHandle,
     ) -> Result<Self> {
-        self.lib.validate_native_function(native_function)?;
+        self.lib.validate_function(native_function)?;
         self.validate_first_param(native_function)?;
 
         // Check that native method has a single callback with a single method,
@@ -363,7 +363,7 @@ impl<'a> ClassBuilder<'a> {
         Ok(handle)
     }
 
-    fn validate_first_param(&self, native_function: &NativeFunctionHandle) -> Result<()> {
+    fn validate_first_param(&self, native_function: &FunctionHandle) -> Result<()> {
         if let Some(first_param) = native_function.parameters.first() {
             if let FArgument::ClassRef(first_param_type) = &first_param.arg_type {
                 if first_param_type == &self.declaration {
@@ -421,9 +421,9 @@ impl<'a> StaticClassBuilder<'a> {
     pub fn static_method<T: Into<String>>(
         mut self,
         name: T,
-        native_function: &NativeFunctionHandle,
+        native_function: &FunctionHandle,
     ) -> Result<Self> {
-        self.lib.validate_native_function(native_function)?;
+        self.lib.validate_function(native_function)?;
 
         self.static_methods.push(Method {
             name: name.into(),

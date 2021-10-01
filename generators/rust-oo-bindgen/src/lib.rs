@@ -77,13 +77,13 @@ impl<'a> RustCodegen<'a> {
     pub fn generate(self) -> FormattingResult<()> {
         let mut f = FilePrinter::new(&self.dest_path)?;
 
-        for statement in self.library.into_iter() {
+        for statement in self.library.statements() {
             match statement {
-                Statement::NativeStructDefinition(handle) => {
-                    self.write_struct_definition(&mut f, handle)?
+                Statement::StructDefinition(handle) => {
+                    self.write_struct_definition(&mut f, handle.get_any_struct())?
                 }
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
-                Statement::NativeFunctionDeclaration(handle) => {
+                Statement::FunctionDefinition(handle) => {
                     Self::write_function(&mut f, handle, &self.library.c_ffi_prefix)?
                 }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
@@ -335,7 +335,7 @@ impl<'a> RustCodegen<'a> {
 
     fn write_function(
         f: &mut dyn Printer,
-        handle: &NativeFunctionHandle,
+        handle: &FunctionHandle,
         prefix: &str,
     ) -> FormattingResult<()> {
         f.writeln("#[allow(clippy::missing_safety_doc)]")?;
@@ -366,17 +366,17 @@ impl<'a> RustCodegen<'a> {
         }
 
         // write the return type
-        match handle.get_type() {
-            NativeFunctionType::NoErrorNoReturn => {
+        match handle.get_signature_type() {
+            SignatureType::NoErrorNoReturn => {
                 f.write(")")?;
             }
-            NativeFunctionType::NoErrorWithReturn(t, _) => {
+            SignatureType::NoErrorWithReturn(t, _) => {
                 f.write(&format!(") -> {}", t.as_c_type()))?;
             }
-            NativeFunctionType::ErrorNoReturn(err) => {
+            SignatureType::ErrorNoReturn(err) => {
                 write_error_return(f, &err)?;
             }
-            NativeFunctionType::ErrorWithReturn(err, ret, _) => {
+            SignatureType::ErrorWithReturn(err, ret, _) => {
                 if !handle.parameters.is_empty() {
                     f.write(", ")?;
                 }
@@ -398,19 +398,18 @@ impl<'a> RustCodegen<'a> {
             }
 
             // invoke the inner function
-            match handle.get_type() {
-                NativeFunctionType::NoErrorNoReturn => {
+            match handle.get_signature_type() {
+                SignatureType::NoErrorNoReturn => {
                     basic_invocation(f, &handle.name)?;
                 }
-                NativeFunctionType::NoErrorWithReturn(ret, _) => {
+                SignatureType::NoErrorWithReturn(ret, _) => {
                     if ret.has_conversion() {
                         f.writeln(&format!("let _result = crate::{}(", handle.name))?;
                     } else {
                         basic_invocation(f, &handle.name)?;
                     }
                 }
-                NativeFunctionType::ErrorWithReturn(_, _, _)
-                | NativeFunctionType::ErrorNoReturn(_) => {
+                SignatureType::ErrorWithReturn(_, _, _) | SignatureType::ErrorNoReturn(_) => {
                     f.writeln(&format!("match crate::{}(", &handle.name))?;
                 }
             }
@@ -425,15 +424,15 @@ impl<'a> RustCodegen<'a> {
             )?;
             f.write(")")?;
 
-            match handle.get_type() {
-                NativeFunctionType::NoErrorNoReturn => {}
-                NativeFunctionType::NoErrorWithReturn(ret, _) => {
+            match handle.get_signature_type() {
+                SignatureType::NoErrorNoReturn => {}
+                SignatureType::NoErrorWithReturn(ret, _) => {
                     if let Some(conversion) = ret.conversion() {
                         f.write(";")?;
                         conversion.convert_to_c(f, "_result", "")?;
                     }
                 }
-                NativeFunctionType::ErrorNoReturn(err) => {
+                SignatureType::ErrorNoReturn(err) => {
                     blocked(f, |f| {
                         let converter = EnumConverter(err.inner.clone());
                         f.writeln("Ok(()) =>")?;
@@ -444,7 +443,7 @@ impl<'a> RustCodegen<'a> {
                         blocked(f, |f| converter.convert_to_c(f, "err", ""))
                     })?;
                 }
-                NativeFunctionType::ErrorWithReturn(err, result_type, _) => {
+                SignatureType::ErrorWithReturn(err, result_type, _) => {
                     blocked(f, |f| {
                         let converter = EnumConverter(err.inner.clone());
                         f.writeln("Ok(x) =>")?;

@@ -12,7 +12,6 @@ mod lifetime;
 mod opaque_struct;
 mod strings;
 
-
 pub use callback::*;
 pub use class::*;
 pub use collection::*;

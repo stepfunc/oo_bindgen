@@ -52,7 +52,7 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
 use oo_bindgen::native_enum::*;
 use oo_bindgen::native_function::*;
-use oo_bindgen::native_struct::*;
+use oo_bindgen::any_struct::*;
 use oo_bindgen::types::AnyType;
 use oo_bindgen::*;
 use std::env;

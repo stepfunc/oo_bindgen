@@ -1,7 +1,7 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
-use oo_bindgen::native_struct::*;
+use oo_bindgen::any_struct::*;
 use oo_bindgen::struct_common::Visibility;
 use oo_bindgen::types::DurationType;
 

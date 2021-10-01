@@ -6,9 +6,10 @@ use oo_bindgen::class::{
 use oo_bindgen::constants::Constant;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::native_enum::{EnumHandle, EnumVariant};
-use oo_bindgen::native_struct::{AnyStructField, AnyStructHandle, StructHandle};
+use oo_bindgen::native_struct::{AnyStructField, AnyStructHandle};
 use oo_bindgen::struct_common::NativeStructDeclaration;
 use oo_bindgen::types::{AnyType, Arg};
+use oo_bindgen::NativeStructType;
 
 pub(crate) trait CppName {
     fn cpp_name(&self) -> String;
@@ -95,7 +96,7 @@ impl CppName for ClassHandle {
     }
 }
 
-impl CppName for StructHandle {
+impl CppName for NativeStructType {
     fn cpp_name(&self) -> String {
         self.name().to_camel_case()
     }

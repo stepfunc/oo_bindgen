@@ -73,6 +73,15 @@ trait CFormatting {
     fn to_c_type(&self, prefix: &str) -> String;
 }
 
+impl CFormatting for NativeStructType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        match self {
+            NativeStructType::Any(x) => x.to_c_type(prefix),
+            NativeStructType::FStruct(_, x) => x.to_c_type(prefix),
+        }
+    }
+}
+
 impl CFormatting for NativeStructDeclarationHandle {
     fn to_c_type(&self, prefix: &str) -> String {
         format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())

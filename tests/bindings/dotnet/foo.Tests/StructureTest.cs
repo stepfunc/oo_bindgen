@@ -4,15 +4,7 @@ using foo;
 
 namespace foo.Tests
 {
-    class TestInterface : IStructureInterface
-    {
-        public Structure lastValue = null;
-
-        public void OnValue(Structure value)
-        {
-            this.lastValue = value;
-        }
-    }
+    class TestInterface : IEmptyInterface {}
 
     public class StructureTest
     {               

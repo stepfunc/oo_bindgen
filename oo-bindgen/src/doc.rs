@@ -193,10 +193,6 @@ pub enum DocReference {
     ///
     /// First string is the struct name, second is the element name inside that struct
     StructElement(String, String),
-    /// Reference a method of a struct
-    ///
-    /// First string is the struct name, second is the method's name
-    StructMethod(String, String),
     /// Reference an enum
     Enum(String),
     /// Reference an enum variant
@@ -274,12 +270,6 @@ impl TryFrom<&str> for DocStringElement {
                 capture.get(2).unwrap().as_str().to_owned(),
             )));
         }
-        if let Some(capture) = RE_STRUCT_METHOD.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::StructMethod(
-                capture.get(1).unwrap().as_str().to_owned(),
-                capture.get(2).unwrap().as_str().to_owned(),
-            )));
-        }
         if let Some(capture) = RE_ENUM.captures(from) {
             return Ok(DocStringElement::Reference(DocReference::Enum(
                 capture.get(1).unwrap().as_str().to_owned(),
@@ -338,10 +328,10 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 
     for structure in lib.structs() {
         validate_doc(structure.name(), structure.doc(), lib)?;
-        for element in structure.elements() {
+        for field in structure.fields() {
             validate_doc(
-                &format!("{}.{}()", structure.name(), element.name),
-                &element.doc,
+                &format!("{}.{}()", structure.name(), field.name),
+                &field.doc,
                 lib,
             )?;
         }
@@ -493,7 +483,7 @@ where
         }
         DocReference::StructElement(struct_name, method_name) => {
             if let Some(handle) = lib.find_struct(struct_name) {
-                if handle.find_element(method_name).is_none() {
+                if handle.find_field(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!(
@@ -507,25 +497,6 @@ where
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
                     ref_name: format!("{}.{}", struct_name.to_string(), method_name.to_string()),
-                });
-            }
-        }
-        DocReference::StructMethod(struct_name, element_name) => {
-            if let Some(handle) = lib.find_struct(struct_name) {
-                if handle.find_method(element_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}()",
-                            struct_name.to_string(),
-                            element_name.to_string()
-                        ),
-                    });
-                }
-            } else {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}()", struct_name.to_string(), element_name.to_string()),
                 });
             }
         }
@@ -680,25 +651,6 @@ mod tests {
                     "foo".to_owned()
                 )),
                 DocStringElement::Text(" struct element.".to_owned()),
-            ]
-            .as_ref(),
-            doc.elements.as_slice()
-        );
-    }
-
-    #[test]
-    fn parse_struct_method() {
-        let doc: DocString = "This is a {struct:MyStruct.bar()} struct method."
-            .try_into()
-            .unwrap();
-        assert_eq!(
-            [
-                DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::StructMethod(
-                    "MyStruct".to_owned(),
-                    "bar".to_owned()
-                )),
-                DocStringElement::Text(" struct method.".to_owned()),
             ]
             .as_ref(),
             doc.elements.as_slice()

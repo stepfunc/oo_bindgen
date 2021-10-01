@@ -88,20 +88,11 @@ fn reference_print(
                 struct_name.to_c_type(&lib.c_ffi_prefix)
             ))?;
         }
-        DocReference::StructMethod(struct_name, method_name) => {
-            let func_name = &lib
-                .find_struct(struct_name)
-                .unwrap()
-                .find_method(method_name)
-                .unwrap()
-                .name;
-            f.write(&format!("@ref {}_{}", lib.c_ffi_prefix, func_name))?;
-        }
         DocReference::StructElement(struct_name, element_name) => {
             let handle = lib.find_struct(struct_name).unwrap();
             f.write(&format!(
                 "@ref {}.{}",
-                handle.definition().to_c_type(&lib.c_ffi_prefix),
+                handle.to_c_type(&lib.c_ffi_prefix),
                 element_name.to_snake_case()
             ))?;
         }

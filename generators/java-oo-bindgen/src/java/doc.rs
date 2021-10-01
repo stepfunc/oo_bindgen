@@ -102,13 +102,6 @@ fn reference_print(
         DocReference::Struct(struct_name) => {
             f.write(&format!("{{@link {}}}", struct_name.to_camel_case()))?;
         }
-        DocReference::StructMethod(struct_name, method_name) => {
-            f.write(&format!(
-                "{{@link {}#{}}}",
-                struct_name.to_camel_case(),
-                method_name.to_mixed_case()
-            ))?;
-        }
         DocReference::StructElement(struct_name, element_name) => {
             f.write(&format!(
                 "{{@link {}#{}}}",

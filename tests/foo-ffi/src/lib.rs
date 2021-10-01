@@ -9,7 +9,6 @@ mod error;
 mod integer;
 mod iterator;
 mod lifetime;
-mod opaque_struct;
 mod strings;
 
 pub use callback::*;
@@ -21,7 +20,6 @@ pub use error::*;
 pub use integer::*;
 pub use iterator::*;
 pub use lifetime::*;
-pub(crate) use opaque_struct::*;
 pub use strings::*;
 
 pub mod ffi;

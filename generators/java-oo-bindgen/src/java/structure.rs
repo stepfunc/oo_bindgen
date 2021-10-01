@@ -1,7 +1,6 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
-use oo_bindgen::error_type::ExceptionType;
 use oo_bindgen::native_struct::*;
 use oo_bindgen::struct_common::Visibility;
 use oo_bindgen::types::DurationType;
@@ -22,12 +21,12 @@ fn field_visibility(struct_type: Visibility) -> &'static str {
 
 pub(crate) fn generate(
     f: &mut impl Printer,
-    native_struct: &StructHandle,
+    native_struct: &NativeStructType,
     lib: &Library,
 ) -> FormattingResult<()> {
     let struct_name = native_struct.name().to_camel_case();
 
-    let doc = match native_struct.definition.visibility() {
+    let doc = match native_struct.visibility() {
         Visibility::Public => native_struct.doc().clone(),
         Visibility::Private => native_struct
             .doc()
@@ -42,7 +41,7 @@ pub(crate) fn generate(
     f.writeln(&format!("public final class {}", struct_name))?;
     blocked(f, |f| {
         // Write Java structure elements
-        for el in native_struct.elements() {
+        for el in native_struct.fields() {
             documentation(f, |f| {
                 javadoc_print(f, &el.doc, lib)?;
 
@@ -88,7 +87,7 @@ pub(crate) fn generate(
 
             f.writeln(&format!(
                 "{} {} {}",
-                field_visibility(native_struct.definition.visibility()),
+                field_visibility(native_struct.visibility()),
                 el.field_type.to_all_types().as_java_primitive(),
                 el.name.to_mixed_case()
             ))?;
@@ -196,7 +195,7 @@ pub(crate) fn generate(
 
         f.newline()?;
 
-        if !native_struct.definition().all_fields_have_defaults() {
+        if !native_struct.all_fields_have_defaults() {
             documentation(f, |f| {
                 f.newline()?;
                 docstring_print(
@@ -211,8 +210,8 @@ pub(crate) fn generate(
                 f.newline()?;
 
                 for param in native_struct
-                    .elements()
-                    .filter(|el| !el.field_type.has_default())
+                    .fields()
+                    .filter(|f| !f.field_type.has_default())
                 {
                     f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
                     docstring_print(f, &param.doc.brief, lib)?;
@@ -223,12 +222,12 @@ pub(crate) fn generate(
 
             f.writeln(&format!(
                 "{} {}(",
-                constructor_visibility(native_struct.definition.visibility()),
+                constructor_visibility(native_struct.visibility()),
                 struct_name,
             ))?;
             f.write(
                 &native_struct
-                    .elements()
+                    .fields()
                     .filter(|el| !el.field_type.has_default())
                     .map(|el| {
                         format!(
@@ -243,7 +242,7 @@ pub(crate) fn generate(
             f.write(")")?;
 
             blocked(f, |f| {
-                for el in native_struct.elements() {
+                for el in native_struct.fields() {
                     if !el.field_type.has_default() {
                         f.writeln(&format!(
                             "this.{} = {};",
@@ -256,137 +255,6 @@ pub(crate) fn generate(
             })?;
 
             f.newline()?;
-        }
-
-        // Write methods
-        for method in &native_struct.methods {
-            documentation(f, |f| {
-                // Print top-level documentation
-                javadoc_print(f, &method.native_function.doc, lib)?;
-                f.newline()?;
-
-                // Print each parameter value
-                for param in method.native_function.parameters.iter().skip(1) {
-                    f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-                    docstring_print(f, &param.doc, lib)?;
-                }
-
-                // Print return value
-                if let ReturnType::Type(_, doc) = &method.native_function.return_type {
-                    f.writeln("@return ")?;
-                    docstring_print(f, doc, lib)?;
-                }
-
-                // Print exception
-                if let Some(error) = &method.native_function.error_type {
-                    f.writeln(&format!(
-                        "@throws {} {}",
-                        error.exception_name.to_camel_case(),
-                        error.inner.name.to_camel_case()
-                    ))?;
-                }
-
-                Ok(())
-            })?;
-
-            f.writeln(&format!(
-                "public {} {}(",
-                method.native_function.return_type.as_java_primitive(),
-                method.name.to_mixed_case()
-            ))?;
-            f.write(
-                &method
-                    .native_function
-                    .parameters
-                    .iter()
-                    .skip(1)
-                    .map(|param| {
-                        format!(
-                            "{} {}",
-                            AnyType::from(param.arg_type.clone()).as_java_primitive(),
-                            param.name.to_mixed_case()
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            )?;
-            f.write(")")?;
-
-            if let Some(error) = &method.native_function.error_type {
-                if error.exception_type == ExceptionType::CheckedException {
-                    f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
-                }
-            }
-
-            blocked(f, |f| {
-                call_native_function(f, &method.native_function, "return ", true)
-            })?;
-        }
-
-        f.newline()?;
-
-        // Write static methods
-        for method in &native_struct.static_methods {
-            documentation(f, |f| {
-                // Print top-level documentation
-                javadoc_print(f, &method.native_function.doc, lib)?;
-                f.newline()?;
-
-                // Print each parameter value
-                for param in method.native_function.parameters.iter() {
-                    f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-                    docstring_print(f, &param.doc, lib)?;
-                }
-
-                // Print return value
-                if let ReturnType::Type(_, doc) = &method.native_function.return_type {
-                    f.writeln("@return ")?;
-                    docstring_print(f, doc, lib)?;
-                }
-
-                // Print exception
-                if let Some(error) = &method.native_function.error_type {
-                    f.writeln(&format!(
-                        "@throws {} {}",
-                        error.exception_name.to_camel_case(),
-                        error.inner.name.to_camel_case()
-                    ))?;
-                }
-
-                Ok(())
-            })?;
-
-            f.writeln(&format!(
-                "public static {} {}(",
-                method.native_function.return_type.as_java_primitive(),
-                method.name.to_mixed_case()
-            ))?;
-            f.write(
-                &method
-                    .native_function
-                    .parameters
-                    .iter()
-                    .map(|param| {
-                        format!(
-                            "{} {}",
-                            AnyType::from(param.arg_type.clone()).as_java_primitive(),
-                            param.name.to_mixed_case()
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            )?;
-            f.write(")")?;
-
-            if let Some(error) = &method.native_function.error_type {
-                if error.exception_type == ExceptionType::CheckedException {
-                    f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
-                }
-            }
-
-            blocked(f, |f| {
-                call_native_function(f, &method.native_function, "return ", false)
-            })?;
         }
 
         Ok(())

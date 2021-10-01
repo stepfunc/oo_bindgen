@@ -20,7 +20,7 @@ fn constructor_visibility(struct_type: Visibility) -> &'static str {
 
 pub(crate) fn generate(
     f: &mut impl Printer,
-    native_struct: &StructHandle,
+    native_struct: &NativeStructType,
     lib: &Library,
 ) -> FormattingResult<()> {
     let struct_name = native_struct.name().to_camel_case();
@@ -30,7 +30,7 @@ pub(crate) fn generate(
     print_imports(f)?;
     f.newline()?;
 
-    let doc = match native_struct.definition.visibility() {
+    let doc = match native_struct.visibility() {
         Visibility::Public => native_struct.doc().clone(),
         Visibility::Private => native_struct
             .doc()
@@ -47,7 +47,7 @@ pub(crate) fn generate(
         f.writeln(&format!("public class {}", struct_name))?;
         blocked(f, |f| {
             // Write .NET structure elements
-            for el in native_struct.elements() {
+            for el in native_struct.fields() {
                 documentation(f, |f| {
                     // Print top-level documentation
                     xmldoc_print(f, &el.doc, lib)?;
@@ -97,7 +97,7 @@ pub(crate) fn generate(
 
                 f.writeln(&format!(
                     "{} {} {}",
-                    field_visibility(native_struct.definition.visibility()),
+                    field_visibility(native_struct.visibility()),
                     el.field_type.to_all_types().as_dotnet_type(),
                     el.name.to_camel_case()
                 ))?;
@@ -206,7 +206,7 @@ pub(crate) fn generate(
             f.newline()?;
 
             // Write constructor
-            if !native_struct.definition().all_fields_have_defaults() {
+            if !native_struct.all_fields_have_defaults() {
                 documentation(f, |f| {
                     f.writeln("<summary>")?;
                     docstring_print(
@@ -221,7 +221,7 @@ pub(crate) fn generate(
                     f.write("</summary>")?;
 
                     for param in native_struct
-                        .elements()
+                        .fields()
                         .filter(|el| !el.field_type.has_default())
                     {
                         f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
@@ -234,12 +234,12 @@ pub(crate) fn generate(
 
                 f.writeln(&format!(
                     "{} {}(",
-                    constructor_visibility(native_struct.definition.visibility()),
+                    constructor_visibility(native_struct.visibility()),
                     struct_name
                 ))?;
                 f.write(
                     &native_struct
-                        .elements()
+                        .fields()
                         .filter(|el| !el.field_type.has_default())
                         .map(|el| {
                             format!(
@@ -254,7 +254,7 @@ pub(crate) fn generate(
                 f.write(")")?;
 
                 blocked(f, |f| {
-                    for el in native_struct.elements() {
+                    for el in native_struct.fields() {
                         if !el.field_type.has_default() {
                             f.writeln(&format!(
                                 "this.{} = {};",
@@ -273,133 +273,6 @@ pub(crate) fn generate(
                 f.newline()?;
             }
 
-            // Write methods
-            for method in &native_struct.methods {
-                documentation(f, |f| {
-                    // Print top-level documentation
-                    xmldoc_print(f, &method.native_function.doc, lib)?;
-                    f.newline()?;
-
-                    // Print each parameter value
-                    for param in method.native_function.parameters.iter().skip(1) {
-                        f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-                        docstring_print(f, &param.doc, lib)?;
-                        f.write("</param>")?;
-                    }
-
-                    // Print return value
-                    if let ReturnType::Type(_, doc) = &method.native_function.return_type {
-                        f.writeln("<returns>")?;
-                        docstring_print(f, doc, lib)?;
-                        f.write("</returns>")?;
-                    }
-
-                    // Print exception
-                    if let Some(error) = &method.native_function.error_type {
-                        f.writeln(&format!(
-                            "<exception cref=\"{}\" />",
-                            error.exception_name.to_camel_case()
-                        ))?;
-                    }
-
-                    Ok(())
-                })?;
-
-                f.writeln(&format!(
-                    "public {} {}(",
-                    method.native_function.return_type.as_dotnet_type(),
-                    method.name.to_camel_case()
-                ))?;
-                f.write(
-                    &method
-                        .native_function
-                        .parameters
-                        .iter()
-                        .skip(1)
-                        .map(|param| {
-                            format!(
-                                "{} {}",
-                                param.arg_type.to_any_type().as_dotnet_type(),
-                                param.name.to_mixed_case()
-                            )
-                        })
-                        .collect::<Vec<String>>()
-                        .join(", "),
-                )?;
-                f.write(")")?;
-
-                blocked(f, |f| {
-                    call_native_function(
-                        f,
-                        &method.native_function,
-                        "return ",
-                        Some("this".to_string()),
-                        false,
-                    )
-                })?;
-            }
-
-            f.newline()?;
-
-            // Write static methods
-            for method in &native_struct.static_methods {
-                documentation(f, |f| {
-                    // Print top-level documentation
-                    xmldoc_print(f, &method.native_function.doc, lib)?;
-                    f.newline()?;
-
-                    // Print each parameter value
-                    for param in method.native_function.parameters.iter().skip(1) {
-                        f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-                        docstring_print(f, &param.doc, lib)?;
-                        f.write("</param>")?;
-                    }
-
-                    // Print return value
-                    if let ReturnType::Type(_, doc) = &method.native_function.return_type {
-                        f.writeln("<returns>")?;
-                        docstring_print(f, doc, lib)?;
-                        f.write("</returns>")?;
-                    }
-
-                    // Print exception
-                    if let Some(error) = &method.native_function.error_type {
-                        f.writeln(&format!(
-                            "<exception cref=\"{}\" />",
-                            error.exception_name.to_camel_case()
-                        ))?;
-                    }
-
-                    Ok(())
-                })?;
-
-                f.writeln(&format!(
-                    "public static {} {}(",
-                    method.native_function.return_type.as_dotnet_type(),
-                    method.name.to_camel_case()
-                ))?;
-                f.write(
-                    &method
-                        .native_function
-                        .parameters
-                        .iter()
-                        .map(|param| {
-                            format!(
-                                "{} {}",
-                                param.arg_type.to_any_type().as_dotnet_type(),
-                                param.name.to_mixed_case()
-                            )
-                        })
-                        .collect::<Vec<String>>()
-                        .join(", "),
-                )?;
-                f.write(")")?;
-
-                blocked(f, |f| {
-                    call_native_function(f, &method.native_function, "return ", None, false)
-                })?;
-            }
-
             Ok(())
         })?;
 
@@ -410,7 +283,7 @@ pub(crate) fn generate(
         f.writeln(&format!("internal struct {}", struct_native_name))?;
         blocked(f, |f| {
             // Write native elements
-            for el in native_struct.elements() {
+            for el in native_struct.fields() {
                 f.writeln(&format!(
                     "{} {};",
                     el.field_type.to_all_types().as_native_type(),
@@ -427,7 +300,7 @@ pub(crate) fn generate(
             ))?;
             blocked(f, |f| {
                 f.writeln(&format!("{} result;", struct_native_name))?;
-                for el in native_struct.elements() {
+                for el in native_struct.fields() {
                     let el_name = el.name.to_camel_case();
 
                     let conversion = el
@@ -449,7 +322,7 @@ pub(crate) fn generate(
             ))?;
             blocked(f, |f| {
                 f.writeln(&format!("{} result = new {}();", struct_name, struct_name))?;
-                for el in native_struct.elements() {
+                for el in native_struct.fields() {
                     let el_name = el.name.to_camel_case();
 
                     let conversion = el
@@ -515,7 +388,7 @@ pub(crate) fn generate(
             // Finalizer
             f.writeln("internal void Dispose()")?;
             blocked(f, |f| {
-                for el in native_struct.elements() {
+                for el in native_struct.fields() {
                     let el_name = el.name.to_camel_case();
 
                     if let Some(cleanup) = el

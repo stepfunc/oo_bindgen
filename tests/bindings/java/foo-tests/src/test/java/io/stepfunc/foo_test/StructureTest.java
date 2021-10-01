@@ -3,7 +3,7 @@ package io.stepfunc.foo_test;
 import io.stepfunc.foo.OtherStructure;
 import io.stepfunc.foo.Structure;
 import io.stepfunc.foo.StructureEnum;
-import io.stepfunc.foo.StructureInterface;
+import io.stepfunc.foo.EmptyInterface;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -12,14 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.joou.Unsigned.*;
 
 public class StructureTest {
-    static class TestInterface implements StructureInterface {
-        public Structure lastValue = null;
-
-        @Override
-        public void onValue(Structure value) {
-            lastValue = value;
-        }
-    }
+    static class TestInterface implements EmptyInterface {}
 
     public static Structure createStructure() {
         return new Structure(new TestInterface());

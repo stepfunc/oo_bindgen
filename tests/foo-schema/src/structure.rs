@@ -35,17 +35,12 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
 
     let structure = lib.declare_native_struct("Structure")?;
 
-    let structure_interface = lib
-        .define_interface("StructureInterface", "Interface within a structure")?
-        .callback("on_value", "Callback on value")?
-        .param("value", structure.clone(), "New value")?
-        .returns_nothing()?
-        .build()?
+    let empty_interface = lib
+        .define_interface("EmptyInterface", "Interface within a structure")?
         .destroy_callback("on_destroy")?
         .build()?;
 
-    lib
-        .define_fstruct(&structure)?
+    lib.define_fstruct(&structure)?
         .add(
             "enum_value",
             FStructFieldType::Enum(structure_enum.clone(), Some("Var2".to_string())),
@@ -126,7 +121,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
             other_structure.clone(),
             "structure_value",
         )?
-        .add("interface_value", structure_interface, "interface_value")?
+        .add(
+            "empty_interface",
+            empty_interface,
+            "interface that does nothing",
+        )?
         .add(
             "duration_millis",
             FStructFieldType::Duration(

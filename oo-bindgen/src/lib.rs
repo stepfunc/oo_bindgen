@@ -335,7 +335,7 @@ impl<T> Deref for Handle<T> {
 #[derive(Debug, Clone)]
 pub enum Symbol {
     NativeFunction(NativeFunctionHandle),
-    Struct(StructHandle),
+    Struct(NativeStructType),
     Enum(EnumHandle),
     Class(ClassHandle),
     StaticClass(StaticClassHandle),
@@ -349,7 +349,7 @@ pub enum Statement {
     Constants(ConstantSetHandle),
     NativeStructDeclaration(NativeStructDeclarationHandle),
     NativeStructDefinition(AnyStructHandle),
-    StructDefinition(StructHandle),
+    StructDefinition(NativeStructType),
     EnumDefinition(EnumHandle),
     ErrorType(ErrorType),
     ClassDeclaration(ClassDeclarationHandle),
@@ -395,7 +395,7 @@ pub struct Library {
     pub c_ffi_prefix: String,
     pub info: LibraryInfo,
     statements: Vec<Statement>,
-    structs: HashMap<NativeStructDeclarationHandle, StructHandle>,
+    structs: HashMap<NativeStructDeclarationHandle, NativeStructType>,
     _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
     symbols: HashMap<String, Symbol>,
 }
@@ -415,11 +415,11 @@ impl Library {
         })
     }
 
-    pub fn structs(&self) -> impl Iterator<Item = &StructHandle> {
+    pub fn structs(&self) -> impl Iterator<Item = &NativeStructType> {
         self.structs.values()
     }
 
-    pub fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&StructHandle> {
+    pub fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&NativeStructType> {
         self.symbol(name)
             .iter()
             .filter_map(|symbol| {
@@ -619,10 +619,17 @@ impl From<FStructHandle> for NativeStructType {
 }
 
 impl NativeStructType {
-    fn declaration(&self) -> NativeStructDeclarationHandle {
+    pub fn declaration(&self) -> NativeStructDeclarationHandle {
         match self {
             NativeStructType::Any(x) => x.declaration.clone(),
             NativeStructType::FStruct(_, x) => x.declaration.clone(),
+        }
+    }
+
+    pub fn doc(&self) -> &Doc {
+        match self {
+            NativeStructType::Any(x) => &x.doc,
+            NativeStructType::FStruct(_, x) => &x.doc,
         }
     }
 
@@ -640,11 +647,22 @@ impl NativeStructType {
         }
     }
 
-    pub fn fields(&self) -> &Vec<AnyStructField> {
+    pub fn fields(&self) -> impl Iterator<Item = &AnyStructField> {
         match self {
-            NativeStructType::Any(x) => &x.fields,
-            NativeStructType::FStruct(_, x) => &x.fields,
+            NativeStructType::Any(x) => x.fields.iter(),
+            NativeStructType::FStruct(_, x) => x.fields.iter(),
         }
+    }
+
+    pub fn all_fields_have_defaults(&self) -> bool {
+        match self {
+            NativeStructType::Any(x) => x.all_fields_have_defaults(),
+            NativeStructType::FStruct(_, x) => x.all_fields_have_defaults(),
+        }
+    }
+
+    pub fn find_field<T: AsRef<str>>(&self, field_name: T) -> Option<&AnyStructField> {
+        self.fields().find(|f| f.name == field_name.as_ref())
     }
 }
 
@@ -659,7 +677,6 @@ pub struct LibraryBuilder {
 
     native_structs_declarations: HashSet<NativeStructDeclarationHandle>,
     native_structs: HashMap<NativeStructDeclarationHandle, NativeStructType>,
-    defined_structs: HashMap<NativeStructType, StructHandle>,
 
     native_enums: HashSet<EnumHandle>,
 
@@ -688,7 +705,6 @@ impl LibraryBuilder {
 
             native_structs_declarations: HashSet::new(),
             native_structs: HashMap::new(),
-            defined_structs: HashMap::new(),
 
             native_enums: HashSet::new(),
 
@@ -706,20 +722,6 @@ impl LibraryBuilder {
     }
 
     pub fn build(self) -> Result<Library> {
-        // Update all native structs to full structs
-        let mut structs = HashMap::with_capacity(self.defined_structs.len());
-        for structure in self.defined_structs.values() {
-            structs.insert(structure.declaration(), structure.clone());
-        }
-        for native_struct in self.native_structs.values() {
-            if !self.defined_structs.contains_key(native_struct) {
-                structs.insert(
-                    native_struct.declaration(),
-                    StructHandle::new(Struct::new(native_struct.clone())),
-                );
-            }
-        }
-
         // Build symbols map
         let mut symbols = HashMap::new();
         for statement in &self.statements {
@@ -728,7 +730,7 @@ impl LibraryBuilder {
                 Statement::NativeStructDeclaration(handle) => {
                     symbols.insert(
                         handle.name.clone(),
-                        Symbol::Struct(structs.get(handle).unwrap().clone()),
+                        Symbol::Struct(self.native_structs.get(handle).unwrap().clone()),
                     );
                 }
                 Statement::NativeStructDefinition(_) => (),
@@ -768,7 +770,7 @@ impl LibraryBuilder {
             c_ffi_prefix: self.c_ffi_prefix.unwrap_or(self.name),
             info: self.info,
             statements: self.statements,
-            structs,
+            structs: self.native_structs,
             _classes: self.classes,
             symbols,
         };
@@ -851,21 +853,6 @@ impl LibraryBuilder {
         } else {
             Err(BindingError::NativeStructAlreadyDefined {
                 handle: declaration.clone(),
-            })
-        }
-    }
-
-    pub fn define_struct<T>(&mut self, definition: T) -> Result<StructBuilder>
-    where
-        T: Into<NativeStructType>,
-    {
-        let definition = definition.into();
-        self.validate_native_struct(&definition)?;
-        if !self.defined_structs.contains_key(&definition) {
-            Ok(StructBuilder::new(self, definition))
-        } else {
-            Err(BindingError::StructAlreadyDefined {
-                handle: definition.declaration(),
             })
         }
     }

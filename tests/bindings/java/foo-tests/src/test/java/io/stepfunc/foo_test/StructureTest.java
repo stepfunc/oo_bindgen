@@ -12,32 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.joou.Unsigned.*;
 
 public class StructureTest {
-    @Test
-    public void StructureByValueEchoTest() {
-        Structure value = createStructure();
-        Structure result = Structure.structByValueEcho(value);
-        checkStructure(result);
-    }
-
-    @Test
-    public void StructureByReferenceEchoTest() {
-        Structure value = createStructure();
-        Structure result = value.structByReferenceEcho();
-        checkStructure(result);
-    }
-
-    @Test
-    public void InterfaceStruct() {
-        Structure value = createStructure();
-        TestInterface testInterface = new TestInterface();
-        value.interfaceValue = testInterface;
-
-        Structure result = Structure.structByValueEcho(value);
-
-        assertThat(result.interfaceValue).isNotNull();
-        checkStructure(testInterface.lastValue);
-    }
-
     static class TestInterface implements StructureInterface {
         public Structure lastValue = null;
 

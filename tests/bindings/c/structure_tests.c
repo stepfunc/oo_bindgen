@@ -58,20 +58,6 @@ static void check_struct(foo_structure_t* structure)
     assert(structure->duration_seconds == 76);    
 }
 
-static void test_struct_by_value()
-{
-    foo_structure_t test = create_struct();
-    foo_structure_t result = foo_struct_by_value_echo(test);
-    check_struct(&result);
-}
-
-static void test_struct_by_reference()
-{
-    foo_structure_t test = create_struct();
-    foo_structure_t result = foo_struct_by_reference_echo(&test);
-    check_struct(&result);
-}
-
 static void test_struct_init()
 {
     foo_structure_t test = foo_structure_init((foo_structure_interface_t) {NULL, NULL, NULL});
@@ -81,8 +67,6 @@ static void test_struct_init()
 }
 
 void structure_tests()
-{
-    test_struct_by_value();
-    test_struct_by_reference();
+{    
     test_struct_init();
 }

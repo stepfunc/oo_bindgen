@@ -15,36 +15,7 @@ namespace foo.Tests
     }
 
     public class StructureTest
-    {
-        [Fact]
-        public void StructureByValueEchoTest()
-        {
-            var value = CreateStructure();
-            var result = Structure.StructByValueEcho(value);
-            CheckStructure(result);
-        }
-
-        [Fact]
-        public void StructureByReferenceEchoTest()
-        {
-            var value = CreateStructure();
-            var result = value.StructByReferenceEcho();
-            CheckStructure(result);
-        }
-
-        [Fact]
-        public void InterfaceStruct()
-        {
-            var value = CreateStructure();
-            var testInterface = new TestInterface();
-            value.InterfaceValue = testInterface;
-
-            Structure.StructByValueEcho(value);
-
-            Assert.NotNull(testInterface.lastValue);
-            CheckStructure(testInterface.lastValue);
-        }
-
+    {               
         [Fact]
         public void StructureMemoryLeakTest()
         {

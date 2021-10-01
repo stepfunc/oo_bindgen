@@ -11,7 +11,6 @@ mod iterator;
 mod lifetime;
 mod opaque_struct;
 mod strings;
-mod structure;
 
 pub use callback::*;
 pub use class::*;
@@ -24,6 +23,5 @@ pub use iterator::*;
 pub use lifetime::*;
 pub(crate) use opaque_struct::*;
 pub use strings::*;
-pub(crate) use structure::*;
 
 pub mod ffi;

@@ -44,7 +44,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
         .destroy_callback("on_destroy")?
         .build()?;
 
-    let structure = lib
+    lib
         .define_fstruct(&structure)?
         .add(
             "enum_value",
@@ -142,27 +142,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
         )?
         .doc("Test structure")?
         .build()?;
-
-    // Declare each echo function
-    let struct_by_value_echo_func = lib
-        .declare_native_function("struct_by_value_echo")?
-        .param("value", structure.clone(), "Structure to echo")?
-        .returns(structure.clone(), "Echoed structure")?
-        .doc("Echo structure by value")?
-        .build()?;
-
-    let struct_by_reference_echo_func = lib
-        .declare_native_function("struct_by_reference_echo")?
-        .param("value", structure.declaration(), "Structure to echo")?
-        .returns(structure.clone(), "Echoed structure")?
-        .doc("Echo structure by reference")?
-        .build()?;
-
-    // Declare structs methods
-    lib.define_struct(structure)?
-        .static_method("StructByValueEcho", &struct_by_value_echo_func)?
-        .method("StructByReferenceEcho", &struct_by_reference_echo_func)?
-        .build();
 
     Ok(other_structure)
 }

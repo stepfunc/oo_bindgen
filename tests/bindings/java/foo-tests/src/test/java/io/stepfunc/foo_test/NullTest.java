@@ -58,46 +58,12 @@ public class NullTest {
     }
 
     @Test
-    public void NullStruct() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(null);
-        }).withMessage("value");
-    }
-
-    @Test
-    public void NullStructElement() {
-        Structure structure = StructureTest.createStructure();
-        structure.interfaceValue = null;
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(structure);
-        }).withMessage("value");
-    }
-
-    @Test
     public void NullInterface() {
         assertThatIllegalArgumentException().isThrownBy(() -> {
             try(CallbackSource source = new CallbackSource()) {
                 source.setInterface(null);
             }
         }).withMessage("cb");
-    }
-
-    @Test
-    public void NullStructSubStruct() {
-        Structure structure = StructureTest.createStructure();
-        structure.structureValue = null;
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(structure);
-        }).withMessage("value");
-    }
-
-    @Test
-    public void NullStructSubStructElement() {
-        Structure structure = StructureTest.createStructure();
-        structure.structureValue.test = null;
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(structure);
-        }).withMessage("value");
     }
 
     @Test

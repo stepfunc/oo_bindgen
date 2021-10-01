@@ -412,14 +412,13 @@ impl Library {
     pub fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&StructType> {
         self.symbol(name)
             .iter()
-            .filter_map(|symbol| {
+            .find_map(|symbol| {
                 if let Symbol::Struct(handle) = symbol {
                     Some(handle)
                 } else {
                     None
                 }
             })
-            .next()
     }
 
     pub fn constants(&self) -> impl Iterator<Item = &ConstantSetHandle> {
@@ -446,14 +445,13 @@ impl Library {
     pub fn find_enum<T: AsRef<str>>(&self, name: T) -> Option<&EnumHandle> {
         self.symbol(name)
             .iter()
-            .filter_map(|symbol| {
+            .find_map(|symbol| {
                 if let Symbol::Enum(handle) = symbol {
                     Some(handle)
                 } else {
                     None
                 }
             })
-            .next()
     }
 
     pub fn classes(&self) -> impl Iterator<Item = &ClassHandle> {
@@ -469,26 +467,24 @@ impl Library {
     ) -> Option<&ClassDeclarationHandle> {
         self.symbol(name)
             .iter()
-            .filter_map(|symbol| match symbol {
+            .find_map(|symbol| match symbol {
                 Symbol::Class(handle) => Some(&handle.declaration),
                 Symbol::Iterator(handle) => Some(&handle.iter_type),
                 Symbol::Collection(handle) => Some(&handle.collection_type),
                 _ => None,
             })
-            .next()
     }
 
     pub fn find_class<T: AsRef<str>>(&self, name: T) -> Option<&ClassHandle> {
         self.symbol(name)
             .iter()
-            .filter_map(|symbol| {
+            .find_map(|symbol| {
                 if let Symbol::Class(handle) = symbol {
                     Some(handle)
                 } else {
                     None
                 }
             })
-            .next()
     }
 
     pub fn static_classes(&self) -> impl Iterator<Item = &StaticClassHandle> {
@@ -501,14 +497,13 @@ impl Library {
     pub fn find_static_class<T: AsRef<str>>(&self, name: T) -> Option<&StaticClassHandle> {
         self.symbol(name)
             .iter()
-            .filter_map(|symbol| {
+            .find_map(|symbol| {
                 if let Symbol::StaticClass(handle) = symbol {
                     Some(handle)
                 } else {
                     None
                 }
             })
-            .next()
     }
 
     pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
@@ -521,14 +516,13 @@ impl Library {
     pub fn find_interface<T: AsRef<str>>(&self, name: T) -> Option<&InterfaceHandle> {
         self.symbol(name)
             .iter()
-            .filter_map(|symbol| {
+            .find_map(|symbol| {
                 if let Symbol::Interface(handle) = symbol {
                     Some(handle)
                 } else {
                     None
                 }
             })
-            .next()
     }
 
     pub fn iterators(&self) -> impl Iterator<Item = &iterator::IteratorHandle> {
@@ -541,7 +535,7 @@ impl Library {
     pub fn find_iterator<T: AsRef<str>>(&self, name: T) -> Option<&iterator::IteratorHandle> {
         self.statements
             .iter()
-            .filter_map(|statement| {
+            .find_map(|statement| {
                 if let Statement::IteratorDeclaration(handle) = statement {
                     if handle.name() == name.as_ref() {
                         return Some(handle);
@@ -550,7 +544,6 @@ impl Library {
 
                 None
             })
-            .next()
     }
 
     pub fn collections(&self) -> impl Iterator<Item = &collection::CollectionHandle> {
@@ -563,7 +556,7 @@ impl Library {
     pub fn find_collection<T: AsRef<str>>(&self, name: T) -> Option<&collection::CollectionHandle> {
         self.statements
             .iter()
-            .filter_map(|statement| {
+            .find_map(|statement| {
                 if let Statement::CollectionDeclaration(handle) = statement {
                     if handle.name() == name.as_ref() {
                         return Some(handle);
@@ -572,7 +565,6 @@ impl Library {
 
                 None
             })
-            .next()
     }
 
     pub fn symbol<T: AsRef<str>>(&self, symbol_name: T) -> Option<&Symbol> {
@@ -664,21 +656,21 @@ pub struct LibraryBuilder {
     statements: Vec<Statement>,
     symbol_names: HashSet<String>,
 
+    // native stuff
     structs_declarations: HashSet<StructDeclarationHandle>,
     structs: HashMap<StructDeclarationHandle, StructType>,
+    functions: HashSet<FunctionHandle>,
+    enums: HashSet<EnumHandle>,
 
-    native_enums: HashSet<EnumHandle>,
-
+    // oo stuff
     class_declarations: HashSet<ClassDeclarationHandle>,
     classes: HashMap<ClassDeclarationHandle, ClassHandle>,
     static_classes: HashSet<StaticClassHandle>,
-
     interfaces: HashSet<InterfaceHandle>,
 
+    // specialized types
     iterators: HashSet<iterator::IteratorHandle>,
     collections: HashSet<collection::CollectionHandle>,
-
-    native_functions: HashSet<FunctionHandle>,
 }
 
 impl LibraryBuilder {
@@ -695,7 +687,7 @@ impl LibraryBuilder {
             structs_declarations: HashSet::new(),
             structs: HashMap::new(),
 
-            native_enums: HashSet::new(),
+            enums: HashSet::new(),
 
             class_declarations: HashSet::new(),
             classes: HashMap::new(),
@@ -706,7 +698,7 @@ impl LibraryBuilder {
             iterators: HashSet::new(),
             collections: HashSet::new(),
 
-            native_functions: HashSet::new(),
+            functions: HashSet::new(),
         }
     }
 
@@ -953,7 +945,7 @@ impl LibraryBuilder {
     }
 
     fn validate_function(&self, native_function: &FunctionHandle) -> Result<()> {
-        if self.native_functions.contains(native_function) {
+        if self.functions.contains(native_function) {
             Ok(())
         } else {
             Err(BindingError::NativeFunctionNotPartOfThisLib {
@@ -1000,7 +992,7 @@ impl LibraryBuilder {
     }
 
     fn validate_enum(&self, native_enum: &EnumHandle) -> Result<()> {
-        if self.native_enums.contains(native_enum) {
+        if self.enums.contains(native_enum) {
             Ok(())
         } else {
             Err(BindingError::NativeEnumNotPartOfThisLib {

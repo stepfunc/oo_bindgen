@@ -267,7 +267,7 @@ impl<'a> FunctionBuilder<'a> {
             doc,
         });
 
-        self.lib.native_functions.insert(handle.clone());
+        self.lib.functions.insert(handle.clone());
         self.lib
             .statements
             .push(Statement::FunctionDefinition(handle.clone()));

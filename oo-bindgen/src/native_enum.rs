@@ -141,7 +141,7 @@ impl<'a> EnumBuilder<'a> {
             doc,
         });
 
-        self.lib.native_enums.insert(handle.clone());
+        self.lib.enums.insert(handle.clone());
         self.lib
             .statements
             .push(Statement::EnumDefinition(handle.clone()));

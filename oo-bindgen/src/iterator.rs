@@ -1,5 +1,4 @@
 use crate::types::AnyType;
-use crate::Result;
 use crate::*;
 
 #[derive(Debug)]
@@ -15,7 +14,7 @@ impl Iterator {
         has_lifetime_annotation: bool,
         native_func: &FunctionHandle,
         item_type: &AnyStructHandle,
-    ) -> Result<Iterator> {
+    ) -> BindResult<Iterator> {
         match &native_func.return_type {
             ReturnType::Void => {
                 return Err(BindingError::IteratorReturnTypeNotStructRef {

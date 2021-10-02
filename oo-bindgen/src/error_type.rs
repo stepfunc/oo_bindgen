@@ -43,24 +43,22 @@ impl<'a> ErrorTypeBuilder<'a> {
         }
     }
 
-    pub fn add_error<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> Result<Self> {
+    pub fn add_error<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
         Ok(Self {
             inner: self.inner.push(name, doc)?,
             ..self
         })
     }
 
-    pub fn doc<D: Into<Doc>>(self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(self, doc: D) -> BindResult<Self> {
         Ok(Self {
             inner: self.inner.doc(doc)?,
             ..self
         })
     }
 
-    pub fn build(self) -> Result<ErrorType> {
+    pub fn build(self) -> BindResult<ErrorType> {
         let (inner, lib) = self.inner.build_and_release()?;
-
-        lib.check_unique_symbol(&self.exception_name)?;
 
         let err = ErrorType {
             exception_name: self.exception_name,
@@ -68,7 +66,7 @@ impl<'a> ErrorTypeBuilder<'a> {
             inner,
         };
 
-        lib.statements.push(Statement::ErrorType(err.clone()));
+        lib.add_statement(Statement::ErrorType(err.clone()))?;
 
         Ok(err)
     }

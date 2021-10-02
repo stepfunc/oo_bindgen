@@ -142,7 +142,7 @@ impl<'a> ClassBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -154,7 +154,7 @@ impl<'a> ClassBuilder<'a> {
         }
     }
 
-    pub fn constructor(mut self, native_function: &FunctionHandle) -> Result<Self> {
+    pub fn constructor(mut self, native_function: &FunctionHandle) -> BindResult<Self> {
         if self.constructor.is_some() {
             return Err(BindingError::ConstructorAlreadyDefined {
                 handle: self.declaration,
@@ -175,7 +175,7 @@ impl<'a> ClassBuilder<'a> {
         })
     }
 
-    pub fn destructor(mut self, native_function: &FunctionHandle) -> Result<Self> {
+    pub fn destructor(mut self, native_function: &FunctionHandle) -> BindResult<Self> {
         if self.destructor.is_some() {
             return Err(BindingError::DestructorAlreadyDefined {
                 handle: self.declaration,
@@ -206,7 +206,7 @@ impl<'a> ClassBuilder<'a> {
         mut self,
         name: T,
         native_function: &FunctionHandle,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         self.lib.validate_function(native_function)?;
         self.validate_first_param(native_function)?;
 
@@ -222,7 +222,7 @@ impl<'a> ClassBuilder<'a> {
         mut self,
         name: T,
         native_function: &FunctionHandle,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         self.lib.validate_function(native_function)?;
 
         self.static_methods.push(Method {
@@ -237,7 +237,7 @@ impl<'a> ClassBuilder<'a> {
         mut self,
         name: T,
         native_function: &FunctionHandle,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         self.lib.validate_function(native_function)?;
         self.validate_first_param(native_function)?;
 
@@ -310,7 +310,7 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn custom_destroy<T: Into<String>>(mut self, name: T) -> Result<Self> {
+    pub fn custom_destroy<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
         if self.destructor.is_none() {
             return Err(BindingError::NoDestructorForManualDestruction {
                 handle: self.declaration,
@@ -321,7 +321,7 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn disposable_destroy(mut self) -> Result<Self> {
+    pub fn disposable_destroy(mut self) -> BindResult<Self> {
         if self.destructor.is_none() {
             return Err(BindingError::NoDestructorForManualDestruction {
                 handle: self.declaration,
@@ -332,7 +332,7 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn build(self) -> Result<ClassHandle> {
+    pub fn build(self) -> BindResult<ClassHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -354,16 +354,12 @@ impl<'a> ClassBuilder<'a> {
         });
 
         self.lib
-            .classes
-            .insert(handle.declaration.clone(), handle.clone());
-        self.lib
-            .statements
-            .push(Statement::ClassDefinition(handle.clone()));
+            .add_statement(Statement::ClassDefinition(handle.clone()))?;
 
         Ok(handle)
     }
 
-    fn validate_first_param(&self, native_function: &FunctionHandle) -> Result<()> {
+    fn validate_first_param(&self, native_function: &FunctionHandle) -> BindResult<()> {
         if let Some(first_param) = native_function.parameters.first() {
             if let FArgument::ClassRef(first_param_type) = &first_param.arg_type {
                 if first_param_type == &self.declaration {
@@ -406,7 +402,7 @@ impl<'a> StaticClassBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -422,7 +418,7 @@ impl<'a> StaticClassBuilder<'a> {
         mut self,
         name: T,
         native_function: &FunctionHandle,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         self.lib.validate_function(native_function)?;
 
         self.static_methods.push(Method {
@@ -433,7 +429,7 @@ impl<'a> StaticClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn build(self) -> Result<StaticClassHandle> {
+    pub fn build(self) -> BindResult<StaticClassHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -449,10 +445,8 @@ impl<'a> StaticClassBuilder<'a> {
             doc,
         });
 
-        self.lib.static_classes.insert(handle.clone());
         self.lib
-            .statements
-            .push(Statement::StaticClassDefinition(handle.clone()));
+            .add_statement(Statement::StaticClassDefinition(handle.clone()))?;
 
         Ok(handle)
     }

@@ -107,7 +107,7 @@ impl FStructFieldType {
         }
     }
 
-    fn validate(&self) -> Result<()> {
+    fn validate(&self) -> BindResult<()> {
         match self {
             Self::Enum(handle, Some(default)) => handle.validate_contains_variant_name(default),
             _ => Ok(()),
@@ -211,7 +211,7 @@ impl<'a> FStructBuilder<'a> {
         name: S,
         field_type: T,
         doc: D,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         let name = name.into();
         let field_type = field_type.into();
         field_type.validate()?;
@@ -234,7 +234,7 @@ impl<'a> FStructBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -246,7 +246,7 @@ impl<'a> FStructBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<FStructHandle> {
+    pub fn build(self) -> BindResult<FStructHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -266,12 +266,7 @@ impl<'a> FStructBuilder<'a> {
         let struct_type = StructType::FStruct(handle.clone(), handle.to_any_struct());
 
         self.lib
-            .structs
-            .insert(handle.declaration.clone(), struct_type.clone());
-
-        self.lib
-            .statements
-            .push(Statement::StructDefinition(struct_type));
+            .add_statement(Statement::StructDefinition(struct_type))?;
 
         Ok(handle)
     }

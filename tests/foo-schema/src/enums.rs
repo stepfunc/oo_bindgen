@@ -3,7 +3,7 @@ use oo_bindgen::*;
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Define each enum
     let enum_zero_to_five = lib
-        .define_enum("EnumZeroToFive")?
+        .define_enum("EnumZeroToFive")
         .push("Zero", "Zero")?
         .push("One", "One")?
         .push("Two", "Two")?
@@ -14,7 +14,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let enum_one_to_six = lib
-        .define_enum("EnumOneToSix")?
+        .define_enum("EnumOneToSix")
         .variant("One", 1, "One")?
         .push("Two", "Two")?
         .push("Three", "Three")?
@@ -25,7 +25,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let enum_disjoint = lib
-        .define_enum("EnumDisjoint")?
+        .define_enum("EnumDisjoint")
         .variant("Five", 5, "Five")?
         .variant("One", 1, "One")?
         .variant("Twenty", 20, "Twenty")?
@@ -36,42 +36,42 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let enum_single = lib
-        .define_enum("EnumSingle")?
+        .define_enum("EnumSingle")
         .push("Single", "Single")?
         .doc("Single")?
         .build()?;
 
     // Declare each echo function
     let enum_zero_to_five_echo_function = lib
-        .define_function("enum_zero_to_five_echo")?
+        .define_function("enum_zero_to_five_echo")
         .param("value", enum_zero_to_five.clone(), "Enum value")?
         .returns(enum_zero_to_five, "Enum value")?
         .doc("Echo a EnumZeroToFive enum")?
         .build()?;
 
     let enum_one_to_six_echo_function = lib
-        .define_function("enum_one_to_six_echo")?
+        .define_function("enum_one_to_six_echo")
         .param("value", enum_one_to_six.clone(), "Enum value")?
         .returns(enum_one_to_six, "Enum value")?
         .doc("Echo a EnumOneToSix enum")?
         .build()?;
 
     let enum_disjoint_echo_function = lib
-        .define_function("enum_disjoint_echo")?
+        .define_function("enum_disjoint_echo")
         .param("value", enum_disjoint.clone(), "Enum value")?
         .returns(enum_disjoint, "Enum value")?
         .doc("Echo a EnumDisjoint enum")?
         .build()?;
 
     let enum_single_echo_function = lib
-        .define_function("enum_single_echo")?
+        .define_function("enum_single_echo")
         .param("value", enum_single.clone(), "Enum value")?
         .returns(enum_single, "Enum value")?
         .doc("Echo a EnumSingle enum")?
         .build()?;
 
     // Declare static class
-    lib.define_static_class("EnumEchoFunctions")?
+    lib.define_static_class("EnumEchoFunctions")
         .static_method("EnumZeroToFiveEcho", &enum_zero_to_five_echo_function)?
         .static_method("EnumOneToSixEcho", &enum_one_to_six_echo_function)?
         .static_method("EnumDisjointEcho", &enum_disjoint_echo_function)?

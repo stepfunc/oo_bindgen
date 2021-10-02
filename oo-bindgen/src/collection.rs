@@ -1,5 +1,5 @@
 use crate::types::{AnyType, BasicType};
-use crate::Result;
+use crate::BindResult;
 use crate::*;
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ impl Collection {
         create_func: &FunctionHandle,
         delete_func: &FunctionHandle,
         add_func: &FunctionHandle,
-    ) -> Result<Collection> {
+    ) -> BindResult<Collection> {
         // Validate constructor
         let collection_type = if let ReturnType::Type(AnyType::ClassRef(collection_type), _) =
             &create_func.return_type

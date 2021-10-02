@@ -104,13 +104,13 @@ impl<'a> InterfaceBuilder<'a> {
         mut self,
         name: T,
         doc: D,
-    ) -> Result<CallbackFunctionBuilder<'a>> {
+    ) -> BindResult<CallbackFunctionBuilder<'a>> {
         let name = name.into();
         self.check_unique_name(&name)?;
         Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
     }
 
-    pub fn destroy_callback<T: Into<String>>(mut self, name: T) -> Result<Self> {
+    pub fn destroy_callback<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
         match self.destroy_name {
             None => {
                 let name = name.into();
@@ -125,7 +125,7 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn ctx<T: Into<String>>(mut self, name: T) -> Result<Self> {
+    pub fn ctx<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
         match self.arg_name {
             None => {
                 let name = name.into();
@@ -140,7 +140,7 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn build(mut self) -> Result<InterfaceHandle> {
+    pub fn build(mut self) -> BindResult<InterfaceHandle> {
         let arg_name = if let Some(arg_name) = self.arg_name {
             arg_name
         } else {
@@ -162,15 +162,12 @@ impl<'a> InterfaceBuilder<'a> {
             doc: self.doc,
         });
 
-        self.lib.interfaces.insert(handle.clone());
         self.lib
-            .statements
-            .push(Statement::InterfaceDefinition(handle.clone()));
-
+            .add_statement(Statement::InterfaceDefinition(handle.clone()))?;
         Ok(handle)
     }
 
-    fn check_unique_name(&mut self, name: &str) -> Result<()> {
+    fn check_unique_name(&mut self, name: &str) -> BindResult<()> {
         if self.element_names.insert(name.to_string()) {
             Ok(())
         } else {
@@ -208,7 +205,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         name: S,
         arg_type: P,
         doc: D,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         let arg_type = arg_type.into();
         self.builder.lib.validate_type(&arg_type)?;
         self.params.push(CallbackParameter::Parameter(Arg::new(
@@ -219,7 +216,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn ctx<S: Into<String>>(mut self, name: S) -> Result<Self> {
+    pub fn ctx<S: Into<String>>(mut self, name: S) -> BindResult<Self> {
         match self.arg_name {
             None => {
                 let name = name.into();
@@ -233,15 +230,15 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn returns<T: Into<AnyType>, D: Into<DocString>>(self, t: T, d: D) -> Result<Self> {
+    pub fn returns<T: Into<AnyType>, D: Into<DocString>>(self, t: T, d: D) -> BindResult<Self> {
         self.return_type(ReturnType::new(t, d))
     }
 
-    pub fn returns_nothing(self) -> Result<Self> {
+    pub fn returns_nothing(self) -> BindResult<Self> {
         self.return_type(ReturnType::Void)
     }
 
-    fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
+    fn return_type(mut self, return_type: ReturnType) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);
@@ -254,7 +251,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn build(mut self) -> Result<InterfaceBuilder<'a>> {
+    pub fn build(mut self) -> BindResult<InterfaceBuilder<'a>> {
         let arg_name = if let Some(arg_name) = self.arg_name {
             arg_name
         } else {

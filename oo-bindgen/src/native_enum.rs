@@ -22,7 +22,7 @@ impl Enum {
             .find(|variant| variant.name == variant_name.as_ref())
     }
 
-    pub fn validate_contains_variant_name<T: AsRef<str>>(&self, variant_name: T) -> Result<()> {
+    pub fn validate_contains_variant_name<T: AsRef<str>>(&self, variant_name: T) -> BindResult<()> {
         let var_name = variant_name.as_ref();
         if self.find_variant_by_name(var_name).is_none() {
             Err(BindingError::NativeEnumDoesNotContainVariant {
@@ -81,7 +81,7 @@ impl<'a> EnumBuilder<'a> {
         name: T,
         value: i32,
         doc: D,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         let name = name.into();
         let unique_name = self.variant_names.insert(name.to_string());
         let unique_value = self.variant_values.insert(value);
@@ -108,12 +108,12 @@ impl<'a> EnumBuilder<'a> {
         }
     }
 
-    pub fn push<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> Result<Self> {
+    pub fn push<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
         let value = self.next_value;
         self.variant(name, value, doc)
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -125,7 +125,7 @@ impl<'a> EnumBuilder<'a> {
         }
     }
 
-    pub(crate) fn build_and_release(self) -> Result<(EnumHandle, &'a mut LibraryBuilder)> {
+    pub(crate) fn build_and_release(self) -> BindResult<(EnumHandle, &'a mut LibraryBuilder)> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -141,15 +141,13 @@ impl<'a> EnumBuilder<'a> {
             doc,
         });
 
-        self.lib.enums.insert(handle.clone());
         self.lib
-            .statements
-            .push(Statement::EnumDefinition(handle.clone()));
+            .add_statement(Statement::EnumDefinition(handle.clone()))?;
 
         Ok((handle, self.lib))
     }
 
-    pub fn build(self) -> Result<EnumHandle> {
+    pub fn build(self) -> BindResult<EnumHandle> {
         let (ret, _) = self.build_and_release()?;
         Ok(ret)
     }

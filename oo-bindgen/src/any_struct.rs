@@ -82,7 +82,7 @@ impl AnyStructFieldType {
         }
     }
 
-    fn validate(&self) -> Result<()> {
+    fn validate(&self) -> BindResult<()> {
         match self {
             Self::Enum(handle, Some(default)) => handle.validate_contains_variant_name(default),
             _ => Ok(()),
@@ -181,7 +181,7 @@ impl<'a> AnyStructBuilder<'a> {
         name: S,
         element_type: T,
         doc: D,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         let name = name.into();
         let element_type = element_type.into();
         element_type.validate()?;
@@ -204,7 +204,7 @@ impl<'a> AnyStructBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -216,7 +216,7 @@ impl<'a> AnyStructBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<AnyStructHandle> {
+    pub fn build(self) -> BindResult<AnyStructHandle> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -233,14 +233,8 @@ impl<'a> AnyStructBuilder<'a> {
             doc,
         });
 
-        let struct_type = StructType::Any(handle.clone());
-
         self.lib
-            .structs
-            .insert(handle.declaration.clone(), struct_type.clone());
-        self.lib
-            .statements
-            .push(Statement::StructDefinition(struct_type));
+            .add_statement(Statement::StructDefinition(StructType::Any(handle.clone())))?;
 
         Ok(handle)
     }

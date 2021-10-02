@@ -53,7 +53,7 @@ impl<'a> ConstantSetBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -70,7 +70,7 @@ impl<'a> ConstantSetBuilder<'a> {
         name: T,
         value: ConstantValue,
         doc: D,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         let name = name.into();
         if self.names.contains(&name) {
             return Err(BindingError::ConstantNameAlreadyUsed {
@@ -86,7 +86,7 @@ impl<'a> ConstantSetBuilder<'a> {
         Ok(self)
     }
 
-    pub fn build(self) -> Result<()> {
+    pub fn build(self) -> BindResult<()> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -102,7 +102,7 @@ impl<'a> ConstantSetBuilder<'a> {
             doc,
         });
 
-        self.lib.statements.push(Statement::Constants(handle));
+        self.lib.add_statement(Statement::Constants(handle))?;
 
         Ok(())
     }

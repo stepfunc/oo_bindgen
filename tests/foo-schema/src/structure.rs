@@ -6,7 +6,7 @@ use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
     let structure_enum = lib
-        .define_enum("StructureEnum")?
+        .define_enum("StructureEnum")
         .push("Var1", "Var1")?
         .push("Var2", "Var2")?
         .push("Var3", "Var3")?
@@ -36,7 +36,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
     let structure = lib.declare_struct("Structure")?;
 
     let empty_interface = lib
-        .define_interface("EmptyInterface", "Interface within a structure")?
+        .define_interface("EmptyInterface", "Interface within a structure")
         .destroy_callback("on_destroy")?
         .build()?;
 

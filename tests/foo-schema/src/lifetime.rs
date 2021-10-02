@@ -5,7 +5,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let iterator_class = lib.declare_class("IteratorWithLifeTime")?;
     let iterator_item = lib.declare_struct("IteratorItem")?;
     let iterator_next_fn = lib
-        .define_function("next_value_with_lifetime")?
+        .define_function("next_value_with_lifetime")
         .param("it", iterator_class, "Iterator")?
         .returns(iterator_item.clone(), "Iterator Value")?
         .doc("test")?

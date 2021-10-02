@@ -179,7 +179,7 @@ impl<'a> FunctionBuilder<'a> {
         name: T,
         param_type: P,
         doc: D,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         let param_type = param_type.into();
 
         self.lib.validate_type(&param_type.clone().into())?; // TODO
@@ -191,7 +191,7 @@ impl<'a> FunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn returns_nothing(self) -> Result<Self> {
+    pub fn returns_nothing(self) -> BindResult<Self> {
         self.return_type(ReturnType::Void)
     }
 
@@ -199,11 +199,11 @@ impl<'a> FunctionBuilder<'a> {
         self,
         return_type: T,
         doc: D,
-    ) -> Result<Self> {
+    ) -> BindResult<Self> {
         self.return_type(ReturnType::new(return_type, doc))
     }
 
-    fn return_type(mut self, return_type: ReturnType) -> Result<Self> {
+    fn return_type(mut self, return_type: ReturnType) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);
@@ -216,7 +216,7 @@ impl<'a> FunctionBuilder<'a> {
         }
     }
 
-    pub fn fails_with(mut self, err: ErrorType) -> Result<Self> {
+    pub fn fails_with(mut self, err: ErrorType) -> BindResult<Self> {
         if let Some(x) = self.error_type {
             return Err(BindingError::ErrorTypeAlreadyDefined {
                 function: self.name,
@@ -228,7 +228,7 @@ impl<'a> FunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> Result<Self> {
+    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -240,7 +240,7 @@ impl<'a> FunctionBuilder<'a> {
         }
     }
 
-    pub fn build(self) -> Result<FunctionHandle> {
+    pub fn build(self) -> BindResult<FunctionHandle> {
         let return_type = match self.return_type {
             Some(return_type) => return_type,
             None => {
@@ -267,10 +267,8 @@ impl<'a> FunctionBuilder<'a> {
             doc,
         });
 
-        self.lib.functions.insert(handle.clone());
         self.lib
-            .statements
-            .push(Statement::FunctionDefinition(handle.clone()));
+            .add_statement(Statement::FunctionDefinition(handle.clone()))?;
 
         Ok(handle)
     }

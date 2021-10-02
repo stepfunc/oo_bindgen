@@ -17,7 +17,7 @@ pub(crate) fn define(
     let my_class = lib.declare_class("ClassWithPassword")?;
 
     let get_special_number_fb = lib
-        .define_function("get_special_number")?
+        .define_function("get_special_number")
         .param("password", STRING_TYPE, "secret password")?
         .returns(BasicType::Uint32, "unlocked value")?
         .fails_with(error_type.clone())?
@@ -25,7 +25,7 @@ pub(crate) fn define(
         .build()?;
 
     let get_struct_fn = lib
-        .define_function("get_struct")?
+        .define_function("get_struct")
         .param("password", STRING_TYPE, "secret password")?
         .returns(structure, "A struct")?
         .fails_with(error_type.clone())?
@@ -33,7 +33,7 @@ pub(crate) fn define(
         .build()?;
 
     let echo_password_fn = lib
-        .define_function("echo_password")?
+        .define_function("echo_password")
         .param("password", STRING_TYPE, "secret password")?
         .returns(STRING_TYPE, "The password")?
         .fails_with(error_type.clone())?
@@ -41,7 +41,7 @@ pub(crate) fn define(
         .build()?;
 
     let constructor_fn = lib
-        .define_function("create_class_with_password")?
+        .define_function("create_class_with_password")
         .param("password", STRING_TYPE, "secret password")?
         .returns(my_class.clone(), "allocated class")?
         .fails_with(error_type.clone())?
@@ -49,7 +49,7 @@ pub(crate) fn define(
         .build()?;
 
     let get_special_value_fn = lib
-        .define_function("get_special_value_from_class")?
+        .define_function("get_special_value_from_class")
         .param("instance", my_class.clone(), "class instance")?
         .returns(BasicType::Uint32, "special value")?
         .fails_with(error_type)?
@@ -57,7 +57,7 @@ pub(crate) fn define(
         .build()?;
 
     let destructor_fn = lib
-        .define_function("destroy_class_with_password")?
+        .define_function("destroy_class_with_password")
         .param("instance", my_class.clone(), "class to destroy")?
         .returns_nothing()?
         .doc("Destroy an instance")?

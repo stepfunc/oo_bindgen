@@ -4,7 +4,7 @@ use oo_bindgen::*;
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare interface
     let interface = lib
-        .define_interface("CallbackInterface", "Test interface")?
+        .define_interface("CallbackInterface", "Test interface")
         .callback("on_value", "On value callback")?
         .param("value", BasicType::Uint32, "Value")?
         .returns(BasicType::Uint32, "Some value")?
@@ -21,20 +21,20 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     // Declare each native function
     let cbsource_new_func = lib
-        .define_function("cbsource_new")?
+        .define_function("cbsource_new")
         .returns(cbsource.clone(), "Handle to a CallbackSource")?
         .doc("Create a new CallbackSource")?
         .build()?;
 
     let cbsource_destroy_func = lib
-        .define_function("cbsource_destroy")?
+        .define_function("cbsource_destroy")
         .param("cbsource", cbsource.clone(), "Callback source")?
         .returns_nothing()?
         .doc("Destroy a callback source")?
         .build()?;
 
     let cbsource_set_interface = lib
-        .define_function("cbsource_set_interface")?
+        .define_function("cbsource_set_interface")
         .param("cbsource", cbsource.clone(), "Callback source")?
         .param("cb", interface, "Callback to add")?
         .returns_nothing()?
@@ -42,7 +42,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let cbsource_set_value_func = lib
-        .define_function("cbsource_set_value")?
+        .define_function("cbsource_set_value")
         .param("cbsource", cbsource.clone(), "Callback source")?
         .param("value", BasicType::Uint32, "New value")?
         .returns(BasicType::Uint32, "Value returned by the callback")?
@@ -50,7 +50,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let cbsource_set_duration_func = lib
-        .define_function("cbsource_set_duration")?
+        .define_function("cbsource_set_duration")
         .param("cbsource", cbsource.clone(), "Callback source")?
         .param("value", DurationType::Milliseconds, "New duration")?
         .returns(DurationType::Milliseconds, "Some value")?

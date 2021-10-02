@@ -1,5 +1,5 @@
-use crate::native_enum::EnumHandle;
 use crate::any_struct::{AnyStructFieldType, AnyStructHandle};
+use crate::native_enum::EnumHandle;
 
 use crate::callback::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;

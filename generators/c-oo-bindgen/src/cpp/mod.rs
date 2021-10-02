@@ -3,6 +3,7 @@ mod names;
 mod types;
 
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
+use oo_bindgen::any_struct::{AnyStructField, AnyStructFieldType, AnyStructHandle};
 use oo_bindgen::callback::{
     CallbackFunction, CallbackParameter, InterfaceElement, InterfaceHandle,
 };
@@ -11,7 +12,6 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::native_enum::EnumHandle;
-use oo_bindgen::any_struct::{AnyStructField, AnyStructFieldType, AnyStructHandle};
 use oo_bindgen::{Library, Statement};
 use std::path::Path;
 

@@ -696,7 +696,7 @@ fn write_class_declaration(
                     "Iterator of {{struct:{}}}. See @ref {}_{}.",
                     handle.item_type.name(),
                     lib.c_ffi_prefix,
-                    handle.native_func.name
+                    handle.function.name
                 )),
                 lib,
             )

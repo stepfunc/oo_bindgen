@@ -554,7 +554,7 @@ impl LibraryBuilder {
         if !self.structs.contains_key(declaration) {
             Ok(AnyStructBuilder::new(self, declaration.clone()))
         } else {
-            Err(BindingError::NativeStructAlreadyDefined {
+            Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),
             })
         }
@@ -569,7 +569,7 @@ impl LibraryBuilder {
         if !self.structs.contains_key(declaration) {
             Ok(FStructBuilder::new(self, declaration.clone()))
         } else {
-            Err(BindingError::NativeStructAlreadyDefined {
+            Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),
             })
         }
@@ -679,7 +679,7 @@ impl LibraryBuilder {
         if self.functions.contains(native_function) {
             Ok(())
         } else {
-            Err(BindingError::NativeFunctionNotPartOfThisLib {
+            Err(BindingError::FunctionNotPartOfThisLib {
                 handle: native_function.clone(),
             })
         }
@@ -709,7 +709,7 @@ impl LibraryBuilder {
         if self.structs_declarations.contains(native_struct) {
             Ok(())
         } else {
-            Err(BindingError::NativeStructNotPartOfThisLib {
+            Err(BindingError::StructNotPartOfThisLib {
                 handle: native_struct.clone(),
             })
         }
@@ -719,7 +719,7 @@ impl LibraryBuilder {
         if self.structs.contains_key(&native_struct.declaration()) {
             Ok(())
         } else {
-            Err(BindingError::NativeStructNotPartOfThisLib {
+            Err(BindingError::StructNotPartOfThisLib {
                 handle: native_struct.declaration(),
             })
         }
@@ -729,7 +729,7 @@ impl LibraryBuilder {
         if self.enums.contains(native_enum) {
             Ok(())
         } else {
-            Err(BindingError::NativeEnumNotPartOfThisLib {
+            Err(BindingError::EnumNotPartOfThisLib {
                 handle: native_enum.clone(),
             })
         }

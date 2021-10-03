@@ -171,7 +171,7 @@ impl<'a> ClassBuilder<'a> {
 
         Err(BindingError::ConstructorReturnTypeDoesNotMatch {
             handle: self.declaration,
-            native_func: native_function.clone(),
+            function: native_function.clone(),
         })
     }
 
@@ -193,7 +193,7 @@ impl<'a> ClassBuilder<'a> {
         if native_function.parameters.len() != 1 {
             return Err(BindingError::DestructorTakesMoreThanOneParameter {
                 handle: self.declaration,
-                native_func: native_function.clone(),
+                function: native_function.clone(),
             });
         }
 
@@ -249,7 +249,7 @@ impl<'a> ClassBuilder<'a> {
         for param in &native_function.parameters {
             if let FArgument::Interface(ot_cb) = &param.arg_type {
                 if async_method.is_some() {
-                    return Err(BindingError::AsyncNativeMethodTooManyInterface {
+                    return Err(BindingError::AsyncMethodTooManyInterface {
                         handle: native_function.clone(),
                     });
                 }
@@ -302,7 +302,7 @@ impl<'a> ClassBuilder<'a> {
         if let Some(method) = async_method {
             self.async_methods.push(method);
         } else {
-            return Err(BindingError::AsyncNativeMethodNoInterface {
+            return Err(BindingError::AsyncMethodNoInterface {
                 handle: native_function.clone(),
             });
         }
@@ -370,7 +370,7 @@ impl<'a> ClassBuilder<'a> {
 
         Err(BindingError::FirstMethodParameterIsNotClassType {
             handle: self.declaration.clone(),
-            native_func: native_function.clone(),
+            function: native_function.clone(),
         })
     }
 }

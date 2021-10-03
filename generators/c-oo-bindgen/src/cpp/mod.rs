@@ -826,7 +826,7 @@ fn print_iterator_conversions(
     ))?;
     f.writeln("{")?;
     indented(f, |f| {
-        let function_name = format!("{}_{}", lib.c_ffi_prefix, handle.native_func.name);
+        let function_name = format!("{}_{}", lib.c_ffi_prefix, handle.function.name);
         f.writeln(&format!(
             "auto result = std::vector<{}>();",
             handle.item_type.cpp_name()

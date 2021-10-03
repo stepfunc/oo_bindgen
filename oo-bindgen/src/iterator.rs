@@ -4,7 +4,7 @@ use crate::*;
 #[derive(Debug)]
 pub struct Iterator {
     pub has_lifetime_annotation: bool,
-    pub native_func: FunctionHandle,
+    pub function: FunctionHandle,
     pub iter_type: ClassDeclarationHandle,
     pub item_type: AnyStructHandle,
 }
@@ -12,53 +12,53 @@ pub struct Iterator {
 impl Iterator {
     pub(crate) fn new(
         has_lifetime_annotation: bool,
-        native_func: &FunctionHandle,
+        function: &FunctionHandle,
         item_type: &AnyStructHandle,
     ) -> BindResult<Iterator> {
-        match &native_func.return_type {
+        match &function.return_type {
             ReturnType::Void => {
                 return Err(BindingError::IteratorReturnTypeNotStructRef {
-                    handle: native_func.clone(),
+                    handle: function.clone(),
                 })
             }
             ReturnType::Type(return_type, _) => {
                 if *return_type != AnyType::StructRef(item_type.declaration()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
-                        handle: native_func.clone(),
+                        handle: function.clone(),
                     });
                 }
             }
         }
 
-        if native_func.error_type.is_some() {
+        if function.error_type.is_some() {
             return Err(BindingError::IteratorFunctionsCannotFail {
-                handle: native_func.clone(),
+                handle: function.clone(),
             });
         }
 
-        let mut iter = native_func.parameters.iter();
+        let mut iter = function.parameters.iter();
         if let Some(param) = iter.next() {
             if let FArgument::ClassRef(iter_type) = &param.arg_type {
                 if iter.next().is_some() {
                     return Err(BindingError::IteratorNotSingleClassRefParam {
-                        handle: native_func.clone(),
+                        handle: function.clone(),
                     });
                 }
 
                 Ok(Iterator {
                     has_lifetime_annotation,
-                    native_func: native_func.clone(),
+                    function: function.clone(),
                     iter_type: iter_type.clone(),
                     item_type: item_type.clone(),
                 })
             } else {
                 Err(BindingError::IteratorNotSingleClassRefParam {
-                    handle: native_func.clone(),
+                    handle: function.clone(),
                 })
             }
         } else {
             Err(BindingError::IteratorNotSingleClassRefParam {
-                handle: native_func.clone(),
+                handle: function.clone(),
             })
         }
     }

@@ -196,7 +196,7 @@ fn generate_functions(
             if let FArgument::ClassRef(class_handle) = &first_param.arg_type {
                 // We don't want to generate the `next` methods of iterators
                 if let Some(it) = lib.find_iterator(&class_handle.name) {
-                    if &it.native_func == handle {
+                    if &it.function == handle {
                         continue;
                     }
                 }

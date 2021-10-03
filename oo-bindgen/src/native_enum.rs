@@ -25,7 +25,7 @@ impl Enum {
     pub fn validate_contains_variant_name<T: AsRef<str>>(&self, variant_name: T) -> BindResult<()> {
         let var_name = variant_name.as_ref();
         if self.find_variant_by_name(var_name).is_none() {
-            Err(BindingError::NativeEnumDoesNotContainVariant {
+            Err(BindingError::EnumDoesNotContainVariant {
                 name: self.name.to_string(),
                 variant_name: var_name.to_string(),
             })
@@ -94,17 +94,15 @@ impl<'a> EnumBuilder<'a> {
             self.next_value = value + 1;
             Ok(self)
         } else if !unique_name {
-            Err(BindingError::NativeEnumAlreadyContainsVariantWithSameName {
+            Err(BindingError::EnumAlreadyContainsVariantWithSameName {
                 name: self.name,
                 variant_name: name,
             })
         } else {
-            Err(
-                BindingError::NativeEnumAlreadyContainsVariantWithSameValue {
-                    name: self.name,
-                    variant_value: value,
-                },
-            )
+            Err(BindingError::EnumAlreadyContainsVariantWithSameValue {
+                name: self.name,
+                variant_value: value,
+            })
         }
     }
 

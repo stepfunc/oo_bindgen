@@ -210,7 +210,7 @@ impl<'a> FunctionBuilder<'a> {
                 Ok(self)
             }
             Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined {
-                native_func_name: self.name,
+                func_name: self.name,
                 return_type,
             }),
         }
@@ -245,7 +245,7 @@ impl<'a> FunctionBuilder<'a> {
             Some(return_type) => return_type,
             None => {
                 return Err(BindingError::ReturnTypeNotDefined {
-                    native_func_name: self.name,
+                    func_name: self.name,
                 })
             }
         };

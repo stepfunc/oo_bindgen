@@ -245,7 +245,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
                 Ok(self)
             }
             Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined {
-                native_func_name: self.name,
+                func_name: self.name,
                 return_type,
             }),
         }
@@ -260,7 +260,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         };
 
         let return_type = self.return_type.ok_or(BindingError::ReturnTypeNotDefined {
-            native_func_name: self.name.clone(),
+            func_name: self.name.clone(),
         })?;
 
         let cb = CallbackFunction {

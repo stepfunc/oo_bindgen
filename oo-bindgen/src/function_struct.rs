@@ -225,12 +225,10 @@ impl<'a> FStructBuilder<'a> {
             });
             Ok(self)
         } else {
-            Err(
-                BindingError::NativeStructAlreadyContainsElementWithSameName {
-                    handle: self.declaration,
-                    element_name: name,
-                },
-            )
+            Err(BindingError::StructAlreadyContainsFieldWithSameName {
+                handle: self.declaration,
+                field_name: name,
+            })
         }
     }
 

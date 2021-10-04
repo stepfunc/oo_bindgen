@@ -1,7 +1,7 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, ShoutySnakeCase};
-use oo_bindgen::native_enum::*;
+use oo_bindgen::enum_type::*;
 
 pub(crate) fn generate(
     f: &mut impl Printer,

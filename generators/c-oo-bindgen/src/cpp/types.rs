@@ -1,4 +1,4 @@
-use oo_bindgen::native_function::ReturnType;
+use oo_bindgen::function::ReturnType;
 
 use crate::cpp::names::CppName;
 use oo_bindgen::any_struct::AnyStructHandle;
@@ -6,7 +6,7 @@ use oo_bindgen::callback::InterfaceHandle;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::native_enum::EnumHandle;
+use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::struct_common::StructDeclarationHandle;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 

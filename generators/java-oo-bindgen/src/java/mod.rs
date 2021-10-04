@@ -4,7 +4,7 @@ use crate::JavaBindgenConfig;
 use heck::ShoutySnakeCase;
 use heck::{CamelCase, KebabCase};
 use oo_bindgen::formatting::*;
-use oo_bindgen::native_function::*;
+use oo_bindgen::function::*;
 use oo_bindgen::platforms::Platform;
 use oo_bindgen::types::AnyType;
 use oo_bindgen::*;

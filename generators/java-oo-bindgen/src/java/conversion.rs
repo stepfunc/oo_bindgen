@@ -1,7 +1,7 @@
 use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
-use oo_bindgen::native_function::*;
+use oo_bindgen::function::*;
 use oo_bindgen::types::{AnyType, BasicType};
 
 pub(crate) trait JavaType {

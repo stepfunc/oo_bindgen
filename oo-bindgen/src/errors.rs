@@ -1,8 +1,8 @@
 use crate::callback::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
-use crate::native_enum::EnumHandle;
-use crate::native_function::{FunctionHandle, ReturnType};
+use crate::enum_type::EnumHandle;
+use crate::function::{FunctionHandle, ReturnType};
 use crate::struct_common::StructDeclarationHandle;
 use thiserror::Error;
 

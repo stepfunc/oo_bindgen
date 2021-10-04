@@ -48,8 +48,8 @@ use crate::any_struct::*;
 use crate::callback::*;
 use crate::class::*;
 use crate::doc::Doc;
-use crate::native_enum::*;
-use crate::native_function::*;
+use crate::enum_type::*;
+use crate::function::*;
 
 pub use semver::Version;
 
@@ -66,8 +66,8 @@ pub mod function_struct;
 mod handle;
 pub mod iterator;
 mod library;
-pub mod native_enum;
-pub mod native_function;
+pub mod enum_type;
+pub mod function;
 pub mod platforms;
 pub mod struct_common;
 pub mod types;

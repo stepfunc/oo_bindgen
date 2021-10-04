@@ -1,5 +1,5 @@
 use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::native_function::{FunctionHandle, SignatureType};
+use oo_bindgen::function::{FunctionHandle, SignatureType};
 use oo_bindgen::Library;
 
 use crate::conversion::DotnetType;

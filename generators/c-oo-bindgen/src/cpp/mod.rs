@@ -11,7 +11,7 @@ use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::native_enum::EnumHandle;
+use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::{Library, Statement};
 use std::path::Path;
 
@@ -21,7 +21,7 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::native_function::{FArgument, FunctionHandle, ReturnType};
+use oo_bindgen::function::{FArgument, FunctionHandle, ReturnType};
 use oo_bindgen::struct_common::{StructDeclaration, Visibility};
 use oo_bindgen::types::{AnyType, Arg, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;

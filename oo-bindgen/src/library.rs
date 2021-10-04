@@ -1,9 +1,6 @@
 use crate::any_struct::{AnyStructBuilder, AnyStructField, AnyStructHandle};
 use crate::callback::{InterfaceBuilder, InterfaceHandle};
-use crate::class::{
-    ClassBuilder, ClassDeclaration, ClassDeclarationHandle, ClassHandle, StaticClassBuilder,
-    StaticClassHandle,
-};
+use crate::class::*;
 use crate::collection::CollectionHandle;
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 use crate::doc::Doc;
@@ -14,8 +11,9 @@ use crate::enum_type::{EnumBuilder, EnumHandle};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::struct_common::{StructDeclaration, StructDeclarationHandle, Visibility};
 use crate::types::{AnyType, BasicType};
-use crate::*;
 use crate::{BindingError, Version};
+use crate::*;
+
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -48,19 +46,31 @@ pub enum Statement {
 }
 
 impl Statement {
-    pub(crate) fn name(&self) -> Option<&str> {
+    pub(crate) fn unique_name(&self) -> Option<&str> {
         match self {
             Statement::Constants(x) => Some(x.name.as_str()),
             Statement::StructDeclaration(x) => Some(x.name.as_str()),
-            Statement::StructDefinition(_) => None,
+            Statement::StructDefinition(_) => {
+                // the name is shared with the declaration
+                None
+            },
             Statement::EnumDefinition(x) => Some(x.name.as_str()),
             Statement::ErrorType(x) => Some(x.exception_name.as_str()),
             Statement::ClassDeclaration(x) => Some(x.name.as_str()),
-            Statement::ClassDefinition(_) => None,
+            Statement::ClassDefinition(_) => {
+                // the name is shared with the declaration
+                None
+            },
             Statement::StaticClassDefinition(x) => Some(x.name.as_str()),
             Statement::InterfaceDefinition(x) => Some(x.name.as_str()),
-            Statement::IteratorDeclaration(_) => None,
-            Statement::CollectionDeclaration(_) => None,
+            Statement::IteratorDeclaration(_) => {
+                // the name is derived in a language specific way
+                None
+            },
+            Statement::CollectionDeclaration(_) => {
+                // the name is derived in a language specific way
+                None
+            },
             Statement::FunctionDefinition(x) => Some(x.name.as_str()),
         }
     }
@@ -401,7 +411,7 @@ impl LibraryBuilder {
     }
 
     pub(crate) fn add_statement(&mut self, statement: Statement) -> BindResult<()> {
-        if let Some(name) = statement.name() {
+        if let Some(name) = statement.unique_name() {
             self.check_unique_symbol(name)?;
         }
 

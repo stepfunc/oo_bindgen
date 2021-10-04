@@ -3,30 +3,15 @@ use crate::types::Arg;
 use crate::*;
 use std::collections::HashSet;
 
-const DEFAULT_CTX_NAME: &str = "ctx";
-
-#[derive(Debug)]
-pub enum CallbackParameter {
-    Arg(String),
-    Parameter(Arg<AnyType>),
-}
+pub const CTX_VARIABLE_NAME: &str = "ctx";
+pub const DESTROY_FUNC_NAME: &str = "on_destroy";
 
 #[derive(Debug)]
 pub struct CallbackFunction {
     pub name: String,
     pub return_type: ReturnType,
-    pub parameters: Vec<CallbackParameter>,
-    pub arg_name: String,
+    pub arguments: Vec<Arg<AnyType>>,
     pub doc: Doc,
-}
-
-impl CallbackFunction {
-    pub fn params(&self) -> impl Iterator<Item = &Arg<AnyType>> {
-        self.parameters.iter().filter_map(|param| match param {
-            CallbackParameter::Parameter(param) => Some(param),
-            _ => None,
-        })
-    }
 }
 
 #[derive(Debug)]
@@ -125,7 +110,7 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn ctx<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
+    fn ctx<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
         match self.arg_name {
             None => {
                 let name = name.into();
@@ -144,8 +129,8 @@ impl<'a> InterfaceBuilder<'a> {
         let arg_name = if let Some(arg_name) = self.arg_name {
             arg_name
         } else {
-            self = self.ctx(DEFAULT_CTX_NAME)?;
-            DEFAULT_CTX_NAME.to_string()
+            self = self.ctx(CTX_VARIABLE_NAME)?;
+            CTX_VARIABLE_NAME.to_string()
         };
 
         let destroy_name =
@@ -183,8 +168,7 @@ pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
     return_type: Option<ReturnType>,
-    params: Vec<CallbackParameter>,
-    arg_name: Option<String>,
+    arguments: Vec<Arg<AnyType>>,
     doc: Doc,
 }
 
@@ -194,8 +178,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
             builder,
             name,
             return_type: None,
-            params: Vec::new(),
-            arg_name: None,
+            arguments: Vec::new(),
             doc,
         }
     }
@@ -208,26 +191,9 @@ impl<'a> CallbackFunctionBuilder<'a> {
     ) -> BindResult<Self> {
         let arg_type = arg_type.into();
         self.builder.lib.validate_type(&arg_type)?;
-        self.params.push(CallbackParameter::Parameter(Arg::new(
-            arg_type,
-            name.into(),
-            doc.into(),
-        )));
+        self.arguments
+            .push(Arg::new(arg_type, name.into(), doc.into()));
         Ok(self)
-    }
-
-    pub fn ctx<S: Into<String>>(mut self, name: S) -> BindResult<Self> {
-        match self.arg_name {
-            None => {
-                let name = name.into();
-                self.arg_name = Some(name.to_string());
-                self.params.push(CallbackParameter::Arg(name));
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
-                interface_name: self.name,
-            }),
-        }
     }
 
     pub fn returns<T: Into<AnyType>, D: Into<DocString>>(self, t: T, d: D) -> BindResult<Self> {
@@ -252,13 +218,6 @@ impl<'a> CallbackFunctionBuilder<'a> {
     }
 
     pub fn build(mut self) -> BindResult<InterfaceBuilder<'a>> {
-        let arg_name = if let Some(arg_name) = self.arg_name {
-            arg_name
-        } else {
-            self = self.ctx(DEFAULT_CTX_NAME)?;
-            DEFAULT_CTX_NAME.to_string()
-        };
-
         let return_type = self.return_type.ok_or(BindingError::ReturnTypeNotDefined {
             func_name: self.name.clone(),
         })?;
@@ -266,8 +225,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         let cb = CallbackFunction {
             name: self.name,
             return_type,
-            parameters: self.params,
-            arg_name,
+            arguments: self.arguments,
             doc: self.doc,
         };
 

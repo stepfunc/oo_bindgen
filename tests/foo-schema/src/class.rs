@@ -48,11 +48,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_interface("GetValueCallback", "GetValue callback handler")
         .callback("on_value", "On value callback")?
         .param("value", BasicType::Uint32, "Value")?
-        .ctx("data")?
         .returns_nothing()?
         .build()?
         .destroy_callback("on_destroy")?
-        .ctx("data")?
         .build()?;
 
     let testclass_get_value_async_func = lib

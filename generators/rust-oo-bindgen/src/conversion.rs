@@ -353,22 +353,14 @@ pub(crate) trait RustCallbackFunction {
 
 impl RustCallbackFunction for CallbackFunction {
     fn rust_requires_lifetime(&self) -> bool {
-        self.parameters.iter().any(|param| {
-            if let CallbackParameter::Parameter(param) = param {
-                param.arg_type.rust_requires_lifetime()
-            } else {
-                false
-            }
-        })
+        self.arguments
+            .iter()
+            .any(|arg| arg.arg_type.rust_requires_lifetime())
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        self.parameters.iter().any(|param| {
-            if let CallbackParameter::Parameter(param) = param {
-                param.arg_type.c_requires_lifetime()
-            } else {
-                false
-            }
-        })
+        self.arguments
+            .iter()
+            .any(|arg| arg.arg_type.c_requires_lifetime())
     }
 }

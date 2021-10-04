@@ -262,7 +262,7 @@ impl<'a> ClassBuilder<'a> {
                         });
                     }
 
-                    let mut iter = cb.params();
+                    let mut iter = cb.arguments.iter();
                     if let Some(cb_param) = iter.next() {
                         async_method = Some(AsyncMethod {
                             name: name.to_string(),

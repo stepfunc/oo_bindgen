@@ -495,16 +495,13 @@ impl<'a> RustCodegen<'a> {
 
                         f.write(
                             &handle
-                                .parameters
+                                .arguments
                                 .iter()
-                                .map(|param| match param {
-                                    CallbackParameter::Arg(name) => {
-                                        format!("{}: *mut std::os::raw::c_void", name)
-                                    }
-                                    CallbackParameter::Parameter(param) => {
-                                        format!("{}: {}", param.name, param.arg_type.as_c_type())
-                                    }
-                                })
+                                .map(|arg| format!("{}: {}", arg.name, arg.arg_type.as_c_type()))
+                                .chain(std::iter::once(format!(
+                                    "{}: *mut std::os::raw::c_void",
+                                    CTX_VARIABLE_NAME
+                                )))
                                 .collect::<Vec<String>>()
                                 .join(", "),
                         )?;
@@ -513,7 +510,7 @@ impl<'a> RustCodegen<'a> {
                     }
                     InterfaceElement::DestroyFunction(name) => {
                         f.writeln(&format!(
-                            "pub {}: Option<extern \"C\" fn(data: *mut std::os::raw::c_void)>,",
+                            "pub {}: Option<extern \"C\" fn(ctx: *mut std::os::raw::c_void)>,",
                             name
                         ))?;
                     }
@@ -534,7 +531,9 @@ impl<'a> RustCodegen<'a> {
             f.writeln("fn drop(&mut self)")?;
             blocked(f, |f| {
                 f.writeln(&format!("if let Some(cb) = self.{}", handle.destroy_name))?;
-                blocked(f, |f| f.writeln(&format!("cb(self.{});", handle.arg_name)))
+                blocked(f, |f| {
+                    f.writeln(&format!("cb(self.{});", CTX_VARIABLE_NAME))
+                })
             })
         })
     }
@@ -570,14 +569,9 @@ impl<'a> RustCodegen<'a> {
                 ))?;
                 f.write(
                     &callback
-                        .parameters
+                        .arguments
                         .iter()
-                        .filter_map(|param| match param {
-                            CallbackParameter::Arg(_) => None,
-                            CallbackParameter::Parameter(param) => {
-                                Some(format!("{}: {}", param.name, param.arg_type.as_rust_type()))
-                            }
-                        })
+                        .map(|arg| format!("{}: {}", arg.name, arg.arg_type.as_rust_type()))
                         .collect::<Vec<_>>()
                         .join(", "),
                 )?;
@@ -589,25 +583,21 @@ impl<'a> RustCodegen<'a> {
 
                 // Function body
                 blocked(f, |f| {
-                    for param in &callback.parameters {
-                        if let CallbackParameter::Parameter(param) = param {
-                            if let Some(converter) = param.arg_type.conversion() {
-                                converter.convert_to_c(
-                                    f,
-                                    &param.name,
-                                    &format!("let {} = ", param.name),
-                                )?;
-                                f.write(";")?;
-                            }
+                    for arg in &callback.arguments {
+                        if let Some(converter) = arg.arg_type.conversion() {
+                            converter.convert_to_c(
+                                f,
+                                &arg.name,
+                                &format!("let {} = ", arg.name),
+                            )?;
+                            f.write(";")?;
                         }
                     }
                     let params = &callback
-                        .parameters
+                        .arguments
                         .iter()
-                        .map(|param| match param {
-                            CallbackParameter::Arg(name) => format!("self.{}", name),
-                            CallbackParameter::Parameter(param) => param.name.to_string(),
-                        })
+                        .map(|arg| arg.name.to_string())
+                        .chain(std::iter::once(format!("self.{}", CTX_VARIABLE_NAME)))
                         .collect::<Vec<_>>()
                         .join(", ");
                     let call = format!("cb({})", params);

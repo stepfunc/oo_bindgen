@@ -220,7 +220,7 @@ impl DotnetType for AnyType {
                 "I{}NativeAdapter.FromNative({}.{})",
                 handle.name.to_camel_case(),
                 from,
-                handle.arg_name.to_mixed_case()
+                CTX_VARIABLE_NAME.to_mixed_case()
             )),
             Self::Iterator(handle) => Some(format!(
                 "{}Helpers.FromNative({})",
@@ -377,14 +377,14 @@ pub(crate) fn call_dotnet_function(
     return_destination: &str,
 ) -> FormattingResult<()> {
     // Write the type conversions
-    for param in method.params() {
-        let conversion = param
+    for arg in method.arguments.iter() {
+        let conversion = arg
             .arg_type
-            .convert_from_native(&param.name.to_mixed_case())
-            .unwrap_or_else(|| param.name.to_mixed_case());
+            .convert_from_native(&arg.name.to_mixed_case())
+            .unwrap_or_else(|| arg.name.to_mixed_case());
         f.writeln(&format!(
             "var _{} = {};",
-            param.name.to_mixed_case(),
+            arg.name.to_mixed_case(),
             conversion
         ))?;
     }
@@ -404,8 +404,9 @@ pub(crate) fn call_dotnet_function(
 
     f.write(
         &method
-            .params()
-            .map(|param| format!("_{}", param.name.to_mixed_case()))
+            .arguments
+            .iter()
+            .map(|arg| format!("_{}", arg.name.to_mixed_case()))
             .collect::<Vec<String>>()
             .join(", "),
     )?;

@@ -4,7 +4,7 @@ mod types;
 
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::callback::{
-    CallbackFunction, CallbackParameter, InterfaceElement, InterfaceHandle,
+    CallbackFunction, InterfaceElement, InterfaceHandle, CTX_VARIABLE_NAME,
 };
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
@@ -210,15 +210,14 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
         for elem in &handle.elements {
             if let InterfaceElement::CallbackFunction(func) = elem {
                 let args: String = func
-                    .parameters
+                    .arguments
                     .iter()
-                    .flat_map(|p| match p {
-                        CallbackParameter::Arg(_) => None,
-                        CallbackParameter::Parameter(p) => Some(format!(
+                    .map(|arg| {
+                        format!(
                             "{} {}",
-                            p.arg_type.get_cpp_func_argument_type(),
-                            p.cpp_name()
-                        )),
+                            arg.arg_type.get_cpp_func_argument_type(),
+                            arg.cpp_name()
+                        )
                     })
                     .collect::<Vec<String>>()
                     .join(", ");
@@ -736,19 +735,16 @@ fn print_interface_conversions(
 ) -> FormattingResult<()> {
     fn get_invocation(handle: &InterfaceHandle, func: &CallbackFunction) -> String {
         let args = func
-            .parameters
+            .arguments
             .iter()
-            .flat_map(|p| match p {
-                CallbackParameter::Parameter(p) => Some(convert_to_cpp(&p.arg_type, p.cpp_name())),
-                CallbackParameter::Arg(_) => None,
-            })
+            .map(|p| convert_to_cpp(&p.arg_type, p.cpp_name()))
             .collect::<Vec<String>>()
             .join(", ");
 
         format!(
             "reinterpret_cast<{}*>({})->{}({})",
             handle.cpp_name(),
-            func.arg_name.to_snake_case(),
+            CTX_VARIABLE_NAME.to_snake_case(),
             func.cpp_name(),
             args
         )

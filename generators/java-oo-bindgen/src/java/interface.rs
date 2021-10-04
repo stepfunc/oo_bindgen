@@ -31,12 +31,10 @@ pub(crate) fn generate(
                 javadoc_print(f, &func.doc, lib)?;
                 f.newline()?;
 
-                // Print each parameter value
-                for param in &func.parameters {
-                    if let CallbackParameter::Parameter(param) = param {
-                        f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-                        docstring_print(f, &param.doc, lib)?;
-                    }
+                // Print each argument value
+                for arg in &func.arguments {
+                    f.writeln(&format!("@param {} ", arg.name.to_mixed_case()))?;
+                    docstring_print(f, &arg.doc, lib)?;
                 }
 
                 // Print return value
@@ -56,15 +54,14 @@ pub(crate) fn generate(
             ))?;
             f.write(
                 &func
-                    .parameters
+                    .arguments
                     .iter()
-                    .filter_map(|param| match param {
-                        CallbackParameter::Parameter(param) => Some(format!(
+                    .map(|arg| {
+                        format!(
                             "{} {}",
-                            param.arg_type.as_java_primitive(),
-                            param.name.to_mixed_case()
-                        )),
-                        _ => None,
+                            arg.arg_type.as_java_primitive(),
+                            arg.name.to_mixed_case()
+                        )
                     })
                     .collect::<Vec<String>>()
                     .join(", "),

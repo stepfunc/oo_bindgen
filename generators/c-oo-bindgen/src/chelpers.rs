@@ -1,32 +1,28 @@
 use crate::CFormatting;
 use heck::SnakeCase;
-use oo_bindgen::callback::{CallbackFunction, CallbackParameter};
+use oo_bindgen::callback::{CallbackFunction, CTX_VARIABLE_NAME};
 use oo_bindgen::Library;
 
 pub(crate) fn callback_parameters(lib: &Library, func: &CallbackFunction) -> String {
-    func.parameters
+    func.arguments
         .iter()
-        .map(|param| match param {
-            CallbackParameter::Arg(_) => "void*".to_string(),
-            CallbackParameter::Parameter(param) => param.arg_type.to_c_type(&lib.c_ffi_prefix),
-        })
+        .map(|arg| arg.arg_type.to_c_type(&lib.c_ffi_prefix))
+        .chain(std::iter::once("void*".to_string()))
         .collect::<Vec<String>>()
         .join(", ")
 }
 
 pub(crate) fn callback_parameters_with_var_names(lib: &Library, func: &CallbackFunction) -> String {
-    func.parameters
+    func.arguments
         .iter()
-        .map(|param| match param {
-            CallbackParameter::Arg(name) => format!("void* {}", name),
-            CallbackParameter::Parameter(param) => {
-                format!(
-                    "{} {}",
-                    param.arg_type.to_c_type(&lib.c_ffi_prefix),
-                    param.name.to_snake_case()
-                )
-            }
+        .map(|arg| {
+            format!(
+                "{} {}",
+                arg.arg_type.to_c_type(&lib.c_ffi_prefix),
+                arg.name.to_snake_case()
+            )
         })
+        .chain(std::iter::once(format!("void* {}", CTX_VARIABLE_NAME)))
         .collect::<Vec<String>>()
         .join(", ")
 }

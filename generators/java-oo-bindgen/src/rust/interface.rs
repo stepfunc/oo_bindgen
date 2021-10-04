@@ -131,20 +131,22 @@ pub(crate) fn generate_interfaces_cache(
             match element {
                 InterfaceElement::CallbackFunction(callback) => {
                     let params = callback
-                        .parameters
+                        .arguments
                         .iter()
-                        .map(|param| match param {
-                            CallbackParameter::Parameter(param) => format!(
+                        .map(|arg| {
+                            format!(
                                 "{}: {}",
-                                param.name.to_snake_case(),
-                                param.arg_type.as_rust_type(&config.ffi_name)
-                            ),
-                            CallbackParameter::Arg(name) => {
-                                format!("{}: *mut std::ffi::c_void", name)
-                            }
+                                arg.name.to_snake_case(),
+                                arg.arg_type.as_rust_type(&config.ffi_name)
+                            )
                         })
+                        .chain(std::iter::once(format!(
+                            "{}: *mut std::ffi::c_void",
+                            CTX_VARIABLE_NAME
+                        )))
                         .collect::<Vec<_>>()
                         .join(", ");
+
                     f.writeln(&format!(
                         "extern \"C\" fn {}_{}({}) -> {}",
                         interface.name.to_camel_case(),
@@ -160,8 +162,8 @@ pub(crate) fn generate_interfaces_cache(
                             &lib_path,
                             &config.ffi_name,
                             &lib.c_ffi_prefix,
-                            &callback.arg_name,
-                            callback.params().collect(),
+                            CTX_VARIABLE_NAME,
+                            &callback.arguments,
                             &callback.return_type,
                         )?;
 
@@ -222,8 +224,9 @@ fn write_interface_init<'a>(
             let method_sig = format!(
                 "({}){}",
                 callback
-                    .params()
-                    .map(|param| { param.arg_type.as_jni_sig(lib_path) })
+                    .arguments
+                    .iter()
+                    .map(|arg| { arg.arg_type.as_jni_sig(lib_path) })
                     .collect::<Vec<_>>()
                     .join(""),
                 callback.return_type.as_jni_sig(lib_path)
@@ -242,7 +245,7 @@ fn write_interface_init<'a>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn call_java_callback<'a>(
+fn call_java_callback(
     f: &mut dyn Printer,
     interface_name: &str,
     callback_name: &str,
@@ -250,7 +253,7 @@ fn call_java_callback<'a>(
     ffi_name: &str,
     prefix: &str,
     arg_name: &str,
-    params: Vec<&'a Arg<AnyType>>,
+    args: &[Arg<AnyType>],
     return_type: &ReturnType,
 ) -> FormattingResult<()> {
     // Extract the global ref
@@ -269,7 +272,7 @@ fn call_java_callback<'a>(
     f.writeln("let _env = _cache.vm.get_env().unwrap();")?;
 
     // Perform the conversion of the parameters
-    for param in &params {
+    for param in args {
         if let Some(conversion) = param.arg_type.conversion(ffi_name, prefix) {
             conversion.convert_from_rust(
                 f,
@@ -291,11 +294,11 @@ fn call_java_callback<'a>(
         interface_name,
         callback_name,
         return_type.as_jni_sig(lib_path),
-        params.iter().map(|param| format!("{}.into()", param.name.to_snake_case())).collect::<Vec<_>>().join(", ")
+        args.iter().map(|param| format!("{}.into()", param.name.to_snake_case())).collect::<Vec<_>>().join(", ")
     ))?;
 
     // Release the local refs
-    for param in params {
+    for param in args {
         if param.arg_type.requires_local_ref_cleanup() {
             f.writeln(&format!(
                 "_env.delete_local_ref({}.into()).unwrap();",

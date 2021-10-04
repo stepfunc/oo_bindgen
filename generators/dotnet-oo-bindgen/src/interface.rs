@@ -33,15 +33,10 @@ pub(crate) fn generate(
                         f.newline()?;
 
                         // Print each parameter value
-                        for param in &func.parameters {
-                            if let CallbackParameter::Parameter(param) = param {
-                                f.writeln(&format!(
-                                    "<param name=\"{}\">",
-                                    param.name.to_mixed_case()
-                                ))?;
-                                docstring_print(f, &param.doc, lib)?;
-                                f.write("</param>")?;
-                            }
+                        for arg in &func.arguments {
+                            f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
+                            docstring_print(f, &arg.doc, lib)?;
+                            f.write("</param>")?;
                         }
 
                         // Print return value
@@ -62,12 +57,13 @@ pub(crate) fn generate(
                     ))?;
                     f.write(
                         &func
-                            .params()
-                            .map(|param| {
+                            .arguments
+                            .iter()
+                            .map(|arg| {
                                 format!(
                                     "{} {}",
-                                    param.arg_type.as_dotnet_type(),
-                                    param.name.to_mixed_case()
+                                    arg.arg_type.as_dotnet_type(),
+                                    arg.name.to_mixed_case()
                                 )
                             })
                             .collect::<Vec<String>>()
@@ -100,16 +96,16 @@ pub(crate) fn generate(
                         ))?;
                         f.write(
                             &func
-                                .parameters
+                                .arguments
                                 .iter()
-                                .map(|param| match param {
-                                    CallbackParameter::Parameter(param) => format!(
+                                .map(|param| {
+                                    format!(
                                         "{} {}",
                                         param.arg_type.as_native_type(),
                                         param.name.to_mixed_case()
-                                    ),
-                                    CallbackParameter::Arg(name) => format!("IntPtr {}", name),
+                                    )
                                 })
+                                .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
                                 .collect::<Vec<String>>()
                                 .join(", "),
                         )?;
@@ -190,16 +186,16 @@ pub(crate) fn generate(
                         ))?;
                         f.write(
                             &func
-                                .parameters
+                                .arguments
                                 .iter()
-                                .map(|param| match param {
-                                    CallbackParameter::Parameter(param) => format!(
+                                .map(|arg| {
+                                    format!(
                                         "{} {}",
-                                        param.arg_type.as_native_type(),
-                                        param.name.to_mixed_case()
-                                    ),
-                                    CallbackParameter::Arg(name) => format!("IntPtr {}", name),
+                                        arg.arg_type.as_native_type(),
+                                        arg.name.to_mixed_case()
+                                    )
                                 })
+                                .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
                                 .collect::<Vec<String>>()
                                 .join(", "),
                         )?;
@@ -208,7 +204,7 @@ pub(crate) fn generate(
                         blocked(f, |f| {
                             f.writeln(&format!(
                                 "var _handle = GCHandle.FromIntPtr({});",
-                                func.arg_name
+                                CTX_VARIABLE_NAME
                             ))?;
                             f.writeln(&format!("var _impl = ({})_handle.Target;", interface_name))?;
                             call_dotnet_function(f, func, "return ")
@@ -261,7 +257,8 @@ pub(crate) fn generate_functional_callback(
 
     // Build the Action<>/Func<> signature
     let param_types = function
-        .params()
+        .arguments
+        .iter()
         .map(|param| param.arg_type.as_dotnet_type())
         .collect::<Vec<_>>()
         .join(", ");
@@ -319,12 +316,10 @@ pub(crate) fn generate_functional_callback(
             f.newline()?;
 
             // Print each parameter value
-            for param in &function.parameters {
-                if let CallbackParameter::Parameter(param) = param {
-                    f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-                    docstring_print(f, &param.doc, lib)?;
-                    f.write("</param>")?;
-                }
+            for arg in &function.arguments {
+                f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
+                docstring_print(f, &arg.doc, lib)?;
+                f.write("</param>")?;
             }
 
             // Print return value
@@ -342,7 +337,8 @@ pub(crate) fn generate_functional_callback(
         ))?;
         f.write(
             &function
-                .params()
+                .arguments
+                .iter()
                 .map(|param| {
                     format!(
                         "{} {}",
@@ -362,7 +358,8 @@ pub(crate) fn generate_functional_callback(
             }
 
             let params = function
-                .params()
+                .arguments
+                .iter()
                 .map(|param| param.name.to_mixed_case())
                 .collect::<Vec<_>>()
                 .join(", ");

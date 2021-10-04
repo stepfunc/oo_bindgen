@@ -847,19 +847,14 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                         // Print top-level documentation
                         doxygen_print(f, &handle.doc, lib)?;
 
-                        // Print each parameter value
-                        for param in &handle.parameters {
-                            match param {
-                                CallbackParameter::Arg(name) => {
-                                    f.writeln(&format!("@param {} ", name))?;
-                                    docstring_print(f, &"Context data".into(), lib)?;
-                                }
-                                CallbackParameter::Parameter(param) => {
-                                    f.writeln(&format!("@param {} ", param.name))?;
-                                    docstring_print(f, &param.doc, lib)?;
-                                }
-                            }
+                        // Print each argument value
+                        for arg in &handle.arguments {
+                            f.writeln(&format!("@param {} ", arg.name))?;
+                            docstring_print(f, &arg.doc, lib)?;
                         }
+
+                        f.writeln(&format!("@param {} ", CTX_VARIABLE_NAME))?;
+                        docstring_print(f, &"Context data".into(), lib)?;
 
                         // Print return documentation
                         if let ReturnType::Type(_, doc) = &handle.return_type {

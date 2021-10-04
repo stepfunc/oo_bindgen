@@ -39,7 +39,6 @@
 //! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
-use crate::callback::*;
 use crate::types::{AnyType, Arg};
 use crate::{BindingError, Library};
 use lazy_static::lazy_static;
@@ -350,21 +349,17 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 
     for interface in lib.interfaces() {
         validate_doc(&interface.name, &interface.doc, lib)?;
-        for callback in interface.callbacks() {
-            let params = callback
-                .parameters
-                .iter()
-                .filter_map(|param| match param {
-                    CallbackParameter::Parameter(param) => Some(param.clone()),
-                    _ => None,
-                })
-                .collect::<Vec<_>>();
+        for cb in interface.callbacks() {
+            let callback_name = format!("{}.{}", interface.name, cb.name);
+            validate_doc_with_params(&callback_name, &cb.doc, cb.arguments.as_slice(), lib)?;
 
-            let callback_name = format!("{}.{}", interface.name, callback.name);
-            validate_doc_with_params(&callback_name, &callback.doc, params.as_slice(), lib)?;
-
-            for param in &params {
-                validate_docstring_with_params(&callback_name, &param.doc, params.as_slice(), lib)?;
+            for arg in &cb.arguments {
+                validate_docstring_with_params(
+                    &callback_name,
+                    &arg.doc,
+                    cb.arguments.as_slice(),
+                    lib,
+                )?;
             }
         }
     }

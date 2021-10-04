@@ -7,7 +7,7 @@ use crate::collection::CollectionHandle;
 use crate::doc::DocString;
 use crate::function_struct::FStructHandle;
 use crate::iterator::IteratorHandle;
-use crate::struct_common::StructDeclarationHandle;
+use crate::struct_common::{EnumField, StructDeclarationHandle};
 use std::time::Duration;
 
 /// Marker class used to denote the String type with conversions to more specialized types
@@ -153,7 +153,7 @@ impl From<BasicType> for AnyStructFieldType {
             BasicType::Float => AnyStructFieldType::Float(None),
             BasicType::Double => AnyStructFieldType::Double(None),
             BasicType::Duration(mapping) => AnyStructFieldType::Duration(mapping, None),
-            BasicType::Enum(handle) => AnyStructFieldType::Enum(handle, None),
+            BasicType::Enum(handle) => AnyStructFieldType::Enum(EnumField::new(handle)),
         }
     }
 }

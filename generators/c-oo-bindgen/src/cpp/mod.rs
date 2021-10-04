@@ -915,9 +915,10 @@ fn get_initializer_value(e: &AnyStructField) -> String {
             }
         }
         AnyStructFieldType::StructRef(_) => unimplemented!(),
-        AnyStructFieldType::Enum(x, v) => v
+        AnyStructFieldType::Enum(field) => field
+            .default_variant
             .as_ref()
-            .map(|v| format!("{}::{}", x.cpp_name(), v.to_snake_case()))
+            .map(|v| format!("{}::{}", field.handle.cpp_name(), v.to_snake_case()))
             .unwrap_or_else(|| e.cpp_name()),
         AnyStructFieldType::ClassRef(_) => unimplemented!(),
         AnyStructFieldType::Interface(_) => format!("std::move({})", e.cpp_name()),

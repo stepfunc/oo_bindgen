@@ -2,8 +2,10 @@ use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::any_struct::*;
-use oo_bindgen::struct_common::*;
+use oo_bindgen::struct_common::Visibility;
 use oo_bindgen::types::DurationType;
+
+use oo_bindgen::struct_common::StructFieldType;
 
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
@@ -41,11 +43,11 @@ pub(crate) fn generate(
     f.writeln(&format!("public final class {}", struct_name))?;
     blocked(f, |f| {
         // Write Java structure elements
-        for el in native_struct.fields() {
+        for field in native_struct.fields() {
             documentation(f, |f| {
-                javadoc_print(f, &el.doc, lib)?;
+                javadoc_print(f, &field.doc, lib)?;
 
-                let default_value = match &el.field_type {
+                let default_value = match &field.field_type {
                     AnyStructFieldType::Bool(default) => default.map(|x| x.to_string()),
                     AnyStructFieldType::Uint8(default) => default.map(|x| x.to_string()),
                     AnyStructFieldType::Sint8(default) => default.map(|x| x.to_string()),
@@ -62,10 +64,10 @@ pub(crate) fn generate(
                     }
                     AnyStructFieldType::Struct(_) => None,
                     AnyStructFieldType::StructRef(_) => None,
-                    AnyStructFieldType::Enum(handle, default) => default.clone().map(|x| {
+                    AnyStructFieldType::Enum(field) => field.clone().default_variant.map(|x| {
                         format!(
                             "{{@link {}#{}}}",
-                            handle.name.to_camel_case(),
+                            field.handle.name.to_camel_case(),
                             x.to_shouty_snake_case()
                         )
                     }),
@@ -88,10 +90,10 @@ pub(crate) fn generate(
             f.writeln(&format!(
                 "{} {} {}",
                 field_visibility(native_struct.visibility()),
-                el.field_type.to_any_type().as_java_primitive(),
-                el.name.to_mixed_case()
+                field.field_type.to_any_type().as_java_primitive(),
+                field.name.to_mixed_case()
             ))?;
-            match &el.field_type {
+            match &field.field_type {
                 AnyStructFieldType::Bool(default) => match default {
                     None => (),
                     Some(false) => f.write(" = false")?,
@@ -158,15 +160,15 @@ pub(crate) fn generate(
                     }
                 }
                 AnyStructFieldType::StructRef(_) => (),
-                AnyStructFieldType::Enum(handle, default) => {
-                    if let Some(value) = default {
-                        match handle.find_variant_by_name(value) {
+                AnyStructFieldType::Enum(field) => {
+                    if let Some(value) = &field.default_variant {
+                        match field.handle.find_variant_by_name(value) {
                             Some(variant) => f.write(&format!(
                                 " = {}.{}",
-                                handle.name.to_camel_case(),
+                                field.handle.name.to_camel_case(),
                                 variant.name.to_shouty_snake_case()
                             ))?,
-                            None => panic!("Variant {} not found in {}", value, handle.name),
+                            None => panic!("Variant {} not found in {}", value, field.handle.name),
                         }
                     }
                 }

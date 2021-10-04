@@ -69,10 +69,10 @@ pub(crate) fn generate(
                         }
                         AnyStructFieldType::Struct(_) => None,
                         AnyStructFieldType::StructRef(_) => None,
-                        AnyStructFieldType::Enum(handle, default) => default.clone().map(|x| {
+                        AnyStructFieldType::Enum(field) => field.clone().default_variant.map(|x| {
                             format!(
                                 "<see cref=\"{}.{}\" />",
-                                handle.name.to_camel_case(),
+                                field.handle.name.to_camel_case(),
                                 x.to_camel_case()
                             )
                         }),
@@ -168,15 +168,17 @@ pub(crate) fn generate(
                         }
                     }
                     AnyStructFieldType::StructRef(_) => (),
-                    AnyStructFieldType::Enum(handle, default) => {
-                        if let Some(value) = default {
-                            match handle.find_variant_by_name(value) {
+                    AnyStructFieldType::Enum(field) => {
+                        if let Some(value) = &field.default_variant {
+                            match field.handle.find_variant_by_name(value) {
                                 Some(variant) => f.write(&format!(
                                     " = {}.{}",
-                                    handle.name.to_camel_case(),
+                                    field.handle.name.to_camel_case(),
                                     variant.name.to_camel_case()
                                 ))?,
-                                None => panic!("Variant {} not found in {}", value, handle.name),
+                                None => {
+                                    panic!("Variant {} not found in {}", value, field.handle.name)
+                                }
                             }
                         }
                     }

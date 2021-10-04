@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use oo_bindgen::function_struct::{FStructFieldType, FStructHandle};
+use oo_bindgen::struct_common::EnumField;
 use oo_bindgen::types::DurationType;
 use oo_bindgen::*;
 
@@ -20,14 +21,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
         // The following pattern used to crash in Java because of the way we handled boolean
         .add(
             "first_enum_value",
-            FStructFieldType::Enum(structure_enum.clone(), Some("Var2".to_string())),
+            EnumField::try_default(structure_enum.clone(), "Var2")?,
             "first_enum_value",
         )?
         .add("int1", FStructFieldType::Sint16(Some(1)), "int1")?
         .add("bool2", FStructFieldType::Bool(Some(false)), "bool2")?
         .add(
             "second_enum_value",
-            FStructFieldType::Enum(structure_enum.clone(), Some("Var2".to_string())),
+            EnumField::try_default(structure_enum.clone(), "Var2")?,
             "second_enum_value",
         )?
         .doc("Structure within a structure")?
@@ -43,7 +44,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
     lib.define_fstruct(&structure)?
         .add(
             "enum_value",
-            FStructFieldType::Enum(structure_enum.clone(), Some("Var2".to_string())),
+            EnumField::try_default(structure_enum.clone(), "Var2")?,
             "enum_value",
         )?
         .add(
@@ -58,7 +59,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
         )?
         .add(
             "enum_value2",
-            FStructFieldType::Enum(structure_enum, Some("Var2".to_string())),
+            EnumField::try_default(structure_enum, "Var2")?,
             "enum_value2",
         )?
         .add(

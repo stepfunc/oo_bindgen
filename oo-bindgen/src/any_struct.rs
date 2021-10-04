@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::iterator::IteratorHandle;
 use crate::struct_common::{
-    Struct, StructBuilder, StructDeclarationHandle, StructField, StructFieldType,
+    EnumField, Struct, StructBuilder, StructDeclarationHandle, StructField, StructFieldType,
 };
 use crate::types::{AnyType, BasicType, DurationType};
 use crate::*;
@@ -24,7 +24,7 @@ pub enum AnyStructFieldType {
     String(Option<String>),
     Struct(AnyStructHandle),
     StructRef(StructDeclarationHandle),
-    Enum(EnumHandle, Option<String>),
+    Enum(EnumField),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
     Iterator(IteratorHandle),
@@ -49,7 +49,7 @@ impl StructFieldType for AnyStructFieldType {
             Self::String(default) => default.is_some(),
             Self::Struct(handle) => handle.all_fields_have_defaults(),
             Self::StructRef(_) => false,
-            Self::Enum(_, default) => default.is_some(),
+            Self::Enum(f) => f.default_variant.is_some(),
             Self::ClassRef(_) => false,
             Self::Interface(_) => false,
             Self::Iterator(_) => false,
@@ -60,13 +60,6 @@ impl StructFieldType for AnyStructFieldType {
 
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType {
         StructType::Any(v)
-    }
-
-    fn validate(&self) -> BindResult<()> {
-        match self {
-            Self::Enum(handle, Some(default)) => handle.validate_contains_variant_name(default),
-            _ => Ok(()),
-        }
     }
 
     fn to_any_struct_field_type(self) -> AnyStructFieldType {
@@ -89,7 +82,7 @@ impl StructFieldType for AnyStructFieldType {
             AnyStructFieldType::String(_) => AnyType::String,
             AnyStructFieldType::Struct(x) => AnyType::Struct(x.to_any_struct()),
             AnyStructFieldType::StructRef(x) => AnyType::StructRef(x.clone()),
-            AnyStructFieldType::Enum(x, _) => BasicType::Enum(x.clone()).into(),
+            AnyStructFieldType::Enum(x) => BasicType::Enum(x.handle.clone()).into(),
             AnyStructFieldType::ClassRef(x) => AnyType::ClassRef(x.clone()),
             AnyStructFieldType::Interface(x) => AnyType::Interface(x.clone()),
             AnyStructFieldType::Iterator(x) => AnyType::Iterator(x.clone()),

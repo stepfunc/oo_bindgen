@@ -20,7 +20,7 @@ pub enum FStructFieldType {
     Float(Option<f32>),
     Double(Option<f64>),
     String(Option<String>),
-    Enum(EnumHandle, Option<String>),
+    Enum(EnumField),
     Interface(InterfaceHandle),
     Collection(CollectionHandle),
     Duration(DurationType, Option<Duration>),
@@ -31,18 +31,6 @@ pub type FStructField = StructField<FStructFieldType>;
 pub type FStruct = Struct<FStructFieldType>;
 pub type FStructHandle = Handle<FStruct>;
 pub type FStructBuilder<'a> = StructBuilder<'a, FStructFieldType>;
-
-impl From<FStructHandle> for FStructFieldType {
-    fn from(x: FStructHandle) -> Self {
-        FStructFieldType::Struct(x)
-    }
-}
-
-impl From<InterfaceHandle> for FStructFieldType {
-    fn from(x: InterfaceHandle) -> Self {
-        FStructFieldType::Interface(x)
-    }
-}
 
 impl StructFieldType for FStructFieldType {
     fn has_default(&self) -> bool {
@@ -59,7 +47,7 @@ impl StructFieldType for FStructFieldType {
             Self::Float(default) => default.is_some(),
             Self::Double(default) => default.is_some(),
             Self::String(default) => default.is_some(),
-            Self::Enum(_, default) => default.is_some(),
+            Self::Enum(x) => x.default_variant.is_some(),
             Self::Interface(_) => false,
             Self::Collection(_) => false,
             Self::Duration(_, default) => default.is_some(),
@@ -69,13 +57,6 @@ impl StructFieldType for FStructFieldType {
 
     fn create_struct_type(v: Handle<Struct<FStructFieldType>>) -> StructType {
         StructType::FStruct(v.clone(), v.to_any_struct())
-    }
-
-    fn validate(&self) -> BindResult<()> {
-        match self {
-            Self::Enum(handle, Some(default)) => handle.validate_contains_variant_name(default),
-            _ => Ok(()),
-        }
     }
 
     fn to_any_struct_field_type(self) -> AnyStructFieldType {
@@ -92,7 +73,7 @@ impl StructFieldType for FStructFieldType {
             Self::Float(x) => AnyStructFieldType::Float(x),
             Self::Double(x) => AnyStructFieldType::Double(x),
             Self::String(x) => AnyStructFieldType::String(x),
-            Self::Enum(handle, x) => AnyStructFieldType::Enum(handle, x),
+            Self::Enum(x) => AnyStructFieldType::Enum(x),
             Self::Interface(handle) => AnyStructFieldType::Interface(handle),
             Self::Collection(handle) => AnyStructFieldType::Collection(handle),
             Self::Duration(t, x) => AnyStructFieldType::Duration(t, x),
@@ -114,11 +95,29 @@ impl StructFieldType for FStructFieldType {
             FStructFieldType::Float(_) => BasicType::Float.into(),
             FStructFieldType::Double(_) => BasicType::Double.into(),
             FStructFieldType::String(_) => AnyType::String,
-            FStructFieldType::Enum(x, _) => BasicType::Enum(x.clone()).into(),
+            FStructFieldType::Enum(x) => BasicType::Enum(x.handle.clone()).into(),
             FStructFieldType::Interface(x) => AnyType::Interface(x.clone()),
             FStructFieldType::Collection(x) => AnyType::Collection(x.clone()),
             FStructFieldType::Duration(x, _) => BasicType::Duration(*x).into(),
             FStructFieldType::Struct(x) => AnyType::Struct(x.to_any_struct()),
         }
+    }
+}
+
+impl From<FStructHandle> for FStructFieldType {
+    fn from(x: FStructHandle) -> Self {
+        FStructFieldType::Struct(x)
+    }
+}
+
+impl From<InterfaceHandle> for FStructFieldType {
+    fn from(x: InterfaceHandle) -> Self {
+        FStructFieldType::Interface(x)
+    }
+}
+
+impl From<EnumField> for FStructFieldType {
+    fn from(x: EnumField) -> Self {
+        Self::Enum(x)
     }
 }

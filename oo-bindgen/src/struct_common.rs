@@ -1,8 +1,33 @@
 use crate::any_struct::{AnyStruct, AnyStructField, AnyStructFieldType};
 use crate::doc::Doc;
+use crate::enum_type::EnumHandle;
 use crate::types::AnyType;
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
+
+/// An enum which might contain a validated default value
+#[derive(Clone, Debug)]
+pub struct EnumField {
+    pub handle: EnumHandle,
+    pub default_variant: Option<String>,
+}
+
+impl EnumField {
+    pub(crate) fn new(handle: EnumHandle) -> Self {
+        Self {
+            handle,
+            default_variant: None,
+        }
+    }
+
+    pub fn try_default(handle: EnumHandle, default_variant: &str) -> BindResult<Self> {
+        handle.validate_contains_variant_name(default_variant)?;
+        Ok(Self {
+            handle,
+            default_variant: Some(default_variant.to_string()),
+        })
+    }
+}
 
 /// struct type affects the type of code the backend will generate
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -39,9 +64,6 @@ pub trait StructFieldType: Clone + Sized {
 
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
-
-    /// perform validation on the field
-    fn validate(&self) -> BindResult<()>;
 
     /// TODO - this will go away
     fn to_any_struct_field_type(self) -> AnyStructFieldType;
@@ -169,7 +191,6 @@ where
     ) -> BindResult<Self> {
         let name = name.into();
         let field_type = field_type.into();
-        field_type.validate()?;
 
         self.lib.validate_type(&field_type.to_any_type())?;
         if self.field_names.insert(name.to_string()) {

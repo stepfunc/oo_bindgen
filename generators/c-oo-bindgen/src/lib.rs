@@ -426,11 +426,11 @@ fn write_struct_definition(
                     }
                     AnyStructFieldType::Struct(_) => None,
                     AnyStructFieldType::StructRef(_) => None,
-                    AnyStructFieldType::Enum(handle, default) => default.clone().map(|x| {
+                    AnyStructFieldType::Enum(field) => field.clone().default_variant.map(|x| {
                         format!(
                             "@ref {}_{}_{}",
                             lib.c_ffi_prefix.to_shouty_snake_case(),
-                            handle.name.to_shouty_snake_case(),
+                            field.handle.name.to_shouty_snake_case(),
                             x.to_shouty_snake_case()
                         )
                     }),
@@ -590,16 +590,16 @@ fn write_struct_initializer(
                         }
                     }
                     AnyStructFieldType::StructRef(_) => el.name.to_snake_case(),
-                    AnyStructFieldType::Enum(handle, default) => match default {
+                    AnyStructFieldType::Enum(field) => match &field.default_variant {
                         None => el.name.to_snake_case(),
-                        Some(value) => match handle.find_variant_by_name(value) {
+                        Some(value) => match field.handle.find_variant_by_name(value.as_str()) {
                             Some(variant) => format!(
                                 "{}_{}_{}",
                                 lib.c_ffi_prefix.to_shouty_snake_case(),
-                                handle.name.to_shouty_snake_case(),
+                                field.handle.name.to_shouty_snake_case(),
                                 variant.name.to_shouty_snake_case()
                             ),
-                            None => panic!("Variant {} not found in {}", value, handle.name),
+                            None => panic!("Variant {} not found in {}", value, field.handle.name),
                         },
                     },
                     AnyStructFieldType::ClassRef(_) => el.name.to_snake_case(),

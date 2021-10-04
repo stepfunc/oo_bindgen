@@ -1,6 +1,7 @@
 use crate::doc::Doc;
 use crate::*;
 
+use crate::struct_common::EnumField;
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -24,12 +25,11 @@ impl Enum {
             .find(|variant| variant.name == variant_name.as_ref())
     }
 
-    pub fn validate_contains_variant_name<T: AsRef<str>>(&self, variant_name: T) -> BindResult<()> {
-        let var_name = variant_name.as_ref();
-        if self.find_variant_by_name(var_name).is_none() {
+    pub fn validate_contains_variant_name(&self, variant_name: &str) -> BindResult<()> {
+        if self.find_variant_by_name(variant_name).is_none() {
             Err(BindingError::EnumDoesNotContainVariant {
                 name: self.name.to_string(),
-                variant_name: var_name.to_string(),
+                variant_name: variant_name.to_string(),
             })
         } else {
             Ok(())
@@ -51,7 +51,7 @@ impl From<EnumHandle> for AnyType {
 
 impl From<EnumHandle> for AnyStructFieldType {
     fn from(x: EnumHandle) -> Self {
-        AnyStructFieldType::Enum(x, None)
+        AnyStructFieldType::Enum(EnumField::new(x))
     }
 }
 

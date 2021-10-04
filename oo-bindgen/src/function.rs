@@ -100,12 +100,6 @@ impl From<StructDeclarationHandle> for FArgument {
     }
 }
 
-impl From<FStructHandle> for FArgument {
-    fn from(x: FStructHandle) -> Self {
-        FArgument::Struct(x)
-    }
-}
-
 impl From<FArgument> for AnyType {
     fn from(x: FArgument) -> Self {
         x.to_any_type()

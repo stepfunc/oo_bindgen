@@ -56,9 +56,11 @@ use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::platforms::*;
+use oo_bindgen::struct_common::StructFieldType;
 use oo_bindgen::struct_common::{StructDeclarationHandle, Visibility};
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 use oo_bindgen::*;
+
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -455,7 +457,7 @@ fn write_struct_definition(
                 "{} {};",
                 element
                     .field_type
-                    .to_all_types()
+                    .to_any_type()
                     .to_c_type(&lib.c_ffi_prefix),
                 element.name.to_snake_case(),
             ))?;
@@ -507,7 +509,7 @@ fn write_struct_initializer(
         .map(|el| {
             format!(
                 "{} {}",
-                el.field_type.to_all_types().to_c_type(&lib.c_ffi_prefix),
+                el.field_type.to_any_type().to_c_type(&lib.c_ffi_prefix),
                 el.name.to_snake_case()
             )
         })

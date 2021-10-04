@@ -2,7 +2,7 @@ use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::any_struct::*;
-use oo_bindgen::struct_common::Visibility;
+use oo_bindgen::struct_common::*;
 use oo_bindgen::types::DurationType;
 
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
@@ -88,7 +88,7 @@ pub(crate) fn generate(
             f.writeln(&format!(
                 "{} {} {}",
                 field_visibility(native_struct.visibility()),
-                el.field_type.to_all_types().as_java_primitive(),
+                el.field_type.to_any_type().as_java_primitive(),
                 el.name.to_mixed_case()
             ))?;
             match &el.field_type {
@@ -232,7 +232,7 @@ pub(crate) fn generate(
                     .map(|el| {
                         format!(
                             "{} {}",
-                            el.field_type.to_all_types().as_java_primitive(),
+                            el.field_type.to_any_type().as_java_primitive(),
                             el.name.to_mixed_case()
                         )
                     })

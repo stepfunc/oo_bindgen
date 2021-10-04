@@ -1,11 +1,12 @@
 use heck::CamelCase;
+
 use oo_bindgen::any_struct::*;
 use oo_bindgen::callback::*;
 use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
-use oo_bindgen::struct_common::StructDeclarationHandle;
-use oo_bindgen::types::{AnyType, BasicType, DurationType};
+use oo_bindgen::struct_common::*;
+use oo_bindgen::types::*;
 
 pub(crate) trait RustType {
     fn as_rust_type(&self) -> String;
@@ -326,7 +327,7 @@ impl RustStruct for AnyStructHandle {
     fn has_conversion(&self) -> bool {
         self.fields
             .iter()
-            .any(|e| e.field_type.to_all_types().has_conversion())
+            .any(|e| e.field_type.to_any_type().has_conversion())
     }
 }
 
@@ -337,11 +338,11 @@ pub(crate) trait RustStructField {
 
 impl RustStructField for AnyStructField {
     fn rust_requires_lifetime(&self) -> bool {
-        self.field_type.to_all_types().rust_requires_lifetime()
+        self.field_type.to_any_type().rust_requires_lifetime()
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        self.field_type.to_all_types().c_requires_lifetime()
+        self.field_type.to_any_type().c_requires_lifetime()
     }
 }
 

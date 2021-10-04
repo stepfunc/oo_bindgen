@@ -1,7 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::any_struct::*;
-use oo_bindgen::struct_common::Visibility;
+use oo_bindgen::struct_common::*;
 use oo_bindgen::types::DurationType;
 
 fn field_visibility(struct_type: Visibility) -> &'static str {
@@ -98,7 +98,7 @@ pub(crate) fn generate(
                 f.writeln(&format!(
                     "{} {} {}",
                     field_visibility(native_struct.visibility()),
-                    el.field_type.to_all_types().as_dotnet_type(),
+                    el.field_type.to_any_type().as_dotnet_type(),
                     el.name.to_camel_case()
                 ))?;
                 match &el.field_type {
@@ -244,7 +244,7 @@ pub(crate) fn generate(
                         .map(|el| {
                             format!(
                                 "{} {}",
-                                el.field_type.to_all_types().as_dotnet_type(),
+                                el.field_type.to_any_type().as_dotnet_type(),
                                 el.name.to_mixed_case()
                             )
                         })
@@ -286,7 +286,7 @@ pub(crate) fn generate(
             for el in native_struct.fields() {
                 f.writeln(&format!(
                     "{} {};",
-                    el.field_type.to_all_types().as_native_type(),
+                    el.field_type.to_any_type().as_native_type(),
                     el.name.to_camel_case()
                 ))?;
             }
@@ -305,7 +305,7 @@ pub(crate) fn generate(
 
                     let conversion = el
                         .field_type
-                        .to_all_types()
+                        .to_any_type()
                         .convert_to_native(&format!("self.{}", el_name))
                         .unwrap_or(format!("self.{}", el_name));
                     f.writeln(&format!("result.{} = {};", el_name, conversion))?;
@@ -327,7 +327,7 @@ pub(crate) fn generate(
 
                     let conversion = el
                         .field_type
-                        .to_all_types()
+                        .to_any_type()
                         .convert_from_native(&format!("native.{}", el_name))
                         .unwrap_or(format!("native.{}", el_name));
                     f.writeln(&format!("result.{} = {};", el_name, conversion))?;
@@ -393,7 +393,7 @@ pub(crate) fn generate(
 
                     if let Some(cleanup) = el
                         .field_type
-                        .to_all_types()
+                        .to_any_type()
                         .cleanup(&format!("this.{}", el_name))
                     {
                         f.writeln(&cleanup)?;

@@ -22,7 +22,7 @@ use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
 use oo_bindgen::function::{FArgument, FunctionHandle, ReturnType};
-use oo_bindgen::struct_common::{StructDeclaration, Visibility};
+use oo_bindgen::struct_common::*;
 use oo_bindgen::types::{AnyType, Arg, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
@@ -127,9 +127,7 @@ fn get_struct_default_constructor_args(handle: &AnyStructHandle) -> String {
             } else {
                 Some(format!(
                     "{} {}",
-                    x.field_type
-                        .to_all_types()
-                        .get_cpp_struct_constructor_type(),
+                    x.field_type.to_any_type().get_cpp_struct_constructor_type(),
                     x.name
                 ))
             }
@@ -145,9 +143,7 @@ fn get_struct_full_constructor_args(handle: &AnyStructHandle) -> String {
         .map(|x| {
             format!(
                 "{} {}",
-                x.field_type
-                    .to_all_types()
-                    .get_cpp_struct_constructor_type(),
+                x.field_type.to_any_type().get_cpp_struct_constructor_type(),
                 x.name
             )
         })
@@ -193,7 +189,7 @@ fn print_struct_header(
         for field in &handle.fields {
             f.writeln(&format!(
                 "{} {};",
-                field.field_type.to_all_types().get_cpp_struct_member_type(),
+                field.field_type.to_any_type().get_cpp_struct_member_type(),
                 field.cpp_name()
             ))?;
         }
@@ -399,22 +395,22 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
 
 fn convert_native_struct_elem_to_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x.{}", elem.name);
-    convert_to_cpp(&elem.field_type.to_all_types(), base_name)
+    convert_to_cpp(&elem.field_type.to_any_type(), base_name)
 }
 
 fn convert_native_struct_ptr_elem_to_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x->{}", elem.name);
-    convert_to_cpp(&elem.field_type.to_all_types(), base_name)
+    convert_to_cpp(&elem.field_type.to_any_type(), base_name)
 }
 
 fn convert_native_struct_elem_from_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x.{}", elem.name);
-    convert_to_c(&elem.field_type.to_all_types(), base_name)
+    convert_to_c(&elem.field_type.to_any_type(), base_name)
 }
 
 fn convert_native_struct_ptr_elem_from_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x->{}", elem.name);
-    convert_to_c(&elem.field_type.to_all_types(), base_name)
+    convert_to_c(&elem.field_type.to_any_type(), base_name)
 }
 
 fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {

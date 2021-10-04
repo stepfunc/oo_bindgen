@@ -1,13 +1,13 @@
-use crate::any_struct::{AnyStructFieldType, AnyStructHandle};
 use crate::enum_type::EnumHandle;
+use crate::structs::any_struct::{AnyStructFieldType, AnyStructHandle};
 
 use crate::callback::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::doc::DocString;
-use crate::function_struct::FStructHandle;
 use crate::iterator::IteratorHandle;
-use crate::struct_common::{EnumField, StructDeclarationHandle};
+use crate::structs::common::{EnumField, StructDeclarationHandle};
+use crate::structs::function_struct::FStructHandle;
 use std::time::Duration;
 
 /// Marker class used to denote the String type with conversions to more specialized types

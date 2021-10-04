@@ -1,5 +1,5 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::function_struct::FStructHandle;
+use oo_bindgen::structs::function_struct::FStructHandle;
 use oo_bindgen::types::{BasicType, STRING_TYPE};
 use oo_bindgen::{BindingError, LibraryBuilder};
 

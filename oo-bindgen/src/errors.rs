@@ -3,7 +3,7 @@ use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::{FunctionHandle, ReturnType};
-use crate::struct_common::StructDeclarationHandle;
+use crate::structs::common::StructDeclarationHandle;
 use thiserror::Error;
 
 pub type BindResult<T> = Result<T, BindingError>;

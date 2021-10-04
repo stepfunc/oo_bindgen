@@ -44,7 +44,24 @@ clippy::all
     bare_trait_objects
 )]
 
-pub mod any_struct;
+pub use semver::Version;
+
+use structs::any_struct::*;
+use structs::common::StructDeclarationHandle;
+use structs::function_struct::FStructHandle;
+
+use crate::callback::*;
+use crate::class::*;
+pub use crate::doc::doc;
+use crate::doc::Doc;
+use crate::enum_type::*;
+use crate::error_type::ErrorType;
+pub use crate::errors::*;
+use crate::function::*;
+pub use crate::handle::*;
+pub use crate::library::*;
+use crate::types::{AnyType, BasicType};
+
 pub mod callback;
 pub mod class;
 pub mod collection;
@@ -55,29 +72,10 @@ pub mod error_type;
 mod errors;
 pub mod formatting;
 pub mod function;
-pub mod function_struct;
 mod handle;
 pub mod iterator;
 mod library;
 pub mod platforms;
-pub mod struct_common;
+pub mod structs;
 pub mod types;
 pub mod util;
-
-use crate::any_struct::*;
-use crate::callback::*;
-use crate::class::*;
-use crate::doc::Doc;
-use crate::enum_type::*;
-use crate::error_type::ErrorType;
-use crate::function::*;
-use crate::function_struct::FStructHandle;
-use crate::struct_common::StructDeclarationHandle;
-use crate::types::{AnyType, BasicType};
-
-pub use crate::doc::doc;
-pub use crate::errors::*;
-pub use crate::handle::*;
-pub use crate::library::*;
-
-pub use semver::Version;

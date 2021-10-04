@@ -1,6 +1,5 @@
 use super::formatting::*;
 use heck::{CamelCase, SnakeCase};
-use oo_bindgen::any_struct::*;
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::collection::*;
@@ -8,7 +7,8 @@ use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::iterator::*;
-use oo_bindgen::struct_common::StructDeclarationHandle;
+use oo_bindgen::structs::any_struct::*;
+use oo_bindgen::structs::common::StructDeclarationHandle;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait JniType {

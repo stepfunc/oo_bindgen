@@ -1,7 +1,7 @@
 use crate::doc::Doc;
 use crate::*;
 
-use crate::struct_common::EnumField;
+use crate::structs::common::EnumField;
 use std::collections::HashSet;
 
 #[derive(Debug)]

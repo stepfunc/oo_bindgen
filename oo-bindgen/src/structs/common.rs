@@ -1,6 +1,6 @@
-use crate::any_struct::{AnyStruct, AnyStructField, AnyStructFieldType};
 use crate::doc::Doc;
 use crate::enum_type::EnumHandle;
+use crate::structs::any_struct::{AnyStruct, AnyStructField, AnyStructFieldType};
 use crate::types::AnyType;
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
@@ -20,7 +20,7 @@ impl EnumField {
         }
     }
 
-    pub fn try_default(handle: EnumHandle, default_variant: &str) -> BindResult<Self> {
+    pub fn with_default(handle: EnumHandle, default_variant: &str) -> BindResult<Self> {
         handle.validate_contains_variant_name(default_variant)?;
         Ok(Self {
             handle,

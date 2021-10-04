@@ -1,5 +1,4 @@
 use heck::{CamelCase, SnakeCase};
-use oo_bindgen::any_struct::{AnyStructField, AnyStructHandle};
 use oo_bindgen::callback::{CallbackFunction, InterfaceHandle};
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
@@ -7,7 +6,8 @@ use oo_bindgen::class::{
 use oo_bindgen::constants::Constant;
 use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
 use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::struct_common::StructDeclaration;
+use oo_bindgen::structs::any_struct::{AnyStructField, AnyStructHandle};
+use oo_bindgen::structs::common::StructDeclaration;
 use oo_bindgen::types::{AnyType, Arg};
 use oo_bindgen::StructType;
 

@@ -1,7 +1,7 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
-use oo_bindgen::any_struct::*;
-use oo_bindgen::struct_common::*;
+use oo_bindgen::structs::any_struct::*;
+use oo_bindgen::structs::common::*;
 use oo_bindgen::types::DurationType;
 
 fn field_visibility(struct_type: Visibility) -> &'static str {

@@ -1,6 +1,6 @@
 use crate::collection::CollectionHandle;
 use crate::iterator::IteratorHandle;
-use crate::struct_common::{
+use crate::structs::common::{
     EnumField, Struct, StructBuilder, StructDeclarationHandle, StructField, StructFieldType,
 };
 use crate::types::{AnyType, BasicType, DurationType};

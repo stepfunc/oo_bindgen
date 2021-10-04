@@ -47,7 +47,6 @@ clippy::all
 use crate::doc::*;
 use crate::formatting::*;
 use heck::{ShoutySnakeCase, SnakeCase};
-use oo_bindgen::any_struct::*;
 use oo_bindgen::callback::*;
 use oo_bindgen::class::*;
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
@@ -56,8 +55,9 @@ use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::struct_common::StructFieldType;
-use oo_bindgen::struct_common::{StructDeclarationHandle, Visibility};
+use oo_bindgen::structs::any_struct::*;
+use oo_bindgen::structs::common::StructFieldType;
+use oo_bindgen::structs::common::{StructDeclarationHandle, Visibility};
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 use oo_bindgen::*;
 

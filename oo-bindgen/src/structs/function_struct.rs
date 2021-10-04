@@ -1,5 +1,5 @@
 use crate::collection::CollectionHandle;
-use crate::struct_common::*;
+use crate::structs::common::*;
 use crate::types::{AnyType, DurationType};
 use crate::*;
 

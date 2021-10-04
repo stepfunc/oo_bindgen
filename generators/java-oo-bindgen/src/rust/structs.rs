@@ -1,5 +1,5 @@
 use oo_bindgen::formatting::*;
-use oo_bindgen::struct_common::StructFieldType;
+use oo_bindgen::structs::common::StructFieldType;
 
 use super::conversion::*;
 use super::formatting::*;

@@ -3,9 +3,7 @@ mod names;
 mod types;
 
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::callback::{
-    CallbackFunction, InterfaceElement, InterfaceHandle, CTX_VARIABLE_NAME,
-};
+use oo_bindgen::callback::{CallbackFunction, InterfaceHandle, CTX_VARIABLE_NAME};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
@@ -207,28 +205,26 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
     indented(f, |f| {
         f.writeln(&format!("virtual ~{}() = default;", handle.cpp_name()))?;
         f.newline()?;
-        for elem in &handle.elements {
-            if let InterfaceElement::CallbackFunction(func) = elem {
-                let args: String = func
-                    .arguments
-                    .iter()
-                    .map(|arg| {
-                        format!(
-                            "{} {}",
-                            arg.arg_type.get_cpp_func_argument_type(),
-                            arg.cpp_name()
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join(", ");
+        for cb in &handle.callbacks {
+            let args: String = cb
+                .arguments
+                .iter()
+                .map(|arg| {
+                    format!(
+                        "{} {}",
+                        arg.arg_type.get_cpp_func_argument_type(),
+                        arg.cpp_name()
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(", ");
 
-                f.writeln(&format!(
-                    "virtual {} {}({}) = 0;",
-                    func.return_type.get_cpp_return_type(),
-                    func.cpp_name(),
-                    args
-                ))?;
-            }
+            f.writeln(&format!(
+                "virtual {} {}({}) = 0;",
+                cb.return_type.get_cpp_return_type(),
+                cb.cpp_name(),
+                args
+            ))?;
         }
         Ok(())
     })?;
@@ -762,42 +758,37 @@ fn print_interface_conversions(
         // but only to C++ in C++20. Therefore, we cannot use it here as we target a lower version of C++.
         f.writeln("return {")?;
         indented(f, |f| {
-            for x in &handle.elements {
-                match x {
-                    InterfaceElement::Arg(_) => {
-                        f.writeln("value.release(),")?;
-                    }
-                    InterfaceElement::DestroyFunction(_) => {
-                        f.writeln(&format!(
-                            "[](void* {}) {{ delete reinterpret_cast<{}*>({}); }},",
-                            handle.arg_name,
-                            handle.cpp_name(),
-                            handle.arg_name
-                        ))?;
-                    }
-                    InterfaceElement::CallbackFunction(func) => {
-                        f.writeln(&format!(
-                            "[]({}) -> {} {{",
-                            crate::chelpers::callback_parameters_with_var_names(lib, func),
-                            func.return_type.to_c_type(&lib.c_ffi_prefix)
-                        ))?;
-                        indented(f, |f| {
-                            match &func.return_type {
-                                ReturnType::Type(t, _) => {
-                                    let value = get_invocation(handle, func);
+            for cb in &handle.callbacks {
+                f.writeln(&format!(
+                    "[]({}) -> {} {{",
+                    crate::chelpers::callback_parameters_with_var_names(lib, cb),
+                    cb.return_type.to_c_type(&lib.c_ffi_prefix)
+                ))?;
+                indented(f, |f| {
+                    match &cb.return_type {
+                        ReturnType::Type(t, _) => {
+                            let value = get_invocation(handle, cb);
 
-                                    f.writeln(&format!("return {};", convert_to_c(t, value)))?;
-                                }
-                                ReturnType::Void => {
-                                    f.writeln(&format!("{};", get_invocation(handle, func)))?;
-                                }
-                            }
-                            Ok(())
-                        })?;
-                        f.writeln("},")?;
+                            f.writeln(&format!("return {};", convert_to_c(t, value)))?;
+                        }
+                        ReturnType::Void => {
+                            f.writeln(&format!("{};", get_invocation(handle, cb)))?;
+                        }
                     }
-                }
+                    Ok(())
+                })?;
+                f.writeln("},")?;
             }
+
+            f.writeln("value.release(),")?;
+
+            f.writeln(&format!(
+                "[](void* {}) {{ delete reinterpret_cast<{}*>({}); }},",
+                CTX_VARIABLE_NAME,
+                handle.cpp_name(),
+                CTX_VARIABLE_NAME
+            ))?;
+
             Ok(())
         })?;
         f.writeln("};")

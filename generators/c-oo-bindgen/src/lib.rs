@@ -833,60 +833,57 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
     f.writeln(&format!("typedef struct {}", struct_name))?;
     f.writeln("{")?;
     indented(f, |f| {
-        for element in &handle.elements {
-            match element {
-                InterfaceElement::Arg(name) => {
-                    doxygen(f, |f| f.writeln("@brief Context data"))?;
-                    f.writeln(&format!("void* {};", name))?
+        for cb in &handle.callbacks {
+            f.newline()?;
+
+            // Print the documentation
+            doxygen(f, |f| {
+                // Print top-level documentation
+                doxygen_print(f, &cb.doc, lib)?;
+
+                // Print each argument value
+                for arg in &cb.arguments {
+                    f.writeln(&format!("@param {} ", arg.name))?;
+                    docstring_print(f, &arg.doc, lib)?;
                 }
-                InterfaceElement::CallbackFunction(handle) => {
-                    f.newline()?;
 
-                    // Print the documentation
-                    doxygen(f, |f| {
-                        // Print top-level documentation
-                        doxygen_print(f, &handle.doc, lib)?;
+                f.writeln(&format!("@param {} ", CTX_VARIABLE_NAME))?;
+                docstring_print(f, &"Context data".into(), lib)?;
 
-                        // Print each argument value
-                        for arg in &handle.arguments {
-                            f.writeln(&format!("@param {} ", arg.name))?;
-                            docstring_print(f, &arg.doc, lib)?;
-                        }
-
-                        f.writeln(&format!("@param {} ", CTX_VARIABLE_NAME))?;
-                        docstring_print(f, &"Context data".into(), lib)?;
-
-                        // Print return documentation
-                        if let ReturnType::Type(_, doc) = &handle.return_type {
-                            f.writeln("@return ")?;
-                            docstring_print(f, doc, lib)?;
-                        }
-
-                        Ok(())
-                    })?;
-
-                    f.newline()?;
-
-                    // Print function signature
-                    f.write(&format!(
-                        "{} (*{})(",
-                        handle.return_type.to_c_type(&lib.c_ffi_prefix),
-                        handle.name.to_snake_case(),
-                    ))?;
-
-                    f.write(&chelpers::callback_parameters(lib, handle))?;
-
-                    f.write(");")?;
+                // Print return documentation
+                if let ReturnType::Type(_, doc) = &cb.return_type {
+                    f.writeln("@return ")?;
+                    docstring_print(f, doc, lib)?;
                 }
-                InterfaceElement::DestroyFunction(name) => {
-                    doxygen(f, |f| {
-                        f.writeln("@brief Callback when the underlying owner doesn't need the interface anymore")?;
-                        f.writeln("@param arg Context data")
-                    })?;
-                    f.writeln(&format!("void (*{})(void* arg);", name))?;
-                }
-            }
+
+                Ok(())
+            })?;
+
+            f.newline()?;
+
+            // Print function signature
+            f.write(&format!(
+                "{} (*{})(",
+                cb.return_type.to_c_type(&lib.c_ffi_prefix),
+                cb.name.to_snake_case(),
+            ))?;
+
+            f.write(&chelpers::callback_parameters(lib, cb))?;
+
+            f.write(");")?;
         }
+
+        doxygen(f, |f| {
+            f.writeln(
+                "@brief Callback when the underlying owner doesn't need the interface anymore",
+            )?;
+            f.writeln("@param arg Context data")
+        })?;
+        f.writeln(&format!("void (*{})(void* arg);", DESTROY_FUNC_NAME))?;
+
+        doxygen(f, |f| f.writeln("@brief Context data"))?;
+        f.writeln(&format!("void* {};", CTX_VARIABLE_NAME))?;
+
         Ok(())
     })?;
     f.writeln(&format!("}} {};", struct_name))?;
@@ -901,20 +898,18 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
             &format!("Initialize a {{interface:{}}} interface", handle.name).into(),
             lib,
         )?;
-        for element in &handle.elements {
-            match element {
-                InterfaceElement::Arg(name) => {
-                    f.writeln(&format!("@param {} Context data", name.to_snake_case()))?;
-                }
-                InterfaceElement::CallbackFunction(handle) => {
-                    f.writeln(&format!("@param {} ", handle.name.to_snake_case()))?;
-                    docstring_print(f, &handle.doc.brief, lib)?;
-                }
-                InterfaceElement::DestroyFunction(name) => {
-                    f.writeln(&format!("@param {} Callback when the underlying owner doesn't need the interface anymore", name.to_snake_case()))?;
-                }
-            }
+        for cb in &handle.callbacks {
+            f.writeln(&format!("@param {} ", cb.name.to_snake_case()))?;
+            docstring_print(f, &cb.doc.brief, lib)?;
         }
+        f.writeln(&format!(
+            "@param {} Callback when the underlying owner doesn't need the interface anymore",
+            DESTROY_FUNC_NAME.to_snake_case()
+        ))?;
+        f.writeln(&format!(
+            "@param {} Context data",
+            CTX_VARIABLE_NAME.to_snake_case()
+        ))?;
         Ok(())
     })?;
     f.writeln(&format!(
@@ -924,29 +919,20 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
         handle.name.to_snake_case()
     ))?;
     indented(f, |f| {
-        for (idx, element) in handle.elements.iter().enumerate() {
-            match element {
-                InterfaceElement::Arg(name) => {
-                    f.writeln(&format!("void* {}", name.to_snake_case()))?;
-                }
-                InterfaceElement::CallbackFunction(handle) => {
-                    f.writeln(&format!(
-                        "{} (*{})(",
-                        handle.return_type.to_c_type(&lib.c_ffi_prefix),
-                        handle.name.to_snake_case(),
-                    ))?;
+        for cb in &handle.callbacks {
+            f.writeln(&format!(
+                "{} (*{})(",
+                cb.return_type.to_c_type(&lib.c_ffi_prefix),
+                cb.name.to_snake_case(),
+            ))?;
 
-                    f.write(&chelpers::callback_parameters(lib, handle))?;
-                    f.write(")")?;
-                }
-                InterfaceElement::DestroyFunction(name) => {
-                    f.writeln(&format!("void (*{})(void* arg)", name))?;
-                }
-            }
-            if idx + 1 < handle.elements.len() {
-                f.write(",")?;
-            }
+            f.write(&chelpers::callback_parameters(lib, cb))?;
+            f.write("),")?;
         }
+
+        f.writeln(&format!("void (*{})(void* arg),", DESTROY_FUNC_NAME))?;
+        f.writeln(&format!("void* {}", CTX_VARIABLE_NAME.to_snake_case()))?;
+
         Ok(())
     })?;
     f.writeln(")")?;
@@ -954,31 +940,26 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
     blocked(f, |f| {
         f.writeln(&format!("{} result = ", struct_name))?;
         blocked(f, |f| {
-            for element in &handle.elements {
-                match element {
-                    InterfaceElement::Arg(name) => {
-                        f.writeln(&format!(
-                            ".{} = {},",
-                            name.to_snake_case(),
-                            name.to_snake_case()
-                        ))?;
-                    }
-                    InterfaceElement::CallbackFunction(handle) => {
-                        f.writeln(&format!(
-                            ".{} = {},",
-                            handle.name.to_snake_case(),
-                            handle.name.to_snake_case()
-                        ))?;
-                    }
-                    InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!(
-                            ".{} = {},",
-                            name.to_snake_case(),
-                            name.to_snake_case()
-                        ))?;
-                    }
-                }
+            for cb in &handle.callbacks {
+                f.writeln(&format!(
+                    ".{} = {},",
+                    cb.name.to_snake_case(),
+                    cb.name.to_snake_case()
+                ))?;
             }
+
+            f.writeln(&format!(
+                ".{} = {},",
+                DESTROY_FUNC_NAME.to_snake_case(),
+                DESTROY_FUNC_NAME.to_snake_case()
+            ))?;
+
+            f.writeln(&format!(
+                ".{} = {},",
+                CTX_VARIABLE_NAME.to_snake_case(),
+                CTX_VARIABLE_NAME.to_snake_case()
+            ))?;
+
             Ok(())
         })?;
         f.write(";")?;

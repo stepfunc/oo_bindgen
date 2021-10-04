@@ -15,36 +15,21 @@ pub struct CallbackFunction {
 }
 
 #[derive(Debug)]
-pub enum InterfaceElement {
-    Arg(String),
-    DestroyFunction(String),
-    CallbackFunction(CallbackFunction),
-}
-
-#[derive(Debug)]
 pub struct Interface {
     pub name: String,
-    pub elements: Vec<InterfaceElement>,
-    pub arg_name: String,
-    pub destroy_name: String,
+    pub callbacks: Vec<CallbackFunction>,
     pub doc: Doc,
 }
 
 impl Interface {
-    pub fn callbacks(&self) -> impl Iterator<Item = &CallbackFunction> {
-        self.elements.iter().filter_map(|el| match el {
-            InterfaceElement::CallbackFunction(cb) => Some(cb),
-            _ => None,
-        })
-    }
-
     pub fn find_callback<T: AsRef<str>>(&self, name: T) -> Option<&CallbackFunction> {
-        self.callbacks()
+        self.callbacks
+            .iter()
             .find(|callback| callback.name == name.as_ref())
     }
 
     pub fn is_functional(&self) -> bool {
-        self.callbacks().count() == 1
+        self.callbacks.len() == 1
     }
 }
 
@@ -65,10 +50,8 @@ impl From<InterfaceHandle> for AnyStructFieldType {
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
-    elements: Vec<InterfaceElement>,
-    element_names: HashSet<String>,
-    arg_name: Option<String>,
-    destroy_name: Option<String>,
+    callbacks: Vec<CallbackFunction>,
+    callback_names: HashSet<String>,
     doc: Doc,
 }
 
@@ -77,10 +60,8 @@ impl<'a> InterfaceBuilder<'a> {
         Self {
             lib,
             name,
-            elements: Vec::new(),
-            element_names: HashSet::new(),
-            arg_name: None,
-            destroy_name: None,
+            callbacks: Vec::new(),
+            callback_names: Default::default(),
             doc,
         }
     }
@@ -95,55 +76,10 @@ impl<'a> InterfaceBuilder<'a> {
         Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
     }
 
-    pub fn destroy_callback<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
-        match self.destroy_name {
-            None => {
-                let name = name.into();
-                self.check_unique_name(&name)?;
-                self.destroy_name = Some(name.to_string());
-                self.elements.push(InterfaceElement::DestroyFunction(name));
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::InterfaceDestroyCallbackAlreadyDefined {
-                interface_name: self.name,
-            }),
-        }
-    }
-
-    fn ctx<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
-        match self.arg_name {
-            None => {
-                let name = name.into();
-                self.check_unique_name(&name)?;
-                self.arg_name = Some(name.to_string());
-                self.elements.push(InterfaceElement::Arg(name));
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::InterfaceArgNameAlreadyDefined {
-                interface_name: self.name,
-            }),
-        }
-    }
-
-    pub fn build(mut self) -> BindResult<InterfaceHandle> {
-        let arg_name = if let Some(arg_name) = self.arg_name {
-            arg_name
-        } else {
-            self = self.ctx(CTX_VARIABLE_NAME)?;
-            CTX_VARIABLE_NAME.to_string()
-        };
-
-        let destroy_name =
-            self.destroy_name
-                .ok_or(BindingError::InterfaceDestroyCallbackNotDefined {
-                    interface_name: self.name.clone(),
-                })?;
-
+    pub fn build(self) -> BindResult<InterfaceHandle> {
         let handle = InterfaceHandle::new(Interface {
             name: self.name,
-            elements: self.elements,
-            arg_name,
-            destroy_name,
+            callbacks: self.callbacks,
             doc: self.doc,
         });
 
@@ -153,7 +89,7 @@ impl<'a> InterfaceBuilder<'a> {
     }
 
     fn check_unique_name(&mut self, name: &str) -> BindResult<()> {
-        if self.element_names.insert(name.to_string()) {
+        if self.callback_names.insert(name.to_string()) {
             Ok(())
         } else {
             Err(BindingError::InterfaceHasElementWithSameName {
@@ -229,9 +165,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
             doc: self.doc,
         };
 
-        self.builder
-            .elements
-            .push(InterfaceElement::CallbackFunction(cb));
+        self.builder.callbacks.push(cb);
         Ok(self.builder)
     }
 }

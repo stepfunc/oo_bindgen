@@ -13,7 +13,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .param("value", DurationType::Milliseconds, "Value")?
         .returns(DurationType::Milliseconds, "Some value")?
         .build()?
-        .destroy_callback("on_destroy")?
         .build()?;
 
     // Declare the class

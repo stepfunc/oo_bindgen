@@ -38,7 +38,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
 
     let empty_interface = lib
         .define_interface("EmptyInterface", "Interface within a structure")
-        .destroy_callback("on_destroy")?
         .build()?;
 
     lib.define_fstruct(&structure)?

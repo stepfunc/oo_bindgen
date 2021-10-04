@@ -65,7 +65,7 @@ pub(crate) fn generate_interfaces_cache(
         f.writeln(&format!("pub struct Interface{}", interface_name))?;
         blocked(&mut f, |f| {
             f.writeln("_class: jni::objects::GlobalRef,")?;
-            for callback in interface.callbacks() {
+            for callback in &interface.callbacks {
                 f.writeln(&format!(
                     "cb_{}: jni::objects::JMethodID<'static>,",
                     callback.name.to_snake_case()
@@ -79,12 +79,7 @@ pub(crate) fn generate_interfaces_cache(
 
         f.writeln(&format!("impl Interface{}", interface_name))?;
         blocked(&mut f, |f| {
-            write_interface_init(
-                f,
-                &interface_name,
-                &lib_path,
-                interface.callbacks().collect(),
-            )?;
+            write_interface_init(f, &interface_name, &lib_path, &interface.callbacks)?;
 
             f.newline()?;
 
@@ -97,29 +92,27 @@ pub(crate) fn generate_interfaces_cache(
             blocked(f, |f| {
                 f.writeln(&rust_struct_name)?;
                 blocked(f, |f| {
-                    for element in &interface.elements {
-                        match element {
-                            InterfaceElement::CallbackFunction(callback) => {
-                                f.writeln(&format!(
-                                    "{}: Some({}_{}),",
-                                    callback.name.to_snake_case(),
-                                    interface.name.to_camel_case(),
-                                    callback.name.to_snake_case()
-                                ))?;
-                            }
-                            InterfaceElement::Arg(name) => {
-                                f.writeln(&format!("{}: Box::into_raw(Box::new(env.new_global_ref(obj).unwrap())) as *mut _,", name.to_snake_case()))?;
-                            }
-                            InterfaceElement::DestroyFunction(name) => {
-                                f.writeln(&format!(
-                                    "{}: Some({}_{}),",
-                                    name.to_snake_case(),
-                                    interface.name.to_camel_case(),
-                                    name.to_snake_case()
-                                ))?;
-                            }
-                        }
+                    for cb in &interface.callbacks {
+                        f.writeln(&format!(
+                            "{}: Some({}_{}),",
+                            cb.name.to_snake_case(),
+                            interface.name.to_camel_case(),
+                            cb.name.to_snake_case()
+                        ))?;
                     }
+
+                    f.writeln(&format!(
+                        "{}: Some({}_{}),",
+                        DESTROY_FUNC_NAME.to_snake_case(),
+                        interface.name.to_camel_case(),
+                        DESTROY_FUNC_NAME.to_snake_case()
+                    ))?;
+
+                    f.writeln(&format!(
+                        "{}: Box::into_raw(Box::new(env.new_global_ref(obj).unwrap())) as *mut _,",
+                        CTX_VARIABLE_NAME.to_snake_case()
+                    ))?;
+
                     Ok(())
                 })
             })
@@ -127,90 +120,85 @@ pub(crate) fn generate_interfaces_cache(
 
         f.newline()?;
 
-        for element in &interface.elements {
-            match element {
-                InterfaceElement::CallbackFunction(callback) => {
-                    let params = callback
-                        .arguments
-                        .iter()
-                        .map(|arg| {
-                            format!(
-                                "{}: {}",
-                                arg.name.to_snake_case(),
-                                arg.arg_type.as_rust_type(&config.ffi_name)
-                            )
-                        })
-                        .chain(std::iter::once(format!(
-                            "{}: *mut std::ffi::c_void",
-                            CTX_VARIABLE_NAME
-                        )))
-                        .collect::<Vec<_>>()
-                        .join(", ");
+        for cb in &interface.callbacks {
+            let params = cb
+                .arguments
+                .iter()
+                .map(|arg| {
+                    format!(
+                        "{}: {}",
+                        arg.name.to_snake_case(),
+                        arg.arg_type.as_rust_type(&config.ffi_name)
+                    )
+                })
+                .chain(std::iter::once(format!(
+                    "{}: *mut std::ffi::c_void",
+                    CTX_VARIABLE_NAME
+                )))
+                .collect::<Vec<_>>()
+                .join(", ");
 
-                    f.writeln(&format!(
-                        "extern \"C\" fn {}_{}({}) -> {}",
-                        interface.name.to_camel_case(),
-                        callback.name.to_snake_case(),
-                        params,
-                        callback.return_type.as_rust_type(&config.ffi_name)
-                    ))?;
-                    blocked(&mut f, |f| {
-                        call_java_callback(
+            f.writeln(&format!(
+                "extern \"C\" fn {}_{}({}) -> {}",
+                interface.name.to_camel_case(),
+                cb.name.to_snake_case(),
+                params,
+                cb.return_type.as_rust_type(&config.ffi_name)
+            ))?;
+            blocked(&mut f, |f| {
+                call_java_callback(
+                    f,
+                    &format!("interface_{}", interface_name.to_snake_case()),
+                    &cb.name.to_snake_case(),
+                    &lib_path,
+                    &config.ffi_name,
+                    &lib.c_ffi_prefix,
+                    CTX_VARIABLE_NAME,
+                    &cb.arguments,
+                    &cb.return_type,
+                )?;
+
+                // Convert return value
+                if let ReturnType::Type(return_type, _) = &cb.return_type {
+                    if let Some(conversion) =
+                        return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                    {
+                        conversion.convert_to_rust(
                             f,
-                            &format!("interface_{}", interface_name.to_snake_case()),
-                            &callback.name.to_snake_case(),
-                            &lib_path,
-                            &config.ffi_name,
-                            &lib.c_ffi_prefix,
-                            CTX_VARIABLE_NAME,
-                            &callback.arguments,
-                            &callback.return_type,
+                            &format!("_result.{}", return_type.convert_jvalue()),
+                            "return ",
                         )?;
-
-                        // Convert return value
-                        if let ReturnType::Type(return_type, _) = &callback.return_type {
-                            if let Some(conversion) =
-                                return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
-                            {
-                                conversion.convert_to_rust(
-                                    f,
-                                    &format!("_result.{}", return_type.convert_jvalue()),
-                                    "return ",
-                                )?;
-                                f.write(";")?;
-                            } else {
-                                f.writeln("return _result;")?;
-                            }
-                        }
-
-                        Ok(())
-                    })?;
+                        f.write(";")?;
+                    } else {
+                        f.writeln("return _result;")?;
+                    }
                 }
-                InterfaceElement::DestroyFunction(name) => {
-                    f.writeln(&format!(
-                        "extern \"C\" fn {}_{}(ctx: *mut std::ffi::c_void)",
-                        interface.name.to_camel_case(),
-                        name.to_snake_case()
-                    ))?;
-                    blocked(&mut f, |f| {
-                        f.writeln("unsafe { Box::from_raw(ctx as *mut jni::objects::GlobalRef) };")
-                    })?;
-                }
-                InterfaceElement::Arg(_) => (),
-            }
+
+                Ok(())
+            })?;
 
             f.newline()?;
         }
+
+        // write the destroy stub
+        f.writeln(&format!(
+            "extern \"C\" fn {}_{}(ctx: *mut std::ffi::c_void)",
+            interface.name.to_camel_case(),
+            DESTROY_FUNC_NAME.to_snake_case()
+        ))?;
+        blocked(&mut f, |f| {
+            f.writeln("unsafe { Box::from_raw(ctx as *mut jni::objects::GlobalRef) };")
+        })?;
     }
 
     Ok(())
 }
 
-fn write_interface_init<'a>(
+fn write_interface_init(
     f: &mut dyn Printer,
     interface_name: &str,
     lib_path: &str,
-    callbacks: Vec<&'a CallbackFunction>,
+    callbacks: &[CallbackFunction],
 ) -> FormattingResult<()> {
     f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
     blocked(f, |f| {
@@ -220,7 +208,7 @@ fn write_interface_init<'a>(
             interface_name.to_camel_case(),
             interface_name
         ))?;
-        for callback in &callbacks {
+        for callback in callbacks {
             let method_sig = format!(
                 "({}){}",
                 callback

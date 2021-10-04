@@ -22,62 +22,59 @@ pub(crate) fn generate(
         f.writeln(&format!("public interface {}", interface_name))?;
         blocked(f, |f| {
             // Write each required method
-            interface
-                .callbacks()
-                .filter(|func| func.name != interface.destroy_name)
-                .try_for_each(|func| {
-                    // Documentation
-                    documentation(f, |f| {
-                        // Print top-level documentation
-                        xmldoc_print(f, &func.doc, lib)?;
-                        f.newline()?;
+            interface.callbacks.iter().try_for_each(|func| {
+                // Documentation
+                documentation(f, |f| {
+                    // Print top-level documentation
+                    xmldoc_print(f, &func.doc, lib)?;
+                    f.newline()?;
 
-                        // Print each parameter value
-                        for arg in &func.arguments {
-                            f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
-                            docstring_print(f, &arg.doc, lib)?;
-                            f.write("</param>")?;
-                        }
+                    // Print each parameter value
+                    for arg in &func.arguments {
+                        f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
+                        docstring_print(f, &arg.doc, lib)?;
+                        f.write("</param>")?;
+                    }
 
-                        // Print return value
-                        if let ReturnType::Type(_, doc) = &func.return_type {
-                            f.writeln("<returns>")?;
-                            docstring_print(f, doc, lib)?;
-                            f.write("</returns>")?;
-                        }
+                    // Print return value
+                    if let ReturnType::Type(_, doc) = &func.return_type {
+                        f.writeln("<returns>")?;
+                        docstring_print(f, doc, lib)?;
+                        f.write("</returns>")?;
+                    }
 
-                        Ok(())
-                    })?;
+                    Ok(())
+                })?;
 
-                    // Callback signature
-                    f.writeln(&format!(
-                        "{} {}(",
-                        func.return_type.as_dotnet_type(),
-                        func.name.to_camel_case()
-                    ))?;
-                    f.write(
-                        &func
-                            .arguments
-                            .iter()
-                            .map(|arg| {
-                                format!(
-                                    "{} {}",
-                                    arg.arg_type.as_dotnet_type(),
-                                    arg.name.to_mixed_case()
-                                )
-                            })
-                            .collect::<Vec<String>>()
-                            .join(", "),
-                    )?;
-                    f.write(");")
-                })
+                // Callback signature
+                f.writeln(&format!(
+                    "{} {}(",
+                    func.return_type.as_dotnet_type(),
+                    func.name.to_camel_case()
+                ))?;
+                f.write(
+                    &func
+                        .arguments
+                        .iter()
+                        .map(|arg| {
+                            format!(
+                                "{} {}",
+                                arg.arg_type.as_dotnet_type(),
+                                arg.name.to_mixed_case()
+                            )
+                        })
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                )?;
+                f.write(");")
+            })
         })?;
 
         f.newline()?;
 
         // Write the Action<>/Func<> based implementation if it's a functional interface
         if interface.is_functional() {
-            generate_functional_callback(f, interface, interface.callbacks().next().unwrap(), lib)?;
+            generate_functional_callback(f, interface, interface.callbacks.first().unwrap(), lib)?;
             f.newline()?;
         }
 
@@ -86,59 +83,55 @@ pub(crate) fn generate(
         f.writeln(&format!("internal struct {}NativeAdapter", interface_name))?;
         blocked(f, |f| {
             // Define each delegate type
-            for el in &interface.elements {
-                match el {
-                    InterfaceElement::CallbackFunction(func) => {
-                        f.writeln(&format!(
-                            "private delegate {} {}_delegate(",
-                            func.return_type.as_native_type(),
-                            func.name
-                        ))?;
-                        f.write(
-                            &func
-                                .arguments
-                                .iter()
-                                .map(|param| {
-                                    format!(
-                                        "{} {}",
-                                        param.arg_type.as_native_type(),
-                                        param.name.to_mixed_case()
-                                    )
-                                })
-                                .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
-                                .collect::<Vec<String>>()
-                                .join(", "),
-                        )?;
-                        f.write(");")?;
-                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", func.name, func.name, interface_name, func.name))?;
-                    }
-                    InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!(
-                            "private delegate void {}_delegate(IntPtr arg);",
-                            name
-                        ))?;
-                        f.writeln(&format!("private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;", name, name, interface_name, name))?;
-                    }
-                    _ => (),
-                }
+            for cb in &interface.callbacks {
+                f.writeln(&format!(
+                    "private delegate {} {}_delegate(",
+                    cb.return_type.as_native_type(),
+                    cb.name
+                ))?;
+                f.write(
+                    &cb.arguments
+                        .iter()
+                        .map(|arg| {
+                            format!(
+                                "{} {}",
+                                arg.arg_type.as_native_type(),
+                                arg.name.to_mixed_case()
+                            )
+                        })
+                        .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                )?;
+                f.write(");")?;
+                f.writeln(&format!(
+                    "private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;",
+                    cb.name, cb.name, interface_name, cb.name
+                ))?;
             }
+
+            f.writeln(&format!(
+                "private delegate void {}_delegate(IntPtr arg);",
+                DESTROY_FUNC_NAME
+            ))?;
+
+            f.writeln(&format!(
+                "private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;",
+                DESTROY_FUNC_NAME, DESTROY_FUNC_NAME, interface_name, DESTROY_FUNC_NAME
+            ))?;
 
             f.newline()?;
 
             // Define each structure element that will be marshalled
-            for el in &interface.elements {
-                match el {
-                    InterfaceElement::CallbackFunction(func) => {
-                        f.writeln(&format!("private {}_delegate {};", func.name, func.name))?;
-                    }
-                    InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!("private {}_delegate {};", name, name))?;
-                    }
-                    InterfaceElement::Arg(name) => {
-                        f.writeln(&format!("public IntPtr {};", name))?;
-                    }
-                }
+            for cb in &interface.callbacks {
+                f.writeln(&format!("private {}_delegate {};", cb.name, cb.name))?;
             }
+
+            f.writeln(&format!(
+                "private {}_delegate {};",
+                DESTROY_FUNC_NAME, DESTROY_FUNC_NAME
+            ))?;
+            f.writeln(&format!("public IntPtr {};", CTX_VARIABLE_NAME))?;
 
             f.newline()?;
 
@@ -151,80 +144,74 @@ pub(crate) fn generate(
                 f.writeln("var _handle = GCHandle.Alloc(impl);")?;
                 f.newline()?;
 
-                for el in &interface.elements {
-                    match el {
-                        InterfaceElement::CallbackFunction(func) => {
-                            f.writeln(&format!(
-                                "this.{} = {}NativeAdapter.{}_static_delegate;",
-                                func.name, interface_name, func.name
-                            ))?;
-                        }
-                        InterfaceElement::DestroyFunction(name) => {
-                            f.writeln(&format!(
-                                "this.{} = {}NativeAdapter.{}_static_delegate;",
-                                name, interface_name, name
-                            ))?;
-                        }
-                        InterfaceElement::Arg(name) => {
-                            f.writeln(&format!("this.{} = GCHandle.ToIntPtr(_handle);", name))?;
-                        }
-                    }
+                for cb in &interface.callbacks {
+                    f.writeln(&format!(
+                        "this.{} = {}NativeAdapter.{}_static_delegate;",
+                        cb.name, interface_name, cb.name
+                    ))?;
 
                     f.newline()?;
                 }
+
+                f.writeln(&format!(
+                    "this.{} = {}NativeAdapter.{}_static_delegate;",
+                    DESTROY_FUNC_NAME, interface_name, DESTROY_FUNC_NAME
+                ))?;
+
+                f.writeln(&format!(
+                    "this.{} = GCHandle.ToIntPtr(_handle);",
+                    CTX_VARIABLE_NAME
+                ))?;
                 Ok(())
             })?;
 
             // Define each delegate function
-            for el in &interface.elements {
-                match el {
-                    InterfaceElement::CallbackFunction(func) => {
-                        f.writeln(&format!(
-                            "internal static {} {}_cb(",
-                            func.return_type.as_native_type(),
-                            func.name
-                        ))?;
-                        f.write(
-                            &func
-                                .arguments
-                                .iter()
-                                .map(|arg| {
-                                    format!(
-                                        "{} {}",
-                                        arg.arg_type.as_native_type(),
-                                        arg.name.to_mixed_case()
-                                    )
-                                })
-                                .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
-                                .collect::<Vec<String>>()
-                                .join(", "),
-                        )?;
-                        f.write(")")?;
+            for cb in &interface.callbacks {
+                f.writeln(&format!(
+                    "internal static {} {}_cb(",
+                    cb.return_type.as_native_type(),
+                    cb.name
+                ))?;
+                f.write(
+                    &cb.arguments
+                        .iter()
+                        .map(|arg| {
+                            format!(
+                                "{} {}",
+                                arg.arg_type.as_native_type(),
+                                arg.name.to_mixed_case()
+                            )
+                        })
+                        .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                )?;
+                f.write(")")?;
 
-                        blocked(f, |f| {
-                            f.writeln(&format!(
-                                "var _handle = GCHandle.FromIntPtr({});",
-                                CTX_VARIABLE_NAME
-                            ))?;
-                            f.writeln(&format!("var _impl = ({})_handle.Target;", interface_name))?;
-                            call_dotnet_function(f, func, "return ")
-                        })?;
+                blocked(f, |f| {
+                    f.writeln(&format!(
+                        "var _handle = GCHandle.FromIntPtr({});",
+                        CTX_VARIABLE_NAME
+                    ))?;
+                    f.writeln(&format!("var _impl = ({})_handle.Target;", interface_name))?;
+                    call_dotnet_function(f, cb, "return ")
+                })?;
 
-                        f.newline()?;
-                    }
-                    InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!("internal static void {}_cb(IntPtr arg)", name))?;
-
-                        blocked(f, |f| {
-                            f.writeln("var _handle = GCHandle.FromIntPtr(arg);")?;
-                            f.writeln("_handle.Free();")
-                        })?;
-
-                        f.newline()?;
-                    }
-                    InterfaceElement::Arg(_) => (),
-                }
+                f.newline()?;
             }
+
+            // destroy delegate
+            f.writeln(&format!(
+                "internal static void {}_cb(IntPtr arg)",
+                DESTROY_FUNC_NAME
+            ))?;
+
+            blocked(f, |f| {
+                f.writeln("var _handle = GCHandle.FromIntPtr(arg);")?;
+                f.writeln("_handle.Free();")
+            })?;
+
+            f.newline()?;
 
             f.newline()?;
 

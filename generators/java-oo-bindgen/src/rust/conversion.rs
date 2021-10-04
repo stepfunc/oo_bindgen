@@ -678,7 +678,7 @@ impl TypeConverter for InterfaceConverter {
             "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
             to,
             from,
-            self.0.arg_name.to_snake_case()
+            CTX_VARIABLE_NAME.to_snake_case()
         ))?;
         blocked(f, |f| f.writeln("obj.as_obj()"))?;
         f.writeln("else")?;

@@ -349,7 +349,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 
     for interface in lib.interfaces() {
         validate_doc(&interface.name, &interface.doc, lib)?;
-        for cb in interface.callbacks() {
+        for cb in &interface.callbacks {
             let callback_name = format!("{}.{}", interface.name, cb.name);
             validate_doc_with_params(&callback_name, &cb.doc, cb.arguments.as_slice(), lib)?;
 

@@ -474,54 +474,50 @@ impl<'a> RustCodegen<'a> {
         f.writeln("#[derive(Clone)]")?;
         f.writeln(&format!("pub struct {}", interface_name))?;
         blocked(f, |f| {
-            for element in &handle.elements {
-                match element {
-                    InterfaceElement::Arg(name) => {
-                        f.writeln(&format!("pub {}: *mut std::os::raw::c_void,", name))?
-                    }
-                    InterfaceElement::CallbackFunction(handle) => {
-                        let lifetime = if handle.c_requires_lifetime() {
-                            "for<'a> "
-                        } else {
-                            ""
-                        };
+            for cb in &handle.callbacks {
+                let lifetime = if cb.c_requires_lifetime() {
+                    "for<'a> "
+                } else {
+                    ""
+                };
 
-                        f.writeln("#[allow(clippy::needless_lifetimes)]")?;
-                        f.writeln(&format!(
-                            "pub {name}: Option<{lifetime}extern \"C\" fn(",
-                            name = handle.name,
-                            lifetime = lifetime
-                        ))?;
+                f.writeln("#[allow(clippy::needless_lifetimes)]")?;
+                f.writeln(&format!(
+                    "pub {name}: Option<{lifetime}extern \"C\" fn(",
+                    name = cb.name,
+                    lifetime = lifetime
+                ))?;
 
-                        f.write(
-                            &handle
-                                .arguments
-                                .iter()
-                                .map(|arg| format!("{}: {}", arg.name, arg.arg_type.as_c_type()))
-                                .chain(std::iter::once(format!(
-                                    "{}: *mut std::os::raw::c_void",
-                                    CTX_VARIABLE_NAME
-                                )))
-                                .collect::<Vec<String>>()
-                                .join(", "),
-                        )?;
+                f.write(
+                    &cb.arguments
+                        .iter()
+                        .map(|arg| format!("{}: {}", arg.name, arg.arg_type.as_c_type()))
+                        .chain(std::iter::once(format!(
+                            "{}: *mut std::os::raw::c_void",
+                            CTX_VARIABLE_NAME
+                        )))
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                )?;
 
-                        f.write(&format!(") -> {}>,", handle.return_type.as_c_type()))?;
-                    }
-                    InterfaceElement::DestroyFunction(name) => {
-                        f.writeln(&format!(
-                            "pub {}: Option<extern \"C\" fn(ctx: *mut std::os::raw::c_void)>,",
-                            name
-                        ))?;
-                    }
-                }
+                f.write(&format!(") -> {}>,", cb.return_type.as_c_type()))?;
             }
+
+            f.writeln(&format!(
+                "pub {}: Option<extern \"C\" fn(ctx: *mut std::os::raw::c_void)>,",
+                DESTROY_FUNC_NAME
+            ))?;
+
+            f.writeln(&format!(
+                "pub {}: *mut std::os::raw::c_void,",
+                CTX_VARIABLE_NAME
+            ))?;
             Ok(())
         })?;
 
         f.newline()?;
 
-        self.write_callback_helpers(f, &interface_name, handle.callbacks())?;
+        self.write_callback_helpers(f, &interface_name, handle.callbacks.iter())?;
 
         f.newline()?;
 
@@ -530,7 +526,7 @@ impl<'a> RustCodegen<'a> {
         blocked(f, |f| {
             f.writeln("fn drop(&mut self)")?;
             blocked(f, |f| {
-                f.writeln(&format!("if let Some(cb) = self.{}", handle.destroy_name))?;
+                f.writeln(&format!("if let Some(cb) = self.{}", DESTROY_FUNC_NAME))?;
                 blocked(f, |f| {
                     f.writeln(&format!("cb(self.{});", CTX_VARIABLE_NAME))
                 })

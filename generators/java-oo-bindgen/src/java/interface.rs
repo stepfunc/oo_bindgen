@@ -21,10 +21,7 @@ pub(crate) fn generate(
     f.writeln(&format!("public interface {}", interface_name))?;
     blocked(f, |f| {
         // Write each required method
-        for func in interface
-            .callbacks()
-            .filter(|func| func.name != interface.destroy_name)
-        {
+        for func in interface.callbacks.iter() {
             // Documentation
             documentation(f, |f| {
                 // Print top-level documentation

@@ -254,7 +254,7 @@ impl<'a> ClassBuilder<'a> {
                     });
                 }
 
-                let mut cb_iter = ot_cb.callbacks();
+                let mut cb_iter = ot_cb.callbacks.iter();
                 if let Some(cb) = cb_iter.next() {
                     if !cb.return_type.is_void() {
                         return Err(BindingError::AsyncCallbackReturnTypeNotVoid {

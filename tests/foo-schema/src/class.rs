@@ -50,7 +50,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .param("value", BasicType::Uint32, "Value")?
         .returns_nothing()?
         .build()?
-        .destroy_callback("on_destroy")?
         .build()?;
 
     let testclass_get_value_async_func = lib

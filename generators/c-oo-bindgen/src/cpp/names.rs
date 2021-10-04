@@ -5,8 +5,8 @@ use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
 use oo_bindgen::constants::Constant;
-use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
+use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::struct_common::StructDeclaration;
 use oo_bindgen::types::{AnyType, Arg};
 use oo_bindgen::StructType;

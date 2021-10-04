@@ -4,15 +4,15 @@ use crate::class::*;
 use crate::collection::CollectionHandle;
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
 use crate::doc::Doc;
+use crate::enum_type::{EnumBuilder, EnumHandle};
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
+use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::function_struct::{FStructBuilder, FStructHandle};
 use crate::iterator::IteratorHandle;
-use crate::enum_type::{EnumBuilder, EnumHandle};
-use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::struct_common::{StructDeclaration, StructDeclarationHandle, Visibility};
 use crate::types::{AnyType, BasicType};
-use crate::{BindingError, Version};
 use crate::*;
+use crate::{BindingError, Version};
 
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -53,24 +53,24 @@ impl Statement {
             Statement::StructDefinition(_) => {
                 // the name is shared with the declaration
                 None
-            },
+            }
             Statement::EnumDefinition(x) => Some(x.name.as_str()),
             Statement::ErrorType(x) => Some(x.exception_name.as_str()),
             Statement::ClassDeclaration(x) => Some(x.name.as_str()),
             Statement::ClassDefinition(_) => {
                 // the name is shared with the declaration
                 None
-            },
+            }
             Statement::StaticClassDefinition(x) => Some(x.name.as_str()),
             Statement::InterfaceDefinition(x) => Some(x.name.as_str()),
             Statement::IteratorDeclaration(_) => {
                 // the name is derived in a language specific way
                 None
-            },
+            }
             Statement::CollectionDeclaration(_) => {
                 // the name is derived in a language specific way
                 None
-            },
+            }
             Statement::FunctionDefinition(x) => Some(x.name.as_str()),
         }
     }

@@ -44,41 +44,40 @@ clippy::all
     bare_trait_objects
 )]
 
-use crate::any_struct::*;
-use crate::callback::*;
-use crate::class::*;
-use crate::doc::Doc;
-use crate::enum_type::*;
-use crate::function::*;
-
-pub use semver::Version;
-
 pub mod any_struct;
 pub mod callback;
 pub mod class;
 pub mod collection;
 pub mod constants;
 pub mod doc;
+pub mod enum_type;
 pub mod error_type;
 mod errors;
 pub mod formatting;
+pub mod function;
 pub mod function_struct;
 mod handle;
 pub mod iterator;
 mod library;
-pub mod enum_type;
-pub mod function;
 pub mod platforms;
 pub mod struct_common;
 pub mod types;
 pub mod util;
+
+use crate::any_struct::*;
+use crate::callback::*;
+use crate::class::*;
+use crate::doc::Doc;
+use crate::enum_type::*;
+use crate::error_type::ErrorType;
+use crate::function::*;
+use crate::function_struct::FStructHandle;
+use crate::struct_common::StructDeclarationHandle;
+use crate::types::{AnyType, BasicType};
 
 pub use crate::doc::doc;
 pub use crate::errors::*;
 pub use crate::handle::*;
 pub use crate::library::*;
 
-use crate::error_type::ErrorType;
-use crate::function_struct::FStructHandle;
-use crate::struct_common::StructDeclarationHandle;
-use crate::types::{AnyType, BasicType};
+pub use semver::Version;

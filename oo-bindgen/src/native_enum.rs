@@ -1,6 +1,8 @@
 use crate::doc::Doc;
 use crate::*;
 
+use std::collections::HashSet;
+
 #[derive(Debug)]
 pub struct EnumVariant {
     pub name: String,

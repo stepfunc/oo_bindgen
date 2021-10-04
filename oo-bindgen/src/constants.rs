@@ -1,6 +1,8 @@
 use crate::doc::Doc;
 use crate::*;
 
+use std::collections::HashSet;
+
 /// How to render a numeric constant
 #[derive(Copy, Clone, Debug)]
 pub enum Representation {

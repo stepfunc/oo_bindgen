@@ -4,6 +4,7 @@ use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
+use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait DotnetType {
@@ -257,6 +258,28 @@ impl DotnetType for CArgument {
     }
 }
 
+impl DotnetType for CReturnValue {
+    fn as_dotnet_type(&self) -> String {
+        AnyType::from(self.clone()).as_dotnet_type()
+    }
+
+    fn as_native_type(&self) -> String {
+        AnyType::from(self.clone()).as_native_type()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).convert_to_native(from)
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).cleanup(from)
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).convert_from_native(from)
+    }
+}
+
 impl DotnetType for FReturnValue {
     fn as_dotnet_type(&self) -> String {
         AnyType::from(self.clone()).as_dotnet_type()
@@ -279,32 +302,35 @@ impl DotnetType for FReturnValue {
     }
 }
 
-impl DotnetType for FReturnType {
+impl<T> DotnetType for ReturnType<T>
+where
+    T: DotnetType + Into<AnyType>,
+{
     fn as_dotnet_type(&self) -> String {
         match self {
-            FReturnType::Void => "void".to_string(),
-            FReturnType::Type(return_type, _) => return_type.as_dotnet_type(),
+            Self::Void => "void".to_string(),
+            Self::Type(return_type, _) => return_type.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            FReturnType::Void => "void".to_string(),
-            FReturnType::Type(return_type, _) => return_type.as_native_type(),
+            Self::Void => "void".to_string(),
+            Self::Type(return_type, _) => return_type.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            FReturnType::Void => None,
-            FReturnType::Type(return_type, _) => return_type.convert_to_native(from),
+            Self::Void => None,
+            Self::Type(return_type, _) => return_type.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            FReturnType::Void => None,
-            FReturnType::Type(return_type, _) => return_type.cleanup(from),
+            Self::Void => None,
+            Self::Type(return_type, _) => return_type.cleanup(from),
         }
     }
 
@@ -436,7 +462,7 @@ pub(crate) fn call_dotnet_function(
     // Call the .NET function
     f.newline()?;
     let method_name = method.name.to_camel_case();
-    if let FReturnType::Type(return_type, _) = &method.return_type {
+    if let CReturnType::Type(return_type, _) = &method.return_type {
         if return_type.convert_to_native("_result").is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
@@ -457,7 +483,7 @@ pub(crate) fn call_dotnet_function(
     f.write(");")?;
 
     // Convert the result (if required)
-    if let FReturnType::Type(return_type, _) = &method.return_type {
+    if let CReturnType::Type(return_type, _) = &method.return_type {
         if let Some(conversion) = return_type.convert_to_native("_result") {
             f.writeln(&format!("{}{};", return_destination, conversion))?;
         }

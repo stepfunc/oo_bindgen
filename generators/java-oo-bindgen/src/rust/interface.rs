@@ -3,7 +3,6 @@ use super::formatting::*;
 use crate::*;
 use heck::{CamelCase, MixedCase, SnakeCase};
 use oo_bindgen::formatting::*;
-use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::types::Arg;
 
@@ -159,7 +158,7 @@ pub(crate) fn generate_interfaces_cache(
                 )?;
 
                 // Convert return value
-                if let FReturnType::Type(return_type, _) = &cb.return_type {
+                if let CReturnType::Type(return_type, _) = &cb.return_type {
                     if let Some(conversion) =
                         return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
                     {
@@ -242,7 +241,7 @@ fn call_java_callback(
     prefix: &str,
     arg_name: &str,
     args: &[Arg<CArgument>],
-    return_type: &FReturnType,
+    return_type: &CReturnType,
 ) -> FormattingResult<()> {
     // Extract the global ref
     f.writeln(&format!(

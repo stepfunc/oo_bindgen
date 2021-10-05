@@ -4,6 +4,7 @@ use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
+use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::any_struct::*;
 use oo_bindgen::structs::common::*;
 use oo_bindgen::types::*;
@@ -238,50 +239,79 @@ impl RustType for FReturnValue {
     }
 }
 
-impl RustType for FReturnType {
+impl RustType for CReturnValue {
     fn as_rust_type(&self) -> String {
-        if let FReturnType::Type(return_type, _) = self {
-            return_type.as_rust_type()
+        AnyType::from(self.clone()).as_rust_type()
+    }
+
+    fn as_c_type(&self) -> String {
+        AnyType::from(self.clone()).as_c_type()
+    }
+
+    fn is_copyable(&self) -> bool {
+        AnyType::from(self.clone()).is_copyable()
+    }
+
+    fn rust_requires_lifetime(&self) -> bool {
+        AnyType::from(self.clone()).rust_requires_lifetime()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        AnyType::from(self.clone()).c_requires_lifetime()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        AnyType::from(self.clone()).conversion()
+    }
+}
+
+impl<T> RustType for ReturnType<T>
+where
+    T: RustType + Into<AnyType>,
+{
+    fn as_rust_type(&self) -> String {
+        if let Self::Type(t, _) = self {
+            t.as_rust_type()
         } else {
             "()".to_string()
         }
     }
 
     fn as_c_type(&self) -> String {
-        if let FReturnType::Type(return_type, _) = self {
-            return_type.as_c_type()
+        if let Self::Type(t, _) = self {
+            t.as_c_type()
         } else {
             "()".to_string()
         }
     }
 
     fn is_copyable(&self) -> bool {
-        if let FReturnType::Type(return_type, _) = self {
-            return_type.is_copyable()
+        if let Self::Type(t, _) = self {
+            t.is_copyable()
         } else {
             true
         }
     }
 
     fn rust_requires_lifetime(&self) -> bool {
-        if let FReturnType::Type(return_type, _) = self {
-            return_type.rust_requires_lifetime()
+        if let Self::Type(t, _) = self {
+            t.rust_requires_lifetime()
         } else {
             false
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        if let FReturnType::Type(return_type, _) = self {
-            return_type.c_requires_lifetime()
+        if let Self::Type(t, _) = self {
+            t.c_requires_lifetime()
         } else {
             false
         }
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        if let FReturnType::Type(return_type, _) = self {
-            return_type.conversion()
+        if let Self::Type(t, _) = self {
+            t.conversion()
         } else {
             None
         }

@@ -15,7 +15,8 @@ use crate::*;
 use crate::{BindingError, Version};
 
 use crate::structs::callback_struct::{CStructBuilder, CStructHandle};
-use crate::structs::return_struct::{RStructBuilder, RStructHandle};
+use crate::structs::function_return_struct::{RStructBuilder, RStructHandle};
+use crate::structs::univeral_struct::{UStructBuilder, UStructHandle};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -290,6 +291,8 @@ pub enum StructType {
     RStruct(RStructHandle, AnyStructHandle),
     /// structs that may be used as callback function arguments in interfaces
     CStruct(CStructHandle, AnyStructHandle),
+    /// structs that can be used in any context and only contain basic types
+    UStruct(UStructHandle, AnyStructHandle),
 }
 
 impl From<AnyStructHandle> for StructType {
@@ -311,6 +314,7 @@ impl StructType {
             StructType::FStruct(_, x) => x,
             StructType::CStruct(_, x) => x,
             StructType::RStruct(_, x) => x,
+            StructType::UStruct(_, x) => x,
         }
     }
 
@@ -320,6 +324,7 @@ impl StructType {
             StructType::FStruct(_, x) => x.declaration.clone(),
             StructType::CStruct(_, x) => x.declaration.clone(),
             StructType::RStruct(_, x) => x.declaration.clone(),
+            StructType::UStruct(_, x) => x.declaration.clone(),
         }
     }
 
@@ -329,6 +334,7 @@ impl StructType {
             StructType::FStruct(_, x) => &x.doc,
             StructType::CStruct(_, x) => &x.doc,
             StructType::RStruct(_, x) => &x.doc,
+            StructType::UStruct(_, x) => &x.doc,
         }
     }
 
@@ -338,6 +344,7 @@ impl StructType {
             StructType::FStruct(_, x) => x.name(),
             StructType::CStruct(_, x) => x.name(),
             StructType::RStruct(_, x) => x.name(),
+            StructType::UStruct(_, x) => x.name(),
         }
     }
 
@@ -347,6 +354,7 @@ impl StructType {
             StructType::FStruct(_, x) => x.visibility,
             StructType::CStruct(_, x) => x.visibility,
             StructType::RStruct(_, x) => x.visibility,
+            StructType::UStruct(_, x) => x.visibility,
         }
     }
 
@@ -356,6 +364,7 @@ impl StructType {
             StructType::FStruct(_, x) => x.fields.iter(),
             StructType::CStruct(_, x) => x.fields.iter(),
             StructType::RStruct(_, x) => x.fields.iter(),
+            StructType::UStruct(_, x) => x.fields.iter(),
         }
     }
 
@@ -365,6 +374,7 @@ impl StructType {
             StructType::FStruct(_, x) => x.all_fields_have_defaults(),
             StructType::CStruct(_, x) => x.all_fields_have_defaults(),
             StructType::RStruct(_, x) => x.all_fields_have_defaults(),
+            StructType::UStruct(_, x) => x.all_fields_have_defaults(),
         }
     }
 
@@ -583,6 +593,21 @@ impl LibraryBuilder {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
             Ok(AnyStructBuilder::new(self, declaration.clone()))
+        } else {
+            Err(BindingError::StructAlreadyDefined {
+                handle: declaration.clone(),
+            })
+        }
+    }
+
+    /// Define a structure that can be used in any context
+    pub fn define_ustruct(
+        &mut self,
+        declaration: &StructDeclarationHandle,
+    ) -> BindResult<UStructBuilder> {
+        self.validate_struct_declaration(declaration)?;
+        if !self.structs.contains_key(declaration) {
+            Ok(UStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),

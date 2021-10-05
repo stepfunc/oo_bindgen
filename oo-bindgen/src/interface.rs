@@ -1,6 +1,8 @@
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
+use crate::return_type::ReturnType;
 use crate::structs::callback_struct::CStructHandle;
+use crate::structs::univeral_struct::UStructHandle;
 use crate::types::{Arg, DurationType};
 use crate::*;
 use std::collections::HashSet;
@@ -15,9 +17,6 @@ pub enum CArgument {
     String,
     Iterator(IteratorHandle),
     Struct(CStructHandle),
-    //StructRef(StructDeclarationHandle),
-    //ClassRef(ClassDeclarationHandle),
-    //Interface(InterfaceHandle),
 }
 
 impl From<CArgument> for AnyType {
@@ -43,10 +42,46 @@ impl From<DurationType> for CArgument {
     }
 }
 
+/// types that can be returned from callback functions
+#[derive(Debug, Clone, PartialEq)]
+pub enum CReturnValue {
+    Basic(BasicType),
+    Struct(UStructHandle),
+}
+
+impl From<CReturnValue> for AnyType {
+    fn from(x: CReturnValue) -> Self {
+        match x {
+            CReturnValue::Basic(x) => x.into(),
+            CReturnValue::Struct(x) => x.to_any_struct().into(),
+        }
+    }
+}
+
+impl From<BasicType> for CReturnValue {
+    fn from(x: BasicType) -> Self {
+        CReturnValue::Basic(x)
+    }
+}
+
+impl From<UStructHandle> for CReturnValue {
+    fn from(x: UStructHandle) -> Self {
+        CReturnValue::Struct(x)
+    }
+}
+
+impl From<DurationType> for CReturnValue {
+    fn from(x: DurationType) -> Self {
+        BasicType::Duration(x).into()
+    }
+}
+
+pub type CReturnType = ReturnType<CReturnValue>;
+
 #[derive(Debug)]
 pub struct CallbackFunction {
     pub name: String,
-    pub return_type: FReturnType,
+    pub return_type: CReturnType,
     pub arguments: Vec<Arg<CArgument>>,
     pub doc: Doc,
 }
@@ -152,7 +187,7 @@ impl<'a> InterfaceBuilder<'a> {
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
-    return_type: Option<FReturnType>,
+    return_type: Option<CReturnType>,
     arguments: Vec<Arg<CArgument>>,
     doc: Doc,
 }
@@ -188,19 +223,19 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn returns<T: Into<FReturnValue>, D: Into<DocString>>(
+    pub fn returns<T: Into<CReturnValue>, D: Into<DocString>>(
         self,
         t: T,
         d: D,
     ) -> BindResult<Self> {
-        self.return_type(FReturnType::new(t, d))
+        self.return_type(CReturnType::new(t, d))
     }
 
     pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(FReturnType::Void)
+        self.return_type(CReturnType::Void)
     }
 
-    fn return_type(mut self, return_type: FReturnType) -> BindResult<Self> {
+    fn return_type(mut self, return_type: CReturnType) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

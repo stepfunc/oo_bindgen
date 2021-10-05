@@ -1,4 +1,4 @@
-use crate::structs::return_struct::RStructHandle;
+use crate::structs::function_return_struct::RStructHandle;
 use crate::types::AnyType;
 use crate::*;
 

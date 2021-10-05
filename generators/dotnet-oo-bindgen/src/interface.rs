@@ -37,7 +37,7 @@ pub(crate) fn generate(
                     }
 
                     // Print return value
-                    if let FReturnType::Type(_, doc) = &func.return_type {
+                    if let CReturnType::Type(_, doc) = &func.return_type {
                         f.writeln("<returns>")?;
                         docstring_print(f, doc, lib)?;
                         f.write("</returns>")?;
@@ -250,14 +250,14 @@ pub(crate) fn generate_functional_callback(
         .collect::<Vec<_>>()
         .join(", ");
     let action_type = match &function.return_type {
-        FReturnType::Type(return_type, _) => {
+        CReturnType::Type(return_type, _) => {
             if param_types.is_empty() {
                 format!("Func<{}>", return_type.as_dotnet_type())
             } else {
                 format!("Func<{}, {}>", param_types, return_type.as_dotnet_type())
             }
         }
-        FReturnType::Void => {
+        CReturnType::Void => {
             if param_types.is_empty() {
                 "Action".to_string()
             } else {
@@ -310,7 +310,7 @@ pub(crate) fn generate_functional_callback(
             }
 
             // Print return value
-            if let FReturnType::Type(_, doc) = &function.return_type {
+            if let CReturnType::Type(_, doc) = &function.return_type {
                 f.writeln("<returns>")?;
                 docstring_print(f, doc, lib)?;
                 f.write("</returns>")?;

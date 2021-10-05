@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
-use crate::structs::return_struct::RStructHandle;
+use crate::structs::function_return_struct::RStructHandle;
 use crate::types::{Arg, DurationType, StringType};
 use crate::*;
 

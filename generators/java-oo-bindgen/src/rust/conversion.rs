@@ -7,6 +7,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::*;
+use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::any_struct::*;
 use oo_bindgen::structs::common::StructDeclarationHandle;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
@@ -495,7 +496,55 @@ impl JniType for FReturnValue {
     }
 }
 
-impl JniType for FReturnType {
+impl JniType for CReturnValue {
+    fn as_raw_jni_type(&self) -> String {
+        AnyType::from(self.clone()).as_raw_jni_type()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        AnyType::from(self.clone()).as_jni_sig(lib_path)
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        AnyType::from(self.clone()).as_rust_type(ffi_name)
+    }
+
+    fn convert_jvalue(&self) -> String {
+        AnyType::from(self.clone()).convert_jvalue()
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
+        AnyType::from(self.clone()).convert_to_rust_from_object(f, from, to, lib_name, prefix)
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        AnyType::from(self.clone()).conversion(lib_name, prefix)
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        AnyType::from(self.clone()).requires_local_ref_cleanup()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        AnyType::from(self.clone()).check_null(f, param_name)
+    }
+
+    fn default_value(&self) -> String {
+        AnyType::from(self.clone()).default_value()
+    }
+}
+
+impl<T> JniType for ReturnType<T>
+where
+    T: JniType + Into<AnyType>,
+{
     fn as_raw_jni_type(&self) -> String {
         match self {
             Self::Void => "()".to_string(),

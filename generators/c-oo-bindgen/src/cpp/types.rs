@@ -1,11 +1,10 @@
-use oo_bindgen::function::FReturnType;
-
 use crate::cpp::names::CppName;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::interface::{CArgument, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::any_struct::AnyStructHandle;
 use oo_bindgen::structs::common::StructDeclarationHandle;
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
@@ -70,7 +69,10 @@ pub(crate) trait CppReturnType {
     fn get_cpp_return_type(&self) -> String;
 }
 
-impl CppReturnType for FReturnType {
+impl<T> CppReturnType for ReturnType<T>
+where
+    T: Into<AnyType> + Clone,
+{
     fn get_cpp_return_type(&self) -> String {
         match self {
             Self::Void => "void".to_owned(),

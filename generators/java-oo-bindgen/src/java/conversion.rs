@@ -2,7 +2,8 @@ use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
-use oo_bindgen::interface::CArgument;
+use oo_bindgen::interface::{CArgument, CReturnValue};
+use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::types::{AnyType, BasicType};
 
 pub(crate) trait JavaType {
@@ -98,6 +99,16 @@ impl JavaType for CArgument {
     }
 }
 
+impl JavaType for CReturnValue {
+    fn as_java_primitive(&self) -> String {
+        AnyType::from(self.clone()).as_java_primitive()
+    }
+
+    fn as_java_object(&self) -> String {
+        AnyType::from(self.clone()).as_java_object()
+    }
+}
+
 impl JavaType for FReturnValue {
     fn as_java_primitive(&self) -> String {
         AnyType::from(self.clone()).as_java_primitive()
@@ -108,18 +119,21 @@ impl JavaType for FReturnValue {
     }
 }
 
-impl JavaType for FReturnType {
+impl<T> JavaType for ReturnType<T>
+where
+    T: JavaType + Into<AnyType>,
+{
     fn as_java_primitive(&self) -> String {
         match self {
-            FReturnType::Void => "void".to_string(),
-            FReturnType::Type(return_type, _) => return_type.as_java_primitive(),
+            Self::Void => "void".to_string(),
+            Self::Type(return_type, _) => return_type.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            FReturnType::Void => "Void".to_string(),
-            FReturnType::Type(return_type, _) => return_type.as_java_object(),
+            Self::Void => "Void".to_string(),
+            Self::Type(return_type, _) => return_type.as_java_object(),
         }
     }
 }

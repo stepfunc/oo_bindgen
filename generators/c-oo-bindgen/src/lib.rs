@@ -61,6 +61,7 @@ use oo_bindgen::structs::common::{StructDeclarationHandle, Visibility};
 use oo_bindgen::types::{AnyType, BasicType, DurationType};
 use oo_bindgen::*;
 
+use oo_bindgen::return_type::ReturnType;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -88,6 +89,12 @@ impl CFormatting for CArgument {
 }
 
 impl CFormatting for FReturnValue {
+    fn to_c_type(&self, prefix: &str) -> String {
+        AnyType::from(self.clone()).to_c_type(prefix)
+    }
+}
+
+impl CFormatting for CReturnValue {
     fn to_c_type(&self, prefix: &str) -> String {
         AnyType::from(self.clone()).to_c_type(prefix)
     }
@@ -179,11 +186,14 @@ impl CFormatting for AnyType {
     }
 }
 
-impl CFormatting for FReturnType {
+impl<T> CFormatting for ReturnType<T>
+where
+    T: CFormatting + Into<AnyType>,
+{
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            FReturnType::Void => "void".to_string(),
-            FReturnType::Type(return_type, _) => return_type.to_c_type(prefix),
+            Self::Void => "void".to_string(),
+            Self::Type(return_type, _) => return_type.to_c_type(prefix),
         }
     }
 }
@@ -860,7 +870,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                 docstring_print(f, &"Context data".into(), lib)?;
 
                 // Print return documentation
-                if let FReturnType::Type(_, doc) = &cb.return_type {
+                if let CReturnType::Type(_, doc) = &cb.return_type {
                     f.writeln("@return ")?;
                     docstring_print(f, doc, lib)?;
                 }

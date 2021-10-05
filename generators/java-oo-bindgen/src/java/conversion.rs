@@ -111,15 +111,15 @@ impl JavaType for FReturnValue {
 impl JavaType for FReturnType {
     fn as_java_primitive(&self) -> String {
         match self {
-            ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_java_primitive(),
+            FReturnType::Void => "void".to_string(),
+            FReturnType::Type(return_type, _) => return_type.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            ReturnType::Void => "Void".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_java_object(),
+            FReturnType::Void => "Void".to_string(),
+            FReturnType::Type(return_type, _) => return_type.as_java_object(),
         }
     }
 }

@@ -159,7 +159,7 @@ pub(crate) fn generate_interfaces_cache(
                 )?;
 
                 // Convert return value
-                if let ReturnType::Type(return_type, _) = &cb.return_type {
+                if let FReturnType::Type(return_type, _) = &cb.return_type {
                     if let Some(conversion) =
                         return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
                     {

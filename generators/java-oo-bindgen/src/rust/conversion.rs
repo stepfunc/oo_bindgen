@@ -498,29 +498,29 @@ impl JniType for FReturnValue {
 impl JniType for FReturnType {
     fn as_raw_jni_type(&self) -> String {
         match self {
-            ReturnType::Void => "()".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_raw_jni_type(),
+            Self::Void => "()".to_string(),
+            Self::Type(return_type, _) => return_type.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            ReturnType::Void => "V".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_jni_sig(lib_path),
+            Self::Void => "V".to_string(),
+            Self::Type(return_type, _) => return_type.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            ReturnType::Void => "()".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_rust_type(ffi_name),
+            Self::Void => "()".to_string(),
+            Self::Type(return_type, _) => return_type.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> String {
         match self {
-            ReturnType::Void => "v().unwrap()".to_string(),
-            ReturnType::Type(return_type, _) => return_type.convert_jvalue(),
+            Self::Void => "v().unwrap()".to_string(),
+            Self::Type(return_type, _) => return_type.convert_jvalue(),
         }
     }
 
@@ -533,8 +533,8 @@ impl JniType for FReturnType {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            ReturnType::Void => Ok(()),
-            ReturnType::Type(return_type, _) => {
+            Self::Void => Ok(()),
+            Self::Type(return_type, _) => {
                 return_type.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
@@ -542,29 +542,29 @@ impl JniType for FReturnType {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            ReturnType::Void => None,
-            ReturnType::Type(return_type, _) => return_type.conversion(lib_name, prefix),
+            Self::Void => None,
+            Self::Type(return_type, _) => return_type.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            ReturnType::Void => false,
-            ReturnType::Type(return_type, _) => return_type.requires_local_ref_cleanup(),
+            Self::Void => false,
+            Self::Type(return_type, _) => return_type.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            ReturnType::Void => Ok(()),
-            ReturnType::Type(return_type, _) => return_type.check_null(f, param_name),
+            Self::Void => Ok(()),
+            Self::Type(return_type, _) => return_type.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> String {
         match self {
-            ReturnType::Void => "".to_string(),
-            ReturnType::Type(return_type, _) => return_type.default_value(),
+            Self::Void => "".to_string(),
+            Self::Type(return_type, _) => return_type.default_value(),
         }
     }
 }

@@ -162,7 +162,7 @@ impl<'a> ClassBuilder<'a> {
         }
         self.lib.validate_function(native_function)?;
 
-        if let ReturnType::Type(FReturnValue::ClassRef(return_type), _) =
+        if let FReturnType::Type(FReturnValue::ClassRef(return_type), _) =
             &native_function.return_type
         {
             if return_type == &self.declaration {

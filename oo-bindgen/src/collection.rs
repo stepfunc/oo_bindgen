@@ -19,7 +19,7 @@ impl Collection {
         add_func: &FunctionHandle,
     ) -> BindResult<Collection> {
         // Validate constructor
-        let collection_type = if let ReturnType::Type(FReturnValue::ClassRef(collection_type), _) =
+        let collection_type = if let FReturnType::Type(FReturnValue::ClassRef(collection_type), _) =
             &create_func.return_type
         {
             collection_type

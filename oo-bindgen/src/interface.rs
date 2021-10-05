@@ -152,7 +152,7 @@ impl<'a> InterfaceBuilder<'a> {
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
-    return_type: Option<ReturnType<FReturnValue>>,
+    return_type: Option<FReturnType>,
     arguments: Vec<Arg<CArgument>>,
     doc: Doc,
 }
@@ -193,11 +193,11 @@ impl<'a> CallbackFunctionBuilder<'a> {
         t: T,
         d: D,
     ) -> BindResult<Self> {
-        self.return_type(ReturnType::new(t, d))
+        self.return_type(FReturnType::new(t, d))
     }
 
     pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(ReturnType::Void)
+        self.return_type(FReturnType::Void)
     }
 
     fn return_type(mut self, return_type: FReturnType) -> BindResult<Self> {

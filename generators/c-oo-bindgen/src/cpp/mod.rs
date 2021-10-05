@@ -19,7 +19,7 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::function::{FArgument, FunctionHandle, ReturnType};
+use oo_bindgen::function::{FArgument, FReturnType, FunctionHandle};
 use oo_bindgen::structs::common::*;
 use oo_bindgen::types::{AnyType, Arg, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
@@ -766,7 +766,7 @@ fn print_interface_conversions(
                 ))?;
                 indented(f, |f| {
                     match &cb.return_type {
-                        ReturnType::Type(t, _) => {
+                        FReturnType::Type(t, _) => {
                             let value = get_invocation(handle, cb);
 
                             f.writeln(&format!(
@@ -774,7 +774,7 @@ fn print_interface_conversions(
                                 convert_to_c(&AnyType::from(t.clone()), value)
                             ))?;
                         }
-                        ReturnType::Void => {
+                        FReturnType::Void => {
                             f.writeln(&format!("{};", get_invocation(handle, cb)))?;
                         }
                     }
@@ -1037,10 +1037,10 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
                 f.writeln("{")?;
                 indented(f, |f| {
                     match func.return_type {
-                        ReturnType::Void => {
+                        FReturnType::Void => {
                             print_without_returned_value(lib, f, func, err)?;
                         }
-                        ReturnType::Type(_, _) => {
+                        FReturnType::Type(_, _) => {
                             print_with_returned_value(lib, f, func, err)?;
                         }
                     }

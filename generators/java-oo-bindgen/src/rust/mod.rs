@@ -208,7 +208,7 @@ fn generate_functions(
             }
         }
 
-        if let ReturnType::Type(FReturnValue::ClassRef(class_handle), _) = &handle.return_type {
+        if let FReturnType::Type(FReturnValue::ClassRef(class_handle), _) = &handle.return_type {
             // We don't want to generate the `create` method of collections
             if lib.find_collection(&class_handle.name).is_some() {
                 continue;
@@ -233,7 +233,7 @@ fn generate_functions(
         )?;
         f.write(")")?;
 
-        if let ReturnType::Type(return_type, _) = &handle.return_type {
+        if let FReturnType::Type(return_type, _) = &handle.return_type {
             f.write(&format!(" -> {}", return_type.as_raw_jni_type()))?;
         }
 
@@ -264,7 +264,7 @@ fn generate_functions(
             f.write(")()")?;
             blocked(f, |f| {
                 f.writeln("_env.throw_new(\"java/lang/IllegalArgumentException\", msg).unwrap();")?;
-                if let ReturnType::Type(return_type, _) = &handle.return_type {
+                if let FReturnType::Type(return_type, _) = &handle.return_type {
                     f.writeln(&format!("return {}", return_type.default_value()))?;
                 } else {
                     f.writeln("return;")?;

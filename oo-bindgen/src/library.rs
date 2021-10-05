@@ -15,6 +15,7 @@ use crate::*;
 use crate::{BindingError, Version};
 
 use crate::structs::callback_struct::{CStructBuilder, CStructHandle};
+use crate::structs::return_struct::RStructHandle;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -285,6 +286,8 @@ pub enum StructType {
     Any(AnyStructHandle),
     /// structs that may be used as native function parameters
     FStruct(FStructHandle, AnyStructHandle),
+    /// structs than can be used as native function return values
+    RStruct(RStructHandle, AnyStructHandle),
     /// structs that may be used as callback function arguments in interfaces
     CStruct(CStructHandle, AnyStructHandle),
 }
@@ -307,6 +310,7 @@ impl StructType {
             StructType::Any(x) => x,
             StructType::FStruct(_, x) => x,
             StructType::CStruct(_, x) => x,
+            StructType::RStruct(_, x) => x,
         }
     }
 
@@ -315,6 +319,7 @@ impl StructType {
             StructType::Any(x) => x.declaration.clone(),
             StructType::FStruct(_, x) => x.declaration.clone(),
             StructType::CStruct(_, x) => x.declaration.clone(),
+            StructType::RStruct(_, x) => x.declaration.clone(),
         }
     }
 
@@ -323,6 +328,7 @@ impl StructType {
             StructType::Any(x) => &x.doc,
             StructType::FStruct(_, x) => &x.doc,
             StructType::CStruct(_, x) => &x.doc,
+            StructType::RStruct(_, x) => &x.doc,
         }
     }
 
@@ -331,6 +337,7 @@ impl StructType {
             StructType::Any(x) => x.name(),
             StructType::FStruct(_, x) => x.name(),
             StructType::CStruct(_, x) => x.name(),
+            StructType::RStruct(_, x) => x.name(),
         }
     }
 
@@ -339,6 +346,7 @@ impl StructType {
             StructType::Any(x) => x.visibility,
             StructType::FStruct(_, x) => x.visibility,
             StructType::CStruct(_, x) => x.visibility,
+            StructType::RStruct(_, x) => x.visibility,
         }
     }
 
@@ -347,6 +355,7 @@ impl StructType {
             StructType::Any(x) => x.fields.iter(),
             StructType::FStruct(_, x) => x.fields.iter(),
             StructType::CStruct(_, x) => x.fields.iter(),
+            StructType::RStruct(_, x) => x.fields.iter(),
         }
     }
 
@@ -355,6 +364,7 @@ impl StructType {
             StructType::Any(x) => x.all_fields_have_defaults(),
             StructType::FStruct(_, x) => x.all_fields_have_defaults(),
             StructType::CStruct(_, x) => x.all_fields_have_defaults(),
+            StructType::RStruct(_, x) => x.all_fields_have_defaults(),
         }
     }
 

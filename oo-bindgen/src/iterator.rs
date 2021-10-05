@@ -17,13 +17,13 @@ impl Iterator {
         item_type: &RStructHandle,
     ) -> BindResult<Iterator> {
         match &function.return_type {
-            ReturnTypeInfo::Void => {
+            ReturnType::Void => {
                 return Err(BindingError::IteratorReturnTypeNotStructRef {
                     handle: function.clone(),
                 })
             }
-            ReturnTypeInfo::Type(return_type, _) => {
-                if *return_type != ReturnType::StructRef(item_type.declaration.clone()) {
+            ReturnType::Type(return_type, _) => {
+                if *return_type != FReturnValue::StructRef(item_type.declaration.clone()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: function.clone(),
                     });

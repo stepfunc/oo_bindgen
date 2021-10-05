@@ -1,4 +1,4 @@
-use oo_bindgen::function::ReturnTypeInfo;
+use oo_bindgen::function::{FReturnType, ReturnType};
 
 use crate::cpp::names::CppName;
 use oo_bindgen::class::ClassDeclarationHandle;
@@ -70,11 +70,11 @@ pub(crate) trait CppReturnType {
     fn get_cpp_return_type(&self) -> String;
 }
 
-impl CppReturnType for ReturnTypeInfo {
+impl CppReturnType for FReturnType {
     fn get_cpp_return_type(&self) -> String {
         match self {
-            ReturnTypeInfo::Void => "void".to_owned(),
-            ReturnTypeInfo::Type(t, _) => CppType::new(t.clone().into()).get_cpp_return_type(),
+            ReturnType::Void => "void".to_owned(),
+            ReturnType::Type(t, _) => CppType::new(t.clone().into()).get_cpp_return_type(),
         }
     }
 }

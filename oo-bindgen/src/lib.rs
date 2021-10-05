@@ -76,6 +76,7 @@ pub mod interface;
 pub mod iterator;
 mod library;
 pub mod platforms;
+pub mod return_type;
 pub mod structs;
 pub mod types;
 pub mod util;

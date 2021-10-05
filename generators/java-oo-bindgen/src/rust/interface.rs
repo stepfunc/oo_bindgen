@@ -159,7 +159,7 @@ pub(crate) fn generate_interfaces_cache(
                 )?;
 
                 // Convert return value
-                if let ReturnTypeInfo::Type(return_type, _) = &cb.return_type {
+                if let ReturnType::Type(return_type, _) = &cb.return_type {
                     if let Some(conversion) =
                         return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
                     {
@@ -242,7 +242,7 @@ fn call_java_callback(
     prefix: &str,
     arg_name: &str,
     args: &[Arg<CArgument>],
-    return_type: &ReturnTypeInfo,
+    return_type: &FReturnType,
 ) -> FormattingResult<()> {
     // Extract the global ref
     f.writeln(&format!(

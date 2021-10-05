@@ -1,7 +1,7 @@
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
-use crate::function::{FunctionHandle, ReturnTypeInfo};
+use crate::function::FunctionHandle;
 use crate::interface::InterfaceHandle;
 use crate::structs::common::StructDeclarationHandle;
 use thiserror::Error;
@@ -36,15 +36,8 @@ pub enum BindingError {
     // function errors
     #[error("Function '{}' is not part of this library", handle.name)]
     FunctionNotPartOfThisLib { handle: FunctionHandle },
-    #[error(
-        "Return type of native function '{}' was already defined to '{:?}'",
-        func_name,
-        return_type
-    )]
-    ReturnTypeAlreadyDefined {
-        func_name: String,
-        return_type: ReturnTypeInfo,
-    },
+    #[error("Return type of native function '{}' was already defined", func_name)]
+    ReturnTypeAlreadyDefined { func_name: String },
     #[error("Return type of native function '{}' was not defined", func_name)]
     ReturnTypeNotDefined { func_name: String },
 

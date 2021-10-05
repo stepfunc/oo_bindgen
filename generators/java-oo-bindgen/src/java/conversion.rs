@@ -98,7 +98,7 @@ impl JavaType for CArgument {
     }
 }
 
-impl JavaType for ReturnType {
+impl JavaType for FReturnValue {
     fn as_java_primitive(&self) -> String {
         AnyType::from(self.clone()).as_java_primitive()
     }
@@ -108,18 +108,18 @@ impl JavaType for ReturnType {
     }
 }
 
-impl JavaType for ReturnTypeInfo {
+impl JavaType for FReturnType {
     fn as_java_primitive(&self) -> String {
         match self {
-            ReturnTypeInfo::Void => "void".to_string(),
-            ReturnTypeInfo::Type(return_type, _) => return_type.as_java_primitive(),
+            ReturnType::Void => "void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            ReturnTypeInfo::Void => "Void".to_string(),
-            ReturnTypeInfo::Type(return_type, _) => return_type.as_java_object(),
+            ReturnType::Void => "Void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.as_java_object(),
         }
     }
 }

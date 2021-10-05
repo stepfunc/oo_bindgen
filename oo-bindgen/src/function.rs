@@ -6,7 +6,7 @@ use crate::*;
 
 /// types that can be returns from native functions
 #[derive(Debug, Clone, PartialEq)]
-pub enum ReturnType {
+pub enum FReturnValue {
     Basic(BasicType),
     String,
     ClassRef(ClassDeclarationHandle),
@@ -14,73 +14,81 @@ pub enum ReturnType {
     StructRef(StructDeclarationHandle),
 }
 
-impl From<ReturnType> for AnyType {
-    fn from(x: ReturnType) -> Self {
+impl From<FReturnValue> for AnyType {
+    fn from(x: FReturnValue) -> Self {
         match x {
-            ReturnType::Basic(x) => AnyType::Basic(x),
-            ReturnType::String => AnyType::String,
-            ReturnType::ClassRef(x) => AnyType::ClassRef(x),
-            ReturnType::Struct(x) => AnyType::Struct(x.to_any_struct()),
-            ReturnType::StructRef(x) => AnyType::StructRef(x),
+            FReturnValue::Basic(x) => AnyType::Basic(x),
+            FReturnValue::String => AnyType::String,
+            FReturnValue::ClassRef(x) => AnyType::ClassRef(x),
+            FReturnValue::Struct(x) => AnyType::Struct(x.to_any_struct()),
+            FReturnValue::StructRef(x) => AnyType::StructRef(x),
         }
     }
 }
 
-impl From<BasicType> for ReturnType {
+impl From<BasicType> for FReturnValue {
     fn from(x: BasicType) -> Self {
-        ReturnType::Basic(x)
+        FReturnValue::Basic(x)
     }
 }
 
-impl From<DurationType> for ReturnType {
+impl From<DurationType> for FReturnValue {
     fn from(x: DurationType) -> Self {
-        ReturnType::Basic(BasicType::Duration(x))
+        FReturnValue::Basic(BasicType::Duration(x))
     }
 }
 
-impl From<ClassDeclarationHandle> for ReturnType {
+impl From<ClassDeclarationHandle> for FReturnValue {
     fn from(x: ClassDeclarationHandle) -> Self {
-        ReturnType::ClassRef(x)
+        FReturnValue::ClassRef(x)
     }
 }
 
-impl From<StringType> for ReturnType {
+impl From<StringType> for FReturnValue {
     fn from(_: StringType) -> Self {
-        ReturnType::String
+        FReturnValue::String
     }
 }
 
-impl From<EnumHandle> for ReturnType {
+impl From<EnumHandle> for FReturnValue {
     fn from(x: EnumHandle) -> Self {
-        ReturnType::Basic(BasicType::Enum(x))
+        FReturnValue::Basic(BasicType::Enum(x))
     }
 }
 
-impl From<RStructHandle> for ReturnType {
+impl From<RStructHandle> for FReturnValue {
     fn from(x: RStructHandle) -> Self {
-        ReturnType::Struct(x)
+        FReturnValue::Struct(x)
     }
 }
 
-impl From<StructDeclarationHandle> for ReturnType {
+impl From<StructDeclarationHandle> for FReturnValue {
     fn from(x: StructDeclarationHandle) -> Self {
-        ReturnType::StructRef(x)
+        FReturnValue::StructRef(x)
     }
 }
 
 #[derive(Debug)]
-pub enum ReturnTypeInfo {
+pub enum ReturnType<T>
+where
+    T: Into<AnyType>,
+{
     Void,
-    Type(ReturnType, DocString),
+    Type(T, DocString),
 }
 
-impl ReturnTypeInfo {
+pub type FReturnType = ReturnType<FReturnValue>;
+
+impl<T> ReturnType<T>
+where
+    T: Into<AnyType>,
+{
     pub fn void() -> Self {
-        ReturnTypeInfo::Void
+        ReturnType::Void
     }
 
-    pub fn new<D: Into<DocString>, T: Into<ReturnType>>(return_type: T, doc: D) -> Self {
-        ReturnTypeInfo::Type(return_type.into(), doc.into())
+    pub fn new<D: Into<DocString>, U: Into<T>>(return_type: U, doc: D) -> Self {
+        ReturnType::Type(return_type.into(), doc.into())
     }
 
     pub fn is_void(&self) -> bool {
@@ -175,7 +183,7 @@ impl From<FArgument> for AnyType {
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
-    pub return_type: ReturnTypeInfo,
+    pub return_type: FReturnType,
     pub parameters: Vec<Arg<FArgument>>,
     pub error_type: Option<ErrorType>,
     pub doc: Doc,
@@ -186,27 +194,25 @@ pub enum SignatureType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
-    NoErrorWithReturn(ReturnType, DocString),
+    NoErrorWithReturn(FReturnValue, DocString),
     /// function that can fail, but does not return a value
     ErrorNoReturn(ErrorType),
     /// function that can fail and returns something via an out parameter
-    ErrorWithReturn(ErrorType, ReturnType, DocString),
+    ErrorWithReturn(ErrorType, FReturnValue, DocString),
 }
 
 impl Function {
     pub fn get_signature_type(&self) -> SignatureType {
         match &self.error_type {
             Some(e) => match &self.return_type {
-                ReturnTypeInfo::Void => SignatureType::ErrorNoReturn(e.clone()),
-                ReturnTypeInfo::Type(t, d) => {
+                ReturnType::Void => SignatureType::ErrorNoReturn(e.clone()),
+                ReturnType::Type(t, d) => {
                     SignatureType::ErrorWithReturn(e.clone(), t.clone(), d.clone())
                 }
             },
             None => match &self.return_type {
-                ReturnTypeInfo::Void => SignatureType::NoErrorNoReturn,
-                ReturnTypeInfo::Type(t, d) => {
-                    SignatureType::NoErrorWithReturn(t.clone(), d.clone())
-                }
+                ReturnType::Void => SignatureType::NoErrorNoReturn,
+                ReturnType::Type(t, d) => SignatureType::NoErrorWithReturn(t.clone(), d.clone()),
             },
         }
     }
@@ -217,7 +223,7 @@ pub type FunctionHandle = Handle<Function>;
 pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
-    return_type: Option<ReturnTypeInfo>,
+    return_type: Option<ReturnType<FReturnValue>>,
     params: Vec<Arg<FArgument>>,
     doc: Option<Doc>,
     error_type: Option<ErrorType>,
@@ -253,26 +259,25 @@ impl<'a> FunctionBuilder<'a> {
     }
 
     pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(ReturnTypeInfo::Void)
+        self.return_type(ReturnType::Void)
     }
 
-    pub fn returns<D: Into<DocString>, T: Into<ReturnType>>(
+    pub fn returns<D: Into<DocString>, T: Into<FReturnValue>>(
         self,
         return_type: T,
         doc: D,
     ) -> BindResult<Self> {
-        self.return_type(ReturnTypeInfo::new(return_type, doc))
+        self.return_type(ReturnType::new(return_type, doc))
     }
 
-    fn return_type(mut self, return_type: ReturnTypeInfo) -> BindResult<Self> {
+    fn return_type(mut self, return_type: FReturnType) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);
                 Ok(self)
             }
-            Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined {
+            Some(_) => Err(BindingError::ReturnTypeAlreadyDefined {
                 func_name: self.name,
-                return_type,
             }),
         }
     }

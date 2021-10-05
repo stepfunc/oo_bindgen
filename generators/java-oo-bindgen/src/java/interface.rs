@@ -35,7 +35,7 @@ pub(crate) fn generate(
                 }
 
                 // Print return value
-                if let ReturnTypeInfo::Type(_, doc) = &func.return_type {
+                if let ReturnType::Type(_, doc) = &func.return_type {
                     f.writeln("@return ")?;
                     docstring_print(f, doc, lib)?;
                 }

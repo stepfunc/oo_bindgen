@@ -46,7 +46,7 @@ impl From<DurationType> for CArgument {
 #[derive(Debug)]
 pub struct CallbackFunction {
     pub name: String,
-    pub return_type: ReturnTypeInfo,
+    pub return_type: FReturnType,
     pub arguments: Vec<Arg<CArgument>>,
     pub doc: Doc,
 }
@@ -152,7 +152,7 @@ impl<'a> InterfaceBuilder<'a> {
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
-    return_type: Option<ReturnTypeInfo>,
+    return_type: Option<ReturnType<FReturnValue>>,
     arguments: Vec<Arg<CArgument>>,
     doc: Doc,
 }
@@ -188,23 +188,26 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn returns<T: Into<ReturnType>, D: Into<DocString>>(self, t: T, d: D) -> BindResult<Self> {
-        self.return_type(ReturnTypeInfo::new(t, d))
+    pub fn returns<T: Into<FReturnValue>, D: Into<DocString>>(
+        self,
+        t: T,
+        d: D,
+    ) -> BindResult<Self> {
+        self.return_type(ReturnType::new(t, d))
     }
 
     pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(ReturnTypeInfo::Void)
+        self.return_type(ReturnType::Void)
     }
 
-    fn return_type(mut self, return_type: ReturnTypeInfo) -> BindResult<Self> {
+    fn return_type(mut self, return_type: FReturnType) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);
                 Ok(self)
             }
-            Some(return_type) => Err(BindingError::ReturnTypeAlreadyDefined {
+            Some(_) => Err(BindingError::ReturnTypeAlreadyDefined {
                 func_name: self.name,
-                return_type,
             }),
         }
     }

@@ -212,7 +212,7 @@ impl RustType for CArgument {
     }
 }
 
-impl RustType for ReturnType {
+impl RustType for FReturnValue {
     fn as_rust_type(&self) -> String {
         AnyType::from(self.clone()).as_rust_type()
     }
@@ -238,9 +238,9 @@ impl RustType for ReturnType {
     }
 }
 
-impl RustType for ReturnTypeInfo {
+impl RustType for FReturnType {
     fn as_rust_type(&self) -> String {
-        if let ReturnTypeInfo::Type(return_type, _) = self {
+        if let ReturnType::Type(return_type, _) = self {
             return_type.as_rust_type()
         } else {
             "()".to_string()
@@ -248,7 +248,7 @@ impl RustType for ReturnTypeInfo {
     }
 
     fn as_c_type(&self) -> String {
-        if let ReturnTypeInfo::Type(return_type, _) = self {
+        if let ReturnType::Type(return_type, _) = self {
             return_type.as_c_type()
         } else {
             "()".to_string()
@@ -256,7 +256,7 @@ impl RustType for ReturnTypeInfo {
     }
 
     fn is_copyable(&self) -> bool {
-        if let ReturnTypeInfo::Type(return_type, _) = self {
+        if let ReturnType::Type(return_type, _) = self {
             return_type.is_copyable()
         } else {
             true
@@ -264,7 +264,7 @@ impl RustType for ReturnTypeInfo {
     }
 
     fn rust_requires_lifetime(&self) -> bool {
-        if let ReturnTypeInfo::Type(return_type, _) = self {
+        if let ReturnType::Type(return_type, _) = self {
             return_type.rust_requires_lifetime()
         } else {
             false
@@ -272,7 +272,7 @@ impl RustType for ReturnTypeInfo {
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        if let ReturnTypeInfo::Type(return_type, _) = self {
+        if let ReturnType::Type(return_type, _) = self {
             return_type.c_requires_lifetime()
         } else {
             false
@@ -280,7 +280,7 @@ impl RustType for ReturnTypeInfo {
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        if let ReturnTypeInfo::Type(return_type, _) = self {
+        if let ReturnType::Type(return_type, _) = self {
             return_type.conversion()
         } else {
             None

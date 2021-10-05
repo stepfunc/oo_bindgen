@@ -87,7 +87,7 @@ impl CFormatting for CArgument {
     }
 }
 
-impl CFormatting for ReturnType {
+impl CFormatting for FReturnValue {
     fn to_c_type(&self, prefix: &str) -> String {
         AnyType::from(self.clone()).to_c_type(prefix)
     }
@@ -179,11 +179,11 @@ impl CFormatting for AnyType {
     }
 }
 
-impl CFormatting for ReturnTypeInfo {
+impl CFormatting for FReturnType {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            ReturnTypeInfo::Void => "void".to_string(),
-            ReturnTypeInfo::Type(return_type, _) => return_type.to_c_type(prefix),
+            ReturnType::Void => "void".to_string(),
+            ReturnType::Type(return_type, _) => return_type.to_c_type(prefix),
         }
     }
 }
@@ -763,7 +763,7 @@ fn write_function_docs(
             SignatureType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
-                if let ReturnType::Basic(BasicType::Duration(mapping)) = ret {
+                if let FReturnValue::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
             }
@@ -773,7 +773,7 @@ fn write_function_docs(
             SignatureType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
-                if let ReturnType::Basic(BasicType::Duration(mapping)) = ret {
+                if let FReturnValue::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
                 write_error_return_doc(f)?;
@@ -823,7 +823,7 @@ fn write_function(
     )?;
 
     if handle.error_type.is_some() {
-        if let ReturnTypeInfo::Type(x, _) = &handle.return_type {
+        if let ReturnType::Type(x, _) = &handle.return_type {
             if !handle.parameters.is_empty() {
                 f.write(", ")?;
                 f.write(&format!("{}* out", x.to_c_type(&lib.c_ffi_prefix)))?;
@@ -860,7 +860,7 @@ fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> Fo
                 docstring_print(f, &"Context data".into(), lib)?;
 
                 // Print return documentation
-                if let ReturnTypeInfo::Type(_, doc) = &cb.return_type {
+                if let ReturnType::Type(_, doc) = &cb.return_type {
                     f.writeln("@return ")?;
                     docstring_print(f, doc, lib)?;
                 }

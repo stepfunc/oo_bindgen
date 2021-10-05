@@ -127,18 +127,6 @@ pub enum BindingError {
         interface_name: String,
         element_name: String,
     },
-    #[error("Interface '{}' already has void* arg defined", interface_name)]
-    InterfaceArgNameAlreadyDefined { interface_name: String },
-    #[error(
-        "Interface '{}' does not have a destroy callback defined",
-        interface_name
-    )]
-    InterfaceDestroyCallbackNotDefined { interface_name: String },
-    #[error(
-        "Interface '{}' already has a destroy callback defined",
-        interface_name
-    )]
-    InterfaceDestroyCallbackAlreadyDefined { interface_name: String },
     #[error("Interface '{}' is not part of this library", handle.name)]
     InterfaceNotPartOfThisLib { handle: InterfaceHandle },
 

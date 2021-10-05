@@ -1,4 +1,3 @@
-use crate::callback::{InterfaceBuilder, InterfaceHandle};
 use crate::class::*;
 use crate::collection::CollectionHandle;
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
@@ -6,6 +5,7 @@ use crate::doc::Doc;
 use crate::enum_type::{EnumBuilder, EnumHandle};
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
+use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
 use crate::structs::any_struct::{AnyStructBuilder, AnyStructField, AnyStructHandle};
 use crate::structs::common::{StructDeclaration, StructDeclarationHandle, Visibility};

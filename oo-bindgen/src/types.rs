@@ -1,10 +1,10 @@
 use crate::enum_type::EnumHandle;
 use crate::structs::any_struct::{AnyStructFieldType, AnyStructHandle};
 
-use crate::callback::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::doc::DocString;
+use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::structs::common::{EnumField, StructDeclarationHandle};
 use crate::structs::function_struct::FStructHandle;

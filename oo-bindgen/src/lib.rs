@@ -50,7 +50,6 @@ use structs::any_struct::*;
 use structs::common::StructDeclarationHandle;
 use structs::function_struct::FStructHandle;
 
-use crate::callback::*;
 use crate::class::*;
 pub use crate::doc::doc;
 use crate::doc::Doc;
@@ -59,10 +58,10 @@ use crate::error_type::ErrorType;
 pub use crate::errors::*;
 use crate::function::*;
 pub use crate::handle::*;
+use crate::interface::*;
 pub use crate::library::*;
 use crate::types::{AnyType, BasicType};
 
-pub mod callback;
 pub mod class;
 pub mod collection;
 pub mod constants;
@@ -73,6 +72,7 @@ mod errors;
 pub mod formatting;
 pub mod function;
 mod handle;
+pub mod interface;
 pub mod iterator;
 mod library;
 pub mod platforms;

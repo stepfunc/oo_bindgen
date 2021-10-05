@@ -1,6 +1,6 @@
 use crate::CFormatting;
 use heck::SnakeCase;
-use oo_bindgen::callback::{CallbackFunction, CTX_VARIABLE_NAME};
+use oo_bindgen::interface::{CallbackFunction, CTX_VARIABLE_NAME};
 use oo_bindgen::Library;
 
 pub(crate) fn callback_parameters(lib: &Library, func: &CallbackFunction) -> String {

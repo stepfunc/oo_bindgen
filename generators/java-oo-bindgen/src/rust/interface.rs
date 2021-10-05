@@ -2,9 +2,9 @@ use super::conversion::*;
 use super::formatting::*;
 use crate::*;
 use heck::{CamelCase, MixedCase, SnakeCase};
-use oo_bindgen::callback::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
+use oo_bindgen::interface::*;
 use oo_bindgen::types::{AnyType, Arg};
 
 pub(crate) fn generate_interfaces_cache(

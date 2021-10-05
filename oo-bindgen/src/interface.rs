@@ -72,7 +72,7 @@ impl<'a> InterfaceBuilder<'a> {
         doc: D,
     ) -> BindResult<CallbackFunctionBuilder<'a>> {
         let name = name.into();
-        self.check_unique_name(&name)?;
+        self.check_unique_callback_name(&name)?;
         Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
     }
 
@@ -88,7 +88,19 @@ impl<'a> InterfaceBuilder<'a> {
         Ok(handle)
     }
 
-    fn check_unique_name(&mut self, name: &str) -> BindResult<()> {
+    fn check_unique_callback_name(&mut self, name: &str) -> BindResult<()> {
+        if name == DESTROY_FUNC_NAME {
+            return Err(BindingError::InterfaceMethodWithReservedName {
+                name: DESTROY_FUNC_NAME,
+            });
+        }
+
+        if name == CTX_VARIABLE_NAME {
+            return Err(BindingError::InterfaceMethodWithReservedName {
+                name: CTX_VARIABLE_NAME,
+            });
+        }
+
         if self.callback_names.insert(name.to_string()) {
             Ok(())
         } else {
@@ -126,9 +138,16 @@ impl<'a> CallbackFunctionBuilder<'a> {
         doc: D,
     ) -> BindResult<Self> {
         let arg_type = arg_type.into();
+        let name = name.into();
+
+        if name == CTX_VARIABLE_NAME {
+            return Err(BindingError::CallbackMethodArgumentWithReservedName {
+                name: CTX_VARIABLE_NAME,
+            });
+        }
+
         self.builder.lib.validate_type(&arg_type)?;
-        self.arguments
-            .push(Arg::new(arg_type, name.into(), doc.into()));
+        self.arguments.push(Arg::new(arg_type, name, doc.into()));
         Ok(self)
     }
 

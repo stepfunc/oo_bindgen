@@ -3,11 +3,11 @@ mod names;
 mod types;
 
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::callback::{CallbackFunction, InterfaceHandle, CTX_VARIABLE_NAME};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
+use oo_bindgen::interface::{CallbackFunction, InterfaceHandle, CTX_VARIABLE_NAME};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::any_struct::{AnyStructField, AnyStructFieldType, AnyStructHandle};
 use oo_bindgen::{Library, Statement};

@@ -1,9 +1,9 @@
 use heck::CamelCase;
 
-use oo_bindgen::callback::*;
 use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
+use oo_bindgen::interface::*;
 use oo_bindgen::structs::any_struct::*;
 use oo_bindgen::structs::common::*;
 use oo_bindgen::types::*;

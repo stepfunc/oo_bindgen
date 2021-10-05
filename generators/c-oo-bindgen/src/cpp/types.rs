@@ -1,10 +1,10 @@
 use oo_bindgen::function::ReturnType;
 
 use crate::cpp::names::CppName;
-use oo_bindgen::callback::InterfaceHandle;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::any_struct::AnyStructHandle;
 use oo_bindgen::structs::common::StructDeclarationHandle;

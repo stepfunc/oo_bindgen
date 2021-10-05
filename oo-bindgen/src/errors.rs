@@ -1,8 +1,8 @@
-use crate::callback::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::{FunctionHandle, ReturnType};
+use crate::interface::InterfaceHandle;
 use crate::structs::common::StructDeclarationHandle;
 use thiserror::Error;
 
@@ -127,9 +127,18 @@ pub enum BindingError {
         interface_name: String,
         element_name: String,
     },
+    #[error(
+        "Symbol '{}' is reserved and cannot be used as an interface method name",
+        name
+    )]
+    InterfaceMethodWithReservedName { name: &'static str },
     #[error("Interface '{}' is not part of this library", handle.name)]
     InterfaceNotPartOfThisLib { handle: InterfaceHandle },
-
+    #[error(
+        "Symbol '{}' is reserved and cannot be used as a callback argument name",
+        name
+    )]
+    CallbackMethodArgumentWithReservedName { name: &'static str },
     // Iterator errors
     #[error("Iterator native function '{}' does not take a single class ref parameter", handle.name)]
     IteratorNotSingleClassRefParam { handle: FunctionHandle },

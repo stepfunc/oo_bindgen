@@ -77,10 +77,7 @@ trait CFormatting {
 
 impl CFormatting for StructType {
     fn to_c_type(&self, prefix: &str) -> String {
-        match self {
-            StructType::Any(x) => x.to_c_type(prefix),
-            StructType::FStruct(_, x) => x.to_c_type(prefix),
-        }
+        self.get_any_struct().to_c_type(prefix)
     }
 }
 

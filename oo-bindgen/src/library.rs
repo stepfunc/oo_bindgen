@@ -14,6 +14,7 @@ use crate::types::{AnyType, BasicType};
 use crate::*;
 use crate::{BindingError, Version};
 
+use crate::structs::callback_struct::CStructHandle;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -284,6 +285,8 @@ pub enum StructType {
     Any(AnyStructHandle),
     /// structs that may be used as native function parameters
     FStruct(FStructHandle, AnyStructHandle),
+    /// structs that may be used as callback function arguments in interfaces
+    CStruct(CStructHandle, AnyStructHandle),
 }
 
 impl From<AnyStructHandle> for StructType {
@@ -303,6 +306,7 @@ impl StructType {
         match self {
             StructType::Any(x) => x,
             StructType::FStruct(_, x) => x,
+            StructType::CStruct(_, x) => x,
         }
     }
 
@@ -310,6 +314,7 @@ impl StructType {
         match self {
             StructType::Any(x) => x.declaration.clone(),
             StructType::FStruct(_, x) => x.declaration.clone(),
+            StructType::CStruct(_, x) => x.declaration.clone(),
         }
     }
 
@@ -317,6 +322,7 @@ impl StructType {
         match self {
             StructType::Any(x) => &x.doc,
             StructType::FStruct(_, x) => &x.doc,
+            StructType::CStruct(_, x) => &x.doc,
         }
     }
 
@@ -324,6 +330,7 @@ impl StructType {
         match self {
             StructType::Any(x) => x.name(),
             StructType::FStruct(_, x) => x.name(),
+            StructType::CStruct(_, x) => x.name(),
         }
     }
 
@@ -331,6 +338,7 @@ impl StructType {
         match self {
             StructType::Any(x) => x.visibility,
             StructType::FStruct(_, x) => x.visibility,
+            StructType::CStruct(_, x) => x.visibility,
         }
     }
 
@@ -338,6 +346,7 @@ impl StructType {
         match self {
             StructType::Any(x) => x.fields.iter(),
             StructType::FStruct(_, x) => x.fields.iter(),
+            StructType::CStruct(_, x) => x.fields.iter(),
         }
     }
 
@@ -345,6 +354,7 @@ impl StructType {
         match self {
             StructType::Any(x) => x.all_fields_have_defaults(),
             StructType::FStruct(_, x) => x.all_fields_have_defaults(),
+            StructType::CStruct(_, x) => x.all_fields_have_defaults(),
         }
     }
 

@@ -14,7 +14,7 @@ use crate::types::{AnyType, BasicType};
 use crate::*;
 use crate::{BindingError, Version};
 
-use crate::structs::callback_struct::CStructHandle;
+use crate::structs::callback_struct::{CStructBuilder, CStructHandle};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -573,6 +573,21 @@ impl LibraryBuilder {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
             Ok(AnyStructBuilder::new(self, declaration.clone()))
+        } else {
+            Err(BindingError::StructAlreadyDefined {
+                handle: declaration.clone(),
+            })
+        }
+    }
+
+    /// Define a structure that can be used in callback function arguments
+    pub fn define_cstruct(
+        &mut self,
+        declaration: &StructDeclarationHandle,
+    ) -> BindResult<CStructBuilder> {
+        self.validate_struct_declaration(declaration)?;
+        if !self.structs.contains_key(declaration) {
+            Ok(CStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),

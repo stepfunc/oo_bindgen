@@ -8,16 +8,28 @@ namespace foo.Tests
 {
     public class IteratorTest
     {
-        /* TODO - needs refactoring
-         * 
+        class ValuesReceiver : IValuesReceiver
+        {
+            public readonly List<Byte> values = new List<Byte>();
+
+            public void OnCharacters(ICollection<StringIteratorItem> values)
+            {
+                foreach(StringIteratorItem v in values)
+                {
+                    this.values.Add(v.Value);
+                }
+            }
+        }
+
         [Fact]
         public void StringIteratorTest()
         {
+            var receiver = new ValuesReceiver();
             
-            var characters = StringIterator.IterateString("ABCDE");
-            Assert.Equal(new byte[] { 65, 66, 67, 68, 69 }, characters.Select(val => val.Value));
+            IteratorTestHelper.InvokeCallback("ABCDE", receiver);
+            Assert.Equal(new byte[] { 65, 66, 67, 68, 69 }, receiver.values);
         }
-        */
+        
     }
 }
 

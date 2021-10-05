@@ -19,15 +19,16 @@ impl Collection {
         add_func: &FunctionHandle,
     ) -> BindResult<Collection> {
         // Validate constructor
-        let collection_type = if let ReturnType::Type(AnyType::ClassRef(collection_type), _) =
-            &create_func.return_type
-        {
-            collection_type
-        } else {
-            return Err(BindingError::CollectionCreateFuncInvalidSignature {
-                handle: create_func.clone(),
-            });
-        };
+        let collection_type =
+            if let ReturnTypeInfo::Type(ReturnType::ClassRef(collection_type), _) =
+                &create_func.return_type
+            {
+                collection_type
+            } else {
+                return Err(BindingError::CollectionCreateFuncInvalidSignature {
+                    handle: create_func.clone(),
+                });
+            };
 
         if create_func.error_type.is_some() {
             return Err(BindingError::CollectionFunctionsCannotFail {

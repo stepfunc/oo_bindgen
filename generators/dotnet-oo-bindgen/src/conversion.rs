@@ -259,37 +259,59 @@ impl DotnetType for CArgument {
 
 impl DotnetType for ReturnType {
     fn as_dotnet_type(&self) -> String {
+        AnyType::from(self.clone()).as_dotnet_type()
+    }
+
+    fn as_native_type(&self) -> String {
+        AnyType::from(self.clone()).as_native_type()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).convert_to_native(from)
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).cleanup(from)
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).convert_from_native(from)
+    }
+}
+
+impl DotnetType for ReturnTypeInfo {
+    fn as_dotnet_type(&self) -> String {
         match self {
-            ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_dotnet_type(),
+            ReturnTypeInfo::Void => "void".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_native_type(),
+            ReturnTypeInfo::Void => "void".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            ReturnType::Void => None,
-            ReturnType::Type(return_type, _) => return_type.convert_to_native(from),
+            ReturnTypeInfo::Void => None,
+            ReturnTypeInfo::Type(return_type, _) => return_type.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            ReturnType::Void => None,
-            ReturnType::Type(return_type, _) => return_type.cleanup(from),
+            ReturnTypeInfo::Void => None,
+            ReturnTypeInfo::Type(return_type, _) => return_type.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            ReturnType::Void => None,
-            ReturnType::Type(return_type, _) => return_type.convert_from_native(from),
+            ReturnTypeInfo::Void => None,
+            ReturnTypeInfo::Type(return_type, _) => return_type.convert_from_native(from),
         }
     }
 }
@@ -343,7 +365,7 @@ pub(crate) fn call_native_function(
         f.write(");")?;
 
         // Convert the result (if required)
-        let return_name = if let ReturnType::Type(return_type, _) = &method.return_type {
+        let return_name = if let ReturnTypeInfo::Type(return_type, _) = &method.return_type {
             let mut return_name = "_result";
             if let Some(conversion) = return_type.convert_from_native("_result") {
                 if !is_constructor {
@@ -414,7 +436,7 @@ pub(crate) fn call_dotnet_function(
     // Call the .NET function
     f.newline()?;
     let method_name = method.name.to_camel_case();
-    if let ReturnType::Type(return_type, _) = &method.return_type {
+    if let ReturnTypeInfo::Type(return_type, _) = &method.return_type {
         if return_type.convert_to_native("_result").is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
@@ -435,7 +457,7 @@ pub(crate) fn call_dotnet_function(
     f.write(");")?;
 
     // Convert the result (if required)
-    if let ReturnType::Type(return_type, _) = &method.return_type {
+    if let ReturnTypeInfo::Type(return_type, _) = &method.return_type {
         if let Some(conversion) = return_type.convert_to_native("_result") {
             f.writeln(&format!("{}{};", return_destination, conversion))?;
         }

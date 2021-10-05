@@ -452,30 +452,75 @@ impl JniType for CArgument {
 
 impl JniType for ReturnType {
     fn as_raw_jni_type(&self) -> String {
+        AnyType::from(self.clone()).as_raw_jni_type()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        AnyType::from(self.clone()).as_jni_sig(lib_path)
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        AnyType::from(self.clone()).as_rust_type(ffi_name)
+    }
+
+    fn convert_jvalue(&self) -> String {
+        AnyType::from(self.clone()).convert_jvalue()
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
+        AnyType::from(self.clone()).convert_to_rust_from_object(f, from, to, lib_name, prefix)
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        AnyType::from(self.clone()).conversion(lib_name, prefix)
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        AnyType::from(self.clone()).requires_local_ref_cleanup()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        AnyType::from(self.clone()).check_null(f, param_name)
+    }
+
+    fn default_value(&self) -> String {
+        AnyType::from(self.clone()).default_value()
+    }
+}
+
+impl JniType for ReturnTypeInfo {
+    fn as_raw_jni_type(&self) -> String {
         match self {
-            ReturnType::Void => "()".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_raw_jni_type(),
+            ReturnTypeInfo::Void => "()".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            ReturnType::Void => "V".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_jni_sig(lib_path),
+            ReturnTypeInfo::Void => "V".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            ReturnType::Void => "()".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_rust_type(ffi_name),
+            ReturnTypeInfo::Void => "()".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> String {
         match self {
-            ReturnType::Void => "v().unwrap()".to_string(),
-            ReturnType::Type(return_type, _) => return_type.convert_jvalue(),
+            ReturnTypeInfo::Void => "v().unwrap()".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.convert_jvalue(),
         }
     }
 
@@ -488,8 +533,8 @@ impl JniType for ReturnType {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            ReturnType::Void => Ok(()),
-            ReturnType::Type(return_type, _) => {
+            ReturnTypeInfo::Void => Ok(()),
+            ReturnTypeInfo::Type(return_type, _) => {
                 return_type.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
@@ -497,29 +542,29 @@ impl JniType for ReturnType {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            ReturnType::Void => None,
-            ReturnType::Type(return_type, _) => return_type.conversion(lib_name, prefix),
+            ReturnTypeInfo::Void => None,
+            ReturnTypeInfo::Type(return_type, _) => return_type.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            ReturnType::Void => false,
-            ReturnType::Type(return_type, _) => return_type.requires_local_ref_cleanup(),
+            ReturnTypeInfo::Void => false,
+            ReturnTypeInfo::Type(return_type, _) => return_type.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            ReturnType::Void => Ok(()),
-            ReturnType::Type(return_type, _) => return_type.check_null(f, param_name),
+            ReturnTypeInfo::Void => Ok(()),
+            ReturnTypeInfo::Type(return_type, _) => return_type.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> String {
         match self {
-            ReturnType::Void => "".to_string(),
-            ReturnType::Type(return_type, _) => return_type.default_value(),
+            ReturnTypeInfo::Void => "".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.default_value(),
         }
     }
 }
@@ -753,7 +798,7 @@ impl TypeConverter for IteratorConverter {
                     f.writeln("None => { break; }")?;
                     f.writeln("Some(it) => ")?;
                     blocked(f, |f| {
-                        StructConverter(self.0.item_type.clone()).convert_from_rust(
+                        StructConverter(self.0.item_type.to_any_struct()).convert_from_rust(
                             f,
                             "it",
                             "let item = ",

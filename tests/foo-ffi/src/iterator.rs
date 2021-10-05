@@ -1,3 +1,4 @@
+/*
 use crate::ffi;
 use std::ffi::CStr;
 
@@ -45,3 +46,4 @@ pub unsafe fn iterator_next<'a>(value: *mut StringIterator) -> Option<&'a ffi::S
         None
     }
 }
+*/

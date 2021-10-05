@@ -8,11 +8,18 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::interface::{CallbackFunction, InterfaceHandle};
 use oo_bindgen::structs::any_struct::{AnyStructField, AnyStructHandle};
 use oo_bindgen::structs::common::StructDeclaration;
+use oo_bindgen::structs::return_struct::RStructHandle;
 use oo_bindgen::types::{AnyType, Arg};
 use oo_bindgen::StructType;
 
 pub(crate) trait CppName {
     fn cpp_name(&self) -> String;
+}
+
+impl CppName for RStructHandle {
+    fn cpp_name(&self) -> String {
+        self.name().to_camel_case()
+    }
 }
 
 impl CppName for StructDeclaration {

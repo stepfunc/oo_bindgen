@@ -106,3 +106,23 @@ impl From<EnumField> for RStructFieldType {
         Self::Enum(x)
     }
 }
+
+impl From<BasicType> for RStructFieldType {
+    fn from(x: BasicType) -> Self {
+        match x {
+            BasicType::Bool => Self::Bool(None),
+            BasicType::Uint8 => Self::Uint8(None),
+            BasicType::Sint8 => Self::Sint8(None),
+            BasicType::Uint16 => Self::Uint16(None),
+            BasicType::Sint16 => Self::Sint16(None),
+            BasicType::Uint32 => Self::Uint32(None),
+            BasicType::Sint32 => Self::Sint32(None),
+            BasicType::Uint64 => Self::Uint64(None),
+            BasicType::Sint64 => Self::Sint64(None),
+            BasicType::Float => Self::Float(None),
+            BasicType::Double => Self::Double(None),
+            BasicType::Duration(x) => Self::Duration(x, None),
+            BasicType::Enum(x) => Self::Enum(EnumField::new(x)),
+        }
+    }
+}

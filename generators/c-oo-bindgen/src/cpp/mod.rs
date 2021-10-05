@@ -19,7 +19,7 @@ use names::*;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
-use oo_bindgen::function::{FArgument, FunctionHandle, ReturnType};
+use oo_bindgen::function::{FArgument, FunctionHandle, ReturnTypeInfo};
 use oo_bindgen::structs::common::*;
 use oo_bindgen::types::{AnyType, Arg, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
@@ -766,12 +766,15 @@ fn print_interface_conversions(
                 ))?;
                 indented(f, |f| {
                     match &cb.return_type {
-                        ReturnType::Type(t, _) => {
+                        ReturnTypeInfo::Type(t, _) => {
                             let value = get_invocation(handle, cb);
 
-                            f.writeln(&format!("return {};", convert_to_c(t, value)))?;
+                            f.writeln(&format!(
+                                "return {};",
+                                convert_to_c(&AnyType::from(t.clone()), value)
+                            ))?;
                         }
-                        ReturnType::Void => {
+                        ReturnTypeInfo::Void => {
                             f.writeln(&format!("{};", get_invocation(handle, cb)))?;
                         }
                     }
@@ -820,7 +823,7 @@ fn print_iterator_conversions(
             f.writeln(&format!(
                 "result.push_back({});",
                 convert_to_cpp(
-                    &AnyType::Struct(handle.item_type.clone()),
+                    &AnyType::Struct(handle.item_type.to_any_struct()),
                     "*it".to_string()
                 )
             ))?;
@@ -1034,10 +1037,10 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
                 f.writeln("{")?;
                 indented(f, |f| {
                     match func.return_type {
-                        ReturnType::Void => {
+                        ReturnTypeInfo::Void => {
                             print_without_returned_value(lib, f, func, err)?;
                         }
-                        ReturnType::Type(_, _) => {
+                        ReturnTypeInfo::Type(_, _) => {
                             print_with_returned_value(lib, f, func, err)?;
                         }
                     }

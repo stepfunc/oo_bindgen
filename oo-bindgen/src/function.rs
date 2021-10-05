@@ -1,21 +1,86 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
+use crate::structs::return_struct::RStructHandle;
 use crate::types::{Arg, DurationType, StringType};
 use crate::*;
 
-#[derive(Debug)]
+/// types that can be returns from native functions
+#[derive(Debug, Clone, PartialEq)]
 pub enum ReturnType {
-    Void,
-    Type(AnyType, DocString),
+    Basic(BasicType),
+    String,
+    ClassRef(ClassDeclarationHandle),
+    Struct(RStructHandle),
+    StructRef(StructDeclarationHandle),
 }
 
-impl ReturnType {
+impl From<ReturnType> for AnyType {
+    fn from(x: ReturnType) -> Self {
+        match x {
+            ReturnType::Basic(x) => AnyType::Basic(x),
+            ReturnType::String => AnyType::String,
+            ReturnType::ClassRef(x) => AnyType::ClassRef(x),
+            ReturnType::Struct(x) => AnyType::Struct(x.to_any_struct()),
+            ReturnType::StructRef(x) => AnyType::StructRef(x),
+        }
+    }
+}
+
+impl From<BasicType> for ReturnType {
+    fn from(x: BasicType) -> Self {
+        ReturnType::Basic(x)
+    }
+}
+
+impl From<DurationType> for ReturnType {
+    fn from(x: DurationType) -> Self {
+        ReturnType::Basic(BasicType::Duration(x))
+    }
+}
+
+impl From<ClassDeclarationHandle> for ReturnType {
+    fn from(x: ClassDeclarationHandle) -> Self {
+        ReturnType::ClassRef(x)
+    }
+}
+
+impl From<StringType> for ReturnType {
+    fn from(_: StringType) -> Self {
+        ReturnType::String
+    }
+}
+
+impl From<EnumHandle> for ReturnType {
+    fn from(x: EnumHandle) -> Self {
+        ReturnType::Basic(BasicType::Enum(x))
+    }
+}
+
+impl From<RStructHandle> for ReturnType {
+    fn from(x: RStructHandle) -> Self {
+        ReturnType::Struct(x)
+    }
+}
+
+impl From<StructDeclarationHandle> for ReturnType {
+    fn from(x: StructDeclarationHandle) -> Self {
+        ReturnType::StructRef(x)
+    }
+}
+
+#[derive(Debug)]
+pub enum ReturnTypeInfo {
+    Void,
+    Type(ReturnType, DocString),
+}
+
+impl ReturnTypeInfo {
     pub fn void() -> Self {
-        ReturnType::Void
+        ReturnTypeInfo::Void
     }
 
-    pub fn new<D: Into<DocString>, T: Into<AnyType>>(return_type: T, doc: D) -> Self {
-        ReturnType::Type(return_type.into(), doc.into())
+    pub fn new<D: Into<DocString>, T: Into<ReturnType>>(return_type: T, doc: D) -> Self {
+        ReturnTypeInfo::Type(return_type.into(), doc.into())
     }
 
     pub fn is_void(&self) -> bool {
@@ -110,7 +175,7 @@ impl From<FArgument> for AnyType {
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
-    pub return_type: ReturnType,
+    pub return_type: ReturnTypeInfo,
     pub parameters: Vec<Arg<FArgument>>,
     pub error_type: Option<ErrorType>,
     pub doc: Doc,
@@ -121,25 +186,27 @@ pub enum SignatureType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
-    NoErrorWithReturn(AnyType, DocString),
+    NoErrorWithReturn(ReturnType, DocString),
     /// function that can fail, but does not return a value
     ErrorNoReturn(ErrorType),
     /// function that can fail and returns something via an out parameter
-    ErrorWithReturn(ErrorType, AnyType, DocString),
+    ErrorWithReturn(ErrorType, ReturnType, DocString),
 }
 
 impl Function {
     pub fn get_signature_type(&self) -> SignatureType {
         match &self.error_type {
             Some(e) => match &self.return_type {
-                ReturnType::Void => SignatureType::ErrorNoReturn(e.clone()),
-                ReturnType::Type(t, d) => {
+                ReturnTypeInfo::Void => SignatureType::ErrorNoReturn(e.clone()),
+                ReturnTypeInfo::Type(t, d) => {
                     SignatureType::ErrorWithReturn(e.clone(), t.clone(), d.clone())
                 }
             },
             None => match &self.return_type {
-                ReturnType::Void => SignatureType::NoErrorNoReturn,
-                ReturnType::Type(t, d) => SignatureType::NoErrorWithReturn(t.clone(), d.clone()),
+                ReturnTypeInfo::Void => SignatureType::NoErrorNoReturn,
+                ReturnTypeInfo::Type(t, d) => {
+                    SignatureType::NoErrorWithReturn(t.clone(), d.clone())
+                }
             },
         }
     }
@@ -150,7 +217,7 @@ pub type FunctionHandle = Handle<Function>;
 pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
-    return_type: Option<ReturnType>,
+    return_type: Option<ReturnTypeInfo>,
     params: Vec<Arg<FArgument>>,
     doc: Option<Doc>,
     error_type: Option<ErrorType>,
@@ -186,18 +253,18 @@ impl<'a> FunctionBuilder<'a> {
     }
 
     pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(ReturnType::Void)
+        self.return_type(ReturnTypeInfo::Void)
     }
 
-    pub fn returns<D: Into<DocString>, T: Into<AnyType>>(
+    pub fn returns<D: Into<DocString>, T: Into<ReturnType>>(
         self,
         return_type: T,
         doc: D,
     ) -> BindResult<Self> {
-        self.return_type(ReturnType::new(return_type, doc))
+        self.return_type(ReturnTypeInfo::new(return_type, doc))
     }
 
-    fn return_type(mut self, return_type: ReturnType) -> BindResult<Self> {
+    fn return_type(mut self, return_type: ReturnTypeInfo) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

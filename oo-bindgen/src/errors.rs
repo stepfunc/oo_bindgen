@@ -1,7 +1,7 @@
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
-use crate::function::{FunctionHandle, ReturnType};
+use crate::function::{FunctionHandle, ReturnTypeInfo};
 use crate::interface::InterfaceHandle;
 use crate::structs::common::StructDeclarationHandle;
 use thiserror::Error;
@@ -43,7 +43,7 @@ pub enum BindingError {
     )]
     ReturnTypeAlreadyDefined {
         func_name: String,
-        return_type: ReturnType,
+        return_type: ReturnTypeInfo,
     },
     #[error("Return type of native function '{}' was not defined", func_name)]
     ReturnTypeNotDefined { func_name: String },

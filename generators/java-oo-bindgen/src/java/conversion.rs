@@ -100,16 +100,26 @@ impl JavaType for CArgument {
 
 impl JavaType for ReturnType {
     fn as_java_primitive(&self) -> String {
+        AnyType::from(self.clone()).as_java_primitive()
+    }
+
+    fn as_java_object(&self) -> String {
+        AnyType::from(self.clone()).as_java_object()
+    }
+}
+
+impl JavaType for ReturnTypeInfo {
+    fn as_java_primitive(&self) -> String {
         match self {
-            ReturnType::Void => "void".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_java_primitive(),
+            ReturnTypeInfo::Void => "void".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            ReturnType::Void => "Void".to_string(),
-            ReturnType::Type(return_type, _) => return_type.as_java_object(),
+            ReturnTypeInfo::Void => "Void".to_string(),
+            ReturnTypeInfo::Type(return_type, _) => return_type.as_java_object(),
         }
     }
 }

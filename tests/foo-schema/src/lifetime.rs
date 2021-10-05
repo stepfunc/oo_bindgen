@@ -1,7 +1,10 @@
-use oo_bindgen::types::BasicType;
+//use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(_lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+    // must be rewritten
+
+    /*
     let iterator_class = lib.declare_class("IteratorWithLifeTime")?;
     let iterator_item = lib.declare_struct("IteratorItem")?;
     let iterator_next_fn = lib
@@ -25,6 +28,6 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add("iter", iter, "test")?
         .doc("Structure with an iterator with a lifetime")?
         .build()?;
-
+     */
     Ok(())
 }

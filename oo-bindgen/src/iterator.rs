@@ -1,3 +1,4 @@
+use crate::structs::return_struct::RStructHandle;
 use crate::types::AnyType;
 use crate::*;
 
@@ -6,23 +7,23 @@ pub struct Iterator {
     pub has_lifetime_annotation: bool,
     pub function: FunctionHandle,
     pub iter_type: ClassDeclarationHandle,
-    pub item_type: AnyStructHandle,
+    pub item_type: RStructHandle,
 }
 
 impl Iterator {
     pub(crate) fn new(
         has_lifetime_annotation: bool,
         function: &FunctionHandle,
-        item_type: &AnyStructHandle,
+        item_type: &RStructHandle,
     ) -> BindResult<Iterator> {
         match &function.return_type {
-            ReturnType::Void => {
+            ReturnTypeInfo::Void => {
                 return Err(BindingError::IteratorReturnTypeNotStructRef {
                     handle: function.clone(),
                 })
             }
-            ReturnType::Type(return_type, _) => {
-                if *return_type != AnyType::StructRef(item_type.declaration()) {
+            ReturnTypeInfo::Type(return_type, _) => {
+                if *return_type != ReturnType::StructRef(item_type.declaration.clone()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: function.clone(),
                     });

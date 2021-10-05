@@ -1,11 +1,11 @@
 use std::time::Duration;
 
 use oo_bindgen::structs::common::EnumField;
-use oo_bindgen::structs::function_struct::{FStructFieldType, FStructHandle};
+use oo_bindgen::structs::function_struct::FStructFieldType;
 use oo_bindgen::types::DurationType;
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let structure_enum = lib
         .define_enum("StructureEnum")
         .push("Var1", "Var1")?
@@ -116,11 +116,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
             FStructFieldType::String(Some("Hello".to_string())),
             "string_value",
         )?
-        .add(
-            "structure_value",
-            other_structure.clone(),
-            "structure_value",
-        )?
+        .add("structure_value", other_structure, "structure_value")?
         .add(
             "empty_interface",
             empty_interface,
@@ -142,5 +138,5 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<FStructHandle, BindingError> {
         .doc("Test structure")?
         .build()?;
 
-    Ok(other_structure)
+    Ok(())
 }

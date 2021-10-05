@@ -46,7 +46,7 @@ impl From<DurationType> for CArgument {
 #[derive(Debug)]
 pub struct CallbackFunction {
     pub name: String,
-    pub return_type: ReturnType,
+    pub return_type: ReturnTypeInfo,
     pub arguments: Vec<Arg<CArgument>>,
     pub doc: Doc,
 }
@@ -152,7 +152,7 @@ impl<'a> InterfaceBuilder<'a> {
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
-    return_type: Option<ReturnType>,
+    return_type: Option<ReturnTypeInfo>,
     arguments: Vec<Arg<CArgument>>,
     doc: Doc,
 }
@@ -188,15 +188,15 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn returns<T: Into<AnyType>, D: Into<DocString>>(self, t: T, d: D) -> BindResult<Self> {
-        self.return_type(ReturnType::new(t, d))
+    pub fn returns<T: Into<ReturnType>, D: Into<DocString>>(self, t: T, d: D) -> BindResult<Self> {
+        self.return_type(ReturnTypeInfo::new(t, d))
     }
 
     pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(ReturnType::Void)
+        self.return_type(ReturnTypeInfo::Void)
     }
 
-    fn return_type(mut self, return_type: ReturnType) -> BindResult<Self> {
+    fn return_type(mut self, return_type: ReturnTypeInfo) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

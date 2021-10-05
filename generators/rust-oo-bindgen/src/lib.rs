@@ -573,7 +573,7 @@ impl<'a> RustCodegen<'a> {
                 )?;
                 f.write(")")?;
 
-                if let ReturnType::Type(return_type, _) = &callback.return_type {
+                if let ReturnTypeInfo::Type(return_type, _) = &callback.return_type {
                     f.write(&format!(" -> Option<{}>", return_type.as_rust_type()))?;
                 }
 
@@ -598,7 +598,7 @@ impl<'a> RustCodegen<'a> {
                         .join(", ");
                     let call = format!("cb({})", params);
 
-                    if let ReturnType::Type(return_type, _) = &callback.return_type {
+                    if let ReturnTypeInfo::Type(return_type, _) = &callback.return_type {
                         f.writeln(&format!("self.{}.map(|cb| ", callback.name))?;
                         blocked(f, |f| {
                             if let Some(conversion) = return_type.conversion() {

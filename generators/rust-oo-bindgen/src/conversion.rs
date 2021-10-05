@@ -214,7 +214,33 @@ impl RustType for CArgument {
 
 impl RustType for ReturnType {
     fn as_rust_type(&self) -> String {
-        if let ReturnType::Type(return_type, _) = self {
+        AnyType::from(self.clone()).as_rust_type()
+    }
+
+    fn as_c_type(&self) -> String {
+        AnyType::from(self.clone()).as_c_type()
+    }
+
+    fn is_copyable(&self) -> bool {
+        AnyType::from(self.clone()).is_copyable()
+    }
+
+    fn rust_requires_lifetime(&self) -> bool {
+        AnyType::from(self.clone()).rust_requires_lifetime()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        AnyType::from(self.clone()).c_requires_lifetime()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        AnyType::from(self.clone()).conversion()
+    }
+}
+
+impl RustType for ReturnTypeInfo {
+    fn as_rust_type(&self) -> String {
+        if let ReturnTypeInfo::Type(return_type, _) = self {
             return_type.as_rust_type()
         } else {
             "()".to_string()
@@ -222,7 +248,7 @@ impl RustType for ReturnType {
     }
 
     fn as_c_type(&self) -> String {
-        if let ReturnType::Type(return_type, _) = self {
+        if let ReturnTypeInfo::Type(return_type, _) = self {
             return_type.as_c_type()
         } else {
             "()".to_string()
@@ -230,7 +256,7 @@ impl RustType for ReturnType {
     }
 
     fn is_copyable(&self) -> bool {
-        if let ReturnType::Type(return_type, _) = self {
+        if let ReturnTypeInfo::Type(return_type, _) = self {
             return_type.is_copyable()
         } else {
             true
@@ -238,7 +264,7 @@ impl RustType for ReturnType {
     }
 
     fn rust_requires_lifetime(&self) -> bool {
-        if let ReturnType::Type(return_type, _) = self {
+        if let ReturnTypeInfo::Type(return_type, _) = self {
             return_type.rust_requires_lifetime()
         } else {
             false
@@ -246,7 +272,7 @@ impl RustType for ReturnType {
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        if let ReturnType::Type(return_type, _) = self {
+        if let ReturnTypeInfo::Type(return_type, _) = self {
             return_type.c_requires_lifetime()
         } else {
             false
@@ -254,7 +280,7 @@ impl RustType for ReturnType {
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        if let ReturnType::Type(return_type, _) = self {
+        if let ReturnTypeInfo::Type(return_type, _) = self {
             return_type.conversion()
         } else {
             None

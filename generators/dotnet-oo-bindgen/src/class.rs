@@ -129,7 +129,7 @@ fn generate_constructor(
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &constructor.return_type {
+        if let ReturnTypeInfo::Type(_, doc) = &constructor.return_type {
             f.writeln("<returns>")?;
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
@@ -234,7 +234,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let ReturnTypeInfo::Type(_, doc) = &method.native_function.return_type {
             f.writeln("<returns>")?;
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
@@ -303,7 +303,7 @@ fn generate_static_method(
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let ReturnTypeInfo::Type(_, doc) = &method.native_function.return_type {
             f.writeln("<returns>")?;
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;

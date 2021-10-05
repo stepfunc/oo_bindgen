@@ -218,7 +218,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let ReturnTypeInfo::Type(_, doc) = &method.native_function.return_type {
             f.writeln("@return ")?;
             docstring_print(f, doc, lib)?;
         }
@@ -286,7 +286,7 @@ fn generate_static_method(
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let ReturnTypeInfo::Type(_, doc) = &method.native_function.return_type {
             f.writeln("@return ")?;
             docstring_print(f, doc, lib)?;
         }

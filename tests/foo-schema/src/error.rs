@@ -1,12 +1,8 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::structs::function_struct::FStructHandle;
 use oo_bindgen::types::{BasicType, STRING_TYPE};
 use oo_bindgen::{BindingError, LibraryBuilder};
 
-pub(crate) fn define(
-    lib: &mut LibraryBuilder,
-    structure: FStructHandle,
-) -> Result<(), BindingError> {
+pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let error_type = lib
         .define_error_type("MyError", "MyException", ExceptionType::UncheckedException)?
         .add_error("BadPassword", "Wrong password!")?
@@ -25,9 +21,9 @@ pub(crate) fn define(
         .build()?;
 
     let get_struct_fn = lib
-        .define_function("get_struct")
+        .define_function("validate_password")
         .param("password", STRING_TYPE, "secret password")?
-        .returns(structure, "A struct")?
+        .returns_nothing()?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a struct")?
         .build()?;
@@ -68,7 +64,7 @@ pub(crate) fn define(
         .destructor(&destructor_fn)?
         .method("GetSpecialValueFromInstance", &get_special_value_fn)?
         .static_method("GetSpecialValue", &get_special_number_fb)?
-        .static_method("GetStruct", &get_struct_fn)?
+        .static_method("ValidatePassword", &get_struct_fn)?
         .static_method("EchoPassword", &echo_password_fn)?
         .doc("A very special class")?
         .build()?;

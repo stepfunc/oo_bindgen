@@ -15,7 +15,7 @@ use crate::*;
 use crate::{BindingError, Version};
 
 use crate::structs::callback_struct::{CStructBuilder, CStructHandle};
-use crate::structs::return_struct::RStructHandle;
+use crate::structs::return_struct::{RStructBuilder, RStructHandle};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -605,6 +605,21 @@ impl LibraryBuilder {
         }
     }
 
+    /// Define a structure that can be used in callback function arguments
+    pub fn define_rstruct(
+        &mut self,
+        declaration: &StructDeclarationHandle,
+    ) -> BindResult<RStructBuilder> {
+        self.validate_struct_declaration(declaration)?;
+        if !self.structs.contains_key(declaration) {
+            Ok(RStructBuilder::new(self, declaration.clone()))
+        } else {
+            Err(BindingError::StructAlreadyDefined {
+                handle: declaration.clone(),
+            })
+        }
+    }
+
     /// Define a structure that can be used in native function arguments
     pub fn define_fstruct(
         &mut self,
@@ -667,7 +682,7 @@ impl LibraryBuilder {
     pub fn define_iterator(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &AnyStructHandle,
+        item_type: &RStructHandle,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(false, native_func, item_type)
     }
@@ -675,7 +690,7 @@ impl LibraryBuilder {
     pub fn define_iterator_with_lifetime(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &AnyStructHandle,
+        item_type: &RStructHandle,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(true, native_func, item_type)
     }
@@ -684,7 +699,7 @@ impl LibraryBuilder {
         &mut self,
         has_lifetime: bool,
         native_func: &FunctionHandle,
-        item_type: &AnyStructHandle,
+        item_type: &RStructHandle,
     ) -> BindResult<IteratorHandle> {
         let iter = IteratorHandle::new(crate::iterator::Iterator::new(
             has_lifetime,

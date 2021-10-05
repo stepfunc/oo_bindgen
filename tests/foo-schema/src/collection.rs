@@ -1,4 +1,4 @@
-use oo_bindgen::types::{AnyType, BasicType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, STRING_TYPE};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -66,7 +66,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_function("collection_get")
         .param("col", collection, "Collection")?
         .param("idx", BasicType::Uint32, "Index")?
-        .returns(AnyType::String, "Value")?
+        .returns(STRING_TYPE, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
 
@@ -81,7 +81,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_function("collection_with_reserve_get")
         .param("col", collection_with_reserve, "Collection")?
         .param("idx", BasicType::Uint32, "Index")?
-        .returns(AnyType::String, "Value")?
+        .returns(STRING_TYPE, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
 

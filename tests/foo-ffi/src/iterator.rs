@@ -1,4 +1,3 @@
-/*
 use crate::ffi;
 use std::ffi::CStr;
 
@@ -23,16 +22,9 @@ impl StringIterator {
     }
 }
 
-pub unsafe fn iterator_create(value: &CStr) -> *mut StringIterator {
-    let bytes = value.to_bytes().to_vec();
-    let it = Box::new(StringIterator::new(bytes));
-    Box::into_raw(it)
-}
-
-pub unsafe fn iterator_destroy(it: *mut StringIterator) {
-    if !it.is_null() {
-        Box::from_raw(it);
-    }
+pub unsafe fn invoke_callback(values: &CStr, callback: ffi::ValuesReceiver) {
+    let mut iter = StringIterator::new(values.to_bytes().to_vec());
+    callback.on_characters(&mut iter)
 }
 
 pub unsafe fn iterator_next<'a>(value: *mut StringIterator) -> Option<&'a ffi::StringIteratorItem> {
@@ -46,4 +38,4 @@ pub unsafe fn iterator_next<'a>(value: *mut StringIterator) -> Option<&'a ffi::S
         None
     }
 }
-*/
+

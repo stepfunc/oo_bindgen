@@ -42,6 +42,12 @@ impl From<DurationType> for CArgument {
     }
 }
 
+impl From<IteratorHandle> for CArgument {
+    fn from(x: IteratorHandle) -> Self {
+        Self::Iterator(x)
+    }
+}
+
 /// types that can be returned from callback functions
 #[derive(Debug, Clone, PartialEq)]
 pub enum CReturnValue {

@@ -13,13 +13,13 @@ use oo_bindgen::types::{AnyType, BasicType, DurationType};
 
 pub(crate) trait JniType {
     /// Returns raw JNI type (from jni::sys::* module)
-    fn as_raw_jni_type(&self) -> &str;
+    fn as_raw_jni_type(&self) -> String;
     /// Returns the JNI signature of the type
     fn as_jni_sig(&self, lib_path: &str) -> String;
     /// Return the Rust FFI type
     fn as_rust_type(&self, ffi_name: &str) -> String;
     /// Convert from jni::objects::JValue to raw JNI type (by calling one of the unwrappers)
-    fn convert_jvalue(&self) -> &str;
+    fn convert_jvalue(&self) -> String;
     /// Convert to Rust from a JNI JObject (even for primitives).
     ///
     /// This should call the conversion routine for objects, but implement
@@ -39,25 +39,25 @@ pub(crate) trait JniType {
     /// Check the parameter for null value. Must return an `Err(String)` if it's the case.
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()>;
     /// Returns the default raw JNI type value (used when throwing exceptions). Almost always `JObject::null` except for native types.
-    fn default_value(&self) -> &str;
+    fn default_value(&self) -> String;
 }
 
 impl JniType for BasicType {
-    fn as_raw_jni_type(&self) -> &str {
+    fn as_raw_jni_type(&self) -> String {
         match self {
-            Self::Bool => "jni::sys::jboolean",
-            Self::Uint8 => "jni::sys::jobject",
-            Self::Sint8 => "jni::sys::jbyte",
-            Self::Uint16 => "jni::sys::jobject",
-            Self::Sint16 => "jni::sys::jshort",
-            Self::Uint32 => "jni::sys::jobject",
-            Self::Sint32 => "jni::sys::jint",
-            Self::Uint64 => "jni::sys::jobject",
-            Self::Sint64 => "jni::sys::jlong",
-            Self::Float => "jni::sys::jfloat",
-            Self::Double => "jni::sys::jdouble",
-            Self::Duration(_) => "jni::sys::jobject",
-            Self::Enum(_) => "jni::sys::jobject",
+            Self::Bool => "jni::sys::jboolean".to_string(),
+            Self::Uint8 => "jni::sys::jobject".to_string(),
+            Self::Sint8 => "jni::sys::jbyte".to_string(),
+            Self::Uint16 => "jni::sys::jobject".to_string(),
+            Self::Sint16 => "jni::sys::jshort".to_string(),
+            Self::Uint32 => "jni::sys::jobject".to_string(),
+            Self::Sint32 => "jni::sys::jint".to_string(),
+            Self::Uint64 => "jni::sys::jobject".to_string(),
+            Self::Sint64 => "jni::sys::jlong".to_string(),
+            Self::Float => "jni::sys::jfloat".to_string(),
+            Self::Double => "jni::sys::jdouble".to_string(),
+            Self::Duration(_) => "jni::sys::jobject".to_string(),
+            Self::Enum(_) => "jni::sys::jobject".to_string(),
         }
     }
 
@@ -97,21 +97,21 @@ impl JniType for BasicType {
         }
     }
 
-    fn convert_jvalue(&self) -> &str {
+    fn convert_jvalue(&self) -> String {
         match self {
-            Self::Bool => "z().unwrap() as u8",
-            Self::Uint8 => "l().unwrap().into_inner()",
-            Self::Sint8 => "b().unwrap()",
-            Self::Uint16 => "l().unwrap().into_inner()",
-            Self::Sint16 => "s().unwrap()",
-            Self::Uint32 => "l().unwrap().into_inner()",
-            Self::Sint32 => "i().unwrap()",
-            Self::Uint64 => "l().unwrap().into_inner()",
-            Self::Sint64 => "j().unwrap()",
-            Self::Float => "f().unwrap()",
-            Self::Double => "d().unwrap()",
-            Self::Duration(_) => "l().unwrap().into_inner()",
-            Self::Enum(_) => "l().unwrap().into_inner()",
+            Self::Bool => "z().unwrap() as u8".to_string(),
+            Self::Uint8 => "l().unwrap().into_inner()".to_string(),
+            Self::Sint8 => "b().unwrap()".to_string(),
+            Self::Uint16 => "l().unwrap().into_inner()".to_string(),
+            Self::Sint16 => "s().unwrap()".to_string(),
+            Self::Uint32 => "l().unwrap().into_inner()".to_string(),
+            Self::Sint32 => "i().unwrap()".to_string(),
+            Self::Uint64 => "l().unwrap().into_inner()".to_string(),
+            Self::Sint64 => "j().unwrap()".to_string(),
+            Self::Float => "f().unwrap()".to_string(),
+            Self::Double => "d().unwrap()".to_string(),
+            Self::Duration(_) => "l().unwrap().into_inner()".to_string(),
+            Self::Enum(_) => "l().unwrap().into_inner()".to_string(),
         }
     }
 
@@ -220,40 +220,40 @@ impl JniType for BasicType {
         }
     }
 
-    fn default_value(&self) -> &str {
+    fn default_value(&self) -> String {
         const NULL: &str = "jni::objects::JObject::null().into_inner()";
 
         match self {
-            Self::Bool => "0",
-            Self::Uint8 => NULL,
-            Self::Sint8 => "0",
-            Self::Uint16 => NULL,
-            Self::Sint16 => "0",
-            Self::Uint32 => NULL,
-            Self::Sint32 => "0",
-            Self::Uint64 => NULL,
-            Self::Sint64 => "0",
-            Self::Float => "0.0",
-            Self::Double => "0.0",
-            Self::Duration(_) => NULL,
-            Self::Enum(_) => NULL,
+            Self::Bool => "0".to_string(),
+            Self::Uint8 => NULL.to_string(),
+            Self::Sint8 => "0".to_string(),
+            Self::Uint16 => NULL.to_string(),
+            Self::Sint16 => "0".to_string(),
+            Self::Uint32 => NULL.to_string(),
+            Self::Sint32 => "0".to_string(),
+            Self::Uint64 => NULL.to_string(),
+            Self::Sint64 => "0".to_string(),
+            Self::Float => "0.0".to_string(),
+            Self::Double => "0.0".to_string(),
+            Self::Duration(_) => NULL.to_string(),
+            Self::Enum(_) => NULL.to_string(),
         }
     }
 }
 
 impl JniType for AnyType {
-    fn as_raw_jni_type(&self) -> &str {
+    fn as_raw_jni_type(&self) -> String {
         const JOBJECT: &str = "jni::sys::jobject";
 
         match self {
             Self::Basic(x) => x.as_raw_jni_type(),
-            Self::String => "jni::sys::jstring",
-            Self::Struct(_) => JOBJECT,
-            Self::StructRef(_) => JOBJECT,
-            Self::ClassRef(_) => JOBJECT,
-            Self::Interface(_) => JOBJECT,
-            Self::Iterator(_) => JOBJECT,
-            Self::Collection(_) => JOBJECT,
+            Self::String => "jni::sys::jstring".to_string(),
+            Self::Struct(_) => JOBJECT.to_string(),
+            Self::StructRef(_) => JOBJECT.to_string(),
+            Self::ClassRef(_) => JOBJECT.to_string(),
+            Self::Interface(_) => JOBJECT.to_string(),
+            Self::Iterator(_) => JOBJECT.to_string(),
+            Self::Collection(_) => JOBJECT.to_string(),
         }
     }
 
@@ -291,16 +291,16 @@ impl JniType for AnyType {
         }
     }
 
-    fn convert_jvalue(&self) -> &str {
+    fn convert_jvalue(&self) -> String {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
-            Self::String => "l().unwrap().into_inner()",
-            Self::Struct(_) => "l().unwrap().into_inner()",
-            Self::StructRef(_) => "l().unwrap().into_inner()",
-            Self::ClassRef(_) => "l().unwrap().into_inner()",
-            Self::Interface(_) => "l().unwrap().into_inner()",
-            Self::Iterator(_) => "l().unwrap().into_inner()",
-            Self::Collection(_) => "l().unwrap().into_inner()",
+            Self::String => "l().unwrap().into_inner()".to_string(),
+            Self::Struct(_) => "l().unwrap().into_inner()".to_string(),
+            Self::StructRef(_) => "l().unwrap().into_inner()".to_string(),
+            Self::ClassRef(_) => "l().unwrap().into_inner()".to_string(),
+            Self::Interface(_) => "l().unwrap().into_inner()".to_string(),
+            Self::Iterator(_) => "l().unwrap().into_inner()".to_string(),
+            Self::Collection(_) => "l().unwrap().into_inner()".to_string(),
         }
     }
 
@@ -389,24 +389,71 @@ impl JniType for AnyType {
         }
     }
 
-    fn default_value(&self) -> &str {
+    fn default_value(&self) -> String {
+        const NULL: &str = "jni::objects::JObject::null().into_inner()";
+
         match self {
             Self::Basic(x) => x.default_value(),
-            Self::String => "jni::objects::JObject::null().into_inner()",
-            Self::Struct(_) => "jni::objects::JObject::null().into_inner()",
-            Self::StructRef(_) => "jni::objects::JObject::null().into_inner()",
-            Self::ClassRef(_) => "jni::objects::JObject::null().into_inner()",
-            Self::Interface(_) => "jni::objects::JObject::null().into_inner()",
-            Self::Iterator(_) => "jni::objects::JObject::null().into_inner()",
-            Self::Collection(_) => "jni::objects::JObject::null().into_inner()",
+            Self::String => NULL.to_string(),
+            Self::Struct(_) => NULL.to_string(),
+            Self::StructRef(_) => NULL.to_string(),
+            Self::ClassRef(_) => NULL.to_string(),
+            Self::Interface(_) => NULL.to_string(),
+            Self::Iterator(_) => NULL.to_string(),
+            Self::Collection(_) => NULL.to_string(),
         }
     }
 }
 
+impl JniType for CArgument {
+    fn as_raw_jni_type(&self) -> String {
+        AnyType::from(self.clone()).as_raw_jni_type()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        AnyType::from(self.clone()).as_jni_sig(lib_path)
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        AnyType::from(self.clone()).as_rust_type(ffi_name)
+    }
+
+    fn convert_jvalue(&self) -> String {
+        AnyType::from(self.clone()).convert_jvalue()
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
+        AnyType::from(self.clone()).convert_to_rust_from_object(f, from, to, lib_name, prefix)
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        AnyType::from(self.clone()).conversion(lib_name, prefix)
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        AnyType::from(self.clone()).requires_local_ref_cleanup()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        AnyType::from(self.clone()).check_null(f, param_name)
+    }
+
+    fn default_value(&self) -> String {
+        AnyType::from(self.clone()).default_value()
+    }
+}
+
 impl JniType for ReturnType {
-    fn as_raw_jni_type(&self) -> &str {
+    fn as_raw_jni_type(&self) -> String {
         match self {
-            ReturnType::Void => "()",
+            ReturnType::Void => "()".to_string(),
             ReturnType::Type(return_type, _) => return_type.as_raw_jni_type(),
         }
     }
@@ -425,9 +472,9 @@ impl JniType for ReturnType {
         }
     }
 
-    fn convert_jvalue(&self) -> &str {
+    fn convert_jvalue(&self) -> String {
         match self {
-            ReturnType::Void => "v().unwrap()",
+            ReturnType::Void => "v().unwrap()".to_string(),
             ReturnType::Type(return_type, _) => return_type.convert_jvalue(),
         }
     }
@@ -469,9 +516,9 @@ impl JniType for ReturnType {
         }
     }
 
-    fn default_value(&self) -> &str {
+    fn default_value(&self) -> String {
         match self {
-            ReturnType::Void => "",
+            ReturnType::Void => "".to_string(),
             ReturnType::Type(return_type, _) => return_type.default_value(),
         }
     }

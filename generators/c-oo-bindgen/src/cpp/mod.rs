@@ -733,7 +733,7 @@ fn print_interface_conversions(
         let args = func
             .arguments
             .iter()
-            .map(|p| convert_to_cpp(&p.arg_type, p.cpp_name()))
+            .map(|p| convert_to_cpp(&p.arg_type.clone().into(), p.cpp_name()))
             .collect::<Vec<String>>()
             .join(", ");
 

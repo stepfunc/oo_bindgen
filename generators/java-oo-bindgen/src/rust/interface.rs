@@ -5,7 +5,7 @@ use heck::{CamelCase, MixedCase, SnakeCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
-use oo_bindgen::types::{AnyType, Arg};
+use oo_bindgen::types::Arg;
 
 pub(crate) fn generate_interfaces_cache(
     lib: &Library,
@@ -241,7 +241,7 @@ fn call_java_callback(
     ffi_name: &str,
     prefix: &str,
     arg_name: &str,
-    args: &[Arg<AnyType>],
+    args: &[Arg<CArgument>],
     return_type: &ReturnType,
 ) -> FormattingResult<()> {
     // Extract the global ref

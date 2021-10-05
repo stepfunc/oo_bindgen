@@ -267,7 +267,7 @@ impl<'a> ClassBuilder<'a> {
                         async_method = Some(AsyncMethod {
                             name: name.to_string(),
                             native_function: native_function.clone(),
-                            return_type: cb_param.arg_type.clone(),
+                            return_type: cb_param.arg_type.clone().into(),
                             return_type_doc: cb_param.doc.clone(),
                             one_time_callback_name: ot_cb.name.clone(),
                             one_time_callback_param_name: param.name.clone(),

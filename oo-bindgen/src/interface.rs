@@ -1,16 +1,53 @@
 use crate::doc::{Doc, DocString};
-use crate::types::Arg;
+use crate::iterator::IteratorHandle;
+use crate::structs::callback_struct::CStructHandle;
+use crate::types::{Arg, DurationType};
 use crate::*;
 use std::collections::HashSet;
 
 pub const CTX_VARIABLE_NAME: &str = "ctx";
 pub const DESTROY_FUNC_NAME: &str = "on_destroy";
 
+/// Types that can be used as callback function arguments
+#[derive(Debug, Clone, PartialEq)]
+pub enum CArgument {
+    Basic(BasicType),
+    String,
+    Iterator(IteratorHandle),
+    Struct(CStructHandle),
+    //StructRef(StructDeclarationHandle),
+    //ClassRef(ClassDeclarationHandle),
+    //Interface(InterfaceHandle),
+}
+
+impl From<CArgument> for AnyType {
+    fn from(x: CArgument) -> Self {
+        match x {
+            CArgument::Basic(x) => Self::Basic(x),
+            CArgument::String => Self::String,
+            CArgument::Iterator(x) => Self::Iterator(x),
+            CArgument::Struct(x) => Self::Struct(x.to_any_struct()),
+        }
+    }
+}
+
+impl From<BasicType> for CArgument {
+    fn from(x: BasicType) -> Self {
+        Self::Basic(x)
+    }
+}
+
+impl From<DurationType> for CArgument {
+    fn from(x: DurationType) -> Self {
+        CArgument::Basic(BasicType::Duration(x))
+    }
+}
+
 #[derive(Debug)]
 pub struct CallbackFunction {
     pub name: String,
     pub return_type: ReturnType,
-    pub arguments: Vec<Arg<AnyType>>,
+    pub arguments: Vec<Arg<CArgument>>,
     pub doc: Doc,
 }
 
@@ -116,7 +153,7 @@ pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
     return_type: Option<ReturnType>,
-    arguments: Vec<Arg<AnyType>>,
+    arguments: Vec<Arg<CArgument>>,
     doc: Doc,
 }
 
@@ -131,7 +168,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<AnyType>>(
+    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<CArgument>>(
         mut self,
         name: S,
         arg_type: P,
@@ -146,7 +183,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
             });
         }
 
-        self.builder.lib.validate_type(&arg_type)?;
+        self.builder.lib.validate_type(&arg_type.clone().into())?;
         self.arguments.push(Arg::new(arg_type, name, doc.into()));
         Ok(self)
     }

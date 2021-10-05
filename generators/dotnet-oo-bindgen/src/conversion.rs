@@ -235,6 +235,28 @@ impl DotnetType for AnyType {
     }
 }
 
+impl DotnetType for CArgument {
+    fn as_dotnet_type(&self) -> String {
+        AnyType::from(self.clone()).as_dotnet_type()
+    }
+
+    fn as_native_type(&self) -> String {
+        AnyType::from(self.clone()).as_native_type()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).convert_to_native(from)
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).cleanup(from)
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        AnyType::from(self.clone()).convert_from_native(from)
+    }
+}
+
 impl DotnetType for ReturnType {
     fn as_dotnet_type(&self) -> String {
         match self {

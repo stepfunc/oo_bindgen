@@ -2,6 +2,7 @@ use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
+use oo_bindgen::interface::CArgument;
 use oo_bindgen::types::{AnyType, BasicType};
 
 pub(crate) trait JavaType {
@@ -84,6 +85,16 @@ impl JavaType for AnyType {
                 format!("java.util.List<{}>", handle.item_type.as_java_object())
             }
         }
+    }
+}
+
+impl JavaType for CArgument {
+    fn as_java_primitive(&self) -> String {
+        AnyType::from(self.clone()).as_java_primitive()
+    }
+
+    fn as_java_object(&self) -> String {
+        AnyType::from(self.clone()).as_java_object()
     }
 }
 

@@ -186,6 +186,32 @@ impl RustType for AnyType {
     }
 }
 
+impl RustType for CArgument {
+    fn as_rust_type(&self) -> String {
+        AnyType::from(self.clone()).as_rust_type()
+    }
+
+    fn as_c_type(&self) -> String {
+        AnyType::from(self.clone()).as_c_type()
+    }
+
+    fn is_copyable(&self) -> bool {
+        AnyType::from(self.clone()).is_copyable()
+    }
+
+    fn rust_requires_lifetime(&self) -> bool {
+        AnyType::from(self.clone()).rust_requires_lifetime()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        AnyType::from(self.clone()).c_requires_lifetime()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        AnyType::from(self.clone()).conversion()
+    }
+}
+
 impl RustType for ReturnType {
     fn as_rust_type(&self) -> String {
         if let ReturnType::Type(return_type, _) = self {

@@ -81,6 +81,12 @@ impl CFormatting for StructType {
     }
 }
 
+impl CFormatting for CArgument {
+    fn to_c_type(&self, prefix: &str) -> String {
+        AnyType::from(self.clone()).to_c_type(prefix)
+    }
+}
+
 impl CFormatting for StructDeclarationHandle {
     fn to_c_type(&self, prefix: &str) -> String {
         format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())

@@ -4,7 +4,7 @@ use crate::cpp::names::CppName;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::interface::InterfaceHandle;
+use oo_bindgen::interface::{CArgument, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::any_struct::AnyStructHandle;
 use oo_bindgen::structs::common::StructDeclarationHandle;
@@ -185,6 +185,20 @@ impl CppTypes for AnyType {
 
     fn get_cpp_struct_constructor_type(&self) -> String {
         CppType::new(self.clone()).get_struct_constructor_argument_type()
+    }
+}
+
+impl CppTypes for CArgument {
+    fn get_cpp_struct_member_type(&self) -> String {
+        AnyType::from(self.clone()).get_cpp_struct_member_type()
+    }
+
+    fn get_cpp_func_argument_type(&self) -> String {
+        AnyType::from(self.clone()).get_cpp_func_argument_type()
+    }
+
+    fn get_cpp_struct_constructor_type(&self) -> String {
+        AnyType::from(self.clone()).get_cpp_func_argument_type()
     }
 }
 

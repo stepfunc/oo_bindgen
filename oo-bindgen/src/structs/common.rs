@@ -4,6 +4,7 @@ use crate::structs::any_struct::{AnyStruct, AnyStructField, AnyStructFieldType};
 use crate::types::AnyType;
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
+use std::fmt::Formatter;
 
 /// An enum which might contain a validated default value
 #[derive(Clone, Debug)]
@@ -27,6 +28,60 @@ impl EnumField {
             default_variant: Some(default_variant.to_string()),
         })
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FieldName {
+    name: Handle<String>,
+}
+
+impl FieldName {
+    pub fn new<T: Into<String>>(name: T) -> Self {
+        Self {
+            name: Handle::new(name.into()),
+        }
+    }
+}
+
+impl std::ops::Deref for FieldName {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.name
+    }
+}
+
+impl std::fmt::Display for FieldName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&*self.name)
+    }
+}
+
+impl From<&str> for FieldName {
+    fn from(x: &str) -> Self {
+        FieldName::new(x)
+    }
+}
+
+/// Default values used to define constructors
+#[derive(Debug)]
+pub enum DefaultValue {
+    Bool(bool),
+    Uint8(u8),
+    Sint8(i8),
+    Uint16(u16),
+    Sint16(i16),
+    Uint32(u32),
+    Sint32(i32),
+    Uint64(u64),
+    Sint64(i64),
+    Float(f32),
+    Double(f64),
+    Duration(std::time::Duration),
+    Enum(String),
+    String(String),
+    /// requires that the struct have a default constructor
+    DefaultStruct,
 }
 
 /// struct type affects the type of code the backend will generate
@@ -65,11 +120,34 @@ pub trait StructFieldType: Clone + Sized {
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
 
+    fn strings_allowed() -> bool;
+
     /// TODO - this will go away
     fn to_any_struct_field_type(self) -> AnyStructFieldType;
 
     /// TODO - this will go away
     fn to_any_type(&self) -> AnyType;
+
+    /// Check that the default value is valid for the type
+    fn valid_for_type(x: DefaultValue) -> bool {
+        match x {
+            DefaultValue::Bool(_) => true,
+            DefaultValue::Uint8(_) => true,
+            DefaultValue::Sint8(_) => true,
+            DefaultValue::Uint16(_) => true,
+            DefaultValue::Sint16(_) => true,
+            DefaultValue::Uint32(_) => true,
+            DefaultValue::Sint32(_) => true,
+            DefaultValue::Uint64(_) => true,
+            DefaultValue::Sint64(_) => true,
+            DefaultValue::Float(_) => true,
+            DefaultValue::Double(_) => true,
+            DefaultValue::Duration(_) => true,
+            DefaultValue::Enum(_) => true,
+            DefaultValue::String(_) => Self::strings_allowed(),
+            DefaultValue::DefaultStruct => true,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -77,7 +155,7 @@ pub struct StructField<F>
 where
     F: StructFieldType,
 {
-    pub name: String,
+    pub name: FieldName,
     pub field_type: F,
     pub doc: Doc,
 }
@@ -151,7 +229,7 @@ where
     }
 }
 
-pub struct StructBuilder<'a, F>
+pub struct StructFieldBuilder<'a, F>
 where
     F: StructFieldType,
 {
@@ -163,7 +241,7 @@ where
     doc: Option<Doc>,
 }
 
-impl<'a, F> StructBuilder<'a, F>
+impl<'a, F> StructFieldBuilder<'a, F>
 where
     F: StructFieldType,
 {
@@ -183,7 +261,7 @@ where
         self
     }
 
-    pub fn add<S: Into<String>, V: Into<F>, D: Into<Doc>>(
+    pub fn add<S: Into<FieldName>, V: Into<F>, D: Into<Doc>>(
         mut self,
         name: S,
         field_type: V,
@@ -193,7 +271,7 @@ where
         let field_type = field_type.into();
 
         self.lib.validate_type(&field_type.to_any_type())?;
-        if self.field_names.insert(name.to_string()) {
+        if self.field_names.insert((*name).clone()) {
             self.fields.push(StructField {
                 name,
                 field_type,
@@ -220,7 +298,7 @@ where
         }
     }
 
-    pub fn build(self) -> BindResult<Handle<Struct<F>>> {
+    pub fn end_fields(self) -> BindResult<StructConstructorBuilder<'a, F>> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -230,11 +308,37 @@ where
             }
         };
 
+        Ok(StructConstructorBuilder {
+            lib: self.lib,
+            visibility: self.visibility,
+            declaration: self.declaration,
+            fields: self.fields,
+            doc,
+        })
+    }
+}
+
+pub struct StructConstructorBuilder<'a, F>
+where
+    F: StructFieldType,
+{
+    lib: &'a mut LibraryBuilder,
+    pub visibility: Visibility,
+    pub declaration: StructDeclarationHandle,
+    pub fields: Vec<StructField<F>>,
+    pub doc: Doc,
+}
+
+impl<'a, F> StructConstructorBuilder<'a, F>
+where
+    F: StructFieldType,
+{
+    pub fn build(self) -> BindResult<Handle<Struct<F>>> {
         let handle = Handle::new(Struct {
             visibility: self.visibility,
             declaration: self.declaration.clone(),
             fields: self.fields,
-            doc,
+            doc: self.doc,
         });
 
         self.lib

@@ -9,6 +9,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .make_opaque()
         .add("id", BasicType::Uint64, "64-bit id")?
         .doc("Opaque structure")?
+        .end_fields()?
         .build()?;
 
     let get_id_fn = lib

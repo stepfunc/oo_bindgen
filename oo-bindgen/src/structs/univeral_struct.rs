@@ -26,7 +26,7 @@ pub enum UStructFieldType {
 pub type UStructField = StructField<UStructFieldType>;
 pub type UStruct = Struct<UStructFieldType>;
 pub type UStructHandle = Handle<UStruct>;
-pub type UStructBuilder<'a> = StructBuilder<'a, UStructFieldType>;
+pub type UStructBuilder<'a> = StructFieldBuilder<'a, UStructFieldType>;
 
 impl StructFieldType for UStructFieldType {
     fn has_default(&self) -> bool {
@@ -50,6 +50,10 @@ impl StructFieldType for UStructFieldType {
 
     fn create_struct_type(v: Handle<Struct<UStructFieldType>>) -> StructType {
         StructType::UStruct(v.clone(), v.to_any_struct())
+    }
+
+    fn strings_allowed() -> bool {
+        false
     }
 
     fn to_any_struct_field_type(self) -> AnyStructFieldType {

@@ -28,7 +28,7 @@ pub enum CStructFieldType {
 pub type CStructField = StructField<CStructFieldType>;
 pub type CStruct = Struct<CStructFieldType>;
 pub type CStructHandle = Handle<CStruct>;
-pub type CStructBuilder<'a> = StructBuilder<'a, CStructFieldType>;
+pub type CStructBuilder<'a> = StructFieldBuilder<'a, CStructFieldType>;
 
 impl StructFieldType for CStructFieldType {
     fn has_default(&self) -> bool {
@@ -53,6 +53,10 @@ impl StructFieldType for CStructFieldType {
 
     fn create_struct_type(v: Handle<Struct<CStructFieldType>>) -> StructType {
         StructType::CStruct(v.clone(), v.to_any_struct())
+    }
+
+    fn strings_allowed() -> bool {
+        false
     }
 
     fn to_any_struct_field_type(self) -> AnyStructFieldType {

@@ -27,7 +27,7 @@ pub enum RStructFieldType {
 pub type RStructField = StructField<RStructFieldType>;
 pub type RStruct = Struct<RStructFieldType>;
 pub type RStructHandle = Handle<RStruct>;
-pub type RStructBuilder<'a> = StructBuilder<'a, RStructFieldType>;
+pub type RStructBuilder<'a> = StructFieldBuilder<'a, RStructFieldType>;
 
 impl StructFieldType for RStructFieldType {
     fn has_default(&self) -> bool {
@@ -52,6 +52,10 @@ impl StructFieldType for RStructFieldType {
 
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType {
         StructType::RStruct(v.clone(), v.to_any_struct())
+    }
+
+    fn strings_allowed() -> bool {
+        false
     }
 
     fn to_any_struct_field_type(self) -> AnyStructFieldType {

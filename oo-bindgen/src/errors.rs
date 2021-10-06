@@ -3,7 +3,7 @@ use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::FunctionHandle;
 use crate::interface::InterfaceHandle;
-use crate::structs::common::StructDeclarationHandle;
+use crate::structs::common::{FieldName, StructDeclarationHandle};
 use thiserror::Error;
 
 pub type BindResult<T> = Result<T, BindingError>;
@@ -67,7 +67,7 @@ pub enum BindingError {
     #[error("Native struct '{}' already contains field with name '{}'", handle.name, field_name)]
     StructAlreadyContainsFieldWithSameName {
         handle: StructDeclarationHandle,
-        field_name: String,
+        field_name: FieldName,
     },
     // Class errors
     #[error("Class '{}' was already defined", handle.name)]

@@ -30,7 +30,7 @@ pub enum FStructFieldType {
 pub type FStructField = StructField<FStructFieldType>;
 pub type FStruct = Struct<FStructFieldType>;
 pub type FStructHandle = Handle<FStruct>;
-pub type FStructBuilder<'a> = StructBuilder<'a, FStructFieldType>;
+pub type FStructBuilder<'a> = StructFieldBuilder<'a, FStructFieldType>;
 
 impl StructFieldType for FStructFieldType {
     fn has_default(&self) -> bool {
@@ -57,6 +57,10 @@ impl StructFieldType for FStructFieldType {
 
     fn create_struct_type(v: Handle<Struct<FStructFieldType>>) -> StructType {
         StructType::FStruct(v.clone(), v.to_any_struct())
+    }
+
+    fn strings_allowed() -> bool {
+        true
     }
 
     fn to_any_struct_field_type(self) -> AnyStructFieldType {

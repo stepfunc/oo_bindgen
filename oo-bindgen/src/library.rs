@@ -379,7 +379,7 @@ impl StructType {
     }
 
     pub fn find_field<T: AsRef<str>>(&self, field_name: T) -> Option<&AnyStructField> {
-        self.fields().find(|f| f.name == field_name.as_ref())
+        self.fields().find(|f| *f.name == field_name.as_ref())
     }
 }
 

@@ -4,35 +4,41 @@ use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
 
-pub struct Handle<T>(Rc<T>);
+pub struct Handle<T> {
+    inner: Rc<T>,
+}
 
 impl<T> Handle<T> {
     pub(crate) fn new(inner: T) -> Self {
-        Self(Rc::new(inner))
+        Self {
+            inner: Rc::new(inner),
+        }
     }
 }
 
 impl<T: Debug> Debug for Handle<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
+        self.inner.fmt(f)
     }
 }
 
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
+        Self {
+            inner: self.inner.clone(),
+        }
     }
 }
 
 impl<T> Hash for Handle<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        ptr::hash(&*self.0, state)
+        ptr::hash(&*self.inner, state)
     }
 }
 
 impl<T> PartialEq for Handle<T> {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Rc::ptr_eq(&self.inner, &other.inner)
     }
 }
 
@@ -42,6 +48,6 @@ impl<T> Deref for Handle<T> {
     type Target = T;
 
     fn deref(&self) -> &T {
-        &self.0
+        &self.inner
     }
 }

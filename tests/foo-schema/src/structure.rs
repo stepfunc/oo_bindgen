@@ -14,9 +14,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Enum")?
         .build()?;
 
-    let other_structure = lib.declare_struct("OtherStructure")?;
+    let other_structure = lib.declare_struct("InnerStructure")?;
     let other_structure = lib
         .define_fstruct(&other_structure)?
+        .doc("Structure used within another structure")?
         .add("test", FStructFieldType::Uint16(Some(41)), "test")?
         // The following pattern used to crash in Java because of the way we handled boolean
         .add(
@@ -31,7 +32,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             EnumField::with_default(structure_enum.clone(), "Var2")?,
             "second_enum_value",
         )?
-        .doc("Structure within a structure")?
+        .end_fields()?
         .build()?;
 
     let structure = lib.declare_struct("Structure")?;
@@ -136,6 +137,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "duration_seconds",
         )?
         .doc("Test structure")?
+        .end_fields()?
         .build()?;
 
     Ok(())

@@ -1,9 +1,6 @@
 package io.stepfunc.foo_test;
 
-import io.stepfunc.foo.OtherStructure;
-import io.stepfunc.foo.Structure;
-import io.stepfunc.foo.StructureEnum;
-import io.stepfunc.foo.EmptyInterface;
+import io.stepfunc.foo.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;

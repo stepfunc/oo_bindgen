@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::iterator::IteratorHandle;
 use crate::structs::common::{
-    EnumField, Struct, StructBuilder, StructDeclarationHandle, StructField, StructFieldType,
+    EnumField, Struct, StructDeclarationHandle, StructField, StructFieldBuilder, StructFieldType,
 };
 use crate::types::{AnyType, BasicType, DurationType};
 use crate::*;
@@ -62,6 +62,10 @@ impl StructFieldType for AnyStructFieldType {
         StructType::Any(v)
     }
 
+    fn strings_allowed() -> bool {
+        true
+    }
+
     fn to_any_struct_field_type(self) -> AnyStructFieldType {
         self
     }
@@ -95,7 +99,7 @@ impl StructFieldType for AnyStructFieldType {
 pub type AnyStructField = StructField<AnyStructFieldType>;
 pub type AnyStruct = Struct<AnyStructFieldType>;
 pub type AnyStructHandle = Handle<AnyStruct>;
-pub type AnyStructBuilder<'a> = StructBuilder<'a, AnyStructFieldType>;
+pub type AnyStructBuilder<'a> = StructFieldBuilder<'a, AnyStructFieldType>;
 
 impl From<AnyStructHandle> for AnyType {
     fn from(x: AnyStructHandle) -> Self {

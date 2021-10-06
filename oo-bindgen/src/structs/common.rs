@@ -63,9 +63,9 @@ impl From<&str> for FieldName {
     }
 }
 
-/// Default values used to define constructors
-#[derive(Debug)]
-pub enum DefaultValue {
+/// Values used to define constructors
+#[derive(Debug, Clone)]
+pub enum ConstructorValue {
     Bool(bool),
     Uint8(u8),
     Sint8(i8),
@@ -81,7 +81,7 @@ pub enum DefaultValue {
     Enum(String),
     String(String),
     /// requires that the struct have a default constructor
-    DefaultStruct,
+    DefaultStruct(FieldName),
 }
 
 /// struct type affects the type of code the backend will generate
@@ -120,34 +120,15 @@ pub trait StructFieldType: Clone + Sized {
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
 
-    fn strings_allowed() -> bool;
-
     /// TODO - this will go away
     fn to_any_struct_field_type(self) -> AnyStructFieldType;
 
     /// TODO - this will go away
     fn to_any_type(&self) -> AnyType;
-
-    /// Check that the default value is valid for the type
-    fn valid_for_type(x: DefaultValue) -> bool {
-        match x {
-            DefaultValue::Bool(_) => true,
-            DefaultValue::Uint8(_) => true,
-            DefaultValue::Sint8(_) => true,
-            DefaultValue::Uint16(_) => true,
-            DefaultValue::Sint16(_) => true,
-            DefaultValue::Uint32(_) => true,
-            DefaultValue::Sint32(_) => true,
-            DefaultValue::Uint64(_) => true,
-            DefaultValue::Sint64(_) => true,
-            DefaultValue::Float(_) => true,
-            DefaultValue::Double(_) => true,
-            DefaultValue::Duration(_) => true,
-            DefaultValue::Enum(_) => true,
-            DefaultValue::String(_) => Self::strings_allowed(),
-            DefaultValue::DefaultStruct => true,
-        }
-    }
+    /*
+       /// Check that the default value is valid for the type
+       fn validate(&self, name: &FieldName, x: &ConstructorValue) -> BindResult<()>;
+    */
 }
 
 #[derive(Debug)]
@@ -182,6 +163,7 @@ where
     pub visibility: Visibility,
     pub declaration: StructDeclarationHandle,
     pub fields: Vec<StructField<F>>,
+    pub constructors: Vec<Constructor>,
     pub doc: Doc,
 }
 
@@ -198,6 +180,7 @@ where
                 .iter()
                 .map(|f| f.to_any_struct_field())
                 .collect(),
+            constructors: self.constructors.clone(),
             doc: self.doc.clone(),
         })
     }
@@ -313,8 +296,26 @@ where
             visibility: self.visibility,
             declaration: self.declaration,
             fields: self.fields,
+            constructors: Vec::new(),
             doc,
         })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct InitializedValue {
+    pub name: FieldName,
+    pub value: ConstructorValue,
+}
+
+#[derive(Debug, Clone)]
+pub struct Constructor {
+    values: Vec<InitializedValue>,
+}
+
+impl Constructor {
+    pub fn values(&self) -> &[InitializedValue] {
+        &self.values
     }
 }
 
@@ -326,6 +327,7 @@ where
     pub visibility: Visibility,
     pub declaration: StructDeclarationHandle,
     pub fields: Vec<StructField<F>>,
+    pub constructors: Vec<Constructor>,
     pub doc: Doc,
 }
 
@@ -338,6 +340,7 @@ where
             visibility: self.visibility,
             declaration: self.declaration.clone(),
             fields: self.fields,
+            constructors: self.constructors,
             doc: self.doc,
         });
 

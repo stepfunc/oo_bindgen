@@ -54,10 +54,6 @@ impl StructFieldType for RStructFieldType {
         StructType::RStruct(v.clone(), v.to_any_struct())
     }
 
-    fn strings_allowed() -> bool {
-        false
-    }
-
     fn to_any_struct_field_type(self) -> AnyStructFieldType {
         match self {
             Self::Bool(x) => AnyStructFieldType::Bool(x),

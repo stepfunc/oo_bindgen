@@ -62,10 +62,6 @@ impl StructFieldType for AnyStructFieldType {
         StructType::Any(v)
     }
 
-    fn strings_allowed() -> bool {
-        true
-    }
-
     fn to_any_struct_field_type(self) -> AnyStructFieldType {
         self
     }

@@ -59,10 +59,6 @@ impl StructFieldType for FStructFieldType {
         StructType::FStruct(v.clone(), v.to_any_struct())
     }
 
-    fn strings_allowed() -> bool {
-        true
-    }
-
     fn to_any_struct_field_type(self) -> AnyStructFieldType {
         match self {
             Self::Bool(x) => AnyStructFieldType::Bool(x),

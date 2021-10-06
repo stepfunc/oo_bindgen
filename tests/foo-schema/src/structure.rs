@@ -10,9 +10,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Enum")?
         .build()?;
 
-    let other_structure = lib.declare_struct("InnerStructure")?;
-    let other_structure = lib
-        .define_fstruct(&other_structure)?
+    let inner_structure = lib.declare_struct("InnerStructure")?;
+    let inner_structure = lib
+        .define_fstruct(&inner_structure)?
         .doc("Structure used within another structure")?
         .add("test", BasicType::Uint16, "test")?
         // The following pattern used to crash in Java because of the way we handled boolean
@@ -53,7 +53,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add("float_value", BasicType::Float32, "float_value")?
         .add("double_value", BasicType::Double64, "double_value")?
         .add("string_value", STRING_TYPE, "string_value")?
-        .add("structure_value", other_structure, "structure_value")?
+        .add("structure_value", inner_structure, "structure_value")?
         .add(
             "empty_interface",
             empty_interface,

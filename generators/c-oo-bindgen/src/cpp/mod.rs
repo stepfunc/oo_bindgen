@@ -9,7 +9,7 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::interface::{CReturnType, CallbackFunction, InterfaceHandle, CTX_VARIABLE_NAME};
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::structs::any_struct::{AnyStructField, AnyStructFieldType, AnyStructHandle};
+use oo_bindgen::structs::any_struct::{AnyStructField, AnyStructHandle};
 use oo_bindgen::{Library, Statement};
 use std::path::Path;
 
@@ -115,6 +115,7 @@ fn print_struct_decl(f: &mut dyn Printer, s: &StructDeclaration) -> FormattingRe
     f.newline()
 }
 
+/* TODO
 fn get_struct_default_constructor_args(handle: &AnyStructHandle) -> String {
     handle
         .fields
@@ -148,6 +149,7 @@ fn get_struct_full_constructor_args(handle: &AnyStructHandle) -> String {
         .collect::<Vec<String>>()
         .join(", ")
 }
+*/
 
 fn print_struct_header(
     f: &mut dyn Printer,
@@ -160,11 +162,13 @@ fn print_struct_header(
         f.writeln("private:")?;
     }
     indented(f, |f| {
+        /* TODO
         // delete the default constructor unless all fields have default values in which case it'll
         // be written below
         if !handle.all_fields_have_defaults() {
             f.writeln(&format!("{}() = delete;", handle.cpp_name()))?;
         }
+
 
         // constructor that applies the default values
         f.writeln(&format!(
@@ -173,6 +177,7 @@ fn print_struct_header(
             get_struct_default_constructor_args(handle)
         ))?;
         f.newline()?;
+
 
         // write a full constructor unless the one above already takes all the values
         if !handle.no_fields_have_defaults() {
@@ -183,6 +188,7 @@ fn print_struct_header(
             ))?;
             f.newline()?;
         }
+        */
 
         for field in &handle.fields {
             f.writeln(&format!(
@@ -866,60 +872,7 @@ fn print_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
     f.newline()
 }
 
-fn get_initializer_value(e: &AnyStructField) -> String {
-    match &e.field_type {
-        AnyStructFieldType::Bool(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AnyStructFieldType::Uint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AnyStructFieldType::Sint8(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AnyStructFieldType::Uint16(v) => {
-            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
-        }
-        AnyStructFieldType::Sint16(v) => {
-            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
-        }
-        AnyStructFieldType::Uint32(v) => {
-            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
-        }
-        AnyStructFieldType::Sint32(v) => {
-            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
-        }
-        AnyStructFieldType::Uint64(v) => {
-            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
-        }
-        AnyStructFieldType::Sint64(v) => {
-            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
-        }
-        AnyStructFieldType::Float(v) => v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name()),
-        AnyStructFieldType::Double(v) => {
-            v.map(|x| format!("{}", x)).unwrap_or_else(|| e.cpp_name())
-        }
-        AnyStructFieldType::String(v) => v
-            .as_ref()
-            .map(|x| format!("\"{}\"", x))
-            .unwrap_or(format!("std::move({})", e.cpp_name())),
-        AnyStructFieldType::Struct(x) => {
-            if x.all_fields_have_defaults() {
-                format!("{}()", x.cpp_name())
-            } else {
-                e.cpp_name()
-            }
-        }
-        AnyStructFieldType::StructRef(_) => unimplemented!(),
-        AnyStructFieldType::Enum(field) => field
-            .default_variant
-            .as_ref()
-            .map(|v| format!("{}::{}", field.handle.cpp_name(), v.to_snake_case()))
-            .unwrap_or_else(|| e.cpp_name()),
-        AnyStructFieldType::ClassRef(_) => unimplemented!(),
-        AnyStructFieldType::Interface(_) => format!("std::move({})", e.cpp_name()),
-        AnyStructFieldType::Iterator(_) => e.cpp_name(),
-        AnyStructFieldType::Collection(_) => e.cpp_name(),
-        AnyStructFieldType::Duration(_, v) => v
-            .map(|v| format!("std::chrono::milliseconds({})", v.as_millis()))
-            .unwrap_or_else(|| e.cpp_name()),
-    }
-}
-
+/*
 fn print_struct_constructor_impl(
     f: &mut dyn Printer,
     handle: &AnyStructHandle,
@@ -945,6 +898,7 @@ fn print_struct_constructor_impl(
     f.writeln("{}")?;
     f.newline()
 }
+*/
 
 fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     if !lib.functions().any(|f| f.error_type.is_some()) {
@@ -1091,10 +1045,12 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
 
     print_friend_class_impl(lib, f)?;
 
+    /* TODO
     // struct constructors
     for handle in lib.structs() {
         print_struct_constructor_impl(f, handle.get_any_struct())?;
     }
+    */
 
     Ok(())
 }

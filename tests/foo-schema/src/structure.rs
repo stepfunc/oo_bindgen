@@ -1,4 +1,4 @@
-use oo_bindgen::types::{DurationType, BasicType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, DurationType, STRING_TYPE};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -38,81 +38,21 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     lib.define_fstruct(&structure)?
-        .add(
-            "enum_value",
-            structure_enum.clone(),
-            "enum_value",
-        )?
-        .add(
-            "boolean_value",
-            BasicType::Bool,
-            "boolean_value",
-        )?
-        .add(
-            "boolean_value2",
-            BasicType::Bool,
-            "boolean_value2",
-        )?
-        .add(
-            "enum_value2",
-            structure_enum.clone(),
-            "enum_value2",
-        )?
-        .add(
-            "uint8_value",
-            BasicType::Uint8,
-            "uint8_value",
-        )?
-        .add(
-            "int8_value",
-            BasicType::Sint8,
-            "int8_value",
-        )?
-        .add(
-            "uint16_value",
-            BasicType::Uint16,
-            "uint16_value",
-        )?
-        .add(
-            "int16_value",
-            BasicType::Sint16,
-            "int16_value",
-        )?
-        .add(
-            "uint32_value",
-            BasicType::Uint32,
-            "uint32_value",
-        )?
-        .add(
-            "int32_value",
-            BasicType::Sint32,
-            "int32_value",
-        )?
-        .add(
-            "uint64_value",
-            BasicType::Uint64,
-            "uint64_value",
-        )?
-        .add(
-            "int64_value",
-            BasicType::Sint64,
-            "int64_value",
-        )?
-        .add(
-            "float_value",
-            BasicType::Float32,
-            "float_value",
-        )?
-        .add(
-            "double_value",
-            BasicType::Double64,
-            "double_value",
-        )?
-        .add(
-            "string_value",
-            STRING_TYPE,
-            "string_value",
-        )?
+        .add("enum_value", structure_enum.clone(), "enum_value")?
+        .add("boolean_value", BasicType::Bool, "boolean_value")?
+        .add("boolean_value2", BasicType::Bool, "boolean_value2")?
+        .add("enum_value2", structure_enum, "enum_value2")?
+        .add("uint8_value", BasicType::Uint8, "uint8_value")?
+        .add("int8_value", BasicType::Sint8, "int8_value")?
+        .add("uint16_value", BasicType::Uint16, "uint16_value")?
+        .add("int16_value", BasicType::Sint16, "int16_value")?
+        .add("uint32_value", BasicType::Uint32, "uint32_value")?
+        .add("int32_value", BasicType::Sint32, "int32_value")?
+        .add("uint64_value", BasicType::Uint64, "uint64_value")?
+        .add("int64_value", BasicType::Sint64, "int64_value")?
+        .add("float_value", BasicType::Float32, "float_value")?
+        .add("double_value", BasicType::Double64, "double_value")?
+        .add("string_value", STRING_TYPE, "string_value")?
         .add("structure_value", other_structure, "structure_value")?
         .add(
             "empty_interface",
@@ -121,7 +61,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .add(
             "duration_millis",
-                DurationType::Milliseconds,
+            DurationType::Milliseconds,
             "duration_millis",
         )?
         .add(

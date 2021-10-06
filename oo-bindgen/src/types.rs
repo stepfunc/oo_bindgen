@@ -4,12 +4,12 @@ use crate::structs::any_struct::AnyStructHandle;
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::doc::DocString;
+use crate::function::FArgument;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::structs::common::StructDeclarationHandle;
 use crate::structs::function_struct::FStructHandle;
 use std::time::Duration;
-use crate::function::FArgument;
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug)]

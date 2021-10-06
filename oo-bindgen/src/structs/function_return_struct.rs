@@ -16,7 +16,6 @@ pub type RStructHandle = Handle<RStruct>;
 pub type RStructBuilder<'a> = StructFieldBuilder<'a, RStructFieldType>;
 
 impl StructFieldType for RStructFieldType {
-
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType {
         StructType::RStruct(v.clone(), v.to_any_struct())
     }
@@ -47,5 +46,3 @@ impl From<RStructHandle> for RStructFieldType {
         RStructFieldType::Struct(x)
     }
 }
-
-

@@ -89,7 +89,6 @@ impl From<StructDeclarationHandle> for AnyType {
 }
 
 pub trait StructFieldType: Clone + Sized {
-
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
 

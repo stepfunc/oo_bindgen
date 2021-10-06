@@ -1,18 +1,18 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, MixedCase, ShoutySnakeCase};
-use oo_bindgen::structs::any_struct::*;
+use heck::{CamelCase, MixedCase};
 use oo_bindgen::structs::common::Visibility;
-use oo_bindgen::types::DurationType;
 
 use oo_bindgen::structs::common::StructFieldType;
 
+/* TODO
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
         Visibility::Public => "public",
         Visibility::Private => "private",
     }
 }
+*/
 
 fn field_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
@@ -42,161 +42,24 @@ pub(crate) fn generate(
     // Structure definition
     f.writeln(&format!("public final class {}", struct_name))?;
     blocked(f, |f| {
-        // Write Java structure elements
+        // Write Java structure fields
         for field in native_struct.fields() {
             documentation(f, |f| {
                 javadoc_print(f, &field.doc, lib)?;
-
-                let default_value = match &field.field_type {
-                    AnyStructFieldType::Bool(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Uint8(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Sint8(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Uint16(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Sint16(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Uint32(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Sint32(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Uint64(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Sint64(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Float(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::Double(default) => default.map(|x| x.to_string()),
-                    AnyStructFieldType::String(default) => {
-                        default.clone().map(|x| format!("\"{}\"", x))
-                    }
-                    AnyStructFieldType::Struct(_) => None,
-                    AnyStructFieldType::StructRef(_) => None,
-                    AnyStructFieldType::Enum(field) => field.clone().default_variant.map(|x| {
-                        format!(
-                            "{{@link {}#{}}}",
-                            field.handle.name.to_camel_case(),
-                            x.to_shouty_snake_case()
-                        )
-                    }),
-                    AnyStructFieldType::ClassRef(_) => None,
-                    AnyStructFieldType::Interface(_) => None,
-                    AnyStructFieldType::Iterator(_) => None,
-                    AnyStructFieldType::Collection(_) => None,
-                    AnyStructFieldType::Duration(_, default) => {
-                        default.map(|x| format!("{}s", x.as_secs_f32()))
-                    }
-                };
-
-                if let Some(default_value) = default_value {
-                    f.writeln(&format!("<p>Default value is {}</p>", default_value))?;
-                }
-
                 Ok(())
             })?;
 
             f.writeln(&format!(
-                "{} {} {}",
+                "{} {} {};",
                 field_visibility(native_struct.visibility()),
                 field.field_type.to_any_type().as_java_primitive(),
                 field.name.to_mixed_case()
             ))?;
-            match &field.field_type {
-                AnyStructFieldType::Bool(default) => match default {
-                    None => (),
-                    Some(false) => f.write(" = false")?,
-                    Some(true) => f.write(" = true")?,
-                },
-                AnyStructFieldType::Uint8(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = UByte.valueOf({})", value))?;
-                    }
-                }
-                AnyStructFieldType::Sint8(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = (byte){}", value))?;
-                    }
-                }
-                AnyStructFieldType::Uint16(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = UShort.valueOf({})", value))?;
-                    }
-                }
-                AnyStructFieldType::Sint16(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = (short){}", value))?;
-                    }
-                }
-                AnyStructFieldType::Uint32(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = UInteger.valueOf({}L)", value))?;
-                    }
-                }
-                AnyStructFieldType::Sint32(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = {}", value))?;
-                    }
-                }
-                AnyStructFieldType::Uint64(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = ULong.valueOf({}L)", value))?;
-                    }
-                }
-                AnyStructFieldType::Sint64(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = {}L", value))?;
-                    }
-                }
-                AnyStructFieldType::Float(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = {}f", value))?;
-                    }
-                }
-                AnyStructFieldType::Double(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = {}", value))?;
-                    }
-                }
-                AnyStructFieldType::String(default) => {
-                    if let Some(value) = default {
-                        f.write(&format!(" = \"{}\"", &value))?;
-                    }
-                }
-                AnyStructFieldType::Struct(handle) => {
-                    if handle.all_fields_have_defaults() {
-                        f.write(&format!(" = new {}()", handle.name().to_camel_case()))?;
-                    }
-                }
-                AnyStructFieldType::StructRef(_) => (),
-                AnyStructFieldType::Enum(field) => {
-                    if let Some(value) = &field.default_variant {
-                        match field.handle.find_variant_by_name(value) {
-                            Some(variant) => f.write(&format!(
-                                " = {}.{}",
-                                field.handle.name.to_camel_case(),
-                                variant.name.to_shouty_snake_case()
-                            ))?,
-                            None => panic!("Variant {} not found in {}", value, field.handle.name),
-                        }
-                    }
-                }
-                AnyStructFieldType::ClassRef(_) => (),
-                AnyStructFieldType::Interface(_) => (),
-                AnyStructFieldType::Iterator(_) => (),
-                AnyStructFieldType::Collection(_) => (),
-                AnyStructFieldType::Duration(mapping, default) => {
-                    if let Some(value) = default {
-                        match mapping {
-                            DurationType::Milliseconds => f.write(&format!(
-                                " = java.time.Duration.ofMillis({})",
-                                value.as_millis()
-                            ))?,
-                            DurationType::Seconds => f.write(&format!(
-                                " = java.time.Duration.ofSeconds({})",
-                                value.as_secs()
-                            ))?,
-                        }
-                    }
-                }
-            }
-
-            f.write(";")?;
         }
 
         f.newline()?;
 
+        /* TODO
         if !native_struct.all_fields_have_defaults() {
             documentation(f, |f| {
                 f.newline()?;
@@ -258,6 +121,7 @@ pub(crate) fn generate(
 
             f.newline()?;
         }
+        */
 
         Ok(())
     })

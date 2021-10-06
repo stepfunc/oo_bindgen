@@ -18,7 +18,6 @@ pub type CStructHandle = Handle<CStruct>;
 pub type CStructBuilder<'a> = StructFieldBuilder<'a, CStructFieldType>;
 
 impl StructFieldType for CStructFieldType {
-
     fn create_struct_type(v: Handle<Struct<CStructFieldType>>) -> StructType {
         StructType::CStruct(v.clone(), v.to_any_struct())
     }
@@ -49,4 +48,3 @@ impl From<CStructHandle> for CStructFieldType {
         CStructFieldType::Struct(x)
     }
 }
-

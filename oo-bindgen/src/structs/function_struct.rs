@@ -19,7 +19,6 @@ pub type FStructHandle = Handle<FStruct>;
 pub type FStructBuilder<'a> = StructFieldBuilder<'a, FStructFieldType>;
 
 impl StructFieldType for FStructFieldType {
-
     fn create_struct_type(v: Handle<Struct<FStructFieldType>>) -> StructType {
         StructType::FStruct(v.clone(), v.to_any_struct())
     }

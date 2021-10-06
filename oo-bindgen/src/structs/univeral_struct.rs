@@ -15,7 +15,6 @@ pub type UStructHandle = Handle<UStruct>;
 pub type UStructBuilder<'a> = StructFieldBuilder<'a, UStructFieldType>;
 
 impl StructFieldType for UStructFieldType {
-
     fn create_struct_type(v: Handle<Struct<UStructFieldType>>) -> StructType {
         StructType::UStruct(v.clone(), v.to_any_struct())
     }
@@ -39,5 +38,3 @@ impl From<UStructHandle> for UStructFieldType {
         UStructFieldType::Struct(x)
     }
 }
-
-

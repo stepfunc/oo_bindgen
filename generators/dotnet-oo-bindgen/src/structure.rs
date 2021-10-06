@@ -1,8 +1,6 @@
 use crate::*;
-use heck::{CamelCase, MixedCase};
-use oo_bindgen::structs::any_struct::*;
+use heck::CamelCase;
 use oo_bindgen::structs::common::*;
-use oo_bindgen::types::DurationType;
 
 fn field_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
@@ -11,12 +9,14 @@ fn field_visibility(struct_type: Visibility) -> &'static str {
     }
 }
 
+/* TODO
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
         Visibility::Private => "internal",
         Visibility::Public => "public",
     }
 }
+*/
 
 pub(crate) fn generate(
     f: &mut impl Printer,
@@ -47,166 +47,24 @@ pub(crate) fn generate(
         f.writeln(&format!("public class {}", struct_name))?;
         blocked(f, |f| {
             // Write .NET structure elements
-            for el in native_struct.fields() {
+            for field in native_struct.fields() {
                 documentation(f, |f| {
                     // Print top-level documentation
-                    xmldoc_print(f, &el.doc, lib)?;
-
-                    let default_value = match &el.field_type {
-                        AnyStructFieldType::Bool(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Uint8(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Sint8(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Uint16(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Sint16(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Uint32(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Sint32(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Uint64(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Sint64(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Float(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::Double(default) => default.map(|x| x.to_string()),
-                        AnyStructFieldType::String(default) => {
-                            default.clone().map(|x| format!("\"{}\"", x))
-                        }
-                        AnyStructFieldType::Struct(_) => None,
-                        AnyStructFieldType::StructRef(_) => None,
-                        AnyStructFieldType::Enum(field) => field.clone().default_variant.map(|x| {
-                            format!(
-                                "<see cref=\"{}.{}\" />",
-                                field.handle.name.to_camel_case(),
-                                x.to_camel_case()
-                            )
-                        }),
-                        AnyStructFieldType::ClassRef(_) => None,
-                        AnyStructFieldType::Interface(_) => None,
-                        AnyStructFieldType::Iterator(_) => None,
-                        AnyStructFieldType::Collection(_) => None,
-                        AnyStructFieldType::Duration(_, default) => {
-                            default.map(|x| format!("{}s", x.as_secs_f32()))
-                        }
-                    };
-
-                    if let Some(default_value) = default_value {
-                        f.writeln(&format!(
-                            "<value>Default value is {}</value>",
-                            default_value
-                        ))?;
-                    }
-
+                    xmldoc_print(f, &field.doc, lib)?;
                     Ok(())
                 })?;
 
                 f.writeln(&format!(
-                    "{} {} {}",
+                    "{} {} {};",
                     field_visibility(native_struct.visibility()),
-                    el.field_type.to_any_type().as_dotnet_type(),
-                    el.name.to_camel_case()
+                    field.field_type.to_any_type().as_dotnet_type(),
+                    field.name.to_camel_case()
                 ))?;
-                match &el.field_type {
-                    AnyStructFieldType::Bool(default) => match default {
-                        None => (),
-                        Some(false) => f.write(" = false")?,
-                        Some(true) => f.write(" = true")?,
-                    },
-                    AnyStructFieldType::Uint8(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (byte){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Sint8(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (sbyte){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Uint16(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (ushort){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Sint16(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (short){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Uint32(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (uint){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Sint32(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (int){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Uint64(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (ulong){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Sint64(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = (long){}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Float(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = {}f", value))?;
-                        }
-                    }
-                    AnyStructFieldType::Double(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = {}", value))?;
-                        }
-                    }
-                    AnyStructFieldType::String(default) => {
-                        if let Some(value) = default {
-                            f.write(&format!(" = \"{}\"", &value))?;
-                        }
-                    }
-                    AnyStructFieldType::Struct(handle) => {
-                        if handle.all_fields_have_defaults() {
-                            f.write(&format!(" = new {}()", handle.name().to_camel_case()))?;
-                        }
-                    }
-                    AnyStructFieldType::StructRef(_) => (),
-                    AnyStructFieldType::Enum(field) => {
-                        if let Some(value) = &field.default_variant {
-                            match field.handle.find_variant_by_name(value) {
-                                Some(variant) => f.write(&format!(
-                                    " = {}.{}",
-                                    field.handle.name.to_camel_case(),
-                                    variant.name.to_camel_case()
-                                ))?,
-                                None => {
-                                    panic!("Variant {} not found in {}", value, field.handle.name)
-                                }
-                            }
-                        }
-                    }
-                    AnyStructFieldType::ClassRef(_) => (),
-                    AnyStructFieldType::Interface(_) => (),
-                    AnyStructFieldType::Iterator(_) => (),
-                    AnyStructFieldType::Collection(_) => (),
-                    AnyStructFieldType::Duration(mapping, default) => {
-                        if let Some(value) = default {
-                            match mapping {
-                                DurationType::Milliseconds => f.write(&format!(
-                                    " = TimeSpan.FromMilliseconds({})",
-                                    value.as_millis()
-                                ))?,
-                                DurationType::Seconds => f.write(&format!(
-                                    " = TimeSpan.FromSeconds({})",
-                                    value.as_secs()
-                                ))?,
-                            }
-                        }
-                    }
-                }
-
-                f.write(";")?;
             }
 
             f.newline()?;
 
+            /* TODO
             // Write constructor
             if !native_struct.all_fields_have_defaults() {
                 documentation(f, |f| {
@@ -274,6 +132,7 @@ pub(crate) fn generate(
                 f.writeln(&format!("internal {}() {{ }}", struct_name))?;
                 f.newline()?;
             }
+            */
 
             Ok(())
         })?;

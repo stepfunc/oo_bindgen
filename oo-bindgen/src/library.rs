@@ -368,16 +368,6 @@ impl StructType {
         }
     }
 
-    pub fn all_fields_have_defaults(&self) -> bool {
-        match self {
-            StructType::Any(x) => x.all_fields_have_defaults(),
-            StructType::FStruct(_, x) => x.all_fields_have_defaults(),
-            StructType::CStruct(_, x) => x.all_fields_have_defaults(),
-            StructType::RStruct(_, x) => x.all_fields_have_defaults(),
-            StructType::UStruct(_, x) => x.all_fields_have_defaults(),
-        }
-    }
-
     pub fn find_field<T: AsRef<str>>(&self, field_name: T) -> Option<&AnyStructField> {
         self.fields().find(|f| *f.name == field_name.as_ref())
     }

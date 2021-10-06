@@ -33,8 +33,8 @@ impl RustType for BasicType {
             Self::Sint32 => "i32".to_string(),
             Self::Uint64 => "u64".to_string(),
             Self::Sint64 => "i64".to_string(),
-            Self::Float => "f32".to_string(),
-            Self::Double => "f64".to_string(),
+            Self::Float32 => "f32".to_string(),
+            Self::Double64 => "f64".to_string(),
             Self::Duration(_) => "std::time::Duration".to_string(),
             Self::Enum(handle) => handle.name.to_camel_case(),
         }
@@ -51,8 +51,8 @@ impl RustType for BasicType {
             Self::Sint32 => "i32".to_string(),
             Self::Uint64 => "u64".to_string(),
             Self::Sint64 => "i64".to_string(),
-            Self::Float => "f32".to_string(),
-            Self::Double => "f64".to_string(),
+            Self::Float32 => "f32".to_string(),
+            Self::Double64 => "f64".to_string(),
             Self::Duration(_) => "u64".to_string(),
             Self::Enum(_) => "std::os::raw::c_int".to_string(),
         }
@@ -81,8 +81,8 @@ impl RustType for BasicType {
             Self::Sint32 => None,
             Self::Uint64 => None,
             Self::Sint64 => None,
-            Self::Float => None,
-            Self::Double => None,
+            Self::Float32 => None,
+            Self::Double64 => None,
             Self::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
             Self::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
         }

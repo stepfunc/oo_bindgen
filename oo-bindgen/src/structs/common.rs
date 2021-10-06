@@ -1,34 +1,9 @@
 use crate::doc::Doc;
-use crate::enum_type::EnumHandle;
-use crate::structs::any_struct::{AnyStruct, AnyStructField, AnyStructFieldType};
+use crate::structs::any_struct::{AnyStruct, AnyStructField};
 use crate::types::AnyType;
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
 use std::fmt::Formatter;
-
-/// An enum which might contain a validated default value
-#[derive(Clone, Debug)]
-pub struct EnumField {
-    pub handle: EnumHandle,
-    pub default_variant: Option<String>,
-}
-
-impl EnumField {
-    pub(crate) fn new(handle: EnumHandle) -> Self {
-        Self {
-            handle,
-            default_variant: None,
-        }
-    }
-
-    pub fn with_default(handle: EnumHandle, default_variant: &str) -> BindResult<Self> {
-        handle.validate_contains_variant_name(default_variant)?;
-        Ok(Self {
-            handle,
-            default_variant: Some(default_variant.to_string()),
-        })
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {
@@ -114,14 +89,9 @@ impl From<StructDeclarationHandle> for AnyType {
 }
 
 pub trait StructFieldType: Clone + Sized {
-    /// indicates if the field has a default value specified
-    fn has_default(&self) -> bool;
 
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
-
-    /// TODO - this will go away
-    fn to_any_struct_field_type(self) -> AnyStructFieldType;
 
     /// TODO - this will go away
     fn to_any_type(&self) -> AnyType;
@@ -148,7 +118,7 @@ where
     pub(crate) fn to_any_struct_field(&self) -> AnyStructField {
         AnyStructField {
             name: self.name.clone(),
-            field_type: self.field_type.clone().to_any_struct_field_type(),
+            field_type: self.field_type.clone().to_any_type(),
             doc: self.doc.clone(),
         }
     }
@@ -191,20 +161,6 @@ where
 
     pub fn declaration(&self) -> StructDeclarationHandle {
         self.declaration.clone()
-    }
-
-    /// returns true if all struct fields have a default value
-    pub fn all_fields_have_defaults(&self) -> bool {
-        self.fields
-            .iter()
-            .all(|field| field.field_type.has_default())
-    }
-
-    /// returns true if none of the struct fields have a default value
-    pub fn no_fields_have_defaults(&self) -> bool {
-        self.fields
-            .iter()
-            .all(|field| !field.field_type.has_default())
     }
 
     pub fn fields(&self) -> impl Iterator<Item = &StructField<F>> {

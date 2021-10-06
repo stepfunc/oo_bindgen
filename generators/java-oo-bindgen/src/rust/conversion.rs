@@ -55,8 +55,8 @@ impl JniType for BasicType {
             Self::Sint32 => "jni::sys::jint".to_string(),
             Self::Uint64 => "jni::sys::jobject".to_string(),
             Self::Sint64 => "jni::sys::jlong".to_string(),
-            Self::Float => "jni::sys::jfloat".to_string(),
-            Self::Double => "jni::sys::jdouble".to_string(),
+            Self::Float32 => "jni::sys::jfloat".to_string(),
+            Self::Double64 => "jni::sys::jdouble".to_string(),
             Self::Duration(_) => "jni::sys::jobject".to_string(),
             Self::Enum(_) => "jni::sys::jobject".to_string(),
         }
@@ -73,8 +73,8 @@ impl JniType for BasicType {
             Self::Sint32 => "I".to_string(),
             Self::Uint64 => "Lorg/joou/ULong;".to_string(),
             Self::Sint64 => "J".to_string(),
-            Self::Float => "F".to_string(),
-            Self::Double => "D".to_string(),
+            Self::Float32 => "F".to_string(),
+            Self::Double64 => "D".to_string(),
             Self::Duration(_) => "Ljava/time/Duration;".to_string(),
             Self::Enum(handle) => format!("L{}/{};", lib_path, handle.name.to_camel_case()),
         }
@@ -91,8 +91,8 @@ impl JniType for BasicType {
             Self::Sint32 => "i32".to_string(),
             Self::Uint64 => "u64".to_string(),
             Self::Sint64 => "i64".to_string(),
-            Self::Float => "f32".to_string(),
-            Self::Double => "f64".to_string(),
+            Self::Float32 => "f32".to_string(),
+            Self::Double64 => "f64".to_string(),
             Self::Duration(_) => "u64".to_string(),
             Self::Enum(_) => "std::os::raw::c_int".to_string(),
         }
@@ -109,8 +109,8 @@ impl JniType for BasicType {
             Self::Sint32 => "i().unwrap()".to_string(),
             Self::Uint64 => "l().unwrap().into_inner()".to_string(),
             Self::Sint64 => "j().unwrap()".to_string(),
-            Self::Float => "f().unwrap()".to_string(),
-            Self::Double => "d().unwrap()".to_string(),
+            Self::Float32 => "f().unwrap()".to_string(),
+            Self::Double64 => "d().unwrap()".to_string(),
             Self::Duration(_) => "l().unwrap().into_inner()".to_string(),
             Self::Enum(_) => "l().unwrap().into_inner()".to_string(),
         }
@@ -149,11 +149,11 @@ impl JniType for BasicType {
                 "{}_cache.primitives.long_value(&_env, {})",
                 to, from
             )),
-            Self::Float => f.writeln(&format!(
+            Self::Float32 => f.writeln(&format!(
                 "{}_cache.primitives.float_value(&_env, {})",
                 to, from
             )),
-            Self::Double => f.writeln(&format!(
+            Self::Double64 => f.writeln(&format!(
                 "{}_cache.primitives.double_value(&_env, {})",
                 to, from
             )),
@@ -173,8 +173,8 @@ impl JniType for BasicType {
             Self::Sint32 => None,
             Self::Uint64 => Some(Box::new(UnsignedConverter("ulong".to_string()))),
             Self::Sint64 => None,
-            Self::Float => None,
-            Self::Double => None,
+            Self::Float32 => None,
+            Self::Double64 => None,
             Self::Duration(mapping) => Some(Box::new(DurationConverter(*mapping))),
             Self::Enum(handle) => Some(Box::new(EnumConverter(handle.clone()))),
         }
@@ -192,8 +192,8 @@ impl JniType for BasicType {
             Self::Sint32 => false,
             Self::Uint64 => true,
             Self::Sint64 => false,
-            Self::Float => false,
-            Self::Double => false,
+            Self::Float32 => false,
+            Self::Double64 => false,
             Self::Duration(_) => true,
             Self::Enum(_) => false, // We re-use a global ref here
         }
@@ -214,8 +214,8 @@ impl JniType for BasicType {
             Self::Sint32 => Ok(()),
             Self::Uint64 => perform_null_check(f, param_name),
             Self::Sint64 => Ok(()),
-            Self::Float => Ok(()),
-            Self::Double => Ok(()),
+            Self::Float32 => Ok(()),
+            Self::Double64 => Ok(()),
             Self::Duration(_) => perform_null_check(f, param_name),
             Self::Enum(_) => perform_null_check(f, param_name),
         }
@@ -234,8 +234,8 @@ impl JniType for BasicType {
             Self::Sint32 => "0".to_string(),
             Self::Uint64 => NULL.to_string(),
             Self::Sint64 => "0".to_string(),
-            Self::Float => "0.0".to_string(),
-            Self::Double => "0.0".to_string(),
+            Self::Float32 => "0.0".to_string(),
+            Self::Double64 => "0.0".to_string(),
             Self::Duration(_) => NULL.to_string(),
             Self::Enum(_) => NULL.to_string(),
         }

@@ -1,7 +1,6 @@
 use crate::doc::Doc;
 use crate::*;
 
-use crate::structs::common::EnumField;
 use std::collections::HashSet;
 
 #[derive(Debug)]
@@ -42,18 +41,6 @@ impl Enum {
 }
 
 pub type EnumHandle = Handle<Enum>;
-
-impl From<EnumHandle> for AnyType {
-    fn from(x: EnumHandle) -> Self {
-        BasicType::Enum(x).into()
-    }
-}
-
-impl From<EnumHandle> for AnyStructFieldType {
-    fn from(x: EnumHandle) -> Self {
-        AnyStructFieldType::Enum(EnumField::new(x))
-    }
-}
 
 pub struct EnumBuilder<'a> {
     pub(crate) lib: &'a mut LibraryBuilder,

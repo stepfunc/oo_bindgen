@@ -1,8 +1,4 @@
-use std::time::Duration;
-
-use oo_bindgen::structs::common::EnumField;
-use oo_bindgen::structs::function_struct::FStructFieldType;
-use oo_bindgen::types::DurationType;
+use oo_bindgen::types::{DurationType, BasicType, STRING_TYPE};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -18,18 +14,18 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let other_structure = lib
         .define_fstruct(&other_structure)?
         .doc("Structure used within another structure")?
-        .add("test", FStructFieldType::Uint16(Some(41)), "test")?
+        .add("test", BasicType::Uint16, "test")?
         // The following pattern used to crash in Java because of the way we handled boolean
         .add(
             "first_enum_value",
-            EnumField::with_default(structure_enum.clone(), "Var2")?,
+            structure_enum.clone(),
             "first_enum_value",
         )?
-        .add("int1", FStructFieldType::Sint16(Some(1)), "int1")?
-        .add("bool2", FStructFieldType::Bool(Some(false)), "bool2")?
+        .add("int1", BasicType::Sint16, "int1")?
+        .add("bool2", BasicType::Bool, "bool2")?
         .add(
             "second_enum_value",
-            EnumField::with_default(structure_enum.clone(), "Var2")?,
+            structure_enum.clone(),
             "second_enum_value",
         )?
         .end_fields()?
@@ -44,77 +40,77 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     lib.define_fstruct(&structure)?
         .add(
             "enum_value",
-            EnumField::with_default(structure_enum.clone(), "Var2")?,
+            structure_enum.clone(),
             "enum_value",
         )?
         .add(
             "boolean_value",
-            FStructFieldType::Bool(Some(true)),
+            BasicType::Bool,
             "boolean_value",
         )?
         .add(
             "boolean_value2",
-            FStructFieldType::Bool(Some(true)),
+            BasicType::Bool,
             "boolean_value2",
         )?
         .add(
             "enum_value2",
-            EnumField::with_default(structure_enum, "Var2")?,
+            structure_enum.clone(),
             "enum_value2",
         )?
         .add(
             "uint8_value",
-            FStructFieldType::Uint8(Some(1)),
+            BasicType::Uint8,
             "uint8_value",
         )?
         .add(
             "int8_value",
-            FStructFieldType::Sint8(Some(-1)),
+            BasicType::Sint8,
             "int8_value",
         )?
         .add(
             "uint16_value",
-            FStructFieldType::Uint16(Some(2)),
+            BasicType::Uint16,
             "uint16_value",
         )?
         .add(
             "int16_value",
-            FStructFieldType::Sint16(Some(-2)),
+            BasicType::Sint16,
             "int16_value",
         )?
         .add(
             "uint32_value",
-            FStructFieldType::Uint32(Some(3)),
+            BasicType::Uint32,
             "uint32_value",
         )?
         .add(
             "int32_value",
-            FStructFieldType::Sint32(Some(-3)),
+            BasicType::Sint32,
             "int32_value",
         )?
         .add(
             "uint64_value",
-            FStructFieldType::Uint64(Some(4)),
+            BasicType::Uint64,
             "uint64_value",
         )?
         .add(
             "int64_value",
-            FStructFieldType::Sint64(Some(-4)),
+            BasicType::Sint64,
             "int64_value",
         )?
         .add(
             "float_value",
-            FStructFieldType::Float(Some(12.34)),
+            BasicType::Float32,
             "float_value",
         )?
         .add(
             "double_value",
-            FStructFieldType::Double(Some(-56.78)),
+            BasicType::Double64,
             "double_value",
         )?
         .add(
             "string_value",
-            FStructFieldType::String(Some("Hello".to_string())),
+            STRING_TYPE,
             "string_value",
         )?
         .add("structure_value", other_structure, "structure_value")?
@@ -125,15 +121,12 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .add(
             "duration_millis",
-            FStructFieldType::Duration(
                 DurationType::Milliseconds,
-                Some(Duration::from_millis(4200)),
-            ),
             "duration_millis",
         )?
         .add(
             "duration_seconds",
-            FStructFieldType::Duration(DurationType::Seconds, Some(Duration::from_secs(76))),
+            DurationType::Seconds,
             "duration_seconds",
         )?
         .doc("Test structure")?

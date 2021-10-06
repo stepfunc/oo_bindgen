@@ -659,8 +659,8 @@ fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
         BasicType::Sint32 => expr,
         BasicType::Uint64 => expr,
         BasicType::Sint64 => expr,
-        BasicType::Float => expr,
-        BasicType::Double => expr,
+        BasicType::Float32 => expr,
+        BasicType::Double64 => expr,
         BasicType::Duration(t) => match t {
             DurationType::Milliseconds => {
                 format!("convert::from_sec_u64({})", expr)
@@ -697,8 +697,8 @@ fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
         BasicType::Sint32 => expr,
         BasicType::Uint64 => expr,
         BasicType::Sint64 => expr,
-        BasicType::Float => expr,
-        BasicType::Double => expr,
+        BasicType::Float32 => expr,
+        BasicType::Double64 => expr,
         BasicType::Duration(t) => match t {
             DurationType::Milliseconds => {
                 format!("convert::to_sec_u64({})", expr)

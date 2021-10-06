@@ -23,8 +23,8 @@ impl JavaType for BasicType {
             Self::Sint32 => "int".to_string(),
             Self::Uint64 => "ULong".to_string(),
             Self::Sint64 => "long".to_string(),
-            Self::Float => "float".to_string(),
-            Self::Double => "double".to_string(),
+            Self::Float32 => "float".to_string(),
+            Self::Double64 => "double".to_string(),
             Self::Duration(_) => "java.time.Duration".to_string(),
             Self::Enum(handle) => handle.name.to_camel_case(),
         }
@@ -41,8 +41,8 @@ impl JavaType for BasicType {
             Self::Sint32 => "Integer".to_string(),
             Self::Uint64 => "ULong".to_string(),
             Self::Sint64 => "Long".to_string(),
-            Self::Float => "Float".to_string(),
-            Self::Double => "Double".to_string(),
+            Self::Float32 => "Float".to_string(),
+            Self::Double64 => "Double".to_string(),
             Self::Duration(_) => "java.time.Duration".to_string(),
             Self::Enum(handle) => handle.name.to_camel_case(),
         }

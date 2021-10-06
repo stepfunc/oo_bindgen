@@ -2,7 +2,7 @@ use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
 use crate::structs::function_return_struct::RStructHandle;
-use crate::types::{Arg, DurationType, StringType};
+use crate::types::{Arg, StringType, DurationType};
 use crate::*;
 
 /// types that can be returns from native functions
@@ -35,7 +35,7 @@ impl From<BasicType> for FReturnValue {
 
 impl From<DurationType> for FReturnValue {
     fn from(x: DurationType) -> Self {
-        FReturnValue::Basic(BasicType::Duration(x))
+        BasicType::Duration(x).into()
     }
 }
 
@@ -51,12 +51,6 @@ impl From<StringType> for FReturnValue {
     }
 }
 
-impl From<EnumHandle> for FReturnValue {
-    fn from(x: EnumHandle) -> Self {
-        FReturnValue::Basic(BasicType::Enum(x))
-    }
-}
-
 impl From<RStructHandle> for FReturnValue {
     fn from(x: RStructHandle) -> Self {
         FReturnValue::Struct(x)
@@ -66,6 +60,12 @@ impl From<RStructHandle> for FReturnValue {
 impl From<StructDeclarationHandle> for FReturnValue {
     fn from(x: StructDeclarationHandle) -> Self {
         FReturnValue::StructRef(x)
+    }
+}
+
+impl From<EnumHandle> for FReturnValue {
+    fn from(x: EnumHandle) -> Self {
+        BasicType::Enum(x).into()
     }
 }
 
@@ -115,12 +115,6 @@ impl From<BasicType> for FArgument {
     }
 }
 
-impl From<DurationType> for FArgument {
-    fn from(x: DurationType) -> Self {
-        FArgument::Basic(x.into())
-    }
-}
-
 impl From<StringType> for FArgument {
     fn from(_: StringType) -> Self {
         FArgument::String
@@ -133,21 +127,21 @@ impl From<CollectionHandle> for FArgument {
     }
 }
 
-impl From<EnumHandle> for FArgument {
-    fn from(x: EnumHandle) -> Self {
-        FArgument::Basic(BasicType::Enum(x))
-    }
-}
-
 impl From<StructDeclarationHandle> for FArgument {
     fn from(x: StructDeclarationHandle) -> Self {
         FArgument::StructRef(x)
     }
 }
 
-impl From<FArgument> for AnyType {
-    fn from(x: FArgument) -> Self {
-        x.to_any_type()
+impl From<DurationType> for FArgument {
+    fn from(x: DurationType) -> Self {
+        BasicType::Duration(x).into()
+    }
+}
+
+impl From<EnumHandle> for FArgument {
+    fn from(x: EnumHandle) -> Self {
+        BasicType::Enum(x).into()
     }
 }
 

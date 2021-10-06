@@ -76,9 +76,3 @@ impl From<IteratorHandle> for AnyType {
         Self::Iterator(x)
     }
 }
-
-impl From<IteratorHandle> for AnyStructFieldType {
-    fn from(x: IteratorHandle) -> Self {
-        AnyStructFieldType::Iterator(x)
-    }
-}

@@ -119,12 +119,6 @@ impl From<InterfaceHandle> for AnyType {
     }
 }
 
-impl From<InterfaceHandle> for AnyStructFieldType {
-    fn from(x: InterfaceHandle) -> Self {
-        AnyStructFieldType::Interface(x)
-    }
-}
-
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,

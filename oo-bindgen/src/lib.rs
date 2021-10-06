@@ -46,7 +46,6 @@ clippy::all
 
 pub use semver::Version;
 
-use structs::any_struct::*;
 use structs::common::StructDeclarationHandle;
 use structs::function_struct::FStructHandle;
 

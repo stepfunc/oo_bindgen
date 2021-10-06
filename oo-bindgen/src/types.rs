@@ -1,14 +1,15 @@
 use crate::enum_type::EnumHandle;
-use crate::structs::any_struct::{AnyStructFieldType, AnyStructHandle};
+use crate::structs::any_struct::AnyStructHandle;
 
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::doc::DocString;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
-use crate::structs::common::{EnumField, StructDeclarationHandle};
+use crate::structs::common::StructDeclarationHandle;
 use crate::structs::function_struct::FStructHandle;
 use std::time::Duration;
+use crate::function::FArgument;
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug)]
@@ -69,12 +70,6 @@ impl From<FStructHandle> for AnyType {
     }
 }
 
-impl From<DurationType> for AnyStructFieldType {
-    fn from(x: DurationType) -> Self {
-        BasicType::Duration(x).into()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Arg<T>
 where
@@ -111,8 +106,8 @@ pub enum BasicType {
     Sint32,
     Uint64,
     Sint64,
-    Float,
-    Double,
+    Float32,
+    Double64,
     Duration(DurationType),
     Enum(EnumHandle),
 }
@@ -133,27 +128,21 @@ pub enum AnyType {
 }
 
 impl From<BasicType> for AnyType {
-    fn from(t: BasicType) -> Self {
-        AnyType::Basic(t)
+    fn from(x: BasicType) -> Self {
+        AnyType::Basic(x)
     }
 }
 
-impl From<BasicType> for AnyStructFieldType {
-    fn from(t: BasicType) -> Self {
-        match t {
-            BasicType::Bool => AnyStructFieldType::Bool(None),
-            BasicType::Uint8 => AnyStructFieldType::Uint8(None),
-            BasicType::Sint8 => AnyStructFieldType::Sint8(None),
-            BasicType::Uint16 => AnyStructFieldType::Uint16(None),
-            BasicType::Sint16 => AnyStructFieldType::Sint16(None),
-            BasicType::Uint32 => AnyStructFieldType::Uint32(None),
-            BasicType::Sint32 => AnyStructFieldType::Sint32(None),
-            BasicType::Uint64 => AnyStructFieldType::Uint64(None),
-            BasicType::Sint64 => AnyStructFieldType::Sint64(None),
-            BasicType::Float => AnyStructFieldType::Float(None),
-            BasicType::Double => AnyStructFieldType::Double(None),
-            BasicType::Duration(mapping) => AnyStructFieldType::Duration(mapping, None),
-            BasicType::Enum(handle) => AnyStructFieldType::Enum(EnumField::new(handle)),
+impl From<FArgument> for AnyType {
+    fn from(x: FArgument) -> Self {
+        match x {
+            FArgument::Basic(x) => Self::Basic(x),
+            FArgument::String => Self::String,
+            FArgument::Collection(x) => Self::Collection(x),
+            FArgument::Struct(x) => Self::Struct(x.to_any_struct()),
+            FArgument::StructRef(x) => Self::StructRef(x),
+            FArgument::ClassRef(x) => Self::ClassRef(x),
+            FArgument::Interface(x) => Self::Interface(x),
         }
     }
 }

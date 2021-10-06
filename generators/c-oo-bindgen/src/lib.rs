@@ -161,8 +161,8 @@ impl CFormatting for BasicType {
             Self::Sint32 => "int32_t".to_string(),
             Self::Uint64 => "uint64_t".to_string(),
             Self::Sint64 => "int64_t".to_string(),
-            Self::Float => "float".to_string(),
-            Self::Double => "double".to_string(),
+            Self::Float32 => "float".to_string(),
+            Self::Double64 => "double".to_string(),
             Self::Duration(_) => "uint64_t".to_string(),
             Self::Enum(handle) => handle.to_c_type(prefix),
         }

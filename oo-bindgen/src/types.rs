@@ -91,6 +91,27 @@ pub enum BasicType {
     Enum(EnumHandle),
 }
 
+impl BasicType {
+    /// get the string representation of the type used in the Rust for the C FFI
+    pub fn get_c_rust_type(&self) -> &str {
+        match self {
+            Self::Bool => "bool",
+            Self::Uint8 => "u8",
+            Self::Sint8 => "i8",
+            Self::Uint16 => "u16",
+            Self::Sint16 => "i16",
+            Self::Uint32 => "u32",
+            Self::Sint32 => "i32",
+            Self::Uint64 => "u64",
+            Self::Sint64 => "i64",
+            Self::Float32 => "f32",
+            Self::Double64 => "f64",
+            Self::Duration(_) => "u64",
+            Self::Enum(_) => "std::os::raw::c_int",
+        }
+    }
+}
+
 pub trait TypeExtractor {
     fn get_basic_type(&self) -> Option<&BasicType>;
 

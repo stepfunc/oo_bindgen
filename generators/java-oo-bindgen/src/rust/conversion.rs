@@ -84,21 +84,7 @@ impl JniType for BasicType {
     }
 
     fn as_rust_type(&self, _ffi_name: &str) -> String {
-        match self {
-            Self::Bool => "bool".to_string(),
-            Self::Uint8 => "u8".to_string(),
-            Self::Sint8 => "i8".to_string(),
-            Self::Uint16 => "u16".to_string(),
-            Self::Sint16 => "i16".to_string(),
-            Self::Uint32 => "u32".to_string(),
-            Self::Sint32 => "i32".to_string(),
-            Self::Uint64 => "u64".to_string(),
-            Self::Sint64 => "i64".to_string(),
-            Self::Float32 => "f32".to_string(),
-            Self::Double64 => "f64".to_string(),
-            Self::Duration(_) => "u64".to_string(),
-            Self::Enum(_) => "std::os::raw::c_int".to_string(),
-        }
+        self.get_c_rust_type().to_string()
     }
 
     fn convert_jvalue(&self) -> String {

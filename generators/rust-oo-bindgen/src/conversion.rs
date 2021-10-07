@@ -56,21 +56,7 @@ impl RustType for BasicType {
     }
 
     fn as_c_type(&self) -> String {
-        match self {
-            Self::Bool => "bool".to_string(),
-            Self::Uint8 => "u8".to_string(),
-            Self::Sint8 => "i8".to_string(),
-            Self::Uint16 => "u16".to_string(),
-            Self::Sint16 => "i16".to_string(),
-            Self::Uint32 => "u32".to_string(),
-            Self::Sint32 => "i32".to_string(),
-            Self::Uint64 => "u64".to_string(),
-            Self::Sint64 => "i64".to_string(),
-            Self::Float32 => "f32".to_string(),
-            Self::Double64 => "f64".to_string(),
-            Self::Duration(_) => "u64".to_string(),
-            Self::Enum(_) => "std::os::raw::c_int".to_string(),
-        }
+        self.get_c_rust_type().to_string()
     }
 
     fn is_copyable(&self) -> bool {
@@ -570,14 +556,7 @@ impl LifetimeInfo for UStructFieldType {
     }
 }
 
-
-
-pub(crate) trait RustCallbackFunction {
-    fn rust_requires_lifetime(&self) -> bool;
-    fn c_requires_lifetime(&self) -> bool;
-}
-
-impl RustCallbackFunction for CallbackFunction {
+impl LifetimeInfo for CallbackFunction {
     fn rust_requires_lifetime(&self) -> bool {
         self.arguments
             .iter()

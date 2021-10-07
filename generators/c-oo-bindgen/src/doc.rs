@@ -1,4 +1,4 @@
-use crate::CFormatting;
+use crate::ctype::CType;
 use heck::{ShoutySnakeCase, SnakeCase};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;

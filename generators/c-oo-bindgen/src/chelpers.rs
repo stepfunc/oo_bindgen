@@ -1,7 +1,6 @@
-use crate::CFormatting;
-use heck::SnakeCase;
-use oo_bindgen::interface::{CallbackFunction, CTX_VARIABLE_NAME};
+use oo_bindgen::interface::CallbackFunction;
 use oo_bindgen::Library;
+use crate::ctype::CType;
 
 pub(crate) fn callback_parameters(lib: &Library, func: &CallbackFunction) -> String {
     func.arguments
@@ -12,6 +11,7 @@ pub(crate) fn callback_parameters(lib: &Library, func: &CallbackFunction) -> Str
         .join(", ")
 }
 
+/* TODO
 pub(crate) fn callback_parameters_with_var_names(lib: &Library, func: &CallbackFunction) -> String {
     func.arguments
         .iter()
@@ -26,3 +26,4 @@ pub(crate) fn callback_parameters_with_var_names(lib: &Library, func: &CallbackF
         .collect::<Vec<String>>()
         .join(", ")
 }
+*/

@@ -56,184 +56,21 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
 use oo_bindgen::structs::common::{StructFieldType, Struct};
-use oo_bindgen::structs::common::{StructDeclarationHandle, Visibility};
+use oo_bindgen::structs::common::Visibility;
 use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
 
-use oo_bindgen::return_type::ReturnType;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use oo_bindgen::structs::function_struct::FStructFieldType;
-use oo_bindgen::structs::function_return_struct::RStructFieldType;
-use oo_bindgen::structs::callback_struct::CStructFieldType;
-use oo_bindgen::structs::univeral_struct::UStructFieldType;
+use crate::ctype::CType;
 
 mod chelpers;
+mod ctype;
 //mod cpp;
 mod doc;
 mod formatting;
-
-trait CFormatting {
-    fn to_c_type(&self, prefix: &str) -> String;
-}
-
-impl CFormatting for CArgument {
-    fn to_c_type(&self, prefix: &str) -> String {
-        unimplemented!()
-    }
-}
-
-impl CFormatting for FReturnValue {
-    fn to_c_type(&self, prefix: &str) -> String {
-        unimplemented!()
-    }
-}
-
-impl CFormatting for CReturnValue {
-    fn to_c_type(&self, prefix: &str) -> String {
-        unimplemented!()
-    }
-}
-
-impl CFormatting for StructDeclarationHandle {
-    fn to_c_type(&self, prefix: &str) -> String {
-        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
-    }
-}
-
-impl CFormatting for StructType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        format!(
-            "{}_{}_t",
-            prefix.to_snake_case(),
-            self.name().to_snake_case()
-        )
-    }
-}
-
-impl<T> CFormatting for Struct<T> where T: StructFieldType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        format!(
-            "{}_{}_t",
-            prefix.to_snake_case(),
-            self.name().to_snake_case()
-        )
-    }
-}
-
-impl CFormatting for EnumHandle {
-    fn to_c_type(&self, prefix: &str) -> String {
-        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
-    }
-}
-
-impl CFormatting for ClassDeclarationHandle {
-    fn to_c_type(&self, prefix: &str) -> String {
-        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
-    }
-}
-
-impl CFormatting for Interface {
-    fn to_c_type(&self, prefix: &str) -> String {
-        format!("{}_{}_t", prefix.to_snake_case(), self.name.to_snake_case())
-    }
-}
-
-impl CFormatting for Symbol {
-    fn to_c_type(&self, prefix: &str) -> String {
-        match self {
-            Symbol::Function(handle) => format!("{}_{}", prefix.to_snake_case(), handle.name),
-            Symbol::Struct(handle) => handle.declaration().to_c_type(prefix),
-            Symbol::Enum(handle) => handle.to_c_type(prefix),
-            Symbol::Class(handle) => handle.declaration().to_c_type(prefix),
-            Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
-            Symbol::Interface(handle) => handle.to_c_type(prefix),
-            Symbol::Iterator(handle) => handle.iter_type.to_c_type(prefix),
-            Symbol::Collection(handle) => handle.collection_type.to_c_type(prefix),
-        }
-    }
-}
-
-impl CFormatting for BasicType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        match self {
-            Self::Bool => "bool".to_string(),
-            Self::Uint8 => "uint8_t".to_string(),
-            Self::Sint8 => "int8_t".to_string(),
-            Self::Uint16 => "uint16_t".to_string(),
-            Self::Sint16 => "int16_t".to_string(),
-            Self::Uint32 => "uint32_t".to_string(),
-            Self::Sint32 => "int32_t".to_string(),
-            Self::Uint64 => "uint64_t".to_string(),
-            Self::Sint64 => "int64_t".to_string(),
-            Self::Float32 => "float".to_string(),
-            Self::Double64 => "double".to_string(),
-            Self::Duration(_) => "uint64_t".to_string(),
-            Self::Enum(handle) => handle.to_c_type(prefix),
-        }
-    }
-}
-
-impl CFormatting for FStructFieldType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        todo!()
-    }
-}
-
-impl CFormatting for RStructFieldType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        todo!()
-    }
-}
-
-impl CFormatting for CStructFieldType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        todo!()
-    }
-}
-
-impl CFormatting for UStructFieldType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        todo!()
-    }
-}
-
-impl CFormatting for FArgument {
-    fn to_c_type(&self, prefix: &str) -> String {
-        todo!()
-    }
-}
-
-/* TODO
-impl CFormatting for AnyType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        match self {
-            AnyType::Basic(b) => b.to_c_type(prefix),
-            AnyType::String => "const char*".to_string(),
-            AnyType::Struct(handle) => handle.to_c_type(prefix),
-            AnyType::StructRef(handle) => format!("{}*", handle.to_c_type(prefix)),
-            AnyType::ClassRef(handle) => format!("{}*", handle.to_c_type(prefix)),
-            AnyType::Interface(handle) => handle.to_c_type(prefix),
-            AnyType::Iterator(handle) => format!("{}*", handle.iter_type.to_c_type(prefix)),
-            AnyType::Collection(handle) => {
-                format!("{}*", handle.collection_type.to_c_type(prefix))
-            }
-        }
-    }
-}
- */
-
-impl<T> CFormatting for ReturnType<T> where T: CFormatting
-{
-    fn to_c_type(&self, prefix: &str) -> String {
-        match self {
-            Self::Void => "void".to_string(),
-            Self::Type(return_type, _) => return_type.to_c_type(prefix),
-        }
-    }
-}
 
 pub struct CBindgenConfig {
     pub output_dir: PathBuf,
@@ -448,7 +285,7 @@ fn write_struct_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T>>,
     lib: &Library,
-) -> FormattingResult<()> where T: StructFieldType + TypeExtractor + CFormatting {
+) -> FormattingResult<()> where T: StructFieldType + TypeExtractor + CType {
     let doc = match handle.visibility {
         Visibility::Public => handle.doc.clone(),
         Visibility::Private => handle
@@ -849,7 +686,7 @@ fn write_function(
     f.write(");")
 }
 
-fn write_interface(f: &mut dyn Printer, handle: &Interface, lib: &Library) -> FormattingResult<()> {
+fn write_interface(f: &mut dyn Printer, handle: &InterfaceHandle, lib: &Library) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
     let struct_name = handle.to_c_type(&lib.c_ffi_prefix);

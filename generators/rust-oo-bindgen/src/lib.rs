@@ -44,8 +44,6 @@ clippy::all
     bare_trait_objects
 )]
 
-use crate::conversion::*;
-use crate::formatting::*;
 use heck::CamelCase;
 use oo_bindgen::enum_type::*;
 use oo_bindgen::error_type::ErrorType;
@@ -58,8 +56,15 @@ use oo_bindgen::*;
 use std::env;
 use std::path::{Path, PathBuf};
 
-mod conversion;
+mod rust_struct;
+mod rust_type;
 mod formatting;
+mod type_converter;
+
+use crate::rust_struct::*;
+use crate::rust_type::*;
+use crate::formatting::*;
+use crate::type_converter::*;
 
 pub struct RustCodegen<'a> {
     library: &'a Library,
@@ -106,12 +111,12 @@ impl<'a> RustCodegen<'a> {
         handle: &Handle<Struct<T>>,
     ) -> FormattingResult<()> where T: StructFieldType + RustType {
         let struct_name = handle.name().to_camel_case();
-        let c_lifetime = if handle.c_requires_lifetime() {
+        let c_lifetime = if handle.annotate_c_with_lifetime() {
             "<'a>"
         } else {
             ""
         };
-        let rust_lifetime = if handle.rust_requires_lifetime() {
+        let rust_lifetime = if handle.annotate_rust_with_lifetime() {
             "<'a>"
         } else {
             ""
@@ -439,7 +444,7 @@ impl<'a> RustCodegen<'a> {
                 }
                 SignatureType::ErrorNoReturn(err) => {
                     blocked(f, |f| {
-                        let converter = EnumConverter(err.inner.clone());
+                        let converter = TypeConverter::Enum(err.inner.clone());
                         f.writeln("Ok(()) =>")?;
                         blocked(f, |f| {
                             converter.convert_to_c(f, &format!("{}::Ok", err.inner.name), "")
@@ -450,7 +455,7 @@ impl<'a> RustCodegen<'a> {
                 }
                 SignatureType::ErrorWithReturn(err, result_type, _) => {
                     blocked(f, |f| {
-                        let converter = EnumConverter(err.inner.clone());
+                        let converter = TypeConverter::Enum(err.inner.clone());
                         f.writeln("Ok(x) =>")?;
                         blocked(f, |f| {
                             if let Some(converter) = result_type.conversion() {

@@ -3,7 +3,7 @@ use crate::iterator::IteratorHandle;
 use crate::return_type::ReturnType;
 use crate::structs::callback_struct::CStructHandle;
 use crate::structs::univeral_struct::UStructHandle;
-use crate::types::{Arg, DurationType, TypeValidator, ValidatedType};
+use crate::types::{Arg, DurationType, TypeValidator, ValidatedType, StringType};
 use crate::*;
 use std::collections::HashSet;
 
@@ -14,7 +14,7 @@ pub const DESTROY_FUNC_NAME: &str = "on_destroy";
 #[derive(Debug, Clone, PartialEq)]
 pub enum CArgument {
     Basic(BasicType),
-    String,
+    String(StringType),
     Iterator(IteratorHandle),
     Struct(CStructHandle),
 }
@@ -23,7 +23,7 @@ impl TypeValidator for CArgument {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
             CArgument::Basic(x) => x.get_validated_type(),
-            CArgument::String => None,
+            CArgument::String(x) => x.get_validated_type(),
             CArgument::Iterator(x) => x.get_validated_type(),
             CArgument::Struct(x) => StructType::CStruct(x.clone()).get_validated_type(),
         }

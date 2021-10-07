@@ -9,7 +9,7 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum FReturnValue {
     Basic(BasicType),
-    String,
+    String(StringType),
     ClassRef(ClassDeclarationHandle),
     Struct(RStructHandle),
     StructRef(StructDeclarationHandle),
@@ -35,7 +35,7 @@ impl From<ClassDeclarationHandle> for FReturnValue {
 
 impl From<StringType> for FReturnValue {
     fn from(_: StringType) -> Self {
-        FReturnValue::String
+        FReturnValue::String(StringType)
     }
 }
 
@@ -63,7 +63,7 @@ pub type FReturnType = ReturnType<FReturnValue>;
 #[derive(Debug, Clone, PartialEq)]
 pub enum FArgument {
     Basic(BasicType),
-    String,
+    String(StringType),
     Collection(CollectionHandle),
     Struct(FStructHandle),
     StructRef(StructDeclarationHandle),
@@ -75,7 +75,7 @@ impl TypeValidator for FArgument {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
             FArgument::Basic(x) => x.get_validated_type(),
-            FArgument::String => None,
+            FArgument::String(_) => None,
             FArgument::Collection(x) => x.get_validated_type(),
             FArgument::Struct(x) => StructType::FStruct(x.clone()).get_validated_type(),
             FArgument::StructRef(x) => x.get_validated_type(),
@@ -104,8 +104,8 @@ impl From<BasicType> for FArgument {
 }
 
 impl From<StringType> for FArgument {
-    fn from(_: StringType) -> Self {
-        FArgument::String
+    fn from(x: StringType) -> Self {
+        FArgument::String(x)
     }
 }
 

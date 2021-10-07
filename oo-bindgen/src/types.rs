@@ -14,8 +14,14 @@ use crate::structs::callback_struct::CStructFieldType;
 use crate::structs::univeral_struct::UStructFieldType;
 
 /// Marker class used to denote the String type with conversions to more specialized types
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct StringType;
+
+impl TypeValidator for StringType {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        None
+    }
+}
 
 pub const STRING_TYPE: StringType = StringType {};
 

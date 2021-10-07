@@ -7,7 +7,7 @@ use crate::*;
 #[derive(Clone, Debug)]
 pub enum FStructFieldType {
     Basic(BasicType),
-    String,
+    String(StringType),
     Interface(InterfaceHandle),
     Collection(CollectionHandle),
     Struct(FStructHandle),
@@ -17,7 +17,7 @@ impl TypeValidator for FStructFieldType {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
             FStructFieldType::Basic(x) => x.get_validated_type(),
-            FStructFieldType::String => None,
+            FStructFieldType::String(x) => x.get_validated_type(),
             FStructFieldType::Interface(x) => x.get_validated_type(),
             FStructFieldType::Collection(x) => x.get_validated_type(),
             FStructFieldType::Struct(x) => StructType::FStruct(x.clone()).get_validated_type(),
@@ -43,8 +43,8 @@ impl From<BasicType> for FStructFieldType {
 }
 
 impl From<StringType> for FStructFieldType {
-    fn from(_: StringType) -> Self {
-        FStructFieldType::String
+    fn from(x: StringType) -> Self {
+        FStructFieldType::String(x)
     }
 }
 

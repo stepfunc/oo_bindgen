@@ -18,12 +18,6 @@ pub struct ErrorType {
     pub inner: EnumHandle,
 }
 
-impl ErrorType {
-    pub fn to_enum_type(&self) -> AnyType {
-        BasicType::Enum(self.inner.clone()).into()
-    }
-}
-
 pub struct ErrorTypeBuilder<'a> {
     exception_name: String,
     exception_type: ExceptionType,

@@ -105,7 +105,7 @@ fn write_conversion_wrapper(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.to_any_type().as_native_type(),
+                    param.arg_type.as_native_type(),
                     param.name
                 )
             })
@@ -156,7 +156,7 @@ fn write_exception_wrapper(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.to_any_type().as_native_type(),
+                    param.arg_type.as_native_type(),
                     param.name
                 )
             })
@@ -193,7 +193,7 @@ fn write_pinvoke_signature(
     if let Some(err) = &handle.error_type {
         f.write(&format!(
             "internal static extern {} {}_{}(",
-            err.to_enum_type().as_native_type(),
+            err.inner.as_native_type(),
             prefix,
             handle.name,
         ))?;
@@ -213,7 +213,7 @@ fn write_pinvoke_signature(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.to_any_type().as_native_type(),
+                    param.arg_type.as_native_type(),
                     param.name
                 )
             })

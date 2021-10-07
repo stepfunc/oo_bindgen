@@ -3,7 +3,7 @@ use crate::iterator::IteratorHandle;
 use crate::return_type::ReturnType;
 use crate::structs::callback_struct::CStructHandle;
 use crate::structs::univeral_struct::UStructHandle;
-use crate::types::{Arg, DurationType};
+use crate::types::{Arg, DurationType, TypeValidator, ValidatedType};
 use crate::*;
 use std::collections::HashSet;
 
@@ -19,13 +19,13 @@ pub enum CArgument {
     Struct(CStructHandle),
 }
 
-impl From<CArgument> for AnyType {
-    fn from(x: CArgument) -> Self {
-        match x {
-            CArgument::Basic(x) => Self::Basic(x),
-            CArgument::String => Self::String,
-            CArgument::Iterator(x) => Self::Iterator(x),
-            CArgument::Struct(x) => Self::Struct(x.to_any_struct()),
+impl TypeValidator for CArgument {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        match self {
+            CArgument::Basic(x) => x.get_validated_type(),
+            CArgument::String => None,
+            CArgument::Iterator(x) => x.get_validated_type(),
+            CArgument::Struct(x) => StructType::CStruct(x.clone()).get_validated_type(),
         }
     }
 }
@@ -53,15 +53,6 @@ impl From<IteratorHandle> for CArgument {
 pub enum CReturnValue {
     Basic(BasicType),
     Struct(UStructHandle),
-}
-
-impl From<CReturnValue> for AnyType {
-    fn from(x: CReturnValue) -> Self {
-        match x {
-            CReturnValue::Basic(x) => x.into(),
-            CReturnValue::Struct(x) => x.to_any_struct().into(),
-        }
-    }
 }
 
 impl From<BasicType> for CReturnValue {
@@ -112,12 +103,6 @@ impl Interface {
 }
 
 pub type InterfaceHandle = Handle<Interface>;
-
-impl From<InterfaceHandle> for AnyType {
-    fn from(x: InterfaceHandle) -> Self {
-        AnyType::Interface(x)
-    }
-}
 
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
@@ -218,7 +203,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
             });
         }
 
-        self.builder.lib.validate_type(&arg_type.clone().into())?;
+        self.builder.lib.validate_type(&arg_type)?;
         self.arguments.push(Arg::new(arg_type, name, doc.into()));
         Ok(self)
     }

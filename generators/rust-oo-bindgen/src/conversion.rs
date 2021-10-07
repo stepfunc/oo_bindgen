@@ -2,22 +2,37 @@ use heck::CamelCase;
 
 use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::any_struct::*;
 use oo_bindgen::structs::common::*;
 use oo_bindgen::types::*;
+use oo_bindgen::structs::function_struct::FStructFieldType;
+use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::univeral_struct::UStructFieldType;
+use oo_bindgen::function::{FArgument, FReturnValue};
 
-pub(crate) trait RustType {
+pub(crate) trait LifetimeInfo {
+    fn rust_requires_lifetime(&self) -> bool;
+    fn c_requires_lifetime(&self) -> bool;
+}
+
+pub(crate) trait RustType : LifetimeInfo {
     fn as_rust_type(&self) -> String;
     fn as_c_type(&self) -> String;
     fn is_copyable(&self) -> bool;
-    fn rust_requires_lifetime(&self) -> bool;
-    fn c_requires_lifetime(&self) -> bool;
     fn conversion(&self) -> Option<Box<dyn TypeConverter>>;
     fn has_conversion(&self) -> bool {
         self.conversion().is_some()
+    }
+}
+
+impl LifetimeInfo for BasicType {
+    fn rust_requires_lifetime(&self) -> bool {
+        false
+    }
+    fn c_requires_lifetime(&self) -> bool {
+        false
     }
 }
 
@@ -62,14 +77,6 @@ impl RustType for BasicType {
         true
     }
 
-    fn rust_requires_lifetime(&self) -> bool {
-        false
-    }
-
-    fn c_requires_lifetime(&self) -> bool {
-        false
-    }
-
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
         match self {
             Self::Bool => None,
@@ -89,6 +96,137 @@ impl RustType for BasicType {
     }
 }
 
+impl LifetimeInfo for FArgument {
+    fn rust_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+}
+
+impl RustType for FArgument {
+    fn as_rust_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_c_type(&self) -> String {
+        todo!()
+    }
+
+    fn is_copyable(&self) -> bool {
+        todo!()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+}
+
+impl LifetimeInfo for FReturnValue {
+    fn rust_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+}
+
+impl RustType for FReturnValue {
+    fn as_rust_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_c_type(&self) -> String {
+        todo!()
+    }
+
+    fn is_copyable(&self) -> bool {
+        todo!()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+}
+
+impl RustType for FStructFieldType {
+    fn as_rust_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_c_type(&self) -> String {
+        todo!()
+    }
+
+    fn is_copyable(&self) -> bool {
+        todo!()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+}
+
+impl RustType for RStructFieldType {
+    fn as_rust_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_c_type(&self) -> String {
+        todo!()
+    }
+
+    fn is_copyable(&self) -> bool {
+        todo!()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+}
+
+impl RustType for CStructFieldType {
+    fn as_rust_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_c_type(&self) -> String {
+        todo!()
+    }
+
+    fn is_copyable(&self) -> bool {
+        todo!()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+}
+
+impl RustType for UStructFieldType {
+    fn as_rust_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_c_type(&self) -> String {
+        todo!()
+    }
+
+    fn is_copyable(&self) -> bool {
+        todo!()
+    }
+
+    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+}
+
+//impl RustType for
+
+/*
 impl RustType for AnyType {
     fn as_rust_type(&self) -> String {
         match self {
@@ -186,88 +324,83 @@ impl RustType for AnyType {
         }
     }
 }
+*/
 
-impl RustType for CArgument {
-    fn as_rust_type(&self) -> String {
-        AnyType::from(self.clone()).as_rust_type()
-    }
-
-    fn as_c_type(&self) -> String {
-        AnyType::from(self.clone()).as_c_type()
-    }
-
-    fn is_copyable(&self) -> bool {
-        AnyType::from(self.clone()).is_copyable()
-    }
-
+impl LifetimeInfo for CArgument {
     fn rust_requires_lifetime(&self) -> bool {
-        AnyType::from(self.clone()).rust_requires_lifetime()
+        todo!()
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        AnyType::from(self.clone()).c_requires_lifetime()
-    }
-
-    fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        AnyType::from(self.clone()).conversion()
+        todo!()
     }
 }
 
-impl RustType for FReturnValue {
+impl RustType for CArgument {
     fn as_rust_type(&self) -> String {
-        AnyType::from(self.clone()).as_rust_type()
+        todo!()
     }
 
     fn as_c_type(&self) -> String {
-        AnyType::from(self.clone()).as_c_type()
+        todo!()
     }
 
     fn is_copyable(&self) -> bool {
-        AnyType::from(self.clone()).is_copyable()
-    }
-
-    fn rust_requires_lifetime(&self) -> bool {
-        AnyType::from(self.clone()).rust_requires_lifetime()
-    }
-
-    fn c_requires_lifetime(&self) -> bool {
-        AnyType::from(self.clone()).c_requires_lifetime()
+        todo!()
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        AnyType::from(self.clone()).conversion()
+        todo!()
+    }
+}
+
+impl LifetimeInfo for CReturnValue {
+    fn rust_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        todo!()
     }
 }
 
 impl RustType for CReturnValue {
     fn as_rust_type(&self) -> String {
-        AnyType::from(self.clone()).as_rust_type()
+        todo!()
     }
 
     fn as_c_type(&self) -> String {
-        AnyType::from(self.clone()).as_c_type()
+        todo!()
     }
 
     fn is_copyable(&self) -> bool {
-        AnyType::from(self.clone()).is_copyable()
-    }
-
-    fn rust_requires_lifetime(&self) -> bool {
-        AnyType::from(self.clone()).rust_requires_lifetime()
-    }
-
-    fn c_requires_lifetime(&self) -> bool {
-        AnyType::from(self.clone()).c_requires_lifetime()
+        todo!()
     }
 
     fn conversion(&self) -> Option<Box<dyn TypeConverter>> {
-        AnyType::from(self.clone()).conversion()
+        todo!()
     }
 }
 
-impl<T> RustType for ReturnType<T>
-where
-    T: RustType + Into<AnyType>,
+impl<T> LifetimeInfo for ReturnType<T> where T: LifetimeInfo {
+    fn rust_requires_lifetime(&self) -> bool {
+        if let Self::Type(t, _) = self {
+            t.rust_requires_lifetime()
+        } else {
+            false
+        }
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        if let Self::Type(t, _) = self {
+            t.c_requires_lifetime()
+        } else {
+            false
+        }
+    }
+}
+
+impl<T> RustType for ReturnType<T> where  T: RustType
 {
     fn as_rust_type(&self) -> String {
         if let Self::Type(t, _) = self {
@@ -290,22 +423,6 @@ where
             t.is_copyable()
         } else {
             true
-        }
-    }
-
-    fn rust_requires_lifetime(&self) -> bool {
-        if let Self::Type(t, _) = self {
-            t.rust_requires_lifetime()
-        } else {
-            false
-        }
-    }
-
-    fn c_requires_lifetime(&self) -> bool {
-        if let Self::Type(t, _) = self {
-            t.c_requires_lifetime()
-        } else {
-            false
         }
     }
 
@@ -397,36 +514,63 @@ pub(crate) trait RustStruct {
     fn has_conversion(&self) -> bool;
 }
 
-impl RustStruct for AnyStructHandle {
+impl<T> RustStruct for Struct<T> where T: StructFieldType + RustType {
     fn rust_requires_lifetime(&self) -> bool {
-        self.fields.iter().any(|e| e.rust_requires_lifetime())
+        self.fields.iter().any(|f| f.field_type.rust_requires_lifetime())
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        self.fields.iter().any(|e| e.c_requires_lifetime())
+        self.fields.iter().any(|f| f.field_type.c_requires_lifetime())
     }
 
     fn has_conversion(&self) -> bool {
         self.fields
             .iter()
-            .any(|e| e.field_type.to_any_type().has_conversion())
+            .any(|f| f.field_type.has_conversion())
     }
 }
 
-pub(crate) trait RustStructField {
-    fn rust_requires_lifetime(&self) -> bool;
-    fn c_requires_lifetime(&self) -> bool;
-}
-
-impl RustStructField for AnyStructField {
+impl LifetimeInfo for FStructFieldType {
     fn rust_requires_lifetime(&self) -> bool {
-        self.field_type.to_any_type().rust_requires_lifetime()
+        todo!()
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        self.field_type.to_any_type().c_requires_lifetime()
+        todo!()
     }
 }
+
+impl LifetimeInfo for CStructFieldType {
+    fn rust_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+}
+
+impl LifetimeInfo for RStructFieldType {
+    fn rust_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+}
+
+impl LifetimeInfo for UStructFieldType {
+    fn rust_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        todo!()
+    }
+}
+
+
 
 pub(crate) trait RustCallbackFunction {
     fn rust_requires_lifetime(&self) -> bool;

@@ -225,7 +225,7 @@ fn generate_functions(
                     format!(
                         "{}: {}",
                         param.name.to_snake_case(),
-                        param.arg_type.to_any_type().as_raw_jni_type()
+                        param.arg_type.as_raw_jni_type()
                     )
                 })
                 .collect::<Vec<String>>()
@@ -256,7 +256,6 @@ fn generate_functions(
                 for param in &handle.parameters {
                     param
                         .arg_type
-                        .to_any_type()
                         .check_null(f, &param.name.to_snake_case())?;
                 }
                 f.writeln("Ok(())")
@@ -278,7 +277,6 @@ fn generate_functions(
             for param in &handle.parameters {
                 if let Some(conversion) = param
                     .arg_type
-                    .to_any_type()
                     .conversion(&config.ffi_name, &lib.c_ffi_prefix)
                 {
                     conversion.convert_to_rust(
@@ -397,7 +395,6 @@ fn generate_functions(
             for param in &handle.parameters {
                 if let Some(conversion) = param
                     .arg_type
-                    .to_any_type()
                     .conversion(&config.ffi_name, &lib.c_ffi_prefix)
                 {
                     conversion.convert_to_rust_cleanup(f, &param.name.to_snake_case())?;

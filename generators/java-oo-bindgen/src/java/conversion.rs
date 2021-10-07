@@ -4,7 +4,11 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::{CArgument, CReturnValue};
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::types::{AnyType, BasicType};
+use oo_bindgen::types::BasicType;
+use oo_bindgen::structs::function_struct::FStructFieldType;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::univeral_struct::UStructFieldType;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -49,6 +53,7 @@ impl JavaType for BasicType {
     }
 }
 
+/*
 impl JavaType for AnyType {
     /// Return the Java primitive type
     fn as_java_primitive(&self) -> String {
@@ -88,40 +93,89 @@ impl JavaType for AnyType {
         }
     }
 }
+*/
 
-impl JavaType for CArgument {
+impl JavaType for FStructFieldType {
     fn as_java_primitive(&self) -> String {
-        AnyType::from(self.clone()).as_java_primitive()
+        todo!()
     }
 
     fn as_java_object(&self) -> String {
-        AnyType::from(self.clone()).as_java_object()
+        todo!()
+    }
+}
+
+impl JavaType for RStructFieldType {
+    fn as_java_primitive(&self) -> String {
+        todo!()
+    }
+
+    fn as_java_object(&self) -> String {
+        todo!()
+    }
+}
+
+impl JavaType for CStructFieldType {
+    fn as_java_primitive(&self) -> String {
+        todo!()
+    }
+
+    fn as_java_object(&self) -> String {
+        todo!()
+    }
+}
+
+impl JavaType for UStructFieldType {
+    fn as_java_primitive(&self) -> String {
+        todo!()
+    }
+
+    fn as_java_object(&self) -> String {
+        todo!()
+    }
+}
+
+impl JavaType for FArgument {
+    fn as_java_primitive(&self) -> String {
+        todo!()
+    }
+
+    fn as_java_object(&self) -> String {
+        todo!()
+    }
+}
+
+impl JavaType for CArgument {
+    fn as_java_primitive(&self) -> String {
+        unimplemented!()
+    }
+
+    fn as_java_object(&self) -> String {
+        unimplemented!()
     }
 }
 
 impl JavaType for CReturnValue {
     fn as_java_primitive(&self) -> String {
-        AnyType::from(self.clone()).as_java_primitive()
+        unimplemented!()
     }
 
     fn as_java_object(&self) -> String {
-        AnyType::from(self.clone()).as_java_object()
+        unimplemented!()
     }
 }
 
 impl JavaType for FReturnValue {
     fn as_java_primitive(&self) -> String {
-        AnyType::from(self.clone()).as_java_primitive()
+        unimplemented!()
     }
 
     fn as_java_object(&self) -> String {
-        AnyType::from(self.clone()).as_java_object()
+        unimplemented!()
     }
 }
 
-impl<T> JavaType for ReturnType<T>
-where
-    T: JavaType + Into<AnyType>,
+impl<T> JavaType for ReturnType<T> where T: JavaType
 {
     fn as_java_primitive(&self) -> String {
         match self {

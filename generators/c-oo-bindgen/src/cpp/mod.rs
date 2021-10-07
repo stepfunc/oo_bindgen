@@ -7,10 +7,9 @@ use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::interface::{CReturnType, CallbackFunction, InterfaceHandle, CTX_VARIABLE_NAME};
+use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::structs::any_struct::{AnyStructField, AnyStructHandle};
-use oo_bindgen::{Library, Statement};
+use oo_bindgen::{Library, Statement, Handle};
 use std::path::Path;
 
 use crate::CFormatting;
@@ -21,7 +20,7 @@ use oo_bindgen::class::{
 };
 use oo_bindgen::function::{FArgument, FReturnType, FunctionHandle};
 use oo_bindgen::structs::common::*;
-use oo_bindgen::types::{AnyType, Arg, BasicType, DurationType};
+use oo_bindgen::types::{Arg, BasicType, DurationType};
 use oo_bindgen::util::WithLastIndication;
 use types::*;
 
@@ -151,11 +150,11 @@ fn get_struct_full_constructor_args(handle: &AnyStructHandle) -> String {
 }
 */
 
-fn print_struct_header(
+fn print_struct_header<T>(
     f: &mut dyn Printer,
-    handle: &AnyStructHandle,
+    handle: &Handle<Struct<T>>,
     _lib: &Library,
-) -> FormattingResult<()> {
+) -> FormattingResult<()> where T: StructFieldType {
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
     f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
     if let Visibility::Private = handle.visibility {
@@ -394,6 +393,7 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
+/* TODO
 fn convert_native_struct_elem_to_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x.{}", elem.name);
     convert_to_cpp(&elem.field_type.to_any_type(), base_name)
@@ -413,6 +413,7 @@ fn convert_native_struct_ptr_elem_from_cpp(elem: &AnyStructField) -> String {
     let base_name = format!("x->{}", elem.name);
     convert_to_c(&elem.field_type.to_any_type(), base_name)
 }
+*/
 
 fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", FRIEND_CLASS_NAME))?;
@@ -449,6 +450,7 @@ fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
     f.newline()
 }
 
+/* TODO
 fn print_friend_class_impl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     for handle in lib.structs() {
         print_struct_conversion_impl(lib, f, handle.get_any_struct())?;
@@ -588,6 +590,7 @@ fn print_struct_conversion_impl(
 
     f.newline()
 }
+*/
 
 fn print_enum_conversions(
     lib: &Library,
@@ -679,6 +682,7 @@ fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
     }
 }
 
+/*
 fn convert_to_cpp(typ: &AnyType, expr: String) -> String {
     match typ {
         AnyType::Basic(x) => convert_basic_type_to_cpp(x, expr),
@@ -691,6 +695,7 @@ fn convert_to_cpp(typ: &AnyType, expr: String) -> String {
         AnyType::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
     }
 }
+ */
 
 fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
     match t {
@@ -717,6 +722,7 @@ fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
     }
 }
 
+/* TODO
 fn convert_to_c(typ: &AnyType, expr: String) -> String {
     match typ {
         AnyType::Basic(t) => convert_basic_type_to_c(t, expr),
@@ -729,7 +735,9 @@ fn convert_to_c(typ: &AnyType, expr: String) -> String {
         AnyType::Collection(_) => unimplemented!(),
     }
 }
+ */
 
+/* TODO
 fn print_interface_conversions(
     lib: &Library,
     f: &mut dyn Printer,
@@ -777,7 +785,8 @@ fn print_interface_conversions(
 
                             f.writeln(&format!(
                                 "return {};",
-                                convert_to_c(&AnyType::from(t.clone()), value)
+                                "TODO!!!"
+                                // convert_to_c(&AnyType::from(t.clone()), value)
                             ))?;
                         }
                         CReturnType::Void => {
@@ -805,6 +814,7 @@ fn print_interface_conversions(
     f.writeln("}")?;
     f.newline()
 }
+*/
 
 fn print_iterator_conversions(
     lib: &Library,
@@ -828,10 +838,13 @@ fn print_iterator_conversions(
         indented(f, |f| {
             f.writeln(&format!(
                 "result.push_back({});",
+                "TODO!!"
+                /*
                 convert_to_cpp(
                     &AnyType::Struct(handle.item_type.to_any_struct()),
                     "*it".to_string()
                 )
+                 */
             ))?;
             f.writeln(&format!("it = {}(x);", function_name))
         })?;
@@ -1025,9 +1038,11 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
             print_enum_conversions(lib, f, e)?;
         }
 
+        /* TODO
         for interface in lib.interfaces() {
             print_interface_conversions(lib, f, interface)?;
         }
+         */
 
         for handle in lib.iterators() {
             print_iterator_conversions(lib, f, handle)?;
@@ -1043,9 +1058,10 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
         print_enum_to_string_impl(f, e)?;
     }
 
+    /* TODO
     print_friend_class_impl(lib, f)?;
 
-    /* TODO
+
     // struct constructors
     for handle in lib.structs() {
         print_struct_constructor_impl(f, handle.get_any_struct())?;

@@ -1,9 +1,8 @@
 use crate::doc::Doc;
-use crate::structs::any_struct::{AnyStruct, AnyStructField};
-use crate::types::AnyType;
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
 use std::fmt::Formatter;
+use crate::types::TypeValidator;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {
@@ -82,18 +81,10 @@ impl StructDeclaration {
 
 pub type StructDeclarationHandle = Handle<StructDeclaration>;
 
-impl From<StructDeclarationHandle> for AnyType {
-    fn from(x: StructDeclarationHandle) -> Self {
-        Self::StructRef(x)
-    }
-}
-
-pub trait StructFieldType: Clone + Sized {
+pub trait StructFieldType: Clone + Sized + TypeValidator {
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
 
-    /// TODO - this will go away
-    fn to_any_type(&self) -> AnyType;
     /*
        /// Check that the default value is valid for the type
        fn validate(&self, name: &FieldName, x: &ConstructorValue) -> BindResult<()>;
@@ -108,19 +99,6 @@ where
     pub name: FieldName,
     pub field_type: F,
     pub doc: Doc,
-}
-
-impl<F> StructField<F>
-where
-    F: StructFieldType,
-{
-    pub(crate) fn to_any_struct_field(&self) -> AnyStructField {
-        AnyStructField {
-            name: self.name.clone(),
-            field_type: self.field_type.clone().to_any_type(),
-            doc: self.doc.clone(),
-        }
-    }
 }
 
 /// C-style structure definition
@@ -140,18 +118,8 @@ impl<F> Struct<F>
 where
     F: StructFieldType,
 {
-    pub fn to_any_struct(&self) -> Handle<AnyStruct> {
-        Handle::new(AnyStruct {
-            visibility: self.visibility,
-            declaration: self.declaration.clone(),
-            fields: self
-                .fields
-                .iter()
-                .map(|f| f.to_any_struct_field())
-                .collect(),
-            constructors: self.constructors.clone(),
-            doc: self.doc.clone(),
-        })
+    pub fn has_field_named(&self, name: &str) -> bool {
+        self.fields.iter().find(|x| x.name.as_str() == name).is_some()
     }
 
     pub fn name(&self) -> &str {
@@ -208,7 +176,7 @@ where
         let name = name.into();
         let field_type = field_type.into();
 
-        self.lib.validate_type(&field_type.to_any_type())?;
+        self.lib.validate_type(&field_type)?;
         if self.field_names.insert((*name).clone()) {
             self.fields.push(StructField {
                 name,

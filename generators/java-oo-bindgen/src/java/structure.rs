@@ -1,9 +1,8 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
-use oo_bindgen::structs::common::Visibility;
+use oo_bindgen::structs::common::{Visibility, Struct, StructFieldType};
 
-use oo_bindgen::structs::common::StructFieldType;
 
 /* TODO
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
@@ -21,17 +20,17 @@ fn field_visibility(struct_type: Visibility) -> &'static str {
     }
 }
 
-pub(crate) fn generate(
+pub(crate) fn generate<T>(
     f: &mut impl Printer,
-    native_struct: &StructType,
+    st: &Struct<T>,
     lib: &Library,
-) -> FormattingResult<()> {
-    let struct_name = native_struct.name().to_camel_case();
+) -> FormattingResult<()> where T: StructFieldType + JavaType {
+    let struct_name = st.name().to_camel_case();
 
-    let doc = match native_struct.visibility() {
-        Visibility::Public => native_struct.doc().clone(),
-        Visibility::Private => native_struct
-            .doc()
+    let doc = match st.visibility {
+        Visibility::Public => st.doc.clone(),
+        Visibility::Private => st
+            .doc
             .clone()
             .warning("This class is an opaque handle and cannot be constructed by user code"),
     };
@@ -43,7 +42,7 @@ pub(crate) fn generate(
     f.writeln(&format!("public final class {}", struct_name))?;
     blocked(f, |f| {
         // Write Java structure fields
-        for field in native_struct.fields() {
+        for field in st.fields() {
             documentation(f, |f| {
                 javadoc_print(f, &field.doc, lib)?;
                 Ok(())
@@ -51,8 +50,8 @@ pub(crate) fn generate(
 
             f.writeln(&format!(
                 "{} {} {};",
-                field_visibility(native_struct.visibility()),
-                field.field_type.to_any_type().as_java_primitive(),
+                field_visibility(st.visibility),
+                field.field_type.as_java_primitive(),
                 field.name.to_mixed_case()
             ))?;
         }

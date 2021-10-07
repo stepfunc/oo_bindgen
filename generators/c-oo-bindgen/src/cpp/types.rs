@@ -5,9 +5,9 @@ use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::interface::{CArgument, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::any_struct::AnyStructHandle;
 use oo_bindgen::structs::common::StructDeclarationHandle;
-use oo_bindgen::types::{AnyType, BasicType, DurationType};
+use oo_bindgen::types::DurationType;
+use oo_bindgen::StructType;
 
 /// These types are always be pass-by-value in C++
 #[derive(Clone, Debug, PartialEq)]
@@ -51,7 +51,7 @@ impl Primitive {
 pub(crate) enum CppType {
     Primitive(Primitive),
     String,
-    Struct(AnyStructHandle),
+    Struct(StructType),
     StructRef(StructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
@@ -70,18 +70,18 @@ pub(crate) trait CppReturnType {
 }
 
 impl<T> CppReturnType for ReturnType<T>
-where
-    T: Into<AnyType> + Clone,
+where T: Clone
 {
     fn get_cpp_return_type(&self) -> String {
         match self {
             Self::Void => "void".to_owned(),
-            Self::Type(t, _) => CppType::new(t.clone().into()).get_cpp_return_type(),
+            Self::Type(t, _) => todo!()
         }
     }
 }
 
 impl CppType {
+    /*
     fn new(x: AnyType) -> Self {
         match x {
             AnyType::Basic(x) => match x {
@@ -108,6 +108,7 @@ impl CppType {
             AnyType::Collection(x) => Self::Collection(x),
         }
     }
+     */
 
     fn get_cpp_struct_member_type(&self) -> String {
         match self {
@@ -120,7 +121,7 @@ impl CppType {
             CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
             CppType::Iterator(x) => format!("std::vector<{}>", x.item_type.cpp_name()),
             CppType::Collection(x) => {
-                format!("std::vector<{}>", x.item_type.get_cpp_struct_member_type())
+                format!("std::vector<{}>", todo!())
             }
         }
     }
@@ -136,7 +137,7 @@ impl CppType {
             CppType::Interface(x) => format!("std::unique_ptr<{}>", x.cpp_name()),
             CppType::Iterator(x) => format!("std::vector<{}>", x.item_type.cpp_name()),
             CppType::Collection(x) => {
-                format!("std::vector<{}>", x.item_type.get_cpp_struct_member_type())
+                format!("std::vector<{}>", todo!())
             }
         }
     }
@@ -153,7 +154,7 @@ impl CppType {
             CppType::Iterator(x) => format!("Iterator<{}>&", x.item_type.cpp_name()),
             CppType::Collection(x) => format!(
                 "const std::vector<{}>&",
-                x.item_type.get_cpp_struct_member_type()
+                todo!()
             ),
         }
     }
@@ -170,37 +171,23 @@ impl CppType {
             CppType::Iterator(x) => format!("const std::vector<{}>&", x.item_type.cpp_name()),
             CppType::Collection(x) => format!(
                 "const std::vector<{}>&",
-                x.item_type.get_cpp_struct_member_type()
+               todo!()
             ),
         }
     }
 }
 
-impl CppTypes for AnyType {
-    fn get_cpp_struct_member_type(&self) -> String {
-        CppType::new(self.clone()).get_cpp_struct_member_type()
-    }
-
-    fn get_cpp_func_argument_type(&self) -> String {
-        CppType::new(self.clone()).get_cpp_function_argument_type()
-    }
-
-    fn get_cpp_struct_constructor_type(&self) -> String {
-        CppType::new(self.clone()).get_struct_constructor_argument_type()
-    }
-}
-
 impl CppTypes for CArgument {
     fn get_cpp_struct_member_type(&self) -> String {
-        AnyType::from(self.clone()).get_cpp_struct_member_type()
+       unimplemented!()
     }
 
     fn get_cpp_func_argument_type(&self) -> String {
-        AnyType::from(self.clone()).get_cpp_func_argument_type()
+        unimplemented!()
     }
 
     fn get_cpp_struct_constructor_type(&self) -> String {
-        AnyType::from(self.clone()).get_cpp_func_argument_type()
+        unimplemented!()
     }
 }
 

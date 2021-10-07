@@ -1,18 +1,13 @@
 use crate::doc::DocString;
-use crate::types::AnyType;
 
 #[derive(Debug)]
 pub enum ReturnType<T>
-where
-    T: Into<AnyType>,
 {
     Void,
     Type(T, DocString),
 }
 
 impl<T> ReturnType<T>
-where
-    T: Into<AnyType>,
 {
     pub fn void() -> Self {
         ReturnType::Void

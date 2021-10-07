@@ -6,10 +6,9 @@ use oo_bindgen::constants::Constant;
 use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::interface::{CallbackFunction, InterfaceHandle};
-use oo_bindgen::structs::any_struct::{AnyStructField, AnyStructHandle};
 use oo_bindgen::structs::common::StructDeclaration;
 use oo_bindgen::structs::function_return_struct::RStructHandle;
-use oo_bindgen::types::{AnyType, Arg};
+use oo_bindgen::types::Arg;
 use oo_bindgen::StructType;
 
 pub(crate) trait CppName {
@@ -28,15 +27,9 @@ impl CppName for StructDeclaration {
     }
 }
 
-impl CppName for AnyStructHandle {
+impl CppName for StructType {
     fn cpp_name(&self) -> String {
-        self.declaration.cpp_name()
-    }
-}
-
-impl CppName for &AnyStructHandle {
-    fn cpp_name(&self) -> String {
-        self.declaration.cpp_name()
+        self.declaration().cpp_name()
     }
 }
 
@@ -58,12 +51,6 @@ impl CppName for ErrorType {
     }
 }
 
-impl CppName for AnyStructField {
-    fn cpp_name(&self) -> String {
-        self.name.to_snake_case()
-    }
-}
-
 impl CppName for InterfaceHandle {
     fn cpp_name(&self) -> String {
         self.name.to_camel_case()
@@ -71,8 +58,6 @@ impl CppName for InterfaceHandle {
 }
 
 impl<T> CppName for Arg<T>
-where
-    T: Into<AnyType>,
 {
     fn cpp_name(&self) -> String {
         self.name.to_snake_case()
@@ -98,12 +83,6 @@ impl CppName for ClassDeclarationHandle {
 }
 
 impl CppName for ClassHandle {
-    fn cpp_name(&self) -> String {
-        self.name().to_camel_case()
-    }
-}
-
-impl CppName for StructType {
     fn cpp_name(&self) -> String {
         self.name().to_camel_case()
     }

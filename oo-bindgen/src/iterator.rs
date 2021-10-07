@@ -1,5 +1,4 @@
 use crate::structs::function_return_struct::RStructHandle;
-use crate::types::AnyType;
 use crate::*;
 
 #[derive(Debug)]
@@ -70,9 +69,3 @@ impl Iterator {
 }
 
 pub type IteratorHandle = Handle<Iterator>;
-
-impl From<IteratorHandle> for AnyType {
-    fn from(x: IteratorHandle) -> Self {
-        Self::Iterator(x)
-    }
-}

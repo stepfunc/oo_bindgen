@@ -6,7 +6,6 @@ use heck::{CamelCase, KebabCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::platforms::Platform;
-use oo_bindgen::types::AnyType;
 use oo_bindgen::*;
 use std::fs;
 
@@ -341,20 +340,20 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 handle.name
             ))?;
 
-            f.write(
-                &handle
-                    .parameters
-                    .iter()
-                    .map(|param| {
-                        format!(
-                            "{} {}",
-                            AnyType::from(param.arg_type.clone()).as_java_primitive(),
-                            param.name
-                        )
-                    })
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            )?;
+            let args = handle
+                .parameters
+                .iter()
+                .map(|param| {
+                    format!(
+                        "{} {}",
+                        param.arg_type.as_java_primitive(),
+                        param.name
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            f.write(&args)?;
             f.write(");")?;
             f.newline()?;
         }
@@ -382,9 +381,14 @@ fn generate_exceptions(lib: &Library, config: &JavaBindgenConfig) -> FormattingR
 }
 
 fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for native_struct in lib.structs() {
-        let mut f = create_file(&native_struct.name().to_camel_case(), config, lib)?;
-        structure::generate(&mut f, native_struct, lib)?;
+    for st in lib.structs() {
+        let mut f = create_file(&st.name().to_camel_case(), config, lib)?;
+        match st {
+            StructType::FStruct(x) => structure::generate(&mut f, x, lib)?,
+            StructType::RStruct(x) => structure::generate(&mut f, x, lib)?,
+            StructType::CStruct(x) => structure::generate(&mut f, x, lib)?,
+            StructType::UStruct(x) => structure::generate(&mut f, x, lib)?,
+        }
     }
 
     Ok(())

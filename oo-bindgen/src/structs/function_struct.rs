@@ -1,6 +1,6 @@
 use crate::collection::CollectionHandle;
 use crate::structs::common::*;
-use crate::types::{AnyType, DurationType, StringType};
+use crate::types::{DurationType, StringType, ValidatedType, TypeValidator};
 use crate::*;
 
 /// Types that can be used in a function struct, some of which might have a default value
@@ -13,6 +13,18 @@ pub enum FStructFieldType {
     Struct(FStructHandle),
 }
 
+impl TypeValidator for FStructFieldType {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        match self {
+            FStructFieldType::Basic(x) => x.get_validated_type(),
+            FStructFieldType::String => None,
+            FStructFieldType::Interface(x) => x.get_validated_type(),
+            FStructFieldType::Collection(x) => x.get_validated_type(),
+            FStructFieldType::Struct(x) => StructType::FStruct(x.clone()).get_validated_type(),
+        }
+    }
+}
+
 pub type FStructField = StructField<FStructFieldType>;
 pub type FStruct = Struct<FStructFieldType>;
 pub type FStructHandle = Handle<FStruct>;
@@ -20,17 +32,7 @@ pub type FStructBuilder<'a> = StructFieldBuilder<'a, FStructFieldType>;
 
 impl StructFieldType for FStructFieldType {
     fn create_struct_type(v: Handle<Struct<FStructFieldType>>) -> StructType {
-        StructType::FStruct(v.clone(), v.to_any_struct())
-    }
-
-    fn to_any_type(&self) -> AnyType {
-        match self {
-            Self::Basic(x) => x.clone().into(),
-            Self::String => AnyType::String,
-            Self::Interface(x) => AnyType::Interface(x.clone()),
-            Self::Collection(x) => AnyType::Collection(x.clone()),
-            Self::Struct(x) => AnyType::Struct(x.to_any_struct()),
-        }
+        StructType::FStruct(v)
     }
 }
 

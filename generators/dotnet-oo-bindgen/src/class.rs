@@ -1,7 +1,6 @@
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
-use oo_bindgen::types::AnyType;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -154,7 +153,7 @@ fn generate_constructor(
             .map(|param| {
                 format!(
                     "{} {}",
-                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
+                    param.arg_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -265,7 +264,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
             .map(|param| {
                 format!(
                     "{} {}",
-                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
+                    param.arg_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -333,7 +332,7 @@ fn generate_static_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
+                    param.arg_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })
@@ -434,7 +433,7 @@ fn generate_async_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    AnyType::from(param.arg_type.clone()).as_dotnet_type(),
+                    param.arg_type.as_dotnet_type(),
                     param.name.to_mixed_case()
                 )
             })

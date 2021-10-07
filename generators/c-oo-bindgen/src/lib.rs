@@ -55,10 +55,9 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::structs::any_struct::*;
-use oo_bindgen::structs::common::StructFieldType;
+use oo_bindgen::structs::common::{StructFieldType, Struct};
 use oo_bindgen::structs::common::{StructDeclarationHandle, Visibility};
-use oo_bindgen::types::{AnyType, BasicType};
+use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
 
 use oo_bindgen::return_type::ReturnType;
@@ -66,9 +65,13 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use oo_bindgen::structs::function_struct::FStructFieldType;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::univeral_struct::UStructFieldType;
 
 mod chelpers;
-mod cpp;
+//mod cpp;
 mod doc;
 mod formatting;
 
@@ -76,27 +79,21 @@ trait CFormatting {
     fn to_c_type(&self, prefix: &str) -> String;
 }
 
-impl CFormatting for StructType {
-    fn to_c_type(&self, prefix: &str) -> String {
-        self.get_any_struct().to_c_type(prefix)
-    }
-}
-
 impl CFormatting for CArgument {
     fn to_c_type(&self, prefix: &str) -> String {
-        AnyType::from(self.clone()).to_c_type(prefix)
+        unimplemented!()
     }
 }
 
 impl CFormatting for FReturnValue {
     fn to_c_type(&self, prefix: &str) -> String {
-        AnyType::from(self.clone()).to_c_type(prefix)
+        unimplemented!()
     }
 }
 
 impl CFormatting for CReturnValue {
     fn to_c_type(&self, prefix: &str) -> String {
-        AnyType::from(self.clone()).to_c_type(prefix)
+        unimplemented!()
     }
 }
 
@@ -106,7 +103,17 @@ impl CFormatting for StructDeclarationHandle {
     }
 }
 
-impl CFormatting for AnyStructHandle {
+impl CFormatting for StructType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        format!(
+            "{}_{}_t",
+            prefix.to_snake_case(),
+            self.name().to_snake_case()
+        )
+    }
+}
+
+impl<T> CFormatting for Struct<T> where T: StructFieldType {
     fn to_c_type(&self, prefix: &str) -> String {
         format!(
             "{}_{}_t",
@@ -169,6 +176,37 @@ impl CFormatting for BasicType {
     }
 }
 
+impl CFormatting for FStructFieldType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        todo!()
+    }
+}
+
+impl CFormatting for RStructFieldType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        todo!()
+    }
+}
+
+impl CFormatting for CStructFieldType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        todo!()
+    }
+}
+
+impl CFormatting for UStructFieldType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        todo!()
+    }
+}
+
+impl CFormatting for FArgument {
+    fn to_c_type(&self, prefix: &str) -> String {
+        todo!()
+    }
+}
+
+/* TODO
 impl CFormatting for AnyType {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
@@ -185,10 +223,9 @@ impl CFormatting for AnyType {
         }
     }
 }
+ */
 
-impl<T> CFormatting for ReturnType<T>
-where
-    T: CFormatting + Into<AnyType>,
+impl<T> CFormatting for ReturnType<T> where T: CFormatting
 {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
@@ -216,9 +253,9 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     let include_path = output_dir.join("include");
     generate_c_header(lib, include_path.clone())?;
 
-    // Create the C++ header
-    crate::cpp::generate_cpp_header(lib, &include_path)?;
-    crate::cpp::generate_cpp_impl(lib, &include_path)?;
+    // TODO - Create the C++ header
+    // crate::cpp::generate_cpp_header(lib, &include_path)?;
+    // crate::cpp::generate_cpp_impl(lib, &include_path)?;
 
     // Generate CMake config file
     generate_cmake_config(lib, config, &config.platform_location)?;
@@ -362,8 +399,13 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
                         handle.to_c_type(&lib.c_ffi_prefix)
                     ))?;
                 }
-                Statement::StructDefinition(handle) => {
-                    write_struct_definition(f, handle.get_any_struct(), lib)?
+                Statement::StructDefinition(st) => {
+                    match st {
+                        StructType::FStruct(x) => write_struct_definition(f, x, lib)?,
+                        StructType::RStruct(x) => write_struct_definition(f, x, lib)?,
+                        StructType::CStruct(x) => write_struct_definition(f, x, lib)?,
+                        StructType::UStruct(x) => write_struct_definition(f, x, lib)?,
+                    }
                 }
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
                 Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
@@ -402,11 +444,11 @@ fn write_constants_definition(
     Ok(())
 }
 
-fn write_struct_definition(
+fn write_struct_definition<T>(
     f: &mut dyn Printer,
-    handle: &AnyStructHandle,
+    handle: &Handle<Struct<T>>,
     lib: &Library,
-) -> FormattingResult<()> {
+) -> FormattingResult<()> where T: StructFieldType + TypeExtractor + CFormatting {
     let doc = match handle.visibility {
         Visibility::Public => handle.doc.clone(),
         Visibility::Private => handle
@@ -428,7 +470,7 @@ fn write_struct_definition(
             doxygen(f, |f| {
                 doxygen_print(f, &element.doc, lib)?;
 
-                if let AnyType::Basic(BasicType::Duration(t)) = &element.field_type {
+                if let Some(t) = &element.field_type.get_duration_type() {
                     f.writeln(&format!("@note The unit is {}", t.unit()))?;
                 }
 
@@ -438,7 +480,6 @@ fn write_struct_definition(
                 "{} {};",
                 element
                     .field_type
-                    .to_any_type()
                     .to_c_type(&lib.c_ffi_prefix),
                 element.name.to_snake_case(),
             ))?;
@@ -788,7 +829,7 @@ fn write_function(
             .map(|param| {
                 format!(
                     "{} {}",
-                    AnyType::from(param.arg_type.clone()).to_c_type(&lib.c_ffi_prefix),
+                    param.arg_type.to_c_type(&lib.c_ffi_prefix),
                     param.name.to_snake_case()
                 )
             })

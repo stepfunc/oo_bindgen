@@ -2,7 +2,6 @@ use crate::conversion::DotnetType;
 use crate::*;
 use heck::CamelCase;
 use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::types::AnyType;
 
 pub(crate) fn generate_collection_helpers(
     f: &mut dyn Printer,
@@ -112,7 +111,7 @@ pub(crate) fn generate_iterator_helpers(
                     ))?;
                     f.writeln(&format!(
                         "itValue = {};",
-                        AnyType::StructRef(iter.item_type.declaration())
+                        iter.item_type.declaration()
                             .convert_from_native("itRawValue")
                             .unwrap()
                     ))?;

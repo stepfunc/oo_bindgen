@@ -18,22 +18,22 @@ fn constructor_visibility(struct_type: Visibility) -> &'static str {
 }
 */
 
-pub(crate) fn generate(
+pub(crate) fn generate<T>(
     f: &mut impl Printer,
-    native_struct: &StructType,
+    handle: &Struct<T>,
     lib: &Library,
-) -> FormattingResult<()> {
-    let struct_name = native_struct.name().to_camel_case();
+) -> FormattingResult<()> where T: StructFieldType + DotnetType {
+    let struct_name = handle.name().to_camel_case();
     let struct_native_name = format!("{}Native", struct_name);
 
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
-    let doc = match native_struct.visibility() {
-        Visibility::Public => native_struct.doc().clone(),
-        Visibility::Private => native_struct
-            .doc()
+    let doc = match handle.visibility {
+        Visibility::Public => handle.doc.clone(),
+        Visibility::Private => handle
+            .doc
             .clone()
             .warning("This class is an opaque handle and cannot be constructed by user code"),
     };
@@ -47,7 +47,7 @@ pub(crate) fn generate(
         f.writeln(&format!("public class {}", struct_name))?;
         blocked(f, |f| {
             // Write .NET structure elements
-            for field in native_struct.fields() {
+            for field in handle.fields() {
                 documentation(f, |f| {
                     // Print top-level documentation
                     xmldoc_print(f, &field.doc, lib)?;
@@ -56,8 +56,8 @@ pub(crate) fn generate(
 
                 f.writeln(&format!(
                     "{} {} {};",
-                    field_visibility(native_struct.visibility()),
-                    field.field_type.to_any_type().as_dotnet_type(),
+                    field_visibility(handle.visibility),
+                    field.field_type.as_dotnet_type(),
                     field.name.to_camel_case()
                 ))?;
             }
@@ -144,10 +144,10 @@ pub(crate) fn generate(
         f.writeln(&format!("internal struct {}", struct_native_name))?;
         blocked(f, |f| {
             // Write native elements
-            for el in native_struct.fields() {
+            for el in handle.fields() {
                 f.writeln(&format!(
                     "{} {};",
-                    el.field_type.to_any_type().as_native_type(),
+                    el.field_type.as_native_type(),
                     el.name.to_camel_case()
                 ))?;
             }
@@ -161,12 +161,11 @@ pub(crate) fn generate(
             ))?;
             blocked(f, |f| {
                 f.writeln(&format!("{} result;", struct_native_name))?;
-                for el in native_struct.fields() {
+                for el in handle.fields() {
                     let el_name = el.name.to_camel_case();
 
                     let conversion = el
                         .field_type
-                        .to_any_type()
                         .convert_to_native(&format!("self.{}", el_name))
                         .unwrap_or(format!("self.{}", el_name));
                     f.writeln(&format!("result.{} = {};", el_name, conversion))?;
@@ -183,12 +182,11 @@ pub(crate) fn generate(
             ))?;
             blocked(f, |f| {
                 f.writeln(&format!("{} result = new {}();", struct_name, struct_name))?;
-                for el in native_struct.fields() {
+                for el in handle.fields() {
                     let el_name = el.name.to_camel_case();
 
                     let conversion = el
                         .field_type
-                        .to_any_type()
                         .convert_from_native(&format!("native.{}", el_name))
                         .unwrap_or(format!("native.{}", el_name));
                     f.writeln(&format!("result.{} = {};", el_name, conversion))?;
@@ -249,12 +247,11 @@ pub(crate) fn generate(
             // Finalizer
             f.writeln("internal void Dispose()")?;
             blocked(f, |f| {
-                for el in native_struct.fields() {
+                for el in handle.fields() {
                     let el_name = el.name.to_camel_case();
 
                     if let Some(cleanup) = el
                         .field_type
-                        .to_any_type()
                         .cleanup(&format!("this.{}", el_name))
                     {
                         f.writeln(&cleanup)?;

@@ -214,14 +214,19 @@ fn generate_constants(lib: &Library, config: &DotnetBindgenConfig) -> Formatting
 }
 
 fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-    for native_struct in lib.structs() {
+    for st in lib.structs() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(native_struct.name());
+        filename.push(st.name());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
-        structure::generate(&mut f, native_struct, lib)?;
+        match st {
+            StructType::FStruct(x) => structure::generate(&mut f, x, lib)?,
+            StructType::RStruct(x) => structure::generate(&mut f, x, lib)?,
+            StructType::CStruct(x) => structure::generate(&mut f, x, lib)?,
+            StructType::UStruct(x) => structure::generate(&mut f, x, lib)?,
+        }
     }
 
     Ok(())

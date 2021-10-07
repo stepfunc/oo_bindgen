@@ -7,10 +7,8 @@ use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
-use crate::structs::any_struct::{AnyStructBuilder, AnyStructField, AnyStructHandle};
-use crate::structs::common::{StructDeclaration, StructDeclarationHandle, Visibility};
+use crate::structs::common::{StructDeclaration, StructDeclarationHandle};
 use crate::structs::function_struct::{FStructBuilder, FStructHandle};
-use crate::types::{AnyType, BasicType};
 use crate::*;
 use crate::{BindingError, Version};
 
@@ -19,6 +17,7 @@ use crate::structs::function_return_struct::{RStructBuilder, RStructHandle};
 use crate::structs::univeral_struct::{UStructBuilder, UStructHandle};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
+use crate::types::{TypeValidator, ValidatedType};
 
 #[derive(Debug, Clone)]
 pub enum Symbol {
@@ -283,51 +282,51 @@ impl Library {
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum StructType {
-    /// this will disappear when we only have specialized structs
-    Any(AnyStructHandle),
     /// structs that may be used as native function parameters
-    FStruct(FStructHandle, AnyStructHandle),
+    FStruct(FStructHandle),
     /// structs than can be used as native function return values
-    RStruct(RStructHandle, AnyStructHandle),
+    RStruct(RStructHandle),
     /// structs that may be used as callback function arguments in interfaces
-    CStruct(CStructHandle, AnyStructHandle),
+    CStruct(CStructHandle),
     /// structs that can be used in any context and only contain basic types
-    UStruct(UStructHandle, AnyStructHandle),
-}
-
-impl From<AnyStructHandle> for StructType {
-    fn from(x: AnyStructHandle) -> Self {
-        StructType::Any(x)
-    }
+    UStruct(UStructHandle),
 }
 
 impl From<FStructHandle> for StructType {
     fn from(x: FStructHandle) -> Self {
-        StructType::FStruct(x.clone(), x.to_any_struct())
+        StructType::FStruct(x.clone())
     }
 }
 
 impl StructType {
-    pub fn get_any_struct(&self) -> &AnyStructHandle {
+    pub fn name(&self) -> &str {
         match self {
-            StructType::Any(x) => x,
-            StructType::FStruct(_, x) => x,
-            StructType::CStruct(_, x) => x,
-            StructType::RStruct(_, x) => x,
-            StructType::UStruct(_, x) => x,
+            StructType::FStruct(x) => x.name(),
+            StructType::CStruct(x) => x.name(),
+            StructType::RStruct(x) => x.name(),
+            StructType::UStruct(x) => x.name(),
         }
     }
 
     pub fn declaration(&self) -> StructDeclarationHandle {
         match self {
-            StructType::Any(x) => x.declaration.clone(),
-            StructType::FStruct(_, x) => x.declaration.clone(),
-            StructType::CStruct(_, x) => x.declaration.clone(),
-            StructType::RStruct(_, x) => x.declaration.clone(),
-            StructType::UStruct(_, x) => x.declaration.clone(),
+            StructType::FStruct(x) => x.declaration.clone(),
+            StructType::CStruct(x) => x.declaration.clone(),
+            StructType::RStruct(x) => x.declaration.clone(),
+            StructType::UStruct(x) => x.declaration.clone(),
         }
     }
 
+    pub fn has_field_named(&self, name: &str) -> bool {
+        match self {
+            StructType::FStruct(x) => x.has_field_named(name),
+            StructType::CStruct(x) => x.has_field_named(name),
+            StructType::RStruct(x) => x.has_field_named(name),
+            StructType::UStruct(x) => x.has_field_named(name),
+        }
+    }
+
+    /*
     pub fn doc(&self) -> &Doc {
         match self {
             StructType::Any(x) => &x.doc,
@@ -338,15 +337,7 @@ impl StructType {
         }
     }
 
-    pub fn name(&self) -> &str {
-        match self {
-            StructType::Any(x) => x.name(),
-            StructType::FStruct(_, x) => x.name(),
-            StructType::CStruct(_, x) => x.name(),
-            StructType::RStruct(_, x) => x.name(),
-            StructType::UStruct(_, x) => x.name(),
-        }
-    }
+
 
     pub fn visibility(&self) -> Visibility {
         match self {
@@ -371,6 +362,7 @@ impl StructType {
     pub fn find_field<T: AsRef<str>>(&self, field_name: T) -> Option<&AnyStructField> {
         self.fields().find(|f| *f.name == field_name.as_ref())
     }
+     */
 }
 
 pub struct LibraryBuilder {
@@ -575,21 +567,6 @@ impl LibraryBuilder {
         Ok(handle)
     }
 
-    /// Define ANY native structure - TODO - this will be removed in favor of specialized struct types
-    pub fn define_any_struct(
-        &mut self,
-        declaration: &StructDeclarationHandle,
-    ) -> BindResult<AnyStructBuilder> {
-        self.validate_struct_declaration(declaration)?;
-        if !self.structs.contains_key(declaration) {
-            Ok(AnyStructBuilder::new(self, declaration.clone()))
-        } else {
-            Err(BindingError::StructAlreadyDefined {
-                handle: declaration.clone(),
-            })
-        }
-    }
-
     /// Define a structure that can be used in any context
     pub fn define_ustruct(
         &mut self,
@@ -760,20 +737,19 @@ impl LibraryBuilder {
         }
     }
 
-    pub(crate) fn validate_type(&self, type_to_validate: &AnyType) -> BindResult<()> {
-        match type_to_validate {
-            AnyType::StructRef(native_struct) => self.validate_struct_declaration(native_struct),
-            AnyType::Struct(native_struct) => {
-                self.validate_struct(&StructType::Any(native_struct.clone()))
+    pub(crate) fn validate_type<T>(&self, type_to_validate: &T) -> BindResult<()> where T: TypeValidator {
+
+        match type_to_validate.get_validated_type() {
+            Some(x) => match x {
+                ValidatedType::Enum(x) => self.validate_enum(&x),
+                ValidatedType::StructRef(x) => self.validate_struct_declaration(&x),
+                ValidatedType::Struct(x) => self.validate_struct(&x),
+                ValidatedType::Interface(x) => self.validate_interface(&x),
+                ValidatedType::ClassRef(x) => self.validate_class_declaration(&x),
+                ValidatedType::Iterator(x) => self.validate_iterator(&x),
+                ValidatedType::Collection(x) => self.validate_collection(&x),
             }
-            AnyType::Basic(BasicType::Enum(native_enum)) => self.validate_enum(native_enum),
-            AnyType::Interface(interface) => self.validate_interface(interface),
-            AnyType::ClassRef(class_declaration) => {
-                self.validate_class_declaration(class_declaration)
-            }
-            AnyType::Iterator(iter) => self.validate_iterator(iter),
-            AnyType::Collection(collection) => self.validate_collection(collection),
-            _ => Ok(()),
+            None => Ok(())
         }
     }
 

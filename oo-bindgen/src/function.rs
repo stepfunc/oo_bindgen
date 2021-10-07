@@ -2,7 +2,7 @@ use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
 use crate::structs::function_return_struct::RStructHandle;
-use crate::types::{Arg, DurationType, StringType};
+use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 
 /// types that can be returns from native functions
@@ -13,18 +13,6 @@ pub enum FReturnValue {
     ClassRef(ClassDeclarationHandle),
     Struct(RStructHandle),
     StructRef(StructDeclarationHandle),
-}
-
-impl From<FReturnValue> for AnyType {
-    fn from(x: FReturnValue) -> Self {
-        match x {
-            FReturnValue::Basic(x) => AnyType::Basic(x),
-            FReturnValue::String => AnyType::String,
-            FReturnValue::ClassRef(x) => AnyType::ClassRef(x),
-            FReturnValue::Struct(x) => AnyType::Struct(x.to_any_struct()),
-            FReturnValue::StructRef(x) => AnyType::StructRef(x),
-        }
-    }
 }
 
 impl From<BasicType> for FReturnValue {
@@ -83,16 +71,16 @@ pub enum FArgument {
     Interface(InterfaceHandle),
 }
 
-impl FArgument {
-    pub fn to_any_type(&self) -> AnyType {
+impl TypeValidator for FArgument {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
-            Self::Basic(x) => AnyType::Basic(x.clone()),
-            Self::String => AnyType::String,
-            Self::Collection(x) => AnyType::Collection(x.clone()),
-            Self::Struct(x) => AnyType::Struct(x.to_any_struct()),
-            Self::StructRef(x) => AnyType::StructRef(x.clone()),
-            Self::ClassRef(x) => AnyType::ClassRef(x.clone()),
-            Self::Interface(x) => AnyType::Interface(x.clone()),
+            FArgument::Basic(x) => x.get_validated_type(),
+            FArgument::String => None,
+            FArgument::Collection(x) => x.get_validated_type(),
+            FArgument::Struct(x) => StructType::FStruct(x.clone()).get_validated_type(),
+            FArgument::StructRef(x) => x.get_validated_type(),
+            FArgument::ClassRef(x) => x.get_validated_type(),
+            FArgument::Interface(x) => x.get_validated_type(),
         }
     }
 }
@@ -215,7 +203,7 @@ impl<'a> FunctionBuilder<'a> {
     ) -> BindResult<Self> {
         let param_type = param_type.into();
 
-        self.lib.validate_type(&param_type.clone().into())?; // TODO
+        self.lib.validate_type(&param_type)?;
         self.params.push(Arg {
             name: name.into(),
             arg_type: param_type,

@@ -59,7 +59,7 @@ use crate::function::*;
 pub use crate::handle::*;
 use crate::interface::*;
 pub use crate::library::*;
-use crate::types::{AnyType, BasicType};
+use crate::types::BasicType;
 
 pub mod class;
 pub mod collection;

@@ -52,9 +52,7 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
-use oo_bindgen::structs::any_struct::*;
-use oo_bindgen::structs::common::StructFieldType;
-use oo_bindgen::types::AnyType;
+use oo_bindgen::structs::common::{StructFieldType, Struct};
 use oo_bindgen::*;
 
 use std::env;
@@ -81,8 +79,13 @@ impl<'a> RustCodegen<'a> {
 
         for statement in self.library.statements() {
             match statement {
-                Statement::StructDefinition(handle) => {
-                    self.write_struct_definition(&mut f, handle.get_any_struct())?
+                Statement::StructDefinition(s) => {
+                    match s {
+                        StructType::FStruct(s) => self.write_struct_definition(&mut f, s)?,
+                        StructType::RStruct(s) => self.write_struct_definition(&mut f, s)?,
+                        StructType::CStruct(s) => self.write_struct_definition(&mut f, s)?,
+                        StructType::UStruct(s) => self.write_struct_definition(&mut f, s)?,
+                    }
                 }
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::FunctionDefinition(handle) => {
@@ -97,11 +100,11 @@ impl<'a> RustCodegen<'a> {
         Ok(())
     }
 
-    fn write_struct_definition(
+    fn write_struct_definition<T>(
         &self,
         f: &mut dyn Printer,
-        handle: &AnyStructHandle,
-    ) -> FormattingResult<()> {
+        handle: &Handle<Struct<T>>,
+    ) -> FormattingResult<()> where T: StructFieldType + RustType {
         let struct_name = handle.name().to_camel_case();
         let c_lifetime = if handle.c_requires_lifetime() {
             "<'a>"
@@ -126,7 +129,7 @@ impl<'a> RustCodegen<'a> {
                     "{}{}: {},",
                     public,
                     element.name,
-                    element.field_type.to_any_type().as_c_type()
+                    element.field_type.as_c_type()
                 ))?;
             }
             Ok(())
@@ -141,19 +144,19 @@ impl<'a> RustCodegen<'a> {
             lifetime = c_lifetime
         ))?;
         blocked(f, |f| {
-            for element in &handle.fields {
-                let el_lifetime = if element.rust_requires_lifetime() {
+            for field in &handle.fields {
+                let field_lifetime = if field.field_type.rust_requires_lifetime() {
                     "'a "
                 } else {
                     ""
                 };
                 let fn_lifetime =
-                    if element.rust_requires_lifetime() && !handle.c_requires_lifetime() {
+                    if field.field_type.rust_requires_lifetime() && !handle.c_requires_lifetime() {
                         "<'a>"
                     } else {
                         ""
                     };
-                let ampersand = if element.field_type.to_any_type().is_copyable() {
+                let ampersand = if field.field_type.is_copyable() {
                     ""
                 } else {
                     "&"
@@ -163,14 +166,14 @@ impl<'a> RustCodegen<'a> {
                 f.writeln("#[allow(clippy::needless_lifetimes)]")?;
                 f.writeln(&format!(
                     "pub fn {name}{fn_lifetime}(&{lifetime}self) -> {ampersand}{return_type}",
-                    name = element.name,
-                    return_type = element.field_type.to_any_type().as_rust_type(),
+                    name = field.name,
+                    return_type = field.field_type.as_rust_type(),
                     fn_lifetime = fn_lifetime,
-                    lifetime = el_lifetime,
+                    lifetime = field_lifetime,
                     ampersand = ampersand
                 ))?;
                 blocked(f, |f| {
-                    if let Some(conversion) = element.field_type.to_any_type().conversion() {
+                    if let Some(conversion) = field.field_type.conversion() {
                         if conversion.is_unsafe() {
                             f.writeln("unsafe {")?;
                         }
@@ -178,7 +181,7 @@ impl<'a> RustCodegen<'a> {
                             f,
                             &format!(
                                 "{ampersand}self.{name}",
-                                name = element.name,
+                                name = field.name,
                                 ampersand = ampersand
                             ),
                             "",
@@ -190,7 +193,7 @@ impl<'a> RustCodegen<'a> {
                     } else {
                         f.writeln(&format!(
                             "{ampersand}self.{name}",
-                            name = element.name,
+                            name = field.name,
                             ampersand = ampersand
                         ))
                     }
@@ -202,21 +205,21 @@ impl<'a> RustCodegen<'a> {
                 f.writeln("#[allow(clippy::needless_lifetimes)]")?;
                 f.writeln(&format!(
                     "pub fn set_{name}{fn_lifetime}(&{lifetime}mut self, value: {element_type})",
-                    name = element.name,
-                    element_type = element.field_type.to_any_type().as_rust_type(),
+                    name = field.name,
+                    element_type = field.field_type.as_rust_type(),
                     fn_lifetime = fn_lifetime,
-                    lifetime = el_lifetime
+                    lifetime = field_lifetime
                 ))?;
                 blocked(f, |f| {
-                    if let Some(conversion) = element.field_type.to_any_type().conversion() {
+                    if let Some(conversion) = field.field_type.conversion() {
                         conversion.convert_to_c(
                             f,
                             "value",
-                            &format!("self.{} = ", element.name),
+                            &format!("self.{} = ", field.name),
                         )?;
                         f.write(";")
                     } else {
-                        f.writeln(&format!("self.{} = value;", element.name))
+                        f.writeln(&format!("self.{} = value;", field.name))
                     }
                 })?;
 
@@ -234,7 +237,7 @@ impl<'a> RustCodegen<'a> {
                     f.writeln(&format!(
                         "pub {}: {},",
                         element.name,
-                        element.field_type.to_any_type().as_rust_type()
+                        element.field_type.as_rust_type()
                     ))?;
                 }
                 Ok(())
@@ -254,7 +257,7 @@ impl<'a> RustCodegen<'a> {
                     f.writeln("Self")?;
                     blocked(f, |f| {
                         for element in &handle.fields {
-                            if let Some(conversion) = element.field_type.to_any_type().conversion()
+                            if let Some(conversion) = element.field_type.conversion()
                             {
                                 conversion.convert_to_c(
                                     f,
@@ -355,7 +358,7 @@ impl<'a> RustCodegen<'a> {
                     format!(
                         "{}: {}",
                         param.name,
-                        AnyType::from(param.arg_type.clone()).as_c_type()
+                        param.arg_type.as_c_type()
                     )
                 })
                 .collect::<Vec<String>>()
@@ -389,7 +392,7 @@ impl<'a> RustCodegen<'a> {
 
         blocked(f, |f| {
             for param in &handle.parameters {
-                if let Some(converter) = AnyType::from(param.arg_type.clone()).conversion() {
+                if let Some(converter) = param.arg_type.conversion() {
                     converter.convert_from_c(f, &param.name, &format!("let {} = ", param.name))?;
                     f.write(";")?;
                 }

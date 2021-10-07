@@ -39,11 +39,12 @@
 //! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
-use crate::types::{AnyType, Arg};
+use crate::types::Arg;
 use crate::{BindingError, Library};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::convert::TryFrom;
+use crate::structs::univeral_struct::UStructFieldType;
 
 pub fn doc<D: Into<DocString>>(brief: D) -> Doc {
     Doc {
@@ -325,6 +326,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
         validate_doc(class.name(), &class.doc, lib)?;
     }
 
+    /* TODO
     for structure in lib.structs() {
         validate_doc(structure.name(), structure.doc(), lib)?;
         for field in structure.fields() {
@@ -335,6 +337,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
             )?;
         }
     }
+    */
 
     for enumeration in lib.enums() {
         validate_doc(&enumeration.name, &enumeration.doc, lib)?;
@@ -368,7 +371,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 }
 
 fn validate_doc(symbol_name: &str, doc: &Doc, lib: &Library) -> Result<(), BindingError> {
-    validate_doc_with_params::<AnyType>(symbol_name, doc, &[], lib)
+    validate_doc_with_params::<UStructFieldType>(symbol_name, doc, &[], lib)
 }
 
 fn validate_doc_with_params<T>(
@@ -377,8 +380,6 @@ fn validate_doc_with_params<T>(
     params: &[Arg<T>],
     lib: &Library,
 ) -> Result<(), BindingError>
-where
-    T: Into<AnyType>,
 {
     for reference in doc.references() {
         validate_reference_with_params(symbol_name, reference, params, lib)?;
@@ -393,8 +394,6 @@ fn validate_docstring_with_params<T>(
     params: &[Arg<T>],
     lib: &Library,
 ) -> Result<(), BindingError>
-where
-    T: Into<AnyType>,
 {
     for reference in doc.references() {
         validate_reference_with_params(symbol_name, reference, params, lib)?;
@@ -409,8 +408,7 @@ fn validate_reference_with_params<T>(
     params: &[Arg<T>],
     lib: &Library,
 ) -> Result<(), BindingError>
-where
-    T: Into<AnyType>,
+
 {
     match reference {
         DocReference::Param(param_name) => {
@@ -478,7 +476,7 @@ where
         }
         DocReference::StructElement(struct_name, method_name) => {
             if let Some(handle) = lib.find_struct(struct_name) {
-                if handle.find_field(method_name).is_none() {
+                if !handle.has_field_named(method_name) {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!(

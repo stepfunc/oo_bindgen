@@ -8,9 +8,12 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::any_struct::*;
-use oo_bindgen::structs::common::StructDeclarationHandle;
-use oo_bindgen::types::{AnyType, BasicType, DurationType};
+use oo_bindgen::structs::common::{StructDeclarationHandle, Struct, StructFieldType};
+use oo_bindgen::types::{BasicType, DurationType};
+use oo_bindgen::structs::function_struct::FStructFieldType;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::univeral_struct::UStructFieldType;
 
 pub(crate) trait JniType {
     /// Returns raw JNI type (from jni::sys::* module)
@@ -242,6 +245,7 @@ impl JniType for BasicType {
     }
 }
 
+/*
 impl JniType for AnyType {
     fn as_raw_jni_type(&self) -> String {
         const JOBJECT: &str = "jni::sys::jobject";
@@ -405,22 +409,213 @@ impl JniType for AnyType {
         }
     }
 }
+*/
 
-impl JniType for CArgument {
+impl JniType for FStructFieldType {
     fn as_raw_jni_type(&self) -> String {
-        AnyType::from(self.clone()).as_raw_jni_type()
+        todo!()
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
-        AnyType::from(self.clone()).as_jni_sig(lib_path)
+        todo!()
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        AnyType::from(self.clone()).as_rust_type(ffi_name)
+        todo!()
     }
 
     fn convert_jvalue(&self) -> String {
-        AnyType::from(self.clone()).convert_jvalue()
+        todo!()
+    }
+
+    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        todo!()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn default_value(&self) -> String {
+        todo!()
+    }
+}
+
+impl JniType for RStructFieldType {
+    fn as_raw_jni_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        todo!()
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        todo!()
+    }
+
+    fn convert_jvalue(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        todo!()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn default_value(&self) -> String {
+        todo!()
+    }
+}
+
+impl JniType for CStructFieldType {
+    fn as_raw_jni_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        todo!()
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        todo!()
+    }
+
+    fn convert_jvalue(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        todo!()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn default_value(&self) -> String {
+        todo!()
+    }
+}
+
+impl JniType for UStructFieldType {
+    fn as_raw_jni_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        todo!()
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        todo!()
+    }
+
+    fn convert_jvalue(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        todo!()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn default_value(&self) -> String {
+        todo!()
+    }
+}
+
+impl JniType for FArgument {
+    fn as_raw_jni_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        todo!()
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        todo!()
+    }
+
+    fn convert_jvalue(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        todo!()
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        todo!()
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        todo!()
+    }
+
+    fn default_value(&self) -> String {
+        todo!()
+    }
+}
+
+impl JniType for CArgument {
+    fn as_raw_jni_type(&self) -> String {
+        unimplemented!()
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        unimplemented!()
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        unimplemented!()
+    }
+
+    fn convert_jvalue(&self) -> String {
+        unimplemented!()
     }
 
     fn convert_to_rust_from_object(
@@ -431,41 +626,41 @@ impl JniType for CArgument {
         lib_name: &str,
         prefix: &str,
     ) -> FormattingResult<()> {
-        AnyType::from(self.clone()).convert_to_rust_from_object(f, from, to, lib_name, prefix)
+        unimplemented!()
     }
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
-        AnyType::from(self.clone()).conversion(lib_name, prefix)
+        unimplemented!()
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
-        AnyType::from(self.clone()).requires_local_ref_cleanup()
+        unimplemented!()
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        AnyType::from(self.clone()).check_null(f, param_name)
+        unimplemented!()
     }
 
     fn default_value(&self) -> String {
-        AnyType::from(self.clone()).default_value()
+        unimplemented!()
     }
 }
 
 impl JniType for FReturnValue {
     fn as_raw_jni_type(&self) -> String {
-        AnyType::from(self.clone()).as_raw_jni_type()
+        unimplemented!()
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
-        AnyType::from(self.clone()).as_jni_sig(lib_path)
+        unimplemented!()
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        AnyType::from(self.clone()).as_rust_type(ffi_name)
+        unimplemented!()
     }
 
     fn convert_jvalue(&self) -> String {
-        AnyType::from(self.clone()).convert_jvalue()
+        unimplemented!()
     }
 
     fn convert_to_rust_from_object(
@@ -476,41 +671,41 @@ impl JniType for FReturnValue {
         lib_name: &str,
         prefix: &str,
     ) -> FormattingResult<()> {
-        AnyType::from(self.clone()).convert_to_rust_from_object(f, from, to, lib_name, prefix)
+        unimplemented!()
     }
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
-        AnyType::from(self.clone()).conversion(lib_name, prefix)
+        unimplemented!()
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
-        AnyType::from(self.clone()).requires_local_ref_cleanup()
+        unimplemented!()
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        AnyType::from(self.clone()).check_null(f, param_name)
+        unimplemented!()
     }
 
     fn default_value(&self) -> String {
-        AnyType::from(self.clone()).default_value()
+        unimplemented!()
     }
 }
 
 impl JniType for CReturnValue {
     fn as_raw_jni_type(&self) -> String {
-        AnyType::from(self.clone()).as_raw_jni_type()
+        unimplemented!()
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
-        AnyType::from(self.clone()).as_jni_sig(lib_path)
+        unimplemented!()
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        AnyType::from(self.clone()).as_rust_type(ffi_name)
+        unimplemented!()
     }
 
     fn convert_jvalue(&self) -> String {
-        AnyType::from(self.clone()).convert_jvalue()
+        unimplemented!()
     }
 
     fn convert_to_rust_from_object(
@@ -521,29 +716,27 @@ impl JniType for CReturnValue {
         lib_name: &str,
         prefix: &str,
     ) -> FormattingResult<()> {
-        AnyType::from(self.clone()).convert_to_rust_from_object(f, from, to, lib_name, prefix)
+        unimplemented!()
     }
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
-        AnyType::from(self.clone()).conversion(lib_name, prefix)
+        unimplemented!()
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
-        AnyType::from(self.clone()).requires_local_ref_cleanup()
+        unimplemented!()
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        AnyType::from(self.clone()).check_null(f, param_name)
+        unimplemented!()
     }
 
     fn default_value(&self) -> String {
-        AnyType::from(self.clone()).default_value()
+        unimplemented!()
     }
 }
 
-impl<T> JniType for ReturnType<T>
-where
-    T: JniType + Into<AnyType>,
+impl<T> JniType for ReturnType<T> where T: JniType
 {
     fn as_raw_jni_type(&self) -> String {
         match self {
@@ -687,22 +880,13 @@ impl TypeConverter for StringConverter {
     }
 }
 
-struct StructConverter(AnyStructHandle);
-impl TypeConverter for StructConverter {
+impl<T> TypeConverter for Struct<T> where T: StructFieldType {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
             to,
-            self.0.name().to_snake_case(),
+            self.name().to_snake_case(),
             from
-        ))
-    }
-
-    fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &{});",
-            self.0.name().to_snake_case(),
-            name
         ))
     }
 
@@ -710,8 +894,16 @@ impl TypeConverter for StructConverter {
         f.writeln(&format!(
             "{}_cache.structs.struct_{}.struct_from_rust(_cache, &_env, &{})",
             to,
-            self.0.name().to_snake_case(),
+            self.name().to_snake_case(),
             from
+        ))
+    }
+
+    fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+        f.writeln(&format!(
+            "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &{});",
+            self.name().to_snake_case(),
+            name
         ))
     }
 }
@@ -735,6 +927,17 @@ impl TypeConverter for StructRefConverter {
         blocked(f, |f| f.writeln("std::ptr::null()"))
     }
 
+    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+        f.writeln(&format!("{}match unsafe {{ {}.as_ref() }}", to, from))?;
+        blocked(f, |f| {
+            f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
+            f.writeln(&format!(
+                "Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),",
+                self.0.name.to_snake_case()
+            ))
+        })
+    }
+
     fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
         f.writeln(&format!("if {}.is_null()", name))?;
         blocked(f, |f| {
@@ -744,17 +947,6 @@ impl TypeConverter for StructRefConverter {
             ))?;
             f.writeln(&format!(
                 "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &temp)",
-                self.0.name.to_snake_case()
-            ))
-        })
-    }
-
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}match unsafe {{ {}.as_ref() }}", to, from))?;
-        blocked(f, |f| {
-            f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
-            f.writeln(&format!(
-                "Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),",
                 self.0.name.to_snake_case()
             ))
         })
@@ -847,7 +1039,7 @@ impl TypeConverter for IteratorConverter {
                     f.writeln("None => { break; }")?;
                     f.writeln("Some(it) => ")?;
                     blocked(f, |f| {
-                        StructConverter(self.0.item_type.to_any_struct()).convert_from_rust(
+                        self.0.item_type.convert_from_rust(
                             f,
                             "it",
                             "let item = ",

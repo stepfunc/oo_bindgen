@@ -1,15 +1,17 @@
 use crate::enum_type::EnumHandle;
-use crate::structs::any_struct::AnyStructHandle;
 
-use crate::class::ClassDeclarationHandle;
-use crate::collection::CollectionHandle;
 use crate::doc::DocString;
-use crate::function::FArgument;
-use crate::interface::InterfaceHandle;
-use crate::iterator::IteratorHandle;
-use crate::structs::common::StructDeclarationHandle;
-use crate::structs::function_struct::FStructHandle;
 use std::time::Duration;
+use crate::StructType;
+use crate::structs::common::StructDeclarationHandle;
+use crate::interface::InterfaceHandle;
+use crate::class::ClassDeclarationHandle;
+use crate::iterator::IteratorHandle;
+use crate::collection::CollectionHandle;
+use crate::structs::function_struct::FStructFieldType;
+use crate::structs::function_return_struct::RStructFieldType;
+use crate::structs::callback_struct::CStructFieldType;
+use crate::structs::univeral_struct::UStructFieldType;
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug)]
@@ -52,37 +54,14 @@ impl From<DurationType> for BasicType {
     }
 }
 
-impl From<DurationType> for AnyType {
-    fn from(x: DurationType) -> Self {
-        BasicType::Duration(x).into()
-    }
-}
-
-impl From<StringType> for AnyType {
-    fn from(_: StringType) -> Self {
-        AnyType::String
-    }
-}
-
-impl From<FStructHandle> for AnyType {
-    fn from(x: FStructHandle) -> Self {
-        AnyType::Struct(x.to_any_struct())
-    }
-}
-
 #[derive(Debug, Clone)]
-pub struct Arg<T>
-where
-    T: Into<AnyType>,
-{
+pub struct Arg<T> {
     pub arg_type: T,
     pub name: String,
     pub doc: DocString,
 }
 
 impl<T> Arg<T>
-where
-    T: Into<AnyType> + Clone,
 {
     pub fn new(arg_type: T, name: String, doc: DocString) -> Self {
         Self {
@@ -112,37 +91,125 @@ pub enum BasicType {
     Enum(EnumHandle),
 }
 
-/// This is just sticking around until we refactor existing backends
-#[derive(Debug, Clone, PartialEq)]
-pub enum AnyType {
-    Basic(BasicType),
-    String,
+pub trait TypeExtractor {
+    fn get_basic_type(&self) -> Option<&BasicType>;
 
-    // Complex types
-    Struct(AnyStructHandle),
+    fn get_duration_type(&self) -> Option<DurationType> {
+        match self.get_basic_type() {
+            Some(x) => {
+                match x {
+                    BasicType::Duration(x) => Some(*x),
+                    _ => None,
+                }
+            }
+            None => None,
+        }
+    }
+}
+
+impl TypeExtractor for FStructFieldType {
+    fn get_basic_type(&self) -> Option<&BasicType> {
+        match self {
+            Self::Basic(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TypeExtractor for RStructFieldType {
+    fn get_basic_type(&self) -> Option<&BasicType> {
+        match self {
+            Self::Basic(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TypeExtractor for CStructFieldType {
+    fn get_basic_type(&self) -> Option<&BasicType> {
+        match self {
+            Self::Basic(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TypeExtractor for UStructFieldType {
+    fn get_basic_type(&self) -> Option<&BasicType> {
+        match self {
+            Self::Basic(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+/// types that require validation in the library
+pub enum ValidatedType {
+    Enum(EnumHandle),
     StructRef(StructDeclarationHandle),
-    ClassRef(ClassDeclarationHandle),
+    Struct(StructType),
     Interface(InterfaceHandle),
+    ClassRef(ClassDeclarationHandle),
     Iterator(IteratorHandle),
     Collection(CollectionHandle),
 }
 
-impl From<BasicType> for AnyType {
-    fn from(x: BasicType) -> Self {
-        AnyType::Basic(x)
+pub trait TypeValidator {
+    fn get_validated_type(&self) -> Option<ValidatedType>;
+}
+
+impl TypeValidator for BasicType {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        match self {
+            BasicType::Bool => None,
+            BasicType::Uint8 => None,
+            BasicType::Sint8 => None,
+            BasicType::Uint16 => None,
+            BasicType::Sint16 => None,
+            BasicType::Uint32 => None,
+            BasicType::Sint32 => None,
+            BasicType::Uint64 => None,
+            BasicType::Sint64 => None,
+            BasicType::Float32 => None,
+            BasicType::Double64 => None,
+            BasicType::Duration(_) => None,
+            BasicType::Enum(x) => Some(ValidatedType::Enum(x.clone()))
+        }
     }
 }
 
-impl From<FArgument> for AnyType {
-    fn from(x: FArgument) -> Self {
-        match x {
-            FArgument::Basic(x) => Self::Basic(x),
-            FArgument::String => Self::String,
-            FArgument::Collection(x) => Self::Collection(x),
-            FArgument::Struct(x) => Self::Struct(x.to_any_struct()),
-            FArgument::StructRef(x) => Self::StructRef(x),
-            FArgument::ClassRef(x) => Self::ClassRef(x),
-            FArgument::Interface(x) => Self::Interface(x),
-        }
+impl TypeValidator for StructDeclarationHandle {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::StructRef(self.clone()))
+    }
+}
+
+impl TypeValidator for StructType {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::Struct(self.clone()))
+    }
+}
+
+impl TypeValidator for InterfaceHandle {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::Interface(self.clone()))
+    }
+}
+
+impl TypeValidator for IteratorHandle {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::Iterator(self.clone()))
+    }
+}
+
+impl TypeValidator for ClassDeclarationHandle {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::ClassRef(self.clone()))
+    }
+}
+
+impl TypeValidator for CollectionHandle {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::Collection(self.clone()))
     }
 }

@@ -1,4 +1,4 @@
-use crate::types::{AnyType, BasicType};
+use crate::types::BasicType;
 use crate::BindResult;
 use crate::*;
 
@@ -8,7 +8,7 @@ pub struct Collection {
     pub delete_func: FunctionHandle,
     pub add_func: FunctionHandle,
     pub collection_type: ClassDeclarationHandle,
-    pub item_type: AnyType,
+    pub item_type: FArgument,
     pub has_reserve: bool,
 }
 
@@ -133,7 +133,7 @@ impl Collection {
             delete_func: delete_func.clone(),
             add_func: add_func.clone(),
             collection_type: collection_type.clone(),
-            item_type: item_type.into(),
+            item_type,
             has_reserve,
         })
     }
@@ -145,8 +145,3 @@ impl Collection {
 
 pub type CollectionHandle = Handle<Collection>;
 
-impl From<CollectionHandle> for AnyType {
-    fn from(x: CollectionHandle) -> Self {
-        AnyType::Collection(x)
-    }
-}

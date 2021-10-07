@@ -1,5 +1,4 @@
 use crate::doc::DocString;
-use crate::types::AnyType;
 use crate::*;
 
 /// C-style structure forward declaration
@@ -16,12 +15,6 @@ impl ClassDeclaration {
 
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
-impl From<ClassDeclarationHandle> for AnyType {
-    fn from(x: ClassDeclarationHandle) -> Self {
-        AnyType::ClassRef(x)
-    }
-}
-
 #[derive(Debug)]
 pub struct Method {
     pub name: String,
@@ -32,7 +25,7 @@ pub struct Method {
 pub struct AsyncMethod {
     pub name: String,
     pub native_function: FunctionHandle,
-    pub return_type: AnyType,
+    pub return_type: CArgument,
     pub return_type_doc: DocString,
     pub one_time_callback_name: String,
     pub one_time_callback_param_name: String,
@@ -269,7 +262,7 @@ impl<'a> ClassBuilder<'a> {
                         async_method = Some(AsyncMethod {
                             name: name.to_string(),
                             native_function: native_function.clone(),
-                            return_type: cb_param.arg_type.clone().into(),
+                            return_type: cb_param.arg_type.clone(),
                             return_type_doc: cb_param.doc.clone(),
                             one_time_callback_name: ot_cb.name.clone(),
                             one_time_callback_param_name: param.name.clone(),

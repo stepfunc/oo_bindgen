@@ -3,7 +3,6 @@ use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::class::DestructionMode;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::types::AnyType;
 use oo_bindgen::Library;
 
 pub(crate) fn javadoc_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
@@ -76,7 +75,7 @@ fn reference_print(
             let params = func
                 .parameters
                 .iter()
-                .map(|param| AnyType::from(param.arg_type.clone()).as_java_primitive())
+                .map(|param| param.arg_type.as_java_primitive())
                 .collect::<Vec<_>>()
                 .join(", ");
             f.write(&format!(

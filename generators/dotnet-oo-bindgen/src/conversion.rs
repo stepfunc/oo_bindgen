@@ -5,7 +5,13 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::types::{AnyType, BasicType, DurationType};
+use oo_bindgen::types::{BasicType, DurationType};
+use oo_bindgen::structs::common::StructDeclarationHandle;
+use oo_bindgen::enum_type::Enum;
+use oo_bindgen::structs::function_struct::FStructFieldType;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::univeral_struct::UStructFieldType;
+use oo_bindgen::structs::callback_struct::CStructFieldType;
 
 pub(crate) trait DotnetType {
     /// Returns the .NET natural type
@@ -115,6 +121,7 @@ impl DotnetType for BasicType {
     }
 }
 
+/*
 impl DotnetType for AnyType {
     fn as_dotnet_type(&self) -> String {
         match self {
@@ -235,76 +242,231 @@ impl DotnetType for AnyType {
         }
     }
 }
+*/
 
-impl DotnetType for CArgument {
+impl DotnetType for FStructFieldType {
     fn as_dotnet_type(&self) -> String {
-        AnyType::from(self.clone()).as_dotnet_type()
+        todo!()
     }
 
     fn as_native_type(&self) -> String {
-        AnyType::from(self.clone()).as_native_type()
+        todo!()
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).convert_to_native(from)
+        todo!()
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).cleanup(from)
+        todo!()
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).convert_from_native(from)
+        todo!()
+    }
+}
+
+impl DotnetType for RStructFieldType {
+    fn as_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_native_type(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+}
+
+impl DotnetType for CStructFieldType {
+    fn as_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_native_type(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+}
+
+impl DotnetType for UStructFieldType {
+    fn as_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_native_type(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+}
+
+impl DotnetType for Enum {
+    fn as_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_native_type(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+}
+
+impl DotnetType for FArgument {
+    fn as_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_native_type(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+}
+
+impl DotnetType for CArgument {
+    fn as_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_native_type(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        todo!()
     }
 }
 
 impl DotnetType for CReturnValue {
     fn as_dotnet_type(&self) -> String {
-        AnyType::from(self.clone()).as_dotnet_type()
+        todo!()
     }
 
     fn as_native_type(&self) -> String {
-        AnyType::from(self.clone()).as_native_type()
+        todo!()
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).convert_to_native(from)
+        todo!()
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).cleanup(from)
+        todo!()
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).convert_from_native(from)
+        todo!()
     }
 }
 
 impl DotnetType for FReturnValue {
     fn as_dotnet_type(&self) -> String {
-        AnyType::from(self.clone()).as_dotnet_type()
+        todo!()
     }
 
     fn as_native_type(&self) -> String {
-        AnyType::from(self.clone()).as_native_type()
+        todo!()
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).convert_to_native(from)
+        todo!()
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).cleanup(from)
+        todo!()
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
-        AnyType::from(self.clone()).convert_from_native(from)
+        todo!()
+    }
+}
+
+impl DotnetType for StructDeclarationHandle {
+    fn as_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn as_native_type(&self) -> String {
+        todo!()
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        todo!()
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        todo!()
     }
 }
 
 impl<T> DotnetType for ReturnType<T>
 where
-    T: DotnetType + Into<AnyType>,
+    T: DotnetType
 {
     fn as_dotnet_type(&self) -> String {
         match self {
@@ -358,7 +520,7 @@ pub(crate) fn call_native_function(
             }
         }
 
-        let conversion = AnyType::from(param.arg_type.clone())
+        let conversion = param.arg_type
             .convert_to_native(&param_name)
             .unwrap_or(param_name);
         f.writeln(&format!(
@@ -414,7 +576,7 @@ pub(crate) fn call_native_function(
     };
 
     let has_cleanup = method.parameters.iter().any(|param| {
-        AnyType::from(param.arg_type.clone())
+        param.arg_type
             .cleanup("temp")
             .is_some()
     });
@@ -426,8 +588,7 @@ pub(crate) fn call_native_function(
         blocked(f, |f| {
             // Cleanup type conversions
             for param in method.parameters.iter() {
-                if let Some(cleanup) = AnyType::from(param.arg_type.clone())
-                    .cleanup(&format!("_{}", param.name.to_mixed_case()))
+                if let Some(cleanup) = param.arg_type.cleanup(&format!("_{}", param.name.to_mixed_case()))
                 {
                     f.writeln(&cleanup)?;
                 }

@@ -1,17 +1,17 @@
 use crate::enum_type::EnumHandle;
 
-use crate::doc::DocString;
-use std::time::Duration;
-use crate::StructType;
-use crate::structs::common::StructDeclarationHandle;
-use crate::interface::InterfaceHandle;
 use crate::class::ClassDeclarationHandle;
-use crate::iterator::IteratorHandle;
 use crate::collection::CollectionHandle;
-use crate::structs::function_struct::FStructFieldType;
-use crate::structs::function_return_struct::RStructFieldType;
+use crate::doc::DocString;
+use crate::interface::InterfaceHandle;
+use crate::iterator::IteratorHandle;
 use crate::structs::callback_struct::CStructFieldType;
+use crate::structs::common::StructDeclarationHandle;
+use crate::structs::function_return_struct::RStructFieldType;
+use crate::structs::function_struct::FStructFieldType;
 use crate::structs::univeral_struct::UStructFieldType;
+use crate::StructType;
+use std::time::Duration;
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -67,8 +67,7 @@ pub struct Arg<T> {
     pub doc: DocString,
 }
 
-impl<T> Arg<T>
-{
+impl<T> Arg<T> {
     pub fn new(arg_type: T, name: String, doc: DocString) -> Self {
         Self {
             arg_type,
@@ -123,12 +122,10 @@ pub trait TypeExtractor {
 
     fn get_duration_type(&self) -> Option<DurationType> {
         match self.get_basic_type() {
-            Some(x) => {
-                match x {
-                    BasicType::Duration(x) => Some(*x),
-                    _ => None,
-                }
-            }
+            Some(x) => match x {
+                BasicType::Duration(x) => Some(*x),
+                _ => None,
+            },
             None => None,
         }
     }
@@ -200,7 +197,7 @@ impl TypeValidator for BasicType {
             BasicType::Float32 => None,
             BasicType::Double64 => None,
             BasicType::Duration(_) => None,
-            BasicType::Enum(x) => Some(ValidatedType::Enum(x.clone()))
+            BasicType::Enum(x) => Some(ValidatedType::Enum(x.clone())),
         }
     }
 }

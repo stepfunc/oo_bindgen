@@ -1,6 +1,6 @@
+use crate::ctype::CType;
 use oo_bindgen::interface::CallbackFunction;
 use oo_bindgen::Library;
-use crate::ctype::CType;
 
 pub(crate) fn callback_parameters(lib: &Library, func: &CallbackFunction) -> String {
     func.arguments

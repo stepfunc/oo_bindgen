@@ -102,13 +102,7 @@ fn write_conversion_wrapper(
         &func
             .parameters
             .iter()
-            .map(|param| {
-                format!(
-                    "{} {}",
-                    param.arg_type.as_native_type(),
-                    param.name
-                )
-            })
+            .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -153,13 +147,7 @@ fn write_exception_wrapper(
         &func
             .parameters
             .iter()
-            .map(|param| {
-                format!(
-                    "{} {}",
-                    param.arg_type.as_native_type(),
-                    param.name
-                )
-            })
+            .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -210,13 +198,7 @@ fn write_pinvoke_signature(
         &handle
             .parameters
             .iter()
-            .map(|param| {
-                format!(
-                    "{} {}",
-                    param.arg_type.as_native_type(),
-                    param.name
-                )
-            })
+            .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;

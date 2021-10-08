@@ -1,6 +1,6 @@
 use crate::structs::common::*;
+use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
-use crate::types::{ValidatedType, TypeValidator};
 
 /// Types that can be used in a universal struct, some of which might have a default value
 #[derive(Clone, Debug)]

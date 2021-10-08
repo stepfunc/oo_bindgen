@@ -39,12 +39,12 @@
 //! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
+use crate::structs::univeral_struct::UStructFieldType;
 use crate::types::Arg;
 use crate::{BindingError, Library};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::convert::TryFrom;
-use crate::structs::univeral_struct::UStructFieldType;
 
 pub fn doc<D: Into<DocString>>(brief: D) -> Doc {
     Doc {
@@ -379,8 +379,7 @@ fn validate_doc_with_params<T>(
     doc: &Doc,
     params: &[Arg<T>],
     lib: &Library,
-) -> Result<(), BindingError>
-{
+) -> Result<(), BindingError> {
     for reference in doc.references() {
         validate_reference_with_params(symbol_name, reference, params, lib)?;
     }
@@ -393,8 +392,7 @@ fn validate_docstring_with_params<T>(
     doc: &DocString,
     params: &[Arg<T>],
     lib: &Library,
-) -> Result<(), BindingError>
-{
+) -> Result<(), BindingError> {
     for reference in doc.references() {
         validate_reference_with_params(symbol_name, reference, params, lib)?;
     }
@@ -407,9 +405,7 @@ fn validate_reference_with_params<T>(
     reference: &DocReference,
     params: &[Arg<T>],
     lib: &Library,
-) -> Result<(), BindingError>
-
-{
+) -> Result<(), BindingError> {
     match reference {
         DocReference::Param(param_name) => {
             if !params.iter().any(|param| &param.name == param_name) {

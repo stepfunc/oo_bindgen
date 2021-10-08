@@ -254,9 +254,7 @@ fn generate_functions(
             f.writeln("if let Err(msg) = (|| -> Result<(), String>")?;
             blocked(f, |f| {
                 for param in &handle.parameters {
-                    param
-                        .arg_type
-                        .check_null(f, &param.name.to_snake_case())?;
+                    param.arg_type.check_null(f, &param.name.to_snake_case())?;
                 }
                 f.writeln("Ok(())")
             })?;

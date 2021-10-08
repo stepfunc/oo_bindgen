@@ -343,13 +343,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             let args = handle
                 .parameters
                 .iter()
-                .map(|param| {
-                    format!(
-                        "{} {}",
-                        param.arg_type.as_java_primitive(),
-                        param.name
-                    )
-                })
+                .map(|param| format!("{} {}", param.arg_type.as_java_primitive(), param.name))
                 .collect::<Vec<String>>()
                 .join(", ");
 

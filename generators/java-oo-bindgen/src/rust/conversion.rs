@@ -8,12 +8,12 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::common::{StructDeclarationHandle, Struct, StructFieldType};
-use oo_bindgen::types::{BasicType, DurationType};
-use oo_bindgen::structs::function_struct::FStructFieldType;
-use oo_bindgen::structs::function_return_struct::RStructFieldType;
 use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::function_struct::FStructFieldType;
 use oo_bindgen::structs::univeral_struct::UStructFieldType;
+use oo_bindgen::types::{BasicType, DurationType};
 
 pub(crate) trait JniType {
     /// Returns raw JNI type (from jni::sys::* module)
@@ -414,7 +414,14 @@ impl JniType for FStructFieldType {
         todo!()
     }
 
-    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
         todo!()
     }
 
@@ -452,7 +459,14 @@ impl JniType for RStructFieldType {
         todo!()
     }
 
-    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
         todo!()
     }
 
@@ -490,7 +504,14 @@ impl JniType for CStructFieldType {
         todo!()
     }
 
-    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
         todo!()
     }
 
@@ -528,7 +549,14 @@ impl JniType for UStructFieldType {
         todo!()
     }
 
-    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
         todo!()
     }
 
@@ -566,7 +594,14 @@ impl JniType for FArgument {
         todo!()
     }
 
-    fn convert_to_rust_from_object(&self, f: &mut dyn Printer, from: &str, to: &str, lib_name: &str, prefix: &str) -> FormattingResult<()> {
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        lib_name: &str,
+        prefix: &str,
+    ) -> FormattingResult<()> {
         todo!()
     }
 
@@ -722,7 +757,9 @@ impl JniType for CReturnValue {
     }
 }
 
-impl<T> JniType for ReturnType<T> where T: JniType
+impl<T> JniType for ReturnType<T>
+where
+    T: JniType,
 {
     fn as_raw_jni_type(&self) -> String {
         match self {
@@ -866,7 +903,10 @@ impl TypeConverter for StringConverter {
     }
 }
 
-impl<T> TypeConverter for Struct<T> where T: StructFieldType {
+impl<T> TypeConverter for Struct<T>
+where
+    T: StructFieldType,
+{
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
@@ -1025,11 +1065,7 @@ impl TypeConverter for IteratorConverter {
                     f.writeln("None => { break; }")?;
                     f.writeln("Some(it) => ")?;
                     blocked(f, |f| {
-                        self.0.item_type.convert_from_rust(
-                            f,
-                            "it",
-                            "let item = ",
-                        )?;
+                        self.0.item_type.convert_from_rust(f, "it", "let item = ")?;
                         f.write(";")?;
 
                         f.writeln(

@@ -50,20 +50,20 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
-use oo_bindgen::structs::common::{StructFieldType, Struct};
+use oo_bindgen::structs::common::{Struct, StructFieldType};
 use oo_bindgen::*;
 
 use std::env;
 use std::path::{Path, PathBuf};
 
+mod formatting;
 mod rust_struct;
 mod rust_type;
-mod formatting;
 mod type_converter;
 
+use crate::formatting::*;
 use crate::rust_struct::*;
 use crate::rust_type::*;
-use crate::formatting::*;
 use crate::type_converter::*;
 
 pub struct RustCodegen<'a> {
@@ -84,14 +84,12 @@ impl<'a> RustCodegen<'a> {
 
         for statement in self.library.statements() {
             match statement {
-                Statement::StructDefinition(s) => {
-                    match s {
-                        StructType::FStruct(s) => self.write_struct_definition(&mut f, s)?,
-                        StructType::RStruct(s) => self.write_struct_definition(&mut f, s)?,
-                        StructType::CStruct(s) => self.write_struct_definition(&mut f, s)?,
-                        StructType::UStruct(s) => self.write_struct_definition(&mut f, s)?,
-                    }
-                }
+                Statement::StructDefinition(s) => match s {
+                    StructType::FStruct(s) => self.write_struct_definition(&mut f, s)?,
+                    StructType::RStruct(s) => self.write_struct_definition(&mut f, s)?,
+                    StructType::CStruct(s) => self.write_struct_definition(&mut f, s)?,
+                    StructType::UStruct(s) => self.write_struct_definition(&mut f, s)?,
+                },
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::FunctionDefinition(handle) => {
                     Self::write_function(&mut f, handle, &self.library.c_ffi_prefix)?
@@ -109,7 +107,10 @@ impl<'a> RustCodegen<'a> {
         &self,
         f: &mut dyn Printer,
         handle: &Handle<Struct<T>>,
-    ) -> FormattingResult<()> where T: StructFieldType + RustType {
+    ) -> FormattingResult<()>
+    where
+        T: StructFieldType + RustType,
+    {
         let struct_name = handle.name().to_camel_case();
         let c_lifetime = if handle.annotate_c_with_lifetime() {
             "<'a>"
@@ -217,11 +218,7 @@ impl<'a> RustCodegen<'a> {
                 ))?;
                 blocked(f, |f| {
                     if let Some(conversion) = field.field_type.conversion() {
-                        conversion.convert_to_c(
-                            f,
-                            "value",
-                            &format!("self.{} = ", field.name),
-                        )?;
+                        conversion.convert_to_c(f, "value", &format!("self.{} = ", field.name))?;
                         f.write(";")
                     } else {
                         f.writeln(&format!("self.{} = value;", field.name))
@@ -262,8 +259,7 @@ impl<'a> RustCodegen<'a> {
                     f.writeln("Self")?;
                     blocked(f, |f| {
                         for element in &handle.fields {
-                            if let Some(conversion) = element.field_type.conversion()
-                            {
+                            if let Some(conversion) = element.field_type.conversion() {
                                 conversion.convert_to_c(
                                     f,
                                     &format!("from.{}", element.name),
@@ -359,13 +355,7 @@ impl<'a> RustCodegen<'a> {
             &handle
                 .parameters
                 .iter()
-                .map(|param| {
-                    format!(
-                        "{}: {}",
-                        param.name,
-                        param.arg_type.as_c_type()
-                    )
-                })
+                .map(|param| format!("{}: {}", param.name, param.arg_type.as_c_type()))
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;

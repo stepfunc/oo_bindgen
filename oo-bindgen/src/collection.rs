@@ -144,4 +144,3 @@ impl Collection {
 }
 
 pub type CollectionHandle = Handle<Collection>;
-

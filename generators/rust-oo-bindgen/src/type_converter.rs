@@ -1,5 +1,5 @@
-use oo_bindgen::formatting::{FormattingResult, Printer};
 use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::formatting::{FormattingResult, Printer};
 use oo_bindgen::structs::common::StructDeclarationHandle;
 use oo_bindgen::types::{DurationType, StringType};
 
@@ -19,7 +19,12 @@ pub(crate) enum TypeConverter {
 }
 
 impl TypeConverter {
-    pub(crate) fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    pub(crate) fn convert_to_c(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         match self {
             TypeConverter::String(x) => x.convert_to_c(f, from, to),
             TypeConverter::Enum(x) => x.convert_to_c(f, from, to),
@@ -28,7 +33,12 @@ impl TypeConverter {
         }
     }
 
-    pub(crate) fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
+    pub(crate) fn convert_from_c(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
         match self {
             TypeConverter::String(x) => x.convert_from_c(f, from, to),
             TypeConverter::Enum(x) => x.convert_from_c(f, from, to),

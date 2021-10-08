@@ -78,7 +78,7 @@ fn reference_print(
             let params = func
                 .parameters
                 .iter()
-                .map(|param|param.arg_type.as_dotnet_type())
+                .map(|param| param.arg_type.as_dotnet_type())
                 .collect::<Vec<_>>()
                 .join(", ");
             f.write(&format!(

@@ -22,7 +22,10 @@ pub(crate) fn generate<T>(
     f: &mut impl Printer,
     handle: &Struct<T>,
     lib: &Library,
-) -> FormattingResult<()> where T: StructFieldType + DotnetType {
+) -> FormattingResult<()>
+where
+    T: StructFieldType + DotnetType,
+{
     let struct_name = handle.name().to_camel_case();
     let struct_native_name = format!("{}Native", struct_name);
 
@@ -250,10 +253,7 @@ pub(crate) fn generate<T>(
                 for el in handle.fields() {
                     let el_name = el.name.to_camel_case();
 
-                    if let Some(cleanup) = el
-                        .field_type
-                        .cleanup(&format!("this.{}", el_name))
-                    {
+                    if let Some(cleanup) = el.field_type.cleanup(&format!("this.{}", el_name)) {
                         f.writeln(&cleanup)?;
                     }
                 }

@@ -4,11 +4,11 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::{CArgument, CReturnValue};
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::types::BasicType;
-use oo_bindgen::structs::function_struct::FStructFieldType;
-use oo_bindgen::structs::function_return_struct::RStructFieldType;
 use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::function_struct::FStructFieldType;
 use oo_bindgen::structs::univeral_struct::UStructFieldType;
+use oo_bindgen::types::BasicType;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -175,7 +175,9 @@ impl JavaType for FReturnValue {
     }
 }
 
-impl<T> JavaType for ReturnType<T> where T: JavaType
+impl<T> JavaType for ReturnType<T>
+where
+    T: JavaType,
 {
     fn as_java_primitive(&self) -> String {
         match self {

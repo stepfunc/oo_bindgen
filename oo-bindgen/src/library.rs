@@ -15,9 +15,9 @@ use crate::{BindingError, Version};
 use crate::structs::callback_struct::{CStructBuilder, CStructHandle};
 use crate::structs::function_return_struct::{RStructBuilder, RStructHandle};
 use crate::structs::univeral_struct::{UStructBuilder, UStructHandle};
+use crate::types::{TypeValidator, ValidatedType};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use crate::types::{TypeValidator, ValidatedType};
 
 #[derive(Debug, Clone)]
 pub enum Symbol {
@@ -737,8 +737,10 @@ impl LibraryBuilder {
         }
     }
 
-    pub(crate) fn validate_type<T>(&self, type_to_validate: &T) -> BindResult<()> where T: TypeValidator {
-
+    pub(crate) fn validate_type<T>(&self, type_to_validate: &T) -> BindResult<()>
+    where
+        T: TypeValidator,
+    {
         match type_to_validate.get_validated_type() {
             Some(x) => match x {
                 ValidatedType::Enum(x) => self.validate_enum(&x),
@@ -748,8 +750,8 @@ impl LibraryBuilder {
                 ValidatedType::ClassRef(x) => self.validate_class_declaration(&x),
                 ValidatedType::Iterator(x) => self.validate_iterator(&x),
                 ValidatedType::Collection(x) => self.validate_collection(&x),
-            }
-            None => Ok(())
+            },
+            None => Ok(()),
         }
     }
 

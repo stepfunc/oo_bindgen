@@ -1,8 +1,8 @@
 use crate::doc::Doc;
+use crate::types::TypeValidator;
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
 use std::fmt::Formatter;
-use crate::types::TypeValidator;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {
@@ -119,7 +119,10 @@ where
     F: StructFieldType,
 {
     pub fn has_field_named(&self, name: &str) -> bool {
-        self.fields.iter().find(|x| x.name.as_str() == name).is_some()
+        self.fields
+            .iter()
+            .find(|x| x.name.as_str() == name)
+            .is_some()
     }
 
     pub fn name(&self) -> &str {

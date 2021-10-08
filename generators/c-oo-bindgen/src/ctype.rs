@@ -1,33 +1,42 @@
-use oo_bindgen::types::{StringType, BasicType};
-use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
-use oo_bindgen::{Symbol, StructType};
-use oo_bindgen::function::{FReturnValue, FArgument};
-use oo_bindgen::structs::common::{StructDeclarationHandle, Struct, StructFieldType};
-use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::function::{FArgument, FReturnValue};
+use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
+use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
+use oo_bindgen::types::{BasicType, StringType};
+use oo_bindgen::{StructType, Symbol};
 
 use heck::SnakeCase;
-use oo_bindgen::structs::function_struct::FStructFieldType;
-use oo_bindgen::structs::function_return_struct::RStructFieldType;
-use oo_bindgen::structs::callback_struct::CStructFieldType;
-use oo_bindgen::structs::univeral_struct::UStructFieldType;
-use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::function_struct::FStructFieldType;
+use oo_bindgen::structs::univeral_struct::UStructFieldType;
 
 pub(crate) trait CType {
     fn to_c_type(&self, prefix: &str) -> String;
 }
 
-struct Pointer<'a, T> where T: CType {
-    inner: &'a T
+struct Pointer<'a, T>
+where
+    T: CType,
+{
+    inner: &'a T,
 }
 
-fn pointer<T>(inner : &T) -> Pointer<T> where T: CType {
+fn pointer<T>(inner: &T) -> Pointer<T>
+where
+    T: CType,
+{
     Pointer { inner }
 }
 
-impl<'a, T> CType for Pointer<'a, T> where T: CType {
+impl<'a, T> CType for Pointer<'a, T>
+where
+    T: CType,
+{
     fn to_c_type(&self, prefix: &str) -> String {
         format!("{}*", self.inner.to_c_type(prefix))
     }
@@ -89,7 +98,10 @@ impl CType for StructType {
     }
 }
 
-impl<T> CType for Struct<T> where T: StructFieldType {
+impl<T> CType for Struct<T>
+where
+    T: StructFieldType,
+{
     fn to_c_type(&self, prefix: &str) -> String {
         format!(
             "{}_{}_t",
@@ -232,7 +244,9 @@ impl CFormatting for AnyType {
 }
  */
 
-impl<T> CType for ReturnType<T> where T: CType
+impl<T> CType for ReturnType<T>
+where
+    T: CType,
 {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {

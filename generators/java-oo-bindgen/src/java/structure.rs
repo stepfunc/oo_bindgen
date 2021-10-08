@@ -1,8 +1,7 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
-use oo_bindgen::structs::common::{Visibility, Struct, StructFieldType};
-
+use oo_bindgen::structs::common::{Struct, StructFieldType, Visibility};
 
 /* TODO
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
@@ -24,7 +23,10 @@ pub(crate) fn generate<T>(
     f: &mut impl Printer,
     st: &Struct<T>,
     lib: &Library,
-) -> FormattingResult<()> where T: StructFieldType + JavaType {
+) -> FormattingResult<()>
+where
+    T: StructFieldType + JavaType,
+{
     let struct_name = st.name().to_camel_case();
 
     let doc = match st.visibility {

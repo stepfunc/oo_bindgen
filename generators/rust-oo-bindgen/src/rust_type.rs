@@ -1,25 +1,25 @@
 use heck::CamelCase;
 
-use oo_bindgen::interface::*;
-use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::common::*;
-use oo_bindgen::types::*;
-use oo_bindgen::structs::function_struct::FStructFieldType;
-use oo_bindgen::structs::callback_struct::CStructFieldType;
-use oo_bindgen::structs::function_return_struct::RStructFieldType;
-use oo_bindgen::structs::univeral_struct::UStructFieldType;
-use oo_bindgen::function::{FArgument, FReturnValue};
-use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::class::ClassDeclarationHandle;
 use crate::type_converter::*;
+use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::function::{FArgument, FReturnValue};
+use oo_bindgen::interface::*;
 use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::structs::callback_struct::CStructFieldType;
+use oo_bindgen::structs::common::*;
+use oo_bindgen::structs::function_return_struct::RStructFieldType;
+use oo_bindgen::structs::function_struct::FStructFieldType;
+use oo_bindgen::structs::univeral_struct::UStructFieldType;
+use oo_bindgen::types::*;
 
 pub(crate) trait LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool;
     fn c_requires_lifetime(&self) -> bool;
 }
 
-pub(crate) trait RustType : LifetimeInfo {
+pub(crate) trait RustType: LifetimeInfo {
     fn as_rust_type(&self) -> String;
     fn as_c_type(&self) -> String;
     fn is_copyable(&self) -> bool;
@@ -104,7 +104,10 @@ impl LifetimeInfo for CollectionHandle {
     }
 }
 
-impl<T> LifetimeInfo for Struct<T> where T: StructFieldType {
+impl<T> LifetimeInfo for Struct<T>
+where
+    T: StructFieldType,
+{
     fn rust_requires_lifetime(&self) -> bool {
         false
     }
@@ -217,7 +220,10 @@ impl RustType for CollectionHandle {
     }
 }
 
-impl<T> RustType for Struct<T> where T: StructFieldType {
+impl<T> RustType for Struct<T>
+where
+    T: StructFieldType,
+{
     fn as_rust_type(&self) -> String {
         self.name().to_camel_case()
     }
@@ -672,7 +678,10 @@ impl RustType for CReturnValue {
     }
 }
 
-impl<T> LifetimeInfo for ReturnType<T> where T: LifetimeInfo {
+impl<T> LifetimeInfo for ReturnType<T>
+where
+    T: LifetimeInfo,
+{
     fn rust_requires_lifetime(&self) -> bool {
         if let Self::Type(t, _) = self {
             t.rust_requires_lifetime()
@@ -690,7 +699,9 @@ impl<T> LifetimeInfo for ReturnType<T> where T: LifetimeInfo {
     }
 }
 
-impl<T> RustType for ReturnType<T> where  T: RustType
+impl<T> RustType for ReturnType<T>
+where
+    T: RustType,
 {
     fn as_rust_type(&self) -> String {
         if let Self::Type(t, _) = self {
@@ -724,8 +735,6 @@ impl<T> RustType for ReturnType<T> where  T: RustType
         }
     }
 }
-
-
 
 impl LifetimeInfo for FStructFieldType {
     fn rust_requires_lifetime(&self) -> bool {

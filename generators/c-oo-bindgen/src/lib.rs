@@ -55,16 +55,16 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::structs::common::{StructFieldType, Struct};
 use oo_bindgen::structs::common::Visibility;
+use oo_bindgen::structs::common::{Struct, StructFieldType};
 use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
 
+use crate::ctype::CType;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use crate::ctype::CType;
 
 mod chelpers;
 mod ctype;
@@ -236,14 +236,12 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
                         handle.to_c_type(&lib.c_ffi_prefix)
                     ))?;
                 }
-                Statement::StructDefinition(st) => {
-                    match st {
-                        StructType::FStruct(x) => write_struct_definition(f, x, lib)?,
-                        StructType::RStruct(x) => write_struct_definition(f, x, lib)?,
-                        StructType::CStruct(x) => write_struct_definition(f, x, lib)?,
-                        StructType::UStruct(x) => write_struct_definition(f, x, lib)?,
-                    }
-                }
+                Statement::StructDefinition(st) => match st {
+                    StructType::FStruct(x) => write_struct_definition(f, x, lib)?,
+                    StructType::RStruct(x) => write_struct_definition(f, x, lib)?,
+                    StructType::CStruct(x) => write_struct_definition(f, x, lib)?,
+                    StructType::UStruct(x) => write_struct_definition(f, x, lib)?,
+                },
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
                 Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
                 Statement::FunctionDefinition(handle) => write_function(f, handle, lib)?,
@@ -285,7 +283,10 @@ fn write_struct_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T>>,
     lib: &Library,
-) -> FormattingResult<()> where T: StructFieldType + TypeExtractor + CType {
+) -> FormattingResult<()>
+where
+    T: StructFieldType + TypeExtractor + CType,
+{
     let doc = match handle.visibility {
         Visibility::Public => handle.doc.clone(),
         Visibility::Private => handle
@@ -315,9 +316,7 @@ fn write_struct_definition<T>(
             })?;
             f.writeln(&format!(
                 "{} {};",
-                element
-                    .field_type
-                    .to_c_type(&lib.c_ffi_prefix),
+                element.field_type.to_c_type(&lib.c_ffi_prefix),
                 element.name.to_snake_case(),
             ))?;
         }
@@ -686,7 +685,11 @@ fn write_function(
     f.write(");")
 }
 
-fn write_interface(f: &mut dyn Printer, handle: &InterfaceHandle, lib: &Library) -> FormattingResult<()> {
+fn write_interface(
+    f: &mut dyn Printer,
+    handle: &InterfaceHandle,
+    lib: &Library,
+) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
     let struct_name = handle.to_c_type(&lib.c_ffi_prefix);

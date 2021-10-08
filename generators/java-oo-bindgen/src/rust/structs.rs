@@ -68,8 +68,15 @@ pub(crate) fn generate_structs_cache(
     Ok(())
 }
 
-fn generate_struct<T>(f: &mut dyn Printer, structure: &Handle<Struct<T>>, lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> where T: StructFieldType + JniType {
-
+fn generate_struct<T>(
+    f: &mut dyn Printer,
+    structure: &Handle<Struct<T>>,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + JniType,
+{
     let lib_path = config.java_signature_path(&lib.name);
     let struct_name = structure.name().to_camel_case();
     let struct_sig = format!("\"L{}/{};\"", lib_path, struct_name);

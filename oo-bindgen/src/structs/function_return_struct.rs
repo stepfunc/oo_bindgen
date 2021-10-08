@@ -1,6 +1,6 @@
 use crate::structs::common::*;
-use crate::*;
 use crate::types::{TypeValidator, ValidatedType};
+use crate::*;
 
 /// Types that can be used in a callback struct, some of which might have a default value
 #[derive(Clone, Debug)]

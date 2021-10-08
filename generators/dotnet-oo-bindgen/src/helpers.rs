@@ -111,7 +111,8 @@ pub(crate) fn generate_iterator_helpers(
                     ))?;
                     f.writeln(&format!(
                         "itValue = {};",
-                        iter.item_type.declaration()
+                        iter.item_type
+                            .declaration()
                             .convert_from_native("itRawValue")
                             .unwrap()
                     ))?;

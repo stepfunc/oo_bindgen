@@ -1,6 +1,6 @@
 use crate::collection::CollectionHandle;
 use crate::structs::common::*;
-use crate::types::{DurationType, StringType, ValidatedType, TypeValidator};
+use crate::types::{DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 
 /// Types that can be used in a function struct, some of which might have a default value

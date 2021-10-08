@@ -1,14 +1,12 @@
 use crate::doc::DocString;
 
 #[derive(Debug)]
-pub enum ReturnType<T>
-{
+pub enum ReturnType<T> {
     Void,
     Type(T, DocString),
 }
 
-impl<T> ReturnType<T>
-{
+impl<T> ReturnType<T> {
     pub fn void() -> Self {
         ReturnType::Void
     }

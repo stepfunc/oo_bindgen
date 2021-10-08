@@ -1,7 +1,6 @@
 use super::formatting::*;
 use crate::*;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::formatting::*;
 
 pub(crate) fn generate_enums_cache(
     lib: &Library,

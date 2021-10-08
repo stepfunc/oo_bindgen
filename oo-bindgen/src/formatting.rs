@@ -169,3 +169,26 @@ where
     let mut printer = DoxygenPrinter::new(f);
     cb(&mut printer)
 }
+
+pub fn blocked_open_close<F, T>(
+    f: &mut dyn Printer,
+    open: &str,
+    close: &str,
+    cb: F,
+) -> FormattingResult<T>
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
+    f.writeln(open)?;
+    let result = indented(f, |f| cb(f))?;
+    f.writeln(close)?;
+
+    Ok(result)
+}
+
+pub fn blocked<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
+    blocked_open_close(f, "{", "}", cb)
+}

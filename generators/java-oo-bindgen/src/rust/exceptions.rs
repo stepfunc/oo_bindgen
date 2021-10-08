@@ -1,7 +1,6 @@
 use super::formatting::*;
 use crate::*;
 use heck::{CamelCase, SnakeCase};
-use oo_bindgen::formatting::*;
 
 pub(crate) fn generate_exceptions_cache(
     lib: &Library,

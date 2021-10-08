@@ -56,12 +56,10 @@ use oo_bindgen::*;
 use std::env;
 use std::path::{Path, PathBuf};
 
-mod formatting;
 mod rust_struct;
 mod rust_type;
 mod type_converter;
 
-use crate::formatting::*;
 use crate::rust_struct::*;
 use crate::rust_type::*;
 use crate::type_converter::*;

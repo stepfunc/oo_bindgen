@@ -1,7 +1,6 @@
 use oo_bindgen::formatting::*;
 
 use super::conversion::*;
-use super::formatting::*;
 use crate::*;
 
 use heck::{CamelCase, MixedCase, SnakeCase};

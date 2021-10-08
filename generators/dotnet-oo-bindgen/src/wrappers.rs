@@ -1,4 +1,4 @@
-use oo_bindgen::formatting::{FormattingResult, Printer};
+use oo_bindgen::formatting::{blocked, FormattingResult, Printer};
 use oo_bindgen::function::{FunctionHandle, SignatureType};
 use oo_bindgen::Library;
 

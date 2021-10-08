@@ -1,4 +1,3 @@
-use self::formatting::*;
 use crate::*;
 use conversion::*;
 use heck::SnakeCase;
@@ -10,7 +9,6 @@ mod classes;
 mod conversion;
 mod enums;
 mod exceptions;
-mod formatting;
 mod interface;
 mod structs;
 

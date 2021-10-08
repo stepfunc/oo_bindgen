@@ -1,3 +1,4 @@
+use crate::helpers::call_native_function;
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;

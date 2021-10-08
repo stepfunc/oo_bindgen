@@ -325,44 +325,6 @@ impl StructType {
             StructType::UStruct(x) => x.has_field_named(name),
         }
     }
-
-    /*
-    pub fn doc(&self) -> &Doc {
-        match self {
-            StructType::Any(x) => &x.doc,
-            StructType::FStruct(_, x) => &x.doc,
-            StructType::CStruct(_, x) => &x.doc,
-            StructType::RStruct(_, x) => &x.doc,
-            StructType::UStruct(_, x) => &x.doc,
-        }
-    }
-
-
-
-    pub fn visibility(&self) -> Visibility {
-        match self {
-            StructType::Any(x) => x.visibility,
-            StructType::FStruct(_, x) => x.visibility,
-            StructType::CStruct(_, x) => x.visibility,
-            StructType::RStruct(_, x) => x.visibility,
-            StructType::UStruct(_, x) => x.visibility,
-        }
-    }
-
-    pub fn fields(&self) -> impl Iterator<Item = &AnyStructField> {
-        match self {
-            StructType::Any(x) => x.fields.iter(),
-            StructType::FStruct(_, x) => x.fields.iter(),
-            StructType::CStruct(_, x) => x.fields.iter(),
-            StructType::RStruct(_, x) => x.fields.iter(),
-            StructType::UStruct(_, x) => x.fields.iter(),
-        }
-    }
-
-    pub fn find_field<T: AsRef<str>>(&self, field_name: T) -> Option<&AnyStructField> {
-        self.fields().find(|f| *f.name == field_name.as_ref())
-    }
-     */
 }
 
 pub struct LibraryBuilder {

@@ -2,7 +2,7 @@ use oo_bindgen::formatting::{FormattingResult, Printer};
 use oo_bindgen::function::{FunctionHandle, SignatureType};
 use oo_bindgen::Library;
 
-use crate::conversion::DotnetType;
+use crate::dotnet_type::DotnetType;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
 

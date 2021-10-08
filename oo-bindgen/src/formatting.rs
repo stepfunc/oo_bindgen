@@ -55,13 +55,40 @@ impl Printer for FilePrinter {
     }
 }
 
-struct IndentedPrinter<'a> {
+pub struct PrefixPrinter<'a, 'b> {
     inner: &'a mut dyn Printer,
+    prefix: &'b str,
+}
+
+impl<'a, 'b> PrefixPrinter<'a, 'b> {
+    pub fn new(printer: &'a mut dyn Printer, prefix: &'b str) -> Self {
+        Self {
+            inner: printer,
+            prefix,
+        }
+    }
+}
+
+impl<'a, 'b> Printer for PrefixPrinter<'a, 'b> {
+    fn write(&mut self, s: &str) -> FormattingResult<()> {
+        self.inner.write(s)
+    }
+
+    fn newline(&mut self) -> FormattingResult<()> {
+        self.inner.newline()?;
+        self.inner.write(self.prefix)
+    }
+}
+
+pub struct IndentedPrinter<'a> {
+    inner: PrefixPrinter<'a, 'static>,
 }
 
 impl<'a> IndentedPrinter<'a> {
-    fn new(printer: &'a mut dyn Printer) -> Self {
-        Self { inner: printer }
+    pub fn new(printer: &'a mut dyn Printer) -> Self {
+        Self {
+            inner: PrefixPrinter::new(printer, "    "),
+        }
     }
 }
 
@@ -71,8 +98,51 @@ impl<'a> Printer for IndentedPrinter<'a> {
     }
 
     fn newline(&mut self) -> FormattingResult<()> {
-        self.inner.newline()?;
-        self.inner.write("    ")
+        self.inner.newline()
+    }
+}
+
+pub struct CommentedPrinter<'a> {
+    inner: PrefixPrinter<'a, 'static>,
+}
+
+impl<'a> CommentedPrinter<'a> {
+    pub fn new(f: &'a mut dyn Printer) -> Self {
+        Self {
+            inner: PrefixPrinter::new(f, "// "),
+        }
+    }
+}
+
+impl<'a> Printer for CommentedPrinter<'a> {
+    fn write(&mut self, s: &str) -> FormattingResult<()> {
+        self.inner.write(s)
+    }
+
+    fn newline(&mut self) -> FormattingResult<()> {
+        self.inner.newline()
+    }
+}
+
+pub struct DoxygenPrinter<'a> {
+    inner: PrefixPrinter<'a, 'static>,
+}
+
+impl<'a> DoxygenPrinter<'a> {
+    pub fn new(printer: &'a mut dyn Printer) -> Self {
+        Self {
+            inner: PrefixPrinter::new(printer, "/// "),
+        }
+    }
+}
+
+impl<'a> Printer for DoxygenPrinter<'a> {
+    fn write(&mut self, s: &str) -> FormattingResult<()> {
+        self.inner.write(s)
+    }
+
+    fn newline(&mut self) -> FormattingResult<()> {
+        self.inner.newline()
     }
 }
 
@@ -81,5 +151,21 @@ where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {
     let mut printer = IndentedPrinter::new(f);
+    cb(&mut printer)
+}
+
+pub fn commented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
+    let mut printer = CommentedPrinter::new(f);
+    cb(&mut printer)
+}
+
+pub fn doxygen<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+where
+    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
+{
+    let mut printer = DoxygenPrinter::new(f);
     cb(&mut printer)
 }

@@ -1,4 +1,4 @@
-use crate::conversion::*;
+use crate::dotnet_type::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::DestructionMode;
 use oo_bindgen::doc::*;

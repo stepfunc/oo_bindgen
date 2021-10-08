@@ -44,8 +44,8 @@ clippy::all
     bare_trait_objects
 )]
 
-use crate::conversion::*;
 use crate::doc::*;
+use crate::dotnet_type::*;
 use crate::formatting::*;
 use heck::CamelCase;
 use oo_bindgen::constants::*;
@@ -59,8 +59,8 @@ use std::fs;
 use std::path::PathBuf;
 
 mod class;
-mod conversion;
 mod doc;
+mod dotnet_type;
 mod formatting;
 mod helpers;
 mod interface;

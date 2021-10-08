@@ -294,7 +294,7 @@ pub enum StructType {
 
 impl From<FStructHandle> for StructType {
     fn from(x: FStructHandle) -> Self {
-        StructType::FStruct(x.clone())
+        StructType::FStruct(x)
     }
 }
 

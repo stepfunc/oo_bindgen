@@ -122,11 +122,8 @@ pub trait TypeExtractor {
 
     fn get_duration_type(&self) -> Option<DurationType> {
         match self.get_basic_type() {
-            Some(x) => match x {
-                BasicType::Duration(x) => Some(*x),
-                _ => None,
-            },
-            None => None,
+            Some(BasicType::Duration(x)) => Some(*x),
+            _ => None,
         }
     }
 }

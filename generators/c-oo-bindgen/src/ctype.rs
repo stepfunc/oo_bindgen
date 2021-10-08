@@ -94,7 +94,7 @@ impl CType for StructDeclarationHandle {
 
 impl CType for StructType {
     fn to_c_type(&self, prefix: &str) -> String {
-        format!("{}", self.declaration().to_c_type(prefix))
+        self.declaration().to_c_type(prefix)
     }
 }
 
@@ -131,7 +131,7 @@ impl CType for InterfaceHandle {
 
 impl CType for CollectionHandle {
     fn to_c_type(&self, prefix: &str) -> String {
-        format!("{}", self.collection_type.to_c_type(prefix))
+        self.collection_type.to_c_type(prefix)
     }
 }
 

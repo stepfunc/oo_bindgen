@@ -121,8 +121,7 @@ where
     pub fn has_field_named(&self, name: &str) -> bool {
         self.fields
             .iter()
-            .find(|x| x.name.as_str() == name)
-            .is_some()
+            .any(|x| x.name.as_str() == name)
     }
 
     pub fn name(&self) -> &str {

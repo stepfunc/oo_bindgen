@@ -88,7 +88,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
 
     // Create header file
     let include_path = output_dir.join("include");
-    generate_c_header(lib, include_path.clone())?;
+    generate_c_header(lib, include_path)?;
 
     // TODO - Create the C++ header
     // crate::cpp::generate_cpp_header(lib, &include_path)?;

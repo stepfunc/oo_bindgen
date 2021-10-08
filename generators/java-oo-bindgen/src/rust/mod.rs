@@ -379,7 +379,7 @@ fn generate_functions(
                             "let error = _cache.exceptions.throw_{}(&_env, _error);",
                             error_type.exception_name.to_snake_case()
                         ))?;
-                        f.writeln(&return_type.default_value())
+                        f.writeln(return_type.default_value())
                     })?;
                     f.write(";")?;
                 }

@@ -405,7 +405,7 @@ impl JniType for StructDeclarationHandle {
     }
 
     fn conversion(&self, _lib_name: &str, _prefix: &str) -> Option<Box<dyn TypeConverter>> {
-        Some(Box::new(StructConverter::new(self.clone())))
+        Some(Box::new(StructRefConverter(self.clone())))
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {

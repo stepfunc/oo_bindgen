@@ -2,13 +2,18 @@ use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
-use oo_bindgen::interface::{CArgument, CReturnValue};
+use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::callback_struct::CStructFieldType;
 use oo_bindgen::structs::function_return_struct::RStructFieldType;
 use oo_bindgen::structs::function_struct::FStructFieldType;
 use oo_bindgen::structs::univeral_struct::UStructFieldType;
-use oo_bindgen::types::BasicType;
+use oo_bindgen::types::{BasicType, StringType};
+use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::structs::common::{Struct, StructFieldType, StructDeclarationHandle};
+use oo_bindgen::Handle;
+use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::iterator::IteratorHandle;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -53,125 +58,233 @@ impl JavaType for BasicType {
     }
 }
 
-/*
-impl JavaType for AnyType {
-    /// Return the Java primitive type
+impl JavaType for StringType {
     fn as_java_primitive(&self) -> String {
-        match self {
-            Self::Basic(x) => x.as_java_primitive(),
-            Self::String => "String".to_string(),
-            Self::Struct(handle) => handle.name().to_camel_case(),
-            Self::StructRef(handle) => handle.name.to_camel_case(),
-            Self::ClassRef(handle) => handle.name.to_camel_case(),
-            Self::Interface(handle) => handle.name.to_camel_case(),
-            Self::Iterator(handle) => format!(
-                "java.util.List<{}>",
-                handle.item_type.name().to_camel_case()
-            ),
-            Self::Collection(handle) => {
-                format!("java.util.List<{}>", handle.item_type.as_java_object())
-            }
-        }
+        "String".to_string()
     }
 
-    /// Returns the Java object type (for type parameter)
     fn as_java_object(&self) -> String {
-        match self {
-            Self::Basic(x) => x.as_java_object(),
-            Self::String => "String".to_string(),
-            Self::Struct(handle) => handle.name().to_camel_case(),
-            Self::StructRef(handle) => handle.name.to_camel_case(),
-            Self::ClassRef(handle) => handle.name.to_camel_case(),
-            Self::Interface(handle) => handle.name.to_camel_case(),
-            Self::Iterator(handle) => format!(
-                "java.util.List<{}>",
-                handle.item_type.name().to_camel_case()
-            ),
-            Self::Collection(handle) => {
-                format!("java.util.List<{}>", handle.item_type.as_java_object())
-            }
-        }
+        "String".to_string()
     }
 }
-*/
+
+impl JavaType for InterfaceHandle {
+    fn as_java_primitive(&self) -> String {
+        self.as_java_object()
+    }
+
+    fn as_java_object(&self) -> String {
+        self.name.to_camel_case()
+    }
+}
+
+impl JavaType for CollectionHandle {
+    fn as_java_primitive(&self) -> String {
+        self.as_java_object()
+    }
+
+    fn as_java_object(&self) -> String {
+        format!("java.util.List<{}>", self.item_type.as_java_object())
+    }
+}
+
+impl JavaType for ClassDeclarationHandle {
+    fn as_java_primitive(&self) -> String {
+        self.as_java_object()
+    }
+
+    fn as_java_object(&self) -> String {
+        self.name.to_camel_case()
+    }
+}
+
+impl JavaType for StructDeclarationHandle {
+    fn as_java_primitive(&self) -> String {
+        self.as_java_object()
+    }
+
+    fn as_java_object(&self) -> String {
+        self.name.to_camel_case()
+    }}
+
+impl JavaType for IteratorHandle {
+    fn as_java_primitive(&self) -> String {
+        self.as_java_object()
+    }
+
+    fn as_java_object(&self) -> String {
+        format!(
+            "java.util.List<{}>",
+            self.item_type.as_java_object()
+        )
+    }
+}
+
+impl<T> JavaType for Handle<Struct<T>> where T: StructFieldType {
+    fn as_java_primitive(&self) -> String {
+        self.as_java_object()
+    }
+
+    fn as_java_object(&self) -> String {
+        self.name().to_camel_case()
+    }
+}
 
 impl JavaType for FStructFieldType {
     fn as_java_primitive(&self) -> String {
-        todo!()
+        match self {
+            FStructFieldType::Basic(x) => x.as_java_primitive(),
+            FStructFieldType::String(x) => x.as_java_primitive(),
+            FStructFieldType::Interface(x) => x.as_java_primitive(),
+            FStructFieldType::Collection(x) => x.as_java_primitive(),
+            FStructFieldType::Struct(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        todo!()
+        match self {
+            FStructFieldType::Basic(x) => x.as_java_object(),
+            FStructFieldType::String(x) => x.as_java_object(),
+            FStructFieldType::Interface(x) => x.as_java_object(),
+            FStructFieldType::Collection(x) => x.as_java_object(),
+            FStructFieldType::Struct(x) => x.as_java_object(),
+        }
     }
 }
 
 impl JavaType for RStructFieldType {
     fn as_java_primitive(&self) -> String {
-        todo!()
+        match self {
+            RStructFieldType::Basic(x) => x.as_java_primitive(),
+            RStructFieldType::ClassRef(x) => x.as_java_primitive(),
+            RStructFieldType::Struct(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        todo!()
+        match self {
+            RStructFieldType::Basic(x) => x.as_java_object(),
+            RStructFieldType::ClassRef(x) => x.as_java_object(),
+            RStructFieldType::Struct(x) => x.as_java_object(),
+        }
     }
 }
 
 impl JavaType for CStructFieldType {
     fn as_java_primitive(&self) -> String {
-        todo!()
+        match self {
+            CStructFieldType::Basic(x) => x.as_java_primitive(),
+            CStructFieldType::Iterator(x) => x.as_java_primitive(),
+            CStructFieldType::Struct(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        todo!()
+        match self {
+            CStructFieldType::Basic(x) => x.as_java_object(),
+            CStructFieldType::Iterator(x) => x.as_java_object(),
+            CStructFieldType::Struct(x) => x.as_java_object(),
+        }
     }
 }
 
 impl JavaType for UStructFieldType {
     fn as_java_primitive(&self) -> String {
-        todo!()
+        match self {
+            UStructFieldType::Basic(x) => x.as_java_primitive(),
+            UStructFieldType::Struct(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        todo!()
+        match self {
+            UStructFieldType::Basic(x) => x.as_java_object(),
+            UStructFieldType::Struct(x) => x.as_java_object(),
+        }
     }
 }
 
 impl JavaType for FArgument {
     fn as_java_primitive(&self) -> String {
-        todo!()
+        match self {
+            FArgument::Basic(x) => x.as_java_primitive(),
+            FArgument::String(x) => x.as_java_primitive(),
+            FArgument::Collection(x) => x.as_java_primitive(),
+            FArgument::Struct(x) => x.as_java_primitive(),
+            FArgument::StructRef(x) => x.as_java_primitive(),
+            FArgument::ClassRef(x) => x.as_java_primitive(),
+            FArgument::Interface(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        todo!()
+        match self {
+            FArgument::Basic(x) => x.as_java_object(),
+            FArgument::String(x) => x.as_java_object(),
+            FArgument::Collection(x) => x.as_java_object(),
+            FArgument::Struct(x) => x.as_java_object(),
+            FArgument::StructRef(x) => x.as_java_object(),
+            FArgument::ClassRef(x) => x.as_java_object(),
+            FArgument::Interface(x) => x.as_java_object(),
+        }
     }
 }
 
 impl JavaType for CArgument {
     fn as_java_primitive(&self) -> String {
-        unimplemented!()
+        match self {
+            CArgument::Basic(x) => x.as_java_primitive(),
+            CArgument::String(x) => x.as_java_primitive(),
+            CArgument::Iterator(x) => x.as_java_primitive(),
+            CArgument::Struct(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        unimplemented!()
+        match self {
+            CArgument::Basic(x) => x.as_java_object(),
+            CArgument::String(x) => x.as_java_object(),
+            CArgument::Iterator(x) => x.as_java_object(),
+            CArgument::Struct(x) => x.as_java_object(),
+        }
     }
 }
 
 impl JavaType for CReturnValue {
     fn as_java_primitive(&self) -> String {
-        unimplemented!()
+        match self {
+            CReturnValue::Basic(x) => x.as_java_primitive(),
+            CReturnValue::Struct(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        unimplemented!()
+        match self {
+            CReturnValue::Basic(x) => x.as_java_object(),
+            CReturnValue::Struct(x) => x.as_java_object(),
+        }
     }
 }
 
 impl JavaType for FReturnValue {
     fn as_java_primitive(&self) -> String {
-        unimplemented!()
+        match self {
+            FReturnValue::Basic(x) => x.as_java_primitive(),
+            FReturnValue::String(x) => x.as_java_primitive(),
+            FReturnValue::ClassRef(x) => x.as_java_primitive(),
+            FReturnValue::Struct(x) => x.as_java_primitive(),
+            FReturnValue::StructRef(x) => x.as_java_primitive(),
+        }
     }
 
     fn as_java_object(&self) -> String {
-        unimplemented!()
+        match self {
+            FReturnValue::Basic(x) => x.as_java_object(),
+            FReturnValue::String(x) => x.as_java_object(),
+            FReturnValue::ClassRef(x) => x.as_java_object(),
+            FReturnValue::Struct(x) => x.as_java_object(),
+            FReturnValue::StructRef(x) => x.as_java_object(),
+        }
     }
 }
 

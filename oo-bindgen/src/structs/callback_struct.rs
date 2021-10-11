@@ -6,47 +6,49 @@ use crate::types::{TypeValidator, ValidatedType};
 
 /// Types that can be used in a callback struct, some of which might have a default value
 #[derive(Clone, Debug)]
-pub enum CStructFieldType {
+pub enum CallbackStructFieldType {
     Basic(BasicType),
     Iterator(IteratorHandle),
-    Struct(CStructHandle),
+    Struct(CallbackStructHandle),
 }
 
-impl TypeValidator for CStructFieldType {
+impl TypeValidator for CallbackStructFieldType {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
-            CStructFieldType::Basic(x) => x.get_validated_type(),
-            CStructFieldType::Iterator(x) => x.get_validated_type(),
-            CStructFieldType::Struct(x) => StructType::CStruct(x.clone()).get_validated_type(),
+            CallbackStructFieldType::Basic(x) => x.get_validated_type(),
+            CallbackStructFieldType::Iterator(x) => x.get_validated_type(),
+            CallbackStructFieldType::Struct(x) => {
+                StructType::CStruct(x.clone()).get_validated_type()
+            }
         }
     }
 }
 
-pub type CStructField = StructField<CStructFieldType>;
-pub type CStruct = Struct<CStructFieldType>;
-pub type CStructHandle = Handle<CStruct>;
-pub type CStructBuilder<'a> = StructFieldBuilder<'a, CStructFieldType>;
+pub type CallbackStructField = StructField<CallbackStructFieldType>;
+pub type CallbackStruct = Struct<CallbackStructFieldType>;
+pub type CallbackStructHandle = Handle<CallbackStruct>;
+pub type CallbackStructBuilder<'a> = StructFieldBuilder<'a, CallbackStructFieldType>;
 
-impl StructFieldType for CStructFieldType {
-    fn create_struct_type(v: Handle<Struct<CStructFieldType>>) -> StructType {
+impl StructFieldType for CallbackStructFieldType {
+    fn create_struct_type(v: Handle<Struct<CallbackStructFieldType>>) -> StructType {
         StructType::CStruct(v)
     }
 }
 
-impl From<BasicType> for CStructFieldType {
+impl From<BasicType> for CallbackStructFieldType {
     fn from(x: BasicType) -> Self {
-        CStructFieldType::Basic(x)
+        CallbackStructFieldType::Basic(x)
     }
 }
 
-impl From<IteratorHandle> for CStructFieldType {
+impl From<IteratorHandle> for CallbackStructFieldType {
     fn from(x: IteratorHandle) -> Self {
-        CStructFieldType::Iterator(x)
+        CallbackStructFieldType::Iterator(x)
     }
 }
 
-impl From<CStructHandle> for CStructFieldType {
-    fn from(x: CStructHandle) -> Self {
-        CStructFieldType::Struct(x)
+impl From<CallbackStructHandle> for CallbackStructFieldType {
+    fn from(x: CallbackStructHandle) -> Self {
+        CallbackStructFieldType::Struct(x)
     }
 }

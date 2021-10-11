@@ -5,68 +5,70 @@ use crate::*;
 
 /// Types that can be used in a function struct, some of which might have a default value
 #[derive(Clone, Debug)]
-pub enum FStructFieldType {
+pub enum FunctionArgStructFieldType {
     Basic(BasicType),
     String(StringType),
     Interface(InterfaceHandle),
     Collection(CollectionHandle),
-    Struct(FStructHandle),
+    Struct(FunctionArgStructHandle),
 }
 
-impl TypeValidator for FStructFieldType {
+impl TypeValidator for FunctionArgStructFieldType {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
-            FStructFieldType::Basic(x) => x.get_validated_type(),
-            FStructFieldType::String(x) => x.get_validated_type(),
-            FStructFieldType::Interface(x) => x.get_validated_type(),
-            FStructFieldType::Collection(x) => x.get_validated_type(),
-            FStructFieldType::Struct(x) => StructType::FStruct(x.clone()).get_validated_type(),
+            FunctionArgStructFieldType::Basic(x) => x.get_validated_type(),
+            FunctionArgStructFieldType::String(x) => x.get_validated_type(),
+            FunctionArgStructFieldType::Interface(x) => x.get_validated_type(),
+            FunctionArgStructFieldType::Collection(x) => x.get_validated_type(),
+            FunctionArgStructFieldType::Struct(x) => {
+                StructType::FStruct(x.clone()).get_validated_type()
+            }
         }
     }
 }
 
-pub type FStructField = StructField<FStructFieldType>;
-pub type FStruct = Struct<FStructFieldType>;
-pub type FStructHandle = Handle<FStruct>;
-pub type FStructBuilder<'a> = StructFieldBuilder<'a, FStructFieldType>;
+pub type FunctionArgStructField = StructField<FunctionArgStructFieldType>;
+pub type FunctionArgStruct = Struct<FunctionArgStructFieldType>;
+pub type FunctionArgStructHandle = Handle<FunctionArgStruct>;
+pub type FunctionArgStructBuilder<'a> = StructFieldBuilder<'a, FunctionArgStructFieldType>;
 
-impl StructFieldType for FStructFieldType {
-    fn create_struct_type(v: Handle<Struct<FStructFieldType>>) -> StructType {
+impl StructFieldType for FunctionArgStructFieldType {
+    fn create_struct_type(v: Handle<Struct<FunctionArgStructFieldType>>) -> StructType {
         StructType::FStruct(v)
     }
 }
 
-impl From<BasicType> for FStructFieldType {
+impl From<BasicType> for FunctionArgStructFieldType {
     fn from(x: BasicType) -> Self {
-        FStructFieldType::Basic(x)
+        FunctionArgStructFieldType::Basic(x)
     }
 }
 
-impl From<StringType> for FStructFieldType {
+impl From<StringType> for FunctionArgStructFieldType {
     fn from(x: StringType) -> Self {
-        FStructFieldType::String(x)
+        FunctionArgStructFieldType::String(x)
     }
 }
 
-impl From<FStructHandle> for FStructFieldType {
-    fn from(x: FStructHandle) -> Self {
-        FStructFieldType::Struct(x)
+impl From<FunctionArgStructHandle> for FunctionArgStructFieldType {
+    fn from(x: FunctionArgStructHandle) -> Self {
+        FunctionArgStructFieldType::Struct(x)
     }
 }
 
-impl From<InterfaceHandle> for FStructFieldType {
+impl From<InterfaceHandle> for FunctionArgStructFieldType {
     fn from(x: InterfaceHandle) -> Self {
-        FStructFieldType::Interface(x)
+        FunctionArgStructFieldType::Interface(x)
     }
 }
 
-impl From<DurationType> for FStructFieldType {
+impl From<DurationType> for FunctionArgStructFieldType {
     fn from(x: DurationType) -> Self {
-        FStructFieldType::Basic(BasicType::Duration(x))
+        FunctionArgStructFieldType::Basic(BasicType::Duration(x))
     }
 }
 
-impl From<EnumHandle> for FStructFieldType {
+impl From<EnumHandle> for FunctionArgStructFieldType {
     fn from(x: EnumHandle) -> Self {
         BasicType::Enum(x).into()
     }

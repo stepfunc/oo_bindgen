@@ -5,11 +5,11 @@ use crate::collection::CollectionHandle;
 use crate::doc::DocString;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
-use crate::structs::callback_struct::CStructFieldType;
+use crate::structs::callback_struct::CallbackStructFieldType;
 use crate::structs::common::StructDeclarationHandle;
-use crate::structs::function_return_struct::RStructFieldType;
-use crate::structs::function_struct::FStructFieldType;
-use crate::structs::univeral_struct::UStructFieldType;
+use crate::structs::function_return_struct::ReturnStructFieldType;
+use crate::structs::function_struct::FunctionArgStructFieldType;
+use crate::structs::univeral_struct::UniversalStructFieldType;
 use crate::StructType;
 use std::time::Duration;
 
@@ -128,7 +128,7 @@ pub trait TypeExtractor {
     }
 }
 
-impl TypeExtractor for FStructFieldType {
+impl TypeExtractor for FunctionArgStructFieldType {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
@@ -137,7 +137,7 @@ impl TypeExtractor for FStructFieldType {
     }
 }
 
-impl TypeExtractor for RStructFieldType {
+impl TypeExtractor for ReturnStructFieldType {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
@@ -146,7 +146,7 @@ impl TypeExtractor for RStructFieldType {
     }
 }
 
-impl TypeExtractor for CStructFieldType {
+impl TypeExtractor for CallbackStructFieldType {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
@@ -155,7 +155,7 @@ impl TypeExtractor for CStructFieldType {
     }
 }
 
-impl TypeExtractor for UStructFieldType {
+impl TypeExtractor for UniversalStructFieldType {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),

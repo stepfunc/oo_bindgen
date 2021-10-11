@@ -1,8 +1,8 @@
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::return_type::ReturnType;
-use crate::structs::callback_struct::CStructHandle;
-use crate::structs::univeral_struct::UStructHandle;
+use crate::structs::callback_struct::CallbackStructHandle;
+use crate::structs::univeral_struct::UniversalStructHandle;
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 use std::collections::HashSet;
@@ -16,7 +16,7 @@ pub enum CArgument {
     Basic(BasicType),
     String(StringType),
     Iterator(IteratorHandle),
-    Struct(CStructHandle),
+    Struct(CallbackStructHandle),
 }
 
 impl TypeValidator for CArgument {
@@ -52,7 +52,7 @@ impl From<IteratorHandle> for CArgument {
 #[derive(Debug, Clone, PartialEq)]
 pub enum CReturnValue {
     Basic(BasicType),
-    Struct(UStructHandle),
+    Struct(UniversalStructHandle),
 }
 
 impl From<BasicType> for CReturnValue {
@@ -61,8 +61,8 @@ impl From<BasicType> for CReturnValue {
     }
 }
 
-impl From<UStructHandle> for CReturnValue {
-    fn from(x: UStructHandle) -> Self {
+impl From<UniversalStructHandle> for CReturnValue {
+    fn from(x: UniversalStructHandle) -> Self {
         CReturnValue::Struct(x)
     }
 }

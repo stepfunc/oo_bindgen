@@ -8,13 +8,13 @@ use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
 use crate::structs::common::{StructDeclaration, StructDeclarationHandle};
-use crate::structs::function_struct::{FStructBuilder, FStructHandle};
+use crate::structs::function_struct::{FunctionArgStructBuilder, FunctionArgStructHandle};
 use crate::*;
 use crate::{BindingError, Version};
 
-use crate::structs::callback_struct::{CStructBuilder, CStructHandle};
-use crate::structs::function_return_struct::{RStructBuilder, RStructHandle};
-use crate::structs::univeral_struct::{UStructBuilder, UStructHandle};
+use crate::structs::callback_struct::{CallbackStructBuilder, CallbackStructHandle};
+use crate::structs::function_return_struct::{ReturnStructBuilder, ReturnStructHandle};
+use crate::structs::univeral_struct::{UniversalStructBuilder, UniversalStructHandle};
 use crate::types::{TypeValidator, ValidatedType};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -283,17 +283,17 @@ impl Library {
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum StructType {
     /// structs that may be used as native function parameters
-    FStruct(FStructHandle),
+    FStruct(FunctionArgStructHandle),
     /// structs than can be used as native function return values
-    RStruct(RStructHandle),
+    RStruct(ReturnStructHandle),
     /// structs that may be used as callback function arguments in interfaces
-    CStruct(CStructHandle),
+    CStruct(CallbackStructHandle),
     /// structs that can be used in any context and only contain basic types
-    UStruct(UStructHandle),
+    UStruct(UniversalStructHandle),
 }
 
-impl From<FStructHandle> for StructType {
-    fn from(x: FStructHandle) -> Self {
+impl From<FunctionArgStructHandle> for StructType {
+    fn from(x: FunctionArgStructHandle) -> Self {
         StructType::FStruct(x)
     }
 }
@@ -533,10 +533,10 @@ impl LibraryBuilder {
     pub fn define_ustruct(
         &mut self,
         declaration: &StructDeclarationHandle,
-    ) -> BindResult<UStructBuilder> {
+    ) -> BindResult<UniversalStructBuilder> {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
-            Ok(UStructBuilder::new(self, declaration.clone()))
+            Ok(UniversalStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),
@@ -548,10 +548,10 @@ impl LibraryBuilder {
     pub fn define_cstruct(
         &mut self,
         declaration: &StructDeclarationHandle,
-    ) -> BindResult<CStructBuilder> {
+    ) -> BindResult<CallbackStructBuilder> {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
-            Ok(CStructBuilder::new(self, declaration.clone()))
+            Ok(CallbackStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),
@@ -563,10 +563,10 @@ impl LibraryBuilder {
     pub fn define_rstruct(
         &mut self,
         declaration: &StructDeclarationHandle,
-    ) -> BindResult<RStructBuilder> {
+    ) -> BindResult<ReturnStructBuilder> {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
-            Ok(RStructBuilder::new(self, declaration.clone()))
+            Ok(ReturnStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),
@@ -578,10 +578,10 @@ impl LibraryBuilder {
     pub fn define_fstruct(
         &mut self,
         declaration: &StructDeclarationHandle,
-    ) -> BindResult<FStructBuilder> {
+    ) -> BindResult<FunctionArgStructBuilder> {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
-            Ok(FStructBuilder::new(self, declaration.clone()))
+            Ok(FunctionArgStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),
@@ -636,7 +636,7 @@ impl LibraryBuilder {
     pub fn define_iterator(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &RStructHandle,
+        item_type: &ReturnStructHandle,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(false, native_func, item_type)
     }
@@ -644,7 +644,7 @@ impl LibraryBuilder {
     pub fn define_iterator_with_lifetime(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &RStructHandle,
+        item_type: &ReturnStructHandle,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(true, native_func, item_type)
     }
@@ -653,7 +653,7 @@ impl LibraryBuilder {
         &mut self,
         has_lifetime: bool,
         native_func: &FunctionHandle,
-        item_type: &RStructHandle,
+        item_type: &ReturnStructHandle,
     ) -> BindResult<IteratorHandle> {
         let iter = IteratorHandle::new(crate::iterator::Iterator::new(
             has_lifetime,

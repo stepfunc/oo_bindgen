@@ -1,19 +1,19 @@
 use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
+use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
-use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::callback_struct::CStructFieldType;
-use oo_bindgen::structs::function_return_struct::RStructFieldType;
-use oo_bindgen::structs::function_struct::FStructFieldType;
-use oo_bindgen::structs::univeral_struct::UStructFieldType;
-use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::structs::common::{Struct, StructFieldType, StructDeclarationHandle};
-use oo_bindgen::Handle;
-use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::structs::callback_struct::CallbackStructFieldType;
+use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
+use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
+use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
+use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
+use oo_bindgen::types::{BasicType, StringType};
+use oo_bindgen::Handle;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -105,7 +105,8 @@ impl JavaType for StructDeclarationHandle {
 
     fn as_java_object(&self) -> String {
         self.name.to_camel_case()
-    }}
+    }
+}
 
 impl JavaType for IteratorHandle {
     fn as_java_primitive(&self) -> String {
@@ -113,14 +114,14 @@ impl JavaType for IteratorHandle {
     }
 
     fn as_java_object(&self) -> String {
-        format!(
-            "java.util.List<{}>",
-            self.item_type.as_java_object()
-        )
+        format!("java.util.List<{}>", self.item_type.as_java_object())
     }
 }
 
-impl<T> JavaType for Handle<Struct<T>> where T: StructFieldType {
+impl<T> JavaType for Handle<Struct<T>>
+where
+    T: StructFieldType,
+{
     fn as_java_primitive(&self) -> String {
         self.as_java_object()
     }
@@ -130,76 +131,76 @@ impl<T> JavaType for Handle<Struct<T>> where T: StructFieldType {
     }
 }
 
-impl JavaType for FStructFieldType {
+impl JavaType for FunctionArgStructFieldType {
     fn as_java_primitive(&self) -> String {
         match self {
-            FStructFieldType::Basic(x) => x.as_java_primitive(),
-            FStructFieldType::String(x) => x.as_java_primitive(),
-            FStructFieldType::Interface(x) => x.as_java_primitive(),
-            FStructFieldType::Collection(x) => x.as_java_primitive(),
-            FStructFieldType::Struct(x) => x.as_java_primitive(),
+            FunctionArgStructFieldType::Basic(x) => x.as_java_primitive(),
+            FunctionArgStructFieldType::String(x) => x.as_java_primitive(),
+            FunctionArgStructFieldType::Interface(x) => x.as_java_primitive(),
+            FunctionArgStructFieldType::Collection(x) => x.as_java_primitive(),
+            FunctionArgStructFieldType::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            FStructFieldType::Basic(x) => x.as_java_object(),
-            FStructFieldType::String(x) => x.as_java_object(),
-            FStructFieldType::Interface(x) => x.as_java_object(),
-            FStructFieldType::Collection(x) => x.as_java_object(),
-            FStructFieldType::Struct(x) => x.as_java_object(),
+            FunctionArgStructFieldType::Basic(x) => x.as_java_object(),
+            FunctionArgStructFieldType::String(x) => x.as_java_object(),
+            FunctionArgStructFieldType::Interface(x) => x.as_java_object(),
+            FunctionArgStructFieldType::Collection(x) => x.as_java_object(),
+            FunctionArgStructFieldType::Struct(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for RStructFieldType {
+impl JavaType for ReturnStructFieldType {
     fn as_java_primitive(&self) -> String {
         match self {
-            RStructFieldType::Basic(x) => x.as_java_primitive(),
-            RStructFieldType::ClassRef(x) => x.as_java_primitive(),
-            RStructFieldType::Struct(x) => x.as_java_primitive(),
+            ReturnStructFieldType::Basic(x) => x.as_java_primitive(),
+            ReturnStructFieldType::ClassRef(x) => x.as_java_primitive(),
+            ReturnStructFieldType::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            RStructFieldType::Basic(x) => x.as_java_object(),
-            RStructFieldType::ClassRef(x) => x.as_java_object(),
-            RStructFieldType::Struct(x) => x.as_java_object(),
+            ReturnStructFieldType::Basic(x) => x.as_java_object(),
+            ReturnStructFieldType::ClassRef(x) => x.as_java_object(),
+            ReturnStructFieldType::Struct(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for CStructFieldType {
+impl JavaType for CallbackStructFieldType {
     fn as_java_primitive(&self) -> String {
         match self {
-            CStructFieldType::Basic(x) => x.as_java_primitive(),
-            CStructFieldType::Iterator(x) => x.as_java_primitive(),
-            CStructFieldType::Struct(x) => x.as_java_primitive(),
+            CallbackStructFieldType::Basic(x) => x.as_java_primitive(),
+            CallbackStructFieldType::Iterator(x) => x.as_java_primitive(),
+            CallbackStructFieldType::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            CStructFieldType::Basic(x) => x.as_java_object(),
-            CStructFieldType::Iterator(x) => x.as_java_object(),
-            CStructFieldType::Struct(x) => x.as_java_object(),
+            CallbackStructFieldType::Basic(x) => x.as_java_object(),
+            CallbackStructFieldType::Iterator(x) => x.as_java_object(),
+            CallbackStructFieldType::Struct(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for UStructFieldType {
+impl JavaType for UniversalStructFieldType {
     fn as_java_primitive(&self) -> String {
         match self {
-            UStructFieldType::Basic(x) => x.as_java_primitive(),
-            UStructFieldType::Struct(x) => x.as_java_primitive(),
+            UniversalStructFieldType::Basic(x) => x.as_java_primitive(),
+            UniversalStructFieldType::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            UStructFieldType::Basic(x) => x.as_java_object(),
-            UStructFieldType::Struct(x) => x.as_java_object(),
+            UniversalStructFieldType::Basic(x) => x.as_java_object(),
+            UniversalStructFieldType::Struct(x) => x.as_java_object(),
         }
     }
 }

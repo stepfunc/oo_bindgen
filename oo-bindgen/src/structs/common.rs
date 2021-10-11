@@ -119,9 +119,7 @@ where
     F: StructFieldType,
 {
     pub fn has_field_named(&self, name: &str) -> bool {
-        self.fields
-            .iter()
-            .any(|x| x.name.as_str() == name)
+        self.fields.iter().any(|x| x.name.as_str() == name)
     }
 
     pub fn name(&self) -> &str {

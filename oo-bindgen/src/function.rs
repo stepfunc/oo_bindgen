@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
-use crate::structs::function_return_struct::RStructHandle;
+use crate::structs::function_return_struct::ReturnStructHandle;
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 
@@ -11,7 +11,7 @@ pub enum FReturnValue {
     Basic(BasicType),
     String(StringType),
     ClassRef(ClassDeclarationHandle),
-    Struct(RStructHandle),
+    Struct(ReturnStructHandle),
     StructRef(StructDeclarationHandle),
 }
 
@@ -39,8 +39,8 @@ impl From<StringType> for FReturnValue {
     }
 }
 
-impl From<RStructHandle> for FReturnValue {
-    fn from(x: RStructHandle) -> Self {
+impl From<ReturnStructHandle> for FReturnValue {
+    fn from(x: ReturnStructHandle) -> Self {
         FReturnValue::Struct(x)
     }
 }
@@ -65,7 +65,7 @@ pub enum FArgument {
     Basic(BasicType),
     String(StringType),
     Collection(CollectionHandle),
-    Struct(FStructHandle),
+    Struct(FunctionArgStructHandle),
     StructRef(StructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),

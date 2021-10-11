@@ -1,4 +1,4 @@
-use crate::structs::function_return_struct::RStructHandle;
+use crate::structs::function_return_struct::ReturnStructHandle;
 use crate::*;
 
 #[derive(Debug)]
@@ -6,14 +6,14 @@ pub struct Iterator {
     pub has_lifetime_annotation: bool,
     pub function: FunctionHandle,
     pub iter_type: ClassDeclarationHandle,
-    pub item_type: RStructHandle,
+    pub item_type: ReturnStructHandle,
 }
 
 impl Iterator {
     pub(crate) fn new(
         has_lifetime_annotation: bool,
         function: &FunctionHandle,
-        item_type: &RStructHandle,
+        item_type: &ReturnStructHandle,
     ) -> BindResult<Iterator> {
         match &function.return_type {
             FReturnType::Void => {

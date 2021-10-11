@@ -4,39 +4,41 @@ use crate::*;
 
 /// Types that can be used in a universal struct, some of which might have a default value
 #[derive(Clone, Debug)]
-pub enum UStructFieldType {
+pub enum UniversalStructFieldType {
     Basic(BasicType),
-    Struct(UStructHandle),
+    Struct(UniversalStructHandle),
 }
 
-impl TypeValidator for UStructFieldType {
+impl TypeValidator for UniversalStructFieldType {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
-            UStructFieldType::Basic(x) => x.get_validated_type(),
-            UStructFieldType::Struct(x) => StructType::UStruct(x.clone()).get_validated_type(),
+            UniversalStructFieldType::Basic(x) => x.get_validated_type(),
+            UniversalStructFieldType::Struct(x) => {
+                StructType::UStruct(x.clone()).get_validated_type()
+            }
         }
     }
 }
 
-pub type UStructField = StructField<UStructFieldType>;
-pub type UStruct = Struct<UStructFieldType>;
-pub type UStructHandle = Handle<UStruct>;
-pub type UStructBuilder<'a> = StructFieldBuilder<'a, UStructFieldType>;
+pub type UniversalStructField = StructField<UniversalStructFieldType>;
+pub type UniversalStruct = Struct<UniversalStructFieldType>;
+pub type UniversalStructHandle = Handle<UniversalStruct>;
+pub type UniversalStructBuilder<'a> = StructFieldBuilder<'a, UniversalStructFieldType>;
 
-impl StructFieldType for UStructFieldType {
-    fn create_struct_type(v: Handle<Struct<UStructFieldType>>) -> StructType {
+impl StructFieldType for UniversalStructFieldType {
+    fn create_struct_type(v: Handle<Struct<UniversalStructFieldType>>) -> StructType {
         StructType::UStruct(v)
     }
 }
 
-impl From<BasicType> for UStructFieldType {
+impl From<BasicType> for UniversalStructFieldType {
     fn from(x: BasicType) -> Self {
-        UStructFieldType::Basic(x)
+        UniversalStructFieldType::Basic(x)
     }
 }
 
-impl From<UStructHandle> for UStructFieldType {
-    fn from(x: UStructHandle) -> Self {
-        UStructFieldType::Struct(x)
+impl From<UniversalStructHandle> for UniversalStructFieldType {
+    fn from(x: UniversalStructHandle) -> Self {
+        UniversalStructFieldType::Struct(x)
     }
 }

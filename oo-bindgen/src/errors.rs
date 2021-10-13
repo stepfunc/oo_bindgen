@@ -3,7 +3,7 @@ use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::FunctionHandle;
 use crate::interface::InterfaceHandle;
-use crate::structs::common::{FieldName, StructDeclarationHandle};
+use crate::structs::common::{FieldName, StructDeclarationHandle, ConstructorValue};
 use thiserror::Error;
 
 pub type BindResult<T> = Result<T, BindingError>;
@@ -60,6 +60,13 @@ pub enum BindingError {
     EnumDoesNotContainVariant { name: String, variant_name: String },
 
     // Structure errors
+    #[error("Duplicate constructor field definition '{}' in struct '{}", field_name, struct_name)]
+    StructConstructorDuplicateField { struct_name: String, field_name: String },
+    #[error("Constructor field '{}' doesn't exist within struct '{}", field_name, struct_name)]
+    StructConstructorUnknownField { struct_name: String, field_name: String },
+    #[error("Constructor field type '{}' doesn't match value '{:?}", field_type, value)]
+    StructConstructorBadValueForType { field_type: String, value: ConstructorValue },
+
     #[error("Native struct '{}' was already defined", handle.name)]
     StructAlreadyDefined { handle: StructDeclarationHandle },
     #[error("Native struct '{}' is not part of this library", handle.name)]

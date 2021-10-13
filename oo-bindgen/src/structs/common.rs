@@ -55,7 +55,7 @@ pub enum ConstructorValue {
     Enum(String),
     String(String),
     /// requires that the struct have a default constructor
-    DefaultStruct(FieldName),
+    DefaultStruct,
 }
 
 /// struct type affects the type of code the backend will generate
@@ -81,14 +81,14 @@ impl StructDeclaration {
 
 pub type StructDeclarationHandle = Handle<StructDeclaration>;
 
-pub trait StructFieldType: Clone + Sized + TypeValidator {
+pub trait ConstructorValidator {
+    /// Check that the value is valid for the type
+    fn validate(&self, value: &ConstructorValue) -> BindResult<()>;
+}
+
+pub trait StructFieldType: Clone + Sized + TypeValidator + ConstructorValidator {
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
-
-    /*
-       /// Check that the default value is valid for the type
-       fn validate(&self, name: &FieldName, x: &ConstructorValue) -> BindResult<()>;
-    */
 }
 
 #[derive(Debug)]
@@ -112,6 +112,17 @@ where
     pub fields: Vec<StructField<F>>,
     pub constructors: Vec<Constructor>,
     pub doc: Doc,
+}
+
+impl<F> ConstructorValidator for Struct<F> where F: StructFieldType {
+    fn validate(&self, value: &ConstructorValue) -> BindResult<()> {
+        match value {
+            ConstructorValue::DefaultStruct => {
+                self.constructors.iter.any()
+            }
+            _ => Err()
+        }
+    }
 }
 
 impl<F> Struct<F>
@@ -204,7 +215,7 @@ where
         }
     }
 
-    pub fn end_fields(self) -> BindResult<StructConstructorBuilder<'a, F>> {
+    pub fn end_fields(self) -> BindResult<ConstructorBuilder<'a, F>> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -214,7 +225,7 @@ where
             }
         };
 
-        Ok(StructConstructorBuilder {
+        Ok(ConstructorBuilder {
             lib: self.lib,
             visibility: self.visibility,
             declaration: self.declaration,
@@ -242,22 +253,34 @@ impl Constructor {
     }
 }
 
-pub struct StructConstructorBuilder<'a, F>
+pub struct ConstructorFieldBuilder<'a, F>
+    where
+        F: StructFieldType,
+{
+    builder: ConstructorBuilder<'a, F>,
+    fields: Vec<InitializedValue>,
+}
+
+pub struct ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
 {
     lib: &'a mut LibraryBuilder,
-    pub visibility: Visibility,
-    pub declaration: StructDeclarationHandle,
-    pub fields: Vec<StructField<F>>,
-    pub constructors: Vec<Constructor>,
-    pub doc: Doc,
+    visibility: Visibility,
+    declaration: StructDeclarationHandle,
+    fields: Vec<StructField<F>>,
+    constructors: Vec<Constructor>,
+    doc: Doc,
 }
 
-impl<'a, F> StructConstructorBuilder<'a, F>
+impl<'a, F> ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
 {
+    pub fn new_constructor(self) -> BindResult<ConstructorFieldBuilder<'a, F>> {
+        Ok(ConstructorFieldBuilder{ builder: self, fields: Vec::new() })
+    }
+
     pub fn build(self) -> BindResult<Handle<Struct<F>>> {
         let handle = Handle::new(Struct {
             visibility: self.visibility,
@@ -273,5 +296,42 @@ where
             )))?;
 
         Ok(handle)
+    }
+}
+
+impl<'a, F> ConstructorFieldBuilder<'a, F> where F: StructFieldType {
+    pub fn add(mut self, name: &FieldName, value: ConstructorValue) -> BindResult<Self> {
+
+        // check that we haven't already defined this field
+        if self.fields.iter().any(|f| f.name == *name) {
+            return Err(BindingError::StructConstructorDuplicateField {
+                struct_name: self.builder.declaration.name.clone(), field_name: name.to_string()
+            });
+        }
+
+        // check that the field exists in the struct definition
+        if !self.builder.fields.iter().any(|f| f.name == *name) {
+
+        }
+
+        match self.builder.fields.iter().find(|f| f.name == *name) {
+            Some(x) => {
+                x.field_type.validate(&value)?;
+            }
+            None => {
+                return Err(BindingError::StructConstructorUnknownField {
+                    struct_name: self.builder.declaration.name.clone(), field_name: name.to_string()
+                });
+            }
+        }
+
+        self.fields.push(InitializedValue { name: name.clone(), value: value.clone() });
+
+        Ok(self)
+    }
+
+    pub fn end_constructor(mut self) -> BindResult<ConstructorBuilder<'a, F>> {
+        self.builder.constructors.push(Constructor{ values: self.fields });
+        Ok(self.builder)
     }
 }

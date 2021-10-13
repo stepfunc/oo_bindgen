@@ -31,6 +31,16 @@ impl StructFieldType for ReturnStructFieldType {
     }
 }
 
+impl ConstructorValidator for ReturnStructFieldType {
+    fn validate(&self, value: &ConstructorValue) -> BindResult<()> {
+        match self {
+            ReturnStructFieldType::Basic(x) => x.validate()
+            ReturnStructFieldType::ClassRef(_) => {},
+            ReturnStructFieldType::Struct(x) => {},
+        }
+    }
+}
+
 impl From<BasicType> for ReturnStructFieldType {
     fn from(x: BasicType) -> Self {
         ReturnStructFieldType::Basic(x)

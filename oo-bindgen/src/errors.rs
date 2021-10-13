@@ -66,7 +66,10 @@ pub enum BindingError {
     StructConstructorUnknownField { struct_name: String, field_name: String },
     #[error("Constructor field type '{}' doesn't match value '{:?}", field_type, value)]
     StructConstructorBadValueForType { field_type: String, value: ConstructorValue },
-
+    #[error("Constructor contains a default struct field but struct '{}' doesn't have a default constructor", struct_name)]
+    StructConstructorStructFieldWithoutDefaultConstructor { struct_name: String },
+    #[error("Struct '{}' already contains a constructor with the name '{}'", struct_name, constructor_name)]
+    StructConstructorDuplicateName { struct_name: String, constructor_name: String },
     #[error("Native struct '{}' was already defined", handle.name)]
     StructAlreadyDefined { handle: StructDeclarationHandle },
     #[error("Native struct '{}' is not part of this library", handle.name)]

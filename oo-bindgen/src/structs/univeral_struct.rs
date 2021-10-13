@@ -8,7 +8,6 @@ pub enum UniversalStructFieldType {
     Basic(BasicType),
     Struct(UniversalStructHandle),
 }
-
 impl TypeValidator for UniversalStructFieldType {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
@@ -28,6 +27,15 @@ pub type UniversalStructBuilder<'a> = StructFieldBuilder<'a, UniversalStructFiel
 impl StructFieldType for UniversalStructFieldType {
     fn create_struct_type(v: Handle<Struct<UniversalStructFieldType>>) -> StructType {
         StructType::UStruct(v)
+    }
+}
+
+impl ConstructorValidator for UniversalStructFieldType {
+    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
+        match self {
+            UniversalStructFieldType::Basic(x) => x.validate_constructor_default(value),
+            UniversalStructFieldType::Struct(x) => x.validate_constructor_default(value),
+        }
     }
 }
 

@@ -36,11 +36,11 @@ impl StructFieldType for CallbackStructFieldType {
 }
 
 impl ConstructorValidator for CallbackStructFieldType {
-    fn validate(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
         match self {
-            CallbackStructFieldType::Basic(x) => {},
-            CallbackStructFieldType::Iterator(x) => {},
-            CallbackStructFieldType::Struct(x) => {},
+            CallbackStructFieldType::Basic(x) => x.validate_constructor_default(value),
+            CallbackStructFieldType::Iterator(x) => x.validate_constructor_default(value),
+            CallbackStructFieldType::Struct(x) => x.validate_constructor_default(value),
         }
     }
 }

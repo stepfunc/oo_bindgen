@@ -55,7 +55,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::structs::common::Visibility;
+use oo_bindgen::structs::common::{Visibility, Constructor, ConstructorValue};
 use oo_bindgen::structs::common::{Struct, StructFieldType};
 use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
@@ -327,11 +327,120 @@ where
     // user should never try to initialize opaque structs, so don't suggest this is OK
     if handle.visibility != Visibility::Private {
         f.newline()?;
-        // TODO - write_struct_initializer(f, handle, lib)?;
+        for c in &handle.constructors {
+            write_struct_constructor(f, lib, c, &handle)?;
+            f.newline()?;
+        }
     }
 
     Ok(())
 }
+
+fn write_struct_constructor<T>(f: &mut dyn Printer, lib: &Library, constructor: &Constructor, handle: &Handle<Struct<T>>) -> FormattingResult<()>  where T: StructFieldType + CType + TypeExtractor {
+    doxygen(f, |f| {
+        f.writeln("@brief ")?;
+        docstring_print(
+            f,
+            &constructor.doc.brief,
+            lib,
+        )?;
+
+        if !constructor.values.is_empty() {
+            f.newline()?;
+            f.writeln("@note")?;
+            for value in &constructor.values {
+                f.writeln(&format!("{} is initialized to {}", value.name, value.value))?;
+            }
+            f.newline()?;
+        }
+
+
+        f.writeln("@returns ")?;
+        docstring_print(
+            f,
+            &format!("New instance of {{struct:{}}}", handle.name()).into(),
+            lib,
+        )?;
+
+        Ok(())
+    })?;
+
+    let params = handle
+        .fields()
+        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .map(|el| {
+            format!(
+                "{} {}",
+                el.field_type.to_c_type(&lib.c_ffi_prefix),
+                el.name.to_snake_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "static {} {}_{}_{}({})",
+        handle.to_c_type(&lib.c_ffi_prefix),
+        &lib.c_ffi_prefix,
+        handle.name().to_snake_case(),
+        constructor.name.value().to_snake_case(),
+        params
+    ))?;
+
+    blocked(f, |f| {
+        f.writeln(&format!("return ({})", handle.to_c_type(&lib.c_ffi_prefix)))?;
+        f.writeln("{")?;
+        for field in &handle.fields {
+            let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
+                  Some(x) => {
+                      match &x.value {
+                          ConstructorValue::Bool(x) => x.to_string(),
+                          ConstructorValue::Uint8(x) => x.to_string(),
+                          ConstructorValue::Sint8(x) => x.to_string(),
+                          ConstructorValue::Uint16(x) => x.to_string(),
+                          ConstructorValue::Sint16(x) => x.to_string(),
+                          ConstructorValue::Uint32(x) => x.to_string(),
+                          ConstructorValue::Sint32(x) => x.to_string(),
+                          ConstructorValue::Uint64(x) => x.to_string(),
+                          ConstructorValue::Sint64(x) => x.to_string(),
+                          ConstructorValue::Float(x) => x.to_string(),
+                          ConstructorValue::Double(x) => x.to_string(),
+                          ConstructorValue::Duration(t, x) => {
+                              "todo".to_string()
+                          }
+                          ConstructorValue::Enum(x) => {
+                              let enum_name = field.field_type.get_enum_type().unwrap().name.clone();
+                              format!(
+                                  "{}_{}_{}",
+                                  lib.c_ffi_prefix.to_shouty_snake_case(),
+                                  enum_name.to_shouty_snake_case(),
+                                  x.to_shouty_snake_case()
+                              )
+
+                          }
+                          ConstructorValue::String(x) => {
+                              "todo".to_string()
+                          }
+                          ConstructorValue::DefaultStruct => {
+                              "todo".to_string()
+                          }
+                      }
+                  },
+                  None => {
+                      field.name.to_snake_case()
+                  }
+            };
+            indented(f, |f| {
+                f.writeln(&format!(".{} = {},", field.name.to_snake_case(), value))
+            })?;
+        }
+        f.writeln("};")?;
+        Ok(())
+    })?;
+
+    Ok(())
+}
+
 
 /* TODO
 fn write_struct_initializer(

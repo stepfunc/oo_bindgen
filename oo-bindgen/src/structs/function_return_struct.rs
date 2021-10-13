@@ -32,11 +32,11 @@ impl StructFieldType for ReturnStructFieldType {
 }
 
 impl ConstructorValidator for ReturnStructFieldType {
-    fn validate(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
         match self {
-            ReturnStructFieldType::Basic(x) => x.validate()
-            ReturnStructFieldType::ClassRef(_) => {},
-            ReturnStructFieldType::Struct(x) => {},
+            ReturnStructFieldType::Basic(x) => x.validate_constructor_default(value),
+            ReturnStructFieldType::ClassRef(x) => x.validate_constructor_default(value),
+            ReturnStructFieldType::Struct(x) => x.validate_constructor_default(value),
         }
     }
 }

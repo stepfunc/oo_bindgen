@@ -60,7 +60,7 @@ static void check_struct(foo_structure_t* structure)
 
 static void test_struct_init()
 {
-    foo_structure_t test;// = foo_structure_init((foo_empty_interface_t) { NULL, NULL });
+    foo_structure_t test = foo_structure_init();
     assert(strcmp("Hello", test.string_value) == 0);
     test.string_value = ENGLISH_STRING_1;
     check_struct(&test);

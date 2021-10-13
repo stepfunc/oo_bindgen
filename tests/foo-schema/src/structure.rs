@@ -1,5 +1,49 @@
 use oo_bindgen::types::{BasicType, DurationType, STRING_TYPE};
 use oo_bindgen::*;
+use oo_bindgen::structs::common::{FieldName, ConstructorValue, ConstructorName, Struct};
+use oo_bindgen::structs::function_struct::{FunctionArgStructHandle, FunctionArgStructFieldType};
+use oo_bindgen::enum_type::EnumHandle;
+
+pub fn define_inner_structure(lib: &mut LibraryBuilder, structure_enum: EnumHandle) -> BindResult<FunctionArgStructHandle> {
+
+    let test_field = FieldName::new("test");
+    let first_enum_field = FieldName::new("first_enum_value");
+    let int1_field = FieldName::new("int1");
+    let bool2_field = FieldName::new("bool2");
+    let second_enum_field = FieldName::new("second_enum_value");
+
+    let inner_structure = lib.declare_struct("InnerStructure")?;
+    let inner_structure = lib
+        .define_fstruct(&inner_structure)?
+        .doc("Structure used within another structure")?
+        .add(test_field.clone(), BasicType::Uint16, "test uint16 field")?
+        // The following pattern used to crash in Java because of the way we handled boolean
+        .add(
+            first_enum_field.clone(),
+            structure_enum.clone(),
+            "first_enum_value",
+        )?
+        .add(int1_field.clone(), BasicType::Sint16, "int field")?
+        .add(bool2_field.clone(), BasicType::Bool, "boolean field")?
+        .add(
+            second_enum_field.clone(),
+            structure_enum.clone(),
+            "second enum value",
+        )?
+        .end_fields()?
+
+        // constructor definition
+        .new_constructor(ConstructorName::Normal("init".to_string()), "Initialize to default values".into())?
+        .add(&test_field, ConstructorValue::Uint16(41))?
+        .add(&first_enum_field, ConstructorValue::Enum("Var2".to_string()))?
+        .add(&int1_field, ConstructorValue::Sint16(1))?
+        .add(&bool2_field, ConstructorValue::Bool(false))?
+        .add(&second_enum_field, ConstructorValue::Enum("Var2".to_string()))?
+        .end_constructor()?
+        .build()?;
+
+    Ok(inner_structure)
+}
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let structure_enum = lib
@@ -10,26 +54,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Enum")?
         .build()?;
 
-    let inner_structure = lib.declare_struct("InnerStructure")?;
-    let inner_structure = lib
-        .define_fstruct(&inner_structure)?
-        .doc("Structure used within another structure")?
-        .add("test", BasicType::Uint16, "test")?
-        // The following pattern used to crash in Java because of the way we handled boolean
-        .add(
-            "first_enum_value",
-            structure_enum.clone(),
-            "first_enum_value",
-        )?
-        .add("int1", BasicType::Sint16, "int1")?
-        .add("bool2", BasicType::Bool, "bool2")?
-        .add(
-            "second_enum_value",
-            structure_enum.clone(),
-            "second_enum_value",
-        )?
-        .end_fields()?
-        .build()?;
+    let inner_structure = define_inner_structure(lib, structure_enum.clone())?;
+
 
     let structure = lib.declare_struct("Structure")?;
 

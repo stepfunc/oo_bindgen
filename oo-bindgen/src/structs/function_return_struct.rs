@@ -7,7 +7,7 @@ use crate::*;
 pub enum ReturnStructFieldType {
     Basic(BasicType),
     ClassRef(ClassDeclarationHandle),
-    Struct(ReturnStructHandle),
+    Struct(MaybeUniversal<ReturnStructFieldType>),
 }
 
 impl TypeValidator for ReturnStructFieldType {
@@ -15,7 +15,7 @@ impl TypeValidator for ReturnStructFieldType {
         match self {
             ReturnStructFieldType::Basic(x) => x.get_validated_type(),
             ReturnStructFieldType::ClassRef(x) => x.get_validated_type(),
-            ReturnStructFieldType::Struct(x) => StructType::RStruct(x.clone()).get_validated_type(),
+            ReturnStructFieldType::Struct(x) => x.to_struct_type().get_validated_type(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl StructFieldType for ReturnStructFieldType {
 }
 
 impl ConstructorValidator for ReturnStructFieldType {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
         match self {
             ReturnStructFieldType::Basic(x) => x.validate_constructor_default(value),
             ReturnStructFieldType::ClassRef(x) => x.validate_constructor_default(value),
@@ -55,6 +55,6 @@ impl From<ClassDeclarationHandle> for ReturnStructFieldType {
 
 impl From<ReturnStructHandle> for ReturnStructFieldType {
     fn from(x: ReturnStructHandle) -> Self {
-        ReturnStructFieldType::Struct(x)
+        ReturnStructFieldType::Struct(x.into())
     }
 }

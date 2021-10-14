@@ -9,7 +9,7 @@ use crate::types::{TypeValidator, ValidatedType};
 pub enum CallbackStructFieldType {
     Basic(BasicType),
     Iterator(IteratorHandle),
-    Struct(CallbackStructHandle),
+    Struct(MaybeUniversal<CallbackStructFieldType>),
 }
 
 impl TypeValidator for CallbackStructFieldType {
@@ -18,7 +18,7 @@ impl TypeValidator for CallbackStructFieldType {
             CallbackStructFieldType::Basic(x) => x.get_validated_type(),
             CallbackStructFieldType::Iterator(x) => x.get_validated_type(),
             CallbackStructFieldType::Struct(x) => {
-                StructType::CStruct(x.clone()).get_validated_type()
+                Some(ValidatedType::Struct(x.to_struct_type()))
             }
         }
     }
@@ -36,11 +36,14 @@ impl StructFieldType for CallbackStructFieldType {
 }
 
 impl ConstructorValidator for CallbackStructFieldType {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
         match self {
             CallbackStructFieldType::Basic(x) => x.validate_constructor_default(value),
             CallbackStructFieldType::Iterator(x) => x.validate_constructor_default(value),
-            CallbackStructFieldType::Struct(x) => x.validate_constructor_default(value),
+            CallbackStructFieldType::Struct(x) => match x {
+                MaybeUniversal::Specific(x) => x.validate_constructor_default(value),
+                MaybeUniversal::Universal(x) => x.validate_constructor_default(value),
+            }
         }
     }
 }
@@ -59,6 +62,6 @@ impl From<IteratorHandle> for CallbackStructFieldType {
 
 impl From<CallbackStructHandle> for CallbackStructFieldType {
     fn from(x: CallbackStructHandle) -> Self {
-        CallbackStructFieldType::Struct(x)
+        CallbackStructFieldType::Struct(x.into())
     }
 }

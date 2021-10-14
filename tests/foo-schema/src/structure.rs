@@ -1,5 +1,5 @@
 use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::structs::common::{ConstructorName, ConstructorValue, FieldName};
+use oo_bindgen::structs::common::{ConstructorName, ConstructorDefault, FieldName};
 use oo_bindgen::structs::function_struct::FunctionArgStructHandle;
 use oo_bindgen::types::{BasicType, DurationType, STRING_TYPE};
 use oo_bindgen::*;
@@ -39,16 +39,16 @@ pub fn define_inner_structure(
             ConstructorName::Normal("init".to_string()),
             "Initialize to default values".into(),
         )?
-        .add(&test_field, ConstructorValue::Uint16(41))?
+        .add(&test_field, ConstructorDefault::Uint16(41))?
         .add(
             &first_enum_field,
-            ConstructorValue::Enum("Var2".to_string()),
+            ConstructorDefault::Enum("Var2".to_string()),
         )?
-        .add(&int1_field, ConstructorValue::Sint16(1))?
-        .add(&bool2_field, ConstructorValue::Bool(false))?
+        .add(&int1_field, ConstructorDefault::Sint16(1))?
+        .add(&bool2_field, ConstructorDefault::Bool(false))?
         .add(
             &second_enum_field,
-            ConstructorValue::Enum("Var2".to_string()),
+            ConstructorDefault::Enum("Var2".to_string()),
         )?
         .end_constructor()?
         .build()?;
@@ -130,24 +130,24 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
         // construct all values with defaults
         .new_constructor(ConstructorName::Normal("init".to_string()), "Initialize {struct:Structure} to default values".into())?
-        .add(&enum_value, ConstructorValue::Enum("Var2".into()))?
-        .add(&boolean_value, ConstructorValue::Bool(true))?
-        .add(&boolean_value2, ConstructorValue::Bool(true))?
-        .add(&enum_value2, ConstructorValue::Enum("Var2".into()))?
-        .add(&uint8_value, ConstructorValue::Uint8(1))?
-        .add(&int8_value, ConstructorValue::Sint8(-1))?
-        .add(&uint16_value, ConstructorValue::Uint16(2))?
-        .add(&int16_value, ConstructorValue::Sint16(-2))?
-        .add(&uint32_value, ConstructorValue::Uint32(3))?
-        .add(&int32_value, ConstructorValue::Sint32(-3))?
-        .add(&uint64_value, ConstructorValue::Uint64(4))?
-        .add(&int64_value, ConstructorValue::Sint64(-4))?
-        .add(&float_value, ConstructorValue::Float(12.34))?
-        .add(&double_value, ConstructorValue::Double(-56.78))?
-        .add(&string_value, ConstructorValue::String("Hello".into()))?
-        .add(&structure_value, ConstructorValue::DefaultStruct)?
-        .add(&duration_millis, ConstructorValue::Duration(DurationType::Milliseconds, Duration::from_millis(4200)))?
-        .add(&duration_seconds, ConstructorValue::Duration(DurationType::Seconds, Duration::from_secs(76)))?
+        .add(&enum_value, ConstructorDefault::Enum("Var2".into()))?
+        .add(&boolean_value, ConstructorDefault::Bool(true))?
+        .add(&boolean_value2, ConstructorDefault::Bool(true))?
+        .add(&enum_value2, ConstructorDefault::Enum("Var2".into()))?
+        .add(&uint8_value, ConstructorDefault::Uint8(1))?
+        .add(&int8_value, ConstructorDefault::Sint8(-1))?
+        .add(&uint16_value, ConstructorDefault::Uint16(2))?
+        .add(&int16_value, ConstructorDefault::Sint16(-2))?
+        .add(&uint32_value, ConstructorDefault::Uint32(3))?
+        .add(&int32_value, ConstructorDefault::Sint32(-3))?
+        .add(&uint64_value, ConstructorDefault::Uint64(4))?
+        .add(&int64_value, ConstructorDefault::Sint64(-4))?
+        .add(&float_value, ConstructorDefault::Float(12.34))?
+        .add(&double_value, ConstructorDefault::Double(-56.78))?
+        .add(&string_value, ConstructorDefault::String("Hello".into()))?
+        .add(&structure_value, ConstructorDefault::DefaultStruct)?
+        .add(&duration_millis, ConstructorDefault::Duration(Duration::from_millis(4200)))?
+        .add(&duration_seconds, ConstructorDefault::Duration(Duration::from_secs(76)))?
         .end_constructor()?
 
         .build()?;

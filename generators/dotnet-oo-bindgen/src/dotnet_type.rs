@@ -12,7 +12,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::{Handle, MaybeUniversal};
 
 const INT_PTR_STRING: &str = "IntPtr";
 
@@ -287,6 +287,43 @@ impl DotnetType for IteratorHandle {
             self.iter_type.name.to_camel_case(),
             from
         ))
+    }
+}
+
+impl<T> DotnetType for MaybeUniversal<T> where T: StructFieldType {
+    fn as_dotnet_type(&self) -> String {
+        match self {
+            MaybeUniversal::Specific(x) => x.as_dotnet_type(),
+            MaybeUniversal::Universal(x) => x.as_dotnet_type(),
+        }
+    }
+
+    fn as_native_type(&self) -> String {
+        match self {
+            MaybeUniversal::Specific(x) => x.as_native_type(),
+            MaybeUniversal::Universal(x) => x.as_native_type(),
+        }
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        match self {
+            MaybeUniversal::Specific(x) => x.convert_to_native(from),
+            MaybeUniversal::Universal(x) => x.convert_to_native(from),
+        }
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        match self {
+            MaybeUniversal::Specific(x) => x.cleanup(from),
+            MaybeUniversal::Universal(x) => x.cleanup(from),
+        }
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        match self {
+            MaybeUniversal::Specific(x) => x.convert_from_native(from),
+            MaybeUniversal::Universal(x) => x.convert_from_native(from),
+        }
     }
 }
 

@@ -55,7 +55,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::structs::common::{Constructor, ConstructorValue, Visibility};
+use oo_bindgen::structs::common::{Constructor, Visibility, ValidatedConstructorDefault};
 use oo_bindgen::structs::common::{Struct, StructFieldType};
 use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
@@ -398,36 +398,33 @@ where
         for field in &handle.fields {
             let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
                 Some(x) => match &x.value {
-                    ConstructorValue::Bool(x) => x.to_string(),
-                    ConstructorValue::Uint8(x) => x.to_string(),
-                    ConstructorValue::Sint8(x) => x.to_string(),
-                    ConstructorValue::Uint16(x) => x.to_string(),
-                    ConstructorValue::Sint16(x) => x.to_string(),
-                    ConstructorValue::Uint32(x) => x.to_string(),
-                    ConstructorValue::Sint32(x) => x.to_string(),
-                    ConstructorValue::Uint64(x) => x.to_string(),
-                    ConstructorValue::Sint64(x) => x.to_string(),
-                    ConstructorValue::Float(x) => format!("{}f", x),
-                    ConstructorValue::Double(x) => x.to_string(),
-                    ConstructorValue::Duration(t, x) => t.get_value_string(*x),
-                    ConstructorValue::Enum(x) => {
-                        let enum_name = field.field_type.get_enum_type().unwrap().name.clone();
+                    ValidatedConstructorDefault::Bool(x) => x.to_string(),
+                    ValidatedConstructorDefault::Uint8(x) => x.to_string(),
+                    ValidatedConstructorDefault::Sint8(x) => x.to_string(),
+                    ValidatedConstructorDefault::Uint16(x) => x.to_string(),
+                    ValidatedConstructorDefault::Sint16(x) => x.to_string(),
+                    ValidatedConstructorDefault::Uint32(x) => x.to_string(),
+                    ValidatedConstructorDefault::Sint32(x) => x.to_string(),
+                    ValidatedConstructorDefault::Uint64(x) => x.to_string(),
+                    ValidatedConstructorDefault::Sint64(x) => x.to_string(),
+                    ValidatedConstructorDefault::Float(x) => format!("{}f", x),
+                    ValidatedConstructorDefault::Double(x) => x.to_string(),
+                    ValidatedConstructorDefault::Duration(t, x) => t.get_value_string(*x),
+                    ValidatedConstructorDefault::Enum(x, variant) => {
                         format!(
                             "{}_{}_{}",
                             lib.c_ffi_prefix.to_shouty_snake_case(),
-                            enum_name.to_shouty_snake_case(),
-                            x.to_shouty_snake_case()
+                            x.name.to_shouty_snake_case(),
+                            variant.to_shouty_snake_case()
                         )
                     }
-                    ConstructorValue::String(x) => format!("\"{}\"", x),
-                    ConstructorValue::DefaultStruct => {
-                        let struct_def = field.field_type.get_struct_type().unwrap();
-
+                    ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
+                    ValidatedConstructorDefault::DefaultStruct(handle, name) => {
                         format!(
                             "{}_{}_{}()",
                             &lib.c_ffi_prefix,
-                            struct_def.name().to_snake_case(),
-                            constructor.name.value().to_snake_case(),
+                            handle.name().to_snake_case(),
+                            name.value().to_snake_case(),
                         )
                     },
                 },

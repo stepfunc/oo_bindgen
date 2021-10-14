@@ -5,7 +5,7 @@ use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{StructType, Symbol};
+use oo_bindgen::{StructType, Symbol, MaybeUniversal};
 
 use heck::SnakeCase;
 use oo_bindgen::collection::CollectionHandle;
@@ -167,6 +167,12 @@ impl CType for BasicType {
             Self::Duration(_) => "uint64_t".to_string(),
             Self::Enum(handle) => handle.to_c_type(prefix),
         }
+    }
+}
+
+impl<T> CType for MaybeUniversal<T> where T: StructFieldType {
+    fn to_c_type(&self, prefix: &str) -> String {
+        self.to_struct_type().to_c_type(prefix)
     }
 }
 

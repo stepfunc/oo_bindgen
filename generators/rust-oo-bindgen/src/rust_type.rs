@@ -13,6 +13,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::*;
+use oo_bindgen::MaybeUniversal;
 
 pub(crate) trait LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool;
@@ -101,6 +102,22 @@ impl LifetimeInfo for CollectionHandle {
 
     fn c_requires_lifetime(&self) -> bool {
         false
+    }
+}
+
+impl<T> LifetimeInfo for MaybeUniversal<T> where T: StructFieldType {
+    fn rust_requires_lifetime(&self) -> bool {
+        match self {
+            MaybeUniversal::Specific(x) => x.rust_requires_lifetime(),
+            MaybeUniversal::Universal(x) => x.rust_requires_lifetime(),
+        }
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        match self {
+            MaybeUniversal::Specific(x) => x.c_requires_lifetime(),
+            MaybeUniversal::Universal(x) => x.c_requires_lifetime(),
+        }
     }
 }
 
@@ -217,6 +234,36 @@ impl RustType for CollectionHandle {
 
     fn conversion(&self) -> Option<TypeConverter> {
         None
+    }
+}
+
+impl<T> RustType for MaybeUniversal<T> where T: StructFieldType {
+    fn as_rust_type(&self) -> String {
+        match self {
+            MaybeUniversal::Specific(x) => x.as_rust_type(),
+            MaybeUniversal::Universal(x) => x.as_rust_type(),
+        }
+    }
+
+    fn as_c_type(&self) -> String {
+        match self {
+            MaybeUniversal::Specific(x) => x.as_c_type(),
+            MaybeUniversal::Universal(x) => x.as_c_type(),
+        }
+    }
+
+    fn is_copyable(&self) -> bool {
+        match self {
+            MaybeUniversal::Specific(x) => x.is_copyable(),
+            MaybeUniversal::Universal(x) => x.is_copyable(),
+        }
+    }
+
+    fn conversion(&self) -> Option<TypeConverter> {
+        match self {
+            MaybeUniversal::Specific(x) => x.conversion(),
+            MaybeUniversal::Universal(x) => x.conversion(),
+        }
     }
 }
 

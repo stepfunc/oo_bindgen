@@ -37,10 +37,13 @@ impl Collection {
 
         let mut iter = create_func.parameters.iter();
         let has_reserve = if let Some(param) = iter.next() {
-            if param.arg_type != FArgument::Basic(BasicType::Uint32) {
-                return Err(BindingError::CollectionCreateFuncInvalidSignature {
-                    handle: create_func.clone(),
-                });
+            match &param.arg_type {
+                FArgument::Basic(BasicType::Uint32) => {},
+                _ => {
+                    return Err(BindingError::CollectionCreateFuncInvalidSignature {
+                        handle: create_func.clone(),
+                    });
+                }
             }
 
             if iter.next().is_some() {

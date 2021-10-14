@@ -13,7 +13,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::{Handle, MaybeUniversal};
 
 const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
@@ -663,6 +663,57 @@ where
         NULL_DEFAULT_VALUE
     }
 }
+
+// TODO this is duplicated with Handle<Struct<T>>
+impl<T> JniType for MaybeUniversal<T>
+    where
+        T: StructFieldType,
+{
+    fn as_raw_jni_type(&self) -> &str {
+        JNI_SYS_JOBJECT
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        jni_object_sig(lib_path, self.name())
+    }
+
+    fn as_rust_type(&self, ffi_name: &str) -> String {
+        format!("{}::ffi::{}", ffi_name, self.name().to_camel_case())
+    }
+
+    fn convert_jvalue(&self) -> &str {
+        OBJECT_UNWRAP
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+        _lib_name: &str,
+        _prefix: &str,
+    ) -> FormattingResult<()> {
+        StructConverter::new(self.declaration()).convert_to_rust(f, from, to)
+    }
+
+    fn conversion(&self, _lib_name: &str, _prefix: &str) -> Option<Box<dyn TypeConverter>> {
+        Some(Box::new(StructConverter::new(self.declaration())))
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        true
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        perform_null_check(f, param_name)?;
+        f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name().to_snake_case(), param_name, param_name))
+    }
+
+    fn default_value(&self) -> &str {
+        NULL_DEFAULT_VALUE
+    }
+}
+
 
 impl JniType for FunctionArgStructFieldType {
     fn as_raw_jni_type(&self) -> &str {

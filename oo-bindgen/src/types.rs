@@ -6,7 +6,7 @@ use crate::doc::DocString;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::structs::callback_struct::CallbackStructFieldType;
-use crate::structs::common::{ConstructorValidator, ConstructorValue, StructDeclarationHandle};
+use crate::structs::common::{ConstructorValidator, ConstructorDefault, StructDeclarationHandle, ValidatedConstructorDefault};
 use crate::structs::function_return_struct::ReturnStructFieldType;
 use crate::structs::function_struct::FunctionArgStructFieldType;
 use crate::structs::univeral_struct::UniversalStructFieldType;
@@ -97,89 +97,88 @@ pub enum BasicType {
 }
 
 impl ConstructorValidator for BasicType {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
         match self {
             BasicType::Bool => match value {
-                ConstructorValue::Bool(_) => Ok(()),
+                ConstructorDefault::Bool(x) => Ok(ValidatedConstructorDefault::Bool(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "bool".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Uint8 => match value {
-                ConstructorValue::Uint8(_) => Ok(()),
+                ConstructorDefault::Uint8(x) => Ok(ValidatedConstructorDefault::Uint8(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "uint8".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint8 => match value {
-                ConstructorValue::Sint8(_) => Ok(()),
+                ConstructorDefault::Sint8(x) => Ok(ValidatedConstructorDefault::Sint8(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "sint8".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Uint16 => match value {
-                ConstructorValue::Uint16(_) => Ok(()),
+                ConstructorDefault::Uint16(x) => Ok(ValidatedConstructorDefault::Uint16(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "uint16".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint16 => match value {
-                ConstructorValue::Sint16(_) => Ok(()),
+                ConstructorDefault::Sint16(x) => Ok(ValidatedConstructorDefault::Sint16(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "sint16".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Uint32 => match value {
-                ConstructorValue::Uint32(_) => Ok(()),
+                ConstructorDefault::Uint32(x) => Ok(ValidatedConstructorDefault::Uint32(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "uint32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint32 => match value {
-                ConstructorValue::Sint32(_) => Ok(()),
+                ConstructorDefault::Sint32(x) => Ok(ValidatedConstructorDefault::Sint32(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "sint32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Uint64 => match value {
-                ConstructorValue::Uint64(_) => Ok(()),
+                ConstructorDefault::Uint64(x) => Ok(ValidatedConstructorDefault::Uint64(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "uint64".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint64 => match value {
-                ConstructorValue::Sint64(_) => Ok(()),
+                ConstructorDefault::Sint64(x) => Ok(ValidatedConstructorDefault::Sint64(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "sint64".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Float32 => match value {
-                ConstructorValue::Float(_) => Ok(()),
+                ConstructorDefault::Float(x) => Ok(ValidatedConstructorDefault::Float(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "float32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Double64 => match value {
-                ConstructorValue::Double(_) => Ok(()),
+                ConstructorDefault::Double(x) => Ok(ValidatedConstructorDefault::Double(*x)),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "double".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Duration(dt) => match value {
-                ConstructorValue::Duration(x, _) => {
-                    if dt != x {}
-                    Ok(())
+                ConstructorDefault::Duration(x) => {
+                    Ok(ValidatedConstructorDefault::Duration(*dt, *x))
                 }
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "Duration".to_string(),
@@ -187,9 +186,9 @@ impl ConstructorValidator for BasicType {
                 }),
             },
             BasicType::Enum(handle) => match value {
-                ConstructorValue::Enum(value) => {
+                ConstructorDefault::Enum(value) => {
                     handle.validate_contains_variant_name(value)?;
-                    Ok(())
+                    Ok(ValidatedConstructorDefault::Enum(handle.clone(), value.clone()))
                 }
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "Enum".to_string(),
@@ -224,8 +223,6 @@ impl BasicType {
 pub trait TypeExtractor {
     fn get_basic_type(&self) -> Option<&BasicType>;
 
-    fn get_struct_type(&self) -> Option<StructType>;
-
     fn get_duration_type(&self) -> Option<DurationType> {
         match self.get_basic_type() {
             Some(BasicType::Duration(x)) => Some(*x),
@@ -248,26 +245,12 @@ impl TypeExtractor for FunctionArgStructFieldType {
             _ => None,
         }
     }
-
-    fn get_struct_type(&self) -> Option<StructType> {
-        match self {
-            Self::Struct(x) => Some(x.clone().into()),
-            _ => None,
-        }
-    }
 }
 
 impl TypeExtractor for ReturnStructFieldType {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    fn get_struct_type(&self) -> Option<StructType> {
-        match self {
-            Self::Struct(x) => Some(x.clone().into()),
             _ => None,
         }
     }
@@ -280,26 +263,12 @@ impl TypeExtractor for CallbackStructFieldType {
             _ => None,
         }
     }
-    fn get_struct_type(&self) -> Option<StructType> {
-        match self {
-            Self::Struct(x) => Some(x.clone().into()),
-            _ => None,
-        }
-    }
-
 }
 
 impl TypeExtractor for UniversalStructFieldType {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    fn get_struct_type(&self) -> Option<StructType> {
-        match self {
-            Self::Struct(x) => Some(x.clone().into()),
             _ => None,
         }
     }

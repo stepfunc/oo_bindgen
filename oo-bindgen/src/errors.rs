@@ -3,7 +3,7 @@ use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::FunctionHandle;
 use crate::interface::InterfaceHandle;
-use crate::structs::common::{ConstructorValue, FieldName, StructDeclarationHandle};
+use crate::structs::common::{ConstructorDefault, FieldName, StructDeclarationHandle};
 use thiserror::Error;
 
 pub type BindResult<T> = Result<T, BindingError>;
@@ -85,7 +85,7 @@ pub enum BindingError {
     )]
     StructConstructorBadValueForType {
         field_type: String,
-        value: ConstructorValue,
+        value: ConstructorDefault,
     },
     #[error("Constructor contains a default struct field but struct '{}' doesn't have a default constructor", struct_name)]
     StructConstructorStructFieldWithoutDefaultConstructor { struct_name: String },

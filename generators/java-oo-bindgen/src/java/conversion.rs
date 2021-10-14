@@ -13,7 +13,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::{Handle, MaybeUniversal};
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -128,6 +128,22 @@ where
 
     fn as_java_object(&self) -> String {
         self.name().to_camel_case()
+    }
+}
+
+impl<T> JavaType for MaybeUniversal<T> where T: StructFieldType {
+    fn as_java_primitive(&self) -> String {
+        match self {
+            MaybeUniversal::Specific(x) => x.as_java_primitive(),
+            MaybeUniversal::Universal(x) => x.as_java_primitive(),
+        }
+    }
+
+    fn as_java_object(&self) -> String {
+        match self {
+            MaybeUniversal::Specific(x) => x.as_java_object(),
+            MaybeUniversal::Universal(x) => x.as_java_object(),
+        }
     }
 }
 

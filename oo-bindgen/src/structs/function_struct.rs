@@ -10,7 +10,7 @@ pub enum FunctionArgStructFieldType {
     String(StringType),
     Interface(InterfaceHandle),
     Collection(CollectionHandle),
-    Struct(FunctionArgStructHandle),
+    Struct(MaybeUniversal<FunctionArgStructFieldType>),
 }
 
 impl TypeValidator for FunctionArgStructFieldType {
@@ -20,9 +20,7 @@ impl TypeValidator for FunctionArgStructFieldType {
             FunctionArgStructFieldType::String(x) => x.get_validated_type(),
             FunctionArgStructFieldType::Interface(x) => x.get_validated_type(),
             FunctionArgStructFieldType::Collection(x) => x.get_validated_type(),
-            FunctionArgStructFieldType::Struct(x) => {
-                StructType::FStruct(x.clone()).get_validated_type()
-            }
+            FunctionArgStructFieldType::Struct(x) => x.get_validated_type(),
         }
     }
 }
@@ -39,7 +37,7 @@ impl StructFieldType for FunctionArgStructFieldType {
 }
 
 impl ConstructorValidator for FunctionArgStructFieldType {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
         match self {
             FunctionArgStructFieldType::Basic(x) => x.validate_constructor_default(value),
             FunctionArgStructFieldType::String(x) => x.validate_constructor_default(value),
@@ -64,7 +62,7 @@ impl From<StringType> for FunctionArgStructFieldType {
 
 impl From<FunctionArgStructHandle> for FunctionArgStructFieldType {
     fn from(x: FunctionArgStructHandle) -> Self {
-        FunctionArgStructFieldType::Struct(x)
+        FunctionArgStructFieldType::Struct(x.into())
     }
 }
 

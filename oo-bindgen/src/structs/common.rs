@@ -7,6 +7,7 @@ use crate::types::{DurationType, StringType, TypeValidator};
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
 use std::fmt::Formatter;
+use crate::enum_type::EnumHandle;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {
@@ -41,9 +42,31 @@ impl From<&str> for FieldName {
     }
 }
 
-/// Values used to define constructors
+/// Value used to define constructor default
 #[derive(Debug, Clone)]
-pub enum ConstructorValue {
+pub enum ConstructorDefault {
+    Bool(bool),
+    Uint8(u8),
+    Sint8(i8),
+    Uint16(u16),
+    Sint16(i16),
+    Uint32(u32),
+    Sint32(i32),
+    Uint64(u64),
+    Sint64(i64),
+    Float(f32),
+    Double(f64),
+    Duration(std::time::Duration),
+    Enum(String),
+    String(String),
+    /// requires that the struct have a default constructor
+    DefaultStruct,
+}
+
+
+// Value used to define constructor default
+#[derive(Debug, Clone)]
+pub enum ValidatedConstructorDefault {
     Bool(bool),
     Uint8(u8),
     Sint8(i8),
@@ -56,60 +79,60 @@ pub enum ConstructorValue {
     Float(f32),
     Double(f64),
     Duration(DurationType, std::time::Duration),
-    Enum(String),
+    Enum(EnumHandle, String),
     String(String),
     /// requires that the struct have a default constructor
-    DefaultStruct,
+    DefaultStruct(StructType, ConstructorName),
 }
 
-impl std::fmt::Display for ConstructorValue {
+impl std::fmt::Display for ValidatedConstructorDefault {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ConstructorValue::Bool(x) => {
+            Self::Bool(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Uint8(x) => {
+            Self::Uint8(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Sint8(x) => {
+            Self::Sint8(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Uint16(x) => {
+            Self::Uint16(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Sint16(x) => {
+            Self::Sint16(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Uint32(x) => {
+            Self::Uint32(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Sint32(x) => {
+            Self::Sint32(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Uint64(x) => {
+            Self::Uint64(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Sint64(x) => {
+            Self::Sint64(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Float(x) => {
+            Self::Float(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Double(x) => {
+            Self::Double(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Duration(t, x) => match t {
+            Self::Duration(t, x) => match t {
                 DurationType::Milliseconds => write!(f, "{} milliseconds", x.as_millis()),
                 DurationType::Seconds => write!(f, "{} seconds", x.as_secs()),
             },
-            ConstructorValue::Enum(x) => {
-                write!(f, "{}", x)
+            Self::Enum(handle, x) => {
+                write!(f, "{}::{}", handle.name, x)
             }
-            ConstructorValue::String(x) => {
+            Self::String(x) => {
                 write!(f, "'{}'", x)
             }
-            ConstructorValue::DefaultStruct => {
-                write!(f, "default constructed value")
+            Self::DefaultStruct(x, _) => {
+                write!(f, "default constructed value for {}", x.name())
             }
         }
     }
@@ -138,47 +161,48 @@ impl StructDeclaration {
 
 pub type StructDeclarationHandle = Handle<StructDeclaration>;
 
-pub fn bad_constructor_value(field_type: String, value: &ConstructorValue) -> BindResult<()> {
-    return Err(BindingError::StructConstructorBadValueForType {
-        field_type: field_type.clone(),
-        value: value.clone(),
-    });
-}
-
 pub trait ConstructorValidator {
+
+    fn bad_constructor_value(field_type: String, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+        return Err(BindingError::StructConstructorBadValueForType {
+            field_type: field_type.clone(),
+            value: value.clone(),
+        });
+    }
+
     /// Check that the value is valid for the type
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()>;
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault>;
 }
 
 impl ConstructorValidator for IteratorHandle {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
-        bad_constructor_value("IteratorHandle".to_string(), value)
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+        Self::bad_constructor_value("IteratorHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for ClassDeclarationHandle {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
-        bad_constructor_value("ClassHandle".to_string(), value)
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+        Self::bad_constructor_value("ClassHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for InterfaceHandle {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
-        bad_constructor_value("InterfaceHandle".to_string(), value)
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+        Self::bad_constructor_value("InterfaceHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for CollectionHandle {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
-        bad_constructor_value("CollectionHandle".to_string(), value)
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+        Self::bad_constructor_value("CollectionHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for StringType {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
         match value {
-            ConstructorValue::String(_) => Ok(()),
-            _ => bad_constructor_value("String".to_string(), value),
+            ConstructorDefault::String(x) => Ok(ValidatedConstructorDefault::String(x.clone())),
+            _ => Self::bad_constructor_value("String".to_string(), value),
         }
     }
 }
@@ -211,21 +235,24 @@ where
     pub doc: Doc,
 }
 
-impl<F> ConstructorValidator for Struct<F>
+impl<F> ConstructorValidator for Handle<Struct<F>>
 where
     F: StructFieldType,
 {
-    fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
         match value {
-            ConstructorValue::DefaultStruct => {
-                if self.has_default_constructor() {
-                    Ok(())
-                } else {
-                    Err(
-                        BindingError::StructConstructorStructFieldWithoutDefaultConstructor {
-                            struct_name: self.name().to_string(),
-                        },
-                    )
+            ConstructorDefault::DefaultStruct => {
+                match self.get_default_constructor_name() {
+                    Some(name) => {
+                        Ok(ValidatedConstructorDefault::DefaultStruct(F::create_struct_type(self.clone()), name.clone()))
+                    }
+                    None => {
+                        Err(
+                            BindingError::StructConstructorStructFieldWithoutDefaultConstructor {
+                                struct_name: self.name().to_string(),
+                            }
+                        )
+                    }
                 }
             }
             _ => Err(BindingError::StructConstructorBadValueForType {
@@ -362,7 +389,7 @@ where
 #[derive(Debug, Clone)]
 pub struct InitializedValue {
     pub name: FieldName,
-    pub value: ConstructorValue,
+    pub value: ValidatedConstructorDefault,
 }
 
 #[derive(Debug, Clone)]
@@ -464,7 +491,7 @@ impl<'a, F> ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn add(mut self, name: &FieldName, value: ConstructorValue) -> BindResult<Self> {
+    pub fn add(mut self, name: &FieldName, value: ConstructorDefault) -> BindResult<Self> {
         // check that we haven't already defined this field
         if self.fields.iter().any(|f| f.name == *name) {
             return Err(BindingError::StructConstructorDuplicateField {
@@ -476,9 +503,9 @@ where
         // check that the field exists in the struct definition
         if !self.builder.fields.iter().any(|f| f.name == *name) {}
 
-        match self.builder.fields.iter().find(|f| f.name == *name) {
+        let value = match self.builder.fields.iter().find(|f| f.name == *name) {
             Some(x) => {
-                x.field_type.validate_constructor_default(&value)?;
+                x.field_type.validate_constructor_default(&value)?
             }
             None => {
                 return Err(BindingError::StructConstructorUnknownField {
@@ -486,11 +513,11 @@ where
                     field_name: name.to_string(),
                 });
             }
-        }
+        };
 
         self.fields.push(InitializedValue {
             name: name.clone(),
-            value: value.clone(),
+            value
         });
 
         Ok(self)

@@ -7,7 +7,7 @@ use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
-use crate::structs::common::{StructDeclaration, StructDeclarationHandle, ConstructorName};
+use crate::structs::common::{StructDeclaration, StructDeclarationHandle, ConstructorName, StructFieldType, Struct, ConstructorValidator, ConstructorDefault, ValidatedConstructorDefault};
 use crate::structs::function_struct::{FunctionArgStructBuilder, FunctionArgStructHandle};
 use crate::*;
 use crate::{BindingError, Version};
@@ -313,6 +313,59 @@ impl From<CallbackStructHandle> for StructType {
 impl From<UniversalStructHandle> for StructType {
     fn from(x: UniversalStructHandle) -> Self {
         StructType::UStruct(x)
+    }
+}
+
+/// Structs can always be the Universal type instead of any specific type
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum MaybeUniversal<T> where T: StructFieldType {
+    Specific(Handle<Struct<T>>),
+    Universal(UniversalStructHandle),
+}
+
+impl<T> MaybeUniversal<T> where T: StructFieldType {
+    pub fn name(&self) -> &str {
+        match self {
+            MaybeUniversal::Specific(x) => x.name(),
+            MaybeUniversal::Universal(x) => x.name(),
+        }
+    }
+
+    pub fn declaration(&self) -> StructDeclarationHandle {
+        match self {
+            MaybeUniversal::Specific(x) => x.declaration.clone(),
+            MaybeUniversal::Universal(x) => x.declaration.clone(),
+        }
+    }
+}
+
+impl<T> ConstructorValidator for MaybeUniversal<T> where T: StructFieldType {
+    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+        match self {
+            MaybeUniversal::Specific(x) => x.validate_constructor_default(value),
+            MaybeUniversal::Universal(x) => x.validate_constructor_default(value),
+        }
+    }
+}
+
+impl<T> From<Handle<Struct<T>>> for MaybeUniversal<T> where T: StructFieldType {
+    fn from(x: Handle<Struct<T>>) -> Self {
+        MaybeUniversal::Specific(x)
+    }
+}
+
+impl<T> MaybeUniversal<T> where T: StructFieldType {
+    pub fn to_struct_type(&self) -> StructType {
+        match self {
+            MaybeUniversal::Specific(x) => T::create_struct_type(x.clone()),
+            MaybeUniversal::Universal(x) => StructType::UStruct(x.clone()),
+        }
+    }
+}
+
+impl<T> TypeValidator for MaybeUniversal<T> where T: StructFieldType {
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::Struct(self.to_struct_type()))
     }
 }
 

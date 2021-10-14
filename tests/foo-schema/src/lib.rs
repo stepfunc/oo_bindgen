@@ -14,6 +14,7 @@ mod iterator;
 mod opaque_struct;
 mod strings;
 mod structure;
+mod universal_struct;
 
 pub fn build_lib() -> Result<Library, BindingError> {
     let lib_info = LibraryInfo {
@@ -60,6 +61,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     opaque_struct::define(&mut builder)?;
     strings::define(&mut builder)?;
     collection::define(&mut builder)?;
+    universal_struct::define(&mut builder)?;
 
     builder.build()
 }

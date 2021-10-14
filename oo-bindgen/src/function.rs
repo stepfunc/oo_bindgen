@@ -4,6 +4,8 @@ use crate::return_type::ReturnType;
 use crate::structs::function_return_struct::ReturnStructHandle;
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
+use crate::structs::function_struct::FunctionArgStructFieldType;
+use crate::structs::univeral_struct::UniversalStructHandle;
 
 /// types that can be returns from native functions
 #[derive(Debug, Clone, PartialEq)]
@@ -11,7 +13,7 @@ pub enum FReturnValue {
     Basic(BasicType),
     String(StringType),
     ClassRef(ClassDeclarationHandle),
-    Struct(ReturnStructHandle),
+    Struct(MaybeUniversal<FReturnValue>),
     StructRef(StructDeclarationHandle),
 }
 
@@ -57,15 +59,21 @@ impl From<EnumHandle> for FReturnValue {
     }
 }
 
+impl From<UniversalStructHandle> for FReturnValue {
+    fn from(x: UniversalStructHandle) -> Self {
+        Self::Struct()
+    }
+}
+
 pub type FReturnType = ReturnType<FReturnValue>;
 
 /// Types that can be used as native function arguments
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum FArgument {
     Basic(BasicType),
     String(StringType),
     Collection(CollectionHandle),
-    Struct(FunctionArgStructHandle),
+    Struct(MaybeUniversal<FunctionArgStructFieldType>),
     StructRef(StructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
@@ -77,11 +85,17 @@ impl TypeValidator for FArgument {
             FArgument::Basic(x) => x.get_validated_type(),
             FArgument::String(_) => None,
             FArgument::Collection(x) => x.get_validated_type(),
-            FArgument::Struct(x) => StructType::FStruct(x.clone()).get_validated_type(),
+            FArgument::Struct(x) => x.get_validated_type(),
             FArgument::StructRef(x) => x.get_validated_type(),
             FArgument::ClassRef(x) => x.get_validated_type(),
             FArgument::Interface(x) => x.get_validated_type(),
         }
+    }
+}
+
+impl From<UniversalStructHandle> for FArgument {
+    fn from(x: UniversalStructHandle) -> Self {
+        Self::Struct(MaybeUniversal::Universal(x))
     }
 }
 

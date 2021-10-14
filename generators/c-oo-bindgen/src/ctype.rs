@@ -59,7 +59,7 @@ impl CType for CArgument {
         match self {
             CArgument::Basic(x) => x.to_c_type(prefix),
             CArgument::String(x) => x.to_c_type(prefix),
-            CArgument::Iterator(x) => pointer(x).to_c_type(prefix),
+            CArgument::Iterator(x) => x.to_c_type(prefix),
             CArgument::Struct(x) => x.to_c_type(prefix),
         }
     }

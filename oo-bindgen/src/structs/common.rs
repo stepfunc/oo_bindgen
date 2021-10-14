@@ -1,13 +1,12 @@
+use crate::class::ClassDeclarationHandle;
+use crate::collection::CollectionHandle;
 use crate::doc::Doc;
-use crate::types::{TypeValidator, StringType, DurationType};
+use crate::interface::InterfaceHandle;
+use crate::iterator::IteratorHandle;
+use crate::types::{DurationType, StringType, TypeValidator};
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
 use std::fmt::Formatter;
-use crate::iterator::IteratorHandle;
-use crate::class::ClassDeclarationHandle;
-use crate::interface::InterfaceHandle;
-use crate::collection::CollectionHandle;
-use crate::enum_type::EnumHandle;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {
@@ -99,12 +98,10 @@ impl std::fmt::Display for ConstructorValue {
             ConstructorValue::Double(x) => {
                 write!(f, "{}", x)
             }
-            ConstructorValue::Duration(t, x) => {
-                match t {
-                    DurationType::Milliseconds => write!(f, "{} milliseconds", x.as_millis()),
-                    DurationType::Seconds => write!(f, "{} seconds", x.as_secs())
-                }
-            }
+            ConstructorValue::Duration(t, x) => match t {
+                DurationType::Milliseconds => write!(f, "{} milliseconds", x.as_millis()),
+                DurationType::Seconds => write!(f, "{} seconds", x.as_secs()),
+            },
             ConstructorValue::Enum(x) => {
                 write!(f, "{}", x)
             }
@@ -112,7 +109,7 @@ impl std::fmt::Display for ConstructorValue {
                 write!(f, "'{}'", x)
             }
             ConstructorValue::DefaultStruct => {
-                write!(f, "default value")
+                write!(f, "default constructed value")
             }
         }
     }
@@ -142,7 +139,10 @@ impl StructDeclaration {
 pub type StructDeclarationHandle = Handle<StructDeclaration>;
 
 pub fn bad_constructor_value(field_type: String, value: &ConstructorValue) -> BindResult<()> {
-    return Err(BindingError::StructConstructorBadValueForType { field_type: field_type.clone(), value: value.clone() })
+    return Err(BindingError::StructConstructorBadValueForType {
+        field_type: field_type.clone(),
+        value: value.clone(),
+    });
 }
 
 pub trait ConstructorValidator {
@@ -178,7 +178,7 @@ impl ConstructorValidator for StringType {
     fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
         match value {
             ConstructorValue::String(_) => Ok(()),
-            _ => bad_constructor_value("String".to_string(), value)
+            _ => bad_constructor_value("String".to_string(), value),
         }
     }
 }
@@ -211,21 +211,27 @@ where
     pub doc: Doc,
 }
 
-impl<F> ConstructorValidator for Struct<F> where F: StructFieldType {
-
+impl<F> ConstructorValidator for Struct<F>
+where
+    F: StructFieldType,
+{
     fn validate_constructor_default(&self, value: &ConstructorValue) -> BindResult<()> {
         match value {
             ConstructorValue::DefaultStruct => {
                 if self.has_default_constructor() {
                     Ok(())
-                }
-                else {
-                    Err(BindingError::StructConstructorStructFieldWithoutDefaultConstructor { struct_name: self.name().to_string() })
+                } else {
+                    Err(
+                        BindingError::StructConstructorStructFieldWithoutDefaultConstructor {
+                            struct_name: self.name().to_string(),
+                        },
+                    )
                 }
             }
-            _ => {
-                Err(BindingError::StructConstructorBadValueForType { field_type: "Struct".to_string(), value: value.clone() })
-            }
+            _ => Err(BindingError::StructConstructorBadValueForType {
+                field_type: "Struct".to_string(),
+                value: value.clone(),
+            }),
         }
     }
 }
@@ -256,7 +262,10 @@ where
 
     pub fn get_default_constructor_name(&self) -> Option<&ConstructorName> {
         // do any of the constructors initialize all of the fields
-        self.constructors.iter().find(|c| c.values.len() == self.fields.len()).map(|x| &x.name)
+        self.constructors
+            .iter()
+            .find(|c| c.values.len() == self.fields.len())
+            .map(|x| &x.name)
     }
 }
 
@@ -375,8 +384,6 @@ impl ConstructorName {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
 pub struct Constructor {
     pub name: ConstructorName,
@@ -385,8 +392,8 @@ pub struct Constructor {
 }
 
 pub struct ConstructorBuilder<'a, F>
-    where
-        F: StructFieldType,
+where
+    F: StructFieldType,
 {
     name: ConstructorName,
     builder: MethodBuilder<'a, F>,
@@ -410,13 +417,29 @@ impl<'a, F> MethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn new_constructor(self, name: ConstructorName, doc: Doc) -> BindResult<ConstructorBuilder<'a, F>> {
+    pub fn new_constructor(
+        self,
+        name: ConstructorName,
+        doc: Doc,
+    ) -> BindResult<ConstructorBuilder<'a, F>> {
         // check that we don't have any other constructors with this name
-        if self.constructors.iter().any(|c| c.name.value() == name.value()) {
-            return Err(BindingError::StructConstructorDuplicateName { struct_name: self.declaration.name.clone(), constructor_name: name.value().to_string() });
+        if self
+            .constructors
+            .iter()
+            .any(|c| c.name.value() == name.value())
+        {
+            return Err(BindingError::StructConstructorDuplicateName {
+                struct_name: self.declaration.name.clone(),
+                constructor_name: name.value().to_string(),
+            });
         }
 
-        Ok(ConstructorBuilder { name: name.clone(), builder: self, fields: Vec::new(), doc })
+        Ok(ConstructorBuilder {
+            name: name.clone(),
+            builder: self,
+            fields: Vec::new(),
+            doc,
+        })
     }
 
     pub fn build(self) -> BindResult<Handle<Struct<F>>> {
@@ -437,20 +460,21 @@ where
     }
 }
 
-impl<'a, F> ConstructorBuilder<'a, F> where F: StructFieldType {
+impl<'a, F> ConstructorBuilder<'a, F>
+where
+    F: StructFieldType,
+{
     pub fn add(mut self, name: &FieldName, value: ConstructorValue) -> BindResult<Self> {
-
         // check that we haven't already defined this field
         if self.fields.iter().any(|f| f.name == *name) {
             return Err(BindingError::StructConstructorDuplicateField {
-                struct_name: self.builder.declaration.name.clone(), field_name: name.to_string()
+                struct_name: self.builder.declaration.name.clone(),
+                field_name: name.to_string(),
             });
         }
 
         // check that the field exists in the struct definition
-        if !self.builder.fields.iter().any(|f| f.name == *name) {
-
-        }
+        if !self.builder.fields.iter().any(|f| f.name == *name) {}
 
         match self.builder.fields.iter().find(|f| f.name == *name) {
             Some(x) => {
@@ -458,18 +482,26 @@ impl<'a, F> ConstructorBuilder<'a, F> where F: StructFieldType {
             }
             None => {
                 return Err(BindingError::StructConstructorUnknownField {
-                    struct_name: self.builder.declaration.name.clone(), field_name: name.to_string()
+                    struct_name: self.builder.declaration.name.clone(),
+                    field_name: name.to_string(),
                 });
             }
         }
 
-        self.fields.push(InitializedValue { name: name.clone(), value: value.clone() });
+        self.fields.push(InitializedValue {
+            name: name.clone(),
+            value: value.clone(),
+        });
 
         Ok(self)
     }
 
     pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {
-        self.builder.constructors.push(Constructor{ name: self.name, values: self.fields, doc: self.doc });
+        self.builder.constructors.push(Constructor {
+            name: self.name,
+            values: self.fields,
+            doc: self.doc,
+        });
         Ok(self.builder)
     }
 }

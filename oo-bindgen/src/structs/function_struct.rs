@@ -34,7 +34,7 @@ pub type FunctionArgStructBuilder<'a> = StructFieldBuilder<'a, FunctionArgStruct
 
 impl StructFieldType for FunctionArgStructFieldType {
     fn create_struct_type(v: Handle<Struct<FunctionArgStructFieldType>>) -> StructType {
-        StructType::FStruct(v)
+        v.into()
     }
 }
 

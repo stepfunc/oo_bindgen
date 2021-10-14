@@ -55,7 +55,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::structs::common::{Visibility, Constructor, ConstructorValue};
+use oo_bindgen::structs::common::{Constructor, ConstructorValue, Visibility};
 use oo_bindgen::structs::common::{Struct, StructFieldType};
 use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
@@ -336,14 +336,18 @@ where
     Ok(())
 }
 
-fn write_struct_constructor<T>(f: &mut dyn Printer, lib: &Library, constructor: &Constructor, handle: &Handle<Struct<T>>) -> FormattingResult<()>  where T: StructFieldType + CType + TypeExtractor {
+fn write_struct_constructor<T>(
+    f: &mut dyn Printer,
+    lib: &Library,
+    constructor: &Constructor,
+    handle: &Handle<Struct<T>>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + CType + TypeExtractor,
+{
     doxygen(f, |f| {
         f.writeln("@brief ")?;
-        docstring_print(
-            f,
-            &constructor.doc.brief,
-            lib,
-        )?;
+        docstring_print(f, &constructor.doc.brief, lib)?;
 
         if !constructor.values.is_empty() {
             f.newline()?;
@@ -353,7 +357,6 @@ fn write_struct_constructor<T>(f: &mut dyn Printer, lib: &Library, constructor: 
             }
             f.newline()?;
         }
-
 
         f.writeln("@returns ")?;
         docstring_print(
@@ -378,6 +381,8 @@ fn write_struct_constructor<T>(f: &mut dyn Printer, lib: &Library, constructor: 
         .collect::<Vec<String>>()
         .join(", ");
 
+
+
     f.writeln(&format!(
         "static {} {}_{}_{}({})",
         handle.to_c_type(&lib.c_ffi_prefix),
@@ -392,43 +397,41 @@ fn write_struct_constructor<T>(f: &mut dyn Printer, lib: &Library, constructor: 
         f.writeln("{")?;
         for field in &handle.fields {
             let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
-                  Some(x) => {
-                      match &x.value {
-                          ConstructorValue::Bool(x) => x.to_string(),
-                          ConstructorValue::Uint8(x) => x.to_string(),
-                          ConstructorValue::Sint8(x) => x.to_string(),
-                          ConstructorValue::Uint16(x) => x.to_string(),
-                          ConstructorValue::Sint16(x) => x.to_string(),
-                          ConstructorValue::Uint32(x) => x.to_string(),
-                          ConstructorValue::Sint32(x) => x.to_string(),
-                          ConstructorValue::Uint64(x) => x.to_string(),
-                          ConstructorValue::Sint64(x) => x.to_string(),
-                          ConstructorValue::Float(x) => x.to_string(),
-                          ConstructorValue::Double(x) => x.to_string(),
-                          ConstructorValue::Duration(t, x) => {
-                              "todo".to_string()
-                          }
-                          ConstructorValue::Enum(x) => {
-                              let enum_name = field.field_type.get_enum_type().unwrap().name.clone();
-                              format!(
-                                  "{}_{}_{}",
-                                  lib.c_ffi_prefix.to_shouty_snake_case(),
-                                  enum_name.to_shouty_snake_case(),
-                                  x.to_shouty_snake_case()
-                              )
+                Some(x) => match &x.value {
+                    ConstructorValue::Bool(x) => x.to_string(),
+                    ConstructorValue::Uint8(x) => x.to_string(),
+                    ConstructorValue::Sint8(x) => x.to_string(),
+                    ConstructorValue::Uint16(x) => x.to_string(),
+                    ConstructorValue::Sint16(x) => x.to_string(),
+                    ConstructorValue::Uint32(x) => x.to_string(),
+                    ConstructorValue::Sint32(x) => x.to_string(),
+                    ConstructorValue::Uint64(x) => x.to_string(),
+                    ConstructorValue::Sint64(x) => x.to_string(),
+                    ConstructorValue::Float(x) => format!("{}f", x),
+                    ConstructorValue::Double(x) => x.to_string(),
+                    ConstructorValue::Duration(t, x) => t.get_value_string(*x),
+                    ConstructorValue::Enum(x) => {
+                        let enum_name = field.field_type.get_enum_type().unwrap().name.clone();
+                        format!(
+                            "{}_{}_{}",
+                            lib.c_ffi_prefix.to_shouty_snake_case(),
+                            enum_name.to_shouty_snake_case(),
+                            x.to_shouty_snake_case()
+                        )
+                    }
+                    ConstructorValue::String(x) => format!("\"{}\"", x),
+                    ConstructorValue::DefaultStruct => {
+                        let struct_def = field.field_type.get_struct_type().unwrap();
 
-                          }
-                          ConstructorValue::String(x) => {
-                              "todo".to_string()
-                          }
-                          ConstructorValue::DefaultStruct => {
-                              "todo".to_string()
-                          }
-                      }
-                  },
-                  None => {
-                      field.name.to_snake_case()
-                  }
+                        format!(
+                            "{}_{}_{}()",
+                            &lib.c_ffi_prefix,
+                            struct_def.name().to_snake_case(),
+                            constructor.name.value().to_snake_case(),
+                        )
+                    },
+                },
+                None => field.name.to_snake_case(),
             };
             indented(f, |f| {
                 f.writeln(&format!(".{} = {},", field.name.to_snake_case(), value))
@@ -440,7 +443,6 @@ fn write_struct_constructor<T>(f: &mut dyn Printer, lib: &Library, constructor: 
 
     Ok(())
 }
-
 
 /* TODO
 fn write_struct_initializer(

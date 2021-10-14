@@ -7,7 +7,7 @@ use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
-use crate::structs::common::{StructDeclaration, StructDeclarationHandle};
+use crate::structs::common::{StructDeclaration, StructDeclarationHandle, ConstructorName};
 use crate::structs::function_struct::{FunctionArgStructBuilder, FunctionArgStructHandle};
 use crate::*;
 use crate::{BindingError, Version};
@@ -298,6 +298,24 @@ impl From<FunctionArgStructHandle> for StructType {
     }
 }
 
+impl From<ReturnStructHandle> for StructType {
+    fn from(x: ReturnStructHandle) -> Self {
+        StructType::RStruct(x)
+    }
+}
+
+impl From<CallbackStructHandle> for StructType {
+    fn from(x: CallbackStructHandle) -> Self {
+        StructType::CStruct(x)
+    }
+}
+
+impl From<UniversalStructHandle> for StructType {
+    fn from(x: UniversalStructHandle) -> Self {
+        StructType::UStruct(x)
+    }
+}
+
 impl StructType {
     pub fn name(&self) -> &str {
         match self {
@@ -323,6 +341,15 @@ impl StructType {
             StructType::CStruct(x) => x.has_field_named(name),
             StructType::RStruct(x) => x.has_field_named(name),
             StructType::UStruct(x) => x.has_field_named(name),
+        }
+    }
+
+    pub fn get_default_constructor_name(&self) -> Option<&ConstructorName> {
+        match self {
+            StructType::FStruct(x) => x.get_default_constructor_name(),
+            StructType::RStruct(x) => x.get_default_constructor_name(),
+            StructType::CStruct(x) => x.get_default_constructor_name(),
+            StructType::UStruct(x) => x.get_default_constructor_name(),
         }
     }
 }

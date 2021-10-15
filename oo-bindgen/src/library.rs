@@ -317,10 +317,37 @@ impl From<UniversalStructHandle> for StructType {
 }
 
 /// Structs can always be the Universal type instead of any specific type
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq)]
 pub enum MaybeUniversal<T> where T: StructFieldType {
     Specific(Handle<Struct<T>>),
     Universal(UniversalStructHandle),
+}
+
+impl<T> PartialEq for MaybeUniversal<T> where T: StructFieldType {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            MaybeUniversal::Specific(y) => {
+                match other {
+                    MaybeUniversal::Specific(x) => {
+                        y == x
+                    }
+                    MaybeUniversal::Universal(_) => {
+                        false
+                    }
+                }
+            }
+            MaybeUniversal::Universal(x) => {
+                match other {
+                    MaybeUniversal::Specific(_) => {
+                        false
+                    }
+                    MaybeUniversal::Universal(y) => {
+                        x == y
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl<T> MaybeUniversal<T> where T: StructFieldType {

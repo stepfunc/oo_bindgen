@@ -1,4 +1,4 @@
-/*
+
 pub struct IteratorWithLifeTime<'a> {
     phantom: std::marker::PhantomData<&'a usize>,
 }
@@ -8,4 +8,4 @@ pub unsafe fn next_value_with_lifetime(
 ) -> Option<&crate::ffi::IteratorItem> {
     None
 }
-*/
+

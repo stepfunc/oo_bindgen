@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
-use crate::structs::function_return_struct::ReturnStructHandle;
+use crate::structs::function_return_struct::{ReturnStructHandle, ReturnStructFieldType};
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 use crate::structs::function_struct::FunctionArgStructFieldType;
@@ -13,7 +13,7 @@ pub enum FReturnValue {
     Basic(BasicType),
     String(StringType),
     ClassRef(ClassDeclarationHandle),
-    Struct(MaybeUniversal<FReturnValue>),
+    Struct(MaybeUniversal<ReturnStructFieldType>),
     StructRef(StructDeclarationHandle),
 }
 
@@ -43,7 +43,7 @@ impl From<StringType> for FReturnValue {
 
 impl From<ReturnStructHandle> for FReturnValue {
     fn from(x: ReturnStructHandle) -> Self {
-        FReturnValue::Struct(x)
+        FReturnValue::Struct(x.into())
     }
 }
 
@@ -61,7 +61,7 @@ impl From<EnumHandle> for FReturnValue {
 
 impl From<UniversalStructHandle> for FReturnValue {
     fn from(x: UniversalStructHandle) -> Self {
-        Self::Struct()
+        Self::Struct(MaybeUniversal::Universal(x))
     }
 }
 

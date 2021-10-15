@@ -22,14 +22,18 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
     let outer_struct = lib
         .define_ustruct(&outer_struct)?
         .doc("Simple universal struct with an inner structure")?
+        .add("inner", inner_struct, "An inner structure")?
         .add(delay, DurationType::Seconds, "A duration value")?
         .end_fields()?
         .build()?;
 
-    let modify_fn = lib.define_function("modify_universal_struct")
+    let _modify_fn = lib.define_function("modify_universal_struct")
         .doc("modifies a universal structure and returns the modified value")?
-        .param("value", outer_struct, "value to return modified")?
+        .param("value", outer_struct.clone(), "value to return modified")?
         .returns(outer_struct, "Modified value")?
         .build()?;
 
+    // TODO - a static helper class for OO langs
+
+    Ok(())
 }

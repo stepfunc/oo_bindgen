@@ -105,7 +105,7 @@ impl LifetimeInfo for CollectionHandle {
     }
 }
 
-impl<T> LifetimeInfo for MaybeUniversal<T> where T: StructFieldType {
+impl<T> LifetimeInfo for MaybeUniversal<T> where T: StructFieldType + LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
             MaybeUniversal::Specific(x) => x.rust_requires_lifetime(),
@@ -123,14 +123,14 @@ impl<T> LifetimeInfo for MaybeUniversal<T> where T: StructFieldType {
 
 impl<T> LifetimeInfo for Struct<T>
 where
-    T: StructFieldType,
+    T: StructFieldType + LifetimeInfo
 {
     fn rust_requires_lifetime(&self) -> bool {
-        false
+        self.fields.iter().any(|f| f.field_type.rust_requires_lifetime())
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        false
+        self.fields.iter().any(|f| f.field_type.c_requires_lifetime())
     }
 }
 
@@ -237,7 +237,7 @@ impl RustType for CollectionHandle {
     }
 }
 
-impl<T> RustType for MaybeUniversal<T> where T: StructFieldType {
+impl<T> RustType for MaybeUniversal<T> where T: StructFieldType + LifetimeInfo {
     fn as_rust_type(&self) -> String {
         match self {
             MaybeUniversal::Specific(x) => x.as_rust_type(),
@@ -269,7 +269,7 @@ impl<T> RustType for MaybeUniversal<T> where T: StructFieldType {
 
 impl<T> RustType for Struct<T>
 where
-    T: StructFieldType,
+    T: StructFieldType + LifetimeInfo,
 {
     fn as_rust_type(&self) -> String {
         self.name().to_camel_case()

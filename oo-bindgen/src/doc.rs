@@ -39,7 +39,7 @@
 //! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
-use crate::structs::universal_struct::UniversalStructField;
+use crate::structs::UniversalStructField;
 use crate::types::Arg;
 use crate::{BindingError, Library};
 use lazy_static::lazy_static;

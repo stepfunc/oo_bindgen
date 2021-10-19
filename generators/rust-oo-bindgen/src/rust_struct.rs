@@ -1,5 +1,5 @@
 use crate::rust_type::RustType;
-use oo_bindgen::structs::common::{Struct, StructFieldType};
+use oo_bindgen::structs::{Struct, StructFieldType};
 use oo_bindgen::Handle;
 
 pub(crate) trait RustStruct {

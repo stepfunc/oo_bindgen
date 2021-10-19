@@ -1,4 +1,4 @@
-use crate::structs::function_return_struct::FunctionReturnStructHandle;
+use crate::structs::FunctionReturnStructHandle;
 use crate::*;
 
 #[derive(Debug)]

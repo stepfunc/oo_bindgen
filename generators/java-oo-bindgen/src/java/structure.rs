@@ -1,7 +1,7 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
-use oo_bindgen::structs::common::{Struct, StructFieldType, Visibility};
+use oo_bindgen::structs::{Struct, StructFieldType, Visibility};
 
 /* TODO
 fn constructor_visibility(struct_type: Visibility) -> &'static str {

@@ -1,6 +1,5 @@
 use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::structs::common::{ConstructorDefault, ConstructorName, FieldName};
-use oo_bindgen::structs::function_argument_struct::FunctionArgStructHandle;
+use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, STRING_TYPE};
 use oo_bindgen::*;
 use std::time::Duration;

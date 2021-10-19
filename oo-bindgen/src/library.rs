@@ -7,20 +7,10 @@ use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
-use crate::structs::common::{
-    ConstructorDefault, ConstructorName, ConstructorValidator, Struct, StructDeclaration,
-    StructDeclarationHandle, StructFieldType, ValidatedConstructorDefault,
-};
-use crate::structs::function_argument_struct::{FunctionArgStructBuilder, FunctionArgStructHandle};
+use crate::structs::*;
+use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
 use crate::{BindingError, Version};
-
-use crate::structs::callback_argument_struct::{CallbackStructBuilder, CallbackStructHandle};
-use crate::structs::function_return_struct::{
-    FunctionReturnStructBuilder, FunctionReturnStructHandle,
-};
-use crate::structs::universal_struct::{UniversalStructBuilder, UniversalStructHandle};
-use crate::types::{TypeValidator, ValidatedType};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 

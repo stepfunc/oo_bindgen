@@ -4,7 +4,7 @@ use super::conversion::*;
 use crate::*;
 
 use heck::{CamelCase, MixedCase, SnakeCase};
-use oo_bindgen::structs::common::{Struct, StructFieldType};
+use oo_bindgen::structs::{Struct, StructFieldType};
 
 pub(crate) fn generate_structs_cache(
     lib: &Library,

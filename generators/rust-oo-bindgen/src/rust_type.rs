@@ -7,11 +7,7 @@ use oo_bindgen::function::{FArgument, FReturnValue};
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::callback_argument_struct::CallbackArgStructField;
-use oo_bindgen::structs::common::*;
-use oo_bindgen::structs::function_argument_struct::FunctionArgStructField;
-use oo_bindgen::structs::function_return_struct::FunctionReturnStructField;
-use oo_bindgen::structs::universal_struct::UniversalStructField;
+use oo_bindgen::structs::*;
 use oo_bindgen::types::*;
 use oo_bindgen::UniversalOr;
 

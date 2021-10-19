@@ -1,6 +1,6 @@
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::structs::common::StructDeclarationHandle;
+use oo_bindgen::structs::StructDeclarationHandle;
 use oo_bindgen::types::{DurationType, StringType};
 
 trait TypeConversion {

@@ -55,8 +55,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::structs::common::{Constructor, ValidatedConstructorDefault, Visibility};
-use oo_bindgen::structs::common::{Struct, StructFieldType};
+use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
 

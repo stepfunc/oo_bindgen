@@ -5,13 +5,7 @@ use crate::collection::CollectionHandle;
 use crate::doc::DocString;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
-use crate::structs::callback_argument_struct::CallbackArgStructField;
-use crate::structs::common::{
-    ConstructorDefault, ConstructorValidator, StructDeclarationHandle, ValidatedConstructorDefault,
-};
-use crate::structs::function_argument_struct::FunctionArgStructField;
-use crate::structs::function_return_struct::FunctionReturnStructField;
-use crate::structs::universal_struct::UniversalStructField;
+use crate::structs::*;
 use crate::{BindResult, BindingError, StructType};
 use std::time::Duration;
 

@@ -1,5 +1,4 @@
-use oo_bindgen::structs::common::FieldName;
-use oo_bindgen::structs::universal_struct::UniversalStructHandle;
+use oo_bindgen::structs::{FieldName, UniversalStructHandle};
 use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::{BindResult, LibraryBuilder};
 

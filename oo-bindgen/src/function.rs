@@ -1,11 +1,10 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
-use crate::structs::function_argument_struct::FunctionArgStructField;
-use crate::structs::function_return_struct::{
-    FunctionReturnStructField, FunctionReturnStructHandle,
+use crate::structs::{
+    FunctionArgStructField, FunctionReturnStructField, FunctionReturnStructHandle,
+    UniversalStructHandle,
 };
-use crate::structs::universal_struct::UniversalStructHandle;
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 

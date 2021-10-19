@@ -1,6 +1,6 @@
 use crate::*;
 use heck::CamelCase;
-use oo_bindgen::structs::common::*;
+use oo_bindgen::structs::*;
 
 fn field_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {

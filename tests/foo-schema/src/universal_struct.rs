@@ -1,7 +1,7 @@
-use oo_bindgen::{BindResult, LibraryBuilder};
-use oo_bindgen::structs::univeral_struct::UniversalStructHandle;
 use oo_bindgen::structs::common::FieldName;
+use oo_bindgen::structs::univeral_struct::UniversalStructHandle;
 use oo_bindgen::types::{BasicType, DurationType};
+use oo_bindgen::{BindResult, LibraryBuilder};
 
 fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHandle> {
     let inner = lib.declare_struct("UniversalInnerStruct")?;
@@ -27,7 +27,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
         .end_fields()?
         .build()?;
 
-    let _modify_fn = lib.define_function("modify_universal_struct")
+    let _modify_fn = lib
+        .define_function("modify_universal_struct")
         .doc("modifies a universal structure and returns the modified value")?
         .param("value", outer_struct.clone(), "value to return modified")?
         .returns(outer_struct, "Modified value")?

@@ -1,13 +1,13 @@
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
+use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::types::{DurationType, StringType, TypeValidator};
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
 use std::collections::HashSet;
 use std::fmt::Formatter;
-use crate::enum_type::EnumHandle;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {
@@ -62,7 +62,6 @@ pub enum ConstructorDefault {
     /// requires that the struct have a default constructor
     DefaultStruct,
 }
-
 
 // Value used to define constructor default
 #[derive(Debug, Clone)]
@@ -162,8 +161,10 @@ impl StructDeclaration {
 pub type StructDeclarationHandle = Handle<StructDeclaration>;
 
 pub trait ConstructorValidator {
-
-    fn bad_constructor_value(field_type: String, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn bad_constructor_value(
+        field_type: String,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         return Err(BindingError::StructConstructorBadValueForType {
             field_type: field_type.clone(),
             value: value.clone(),
@@ -171,35 +172,53 @@ pub trait ConstructorValidator {
     }
 
     /// Check that the value is valid for the type
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault>;
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault>;
 }
 
 impl ConstructorValidator for IteratorHandle {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         Self::bad_constructor_value("IteratorHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for ClassDeclarationHandle {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         Self::bad_constructor_value("ClassHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for InterfaceHandle {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         Self::bad_constructor_value("InterfaceHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for CollectionHandle {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         Self::bad_constructor_value("CollectionHandle".to_string(), value)
     }
 }
 
 impl ConstructorValidator for StringType {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         match value {
             ConstructorDefault::String(x) => Ok(ValidatedConstructorDefault::String(x.clone())),
             _ => Self::bad_constructor_value("String".to_string(), value),
@@ -239,22 +258,22 @@ impl<F> ConstructorValidator for Handle<Struct<F>>
 where
     F: StructFieldType,
 {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         match value {
-            ConstructorDefault::DefaultStruct => {
-                match self.get_default_constructor_name() {
-                    Some(name) => {
-                        Ok(ValidatedConstructorDefault::DefaultStruct(F::create_struct_type(self.clone()), name.clone()))
-                    }
-                    None => {
-                        Err(
-                            BindingError::StructConstructorStructFieldWithoutDefaultConstructor {
-                                struct_name: self.name().to_string(),
-                            }
-                        )
-                    }
-                }
-            }
+            ConstructorDefault::DefaultStruct => match self.get_default_constructor_name() {
+                Some(name) => Ok(ValidatedConstructorDefault::DefaultStruct(
+                    F::create_struct_type(self.clone()),
+                    name.clone(),
+                )),
+                None => Err(
+                    BindingError::StructConstructorStructFieldWithoutDefaultConstructor {
+                        struct_name: self.name().to_string(),
+                    },
+                ),
+            },
             _ => Err(BindingError::StructConstructorBadValueForType {
                 field_type: "Struct".to_string(),
                 value: value.clone(),
@@ -504,9 +523,7 @@ where
         if !self.builder.fields.iter().any(|f| f.name == *name) {}
 
         let value = match self.builder.fields.iter().find(|f| f.name == *name) {
-            Some(x) => {
-                x.field_type.validate_constructor_default(&value)?
-            }
+            Some(x) => x.field_type.validate_constructor_default(&value)?,
             None => {
                 return Err(BindingError::StructConstructorUnknownField {
                     struct_name: self.builder.declaration.name.clone(),
@@ -517,7 +534,7 @@ where
 
         self.fields.push(InitializedValue {
             name: name.clone(),
-            value
+            value,
         });
 
         Ok(self)

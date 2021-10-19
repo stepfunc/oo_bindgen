@@ -1,5 +1,5 @@
 use crate::structs::common::*;
-use crate::types::{TypeValidator, ValidatedType, DurationType};
+use crate::types::{DurationType, TypeValidator, ValidatedType};
 use crate::*;
 
 /// Types that can be used in a universal struct, some of which might have a default value
@@ -31,7 +31,10 @@ impl StructFieldType for UniversalStructFieldType {
 }
 
 impl ConstructorValidator for UniversalStructFieldType {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         match self {
             UniversalStructFieldType::Basic(x) => x.validate_constructor_default(value),
             UniversalStructFieldType::Struct(x) => x.validate_constructor_default(value),
@@ -56,5 +59,3 @@ impl From<UniversalStructHandle> for UniversalStructFieldType {
         UniversalStructFieldType::Struct(x)
     }
 }
-
-

@@ -131,7 +131,10 @@ where
     }
 }
 
-impl<T> JavaType for MaybeUniversal<T> where T: StructFieldType {
+impl<T> JavaType for MaybeUniversal<T>
+where
+    T: StructFieldType,
+{
     fn as_java_primitive(&self) -> String {
         match self {
             MaybeUniversal::Specific(x) => x.as_java_primitive(),
@@ -175,6 +178,7 @@ impl JavaType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.as_java_primitive(),
             ReturnStructFieldType::ClassRef(x) => x.as_java_primitive(),
             ReturnStructFieldType::Struct(x) => x.as_java_primitive(),
+            ReturnStructFieldType::Iterator(x) => x.as_java_primitive(),
         }
     }
 
@@ -183,6 +187,7 @@ impl JavaType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.as_java_object(),
             ReturnStructFieldType::ClassRef(x) => x.as_java_object(),
             ReturnStructFieldType::Struct(x) => x.as_java_object(),
+            ReturnStructFieldType::Iterator(x) => x.as_java_object(),
         }
     }
 }

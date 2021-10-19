@@ -105,7 +105,10 @@ impl LifetimeInfo for CollectionHandle {
     }
 }
 
-impl<T> LifetimeInfo for MaybeUniversal<T> where T: StructFieldType + LifetimeInfo {
+impl<T> LifetimeInfo for MaybeUniversal<T>
+where
+    T: StructFieldType + LifetimeInfo,
+{
     fn rust_requires_lifetime(&self) -> bool {
         match self {
             MaybeUniversal::Specific(x) => x.rust_requires_lifetime(),
@@ -123,14 +126,18 @@ impl<T> LifetimeInfo for MaybeUniversal<T> where T: StructFieldType + LifetimeIn
 
 impl<T> LifetimeInfo for Struct<T>
 where
-    T: StructFieldType + LifetimeInfo
+    T: StructFieldType + LifetimeInfo,
 {
     fn rust_requires_lifetime(&self) -> bool {
-        self.fields.iter().any(|f| f.field_type.rust_requires_lifetime())
+        self.fields
+            .iter()
+            .any(|f| f.field_type.rust_requires_lifetime())
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        self.fields.iter().any(|f| f.field_type.c_requires_lifetime())
+        self.fields
+            .iter()
+            .any(|f| f.field_type.c_requires_lifetime())
     }
 }
 
@@ -237,7 +244,10 @@ impl RustType for CollectionHandle {
     }
 }
 
-impl<T> RustType for MaybeUniversal<T> where T: StructFieldType + LifetimeInfo {
+impl<T> RustType for MaybeUniversal<T>
+where
+    T: StructFieldType + LifetimeInfo,
+{
     fn as_rust_type(&self) -> String {
         match self {
             MaybeUniversal::Specific(x) => x.as_rust_type(),
@@ -526,33 +536,37 @@ impl RustType for FunctionArgStructFieldType {
 impl RustType for ReturnStructFieldType {
     fn as_rust_type(&self) -> String {
         match self {
-            ReturnStructFieldType::Basic(x) => x.as_rust_type(),
-            ReturnStructFieldType::ClassRef(x) => x.as_rust_type(),
-            ReturnStructFieldType::Struct(x) => x.as_rust_type(),
+            Self::Basic(x) => x.as_rust_type(),
+            Self::ClassRef(x) => x.as_rust_type(),
+            Self::Struct(x) => x.as_rust_type(),
+            Self::Iterator(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            ReturnStructFieldType::Basic(x) => x.as_c_type(),
-            ReturnStructFieldType::ClassRef(x) => x.as_c_type(),
-            ReturnStructFieldType::Struct(x) => x.as_c_type(),
+            Self::Basic(x) => x.as_c_type(),
+            Self::ClassRef(x) => x.as_c_type(),
+            Self::Struct(x) => x.as_c_type(),
+            Self::Iterator(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            ReturnStructFieldType::Basic(x) => x.is_copyable(),
-            ReturnStructFieldType::ClassRef(x) => x.is_copyable(),
-            ReturnStructFieldType::Struct(x) => x.is_copyable(),
+            Self::Basic(x) => x.is_copyable(),
+            Self::ClassRef(x) => x.is_copyable(),
+            Self::Struct(x) => x.is_copyable(),
+            Self::Iterator(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            ReturnStructFieldType::Basic(x) => x.conversion(),
-            ReturnStructFieldType::ClassRef(x) => x.conversion(),
-            ReturnStructFieldType::Struct(x) => x.conversion(),
+            Self::Basic(x) => x.conversion(),
+            Self::ClassRef(x) => x.conversion(),
+            Self::Struct(x) => x.conversion(),
+            Self::Iterator(x) => x.conversion(),
         }
     }
 }
@@ -826,17 +840,19 @@ impl LifetimeInfo for CallbackStructFieldType {
 impl LifetimeInfo for ReturnStructFieldType {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            ReturnStructFieldType::Basic(x) => x.rust_requires_lifetime(),
-            ReturnStructFieldType::ClassRef(x) => x.rust_requires_lifetime(),
-            ReturnStructFieldType::Struct(x) => x.rust_requires_lifetime(),
+            Self::Basic(x) => x.rust_requires_lifetime(),
+            Self::ClassRef(x) => x.rust_requires_lifetime(),
+            Self::Struct(x) => x.rust_requires_lifetime(),
+            Self::Iterator(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            ReturnStructFieldType::Basic(x) => x.c_requires_lifetime(),
-            ReturnStructFieldType::ClassRef(x) => x.c_requires_lifetime(),
-            ReturnStructFieldType::Struct(x) => x.c_requires_lifetime(),
+            Self::Basic(x) => x.c_requires_lifetime(),
+            Self::ClassRef(x) => x.c_requires_lifetime(),
+            Self::Struct(x) => x.c_requires_lifetime(),
+            Self::Iterator(x) => x.c_requires_lifetime(),
         }
     }
 }

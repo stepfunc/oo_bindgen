@@ -17,9 +17,7 @@ impl TypeValidator for CallbackStructFieldType {
         match self {
             CallbackStructFieldType::Basic(x) => x.get_validated_type(),
             CallbackStructFieldType::Iterator(x) => x.get_validated_type(),
-            CallbackStructFieldType::Struct(x) => {
-                Some(ValidatedType::Struct(x.to_struct_type()))
-            }
+            CallbackStructFieldType::Struct(x) => Some(ValidatedType::Struct(x.to_struct_type())),
         }
     }
 }
@@ -36,14 +34,17 @@ impl StructFieldType for CallbackStructFieldType {
 }
 
 impl ConstructorValidator for CallbackStructFieldType {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         match self {
             CallbackStructFieldType::Basic(x) => x.validate_constructor_default(value),
             CallbackStructFieldType::Iterator(x) => x.validate_constructor_default(value),
             CallbackStructFieldType::Struct(x) => match x {
                 MaybeUniversal::Specific(x) => x.validate_constructor_default(value),
                 MaybeUniversal::Universal(x) => x.validate_constructor_default(value),
-            }
+            },
         }
     }
 }

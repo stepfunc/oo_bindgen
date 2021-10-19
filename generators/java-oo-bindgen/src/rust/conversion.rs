@@ -666,8 +666,8 @@ where
 
 // TODO this is duplicated with Handle<Struct<T>>
 impl<T> JniType for MaybeUniversal<T>
-    where
-        T: StructFieldType,
+where
+    T: StructFieldType,
 {
     fn as_raw_jni_type(&self) -> &str {
         JNI_SYS_JOBJECT
@@ -713,7 +713,6 @@ impl<T> JniType for MaybeUniversal<T>
         NULL_DEFAULT_VALUE
     }
 }
-
 
 impl JniType for FunctionArgStructFieldType {
     fn as_raw_jni_type(&self) -> &str {
@@ -830,6 +829,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.as_raw_jni_type(),
             ReturnStructFieldType::ClassRef(x) => x.as_raw_jni_type(),
             ReturnStructFieldType::Struct(x) => x.as_raw_jni_type(),
+            ReturnStructFieldType::Iterator(x) => x.as_raw_jni_type(),
         }
     }
 
@@ -838,6 +838,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.as_jni_sig(lib_path),
             ReturnStructFieldType::ClassRef(x) => x.as_jni_sig(lib_path),
             ReturnStructFieldType::Struct(x) => x.as_jni_sig(lib_path),
+            ReturnStructFieldType::Iterator(x) => x.as_jni_sig(lib_path),
         }
     }
 
@@ -846,6 +847,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.as_rust_type(ffi_name),
             ReturnStructFieldType::ClassRef(x) => x.as_rust_type(ffi_name),
             ReturnStructFieldType::Struct(x) => x.as_rust_type(ffi_name),
+            ReturnStructFieldType::Iterator(x) => x.as_rust_type(ffi_name),
         }
     }
 
@@ -854,6 +856,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.convert_jvalue(),
             ReturnStructFieldType::ClassRef(x) => x.convert_jvalue(),
             ReturnStructFieldType::Struct(x) => x.convert_jvalue(),
+            ReturnStructFieldType::Iterator(x) => x.convert_jvalue(),
         }
     }
 
@@ -875,6 +878,9 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Struct(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
+            ReturnStructFieldType::Iterator(x) => {
+                x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
+            }
         }
     }
 
@@ -883,6 +889,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.conversion(lib_name, prefix),
             ReturnStructFieldType::ClassRef(x) => x.conversion(lib_name, prefix),
             ReturnStructFieldType::Struct(x) => x.conversion(lib_name, prefix),
+            ReturnStructFieldType::Iterator(x) => x.conversion(lib_name, prefix),
         }
     }
 
@@ -891,6 +898,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.requires_local_ref_cleanup(),
             ReturnStructFieldType::ClassRef(x) => x.requires_local_ref_cleanup(),
             ReturnStructFieldType::Struct(x) => x.requires_local_ref_cleanup(),
+            ReturnStructFieldType::Iterator(x) => x.requires_local_ref_cleanup(),
         }
     }
 
@@ -899,6 +907,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.check_null(f, param_name),
             ReturnStructFieldType::ClassRef(x) => x.check_null(f, param_name),
             ReturnStructFieldType::Struct(x) => x.check_null(f, param_name),
+            ReturnStructFieldType::Iterator(x) => x.check_null(f, param_name),
         }
     }
 
@@ -907,6 +916,7 @@ impl JniType for ReturnStructFieldType {
             ReturnStructFieldType::Basic(x) => x.default_value(),
             ReturnStructFieldType::ClassRef(x) => x.default_value(),
             ReturnStructFieldType::Struct(x) => x.default_value(),
+            ReturnStructFieldType::Iterator(x) => x.default_value(),
         }
     }
 }

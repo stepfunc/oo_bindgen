@@ -6,7 +6,9 @@ use crate::doc::DocString;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::structs::callback_struct::CallbackStructFieldType;
-use crate::structs::common::{ConstructorValidator, ConstructorDefault, StructDeclarationHandle, ValidatedConstructorDefault};
+use crate::structs::common::{
+    ConstructorDefault, ConstructorValidator, StructDeclarationHandle, ValidatedConstructorDefault,
+};
 use crate::structs::function_return_struct::ReturnStructFieldType;
 use crate::structs::function_struct::FunctionArgStructFieldType;
 use crate::structs::univeral_struct::UniversalStructFieldType;
@@ -97,7 +99,10 @@ pub enum BasicType {
 }
 
 impl ConstructorValidator for BasicType {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         match self {
             BasicType::Bool => match value {
                 ConstructorDefault::Bool(x) => Ok(ValidatedConstructorDefault::Bool(*x)),
@@ -188,7 +193,10 @@ impl ConstructorValidator for BasicType {
             BasicType::Enum(handle) => match value {
                 ConstructorDefault::Enum(value) => {
                     handle.validate_contains_variant_name(value)?;
-                    Ok(ValidatedConstructorDefault::Enum(handle.clone(), value.clone()))
+                    Ok(ValidatedConstructorDefault::Enum(
+                        handle.clone(),
+                        value.clone(),
+                    ))
                 }
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "Enum".to_string(),

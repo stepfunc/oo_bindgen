@@ -1,11 +1,11 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
-use crate::structs::function_return_struct::{ReturnStructHandle, ReturnStructFieldType};
-use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
-use crate::*;
+use crate::structs::function_return_struct::{ReturnStructFieldType, ReturnStructHandle};
 use crate::structs::function_struct::FunctionArgStructFieldType;
 use crate::structs::univeral_struct::UniversalStructHandle;
+use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
+use crate::*;
 
 /// types that can be returns from native functions
 #[derive(Debug, Clone, PartialEq)]

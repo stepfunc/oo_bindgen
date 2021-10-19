@@ -1,5 +1,5 @@
 use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::structs::common::{ConstructorName, ConstructorDefault, FieldName};
+use oo_bindgen::structs::common::{ConstructorDefault, ConstructorName, FieldName};
 use oo_bindgen::structs::function_struct::FunctionArgStructHandle;
 use oo_bindgen::types::{BasicType, DurationType, STRING_TYPE};
 use oo_bindgen::*;
@@ -127,9 +127,11 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         )?
         .doc("Test structure")?
         .end_fields()?
-
         // construct all values with defaults
-        .new_constructor(ConstructorName::Normal("init".to_string()), "Initialize {struct:Structure} to default values".into())?
+        .new_constructor(
+            ConstructorName::Normal("init".to_string()),
+            "Initialize {struct:Structure} to default values".into(),
+        )?
         .add(&enum_value, ConstructorDefault::Enum("Var2".into()))?
         .add(&boolean_value, ConstructorDefault::Bool(true))?
         .add(&boolean_value2, ConstructorDefault::Bool(true))?
@@ -146,10 +148,15 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add(&double_value, ConstructorDefault::Double(-56.78))?
         .add(&string_value, ConstructorDefault::String("Hello".into()))?
         .add(&structure_value, ConstructorDefault::DefaultStruct)?
-        .add(&duration_millis, ConstructorDefault::Duration(Duration::from_millis(4200)))?
-        .add(&duration_seconds, ConstructorDefault::Duration(Duration::from_secs(76)))?
+        .add(
+            &duration_millis,
+            ConstructorDefault::Duration(Duration::from_millis(4200)),
+        )?
+        .add(
+            &duration_seconds,
+            ConstructorDefault::Duration(Duration::from_secs(76)),
+        )?
         .end_constructor()?
-
         .build()?;
 
     Ok(())

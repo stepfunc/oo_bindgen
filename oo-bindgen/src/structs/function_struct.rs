@@ -37,7 +37,10 @@ impl StructFieldType for FunctionArgStructFieldType {
 }
 
 impl ConstructorValidator for FunctionArgStructFieldType {
-    fn validate_constructor_default(&self, value: &ConstructorDefault) -> BindResult<ValidatedConstructorDefault> {
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
         match self {
             FunctionArgStructFieldType::Basic(x) => x.validate_constructor_default(value),
             FunctionArgStructFieldType::String(x) => x.validate_constructor_default(value),

@@ -33,7 +33,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
     let iterator = define_iterator(lib)?;
 
     let interface = lib
-        .define_interface("values_receiver", "Callback interface for receiving values")
+        .define_interface("ValuesReceiver", "Callback interface for receiving values")
         .callback("on_characters", "callback to receive character values")?
         .param("values", iterator, "byte value for each character")?
         .returns_nothing()?

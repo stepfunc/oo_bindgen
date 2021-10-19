@@ -55,7 +55,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::platforms::*;
-use oo_bindgen::structs::common::{Constructor, Visibility, ValidatedConstructorDefault};
+use oo_bindgen::structs::common::{Constructor, ValidatedConstructorDefault, Visibility};
 use oo_bindgen::structs::common::{Struct, StructFieldType};
 use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
@@ -381,8 +381,6 @@ where
         .collect::<Vec<String>>()
         .join(", ");
 
-
-
     f.writeln(&format!(
         "static {} {}_{}_{}({})",
         handle.to_c_type(&lib.c_ffi_prefix),
@@ -426,7 +424,7 @@ where
                             handle.name().to_snake_case(),
                             name.value().to_snake_case(),
                         )
-                    },
+                    }
                 },
                 None => field.name.to_snake_case(),
             };

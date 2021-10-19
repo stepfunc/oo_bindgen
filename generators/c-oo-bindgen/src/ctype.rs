@@ -5,7 +5,7 @@ use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{StructType, Symbol, MaybeUniversal};
+use oo_bindgen::{MaybeUniversal, StructType, Symbol};
 
 use heck::SnakeCase;
 use oo_bindgen::collection::CollectionHandle;
@@ -170,7 +170,10 @@ impl CType for BasicType {
     }
 }
 
-impl<T> CType for MaybeUniversal<T> where T: StructFieldType {
+impl<T> CType for MaybeUniversal<T>
+where
+    T: StructFieldType,
+{
     fn to_c_type(&self, prefix: &str) -> String {
         self.to_struct_type().to_c_type(prefix)
     }
@@ -191,9 +194,10 @@ impl CType for FunctionArgStructFieldType {
 impl CType for ReturnStructFieldType {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            ReturnStructFieldType::Basic(x) => x.to_c_type(prefix),
-            ReturnStructFieldType::ClassRef(x) => pointer(x).to_c_type(prefix),
-            ReturnStructFieldType::Struct(x) => x.to_c_type(prefix),
+            Self::Basic(x) => x.to_c_type(prefix),
+            Self::ClassRef(x) => pointer(x).to_c_type(prefix),
+            Self::Struct(x) => x.to_c_type(prefix),
+            Self::Iterator(x) => x.to_c_type(prefix),
         }
     }
 }

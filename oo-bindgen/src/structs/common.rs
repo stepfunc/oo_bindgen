@@ -451,6 +451,15 @@ pub struct Constructor {
 }
 
 impl Constructor {
+    fn argument_names(&self) -> HashSet<FieldName> {
+        self.values.iter().map(|x| x.name.clone()).collect::<HashSet<FieldName>>()
+    }
+
+    pub fn has_same_arguments(&self, other: &Self) -> bool {
+        self.argument_names() == other.argument_names()
+
+    }
+
     pub fn full(name: String, doc: Doc) -> Self {
         Self {
             name: ConstructorName::Normal(name),
@@ -570,13 +579,25 @@ where
     }
 
     pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {
-        // make sure the constructor doesn't use the same parameters as another
-
-        self.builder.constructors.push(Constructor {
+        let constructor = Constructor {
             name: self.name,
             values: self.fields,
             doc: self.doc,
-        });
+        };
+
+        if let Some(x) = self.builder.constructors.iter().find(|other| constructor.has_same_arguments(other)) {
+            return Err(BindingError::StructDuplicateConstructorArgs {
+                struct_name: self.builder.declaration.name.clone(),
+                this_constructor: constructor.name.value().to_string(),
+                other_constructor: x.name.value().to_string(),
+            })
+        }
+
+        if self.builder.constructors.iter().any(|other| constructor.has_same_arguments(other)) {
+
+        }
+
+        self.builder.constructors.push(constructor);
         Ok(self.builder)
     }
 }

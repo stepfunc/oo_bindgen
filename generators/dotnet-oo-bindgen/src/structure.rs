@@ -1,6 +1,7 @@
 use crate::*;
-use heck::CamelCase;
+use heck::{CamelCase, MixedCase};
 use oo_bindgen::structs::*;
+use oo_bindgen::types::DurationType;
 
 fn field_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
@@ -9,17 +10,116 @@ fn field_visibility(struct_type: Visibility) -> &'static str {
     }
 }
 
-/* TODO
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
         Visibility::Private => "internal",
         Visibility::Public => "public",
     }
 }
-*/
+
+fn get_field_value<T>(field: &StructField<T>, constructor: &Constructor) -> String
+where
+    T: StructFieldType,
+{
+    match constructor.values.iter().find(|x| x.name == field.name) {
+        Some(x) => match &x.value {
+            ValidatedConstructorDefault::Bool(x) => x.to_string(),
+            ValidatedConstructorDefault::Uint8(x) => x.to_string(),
+            ValidatedConstructorDefault::Sint8(x) => x.to_string(),
+            ValidatedConstructorDefault::Uint16(x) => x.to_string(),
+            ValidatedConstructorDefault::Sint16(x) => x.to_string(),
+            ValidatedConstructorDefault::Uint32(x) => x.to_string(),
+            ValidatedConstructorDefault::Sint32(x) => x.to_string(),
+            ValidatedConstructorDefault::Uint64(x) => x.to_string(),
+            ValidatedConstructorDefault::Sint64(x) => x.to_string(),
+            ValidatedConstructorDefault::Float(x) => format!("{}F", x),
+            ValidatedConstructorDefault::Double(x) => x.to_string(),
+            ValidatedConstructorDefault::Duration(t, x) => match t {
+                DurationType::Milliseconds => {
+                    format!("TimeSpan.FromMilliseconds({})", t.get_value_string(*x))
+                }
+                DurationType::Seconds => {
+                    format!("TimeSpan.FromSeconds({})", t.get_value_string(*x))
+                }
+            },
+            ValidatedConstructorDefault::Enum(x, variant) => {
+                format!("{}.{}", x.name.to_camel_case(), variant.to_camel_case())
+            }
+            ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
+            ValidatedConstructorDefault::DefaultStruct(handle, _name) => {
+                format!("new {}()", handle.name().to_camel_case(),)
+            }
+        },
+        None => field.name.to_mixed_case(),
+    }
+}
+
+fn write_constructor<T>(
+    f: &mut dyn Printer,
+    lib: &Library,
+    handle: &Struct<T>,
+    constructor: &Constructor,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + DotnetType,
+{
+    documentation(f, |f| {
+        f.writeln("<summary>")?;
+        docstring_print(
+            f,
+            &format!("Initialize {{struct:{}}} to default values", handle.name()).into(),
+            lib,
+        )?;
+        f.write("</summary>")?;
+
+        for param in handle
+            .fields()
+            .filter(|field| !constructor.values.iter().any(|c| c.name == field.name))
+        {
+            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            docstring_print(f, &param.doc.brief, lib)?;
+            f.writeln("</param>")?;
+        }
+
+        Ok(())
+    })?;
+
+    let params = handle
+        .fields()
+        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .map(|sf| {
+            format!(
+                "{} {}",
+                sf.field_type.as_dotnet_type(),
+                sf.name.to_mixed_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "{} {}({})",
+        constructor_visibility(handle.visibility),
+        handle.name().to_camel_case(),
+        params
+    ))?;
+    blocked(f, |f| {
+        for field in &handle.fields {
+            indented(f, |f| {
+                f.writeln(&format!(
+                    "this.{} = {};",
+                    field.name.to_camel_case(),
+                    get_field_value(field, constructor)
+                ))
+            })?;
+        }
+        Ok(())
+    })?;
+    Ok(())
+}
 
 pub(crate) fn generate<T>(
-    f: &mut impl Printer,
+    f: &mut dyn Printer,
     handle: &Struct<T>,
     lib: &Library,
 ) -> FormattingResult<()>
@@ -65,77 +165,19 @@ where
                 ))?;
             }
 
-            f.newline()?;
-
-            /* TODO
-            // Write constructor
-            if !native_struct.all_fields_have_defaults() {
-                documentation(f, |f| {
-                    f.writeln("<summary>")?;
-                    docstring_print(
-                        f,
-                        &format!(
-                            "Initialize {{struct:{}}} to default values",
-                            native_struct.name()
-                        )
-                        .into(),
-                        lib,
-                    )?;
-                    f.write("</summary>")?;
-
-                    for param in native_struct
-                        .fields()
-                        .filter(|el| !el.field_type.has_default())
-                    {
-                        f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-                        docstring_print(f, &param.doc.brief, lib)?;
-                        f.write("</param>")?;
-                    }
-
-                    Ok(())
-                })?;
-
-                f.writeln(&format!(
-                    "{} {}(",
-                    constructor_visibility(native_struct.visibility()),
-                    struct_name
-                ))?;
-                f.write(
-                    &native_struct
-                        .fields()
-                        .filter(|el| !el.field_type.has_default())
-                        .map(|el| {
-                            format!(
-                                "{} {}",
-                                el.field_type.to_any_type().as_dotnet_type(),
-                                el.name.to_mixed_case()
-                            )
-                        })
-                        .collect::<Vec<String>>()
-                        .join(", "),
-                )?;
-                f.write(")")?;
-
-                blocked(f, |f| {
-                    for el in native_struct.fields() {
-                        if !el.field_type.has_default() {
-                            f.writeln(&format!(
-                                "this.{} = {};",
-                                el.name.to_camel_case(),
-                                el.name.to_mixed_case()
-                            ))?;
-                        }
-                    }
-                    Ok(())
-                })?;
-
+            for c in &handle.constructors {
                 f.newline()?;
-
-                // Internal parameterless constructor
-                f.writeln(&format!("internal {}() {{ }}", struct_name))?;
-                f.newline()?;
+                write_constructor(f, lib, handle, c)?;
             }
-            */
+
+            if !handle.has_default_constructor() {
+                // Internal parameterless constructor
+                f.newline()?;
+                f.writeln(&format!(
+                    "internal {}() {{ }}",
+                    handle.name().to_camel_case()
+                ))?;
+            }
 
             Ok(())
         })?;

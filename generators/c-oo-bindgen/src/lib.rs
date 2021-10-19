@@ -385,7 +385,7 @@ where
         handle.to_c_type(&lib.c_ffi_prefix),
         &lib.c_ffi_prefix,
         handle.name().to_snake_case(),
-        constructor.name.value().to_snake_case(),
+        constructor.name.to_snake_case(),
         params
     ))?;
 
@@ -416,12 +416,12 @@ where
                         )
                     }
                     ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
-                    ValidatedConstructorDefault::DefaultStruct(handle, name) => {
+                    ValidatedConstructorDefault::DefaultStruct(handle, _, name) => {
                         format!(
                             "{}_{}_{}()",
                             &lib.c_ffi_prefix,
                             handle.name().to_snake_case(),
-                            name.value().to_snake_case(),
+                            name.to_snake_case(),
                         )
                     }
                 },

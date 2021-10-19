@@ -35,7 +35,8 @@ pub fn define_inner_structure(
         .end_fields()?
         // constructor definition
         .new_constructor(
-            ConstructorName::Normal("init".to_string()),
+            "init",
+            ConstructorType::Normal,
             "Initialize to default values",
         )?
         .add(&test_field, ConstructorDefault::Uint16(41))?
@@ -128,7 +129,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .end_fields()?
         // construct all values with defaults
         .new_constructor(
-            ConstructorName::Normal("init".to_string()),
+            "init",
+            ConstructorType::Normal,
             "Initialize {struct:Structure} to default values",
         )?
         .add(&enum_value, ConstructorDefault::Enum("Var2".into()))?

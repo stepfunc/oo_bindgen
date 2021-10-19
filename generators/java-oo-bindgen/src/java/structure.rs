@@ -2,7 +2,8 @@ use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::structs::{
-    Constructor, Struct, StructField, StructFieldType, ValidatedConstructorDefault, Visibility,
+    Constructor, ConstructorType, Struct, StructField, StructFieldType,
+    ValidatedConstructorDefault, Visibility,
 };
 use oo_bindgen::types::DurationType;
 
@@ -117,7 +118,7 @@ where
                 )
             }
             ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
-            ValidatedConstructorDefault::DefaultStruct(handle, _name) => {
+            ValidatedConstructorDefault::DefaultStruct(handle, _, _) => {
                 format!("new {}()", handle.name().to_camel_case(),)
             }
         },
@@ -125,14 +126,14 @@ where
     }
 }
 
-fn write_constructor<T>(
+fn write_constructor_docs<T>(
     f: &mut dyn Printer,
     lib: &Library,
     handle: &Struct<T>,
     constructor: &Constructor,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + JavaType,
+    T: StructFieldType,
 {
     documentation(f, |f| {
         f.newline()?;
@@ -148,7 +149,19 @@ where
         }
 
         Ok(())
-    })?;
+    })
+}
+
+fn write_static_method_constructor<T>(
+    f: &mut dyn Printer,
+    lib: &Library,
+    handle: &Struct<T>,
+    constructor: &Constructor,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + JavaType,
+{
+    write_constructor_docs(f, lib, handle, constructor)?;
 
     let params = handle
         .fields()
@@ -163,9 +176,65 @@ where
         .collect::<Vec<String>>()
         .join(", ");
 
+    let invocation_args = handle
+        .fields()
+        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .map(|sf| sf.name.to_mixed_case())
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "public static {}({})",
+        constructor.name.to_camel_case(),
+        params
+    ))?;
+
+    blocked(f, |f| {
+        indented(f, |f| {
+            f.writeln(&format!(
+                "return new {}({});",
+                handle.name().to_camel_case(),
+                invocation_args
+            ))
+        })
+    })
+}
+
+fn write_constructor<T>(
+    f: &mut dyn Printer,
+    visibility: Visibility,
+    lib: &Library,
+    handle: &Struct<T>,
+    constructor: &Constructor,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + JavaType,
+{
+    if visibility == Visibility::Public && handle.visibility == Visibility::Public {
+        write_constructor_docs(f, lib, handle, constructor)?;
+    }
+
+    let params = handle
+        .fields()
+        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .map(|sf| {
+            format!(
+                "{} {}",
+                sf.field_type.as_java_primitive(),
+                sf.name.to_mixed_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    let visibility = match visibility {
+        Visibility::Public => constructor_visibility(handle.visibility),
+        Visibility::Private => constructor_visibility(Visibility::Private),
+    };
+
     f.writeln(&format!(
         "{} {}({})",
-        constructor_visibility(handle.visibility),
+        visibility,
         handle.name().to_camel_case(),
         params
     ))?;
@@ -226,20 +295,31 @@ where
 
         for c in &st.constructors {
             f.newline()?;
-            write_constructor(f, lib, st, c)?;
+            match &c.constructor_type {
+                ConstructorType::Normal => {
+                    write_constructor(f, Visibility::Public, lib, st, c)?;
+                }
+                ConstructorType::Static => {
+                    // write a private constructor that the static method will call
+                    write_constructor(f, Visibility::Private, lib, st, c)?;
+                    f.newline()?;
+                    write_static_method_constructor(f, lib, st, c)?;
+                }
+            }
         }
 
         // write a full constructor that initializes all values if none are present
         if st.constructors.is_empty() {
             let constructor = Constructor::full(
                 "init".into(),
+                ConstructorType::Normal,
                 format!(
                     "Initialize all values of {{struct:{}}}",
                     st.declaration().name
                 )
                 .into(),
             );
-            write_constructor(f, lib, st, &constructor)?;
+            write_constructor(f, Visibility::Public, lib, st, &constructor)?;
         }
 
         Ok(())

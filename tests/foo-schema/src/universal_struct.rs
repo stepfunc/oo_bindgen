@@ -1,4 +1,4 @@
-use oo_bindgen::structs::{ConstructorDefault, ConstructorName, FieldName, UniversalStructHandle};
+use oo_bindgen::structs::{ConstructorDefault, ConstructorType, FieldName, UniversalStructHandle};
 use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::{BindResult, LibraryBuilder};
 use std::time::Duration;
@@ -12,7 +12,8 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         .add(value_field.clone(), BasicType::Sint32, "integer value")?
         .end_fields()?
         .new_constructor(
-            ConstructorName::normal("init"),
+            "init",
+            ConstructorType::Normal,
             "initializes {struct:UniversalInnerStruct} to default values",
         )?
         .add(&value_field, ConstructorDefault::Sint32(-42))?
@@ -38,7 +39,8 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         )?
         .end_fields()?
         .new_constructor(
-            ConstructorName::Normal("init".to_string()),
+            "init",
+            ConstructorType::Normal,
             "Construct a {struct:UniversalOuterStruct} initialized to default values",
         )?
         .add(&inner_field, ConstructorDefault::DefaultStruct)?

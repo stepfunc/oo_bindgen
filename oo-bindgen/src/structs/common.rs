@@ -82,7 +82,7 @@ pub enum ValidatedConstructorDefault {
     Enum(EnumHandle, String),
     String(String),
     /// requires that the struct have a default constructor
-    DefaultStruct(StructType, ConstructorName),
+    DefaultStruct(StructType, ConstructorType, String),
 }
 
 impl std::fmt::Display for ValidatedConstructorDefault {
@@ -131,7 +131,7 @@ impl std::fmt::Display for ValidatedConstructorDefault {
             Self::String(x) => {
                 write!(f, "'{}'", x)
             }
-            Self::DefaultStruct(x, _) => {
+            Self::DefaultStruct(x, _, _) => {
                 write!(f, "default constructed value for {}", x.name())
             }
         }
@@ -264,10 +264,11 @@ where
         value: &ConstructorDefault,
     ) -> BindResult<ValidatedConstructorDefault> {
         match value {
-            ConstructorDefault::DefaultStruct => match self.get_default_constructor_name() {
-                Some(name) => Ok(ValidatedConstructorDefault::DefaultStruct(
+            ConstructorDefault::DefaultStruct => match self.get_default_constructor() {
+                Some(c) => Ok(ValidatedConstructorDefault::DefaultStruct(
                     F::create_struct_type(self.clone()),
-                    name.clone(),
+                    c.constructor_type,
+                    c.name.to_string(),
                 )),
                 None => Err(
                     BindingError::StructConstructorStructFieldWithoutDefaultConstructor {
@@ -308,15 +309,14 @@ where
     }
 
     pub fn has_default_constructor(&self) -> bool {
-        self.get_default_constructor_name().is_some()
+        self.get_default_constructor().is_some()
     }
 
-    pub fn get_default_constructor_name(&self) -> Option<&ConstructorName> {
+    pub fn get_default_constructor(&self) -> Option<&Constructor> {
         // do any of the constructors initialize all of the fields
         self.constructors
             .iter()
             .find(|c| c.values.len() == self.fields.len())
-            .map(|x| &x.name)
     }
 }
 
@@ -416,53 +416,40 @@ pub struct InitializedValue {
     pub value: ValidatedConstructorDefault,
 }
 
-#[derive(Debug, Clone)]
-pub enum ConstructorName {
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ConstructorType {
     /// Normal constructors map to actual language constructors
-    /// A name is still required as some languages (e.g. C or Go) don't support associated
-    /// constructors and require free-standing functions instead
-    Normal(String),
+    /// A name is still required as some languages (e.g. C) don't support
+    /// associated constructors and require free-standing functions instead
+    Normal,
     /// Static constructors are mapped to static methods in languages that support them (e.g. C++, Java, C#)
-    Static(String),
-}
-
-impl ConstructorName {
-    pub fn normal(name: &str) -> ConstructorName {
-        ConstructorName::Normal(name.to_string())
-    }
-
-    pub fn static_type(name: &str) -> ConstructorName {
-        ConstructorName::Static(name.to_string())
-    }
-
-    pub fn value(&self) -> &str {
-        match self {
-            ConstructorName::Normal(s) => s.as_str(),
-            ConstructorName::Static(s) => s.as_str(),
-        }
-    }
+    Static,
 }
 
 #[derive(Debug, Clone)]
 pub struct Constructor {
-    pub name: ConstructorName,
+    pub name: String,
+    pub constructor_type: ConstructorType,
     pub values: Vec<InitializedValue>,
     pub doc: Doc,
 }
 
 impl Constructor {
     fn argument_names(&self) -> HashSet<FieldName> {
-        self.values.iter().map(|x| x.name.clone()).collect::<HashSet<FieldName>>()
+        self.values
+            .iter()
+            .map(|x| x.name.clone())
+            .collect::<HashSet<FieldName>>()
     }
 
     pub fn has_same_arguments(&self, other: &Self) -> bool {
         self.argument_names() == other.argument_names()
-
     }
 
-    pub fn full(name: String, doc: Doc) -> Self {
+    pub fn full(name: String, constructor_type: ConstructorType, doc: Doc) -> Self {
         Self {
-            name: ConstructorName::Normal(name),
+            name,
+            constructor_type,
             values: Vec::new(),
             doc,
         }
@@ -473,7 +460,8 @@ pub struct ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    name: ConstructorName,
+    name: String,
+    constructor_type: ConstructorType,
     builder: MethodBuilder<'a, F>,
     fields: Vec<InitializedValue>,
     doc: Doc,
@@ -495,35 +483,29 @@ impl<'a, F> MethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn new_constructor<D: Into<Doc>>(
+    pub fn new_constructor<D: Into<Doc>, S: Into<String>>(
         self,
-        name: ConstructorName,
+        name: S,
+        constructor_type: ConstructorType,
         doc: D,
     ) -> BindResult<ConstructorBuilder<'a, F>> {
+        let name = name.into();
+
         // check that we don't have any other constructors with this name
-        if self
-            .constructors
-            .iter()
-            .any(|c| c.name.value() == name.value())
-        {
+        if self.constructors.iter().any(|c| c.name == name) {
             return Err(BindingError::StructConstructorDuplicateName {
                 struct_name: self.declaration.name.clone(),
-                constructor_name: name.value().to_string(),
+                constructor_name: name,
             });
         }
 
         Ok(ConstructorBuilder {
             name,
+            constructor_type,
             builder: self,
             fields: Vec::new(),
             doc: doc.into(),
         })
-    }
-
-    pub fn add_full_constructor<S: Into<String>>(self, name: S) -> BindResult<Self> {
-        let docs = format!("Fully initialize {{struct:{}}}", &self.declaration.name);
-        self.new_constructor(ConstructorName::Normal(name.into()), docs)?
-            .end_constructor()
     }
 
     pub fn build(self) -> BindResult<Handle<Struct<F>>> {
@@ -581,21 +563,30 @@ where
     pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {
         let constructor = Constructor {
             name: self.name,
+            constructor_type: self.constructor_type,
             values: self.fields,
             doc: self.doc,
         };
 
-        if let Some(x) = self.builder.constructors.iter().find(|other| constructor.has_same_arguments(other)) {
+        if let Some(x) = self
+            .builder
+            .constructors
+            .iter()
+            .find(|other| constructor.has_same_arguments(other))
+        {
             return Err(BindingError::StructDuplicateConstructorArgs {
                 struct_name: self.builder.declaration.name.clone(),
-                this_constructor: constructor.name.value().to_string(),
-                other_constructor: x.name.value().to_string(),
-            })
+                this_constructor: constructor.name,
+                other_constructor: x.name.clone(),
+            });
         }
 
-        if self.builder.constructors.iter().any(|other| constructor.has_same_arguments(other)) {
-
-        }
+        if self
+            .builder
+            .constructors
+            .iter()
+            .any(|other| constructor.has_same_arguments(other))
+        {}
 
         self.builder.constructors.push(constructor);
         Ok(self.builder)

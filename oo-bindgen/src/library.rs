@@ -433,12 +433,12 @@ impl StructType {
         }
     }
 
-    pub fn get_default_constructor_name(&self) -> Option<&ConstructorName> {
+    pub fn get_default_constructor(&self) -> Option<&Constructor> {
         match self {
-            StructType::FStruct(x) => x.get_default_constructor_name(),
-            StructType::RStruct(x) => x.get_default_constructor_name(),
-            StructType::CStruct(x) => x.get_default_constructor_name(),
-            StructType::UStruct(x) => x.get_default_constructor_name(),
+            StructType::FStruct(x) => x.get_default_constructor(),
+            StructType::RStruct(x) => x.get_default_constructor(),
+            StructType::CStruct(x) => x.get_default_constructor(),
+            StructType::UStruct(x) => x.get_default_constructor(),
         }
     }
 }

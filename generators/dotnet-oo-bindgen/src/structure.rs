@@ -46,7 +46,7 @@ where
                 format!("{}.{}", x.name.to_camel_case(), variant.to_camel_case())
             }
             ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
-            ValidatedConstructorDefault::DefaultStruct(handle, _name) => {
+            ValidatedConstructorDefault::DefaultStruct(handle, _, _) => {
                 format!("new {}()", handle.name().to_camel_case(),)
             }
         },

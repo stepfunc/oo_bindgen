@@ -423,6 +423,14 @@ pub enum ConstructorName {
 }
 
 impl ConstructorName {
+    pub fn normal(name: &str) -> ConstructorName {
+        ConstructorName::Normal(name.to_string())
+    }
+
+    pub fn static_type(name: &str) -> ConstructorName {
+        ConstructorName::Static(name.to_string())
+    }
+
     pub fn value(&self) -> &str {
         match self {
             ConstructorName::Normal(s) => s.as_str(),
@@ -464,10 +472,10 @@ impl<'a, F> MethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn new_constructor(
+    pub fn new_constructor<D: Into<Doc>>(
         self,
         name: ConstructorName,
-        doc: Doc,
+        doc: D,
     ) -> BindResult<ConstructorBuilder<'a, F>> {
         // check that we don't have any other constructors with this name
         if self
@@ -485,7 +493,7 @@ where
             name,
             builder: self,
             fields: Vec::new(),
-            doc,
+            doc: doc.into(),
         })
     }
 

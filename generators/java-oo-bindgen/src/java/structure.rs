@@ -1,7 +1,10 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
-use oo_bindgen::structs::{Constructor, Struct, StructFieldType, Visibility};
+use oo_bindgen::structs::{
+    Constructor, Struct, StructField, StructFieldType, ValidatedConstructorDefault, Visibility,
+};
+use oo_bindgen::types::DurationType;
 
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
@@ -81,6 +84,47 @@ if !native_struct.all_fields_have_defaults() {
 }
 */
 
+fn get_field_value<T>(field: &StructField<T>, constructor: &Constructor) -> String
+where
+    T: StructFieldType,
+{
+    match constructor.values.iter().find(|x| x.name == field.name) {
+        Some(x) => match &x.value {
+            ValidatedConstructorDefault::Bool(x) => x.to_string(),
+            ValidatedConstructorDefault::Uint8(x) => format!("UByte.valueOf({})", x),
+            ValidatedConstructorDefault::Sint8(x) => format!("(byte) {}", x),
+            ValidatedConstructorDefault::Uint16(x) => format!("UShort.valueOf({})", x),
+            ValidatedConstructorDefault::Sint16(x) => format!("(short) {}", x),
+            ValidatedConstructorDefault::Uint32(x) => format!("UInteger.valueOf({}L)", x),
+            ValidatedConstructorDefault::Sint32(x) => x.to_string(),
+            ValidatedConstructorDefault::Uint64(x) => format!("ULong.valueOf({}L)", x),
+            ValidatedConstructorDefault::Sint64(x) => x.to_string(),
+            ValidatedConstructorDefault::Float(x) => format!("{}F", x),
+            ValidatedConstructorDefault::Double(x) => x.to_string(),
+            ValidatedConstructorDefault::Duration(t, x) => match t {
+                DurationType::Milliseconds => {
+                    format!("java.time.Duration.ofMillis({})", t.get_value_string(*x))
+                }
+                DurationType::Seconds => {
+                    format!("java.time.Duration.ofSeconds({})", t.get_value_string(*x))
+                }
+            },
+            ValidatedConstructorDefault::Enum(x, variant) => {
+                format!(
+                    "{}.{}",
+                    x.name.to_camel_case(),
+                    variant.to_shouty_snake_case()
+                )
+            }
+            ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
+            ValidatedConstructorDefault::DefaultStruct(handle, _name) => {
+                format!("new {}()", handle.name().to_camel_case(),)
+            }
+        },
+        None => field.name.to_mixed_case(),
+    }
+}
+
 fn write_constructor<T>(
     f: &mut dyn Printer,
     lib: &Library,
@@ -88,7 +132,7 @@ fn write_constructor<T>(
     constructor: &Constructor,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType,
+    T: StructFieldType + JavaType,
 {
     documentation(f, |f| {
         f.newline()?;
@@ -97,12 +141,44 @@ where
 
         for field in handle
             .fields()
-            .filter(|f| constructor.values.iter().any(|x| x.name == f.name))
+            .filter(|f| !constructor.values.iter().any(|x| x.name == f.name))
         {
             f.writeln(&format!("@param {} ", field.name.to_mixed_case()))?;
             docstring_print(f, &field.doc.brief, lib)?;
         }
 
+        Ok(())
+    })?;
+
+    let params = handle
+        .fields()
+        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .map(|sf| {
+            format!(
+                "{} {}",
+                sf.field_type.as_java_primitive(),
+                sf.name.to_mixed_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "{} {}({})",
+        constructor_visibility(handle.visibility),
+        handle.name().to_camel_case(),
+        params
+    ))?;
+    blocked(f, |f| {
+        for field in &handle.fields {
+            indented(f, |f| {
+                f.writeln(&format!(
+                    "this.{} = {};",
+                    field.name.to_mixed_case(),
+                    get_field_value(field, constructor)
+                ))
+            })?;
+        }
         Ok(())
     })?;
 

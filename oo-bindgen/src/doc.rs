@@ -39,12 +39,14 @@
 //! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
+use std::convert::TryFrom;
+
+use lazy_static::lazy_static;
+use regex::Regex;
+
 use crate::structs::UniversalStructField;
 use crate::types::Arg;
 use crate::{BindingError, Library};
-use lazy_static::lazy_static;
-use regex::Regex;
-use std::convert::TryFrom;
 
 pub fn doc<D: Into<DocString>>(brief: D) -> Doc {
     Doc {
@@ -550,8 +552,9 @@ fn validate_reference_with_params<T>(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::convert::TryInto;
+
+    use super::*;
 
     #[test]
     fn parse_param_reference() {

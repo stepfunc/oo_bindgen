@@ -1,13 +1,13 @@
-use crate::enum_type::EnumHandle;
+use std::time::Duration;
 
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::doc::DocString;
+use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::structs::*;
 use crate::{BindResult, BindingError, StructType};
-use std::time::Duration;
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug, PartialEq)]

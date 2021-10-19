@@ -1,3 +1,6 @@
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+
 use crate::class::*;
 use crate::collection::CollectionHandle;
 use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
@@ -11,8 +14,6 @@ use crate::structs::*;
 use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
 use crate::{BindingError, Version};
-use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 pub enum Symbol {

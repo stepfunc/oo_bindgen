@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::return_type::ReturnType;
@@ -5,7 +7,6 @@ use crate::structs::CallbackStructHandle;
 use crate::structs::UniversalStructHandle;
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
-use std::collections::HashSet;
 
 pub const CTX_VARIABLE_NAME: &str = "ctx";
 pub const DESTROY_FUNC_NAME: &str = "on_destroy";

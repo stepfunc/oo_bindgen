@@ -1,10 +1,11 @@
+use thiserror::Error;
+
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::FunctionHandle;
 use crate::interface::InterfaceHandle;
 use crate::structs::{ConstructorDefault, FieldName, StructDeclarationHandle};
-use thiserror::Error;
 
 pub type BindResult<T> = Result<T, BindingError>;
 

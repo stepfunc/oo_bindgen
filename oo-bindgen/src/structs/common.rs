@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+use std::fmt::Formatter;
+
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
 use crate::doc::Doc;
@@ -6,8 +9,6 @@ use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::types::{DurationType, StringType, TypeValidator};
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
-use std::collections::HashSet;
-use std::fmt::Formatter;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {

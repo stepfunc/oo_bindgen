@@ -1,8 +1,7 @@
-use crate::structs::common::*;
-use crate::*;
-
 use crate::iterator::IteratorHandle;
+use crate::structs::common::*;
 use crate::types::{TypeValidator, ValidatedType};
+use crate::*;
 
 /// Types that can be used as a callback argument
 #[derive(Clone, Debug)]

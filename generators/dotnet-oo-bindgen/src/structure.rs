@@ -64,13 +64,7 @@ where
     T: StructFieldType + DotnetType,
 {
     documentation(f, |f| {
-        f.writeln("<summary>")?;
-        docstring_print(
-            f,
-            &format!("Initialize {{struct:{}}} to default values", handle.name()).into(),
-            lib,
-        )?;
-        f.write("</summary>")?;
+        xmldoc_print(f, &constructor.doc, lib)?;
 
         for param in handle
             .fields()
@@ -78,7 +72,7 @@ where
         {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc.brief, lib)?;
-            f.writeln("</param>")?;
+            f.write("</param>")?;
         }
 
         Ok(())

@@ -229,6 +229,19 @@ where
             write_constructor(f, lib, st, c)?;
         }
 
+        // write a full constructor that initializes all values if none are present
+        if st.constructors.is_empty() {
+            let constructor = Constructor::full(
+                "init".into(),
+                format!(
+                    "Initialize all values of {{struct:{}}}",
+                    st.declaration().name
+                )
+                .into(),
+            );
+            write_constructor(f, lib, st, &constructor)?;
+        }
+
         Ok(())
     })
 }

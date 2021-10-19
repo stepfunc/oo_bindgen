@@ -287,6 +287,10 @@ impl<F> Struct<F>
 where
     F: StructFieldType,
 {
+    pub fn requires_constructor(&self) -> bool {
+        true
+    }
+
     pub fn has_field_named(&self, name: &str) -> bool {
         self.fields.iter().any(|x| x.name.as_str() == name)
     }
@@ -446,6 +450,16 @@ pub struct Constructor {
     pub doc: Doc,
 }
 
+impl Constructor {
+    pub fn full(name: String, doc: Doc) -> Self {
+        Self {
+            name: ConstructorName::Normal(name),
+            values: Vec::new(),
+            doc,
+        }
+    }
+}
+
 pub struct ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
@@ -495,6 +509,12 @@ where
             fields: Vec::new(),
             doc: doc.into(),
         })
+    }
+
+    pub fn add_full_constructor<S: Into<String>>(self, name: S) -> BindResult<Self> {
+        let docs = format!("Fully initialize {{struct:{}}}", &self.declaration.name);
+        self.new_constructor(ConstructorName::Normal(name.into()), docs)?
+            .end_constructor()
     }
 
     pub fn build(self) -> BindResult<Handle<Struct<F>>> {
@@ -550,6 +570,8 @@ where
     }
 
     pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {
+        // make sure the constructor doesn't use the same parameters as another
+
         self.builder.constructors.push(Constructor {
             name: self.name,
             values: self.fields,

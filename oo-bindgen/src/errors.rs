@@ -71,6 +71,17 @@ pub enum BindingError {
         field_name: String,
     },
     #[error(
+        "Struct ({}) constructor {} uses the same arguments as constructor {}",
+        struct_name,
+        this_constructor,
+        other_constructor
+    )]
+    StructDuplicateConstructorArgs {
+        struct_name: String,
+        this_constructor: String,
+        other_constructor: String,
+    },
+    #[error(
         "Constructor field '{}' doesn't exist within struct '{}",
         field_name,
         struct_name

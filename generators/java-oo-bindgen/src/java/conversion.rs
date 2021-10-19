@@ -7,11 +7,11 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::callback_struct::CallbackStructFieldType;
+use oo_bindgen::structs::callback_argument_struct::CallbackArgStructField;
 use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
-use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
-use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
-use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
+use oo_bindgen::structs::function_argument_struct::FunctionArgStructField;
+use oo_bindgen::structs::function_return_struct::FunctionReturnStructField;
+use oo_bindgen::structs::universal_struct::UniversalStructField;
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::{Handle, UniversalOr};
 
@@ -150,78 +150,78 @@ where
     }
 }
 
-impl JavaType for FunctionArgStructFieldType {
+impl JavaType for FunctionArgStructField {
     fn as_java_primitive(&self) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_java_primitive(),
-            FunctionArgStructFieldType::String(x) => x.as_java_primitive(),
-            FunctionArgStructFieldType::Interface(x) => x.as_java_primitive(),
-            FunctionArgStructFieldType::Collection(x) => x.as_java_primitive(),
-            FunctionArgStructFieldType::Struct(x) => x.as_java_primitive(),
+            FunctionArgStructField::Basic(x) => x.as_java_primitive(),
+            FunctionArgStructField::String(x) => x.as_java_primitive(),
+            FunctionArgStructField::Interface(x) => x.as_java_primitive(),
+            FunctionArgStructField::Collection(x) => x.as_java_primitive(),
+            FunctionArgStructField::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_java_object(),
-            FunctionArgStructFieldType::String(x) => x.as_java_object(),
-            FunctionArgStructFieldType::Interface(x) => x.as_java_object(),
-            FunctionArgStructFieldType::Collection(x) => x.as_java_object(),
-            FunctionArgStructFieldType::Struct(x) => x.as_java_object(),
+            FunctionArgStructField::Basic(x) => x.as_java_object(),
+            FunctionArgStructField::String(x) => x.as_java_object(),
+            FunctionArgStructField::Interface(x) => x.as_java_object(),
+            FunctionArgStructField::Collection(x) => x.as_java_object(),
+            FunctionArgStructField::Struct(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for ReturnStructFieldType {
+impl JavaType for FunctionReturnStructField {
     fn as_java_primitive(&self) -> String {
         match self {
-            ReturnStructFieldType::Basic(x) => x.as_java_primitive(),
-            ReturnStructFieldType::ClassRef(x) => x.as_java_primitive(),
-            ReturnStructFieldType::Struct(x) => x.as_java_primitive(),
-            ReturnStructFieldType::Iterator(x) => x.as_java_primitive(),
+            FunctionReturnStructField::Basic(x) => x.as_java_primitive(),
+            FunctionReturnStructField::ClassRef(x) => x.as_java_primitive(),
+            FunctionReturnStructField::Struct(x) => x.as_java_primitive(),
+            FunctionReturnStructField::Iterator(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            ReturnStructFieldType::Basic(x) => x.as_java_object(),
-            ReturnStructFieldType::ClassRef(x) => x.as_java_object(),
-            ReturnStructFieldType::Struct(x) => x.as_java_object(),
-            ReturnStructFieldType::Iterator(x) => x.as_java_object(),
+            FunctionReturnStructField::Basic(x) => x.as_java_object(),
+            FunctionReturnStructField::ClassRef(x) => x.as_java_object(),
+            FunctionReturnStructField::Struct(x) => x.as_java_object(),
+            FunctionReturnStructField::Iterator(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for CallbackStructFieldType {
+impl JavaType for CallbackArgStructField {
     fn as_java_primitive(&self) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_java_primitive(),
-            CallbackStructFieldType::Iterator(x) => x.as_java_primitive(),
-            CallbackStructFieldType::Struct(x) => x.as_java_primitive(),
+            CallbackArgStructField::Basic(x) => x.as_java_primitive(),
+            CallbackArgStructField::Iterator(x) => x.as_java_primitive(),
+            CallbackArgStructField::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_java_object(),
-            CallbackStructFieldType::Iterator(x) => x.as_java_object(),
-            CallbackStructFieldType::Struct(x) => x.as_java_object(),
+            CallbackArgStructField::Basic(x) => x.as_java_object(),
+            CallbackArgStructField::Iterator(x) => x.as_java_object(),
+            CallbackArgStructField::Struct(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for UniversalStructFieldType {
+impl JavaType for UniversalStructField {
     fn as_java_primitive(&self) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_java_primitive(),
-            UniversalStructFieldType::Struct(x) => x.as_java_primitive(),
+            UniversalStructField::Basic(x) => x.as_java_primitive(),
+            UniversalStructField::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_java_object(),
-            UniversalStructFieldType::Struct(x) => x.as_java_object(),
+            UniversalStructField::Basic(x) => x.as_java_object(),
+            UniversalStructField::Struct(x) => x.as_java_object(),
         }
     }
 }

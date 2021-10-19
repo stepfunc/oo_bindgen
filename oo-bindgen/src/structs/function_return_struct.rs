@@ -5,15 +5,15 @@ use crate::*;
 
 /// Types that can be used in a function return value
 #[derive(Clone, Debug)]
-pub enum ReturnStructFieldType {
+pub enum FunctionReturnStructField {
     Basic(BasicType),
     ClassRef(ClassDeclarationHandle),
     // iterators must be allowed in return position so that you can have nested iterators
     Iterator(IteratorHandle),
-    Struct(UniversalOr<ReturnStructFieldType>),
+    Struct(UniversalOr<FunctionReturnStructField>),
 }
 
-impl TypeValidator for ReturnStructFieldType {
+impl TypeValidator for FunctionReturnStructField {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
             Self::Basic(x) => x.get_validated_type(),
@@ -24,18 +24,16 @@ impl TypeValidator for ReturnStructFieldType {
     }
 }
 
-pub type ReturnStructField = StructField<ReturnStructFieldType>;
-pub type ReturnStruct = Struct<ReturnStructFieldType>;
-pub type ReturnStructHandle = Handle<ReturnStruct>;
-pub type ReturnStructBuilder<'a> = StructFieldBuilder<'a, ReturnStructFieldType>;
+pub type FunctionReturnStructHandle = Handle<Struct<FunctionReturnStructField>>;
+pub type FunctionReturnStructBuilder<'a> = StructFieldBuilder<'a, FunctionReturnStructField>;
 
-impl StructFieldType for ReturnStructFieldType {
+impl StructFieldType for FunctionReturnStructField {
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType {
         StructType::RStruct(v)
     }
 }
 
-impl ConstructorValidator for ReturnStructFieldType {
+impl ConstructorValidator for FunctionReturnStructField {
     fn validate_constructor_default(
         &self,
         value: &ConstructorDefault,
@@ -49,25 +47,25 @@ impl ConstructorValidator for ReturnStructFieldType {
     }
 }
 
-impl From<BasicType> for ReturnStructFieldType {
+impl From<BasicType> for FunctionReturnStructField {
     fn from(x: BasicType) -> Self {
         Self::Basic(x)
     }
 }
 
-impl From<ClassDeclarationHandle> for ReturnStructFieldType {
+impl From<ClassDeclarationHandle> for FunctionReturnStructField {
     fn from(x: ClassDeclarationHandle) -> Self {
         Self::ClassRef(x)
     }
 }
 
-impl From<ReturnStructHandle> for ReturnStructFieldType {
-    fn from(x: ReturnStructHandle) -> Self {
+impl From<FunctionReturnStructHandle> for FunctionReturnStructField {
+    fn from(x: FunctionReturnStructHandle) -> Self {
         Self::Struct(x.into())
     }
 }
 
-impl From<IteratorHandle> for ReturnStructFieldType {
+impl From<IteratorHandle> for FunctionReturnStructField {
     fn from(x: IteratorHandle) -> Self {
         Self::Iterator(x)
     }

@@ -10,10 +10,10 @@ use oo_bindgen::{StructType, Symbol, UniversalOr};
 use heck::SnakeCase;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::callback_struct::CallbackStructFieldType;
-use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
-use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
-use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
+use oo_bindgen::structs::callback_argument_struct::CallbackArgStructField;
+use oo_bindgen::structs::function_argument_struct::FunctionArgStructField;
+use oo_bindgen::structs::function_return_struct::FunctionReturnStructField;
+use oo_bindgen::structs::universal_struct::UniversalStructField;
 
 pub(crate) trait CType {
     fn to_c_type(&self, prefix: &str) -> String;
@@ -179,19 +179,19 @@ where
     }
 }
 
-impl CType for FunctionArgStructFieldType {
+impl CType for FunctionArgStructField {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.to_c_type(prefix),
-            FunctionArgStructFieldType::String(x) => x.to_c_type(prefix),
-            FunctionArgStructFieldType::Interface(x) => x.to_c_type(prefix),
-            FunctionArgStructFieldType::Collection(x) => pointer(x).to_c_type(prefix),
-            FunctionArgStructFieldType::Struct(x) => x.to_c_type(prefix),
+            FunctionArgStructField::Basic(x) => x.to_c_type(prefix),
+            FunctionArgStructField::String(x) => x.to_c_type(prefix),
+            FunctionArgStructField::Interface(x) => x.to_c_type(prefix),
+            FunctionArgStructField::Collection(x) => pointer(x).to_c_type(prefix),
+            FunctionArgStructField::Struct(x) => x.to_c_type(prefix),
         }
     }
 }
 
-impl CType for ReturnStructFieldType {
+impl CType for FunctionReturnStructField {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
             Self::Basic(x) => x.to_c_type(prefix),
@@ -202,21 +202,21 @@ impl CType for ReturnStructFieldType {
     }
 }
 
-impl CType for CallbackStructFieldType {
+impl CType for CallbackArgStructField {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.to_c_type(prefix),
-            CallbackStructFieldType::Iterator(x) => pointer(x).to_c_type(prefix),
-            CallbackStructFieldType::Struct(x) => x.to_c_type(prefix),
+            CallbackArgStructField::Basic(x) => x.to_c_type(prefix),
+            CallbackArgStructField::Iterator(x) => pointer(x).to_c_type(prefix),
+            CallbackArgStructField::Struct(x) => x.to_c_type(prefix),
         }
     }
 }
 
-impl CType for UniversalStructFieldType {
+impl CType for UniversalStructField {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.to_c_type(prefix),
-            UniversalStructFieldType::Struct(x) => x.to_c_type(prefix),
+            UniversalStructField::Basic(x) => x.to_c_type(prefix),
+            UniversalStructField::Struct(x) => x.to_c_type(prefix),
         }
     }
 }

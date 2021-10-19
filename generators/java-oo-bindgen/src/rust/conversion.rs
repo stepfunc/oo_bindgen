@@ -7,11 +7,11 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::callback_struct::CallbackStructFieldType;
+use oo_bindgen::structs::callback_argument_struct::CallbackArgStructField;
 use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
-use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
-use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
-use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
+use oo_bindgen::structs::function_argument_struct::FunctionArgStructField;
+use oo_bindgen::structs::function_return_struct::FunctionReturnStructField;
+use oo_bindgen::structs::universal_struct::UniversalStructField;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
 use oo_bindgen::{Handle, UniversalOr};
 
@@ -714,44 +714,44 @@ where
     }
 }
 
-impl JniType for FunctionArgStructFieldType {
+impl JniType for FunctionArgStructField {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_raw_jni_type(),
-            FunctionArgStructFieldType::String(x) => x.as_raw_jni_type(),
-            FunctionArgStructFieldType::Interface(x) => x.as_raw_jni_type(),
-            FunctionArgStructFieldType::Collection(x) => x.as_raw_jni_type(),
-            FunctionArgStructFieldType::Struct(x) => x.as_raw_jni_type(),
+            FunctionArgStructField::Basic(x) => x.as_raw_jni_type(),
+            FunctionArgStructField::String(x) => x.as_raw_jni_type(),
+            FunctionArgStructField::Interface(x) => x.as_raw_jni_type(),
+            FunctionArgStructField::Collection(x) => x.as_raw_jni_type(),
+            FunctionArgStructField::Struct(x) => x.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_jni_sig(lib_path),
-            FunctionArgStructFieldType::String(x) => x.as_jni_sig(lib_path),
-            FunctionArgStructFieldType::Interface(x) => x.as_jni_sig(lib_path),
-            FunctionArgStructFieldType::Collection(x) => x.as_jni_sig(lib_path),
-            FunctionArgStructFieldType::Struct(x) => x.as_jni_sig(lib_path),
+            FunctionArgStructField::Basic(x) => x.as_jni_sig(lib_path),
+            FunctionArgStructField::String(x) => x.as_jni_sig(lib_path),
+            FunctionArgStructField::Interface(x) => x.as_jni_sig(lib_path),
+            FunctionArgStructField::Collection(x) => x.as_jni_sig(lib_path),
+            FunctionArgStructField::Struct(x) => x.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_rust_type(ffi_name),
-            FunctionArgStructFieldType::String(x) => x.as_rust_type(ffi_name),
-            FunctionArgStructFieldType::Interface(x) => x.as_rust_type(ffi_name),
-            FunctionArgStructFieldType::Collection(x) => x.as_rust_type(ffi_name),
-            FunctionArgStructFieldType::Struct(x) => x.as_rust_type(ffi_name),
+            FunctionArgStructField::Basic(x) => x.as_rust_type(ffi_name),
+            FunctionArgStructField::String(x) => x.as_rust_type(ffi_name),
+            FunctionArgStructField::Interface(x) => x.as_rust_type(ffi_name),
+            FunctionArgStructField::Collection(x) => x.as_rust_type(ffi_name),
+            FunctionArgStructField::Struct(x) => x.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.convert_jvalue(),
-            FunctionArgStructFieldType::String(x) => x.convert_jvalue(),
-            FunctionArgStructFieldType::Interface(x) => x.convert_jvalue(),
-            FunctionArgStructFieldType::Collection(x) => x.convert_jvalue(),
-            FunctionArgStructFieldType::Struct(x) => x.convert_jvalue(),
+            FunctionArgStructField::Basic(x) => x.convert_jvalue(),
+            FunctionArgStructField::String(x) => x.convert_jvalue(),
+            FunctionArgStructField::Interface(x) => x.convert_jvalue(),
+            FunctionArgStructField::Collection(x) => x.convert_jvalue(),
+            FunctionArgStructField::Struct(x) => x.convert_jvalue(),
         }
     }
 
@@ -764,19 +764,19 @@ impl JniType for FunctionArgStructFieldType {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            FunctionArgStructFieldType::Basic(x) => {
+            FunctionArgStructField::Basic(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            FunctionArgStructFieldType::String(x) => {
+            FunctionArgStructField::String(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            FunctionArgStructFieldType::Interface(x) => {
+            FunctionArgStructField::Interface(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            FunctionArgStructFieldType::Collection(x) => {
+            FunctionArgStructField::Collection(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            FunctionArgStructFieldType::Struct(x) => {
+            FunctionArgStructField::Struct(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
@@ -784,79 +784,79 @@ impl JniType for FunctionArgStructFieldType {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.conversion(lib_name, prefix),
-            FunctionArgStructFieldType::String(x) => x.conversion(lib_name, prefix),
-            FunctionArgStructFieldType::Interface(x) => x.conversion(lib_name, prefix),
-            FunctionArgStructFieldType::Collection(x) => x.conversion(lib_name, prefix),
-            FunctionArgStructFieldType::Struct(x) => x.conversion(lib_name, prefix),
+            FunctionArgStructField::Basic(x) => x.conversion(lib_name, prefix),
+            FunctionArgStructField::String(x) => x.conversion(lib_name, prefix),
+            FunctionArgStructField::Interface(x) => x.conversion(lib_name, prefix),
+            FunctionArgStructField::Collection(x) => x.conversion(lib_name, prefix),
+            FunctionArgStructField::Struct(x) => x.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.requires_local_ref_cleanup(),
-            FunctionArgStructFieldType::String(x) => x.requires_local_ref_cleanup(),
-            FunctionArgStructFieldType::Interface(x) => x.requires_local_ref_cleanup(),
-            FunctionArgStructFieldType::Collection(x) => x.requires_local_ref_cleanup(),
-            FunctionArgStructFieldType::Struct(x) => x.requires_local_ref_cleanup(),
+            FunctionArgStructField::Basic(x) => x.requires_local_ref_cleanup(),
+            FunctionArgStructField::String(x) => x.requires_local_ref_cleanup(),
+            FunctionArgStructField::Interface(x) => x.requires_local_ref_cleanup(),
+            FunctionArgStructField::Collection(x) => x.requires_local_ref_cleanup(),
+            FunctionArgStructField::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.check_null(f, param_name),
-            FunctionArgStructFieldType::String(x) => x.check_null(f, param_name),
-            FunctionArgStructFieldType::Interface(x) => x.check_null(f, param_name),
-            FunctionArgStructFieldType::Collection(x) => x.check_null(f, param_name),
-            FunctionArgStructFieldType::Struct(x) => x.check_null(f, param_name),
+            FunctionArgStructField::Basic(x) => x.check_null(f, param_name),
+            FunctionArgStructField::String(x) => x.check_null(f, param_name),
+            FunctionArgStructField::Interface(x) => x.check_null(f, param_name),
+            FunctionArgStructField::Collection(x) => x.check_null(f, param_name),
+            FunctionArgStructField::Struct(x) => x.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.default_value(),
-            FunctionArgStructFieldType::String(x) => x.default_value(),
-            FunctionArgStructFieldType::Interface(x) => x.default_value(),
-            FunctionArgStructFieldType::Collection(x) => x.default_value(),
-            FunctionArgStructFieldType::Struct(x) => x.default_value(),
+            FunctionArgStructField::Basic(x) => x.default_value(),
+            FunctionArgStructField::String(x) => x.default_value(),
+            FunctionArgStructField::Interface(x) => x.default_value(),
+            FunctionArgStructField::Collection(x) => x.default_value(),
+            FunctionArgStructField::Struct(x) => x.default_value(),
         }
     }
 }
 
-impl JniType for ReturnStructFieldType {
+impl JniType for FunctionReturnStructField {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            ReturnStructFieldType::Basic(x) => x.as_raw_jni_type(),
-            ReturnStructFieldType::ClassRef(x) => x.as_raw_jni_type(),
-            ReturnStructFieldType::Struct(x) => x.as_raw_jni_type(),
-            ReturnStructFieldType::Iterator(x) => x.as_raw_jni_type(),
+            FunctionReturnStructField::Basic(x) => x.as_raw_jni_type(),
+            FunctionReturnStructField::ClassRef(x) => x.as_raw_jni_type(),
+            FunctionReturnStructField::Struct(x) => x.as_raw_jni_type(),
+            FunctionReturnStructField::Iterator(x) => x.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            ReturnStructFieldType::Basic(x) => x.as_jni_sig(lib_path),
-            ReturnStructFieldType::ClassRef(x) => x.as_jni_sig(lib_path),
-            ReturnStructFieldType::Struct(x) => x.as_jni_sig(lib_path),
-            ReturnStructFieldType::Iterator(x) => x.as_jni_sig(lib_path),
+            FunctionReturnStructField::Basic(x) => x.as_jni_sig(lib_path),
+            FunctionReturnStructField::ClassRef(x) => x.as_jni_sig(lib_path),
+            FunctionReturnStructField::Struct(x) => x.as_jni_sig(lib_path),
+            FunctionReturnStructField::Iterator(x) => x.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            ReturnStructFieldType::Basic(x) => x.as_rust_type(ffi_name),
-            ReturnStructFieldType::ClassRef(x) => x.as_rust_type(ffi_name),
-            ReturnStructFieldType::Struct(x) => x.as_rust_type(ffi_name),
-            ReturnStructFieldType::Iterator(x) => x.as_rust_type(ffi_name),
+            FunctionReturnStructField::Basic(x) => x.as_rust_type(ffi_name),
+            FunctionReturnStructField::ClassRef(x) => x.as_rust_type(ffi_name),
+            FunctionReturnStructField::Struct(x) => x.as_rust_type(ffi_name),
+            FunctionReturnStructField::Iterator(x) => x.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            ReturnStructFieldType::Basic(x) => x.convert_jvalue(),
-            ReturnStructFieldType::ClassRef(x) => x.convert_jvalue(),
-            ReturnStructFieldType::Struct(x) => x.convert_jvalue(),
-            ReturnStructFieldType::Iterator(x) => x.convert_jvalue(),
+            FunctionReturnStructField::Basic(x) => x.convert_jvalue(),
+            FunctionReturnStructField::ClassRef(x) => x.convert_jvalue(),
+            FunctionReturnStructField::Struct(x) => x.convert_jvalue(),
+            FunctionReturnStructField::Iterator(x) => x.convert_jvalue(),
         }
     }
 
@@ -869,16 +869,16 @@ impl JniType for ReturnStructFieldType {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            ReturnStructFieldType::Basic(x) => {
+            FunctionReturnStructField::Basic(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            ReturnStructFieldType::ClassRef(x) => {
+            FunctionReturnStructField::ClassRef(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            ReturnStructFieldType::Struct(x) => {
+            FunctionReturnStructField::Struct(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            ReturnStructFieldType::Iterator(x) => {
+            FunctionReturnStructField::Iterator(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
@@ -886,71 +886,71 @@ impl JniType for ReturnStructFieldType {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            ReturnStructFieldType::Basic(x) => x.conversion(lib_name, prefix),
-            ReturnStructFieldType::ClassRef(x) => x.conversion(lib_name, prefix),
-            ReturnStructFieldType::Struct(x) => x.conversion(lib_name, prefix),
-            ReturnStructFieldType::Iterator(x) => x.conversion(lib_name, prefix),
+            FunctionReturnStructField::Basic(x) => x.conversion(lib_name, prefix),
+            FunctionReturnStructField::ClassRef(x) => x.conversion(lib_name, prefix),
+            FunctionReturnStructField::Struct(x) => x.conversion(lib_name, prefix),
+            FunctionReturnStructField::Iterator(x) => x.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            ReturnStructFieldType::Basic(x) => x.requires_local_ref_cleanup(),
-            ReturnStructFieldType::ClassRef(x) => x.requires_local_ref_cleanup(),
-            ReturnStructFieldType::Struct(x) => x.requires_local_ref_cleanup(),
-            ReturnStructFieldType::Iterator(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnStructField::Basic(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnStructField::ClassRef(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnStructField::Struct(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnStructField::Iterator(x) => x.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            ReturnStructFieldType::Basic(x) => x.check_null(f, param_name),
-            ReturnStructFieldType::ClassRef(x) => x.check_null(f, param_name),
-            ReturnStructFieldType::Struct(x) => x.check_null(f, param_name),
-            ReturnStructFieldType::Iterator(x) => x.check_null(f, param_name),
+            FunctionReturnStructField::Basic(x) => x.check_null(f, param_name),
+            FunctionReturnStructField::ClassRef(x) => x.check_null(f, param_name),
+            FunctionReturnStructField::Struct(x) => x.check_null(f, param_name),
+            FunctionReturnStructField::Iterator(x) => x.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            ReturnStructFieldType::Basic(x) => x.default_value(),
-            ReturnStructFieldType::ClassRef(x) => x.default_value(),
-            ReturnStructFieldType::Struct(x) => x.default_value(),
-            ReturnStructFieldType::Iterator(x) => x.default_value(),
+            FunctionReturnStructField::Basic(x) => x.default_value(),
+            FunctionReturnStructField::ClassRef(x) => x.default_value(),
+            FunctionReturnStructField::Struct(x) => x.default_value(),
+            FunctionReturnStructField::Iterator(x) => x.default_value(),
         }
     }
 }
 
-impl JniType for CallbackStructFieldType {
+impl JniType for CallbackArgStructField {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_raw_jni_type(),
-            CallbackStructFieldType::Iterator(x) => x.as_raw_jni_type(),
-            CallbackStructFieldType::Struct(x) => x.as_raw_jni_type(),
+            CallbackArgStructField::Basic(x) => x.as_raw_jni_type(),
+            CallbackArgStructField::Iterator(x) => x.as_raw_jni_type(),
+            CallbackArgStructField::Struct(x) => x.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_jni_sig(lib_path),
-            CallbackStructFieldType::Iterator(x) => x.as_jni_sig(lib_path),
-            CallbackStructFieldType::Struct(x) => x.as_jni_sig(lib_path),
+            CallbackArgStructField::Basic(x) => x.as_jni_sig(lib_path),
+            CallbackArgStructField::Iterator(x) => x.as_jni_sig(lib_path),
+            CallbackArgStructField::Struct(x) => x.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_rust_type(ffi_name),
-            CallbackStructFieldType::Iterator(x) => x.as_rust_type(ffi_name),
-            CallbackStructFieldType::Struct(x) => x.as_rust_type(ffi_name),
+            CallbackArgStructField::Basic(x) => x.as_rust_type(ffi_name),
+            CallbackArgStructField::Iterator(x) => x.as_rust_type(ffi_name),
+            CallbackArgStructField::Struct(x) => x.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            CallbackStructFieldType::Basic(x) => x.convert_jvalue(),
-            CallbackStructFieldType::Iterator(x) => x.convert_jvalue(),
-            CallbackStructFieldType::Struct(x) => x.convert_jvalue(),
+            CallbackArgStructField::Basic(x) => x.convert_jvalue(),
+            CallbackArgStructField::Iterator(x) => x.convert_jvalue(),
+            CallbackArgStructField::Struct(x) => x.convert_jvalue(),
         }
     }
 
@@ -963,13 +963,13 @@ impl JniType for CallbackStructFieldType {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            CallbackStructFieldType::Basic(x) => {
+            CallbackArgStructField::Basic(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            CallbackStructFieldType::Iterator(x) => {
+            CallbackArgStructField::Iterator(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            CallbackStructFieldType::Struct(x) => {
+            CallbackArgStructField::Struct(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
@@ -977,63 +977,63 @@ impl JniType for CallbackStructFieldType {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            CallbackStructFieldType::Basic(x) => x.conversion(lib_name, prefix),
-            CallbackStructFieldType::Iterator(x) => x.conversion(lib_name, prefix),
-            CallbackStructFieldType::Struct(x) => x.conversion(lib_name, prefix),
+            CallbackArgStructField::Basic(x) => x.conversion(lib_name, prefix),
+            CallbackArgStructField::Iterator(x) => x.conversion(lib_name, prefix),
+            CallbackArgStructField::Struct(x) => x.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            CallbackStructFieldType::Basic(x) => x.requires_local_ref_cleanup(),
-            CallbackStructFieldType::Iterator(x) => x.requires_local_ref_cleanup(),
-            CallbackStructFieldType::Struct(x) => x.requires_local_ref_cleanup(),
+            CallbackArgStructField::Basic(x) => x.requires_local_ref_cleanup(),
+            CallbackArgStructField::Iterator(x) => x.requires_local_ref_cleanup(),
+            CallbackArgStructField::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            CallbackStructFieldType::Basic(x) => x.check_null(f, param_name),
-            CallbackStructFieldType::Iterator(x) => x.check_null(f, param_name),
-            CallbackStructFieldType::Struct(x) => x.check_null(f, param_name),
+            CallbackArgStructField::Basic(x) => x.check_null(f, param_name),
+            CallbackArgStructField::Iterator(x) => x.check_null(f, param_name),
+            CallbackArgStructField::Struct(x) => x.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            CallbackStructFieldType::Basic(x) => x.default_value(),
-            CallbackStructFieldType::Iterator(x) => x.default_value(),
-            CallbackStructFieldType::Struct(x) => x.default_value(),
+            CallbackArgStructField::Basic(x) => x.default_value(),
+            CallbackArgStructField::Iterator(x) => x.default_value(),
+            CallbackArgStructField::Struct(x) => x.default_value(),
         }
     }
 }
 
-impl JniType for UniversalStructFieldType {
+impl JniType for UniversalStructField {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_raw_jni_type(),
-            UniversalStructFieldType::Struct(x) => x.as_raw_jni_type(),
+            UniversalStructField::Basic(x) => x.as_raw_jni_type(),
+            UniversalStructField::Struct(x) => x.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_jni_sig(lib_path),
-            UniversalStructFieldType::Struct(x) => x.as_jni_sig(lib_path),
+            UniversalStructField::Basic(x) => x.as_jni_sig(lib_path),
+            UniversalStructField::Struct(x) => x.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_rust_type(ffi_name),
-            UniversalStructFieldType::Struct(x) => x.as_rust_type(ffi_name),
+            UniversalStructField::Basic(x) => x.as_rust_type(ffi_name),
+            UniversalStructField::Struct(x) => x.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            UniversalStructFieldType::Basic(x) => x.convert_jvalue(),
-            UniversalStructFieldType::Struct(x) => x.convert_jvalue(),
+            UniversalStructField::Basic(x) => x.convert_jvalue(),
+            UniversalStructField::Struct(x) => x.convert_jvalue(),
         }
     }
 
@@ -1046,10 +1046,10 @@ impl JniType for UniversalStructFieldType {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            UniversalStructFieldType::Basic(x) => {
+            UniversalStructField::Basic(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            UniversalStructFieldType::Struct(x) => {
+            UniversalStructField::Struct(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
@@ -1057,29 +1057,29 @@ impl JniType for UniversalStructFieldType {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            UniversalStructFieldType::Basic(x) => x.conversion(lib_name, prefix),
-            UniversalStructFieldType::Struct(x) => x.conversion(lib_name, prefix),
+            UniversalStructField::Basic(x) => x.conversion(lib_name, prefix),
+            UniversalStructField::Struct(x) => x.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            UniversalStructFieldType::Basic(x) => x.requires_local_ref_cleanup(),
-            UniversalStructFieldType::Struct(x) => x.requires_local_ref_cleanup(),
+            UniversalStructField::Basic(x) => x.requires_local_ref_cleanup(),
+            UniversalStructField::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            UniversalStructFieldType::Basic(x) => x.check_null(f, param_name),
-            UniversalStructFieldType::Struct(x) => x.check_null(f, param_name),
+            UniversalStructField::Basic(x) => x.check_null(f, param_name),
+            UniversalStructField::Struct(x) => x.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            UniversalStructFieldType::Basic(x) => x.default_value(),
-            UniversalStructFieldType::Struct(x) => x.default_value(),
+            UniversalStructField::Basic(x) => x.default_value(),
+            UniversalStructField::Struct(x) => x.default_value(),
         }
     }
 }

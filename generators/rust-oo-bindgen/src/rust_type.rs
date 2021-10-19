@@ -7,11 +7,11 @@ use oo_bindgen::function::{FArgument, FReturnValue};
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::callback_struct::CallbackStructFieldType;
+use oo_bindgen::structs::callback_argument_struct::CallbackArgStructField;
 use oo_bindgen::structs::common::*;
-use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
-use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
-use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
+use oo_bindgen::structs::function_argument_struct::FunctionArgStructField;
+use oo_bindgen::structs::function_return_struct::FunctionReturnStructField;
+use oo_bindgen::structs::universal_struct::UniversalStructField;
 use oo_bindgen::types::*;
 use oo_bindgen::UniversalOr;
 
@@ -491,49 +491,49 @@ impl RustType for FReturnValue {
     }
 }
 
-impl RustType for FunctionArgStructFieldType {
+impl RustType for FunctionArgStructField {
     fn as_rust_type(&self) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_rust_type(),
-            FunctionArgStructFieldType::String(x) => x.as_rust_type(),
-            FunctionArgStructFieldType::Interface(x) => x.as_rust_type(),
-            FunctionArgStructFieldType::Collection(x) => x.as_rust_type(),
-            FunctionArgStructFieldType::Struct(x) => x.as_rust_type(),
+            FunctionArgStructField::Basic(x) => x.as_rust_type(),
+            FunctionArgStructField::String(x) => x.as_rust_type(),
+            FunctionArgStructField::Interface(x) => x.as_rust_type(),
+            FunctionArgStructField::Collection(x) => x.as_rust_type(),
+            FunctionArgStructField::Struct(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_c_type(),
-            FunctionArgStructFieldType::String(x) => x.as_c_type(),
-            FunctionArgStructFieldType::Interface(x) => x.as_c_type(),
-            FunctionArgStructFieldType::Collection(x) => x.as_c_type(),
-            FunctionArgStructFieldType::Struct(x) => x.as_c_type(),
+            FunctionArgStructField::Basic(x) => x.as_c_type(),
+            FunctionArgStructField::String(x) => x.as_c_type(),
+            FunctionArgStructField::Interface(x) => x.as_c_type(),
+            FunctionArgStructField::Collection(x) => x.as_c_type(),
+            FunctionArgStructField::Struct(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.is_copyable(),
-            FunctionArgStructFieldType::String(x) => x.is_copyable(),
-            FunctionArgStructFieldType::Interface(x) => x.is_copyable(),
-            FunctionArgStructFieldType::Collection(x) => x.is_copyable(),
-            FunctionArgStructFieldType::Struct(x) => x.is_copyable(),
+            FunctionArgStructField::Basic(x) => x.is_copyable(),
+            FunctionArgStructField::String(x) => x.is_copyable(),
+            FunctionArgStructField::Interface(x) => x.is_copyable(),
+            FunctionArgStructField::Collection(x) => x.is_copyable(),
+            FunctionArgStructField::Struct(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.conversion(),
-            FunctionArgStructFieldType::String(x) => x.conversion(),
-            FunctionArgStructFieldType::Interface(x) => x.conversion(),
-            FunctionArgStructFieldType::Collection(x) => x.conversion(),
-            FunctionArgStructFieldType::Struct(x) => x.conversion(),
+            FunctionArgStructField::Basic(x) => x.conversion(),
+            FunctionArgStructField::String(x) => x.conversion(),
+            FunctionArgStructField::Interface(x) => x.conversion(),
+            FunctionArgStructField::Collection(x) => x.conversion(),
+            FunctionArgStructField::Struct(x) => x.conversion(),
         }
     }
 }
 
-impl RustType for ReturnStructFieldType {
+impl RustType for FunctionReturnStructField {
     fn as_rust_type(&self) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(),
@@ -571,66 +571,66 @@ impl RustType for ReturnStructFieldType {
     }
 }
 
-impl RustType for CallbackStructFieldType {
+impl RustType for CallbackArgStructField {
     fn as_rust_type(&self) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_rust_type(),
-            CallbackStructFieldType::Iterator(x) => x.as_rust_type(),
-            CallbackStructFieldType::Struct(x) => x.as_rust_type(),
+            CallbackArgStructField::Basic(x) => x.as_rust_type(),
+            CallbackArgStructField::Iterator(x) => x.as_rust_type(),
+            CallbackArgStructField::Struct(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_c_type(),
-            CallbackStructFieldType::Iterator(x) => x.as_c_type(),
-            CallbackStructFieldType::Struct(x) => x.as_c_type(),
+            CallbackArgStructField::Basic(x) => x.as_c_type(),
+            CallbackArgStructField::Iterator(x) => x.as_c_type(),
+            CallbackArgStructField::Struct(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            CallbackStructFieldType::Basic(x) => x.is_copyable(),
-            CallbackStructFieldType::Iterator(x) => x.is_copyable(),
-            CallbackStructFieldType::Struct(x) => x.is_copyable(),
+            CallbackArgStructField::Basic(x) => x.is_copyable(),
+            CallbackArgStructField::Iterator(x) => x.is_copyable(),
+            CallbackArgStructField::Struct(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            CallbackStructFieldType::Basic(x) => x.conversion(),
-            CallbackStructFieldType::Iterator(x) => x.conversion(),
-            CallbackStructFieldType::Struct(x) => x.conversion(),
+            CallbackArgStructField::Basic(x) => x.conversion(),
+            CallbackArgStructField::Iterator(x) => x.conversion(),
+            CallbackArgStructField::Struct(x) => x.conversion(),
         }
     }
 }
 
-impl RustType for UniversalStructFieldType {
+impl RustType for UniversalStructField {
     fn as_rust_type(&self) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_rust_type(),
-            UniversalStructFieldType::Struct(x) => x.as_rust_type(),
+            UniversalStructField::Basic(x) => x.as_rust_type(),
+            UniversalStructField::Struct(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_c_type(),
-            UniversalStructFieldType::Struct(x) => x.as_c_type(),
+            UniversalStructField::Basic(x) => x.as_c_type(),
+            UniversalStructField::Struct(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            UniversalStructFieldType::Basic(x) => x.is_copyable(),
-            UniversalStructFieldType::Struct(x) => x.is_copyable(),
+            UniversalStructField::Basic(x) => x.is_copyable(),
+            UniversalStructField::Struct(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            UniversalStructFieldType::Basic(x) => x.conversion(),
-            UniversalStructFieldType::Struct(x) => x.conversion(),
+            UniversalStructField::Basic(x) => x.conversion(),
+            UniversalStructField::Struct(x) => x.conversion(),
         }
     }
 }
@@ -797,47 +797,47 @@ where
     }
 }
 
-impl LifetimeInfo for FunctionArgStructFieldType {
+impl LifetimeInfo for FunctionArgStructField {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.rust_requires_lifetime(),
-            FunctionArgStructFieldType::String(x) => x.rust_requires_lifetime(),
-            FunctionArgStructFieldType::Interface(x) => x.rust_requires_lifetime(),
-            FunctionArgStructFieldType::Collection(x) => x.rust_requires_lifetime(),
-            FunctionArgStructFieldType::Struct(x) => x.rust_requires_lifetime(),
+            FunctionArgStructField::Basic(x) => x.rust_requires_lifetime(),
+            FunctionArgStructField::String(x) => x.rust_requires_lifetime(),
+            FunctionArgStructField::Interface(x) => x.rust_requires_lifetime(),
+            FunctionArgStructField::Collection(x) => x.rust_requires_lifetime(),
+            FunctionArgStructField::Struct(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.c_requires_lifetime(),
-            FunctionArgStructFieldType::String(x) => x.c_requires_lifetime(),
-            FunctionArgStructFieldType::Interface(x) => x.c_requires_lifetime(),
-            FunctionArgStructFieldType::Collection(x) => x.c_requires_lifetime(),
-            FunctionArgStructFieldType::Struct(x) => x.c_requires_lifetime(),
+            FunctionArgStructField::Basic(x) => x.c_requires_lifetime(),
+            FunctionArgStructField::String(x) => x.c_requires_lifetime(),
+            FunctionArgStructField::Interface(x) => x.c_requires_lifetime(),
+            FunctionArgStructField::Collection(x) => x.c_requires_lifetime(),
+            FunctionArgStructField::Struct(x) => x.c_requires_lifetime(),
         }
     }
 }
 
-impl LifetimeInfo for CallbackStructFieldType {
+impl LifetimeInfo for CallbackArgStructField {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            CallbackStructFieldType::Basic(x) => x.rust_requires_lifetime(),
-            CallbackStructFieldType::Iterator(x) => x.rust_requires_lifetime(),
-            CallbackStructFieldType::Struct(x) => x.rust_requires_lifetime(),
+            CallbackArgStructField::Basic(x) => x.rust_requires_lifetime(),
+            CallbackArgStructField::Iterator(x) => x.rust_requires_lifetime(),
+            CallbackArgStructField::Struct(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            CallbackStructFieldType::Basic(x) => x.c_requires_lifetime(),
-            CallbackStructFieldType::Iterator(x) => x.c_requires_lifetime(),
-            CallbackStructFieldType::Struct(x) => x.c_requires_lifetime(),
+            CallbackArgStructField::Basic(x) => x.c_requires_lifetime(),
+            CallbackArgStructField::Iterator(x) => x.c_requires_lifetime(),
+            CallbackArgStructField::Struct(x) => x.c_requires_lifetime(),
         }
     }
 }
 
-impl LifetimeInfo for ReturnStructFieldType {
+impl LifetimeInfo for FunctionReturnStructField {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
             Self::Basic(x) => x.rust_requires_lifetime(),
@@ -857,18 +857,18 @@ impl LifetimeInfo for ReturnStructFieldType {
     }
 }
 
-impl LifetimeInfo for UniversalStructFieldType {
+impl LifetimeInfo for UniversalStructField {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            UniversalStructFieldType::Basic(x) => x.rust_requires_lifetime(),
-            UniversalStructFieldType::Struct(x) => x.rust_requires_lifetime(),
+            UniversalStructField::Basic(x) => x.rust_requires_lifetime(),
+            UniversalStructField::Struct(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            UniversalStructFieldType::Basic(x) => x.c_requires_lifetime(),
-            UniversalStructFieldType::Struct(x) => x.c_requires_lifetime(),
+            UniversalStructField::Basic(x) => x.c_requires_lifetime(),
+            UniversalStructField::Struct(x) => x.c_requires_lifetime(),
         }
     }
 }

@@ -13,7 +13,7 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Bin
         .build()?;
 
     let byte_value = lib
-        .define_rstruct(&byte_value)?
+        .define_function_return_struct(&byte_value)?
         .add("value", BasicType::Uint8, "byte")?
         .doc("item type for inner iterator")?
         .end_fields()?
@@ -31,17 +31,13 @@ fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Binding
 
     let iterator_next_fn = lib
         .define_function("next_chunk")
-        .param(
-            "it",
-            chunk_iterator.clone(),
-            "iterator over chunks of bytes",
-        )?
+        .param("it", chunk_iterator, "iterator over chunks of bytes")?
         .returns(chunk.clone(), "next chunk struct")?
         .doc("returns the next Chunk struct")?
         .build()?;
 
     let byte_values = lib
-        .define_rstruct(&chunk)?
+        .define_function_return_struct(&chunk)?
         .add(
             "iter",
             inner_iter,

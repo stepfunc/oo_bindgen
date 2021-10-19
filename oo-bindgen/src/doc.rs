@@ -39,7 +39,7 @@
 //! - `{null}`: prints `NULL` in C, or `null` in C# and Java.
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
-use crate::structs::univeral_struct::UniversalStructFieldType;
+use crate::structs::universal_struct::UniversalStructField;
 use crate::types::Arg;
 use crate::{BindingError, Library};
 use lazy_static::lazy_static;
@@ -371,7 +371,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 }
 
 fn validate_doc(symbol_name: &str, doc: &Doc, lib: &Library) -> Result<(), BindingError> {
-    validate_doc_with_params::<UniversalStructFieldType>(symbol_name, doc, &[], lib)
+    validate_doc_with_params::<UniversalStructField>(symbol_name, doc, &[], lib)
 }
 
 fn validate_doc_with_params<T>(

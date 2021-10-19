@@ -328,7 +328,7 @@ where
     if handle.visibility != Visibility::Private {
         f.newline()?;
         for c in &handle.constructors {
-            write_struct_constructor(f, lib, c, &handle)?;
+            write_struct_constructor(f, lib, c, handle)?;
             f.newline()?;
         }
     }

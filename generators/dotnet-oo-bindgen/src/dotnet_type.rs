@@ -6,11 +6,11 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
-use oo_bindgen::structs::callback_struct::CallbackStructFieldType;
+use oo_bindgen::structs::callback_argument_struct::CallbackArgStructField;
 use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
-use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
-use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
-use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
+use oo_bindgen::structs::function_argument_struct::FunctionArgStructField;
+use oo_bindgen::structs::function_return_struct::FunctionReturnStructField;
+use oo_bindgen::structs::universal_struct::UniversalStructField;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
 use oo_bindgen::{Handle, UniversalOr};
 
@@ -330,59 +330,59 @@ where
     }
 }
 
-impl DotnetType for FunctionArgStructFieldType {
+impl DotnetType for FunctionArgStructField {
     fn as_dotnet_type(&self) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_dotnet_type(),
-            FunctionArgStructFieldType::String(x) => x.as_dotnet_type(),
-            FunctionArgStructFieldType::Interface(x) => x.as_dotnet_type(),
-            FunctionArgStructFieldType::Collection(x) => x.as_dotnet_type(),
-            FunctionArgStructFieldType::Struct(x) => x.as_dotnet_type(),
+            FunctionArgStructField::Basic(x) => x.as_dotnet_type(),
+            FunctionArgStructField::String(x) => x.as_dotnet_type(),
+            FunctionArgStructField::Interface(x) => x.as_dotnet_type(),
+            FunctionArgStructField::Collection(x) => x.as_dotnet_type(),
+            FunctionArgStructField::Struct(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.as_native_type(),
-            FunctionArgStructFieldType::String(x) => x.as_native_type(),
-            FunctionArgStructFieldType::Interface(x) => x.as_native_type(),
-            FunctionArgStructFieldType::Collection(x) => x.as_native_type(),
-            FunctionArgStructFieldType::Struct(x) => x.as_native_type(),
+            FunctionArgStructField::Basic(x) => x.as_native_type(),
+            FunctionArgStructField::String(x) => x.as_native_type(),
+            FunctionArgStructField::Interface(x) => x.as_native_type(),
+            FunctionArgStructField::Collection(x) => x.as_native_type(),
+            FunctionArgStructField::Struct(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.convert_to_native(from),
-            FunctionArgStructFieldType::String(x) => x.convert_to_native(from),
-            FunctionArgStructFieldType::Interface(x) => x.convert_to_native(from),
-            FunctionArgStructFieldType::Collection(x) => x.convert_to_native(from),
-            FunctionArgStructFieldType::Struct(x) => x.convert_to_native(from),
+            FunctionArgStructField::Basic(x) => x.convert_to_native(from),
+            FunctionArgStructField::String(x) => x.convert_to_native(from),
+            FunctionArgStructField::Interface(x) => x.convert_to_native(from),
+            FunctionArgStructField::Collection(x) => x.convert_to_native(from),
+            FunctionArgStructField::Struct(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.cleanup(from),
-            FunctionArgStructFieldType::String(x) => x.cleanup(from),
-            FunctionArgStructFieldType::Interface(x) => x.cleanup(from),
-            FunctionArgStructFieldType::Collection(x) => x.cleanup(from),
-            FunctionArgStructFieldType::Struct(x) => x.cleanup(from),
+            FunctionArgStructField::Basic(x) => x.cleanup(from),
+            FunctionArgStructField::String(x) => x.cleanup(from),
+            FunctionArgStructField::Interface(x) => x.cleanup(from),
+            FunctionArgStructField::Collection(x) => x.cleanup(from),
+            FunctionArgStructField::Struct(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            FunctionArgStructFieldType::Basic(x) => x.convert_from_native(from),
-            FunctionArgStructFieldType::String(x) => x.convert_from_native(from),
-            FunctionArgStructFieldType::Interface(x) => x.convert_from_native(from),
-            FunctionArgStructFieldType::Collection(x) => x.convert_from_native(from),
-            FunctionArgStructFieldType::Struct(x) => x.convert_from_native(from),
+            FunctionArgStructField::Basic(x) => x.convert_from_native(from),
+            FunctionArgStructField::String(x) => x.convert_from_native(from),
+            FunctionArgStructField::Interface(x) => x.convert_from_native(from),
+            FunctionArgStructField::Collection(x) => x.convert_from_native(from),
+            FunctionArgStructField::Struct(x) => x.convert_from_native(from),
         }
     }
 }
 
-impl DotnetType for ReturnStructFieldType {
+impl DotnetType for FunctionReturnStructField {
     fn as_dotnet_type(&self) -> String {
         match self {
             Self::Basic(x) => x.as_dotnet_type(),
@@ -429,81 +429,81 @@ impl DotnetType for ReturnStructFieldType {
     }
 }
 
-impl DotnetType for CallbackStructFieldType {
+impl DotnetType for CallbackArgStructField {
     fn as_dotnet_type(&self) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_dotnet_type(),
-            CallbackStructFieldType::Iterator(x) => x.as_dotnet_type(),
-            CallbackStructFieldType::Struct(x) => x.as_dotnet_type(),
+            CallbackArgStructField::Basic(x) => x.as_dotnet_type(),
+            CallbackArgStructField::Iterator(x) => x.as_dotnet_type(),
+            CallbackArgStructField::Struct(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            CallbackStructFieldType::Basic(x) => x.as_native_type(),
-            CallbackStructFieldType::Iterator(x) => x.as_native_type(),
-            CallbackStructFieldType::Struct(x) => x.as_native_type(),
+            CallbackArgStructField::Basic(x) => x.as_native_type(),
+            CallbackArgStructField::Iterator(x) => x.as_native_type(),
+            CallbackArgStructField::Struct(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            CallbackStructFieldType::Basic(x) => x.convert_to_native(from),
-            CallbackStructFieldType::Iterator(x) => x.convert_to_native(from),
-            CallbackStructFieldType::Struct(x) => x.convert_to_native(from),
+            CallbackArgStructField::Basic(x) => x.convert_to_native(from),
+            CallbackArgStructField::Iterator(x) => x.convert_to_native(from),
+            CallbackArgStructField::Struct(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            CallbackStructFieldType::Basic(x) => x.cleanup(from),
-            CallbackStructFieldType::Iterator(x) => x.cleanup(from),
-            CallbackStructFieldType::Struct(x) => x.cleanup(from),
+            CallbackArgStructField::Basic(x) => x.cleanup(from),
+            CallbackArgStructField::Iterator(x) => x.cleanup(from),
+            CallbackArgStructField::Struct(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            CallbackStructFieldType::Basic(x) => x.convert_from_native(from),
-            CallbackStructFieldType::Iterator(x) => x.convert_from_native(from),
-            CallbackStructFieldType::Struct(x) => x.convert_from_native(from),
+            CallbackArgStructField::Basic(x) => x.convert_from_native(from),
+            CallbackArgStructField::Iterator(x) => x.convert_from_native(from),
+            CallbackArgStructField::Struct(x) => x.convert_from_native(from),
         }
     }
 }
 
-impl DotnetType for UniversalStructFieldType {
+impl DotnetType for UniversalStructField {
     fn as_dotnet_type(&self) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_dotnet_type(),
-            UniversalStructFieldType::Struct(x) => x.as_dotnet_type(),
+            UniversalStructField::Basic(x) => x.as_dotnet_type(),
+            UniversalStructField::Struct(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            UniversalStructFieldType::Basic(x) => x.as_native_type(),
-            UniversalStructFieldType::Struct(x) => x.as_native_type(),
+            UniversalStructField::Basic(x) => x.as_native_type(),
+            UniversalStructField::Struct(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            UniversalStructFieldType::Basic(x) => x.convert_to_native(from),
-            UniversalStructFieldType::Struct(x) => x.convert_to_native(from),
+            UniversalStructField::Basic(x) => x.convert_to_native(from),
+            UniversalStructField::Struct(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            UniversalStructFieldType::Basic(x) => x.cleanup(from),
-            UniversalStructFieldType::Struct(x) => x.cleanup(from),
+            UniversalStructField::Basic(x) => x.cleanup(from),
+            UniversalStructField::Struct(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            UniversalStructFieldType::Basic(x) => x.convert_from_native(from),
-            UniversalStructFieldType::Struct(x) => x.convert_from_native(from),
+            UniversalStructField::Basic(x) => x.convert_from_native(from),
+            UniversalStructField::Struct(x) => x.convert_from_native(from),
         }
     }
 }

@@ -1,6 +1,6 @@
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::structs::common::{ConstructorDefault, ConstructorName, FieldName};
-use oo_bindgen::structs::function_struct::FunctionArgStructHandle;
+use oo_bindgen::structs::function_argument_struct::FunctionArgStructHandle;
 use oo_bindgen::types::{BasicType, DurationType, STRING_TYPE};
 use oo_bindgen::*;
 use std::time::Duration;
@@ -17,7 +17,7 @@ pub fn define_inner_structure(
 
     let inner_structure = lib.declare_struct("InnerStructure")?;
     let inner_structure = lib
-        .define_fstruct(&inner_structure)?
+        .define_function_argument_struct(&inner_structure)?
         .doc("Structure used within another structure")?
         .add(test_field.clone(), BasicType::Uint16, "test uint16 field")?
         // The following pattern used to crash in Java because of the way we handled boolean
@@ -30,7 +30,7 @@ pub fn define_inner_structure(
         .add(bool2_field.clone(), BasicType::Bool, "boolean field")?
         .add(
             second_enum_field.clone(),
-            structure_enum.clone(),
+            structure_enum,
             "second enum value",
         )?
         .end_fields()?
@@ -93,7 +93,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let duration_millis = FieldName::new("duration_millis");
     let duration_seconds = FieldName::new("duration_seconds");
 
-    lib.define_fstruct(&structure)?
+    lib.define_function_argument_struct(&structure)?
         .add(enum_value.clone(), structure_enum.clone(), "enum_value")?
         .add(boolean_value.clone(), BasicType::Bool, "boolean_value")?
         .add(boolean_value2.clone(), BasicType::Bool, "boolean_value2")?
@@ -111,7 +111,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add(string_value.clone(), STRING_TYPE, "string_value")?
         .add(structure_value.clone(), inner_structure, "structure_value")?
         .add(
-            empty_interface.clone(),
+            empty_interface,
             an_empty_interface,
             "interface that does nothing",
         )?

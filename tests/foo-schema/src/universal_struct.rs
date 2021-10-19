@@ -1,5 +1,5 @@
 use oo_bindgen::structs::common::FieldName;
-use oo_bindgen::structs::univeral_struct::UniversalStructHandle;
+use oo_bindgen::structs::universal_struct::UniversalStructHandle;
 use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::{BindResult, LibraryBuilder};
 
@@ -7,7 +7,7 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
     let inner = lib.declare_struct("UniversalInnerStruct")?;
 
     let value = FieldName::new("value");
-    lib.define_ustruct(&inner)?
+    lib.define_universal_struct(&inner)?
         .doc("Simple universal struct")?
         .add(value, BasicType::Sint32, "integer value")?
         .end_fields()?
@@ -20,7 +20,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
     let delay = FieldName::new("delay");
     let outer_struct = lib.declare_struct("UniversalOuterStruct")?;
     let outer_struct = lib
-        .define_ustruct(&outer_struct)?
+        .define_universal_struct(&outer_struct)?
         .doc("Simple universal struct with an inner structure")?
         .add("inner", inner_struct, "An inner structure")?
         .add(delay, DurationType::Seconds, "A duration value")?

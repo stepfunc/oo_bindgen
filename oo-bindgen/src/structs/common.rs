@@ -165,10 +165,10 @@ pub trait ConstructorValidator {
         field_type: String,
         value: &ConstructorDefault,
     ) -> BindResult<ValidatedConstructorDefault> {
-        return Err(BindingError::StructConstructorBadValueForType {
-            field_type: field_type.clone(),
+        Err(BindingError::StructConstructorBadValueForType {
+            field_type,
             value: value.clone(),
-        });
+        })
     }
 
     /// Check that the value is valid for the type
@@ -481,7 +481,7 @@ where
         }
 
         Ok(ConstructorBuilder {
-            name: name.clone(),
+            name,
             builder: self,
             fields: Vec::new(),
             doc,

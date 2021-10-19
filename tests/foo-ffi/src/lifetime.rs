@@ -1,5 +1,4 @@
 use std::ffi::CStr;
-use std::ptr::null_mut;
 
 pub struct InnerByteIterator<'a> {
     item: crate::ffi::ByteValue,
@@ -7,7 +6,7 @@ pub struct InnerByteIterator<'a> {
 }
 
 pub unsafe fn next_byte_value(it: *mut crate::InnerByteIterator) -> Option<&crate::ffi::ByteValue> {
-    if it == null_mut() {
+    if it.is_null() {
         return None;
     }
 
@@ -30,7 +29,7 @@ pub struct ChunkIterator<'a> {
 }
 
 pub unsafe fn next_chunk(it: *mut crate::ChunkIterator) -> Option<&crate::ffi::Chunk> {
-    if it == null_mut() {
+    if it.is_null() {
         return None;
     }
     let it = &mut (*it);

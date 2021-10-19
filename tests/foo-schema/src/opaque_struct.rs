@@ -5,7 +5,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let opaque_struct = lib.declare_struct("OpaqueStruct")?;
 
     let opaque_struct = lib
-        .define_rstruct(&opaque_struct)?
+        .define_function_return_struct(&opaque_struct)?
         .make_opaque()
         .add("id", BasicType::Uint64, "64-bit id")?
         .doc("Opaque structure")?

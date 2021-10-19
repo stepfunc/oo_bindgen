@@ -11,13 +11,15 @@ use crate::structs::common::{
     ConstructorDefault, ConstructorName, ConstructorValidator, Struct, StructDeclaration,
     StructDeclarationHandle, StructFieldType, ValidatedConstructorDefault,
 };
-use crate::structs::function_struct::{FunctionArgStructBuilder, FunctionArgStructHandle};
+use crate::structs::function_argument_struct::{FunctionArgStructBuilder, FunctionArgStructHandle};
 use crate::*;
 use crate::{BindingError, Version};
 
-use crate::structs::callback_struct::{CallbackStructBuilder, CallbackStructHandle};
-use crate::structs::function_return_struct::{ReturnStructBuilder, ReturnStructHandle};
-use crate::structs::univeral_struct::{UniversalStructBuilder, UniversalStructHandle};
+use crate::structs::callback_argument_struct::{CallbackStructBuilder, CallbackStructHandle};
+use crate::structs::function_return_struct::{
+    FunctionReturnStructBuilder, FunctionReturnStructHandle,
+};
+use crate::structs::universal_struct::{UniversalStructBuilder, UniversalStructHandle};
 use crate::types::{TypeValidator, ValidatedType};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -288,7 +290,7 @@ pub enum StructType {
     /// structs that may be used as native function parameters
     FStruct(FunctionArgStructHandle),
     /// structs than can be used as native function return values
-    RStruct(ReturnStructHandle),
+    RStruct(FunctionReturnStructHandle),
     /// structs that may be used as callback function arguments in interfaces
     CStruct(CallbackStructHandle),
     /// structs that can be used in any context and only contain basic types
@@ -301,8 +303,8 @@ impl From<FunctionArgStructHandle> for StructType {
     }
 }
 
-impl From<ReturnStructHandle> for StructType {
-    fn from(x: ReturnStructHandle) -> Self {
+impl From<FunctionReturnStructHandle> for StructType {
+    fn from(x: FunctionReturnStructHandle) -> Self {
         StructType::RStruct(x)
     }
 }
@@ -321,7 +323,7 @@ impl From<UniversalStructHandle> for StructType {
 
 /// Structs can always be the Universal struct type, but may also be a
 /// more specific type depending on context
-#[derive(Debug, Clone, Hash, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub enum UniversalOr<T>
 where
     T: StructFieldType,
@@ -652,8 +654,11 @@ impl LibraryBuilder {
         Ok(handle)
     }
 
-    /// Define a structure that can be used in any context
-    pub fn define_ustruct(
+    /// Define a structure that can be used in any context.
+    ///
+    /// Backends will generate bi-directional conversion routines
+    /// for this type of struct.
+    pub fn define_universal_struct(
         &mut self,
         declaration: &StructDeclarationHandle,
     ) -> BindResult<UniversalStructBuilder> {
@@ -667,8 +672,8 @@ impl LibraryBuilder {
         }
     }
 
-    /// Define a structure that can be used in callback function arguments
-    pub fn define_cstruct(
+    /// Define a structure that can be only be used in callback function arguments
+    pub fn define_callback_argument_struct(
         &mut self,
         declaration: &StructDeclarationHandle,
     ) -> BindResult<CallbackStructBuilder> {
@@ -682,14 +687,14 @@ impl LibraryBuilder {
         }
     }
 
-    /// Define a structure that can be used in callback function arguments
-    pub fn define_rstruct(
+    /// Define a structure that can only be used as function return value
+    pub fn define_function_return_struct(
         &mut self,
         declaration: &StructDeclarationHandle,
-    ) -> BindResult<ReturnStructBuilder> {
+    ) -> BindResult<FunctionReturnStructBuilder> {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
-            Ok(ReturnStructBuilder::new(self, declaration.clone()))
+            Ok(FunctionReturnStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),
@@ -697,8 +702,8 @@ impl LibraryBuilder {
         }
     }
 
-    /// Define a structure that can be used in native function arguments
-    pub fn define_fstruct(
+    /// Define a structure that can only be be used as a function argument
+    pub fn define_function_argument_struct(
         &mut self,
         declaration: &StructDeclarationHandle,
     ) -> BindResult<FunctionArgStructBuilder> {
@@ -759,7 +764,7 @@ impl LibraryBuilder {
     pub fn define_iterator(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &ReturnStructHandle,
+        item_type: &FunctionReturnStructHandle,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(false, native_func, item_type)
     }
@@ -767,7 +772,7 @@ impl LibraryBuilder {
     pub fn define_iterator_with_lifetime(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &ReturnStructHandle,
+        item_type: &FunctionReturnStructHandle,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(true, native_func, item_type)
     }
@@ -776,7 +781,7 @@ impl LibraryBuilder {
         &mut self,
         has_lifetime: bool,
         native_func: &FunctionHandle,
-        item_type: &ReturnStructHandle,
+        item_type: &FunctionReturnStructHandle,
     ) -> BindResult<IteratorHandle> {
         let iter = IteratorHandle::new(crate::iterator::Iterator::new(
             has_lifetime,

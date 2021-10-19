@@ -5,13 +5,13 @@ use crate::collection::CollectionHandle;
 use crate::doc::DocString;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
-use crate::structs::callback_struct::CallbackStructFieldType;
+use crate::structs::callback_argument_struct::CallbackArgStructField;
 use crate::structs::common::{
     ConstructorDefault, ConstructorValidator, StructDeclarationHandle, ValidatedConstructorDefault,
 };
-use crate::structs::function_return_struct::ReturnStructFieldType;
-use crate::structs::function_struct::FunctionArgStructFieldType;
-use crate::structs::univeral_struct::UniversalStructFieldType;
+use crate::structs::function_argument_struct::FunctionArgStructField;
+use crate::structs::function_return_struct::FunctionReturnStructField;
+use crate::structs::universal_struct::UniversalStructField;
 use crate::{BindResult, BindingError, StructType};
 use std::time::Duration;
 
@@ -246,7 +246,7 @@ pub trait TypeExtractor {
     }
 }
 
-impl TypeExtractor for FunctionArgStructFieldType {
+impl TypeExtractor for FunctionArgStructField {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
@@ -255,7 +255,7 @@ impl TypeExtractor for FunctionArgStructFieldType {
     }
 }
 
-impl TypeExtractor for ReturnStructFieldType {
+impl TypeExtractor for FunctionReturnStructField {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
@@ -264,7 +264,7 @@ impl TypeExtractor for ReturnStructFieldType {
     }
 }
 
-impl TypeExtractor for CallbackStructFieldType {
+impl TypeExtractor for CallbackArgStructField {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),
@@ -273,7 +273,7 @@ impl TypeExtractor for CallbackStructFieldType {
     }
 }
 
-impl TypeExtractor for UniversalStructFieldType {
+impl TypeExtractor for UniversalStructField {
     fn get_basic_type(&self) -> Option<&BasicType> {
         match self {
             Self::Basic(x) => Some(x),

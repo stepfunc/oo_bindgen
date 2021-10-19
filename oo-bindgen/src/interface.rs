@@ -1,8 +1,8 @@
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::return_type::ReturnType;
-use crate::structs::callback_struct::CallbackStructHandle;
-use crate::structs::univeral_struct::UniversalStructHandle;
+use crate::structs::callback_argument_struct::CallbackStructHandle;
+use crate::structs::universal_struct::UniversalStructHandle;
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 use std::collections::HashSet;

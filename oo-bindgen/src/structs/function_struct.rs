@@ -10,7 +10,7 @@ pub enum FunctionArgStructFieldType {
     String(StringType),
     Interface(InterfaceHandle),
     Collection(CollectionHandle),
-    Struct(MaybeUniversal<FunctionArgStructFieldType>),
+    Struct(UniversalOr<FunctionArgStructFieldType>),
 }
 
 impl TypeValidator for FunctionArgStructFieldType {

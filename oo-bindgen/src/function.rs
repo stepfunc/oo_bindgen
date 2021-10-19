@@ -13,7 +13,7 @@ pub enum FReturnValue {
     Basic(BasicType),
     String(StringType),
     ClassRef(ClassDeclarationHandle),
-    Struct(MaybeUniversal<ReturnStructFieldType>),
+    Struct(UniversalOr<ReturnStructFieldType>),
     StructRef(StructDeclarationHandle),
 }
 
@@ -61,7 +61,7 @@ impl From<EnumHandle> for FReturnValue {
 
 impl From<UniversalStructHandle> for FReturnValue {
     fn from(x: UniversalStructHandle) -> Self {
-        Self::Struct(MaybeUniversal::Universal(x))
+        Self::Struct(UniversalOr::Universal(x))
     }
 }
 
@@ -73,7 +73,7 @@ pub enum FArgument {
     Basic(BasicType),
     String(StringType),
     Collection(CollectionHandle),
-    Struct(MaybeUniversal<FunctionArgStructFieldType>),
+    Struct(UniversalOr<FunctionArgStructFieldType>),
     StructRef(StructDeclarationHandle),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
@@ -95,7 +95,7 @@ impl TypeValidator for FArgument {
 
 impl From<UniversalStructHandle> for FArgument {
     fn from(x: UniversalStructHandle) -> Self {
-        Self::Struct(MaybeUniversal::Universal(x))
+        Self::Struct(UniversalOr::Universal(x))
     }
 }
 

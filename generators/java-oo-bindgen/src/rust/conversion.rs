@@ -13,7 +13,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::{Handle, MaybeUniversal};
+use oo_bindgen::{Handle, UniversalOr};
 
 const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
@@ -665,7 +665,7 @@ where
 }
 
 // TODO this is duplicated with Handle<Struct<T>>
-impl<T> JniType for MaybeUniversal<T>
+impl<T> JniType for UniversalOr<T>
 where
     T: StructFieldType,
 {

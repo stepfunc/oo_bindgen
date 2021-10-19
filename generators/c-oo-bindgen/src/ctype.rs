@@ -5,7 +5,7 @@ use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::common::{Struct, StructDeclarationHandle, StructFieldType};
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{MaybeUniversal, StructType, Symbol};
+use oo_bindgen::{StructType, Symbol, UniversalOr};
 
 use heck::SnakeCase;
 use oo_bindgen::collection::CollectionHandle;
@@ -170,7 +170,7 @@ impl CType for BasicType {
     }
 }
 
-impl<T> CType for MaybeUniversal<T>
+impl<T> CType for UniversalOr<T>
 where
     T: StructFieldType,
 {

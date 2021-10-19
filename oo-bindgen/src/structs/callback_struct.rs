@@ -9,7 +9,7 @@ use crate::types::{TypeValidator, ValidatedType};
 pub enum CallbackStructFieldType {
     Basic(BasicType),
     Iterator(IteratorHandle),
-    Struct(MaybeUniversal<CallbackStructFieldType>),
+    Struct(UniversalOr<CallbackStructFieldType>),
 }
 
 impl TypeValidator for CallbackStructFieldType {
@@ -42,8 +42,8 @@ impl ConstructorValidator for CallbackStructFieldType {
             CallbackStructFieldType::Basic(x) => x.validate_constructor_default(value),
             CallbackStructFieldType::Iterator(x) => x.validate_constructor_default(value),
             CallbackStructFieldType::Struct(x) => match x {
-                MaybeUniversal::Specific(x) => x.validate_constructor_default(value),
-                MaybeUniversal::Universal(x) => x.validate_constructor_default(value),
+                UniversalOr::Specific(x) => x.validate_constructor_default(value),
+                UniversalOr::Universal(x) => x.validate_constructor_default(value),
             },
         }
     }

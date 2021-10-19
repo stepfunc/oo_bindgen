@@ -13,7 +13,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::*;
-use oo_bindgen::MaybeUniversal;
+use oo_bindgen::UniversalOr;
 
 pub(crate) trait LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool;
@@ -105,21 +105,21 @@ impl LifetimeInfo for CollectionHandle {
     }
 }
 
-impl<T> LifetimeInfo for MaybeUniversal<T>
+impl<T> LifetimeInfo for UniversalOr<T>
 where
     T: StructFieldType + LifetimeInfo,
 {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            MaybeUniversal::Specific(x) => x.rust_requires_lifetime(),
-            MaybeUniversal::Universal(x) => x.rust_requires_lifetime(),
+            UniversalOr::Specific(x) => x.rust_requires_lifetime(),
+            UniversalOr::Universal(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            MaybeUniversal::Specific(x) => x.c_requires_lifetime(),
-            MaybeUniversal::Universal(x) => x.c_requires_lifetime(),
+            UniversalOr::Specific(x) => x.c_requires_lifetime(),
+            UniversalOr::Universal(x) => x.c_requires_lifetime(),
         }
     }
 }
@@ -244,35 +244,35 @@ impl RustType for CollectionHandle {
     }
 }
 
-impl<T> RustType for MaybeUniversal<T>
+impl<T> RustType for UniversalOr<T>
 where
     T: StructFieldType + LifetimeInfo,
 {
     fn as_rust_type(&self) -> String {
         match self {
-            MaybeUniversal::Specific(x) => x.as_rust_type(),
-            MaybeUniversal::Universal(x) => x.as_rust_type(),
+            UniversalOr::Specific(x) => x.as_rust_type(),
+            UniversalOr::Universal(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            MaybeUniversal::Specific(x) => x.as_c_type(),
-            MaybeUniversal::Universal(x) => x.as_c_type(),
+            UniversalOr::Specific(x) => x.as_c_type(),
+            UniversalOr::Universal(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            MaybeUniversal::Specific(x) => x.is_copyable(),
-            MaybeUniversal::Universal(x) => x.is_copyable(),
+            UniversalOr::Specific(x) => x.is_copyable(),
+            UniversalOr::Universal(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            MaybeUniversal::Specific(x) => x.conversion(),
-            MaybeUniversal::Universal(x) => x.conversion(),
+            UniversalOr::Specific(x) => x.conversion(),
+            UniversalOr::Universal(x) => x.conversion(),
         }
     }
 }

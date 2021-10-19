@@ -12,7 +12,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::{Handle, MaybeUniversal};
+use oo_bindgen::{Handle, UniversalOr};
 
 const INT_PTR_STRING: &str = "IntPtr";
 
@@ -290,42 +290,42 @@ impl DotnetType for IteratorHandle {
     }
 }
 
-impl<T> DotnetType for MaybeUniversal<T>
+impl<T> DotnetType for UniversalOr<T>
 where
     T: StructFieldType,
 {
     fn as_dotnet_type(&self) -> String {
         match self {
-            MaybeUniversal::Specific(x) => x.as_dotnet_type(),
-            MaybeUniversal::Universal(x) => x.as_dotnet_type(),
+            UniversalOr::Specific(x) => x.as_dotnet_type(),
+            UniversalOr::Universal(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            MaybeUniversal::Specific(x) => x.as_native_type(),
-            MaybeUniversal::Universal(x) => x.as_native_type(),
+            UniversalOr::Specific(x) => x.as_native_type(),
+            UniversalOr::Universal(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            MaybeUniversal::Specific(x) => x.convert_to_native(from),
-            MaybeUniversal::Universal(x) => x.convert_to_native(from),
+            UniversalOr::Specific(x) => x.convert_to_native(from),
+            UniversalOr::Universal(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            MaybeUniversal::Specific(x) => x.cleanup(from),
-            MaybeUniversal::Universal(x) => x.cleanup(from),
+            UniversalOr::Specific(x) => x.cleanup(from),
+            UniversalOr::Universal(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            MaybeUniversal::Specific(x) => x.convert_from_native(from),
-            MaybeUniversal::Universal(x) => x.convert_from_native(from),
+            UniversalOr::Specific(x) => x.convert_from_native(from),
+            UniversalOr::Universal(x) => x.convert_from_native(from),
         }
     }
 }

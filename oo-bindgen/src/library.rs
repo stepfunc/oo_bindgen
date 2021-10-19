@@ -319,9 +319,10 @@ impl From<UniversalStructHandle> for StructType {
     }
 }
 
-/// Structs can always be the Universal type instead of any specific type
+/// Structs can always be the Universal struct type, but may also be a
+/// more specific type depending on context
 #[derive(Debug, Clone, Hash, Eq)]
-pub enum MaybeUniversal<T>
+pub enum UniversalOr<T>
 where
     T: StructFieldType,
 {
@@ -329,44 +330,44 @@ where
     Universal(UniversalStructHandle),
 }
 
-impl<T> PartialEq for MaybeUniversal<T>
+impl<T> PartialEq for UniversalOr<T>
 where
     T: StructFieldType,
 {
     fn eq(&self, other: &Self) -> bool {
         match self {
-            MaybeUniversal::Specific(y) => match other {
-                MaybeUniversal::Specific(x) => y == x,
-                MaybeUniversal::Universal(_) => false,
+            UniversalOr::Specific(y) => match other {
+                UniversalOr::Specific(x) => y == x,
+                UniversalOr::Universal(_) => false,
             },
-            MaybeUniversal::Universal(x) => match other {
-                MaybeUniversal::Specific(_) => false,
-                MaybeUniversal::Universal(y) => x == y,
+            UniversalOr::Universal(x) => match other {
+                UniversalOr::Specific(_) => false,
+                UniversalOr::Universal(y) => x == y,
             },
         }
     }
 }
 
-impl<T> MaybeUniversal<T>
+impl<T> UniversalOr<T>
 where
     T: StructFieldType,
 {
     pub fn name(&self) -> &str {
         match self {
-            MaybeUniversal::Specific(x) => x.name(),
-            MaybeUniversal::Universal(x) => x.name(),
+            UniversalOr::Specific(x) => x.name(),
+            UniversalOr::Universal(x) => x.name(),
         }
     }
 
     pub fn declaration(&self) -> StructDeclarationHandle {
         match self {
-            MaybeUniversal::Specific(x) => x.declaration.clone(),
-            MaybeUniversal::Universal(x) => x.declaration.clone(),
+            UniversalOr::Specific(x) => x.declaration.clone(),
+            UniversalOr::Universal(x) => x.declaration.clone(),
         }
     }
 }
 
-impl<T> ConstructorValidator for MaybeUniversal<T>
+impl<T> ConstructorValidator for UniversalOr<T>
 where
     T: StructFieldType,
 {
@@ -375,34 +376,34 @@ where
         value: &ConstructorDefault,
     ) -> BindResult<ValidatedConstructorDefault> {
         match self {
-            MaybeUniversal::Specific(x) => x.validate_constructor_default(value),
-            MaybeUniversal::Universal(x) => x.validate_constructor_default(value),
+            UniversalOr::Specific(x) => x.validate_constructor_default(value),
+            UniversalOr::Universal(x) => x.validate_constructor_default(value),
         }
     }
 }
 
-impl<T> From<Handle<Struct<T>>> for MaybeUniversal<T>
+impl<T> From<Handle<Struct<T>>> for UniversalOr<T>
 where
     T: StructFieldType,
 {
     fn from(x: Handle<Struct<T>>) -> Self {
-        MaybeUniversal::Specific(x)
+        UniversalOr::Specific(x)
     }
 }
 
-impl<T> MaybeUniversal<T>
+impl<T> UniversalOr<T>
 where
     T: StructFieldType,
 {
     pub fn to_struct_type(&self) -> StructType {
         match self {
-            MaybeUniversal::Specific(x) => T::create_struct_type(x.clone()),
-            MaybeUniversal::Universal(x) => StructType::UStruct(x.clone()),
+            UniversalOr::Specific(x) => T::create_struct_type(x.clone()),
+            UniversalOr::Universal(x) => StructType::UStruct(x.clone()),
         }
     }
 }
 
-impl<T> TypeValidator for MaybeUniversal<T>
+impl<T> TypeValidator for UniversalOr<T>
 where
     T: StructFieldType,
 {

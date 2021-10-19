@@ -13,7 +13,7 @@ use oo_bindgen::structs::function_return_struct::ReturnStructFieldType;
 use oo_bindgen::structs::function_struct::FunctionArgStructFieldType;
 use oo_bindgen::structs::univeral_struct::UniversalStructFieldType;
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{Handle, MaybeUniversal};
+use oo_bindgen::{Handle, UniversalOr};
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -131,21 +131,21 @@ where
     }
 }
 
-impl<T> JavaType for MaybeUniversal<T>
+impl<T> JavaType for UniversalOr<T>
 where
     T: StructFieldType,
 {
     fn as_java_primitive(&self) -> String {
         match self {
-            MaybeUniversal::Specific(x) => x.as_java_primitive(),
-            MaybeUniversal::Universal(x) => x.as_java_primitive(),
+            UniversalOr::Specific(x) => x.as_java_primitive(),
+            UniversalOr::Universal(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            MaybeUniversal::Specific(x) => x.as_java_object(),
-            MaybeUniversal::Universal(x) => x.as_java_object(),
+            UniversalOr::Specific(x) => x.as_java_object(),
+            UniversalOr::Universal(x) => x.as_java_object(),
         }
     }
 }

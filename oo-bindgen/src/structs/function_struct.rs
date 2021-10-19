@@ -25,9 +25,7 @@ impl TypeValidator for FunctionArgStructFieldType {
     }
 }
 
-pub type FunctionArgStructField = StructField<FunctionArgStructFieldType>;
-pub type FunctionArgStruct = Struct<FunctionArgStructFieldType>;
-pub type FunctionArgStructHandle = Handle<FunctionArgStruct>;
+pub type FunctionArgStructHandle = Handle<Struct<FunctionArgStructFieldType>>;
 pub type FunctionArgStructBuilder<'a> = StructFieldBuilder<'a, FunctionArgStructFieldType>;
 
 impl StructFieldType for FunctionArgStructFieldType {

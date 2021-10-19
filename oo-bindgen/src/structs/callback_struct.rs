@@ -22,9 +22,7 @@ impl TypeValidator for CallbackStructFieldType {
     }
 }
 
-pub type CallbackStructField = StructField<CallbackStructFieldType>;
-pub type CallbackStruct = Struct<CallbackStructFieldType>;
-pub type CallbackStructHandle = Handle<CallbackStruct>;
+pub type CallbackStructHandle = Handle<Struct<CallbackStructFieldType>>;
 pub type CallbackStructBuilder<'a> = StructFieldBuilder<'a, CallbackStructFieldType>;
 
 impl StructFieldType for CallbackStructFieldType {

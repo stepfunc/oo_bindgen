@@ -19,9 +19,7 @@ impl TypeValidator for UniversalStructFieldType {
     }
 }
 
-pub type UniversalStructField = StructField<UniversalStructFieldType>;
-pub type UniversalStruct = Struct<UniversalStructFieldType>;
-pub type UniversalStructHandle = Handle<UniversalStruct>;
+pub type UniversalStructHandle = Handle<Struct<UniversalStructFieldType>>;
 pub type UniversalStructBuilder<'a> = StructFieldBuilder<'a, UniversalStructFieldType>;
 
 impl StructFieldType for UniversalStructFieldType {

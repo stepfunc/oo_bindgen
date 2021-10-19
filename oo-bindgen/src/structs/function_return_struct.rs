@@ -8,9 +8,9 @@ use crate::*;
 pub enum ReturnStructFieldType {
     Basic(BasicType),
     ClassRef(ClassDeclarationHandle),
-    Struct(UniversalOr<ReturnStructFieldType>),
     // iterators must be allowed in return position so that you can have nested iterators
     Iterator(IteratorHandle),
+    Struct(UniversalOr<ReturnStructFieldType>),
 }
 
 impl TypeValidator for ReturnStructFieldType {

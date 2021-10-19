@@ -588,138 +588,138 @@ impl DotnetType for FArgument {
     }
 }
 
-impl DotnetType for CArgument {
+impl DotnetType for CallbackArgument {
     fn as_dotnet_type(&self) -> String {
         match self {
-            CArgument::Basic(x) => x.as_dotnet_type(),
-            CArgument::String(x) => x.as_dotnet_type(),
-            CArgument::Iterator(x) => x.as_dotnet_type(),
-            CArgument::Struct(x) => x.as_dotnet_type(),
+            CallbackArgument::Basic(x) => x.as_dotnet_type(),
+            CallbackArgument::String(x) => x.as_dotnet_type(),
+            CallbackArgument::Iterator(x) => x.as_dotnet_type(),
+            CallbackArgument::Struct(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            CArgument::Basic(x) => x.as_native_type(),
-            CArgument::String(x) => x.as_native_type(),
-            CArgument::Iterator(x) => x.as_native_type(),
-            CArgument::Struct(x) => x.as_native_type(),
+            CallbackArgument::Basic(x) => x.as_native_type(),
+            CallbackArgument::String(x) => x.as_native_type(),
+            CallbackArgument::Iterator(x) => x.as_native_type(),
+            CallbackArgument::Struct(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            CArgument::Basic(x) => x.convert_to_native(from),
-            CArgument::String(x) => x.convert_to_native(from),
-            CArgument::Iterator(x) => x.convert_to_native(from),
-            CArgument::Struct(x) => x.convert_to_native(from),
+            CallbackArgument::Basic(x) => x.convert_to_native(from),
+            CallbackArgument::String(x) => x.convert_to_native(from),
+            CallbackArgument::Iterator(x) => x.convert_to_native(from),
+            CallbackArgument::Struct(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            CArgument::Basic(x) => x.cleanup(from),
-            CArgument::String(x) => x.cleanup(from),
-            CArgument::Iterator(x) => x.cleanup(from),
-            CArgument::Struct(x) => x.cleanup(from),
+            CallbackArgument::Basic(x) => x.cleanup(from),
+            CallbackArgument::String(x) => x.cleanup(from),
+            CallbackArgument::Iterator(x) => x.cleanup(from),
+            CallbackArgument::Struct(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            CArgument::Basic(x) => x.convert_from_native(from),
-            CArgument::String(x) => x.convert_from_native(from),
-            CArgument::Iterator(x) => x.convert_from_native(from),
-            CArgument::Struct(x) => x.convert_from_native(from),
+            CallbackArgument::Basic(x) => x.convert_from_native(from),
+            CallbackArgument::String(x) => x.convert_from_native(from),
+            CallbackArgument::Iterator(x) => x.convert_from_native(from),
+            CallbackArgument::Struct(x) => x.convert_from_native(from),
         }
     }
 }
 
-impl DotnetType for CReturnValue {
+impl DotnetType for CallbackReturnValue {
     fn as_dotnet_type(&self) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_dotnet_type(),
-            CReturnValue::Struct(x) => x.as_dotnet_type(),
+            CallbackReturnValue::Basic(x) => x.as_dotnet_type(),
+            CallbackReturnValue::Struct(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_native_type(),
-            CReturnValue::Struct(x) => x.as_native_type(),
+            CallbackReturnValue::Basic(x) => x.as_native_type(),
+            CallbackReturnValue::Struct(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            CReturnValue::Basic(x) => x.convert_to_native(from),
-            CReturnValue::Struct(x) => x.convert_to_native(from),
+            CallbackReturnValue::Basic(x) => x.convert_to_native(from),
+            CallbackReturnValue::Struct(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            CReturnValue::Basic(x) => x.cleanup(from),
-            CReturnValue::Struct(x) => x.cleanup(from),
+            CallbackReturnValue::Basic(x) => x.cleanup(from),
+            CallbackReturnValue::Struct(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            CReturnValue::Basic(x) => x.convert_from_native(from),
-            CReturnValue::Struct(x) => x.convert_from_native(from),
+            CallbackReturnValue::Basic(x) => x.convert_from_native(from),
+            CallbackReturnValue::Struct(x) => x.convert_from_native(from),
         }
     }
 }
 
-impl DotnetType for FReturnValue {
+impl DotnetType for FunctionReturnValue {
     fn as_dotnet_type(&self) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_dotnet_type(),
-            FReturnValue::String(x) => x.as_dotnet_type(),
-            FReturnValue::ClassRef(x) => x.as_dotnet_type(),
-            FReturnValue::Struct(x) => x.as_dotnet_type(),
-            FReturnValue::StructRef(x) => x.as_dotnet_type(),
+            FunctionReturnValue::Basic(x) => x.as_dotnet_type(),
+            FunctionReturnValue::String(x) => x.as_dotnet_type(),
+            FunctionReturnValue::ClassRef(x) => x.as_dotnet_type(),
+            FunctionReturnValue::Struct(x) => x.as_dotnet_type(),
+            FunctionReturnValue::StructRef(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_native_type(),
-            FReturnValue::String(x) => x.as_native_type(),
-            FReturnValue::ClassRef(x) => x.as_native_type(),
-            FReturnValue::Struct(x) => x.as_native_type(),
-            FReturnValue::StructRef(x) => x.as_native_type(),
+            FunctionReturnValue::Basic(x) => x.as_native_type(),
+            FunctionReturnValue::String(x) => x.as_native_type(),
+            FunctionReturnValue::ClassRef(x) => x.as_native_type(),
+            FunctionReturnValue::Struct(x) => x.as_native_type(),
+            FunctionReturnValue::StructRef(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            FReturnValue::Basic(x) => x.convert_to_native(from),
-            FReturnValue::String(x) => x.convert_to_native(from),
-            FReturnValue::ClassRef(x) => x.convert_to_native(from),
-            FReturnValue::Struct(x) => x.convert_to_native(from),
-            FReturnValue::StructRef(x) => x.convert_to_native(from),
+            FunctionReturnValue::Basic(x) => x.convert_to_native(from),
+            FunctionReturnValue::String(x) => x.convert_to_native(from),
+            FunctionReturnValue::ClassRef(x) => x.convert_to_native(from),
+            FunctionReturnValue::Struct(x) => x.convert_to_native(from),
+            FunctionReturnValue::StructRef(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            FReturnValue::Basic(x) => x.cleanup(from),
-            FReturnValue::String(x) => x.cleanup(from),
-            FReturnValue::ClassRef(x) => x.cleanup(from),
-            FReturnValue::Struct(x) => x.cleanup(from),
-            FReturnValue::StructRef(x) => x.cleanup(from),
+            FunctionReturnValue::Basic(x) => x.cleanup(from),
+            FunctionReturnValue::String(x) => x.cleanup(from),
+            FunctionReturnValue::ClassRef(x) => x.cleanup(from),
+            FunctionReturnValue::Struct(x) => x.cleanup(from),
+            FunctionReturnValue::StructRef(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            FReturnValue::Basic(x) => x.convert_from_native(from),
-            FReturnValue::String(x) => x.convert_from_native(from),
-            FReturnValue::ClassRef(x) => x.convert_from_native(from),
-            FReturnValue::Struct(x) => x.convert_from_native(from),
-            FReturnValue::StructRef(x) => x.convert_from_native(from),
+            FunctionReturnValue::Basic(x) => x.convert_from_native(from),
+            FunctionReturnValue::String(x) => x.convert_from_native(from),
+            FunctionReturnValue::ClassRef(x) => x.convert_from_native(from),
+            FunctionReturnValue::Struct(x) => x.convert_from_native(from),
+            FunctionReturnValue::StructRef(x) => x.convert_from_native(from),
         }
     }
 }

@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::return_type::ReturnType;
-use crate::structs::CallbackStructHandle;
-use crate::structs::UniversalStructHandle;
+use crate::structs::{CallbackArgStructField, UniversalStructHandle};
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 
@@ -13,74 +12,80 @@ pub const DESTROY_FUNC_NAME: &str = "on_destroy";
 
 /// Types that can be used as callback function arguments
 #[derive(Debug, Clone, PartialEq)]
-pub enum CArgument {
+pub enum CallbackArgument {
     Basic(BasicType),
     String(StringType),
     Iterator(IteratorHandle),
-    Struct(CallbackStructHandle),
+    Struct(UniversalOr<CallbackArgStructField>),
 }
 
-impl TypeValidator for CArgument {
+impl TypeValidator for CallbackArgument {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
-            CArgument::Basic(x) => x.get_validated_type(),
-            CArgument::String(x) => x.get_validated_type(),
-            CArgument::Iterator(x) => x.get_validated_type(),
-            CArgument::Struct(x) => StructType::CStruct(x.clone()).get_validated_type(),
+            CallbackArgument::Basic(x) => x.get_validated_type(),
+            CallbackArgument::String(x) => x.get_validated_type(),
+            CallbackArgument::Iterator(x) => x.get_validated_type(),
+            CallbackArgument::Struct(x) => x.get_validated_type(),
         }
     }
 }
 
-impl From<BasicType> for CArgument {
+impl From<BasicType> for CallbackArgument {
     fn from(x: BasicType) -> Self {
         Self::Basic(x)
     }
 }
 
-impl From<DurationType> for CArgument {
+impl From<DurationType> for CallbackArgument {
     fn from(x: DurationType) -> Self {
-        CArgument::Basic(BasicType::Duration(x))
+        CallbackArgument::Basic(BasicType::Duration(x))
     }
 }
 
-impl From<IteratorHandle> for CArgument {
+impl From<IteratorHandle> for CallbackArgument {
     fn from(x: IteratorHandle) -> Self {
         Self::Iterator(x)
     }
 }
 
+impl From<UniversalStructHandle> for CallbackArgument {
+    fn from(x: UniversalStructHandle) -> Self {
+        Self::Struct(UniversalOr::Universal(x))
+    }
+}
+
 /// types that can be returned from callback functions
 #[derive(Debug, Clone, PartialEq)]
-pub enum CReturnValue {
+pub enum CallbackReturnValue {
     Basic(BasicType),
     Struct(UniversalStructHandle),
 }
 
-impl From<BasicType> for CReturnValue {
+impl From<BasicType> for CallbackReturnValue {
     fn from(x: BasicType) -> Self {
-        CReturnValue::Basic(x)
+        CallbackReturnValue::Basic(x)
     }
 }
 
-impl From<UniversalStructHandle> for CReturnValue {
+impl From<UniversalStructHandle> for CallbackReturnValue {
     fn from(x: UniversalStructHandle) -> Self {
-        CReturnValue::Struct(x)
+        CallbackReturnValue::Struct(x)
     }
 }
 
-impl From<DurationType> for CReturnValue {
+impl From<DurationType> for CallbackReturnValue {
     fn from(x: DurationType) -> Self {
         BasicType::Duration(x).into()
     }
 }
 
-pub type CReturnType = ReturnType<CReturnValue>;
+pub type CReturnType = ReturnType<CallbackReturnValue>;
 
 #[derive(Debug)]
 pub struct CallbackFunction {
     pub name: String,
     pub return_type: CReturnType,
-    pub arguments: Vec<Arg<CArgument>>,
+    pub arguments: Vec<Arg<CallbackArgument>>,
     pub doc: Doc,
 }
 
@@ -124,7 +129,7 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn callback<T: Into<String>, D: Into<Doc>>(
+    pub fn begin_callback<T: Into<String>, D: Into<Doc>>(
         mut self,
         name: T,
         doc: D,
@@ -174,7 +179,7 @@ pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
     return_type: Option<CReturnType>,
-    arguments: Vec<Arg<CArgument>>,
+    arguments: Vec<Arg<CallbackArgument>>,
     doc: Doc,
 }
 
@@ -189,7 +194,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<CArgument>>(
+    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<CallbackArgument>>(
         mut self,
         name: S,
         arg_type: P,
@@ -209,7 +214,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn returns<T: Into<CReturnValue>, D: Into<DocString>>(
+    pub fn returns<T: Into<CallbackReturnValue>, D: Into<DocString>>(
         self,
         t: T,
         d: D,
@@ -233,7 +238,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn build(mut self) -> BindResult<InterfaceBuilder<'a>> {
+    pub fn end_callback(mut self) -> BindResult<InterfaceBuilder<'a>> {
         let return_type = self.return_type.ok_or(BindingError::ReturnTypeNotDefined {
             func_name: self.name.clone(),
         })?;

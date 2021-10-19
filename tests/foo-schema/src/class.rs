@@ -46,10 +46,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let get_value_cb = lib
         .define_interface("GetValueCallback", "GetValue callback handler")
-        .callback("on_value", "On value callback")?
+        .begin_callback("on_value", "On value callback")?
         .param("value", BasicType::Uint32, "Value")?
         .returns_nothing()?
-        .build()?
+        .end_callback()?
         .build()?;
 
     let testclass_get_value_async_func = lib

@@ -1,8 +1,8 @@
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::function::{FArgument, FReturnValue};
-use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
+use oo_bindgen::function::{FArgument, FunctionReturnValue};
+use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
@@ -50,34 +50,34 @@ impl CType for IteratorHandle {
     }
 }
 
-impl CType for CArgument {
+impl CType for CallbackArgument {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            CArgument::Basic(x) => x.to_c_type(prefix),
-            CArgument::String(x) => x.to_c_type(prefix),
-            CArgument::Iterator(x) => x.to_c_type(prefix),
-            CArgument::Struct(x) => x.to_c_type(prefix),
+            CallbackArgument::Basic(x) => x.to_c_type(prefix),
+            CallbackArgument::String(x) => x.to_c_type(prefix),
+            CallbackArgument::Iterator(x) => x.to_c_type(prefix),
+            CallbackArgument::Struct(x) => x.to_c_type(prefix),
         }
     }
 }
 
-impl CType for FReturnValue {
+impl CType for FunctionReturnValue {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            FReturnValue::Basic(x) => x.to_c_type(prefix),
-            FReturnValue::String(x) => x.to_c_type(prefix),
-            FReturnValue::ClassRef(x) => pointer(x).to_c_type(prefix),
-            FReturnValue::Struct(x) => x.to_c_type(prefix),
-            FReturnValue::StructRef(x) => pointer(x).to_c_type(prefix),
+            FunctionReturnValue::Basic(x) => x.to_c_type(prefix),
+            FunctionReturnValue::String(x) => x.to_c_type(prefix),
+            FunctionReturnValue::ClassRef(x) => pointer(x).to_c_type(prefix),
+            FunctionReturnValue::Struct(x) => x.to_c_type(prefix),
+            FunctionReturnValue::StructRef(x) => pointer(x).to_c_type(prefix),
         }
     }
 }
 
-impl CType for CReturnValue {
+impl CType for CallbackReturnValue {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            CReturnValue::Basic(x) => x.to_c_type(prefix),
-            CReturnValue::Struct(x) => x.to_c_type(prefix),
+            CallbackReturnValue::Basic(x) => x.to_c_type(prefix),
+            CallbackReturnValue::Struct(x) => x.to_c_type(prefix),
         }
     }
 }

@@ -1,7 +1,6 @@
-pub(crate) fn increment_universal_struct(
-    mut value: crate::ffi::UniversalOuterStruct,
+pub(crate) fn invoke_universal_interface(
+    value: crate::ffi::UniversalOuterStruct,
+    callback: crate::ffi::UniversalInterface,
 ) -> crate::ffi::UniversalOuterStruct {
-    value.inner.value += 1;
-    value.delay += 1;
-    value
+    callback.on_value(value).unwrap()
 }

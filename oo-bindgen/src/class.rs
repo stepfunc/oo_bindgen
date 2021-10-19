@@ -25,7 +25,7 @@ pub struct Method {
 pub struct AsyncMethod {
     pub name: String,
     pub native_function: FunctionHandle,
-    pub return_type: CArgument,
+    pub return_type: CallbackArgument,
     pub return_type_doc: DocString,
     pub one_time_callback_name: String,
     pub one_time_callback_param_name: String,
@@ -155,7 +155,7 @@ impl<'a> ClassBuilder<'a> {
         }
         self.lib.validate_function(native_function)?;
 
-        if let FReturnType::Type(FReturnValue::ClassRef(return_type), _) =
+        if let FReturnType::Type(FunctionReturnValue::ClassRef(return_type), _) =
             &native_function.return_type
         {
             if return_type == &self.declaration {

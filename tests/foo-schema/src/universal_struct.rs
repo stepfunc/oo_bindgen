@@ -52,29 +52,30 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
     Ok(outer_struct)
 }
 
-pub fn define_increment_function(
-    lib: &mut LibraryBuilder,
-    handle: &UniversalStructHandle,
-) -> BindResult<()> {
-    let increment_fn = lib
-        .define_function("increment_universal_struct")
-        .doc("increments values in a universal structure and returns the modified value")?
-        .param("value", handle.clone(), "value to increment")?
-        .returns(handle.clone(), "Incremented value")?
-        .build()?;
-
-    lib.define_static_class("UniversalHelperClass")
-        .doc("Provides static methods for OO languages to test universal structs")?
-        .static_method("Modify", &increment_fn)?
-        .build()?;
-
-    Ok(())
-}
-
 pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
-    let outer_struct = define_outer_struct(lib)?;
+    let handle = define_outer_struct(lib)?;
 
-    define_increment_function(lib, &outer_struct)?;
+    let interface = lib
+        .define_interface("UniversalInterface", "Interface that uses universal types")
+        .begin_callback(
+            "on_value",
+            "callback that receives and returns a universal struct",
+        )?
+        .param("value", handle.clone(), "Universal struct to modify")?
+        .returns(handle.clone(), "Universal struct to return")?
+        .end_callback()?
+        .build()?;
+
+    lib.define_function("invoke_universal_interface")
+        .doc("invokes a universal interface")?
+        .param("value", handle.clone(), "value to apply to the interface")?
+        .param(
+            "callback",
+            interface,
+            "interface on which to apply the value",
+        )?
+        .returns(handle, "return value")?
+        .build()?;
 
     Ok(())
 }

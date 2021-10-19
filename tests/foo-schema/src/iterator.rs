@@ -34,10 +34,10 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
 
     let interface = lib
         .define_interface("ValuesReceiver", "Callback interface for receiving values")
-        .callback("on_characters", "callback to receive character values")?
+        .begin_callback("on_characters", "callback to receive character values")?
         .param("values", iterator, "byte value for each character")?
         .returns_nothing()?
-        .build()?
+        .end_callback()?
         .build()?;
 
     let invoke_fn = lib

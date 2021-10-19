@@ -239,7 +239,7 @@ fn call_java_callback(
     ffi_name: &str,
     prefix: &str,
     arg_name: &str,
-    args: &[Arg<CArgument>],
+    args: &[Arg<CallbackArgument>],
     return_type: &CReturnType,
 ) -> FormattingResult<()> {
     // Extract the global ref

@@ -10,7 +10,7 @@ use crate::*;
 
 /// types that can be returns from native functions
 #[derive(Debug, Clone, PartialEq)]
-pub enum FReturnValue {
+pub enum FunctionReturnValue {
     Basic(BasicType),
     String(StringType),
     ClassRef(ClassDeclarationHandle),
@@ -18,55 +18,55 @@ pub enum FReturnValue {
     StructRef(StructDeclarationHandle),
 }
 
-impl From<BasicType> for FReturnValue {
+impl From<BasicType> for FunctionReturnValue {
     fn from(x: BasicType) -> Self {
-        FReturnValue::Basic(x)
+        FunctionReturnValue::Basic(x)
     }
 }
 
-impl From<DurationType> for FReturnValue {
+impl From<DurationType> for FunctionReturnValue {
     fn from(x: DurationType) -> Self {
         BasicType::Duration(x).into()
     }
 }
 
-impl From<ClassDeclarationHandle> for FReturnValue {
+impl From<ClassDeclarationHandle> for FunctionReturnValue {
     fn from(x: ClassDeclarationHandle) -> Self {
-        FReturnValue::ClassRef(x)
+        FunctionReturnValue::ClassRef(x)
     }
 }
 
-impl From<StringType> for FReturnValue {
+impl From<StringType> for FunctionReturnValue {
     fn from(_: StringType) -> Self {
-        FReturnValue::String(StringType)
+        FunctionReturnValue::String(StringType)
     }
 }
 
-impl From<FunctionReturnStructHandle> for FReturnValue {
+impl From<FunctionReturnStructHandle> for FunctionReturnValue {
     fn from(x: FunctionReturnStructHandle) -> Self {
-        FReturnValue::Struct(x.into())
+        FunctionReturnValue::Struct(x.into())
     }
 }
 
-impl From<StructDeclarationHandle> for FReturnValue {
+impl From<StructDeclarationHandle> for FunctionReturnValue {
     fn from(x: StructDeclarationHandle) -> Self {
-        FReturnValue::StructRef(x)
+        FunctionReturnValue::StructRef(x)
     }
 }
 
-impl From<EnumHandle> for FReturnValue {
+impl From<EnumHandle> for FunctionReturnValue {
     fn from(x: EnumHandle) -> Self {
         BasicType::Enum(x).into()
     }
 }
 
-impl From<UniversalStructHandle> for FReturnValue {
+impl From<UniversalStructHandle> for FunctionReturnValue {
     fn from(x: UniversalStructHandle) -> Self {
         Self::Struct(UniversalOr::Universal(x))
     }
 }
 
-pub type FReturnType = ReturnType<FReturnValue>;
+pub type FReturnType = ReturnType<FunctionReturnValue>;
 
 /// Types that can be used as native function arguments
 #[derive(Debug, Clone)]
@@ -163,11 +163,11 @@ pub enum SignatureType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
-    NoErrorWithReturn(FReturnValue, DocString),
+    NoErrorWithReturn(FunctionReturnValue, DocString),
     /// function that can fail, but does not return a value
     ErrorNoReturn(ErrorType),
     /// function that can fail and returns something via an out parameter
-    ErrorWithReturn(ErrorType, FReturnValue, DocString),
+    ErrorWithReturn(ErrorType, FunctionReturnValue, DocString),
 }
 
 impl Function {
@@ -192,7 +192,7 @@ pub type FunctionHandle = Handle<Function>;
 pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
-    return_type: Option<ReturnType<FReturnValue>>,
+    return_type: Option<ReturnType<FunctionReturnValue>>,
     params: Vec<Arg<FArgument>>,
     doc: Option<Doc>,
     error_type: Option<ErrorType>,
@@ -231,7 +231,7 @@ impl<'a> FunctionBuilder<'a> {
         self.return_type(ReturnType::Void)
     }
 
-    pub fn returns<D: Into<DocString>, T: Into<FReturnValue>>(
+    pub fn returns<D: Into<DocString>, T: Into<FunctionReturnValue>>(
         self,
         return_type: T,
         doc: D,

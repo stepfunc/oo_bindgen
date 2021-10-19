@@ -4,7 +4,7 @@ use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
-use oo_bindgen::interface::{CArgument, CReturnValue, InterfaceHandle};
+use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
@@ -248,60 +248,60 @@ impl JavaType for FArgument {
     }
 }
 
-impl JavaType for CArgument {
+impl JavaType for CallbackArgument {
     fn as_java_primitive(&self) -> String {
         match self {
-            CArgument::Basic(x) => x.as_java_primitive(),
-            CArgument::String(x) => x.as_java_primitive(),
-            CArgument::Iterator(x) => x.as_java_primitive(),
-            CArgument::Struct(x) => x.as_java_primitive(),
+            CallbackArgument::Basic(x) => x.as_java_primitive(),
+            CallbackArgument::String(x) => x.as_java_primitive(),
+            CallbackArgument::Iterator(x) => x.as_java_primitive(),
+            CallbackArgument::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            CArgument::Basic(x) => x.as_java_object(),
-            CArgument::String(x) => x.as_java_object(),
-            CArgument::Iterator(x) => x.as_java_object(),
-            CArgument::Struct(x) => x.as_java_object(),
+            CallbackArgument::Basic(x) => x.as_java_object(),
+            CallbackArgument::String(x) => x.as_java_object(),
+            CallbackArgument::Iterator(x) => x.as_java_object(),
+            CallbackArgument::Struct(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for CReturnValue {
+impl JavaType for CallbackReturnValue {
     fn as_java_primitive(&self) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_java_primitive(),
-            CReturnValue::Struct(x) => x.as_java_primitive(),
+            CallbackReturnValue::Basic(x) => x.as_java_primitive(),
+            CallbackReturnValue::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_java_object(),
-            CReturnValue::Struct(x) => x.as_java_object(),
+            CallbackReturnValue::Basic(x) => x.as_java_object(),
+            CallbackReturnValue::Struct(x) => x.as_java_object(),
         }
     }
 }
 
-impl JavaType for FReturnValue {
+impl JavaType for FunctionReturnValue {
     fn as_java_primitive(&self) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_java_primitive(),
-            FReturnValue::String(x) => x.as_java_primitive(),
-            FReturnValue::ClassRef(x) => x.as_java_primitive(),
-            FReturnValue::Struct(x) => x.as_java_primitive(),
-            FReturnValue::StructRef(x) => x.as_java_primitive(),
+            FunctionReturnValue::Basic(x) => x.as_java_primitive(),
+            FunctionReturnValue::String(x) => x.as_java_primitive(),
+            FunctionReturnValue::ClassRef(x) => x.as_java_primitive(),
+            FunctionReturnValue::Struct(x) => x.as_java_primitive(),
+            FunctionReturnValue::StructRef(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_java_object(),
-            FReturnValue::String(x) => x.as_java_object(),
-            FReturnValue::ClassRef(x) => x.as_java_object(),
-            FReturnValue::Struct(x) => x.as_java_object(),
-            FReturnValue::StructRef(x) => x.as_java_object(),
+            FunctionReturnValue::Basic(x) => x.as_java_object(),
+            FunctionReturnValue::String(x) => x.as_java_object(),
+            FunctionReturnValue::ClassRef(x) => x.as_java_object(),
+            FunctionReturnValue::Struct(x) => x.as_java_object(),
+            FunctionReturnValue::StructRef(x) => x.as_java_object(),
         }
     }
 }

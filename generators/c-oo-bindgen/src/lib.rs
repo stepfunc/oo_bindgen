@@ -719,7 +719,7 @@ fn write_function_docs(
             SignatureType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
                 docstring_print(f, &doc, lib)?;
-                if let FReturnValue::Basic(BasicType::Duration(mapping)) = ret {
+                if let FunctionReturnValue::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
             }
@@ -729,7 +729,7 @@ fn write_function_docs(
             SignatureType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
                 docstring_print(f, &doc, lib)?;
-                if let FReturnValue::Basic(BasicType::Duration(mapping)) = ret {
+                if let FunctionReturnValue::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
                 write_error_return_doc(f)?;

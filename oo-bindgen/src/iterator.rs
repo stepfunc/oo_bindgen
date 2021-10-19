@@ -22,7 +22,7 @@ impl Iterator {
                 })
             }
             FReturnType::Type(return_type, _) => {
-                if *return_type != FReturnValue::StructRef(item_type.declaration.clone()) {
+                if *return_type != FunctionReturnValue::StructRef(item_type.declaration.clone()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: function.clone(),
                     });

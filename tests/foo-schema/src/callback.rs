@@ -5,14 +5,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare interface
     let interface = lib
         .define_interface("CallbackInterface", "Test interface")
-        .callback("on_value", "On value callback")?
+        .begin_callback("on_value", "On value callback")?
         .param("value", BasicType::Uint32, "Value")?
         .returns(BasicType::Uint32, "Some value")?
-        .build()?
-        .callback("on_duration", "On duration callback")?
+        .end_callback()?
+        .begin_callback("on_duration", "On duration callback")?
         .param("value", DurationType::Milliseconds, "Value")?
         .returns(DurationType::Milliseconds, "Some value")?
-        .build()?
+        .end_callback()?
         .build()?;
 
     // Declare the class

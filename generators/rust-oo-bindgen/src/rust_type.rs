@@ -3,7 +3,7 @@ use heck::CamelCase;
 use crate::type_converter::*;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::function::{FArgument, FReturnValue};
+use oo_bindgen::function::{FArgument, FunctionReturnValue};
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
@@ -423,66 +423,66 @@ impl RustType for FArgument {
     }
 }
 
-impl LifetimeInfo for FReturnValue {
+impl LifetimeInfo for FunctionReturnValue {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            FReturnValue::Basic(x) => x.rust_requires_lifetime(),
-            FReturnValue::String(x) => x.rust_requires_lifetime(),
-            FReturnValue::ClassRef(x) => x.rust_requires_lifetime(),
-            FReturnValue::Struct(x) => x.rust_requires_lifetime(),
-            FReturnValue::StructRef(x) => x.rust_requires_lifetime(),
+            FunctionReturnValue::Basic(x) => x.rust_requires_lifetime(),
+            FunctionReturnValue::String(x) => x.rust_requires_lifetime(),
+            FunctionReturnValue::ClassRef(x) => x.rust_requires_lifetime(),
+            FunctionReturnValue::Struct(x) => x.rust_requires_lifetime(),
+            FunctionReturnValue::StructRef(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            FReturnValue::Basic(x) => x.c_requires_lifetime(),
-            FReturnValue::String(x) => x.c_requires_lifetime(),
-            FReturnValue::ClassRef(x) => x.c_requires_lifetime(),
-            FReturnValue::Struct(x) => x.c_requires_lifetime(),
-            FReturnValue::StructRef(x) => x.c_requires_lifetime(),
+            FunctionReturnValue::Basic(x) => x.c_requires_lifetime(),
+            FunctionReturnValue::String(x) => x.c_requires_lifetime(),
+            FunctionReturnValue::ClassRef(x) => x.c_requires_lifetime(),
+            FunctionReturnValue::Struct(x) => x.c_requires_lifetime(),
+            FunctionReturnValue::StructRef(x) => x.c_requires_lifetime(),
         }
     }
 }
 
-impl RustType for FReturnValue {
+impl RustType for FunctionReturnValue {
     fn as_rust_type(&self) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_rust_type(),
-            FReturnValue::String(x) => x.as_rust_type(),
-            FReturnValue::ClassRef(x) => x.as_rust_type(),
-            FReturnValue::Struct(x) => x.as_rust_type(),
-            FReturnValue::StructRef(x) => x.as_rust_type(),
+            FunctionReturnValue::Basic(x) => x.as_rust_type(),
+            FunctionReturnValue::String(x) => x.as_rust_type(),
+            FunctionReturnValue::ClassRef(x) => x.as_rust_type(),
+            FunctionReturnValue::Struct(x) => x.as_rust_type(),
+            FunctionReturnValue::StructRef(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_c_type(),
-            FReturnValue::String(x) => x.as_c_type(),
-            FReturnValue::ClassRef(x) => x.as_c_type(),
-            FReturnValue::Struct(x) => x.as_c_type(),
-            FReturnValue::StructRef(x) => x.as_c_type(),
+            FunctionReturnValue::Basic(x) => x.as_c_type(),
+            FunctionReturnValue::String(x) => x.as_c_type(),
+            FunctionReturnValue::ClassRef(x) => x.as_c_type(),
+            FunctionReturnValue::Struct(x) => x.as_c_type(),
+            FunctionReturnValue::StructRef(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            FReturnValue::Basic(x) => x.is_copyable(),
-            FReturnValue::String(x) => x.is_copyable(),
-            FReturnValue::ClassRef(x) => x.is_copyable(),
-            FReturnValue::Struct(x) => x.is_copyable(),
-            FReturnValue::StructRef(x) => x.is_copyable(),
+            FunctionReturnValue::Basic(x) => x.is_copyable(),
+            FunctionReturnValue::String(x) => x.is_copyable(),
+            FunctionReturnValue::ClassRef(x) => x.is_copyable(),
+            FunctionReturnValue::Struct(x) => x.is_copyable(),
+            FunctionReturnValue::StructRef(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            FReturnValue::Basic(x) => x.conversion(),
-            FReturnValue::String(x) => x.conversion(),
-            FReturnValue::ClassRef(x) => x.conversion(),
-            FReturnValue::Struct(x) => x.conversion(),
-            FReturnValue::StructRef(x) => x.conversion(),
+            FunctionReturnValue::Basic(x) => x.conversion(),
+            FunctionReturnValue::String(x) => x.conversion(),
+            FunctionReturnValue::ClassRef(x) => x.conversion(),
+            FunctionReturnValue::Struct(x) => x.conversion(),
+            FunctionReturnValue::StructRef(x) => x.conversion(),
         }
     }
 }
@@ -631,106 +631,106 @@ impl RustType for UniversalStructField {
     }
 }
 
-impl LifetimeInfo for CArgument {
+impl LifetimeInfo for CallbackArgument {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            CArgument::Basic(x) => x.rust_requires_lifetime(),
-            CArgument::String(x) => x.rust_requires_lifetime(),
-            CArgument::Iterator(x) => x.rust_requires_lifetime(),
-            CArgument::Struct(x) => x.rust_requires_lifetime(),
+            CallbackArgument::Basic(x) => x.rust_requires_lifetime(),
+            CallbackArgument::String(x) => x.rust_requires_lifetime(),
+            CallbackArgument::Iterator(x) => x.rust_requires_lifetime(),
+            CallbackArgument::Struct(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            CArgument::Basic(x) => x.c_requires_lifetime(),
-            CArgument::String(x) => x.c_requires_lifetime(),
-            CArgument::Iterator(x) => x.c_requires_lifetime(),
-            CArgument::Struct(x) => x.c_requires_lifetime(),
+            CallbackArgument::Basic(x) => x.c_requires_lifetime(),
+            CallbackArgument::String(x) => x.c_requires_lifetime(),
+            CallbackArgument::Iterator(x) => x.c_requires_lifetime(),
+            CallbackArgument::Struct(x) => x.c_requires_lifetime(),
         }
     }
 }
 
-impl RustType for CArgument {
+impl RustType for CallbackArgument {
     fn as_rust_type(&self) -> String {
         match self {
-            CArgument::Basic(x) => x.as_rust_type(),
-            CArgument::String(x) => x.as_rust_type(),
-            CArgument::Iterator(x) => x.as_rust_type(),
-            CArgument::Struct(x) => x.as_rust_type(),
+            CallbackArgument::Basic(x) => x.as_rust_type(),
+            CallbackArgument::String(x) => x.as_rust_type(),
+            CallbackArgument::Iterator(x) => x.as_rust_type(),
+            CallbackArgument::Struct(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            CArgument::Basic(x) => x.as_c_type(),
-            CArgument::String(x) => x.as_c_type(),
-            CArgument::Iterator(x) => x.as_c_type(),
-            CArgument::Struct(x) => x.as_c_type(),
+            CallbackArgument::Basic(x) => x.as_c_type(),
+            CallbackArgument::String(x) => x.as_c_type(),
+            CallbackArgument::Iterator(x) => x.as_c_type(),
+            CallbackArgument::Struct(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            CArgument::Basic(x) => x.is_copyable(),
-            CArgument::String(x) => x.is_copyable(),
-            CArgument::Iterator(x) => x.is_copyable(),
-            CArgument::Struct(x) => x.is_copyable(),
+            CallbackArgument::Basic(x) => x.is_copyable(),
+            CallbackArgument::String(x) => x.is_copyable(),
+            CallbackArgument::Iterator(x) => x.is_copyable(),
+            CallbackArgument::Struct(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            CArgument::Basic(x) => x.conversion(),
-            CArgument::String(x) => x.conversion(),
-            CArgument::Iterator(x) => x.conversion(),
-            CArgument::Struct(x) => x.conversion(),
+            CallbackArgument::Basic(x) => x.conversion(),
+            CallbackArgument::String(x) => x.conversion(),
+            CallbackArgument::Iterator(x) => x.conversion(),
+            CallbackArgument::Struct(x) => x.conversion(),
         }
     }
 }
 
-impl LifetimeInfo for CReturnValue {
+impl LifetimeInfo for CallbackReturnValue {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            CReturnValue::Basic(x) => x.rust_requires_lifetime(),
-            CReturnValue::Struct(x) => x.rust_requires_lifetime(),
+            CallbackReturnValue::Basic(x) => x.rust_requires_lifetime(),
+            CallbackReturnValue::Struct(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            CReturnValue::Basic(x) => x.c_requires_lifetime(),
-            CReturnValue::Struct(x) => x.c_requires_lifetime(),
+            CallbackReturnValue::Basic(x) => x.c_requires_lifetime(),
+            CallbackReturnValue::Struct(x) => x.c_requires_lifetime(),
         }
     }
 }
 
-impl RustType for CReturnValue {
+impl RustType for CallbackReturnValue {
     fn as_rust_type(&self) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_rust_type(),
-            CReturnValue::Struct(x) => x.as_rust_type(),
+            CallbackReturnValue::Basic(x) => x.as_rust_type(),
+            CallbackReturnValue::Struct(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_c_type(),
-            CReturnValue::Struct(x) => x.as_c_type(),
+            CallbackReturnValue::Basic(x) => x.as_c_type(),
+            CallbackReturnValue::Struct(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            CReturnValue::Basic(x) => x.is_copyable(),
-            CReturnValue::Struct(x) => x.is_copyable(),
+            CallbackReturnValue::Basic(x) => x.is_copyable(),
+            CallbackReturnValue::Struct(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            CReturnValue::Basic(x) => x.conversion(),
-            CReturnValue::Struct(x) => x.conversion(),
+            CallbackReturnValue::Basic(x) => x.conversion(),
+            CallbackReturnValue::Struct(x) => x.conversion(),
         }
     }
 }

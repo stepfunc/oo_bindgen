@@ -58,10 +58,10 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "ChunkReceiver",
             "Callback interface for chunks of a byte array",
         )
-        .callback("on_chunk", "callback to bytes")?
+        .begin_callback("on_chunk", "callback to bytes")?
         .param("values", outer_iter, "iterator over an iterator of bytes")?
         .returns_nothing()?
-        .build()?
+        .end_callback()?
         .build()?;
 
     let invoke_fn = lib

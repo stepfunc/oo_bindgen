@@ -1199,40 +1199,40 @@ impl JniType for FArgument {
     }
 }
 
-impl JniType for CArgument {
+impl JniType for CallbackArgument {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            CArgument::Basic(x) => x.as_raw_jni_type(),
-            CArgument::String(x) => x.as_raw_jni_type(),
-            CArgument::Iterator(x) => x.as_raw_jni_type(),
-            CArgument::Struct(x) => x.as_raw_jni_type(),
+            Self::Basic(x) => x.as_raw_jni_type(),
+            Self::String(x) => x.as_raw_jni_type(),
+            CallbackArgument::Iterator(x) => x.as_raw_jni_type(),
+            CallbackArgument::Struct(x) => x.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            CArgument::Basic(x) => x.as_jni_sig(lib_path),
-            CArgument::String(x) => x.as_jni_sig(lib_path),
-            CArgument::Iterator(x) => x.as_jni_sig(lib_path),
-            CArgument::Struct(x) => x.as_jni_sig(lib_path),
+            Self::Basic(x) => x.as_jni_sig(lib_path),
+            Self::String(x) => x.as_jni_sig(lib_path),
+            Self::Iterator(x) => x.as_jni_sig(lib_path),
+            Self::Struct(x) => x.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            CArgument::Basic(x) => x.as_rust_type(ffi_name),
-            CArgument::String(x) => x.as_rust_type(ffi_name),
-            CArgument::Iterator(x) => x.as_rust_type(ffi_name),
-            CArgument::Struct(x) => x.as_rust_type(ffi_name),
+            Self::Basic(x) => x.as_rust_type(ffi_name),
+            Self::String(x) => x.as_rust_type(ffi_name),
+            Self::Iterator(x) => x.as_rust_type(ffi_name),
+            Self::Struct(x) => x.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            CArgument::Basic(x) => x.convert_jvalue(),
-            CArgument::String(x) => x.convert_jvalue(),
-            CArgument::Iterator(x) => x.convert_jvalue(),
-            CArgument::Struct(x) => x.convert_jvalue(),
+            Self::Basic(x) => x.convert_jvalue(),
+            Self::String(x) => x.convert_jvalue(),
+            Self::Iterator(x) => x.convert_jvalue(),
+            Self::Struct(x) => x.convert_jvalue(),
         }
     }
 
@@ -1245,88 +1245,88 @@ impl JniType for CArgument {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            CArgument::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            CArgument::String(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            CArgument::Iterator(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            CArgument::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::String(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::Iterator(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
         }
     }
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            CArgument::Basic(x) => x.conversion(lib_name, prefix),
-            CArgument::String(x) => x.conversion(lib_name, prefix),
-            CArgument::Iterator(x) => x.conversion(lib_name, prefix),
-            CArgument::Struct(x) => x.conversion(lib_name, prefix),
+            Self::Basic(x) => x.conversion(lib_name, prefix),
+            Self::String(x) => x.conversion(lib_name, prefix),
+            Self::Iterator(x) => x.conversion(lib_name, prefix),
+            Self::Struct(x) => x.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            CArgument::Basic(x) => x.requires_local_ref_cleanup(),
-            CArgument::String(x) => x.requires_local_ref_cleanup(),
-            CArgument::Iterator(x) => x.requires_local_ref_cleanup(),
-            CArgument::Struct(x) => x.requires_local_ref_cleanup(),
+            Self::Basic(x) => x.requires_local_ref_cleanup(),
+            Self::String(x) => x.requires_local_ref_cleanup(),
+            Self::Iterator(x) => x.requires_local_ref_cleanup(),
+            Self::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            CArgument::Basic(x) => x.check_null(f, param_name),
-            CArgument::String(x) => x.check_null(f, param_name),
-            CArgument::Iterator(x) => x.check_null(f, param_name),
-            CArgument::Struct(x) => x.check_null(f, param_name),
+            Self::Basic(x) => x.check_null(f, param_name),
+            Self::String(x) => x.check_null(f, param_name),
+            Self::Iterator(x) => x.check_null(f, param_name),
+            Self::Struct(x) => x.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            CArgument::Basic(x) => x.default_value(),
-            CArgument::String(x) => x.default_value(),
-            CArgument::Iterator(x) => x.default_value(),
-            CArgument::Struct(x) => x.default_value(),
+            Self::Basic(x) => x.default_value(),
+            Self::String(x) => x.default_value(),
+            Self::Iterator(x) => x.default_value(),
+            Self::Struct(x) => x.default_value(),
         }
     }
 }
 
-impl JniType for FReturnValue {
+impl JniType for FunctionReturnValue {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            FReturnValue::Basic(x) => x.as_raw_jni_type(),
-            FReturnValue::String(x) => x.as_raw_jni_type(),
-            FReturnValue::ClassRef(x) => x.as_raw_jni_type(),
-            FReturnValue::Struct(x) => x.as_raw_jni_type(),
-            FReturnValue::StructRef(x) => x.as_raw_jni_type(),
+            FunctionReturnValue::Basic(x) => x.as_raw_jni_type(),
+            FunctionReturnValue::String(x) => x.as_raw_jni_type(),
+            FunctionReturnValue::ClassRef(x) => x.as_raw_jni_type(),
+            FunctionReturnValue::Struct(x) => x.as_raw_jni_type(),
+            FunctionReturnValue::StructRef(x) => x.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_jni_sig(lib_path),
-            FReturnValue::String(x) => x.as_jni_sig(lib_path),
-            FReturnValue::ClassRef(x) => x.as_jni_sig(lib_path),
-            FReturnValue::Struct(x) => x.as_jni_sig(lib_path),
-            FReturnValue::StructRef(x) => x.as_jni_sig(lib_path),
+            FunctionReturnValue::Basic(x) => x.as_jni_sig(lib_path),
+            FunctionReturnValue::String(x) => x.as_jni_sig(lib_path),
+            FunctionReturnValue::ClassRef(x) => x.as_jni_sig(lib_path),
+            FunctionReturnValue::Struct(x) => x.as_jni_sig(lib_path),
+            FunctionReturnValue::StructRef(x) => x.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            FReturnValue::Basic(x) => x.as_rust_type(ffi_name),
-            FReturnValue::String(x) => x.as_rust_type(ffi_name),
-            FReturnValue::ClassRef(x) => x.as_rust_type(ffi_name),
-            FReturnValue::Struct(x) => x.as_rust_type(ffi_name),
-            FReturnValue::StructRef(x) => x.as_rust_type(ffi_name),
+            FunctionReturnValue::Basic(x) => x.as_rust_type(ffi_name),
+            FunctionReturnValue::String(x) => x.as_rust_type(ffi_name),
+            FunctionReturnValue::ClassRef(x) => x.as_rust_type(ffi_name),
+            FunctionReturnValue::Struct(x) => x.as_rust_type(ffi_name),
+            FunctionReturnValue::StructRef(x) => x.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            FReturnValue::Basic(x) => x.convert_jvalue(),
-            FReturnValue::String(x) => x.convert_jvalue(),
-            FReturnValue::ClassRef(x) => x.convert_jvalue(),
-            FReturnValue::Struct(x) => x.convert_jvalue(),
-            FReturnValue::StructRef(x) => x.convert_jvalue(),
+            FunctionReturnValue::Basic(x) => x.convert_jvalue(),
+            FunctionReturnValue::String(x) => x.convert_jvalue(),
+            FunctionReturnValue::ClassRef(x) => x.convert_jvalue(),
+            FunctionReturnValue::Struct(x) => x.convert_jvalue(),
+            FunctionReturnValue::StructRef(x) => x.convert_jvalue(),
         }
     }
 
@@ -1339,13 +1339,19 @@ impl JniType for FReturnValue {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            FReturnValue::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            FReturnValue::String(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            FReturnValue::ClassRef(x) => {
+            FunctionReturnValue::Basic(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
-            FReturnValue::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            FReturnValue::StructRef(x) => {
+            FunctionReturnValue::String(x) => {
+                x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
+            }
+            FunctionReturnValue::ClassRef(x) => {
+                x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
+            }
+            FunctionReturnValue::Struct(x) => {
+                x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
+            }
+            FunctionReturnValue::StructRef(x) => {
                 x.convert_to_rust_from_object(f, from, to, lib_name, prefix)
             }
         }
@@ -1353,71 +1359,71 @@ impl JniType for FReturnValue {
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            FReturnValue::Basic(x) => x.conversion(lib_name, prefix),
-            FReturnValue::String(x) => x.conversion(lib_name, prefix),
-            FReturnValue::ClassRef(x) => x.conversion(lib_name, prefix),
-            FReturnValue::Struct(x) => x.conversion(lib_name, prefix),
-            FReturnValue::StructRef(x) => x.conversion(lib_name, prefix),
+            FunctionReturnValue::Basic(x) => x.conversion(lib_name, prefix),
+            FunctionReturnValue::String(x) => x.conversion(lib_name, prefix),
+            FunctionReturnValue::ClassRef(x) => x.conversion(lib_name, prefix),
+            FunctionReturnValue::Struct(x) => x.conversion(lib_name, prefix),
+            FunctionReturnValue::StructRef(x) => x.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            FReturnValue::Basic(x) => x.requires_local_ref_cleanup(),
-            FReturnValue::String(x) => x.requires_local_ref_cleanup(),
-            FReturnValue::ClassRef(x) => x.requires_local_ref_cleanup(),
-            FReturnValue::Struct(x) => x.requires_local_ref_cleanup(),
-            FReturnValue::StructRef(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnValue::Basic(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnValue::String(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnValue::ClassRef(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnValue::Struct(x) => x.requires_local_ref_cleanup(),
+            FunctionReturnValue::StructRef(x) => x.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            FReturnValue::Basic(x) => x.check_null(f, param_name),
-            FReturnValue::String(x) => x.check_null(f, param_name),
-            FReturnValue::ClassRef(x) => x.check_null(f, param_name),
-            FReturnValue::Struct(x) => x.check_null(f, param_name),
-            FReturnValue::StructRef(x) => x.check_null(f, param_name),
+            FunctionReturnValue::Basic(x) => x.check_null(f, param_name),
+            FunctionReturnValue::String(x) => x.check_null(f, param_name),
+            FunctionReturnValue::ClassRef(x) => x.check_null(f, param_name),
+            FunctionReturnValue::Struct(x) => x.check_null(f, param_name),
+            FunctionReturnValue::StructRef(x) => x.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            FReturnValue::Basic(x) => x.default_value(),
-            FReturnValue::String(x) => x.default_value(),
-            FReturnValue::ClassRef(x) => x.default_value(),
-            FReturnValue::Struct(x) => x.default_value(),
-            FReturnValue::StructRef(x) => x.default_value(),
+            FunctionReturnValue::Basic(x) => x.default_value(),
+            FunctionReturnValue::String(x) => x.default_value(),
+            FunctionReturnValue::ClassRef(x) => x.default_value(),
+            FunctionReturnValue::Struct(x) => x.default_value(),
+            FunctionReturnValue::StructRef(x) => x.default_value(),
         }
     }
 }
 
-impl JniType for CReturnValue {
+impl JniType for CallbackReturnValue {
     fn as_raw_jni_type(&self) -> &str {
         match self {
-            CReturnValue::Basic(x) => x.as_raw_jni_type(),
-            CReturnValue::Struct(x) => x.as_raw_jni_type(),
+            Self::Basic(x) => x.as_raw_jni_type(),
+            Self::Struct(x) => x.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_jni_sig(lib_path),
-            CReturnValue::Struct(x) => x.as_jni_sig(lib_path),
+            Self::Basic(x) => x.as_jni_sig(lib_path),
+            Self::Struct(x) => x.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
-            CReturnValue::Basic(x) => x.as_rust_type(ffi_name),
-            CReturnValue::Struct(x) => x.as_rust_type(ffi_name),
+            Self::Basic(x) => x.as_rust_type(ffi_name),
+            Self::Struct(x) => x.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
         match self {
-            CReturnValue::Basic(x) => x.convert_jvalue(),
-            CReturnValue::Struct(x) => x.convert_jvalue(),
+            Self::Basic(x) => x.convert_jvalue(),
+            Self::Struct(x) => x.convert_jvalue(),
         }
     }
 
@@ -1430,36 +1436,36 @@ impl JniType for CReturnValue {
         prefix: &str,
     ) -> FormattingResult<()> {
         match self {
-            CReturnValue::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            CReturnValue::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
         }
     }
 
     fn conversion(&self, lib_name: &str, prefix: &str) -> Option<Box<dyn TypeConverter>> {
         match self {
-            CReturnValue::Basic(x) => x.conversion(lib_name, prefix),
-            CReturnValue::Struct(x) => x.conversion(lib_name, prefix),
+            Self::Basic(x) => x.conversion(lib_name, prefix),
+            Self::Struct(x) => x.conversion(lib_name, prefix),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            CReturnValue::Basic(x) => x.requires_local_ref_cleanup(),
-            CReturnValue::Struct(x) => x.requires_local_ref_cleanup(),
+            Self::Basic(x) => x.requires_local_ref_cleanup(),
+            Self::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         match self {
-            CReturnValue::Basic(x) => x.check_null(f, param_name),
-            CReturnValue::Struct(x) => x.check_null(f, param_name),
+            Self::Basic(x) => x.check_null(f, param_name),
+            Self::Struct(x) => x.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
         match self {
-            CReturnValue::Basic(x) => x.default_value(),
-            CReturnValue::Struct(x) => x.default_value(),
+            Self::Basic(x) => x.default_value(),
+            Self::Struct(x) => x.default_value(),
         }
     }
 }

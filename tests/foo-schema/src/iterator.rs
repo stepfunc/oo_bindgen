@@ -1,6 +1,5 @@
-//use oo_bindgen::types::{BasicType, STRING_TYPE};
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::types::{BasicType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
@@ -45,7 +44,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
         .doc("invokes the callback with an iterator over the elements of the string")?
         .param(
             "values",
-            STRING_TYPE,
+            StringType,
             "String to pass to the callback interface",
         )?
         .param("callback", interface, "callback interface to invoke")?

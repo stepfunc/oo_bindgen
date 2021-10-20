@@ -1,4 +1,4 @@
-use oo_bindgen::types::{BasicType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -36,7 +36,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let collection_add_fn = lib
         .define_function("collection_add")
         .param("col", collection_class.clone(), "Collection")?
-        .param("item", STRING_TYPE, "Item")?
+        .param("item", StringType, "Item")?
         .returns_nothing()?
         .doc("Add an item to the collection")?
         .build()?;
@@ -66,7 +66,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_function("collection_get")
         .param("col", collection, "Collection")?
         .param("idx", BasicType::Uint32, "Index")?
-        .returns(STRING_TYPE, "Value")?
+        .returns(StringType, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
 
@@ -81,7 +81,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_function("collection_with_reserve_get")
         .param("col", collection_with_reserve, "Collection")?
         .param("idx", BasicType::Uint32, "Index")?
-        .returns(STRING_TYPE, "Value")?
+        .returns(StringType, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
 

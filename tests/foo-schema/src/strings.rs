@@ -1,4 +1,4 @@
-use oo_bindgen::types::{BasicType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -22,14 +22,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let stringclass_echo_func = lib
         .define_function("string_echo")
         .param("stringclass", stringclass.clone(), "StringClass")?
-        .param("value", STRING_TYPE, "String to echo")?
-        .returns(STRING_TYPE, "Echoed string")?
+        .param("value", StringType, "String to echo")?
+        .returns(StringType, "Echoed string")?
         .doc("Echo a string")?
         .build()?;
 
     let stringclass_length_func = lib
         .define_function("string_length")
-        .param("value", STRING_TYPE, "String")?
+        .param("value", StringType, "String")?
         .returns(BasicType::Uint32, "String length")?
         .doc("Get the string length")?
         .build()?;

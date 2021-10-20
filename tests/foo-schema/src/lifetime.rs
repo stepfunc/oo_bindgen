@@ -1,5 +1,5 @@
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::types::{BasicType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
@@ -69,7 +69,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("iterate over a string by invoking the callback interface with chunks of the string")?
         .param(
             "values",
-            STRING_TYPE,
+            StringType,
             "String to pass to the callback interface",
         )?
         .param("chunk_size", BasicType::Uint32, "size of each iteration")?

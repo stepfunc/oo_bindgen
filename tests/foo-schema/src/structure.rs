@@ -1,6 +1,6 @@
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::structs::*;
-use oo_bindgen::types::{BasicType, DurationType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, DurationType, StringType};
 use oo_bindgen::*;
 use std::time::Duration;
 
@@ -108,7 +108,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add(int64_value.clone(), BasicType::Sint64, "int64_value")?
         .add(float_value.clone(), BasicType::Float32, "float_value")?
         .add(double_value.clone(), BasicType::Double64, "double_value")?
-        .add(string_value.clone(), STRING_TYPE, "string_value")?
+        .add(string_value.clone(), StringType, "string_value")?
         .add(structure_value.clone(), inner_structure, "structure_value")?
         .add(
             empty_interface,

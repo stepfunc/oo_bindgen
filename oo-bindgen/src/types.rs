@@ -19,8 +19,6 @@ impl TypeValidator for StringType {
     }
 }
 
-pub const STRING_TYPE: StringType = StringType {};
-
 /// Durations may be represented in multiple ways in the underlying C API
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum DurationType {

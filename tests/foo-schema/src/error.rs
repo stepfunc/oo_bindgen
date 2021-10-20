@@ -1,5 +1,5 @@
 use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::types::{BasicType, STRING_TYPE};
+use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::{BindingError, LibraryBuilder};
 
 pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
@@ -14,7 +14,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let get_special_number_fb = lib
         .define_function("get_special_number")
-        .param("password", STRING_TYPE, "secret password")?
+        .param("password", StringType, "secret password")?
         .returns(BasicType::Uint32, "unlocked value")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
@@ -22,7 +22,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let get_struct_fn = lib
         .define_function("validate_password")
-        .param("password", STRING_TYPE, "secret password")?
+        .param("password", StringType, "secret password")?
         .returns_nothing()?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a struct")?
@@ -30,15 +30,15 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let echo_password_fn = lib
         .define_function("echo_password")
-        .param("password", STRING_TYPE, "secret password")?
-        .returns(STRING_TYPE, "The password")?
+        .param("password", StringType, "secret password")?
+        .returns(StringType, "The password")?
         .fails_with(error_type.clone())?
         .doc("Use a password and echoes it if it's valid")?
         .build()?;
 
     let constructor_fn = lib
         .define_function("create_class_with_password")
-        .param("password", STRING_TYPE, "secret password")?
+        .param("password", StringType, "secret password")?
         .returns(my_class.clone(), "allocated class")?
         .fails_with(error_type.clone())?
         .doc("Use a password to allocate a class")?

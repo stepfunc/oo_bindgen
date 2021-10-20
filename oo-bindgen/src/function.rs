@@ -2,8 +2,8 @@ use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
 use crate::structs::{
-    FunctionArgStructField, FunctionReturnStructField, FunctionReturnStructHandle,
-    UniversalStructHandle,
+    FunctionArgStructField, FunctionArgStructHandle, FunctionReturnStructField,
+    FunctionReturnStructHandle, UniversalStructHandle,
 };
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
@@ -97,6 +97,12 @@ impl TypeValidator for FArgument {
 impl From<UniversalStructHandle> for FArgument {
     fn from(x: UniversalStructHandle) -> Self {
         Self::Struct(UniversalOr::Universal(x))
+    }
+}
+
+impl From<FunctionArgStructHandle> for FArgument {
+    fn from(x: FunctionArgStructHandle) -> Self {
+        Self::Struct(x.into())
     }
 }
 

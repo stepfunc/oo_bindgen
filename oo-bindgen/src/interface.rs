@@ -16,6 +16,7 @@ pub enum CallbackArgument {
     Basic(BasicType),
     String(StringType),
     Iterator(IteratorHandle),
+    Class(ClassDeclarationHandle),
     Struct(UniversalOr<CallbackArgStructField>),
 }
 
@@ -26,6 +27,7 @@ impl TypeValidator for CallbackArgument {
             CallbackArgument::String(x) => x.get_validated_type(),
             CallbackArgument::Iterator(x) => x.get_validated_type(),
             CallbackArgument::Struct(x) => x.get_validated_type(),
+            CallbackArgument::Class(x) => x.get_validated_type(),
         }
     }
 }

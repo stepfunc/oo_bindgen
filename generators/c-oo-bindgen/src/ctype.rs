@@ -57,6 +57,7 @@ impl CType for CallbackArgument {
             CallbackArgument::String(x) => x.to_c_type(prefix),
             CallbackArgument::Iterator(x) => x.to_c_type(prefix),
             CallbackArgument::Struct(x) => x.to_c_type(prefix),
+            CallbackArgument::Class(x) => x.to_c_type(prefix),
         }
     }
 }

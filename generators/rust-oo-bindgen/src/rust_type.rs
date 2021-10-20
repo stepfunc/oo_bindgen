@@ -638,6 +638,7 @@ impl LifetimeInfo for CallbackArgument {
             CallbackArgument::String(x) => x.rust_requires_lifetime(),
             CallbackArgument::Iterator(x) => x.rust_requires_lifetime(),
             CallbackArgument::Struct(x) => x.rust_requires_lifetime(),
+            CallbackArgument::Class(x) => x.rust_requires_lifetime(),
         }
     }
 
@@ -647,6 +648,7 @@ impl LifetimeInfo for CallbackArgument {
             CallbackArgument::String(x) => x.c_requires_lifetime(),
             CallbackArgument::Iterator(x) => x.c_requires_lifetime(),
             CallbackArgument::Struct(x) => x.c_requires_lifetime(),
+            CallbackArgument::Class(x) => x.c_requires_lifetime(),
         }
     }
 }
@@ -658,6 +660,7 @@ impl RustType for CallbackArgument {
             CallbackArgument::String(x) => x.as_rust_type(),
             CallbackArgument::Iterator(x) => x.as_rust_type(),
             CallbackArgument::Struct(x) => x.as_rust_type(),
+            CallbackArgument::Class(x) => x.as_rust_type(),
         }
     }
 
@@ -667,6 +670,7 @@ impl RustType for CallbackArgument {
             CallbackArgument::String(x) => x.as_c_type(),
             CallbackArgument::Iterator(x) => x.as_c_type(),
             CallbackArgument::Struct(x) => x.as_c_type(),
+            CallbackArgument::Class(x) => x.as_c_type(),
         }
     }
 
@@ -676,6 +680,7 @@ impl RustType for CallbackArgument {
             CallbackArgument::String(x) => x.is_copyable(),
             CallbackArgument::Iterator(x) => x.is_copyable(),
             CallbackArgument::Struct(x) => x.is_copyable(),
+            CallbackArgument::Class(x) => x.is_copyable(),
         }
     }
 
@@ -685,6 +690,7 @@ impl RustType for CallbackArgument {
             CallbackArgument::String(x) => x.conversion(),
             CallbackArgument::Iterator(x) => x.conversion(),
             CallbackArgument::Struct(x) => x.conversion(),
+            CallbackArgument::Class(x) => x.conversion(),
         }
     }
 }

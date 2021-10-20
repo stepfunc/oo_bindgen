@@ -225,25 +225,25 @@ impl JavaType for UniversalStructField {
 impl JavaType for FArgument {
     fn as_java_primitive(&self) -> String {
         match self {
-            FArgument::Basic(x) => x.as_java_primitive(),
-            FArgument::String(x) => x.as_java_primitive(),
-            FArgument::Collection(x) => x.as_java_primitive(),
-            FArgument::Struct(x) => x.as_java_primitive(),
-            FArgument::StructRef(x) => x.as_java_primitive(),
-            FArgument::ClassRef(x) => x.as_java_primitive(),
-            FArgument::Interface(x) => x.as_java_primitive(),
+            Self::Basic(x) => x.as_java_primitive(),
+            Self::String(x) => x.as_java_primitive(),
+            Self::Collection(x) => x.as_java_primitive(),
+            Self::Struct(x) => x.as_java_primitive(),
+            Self::StructRef(x) => x.as_java_primitive(),
+            Self::ClassRef(x) => x.as_java_primitive(),
+            Self::Interface(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            FArgument::Basic(x) => x.as_java_object(),
-            FArgument::String(x) => x.as_java_object(),
-            FArgument::Collection(x) => x.as_java_object(),
-            FArgument::Struct(x) => x.as_java_object(),
-            FArgument::StructRef(x) => x.as_java_object(),
-            FArgument::ClassRef(x) => x.as_java_object(),
-            FArgument::Interface(x) => x.as_java_object(),
+            Self::Basic(x) => x.as_java_object(),
+            Self::String(x) => x.as_java_object(),
+            Self::Collection(x) => x.as_java_object(),
+            Self::Struct(x) => x.as_java_object(),
+            Self::StructRef(x) => x.as_java_object(),
+            Self::ClassRef(x) => x.as_java_object(),
+            Self::Interface(x) => x.as_java_object(),
         }
     }
 }
@@ -251,19 +251,21 @@ impl JavaType for FArgument {
 impl JavaType for CallbackArgument {
     fn as_java_primitive(&self) -> String {
         match self {
-            CallbackArgument::Basic(x) => x.as_java_primitive(),
-            CallbackArgument::String(x) => x.as_java_primitive(),
-            CallbackArgument::Iterator(x) => x.as_java_primitive(),
-            CallbackArgument::Struct(x) => x.as_java_primitive(),
+            Self::Basic(x) => x.as_java_primitive(),
+            Self::String(x) => x.as_java_primitive(),
+            Self::Iterator(x) => x.as_java_primitive(),
+            Self::Struct(x) => x.as_java_primitive(),
+            Self::Class(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            CallbackArgument::Basic(x) => x.as_java_object(),
-            CallbackArgument::String(x) => x.as_java_object(),
-            CallbackArgument::Iterator(x) => x.as_java_object(),
-            CallbackArgument::Struct(x) => x.as_java_object(),
+            Self::Basic(x) => x.as_java_object(),
+            Self::String(x) => x.as_java_object(),
+            Self::Iterator(x) => x.as_java_object(),
+            Self::Struct(x) => x.as_java_object(),
+            Self::Class(x) => x.as_java_object(),
         }
     }
 }
@@ -271,15 +273,15 @@ impl JavaType for CallbackArgument {
 impl JavaType for CallbackReturnValue {
     fn as_java_primitive(&self) -> String {
         match self {
-            CallbackReturnValue::Basic(x) => x.as_java_primitive(),
-            CallbackReturnValue::Struct(x) => x.as_java_primitive(),
+            Self::Basic(x) => x.as_java_primitive(),
+            Self::Struct(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            CallbackReturnValue::Basic(x) => x.as_java_object(),
-            CallbackReturnValue::Struct(x) => x.as_java_object(),
+            Self::Basic(x) => x.as_java_object(),
+            Self::Struct(x) => x.as_java_object(),
         }
     }
 }
@@ -287,21 +289,21 @@ impl JavaType for CallbackReturnValue {
 impl JavaType for FunctionReturnValue {
     fn as_java_primitive(&self) -> String {
         match self {
-            FunctionReturnValue::Basic(x) => x.as_java_primitive(),
-            FunctionReturnValue::String(x) => x.as_java_primitive(),
-            FunctionReturnValue::ClassRef(x) => x.as_java_primitive(),
-            FunctionReturnValue::Struct(x) => x.as_java_primitive(),
-            FunctionReturnValue::StructRef(x) => x.as_java_primitive(),
+            Self::Basic(x) => x.as_java_primitive(),
+            Self::String(x) => x.as_java_primitive(),
+            Self::ClassRef(x) => x.as_java_primitive(),
+            Self::Struct(x) => x.as_java_primitive(),
+            Self::StructRef(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            FunctionReturnValue::Basic(x) => x.as_java_object(),
-            FunctionReturnValue::String(x) => x.as_java_object(),
-            FunctionReturnValue::ClassRef(x) => x.as_java_object(),
-            FunctionReturnValue::Struct(x) => x.as_java_object(),
-            FunctionReturnValue::StructRef(x) => x.as_java_object(),
+            Self::Basic(x) => x.as_java_object(),
+            Self::String(x) => x.as_java_object(),
+            Self::ClassRef(x) => x.as_java_object(),
+            Self::Struct(x) => x.as_java_object(),
+            Self::StructRef(x) => x.as_java_object(),
         }
     }
 }

@@ -21,8 +21,8 @@ impl TypeValidator for CallbackArgStructField {
     }
 }
 
-pub type CallbackStructHandle = Handle<Struct<CallbackArgStructField>>;
-pub type CallbackStructBuilder<'a> = StructFieldBuilder<'a, CallbackArgStructField>;
+pub type CallbackArgStructHandle = Handle<Struct<CallbackArgStructField>>;
+pub type CallbackArgStructBuilder<'a> = StructFieldBuilder<'a, CallbackArgStructField>;
 
 impl StructFieldType for CallbackArgStructField {
     fn create_struct_type(v: Handle<Struct<CallbackArgStructField>>) -> StructType {
@@ -70,8 +70,8 @@ impl From<IteratorHandle> for CallbackArgStructField {
     }
 }
 
-impl From<CallbackStructHandle> for CallbackArgStructField {
-    fn from(x: CallbackStructHandle) -> Self {
+impl From<CallbackArgStructHandle> for CallbackArgStructField {
+    fn from(x: CallbackArgStructHandle) -> Self {
         CallbackArgStructField::Struct(x.into())
     }
 }

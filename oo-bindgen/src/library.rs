@@ -283,7 +283,7 @@ pub enum StructType {
     /// structs than can be used as native function return values
     RStruct(FunctionReturnStructHandle),
     /// structs that may be used as callback function arguments in interfaces
-    CStruct(CallbackStructHandle),
+    CStruct(CallbackArgStructHandle),
     /// structs that can be used in any context and only contain basic types
     UStruct(UniversalStructHandle),
 }
@@ -300,8 +300,8 @@ impl From<FunctionReturnStructHandle> for StructType {
     }
 }
 
-impl From<CallbackStructHandle> for StructType {
-    fn from(x: CallbackStructHandle) -> Self {
+impl From<CallbackArgStructHandle> for StructType {
+    fn from(x: CallbackArgStructHandle) -> Self {
         StructType::CStruct(x)
     }
 }
@@ -667,10 +667,10 @@ impl LibraryBuilder {
     pub fn define_callback_argument_struct(
         &mut self,
         declaration: &StructDeclarationHandle,
-    ) -> BindResult<CallbackStructBuilder> {
+    ) -> BindResult<CallbackArgStructBuilder> {
         self.validate_struct_declaration(declaration)?;
         if !self.structs.contains_key(declaration) {
-            Ok(CallbackStructBuilder::new(self, declaration.clone()))
+            Ok(CallbackArgStructBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.clone(),

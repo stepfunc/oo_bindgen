@@ -105,6 +105,12 @@ impl From<DurationType> for CallbackReturnValue {
     }
 }
 
+impl From<EnumHandle> for CallbackReturnValue {
+    fn from(x: EnumHandle) -> Self {
+        Self::Basic(BasicType::Enum(x))
+    }
+}
+
 pub type CReturnType = ReturnType<CallbackReturnValue>;
 
 #[derive(Debug)]

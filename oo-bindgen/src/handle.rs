@@ -9,7 +9,7 @@ pub struct Handle<T> {
 }
 
 impl<T> Handle<T> {
-    pub(crate) fn new(inner: T) -> Self {
+    pub fn new(inner: T) -> Self {
         Self {
             inner: Rc::new(inner),
         }

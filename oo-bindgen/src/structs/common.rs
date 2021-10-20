@@ -251,7 +251,7 @@ where
     pub visibility: Visibility,
     pub declaration: StructDeclarationHandle,
     pub fields: Vec<StructField<F>>,
-    pub constructors: Vec<Constructor>,
+    pub constructors: Vec<Handle<Constructor>>,
     pub doc: Doc,
 }
 
@@ -304,6 +304,15 @@ where
         self.declaration.clone()
     }
 
+    pub fn constructor_args(
+        &self,
+        constructor: Handle<Constructor>,
+    ) -> impl Iterator<Item = &StructField<F>> {
+        self.fields
+            .iter()
+            .filter(move |field| !constructor.values.iter().any(|c| c.name == field.name))
+    }
+
     pub fn fields(&self) -> impl Iterator<Item = &StructField<F>> {
         self.fields.iter()
     }
@@ -312,7 +321,7 @@ where
         self.get_default_constructor().is_some()
     }
 
-    pub fn get_default_constructor(&self) -> Option<&Constructor> {
+    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor>> {
         // do any of the constructors initialize all of the fields
         self.constructors
             .iter()
@@ -475,7 +484,7 @@ where
     visibility: Visibility,
     declaration: StructDeclarationHandle,
     fields: Vec<StructField<F>>,
-    constructors: Vec<Constructor>,
+    constructors: Vec<Handle<Constructor>>,
     doc: Doc,
 }
 
@@ -561,12 +570,12 @@ where
     }
 
     pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {
-        let constructor = Constructor {
+        let constructor = Handle::new(Constructor {
             name: self.name,
             constructor_type: self.constructor_type,
             values: self.fields,
             doc: self.doc,
-        };
+        });
 
         if let Some(x) = self
             .builder
@@ -576,7 +585,7 @@ where
         {
             return Err(BindingError::StructDuplicateConstructorArgs {
                 struct_name: self.builder.declaration.name.clone(),
-                this_constructor: constructor.name,
+                this_constructor: constructor.name.clone(),
                 other_constructor: x.name.clone(),
             });
         }

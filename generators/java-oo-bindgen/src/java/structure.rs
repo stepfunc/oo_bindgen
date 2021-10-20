@@ -130,7 +130,7 @@ fn write_constructor_docs<T>(
     f: &mut dyn Printer,
     lib: &Library,
     handle: &Struct<T>,
-    constructor: &Constructor,
+    constructor: &Handle<Constructor>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType,
@@ -140,10 +140,7 @@ where
         javadoc_print(f, &constructor.doc, lib)?;
         f.newline()?;
 
-        for field in handle
-            .fields()
-            .filter(|f| !constructor.values.iter().any(|x| x.name == f.name))
-        {
+        for field in handle.constructor_args(constructor.clone()) {
             f.writeln(&format!("@param {} ", field.name.to_mixed_case()))?;
             docstring_print(f, &field.doc.brief, lib)?;
         }
@@ -156,7 +153,7 @@ fn write_static_method_constructor<T>(
     f: &mut dyn Printer,
     lib: &Library,
     handle: &Struct<T>,
-    constructor: &Constructor,
+    constructor: &Handle<Constructor>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType,
@@ -164,8 +161,7 @@ where
     write_constructor_docs(f, lib, handle, constructor)?;
 
     let params = handle
-        .fields()
-        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .constructor_args(constructor.clone())
         .map(|sf| {
             format!(
                 "{} {}",
@@ -205,7 +201,7 @@ fn write_constructor<T>(
     visibility: Visibility,
     lib: &Library,
     handle: &Struct<T>,
-    constructor: &Constructor,
+    constructor: &Handle<Constructor>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType,
@@ -215,8 +211,7 @@ where
     }
 
     let params = handle
-        .fields()
-        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .constructor_args(constructor.clone())
         .map(|sf| {
             format!(
                 "{} {}",
@@ -310,7 +305,7 @@ where
 
         // write a full constructor that initializes all values if none are present
         if st.constructors.is_empty() {
-            let constructor = Constructor::full(
+            let constructor = Handle::new(Constructor::full(
                 "init".into(),
                 ConstructorType::Normal,
                 format!(
@@ -318,7 +313,7 @@ where
                     st.declaration().name
                 )
                 .into(),
-            );
+            ));
             write_constructor(f, Visibility::Public, lib, st, &constructor)?;
         }
 

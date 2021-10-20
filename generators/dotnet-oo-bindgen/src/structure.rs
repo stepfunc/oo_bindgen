@@ -3,17 +3,16 @@ use heck::{CamelCase, MixedCase};
 use oo_bindgen::structs::*;
 use oo_bindgen::types::DurationType;
 
-fn field_visibility(struct_type: Visibility) -> &'static str {
-    match struct_type {
-        Visibility::Private => "internal",
-        Visibility::Public => "public",
-    }
+trait DotNetVisibility {
+    fn to_str(&self) -> &str;
 }
 
-fn constructor_visibility(struct_type: Visibility) -> &'static str {
-    match struct_type {
-        Visibility::Private => "internal",
-        Visibility::Public => "public",
+impl DotNetVisibility for Visibility {
+    fn to_str(&self) -> &str {
+        match self {
+            Visibility::Public => "public",
+            Visibility::Private => "internal",
+        }
     }
 }
 
@@ -58,7 +57,7 @@ fn write_constructor<T>(
     f: &mut dyn Printer,
     lib: &Library,
     handle: &Struct<T>,
-    constructor: &Constructor,
+    constructor: &Handle<Constructor>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + DotnetType,
@@ -66,12 +65,9 @@ where
     documentation(f, |f| {
         xmldoc_print(f, &constructor.doc, lib)?;
 
-        for param in handle
-            .fields()
-            .filter(|field| !constructor.values.iter().any(|c| c.name == field.name))
-        {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc.brief, lib)?;
+        for arg in handle.constructor_args(constructor.clone()) {
+            f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
+            docstring_print(f, &arg.doc.brief, lib)?;
             f.write("</param>")?;
         }
 
@@ -79,8 +75,7 @@ where
     })?;
 
     let params = handle
-        .fields()
-        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .constructor_args(constructor.clone())
         .map(|sf| {
             format!(
                 "{} {}",
@@ -93,7 +88,7 @@ where
 
     f.writeln(&format!(
         "{} {}({})",
-        constructor_visibility(handle.visibility),
+        handle.visibility.to_str(),
         handle.name().to_camel_case(),
         params
     ))?;
@@ -153,7 +148,7 @@ where
 
                 f.writeln(&format!(
                     "{} {} {};",
-                    field_visibility(handle.visibility),
+                    handle.visibility.to_str(),
                     field.field_type.as_dotnet_type(),
                     field.name.to_camel_case()
                 ))?;
@@ -165,7 +160,7 @@ where
             }
 
             if !handle.has_default_constructor() {
-                // Internal parameterless constructor
+                // Internal parameter-less constructor
                 f.newline()?;
                 f.writeln(&format!(
                     "internal {}() {{ }}",

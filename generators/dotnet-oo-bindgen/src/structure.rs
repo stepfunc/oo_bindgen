@@ -65,8 +65,8 @@ where
     write_constructor_documentation(f, lib, handle, constructor, true)?;
 
     let invocation_args = handle
-        .constructor_args(constructor.clone())
-        .map(|sf| sf.name.to_mixed_case())
+        .fields()
+        .map(|sf| get_field_value(sf, constructor))
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -76,6 +76,7 @@ where
         constructor.name.to_camel_case(),
         constructor_parameters(handle, constructor)
     ))?;
+
     blocked(f, |f| {
         f.writeln(&format!(
             "return new {}({});",
@@ -226,13 +227,22 @@ where
                     }
                     ConstructorType::Static => {
                         f.newline()?;
-                        // write a private constructor that the static method will use
-                        write_constructor(f, lib, Visibility::Private, handle, c)?;
-                        f.newline()?;
-                        // write the static factory function
                         write_static_constructor(f, lib, handle, c)?;
                     }
                 }
+            }
+
+            // If the struct doesn't already define a full constructor, write a private one
+            if !handle.has_full_constructor() {
+                let constructor = Handle::new(Constructor {
+                    name: "".to_string(),
+                    constructor_type: ConstructorType::Normal,
+                    values: Vec::new(),
+                    doc,
+                });
+
+                f.newline()?;
+                write_constructor(f, lib, Visibility::Private, handle, &constructor)?;
             }
 
             if !handle.has_default_constructor() {

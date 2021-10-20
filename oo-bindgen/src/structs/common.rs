@@ -321,11 +321,20 @@ where
         self.get_default_constructor().is_some()
     }
 
+    pub fn has_full_constructor(&self) -> bool {
+        self.get_full_constructor().is_some()
+    }
+
     pub fn get_default_constructor(&self) -> Option<&Handle<Constructor>> {
-        // do any of the constructors initialize all of the fields
+        // do any of the constructors initialize ALL of the fields
         self.constructors
             .iter()
             .find(|c| c.values.len() == self.fields.len())
+    }
+
+    pub fn get_full_constructor(&self) -> Option<&Handle<Constructor>> {
+        // do any of the constructors initialize NONE of the fields
+        self.constructors.iter().find(|c| c.values.is_empty())
     }
 }
 
@@ -435,6 +444,12 @@ pub enum ConstructorType {
     Static,
 }
 
+impl ConstructorType {
+    pub fn is_normal(&self) -> bool {
+        *self == ConstructorType::Normal
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Constructor {
     pub name: String,
@@ -451,8 +466,12 @@ impl Constructor {
             .collect::<HashSet<FieldName>>()
     }
 
-    pub fn has_same_arguments(&self, other: &Self) -> bool {
-        self.argument_names() == other.argument_names()
+    pub fn collides_with(&self, other: &Self) -> bool {
+        if self.argument_names() == other.argument_names() {
+            // this is only a problem is both are normal constructors
+            return self.constructor_type.is_normal() && other.constructor_type.is_normal();
+        }
+        false
     }
 
     pub fn full(name: String, constructor_type: ConstructorType, doc: Doc) -> Self {
@@ -581,7 +600,7 @@ where
             .builder
             .constructors
             .iter()
-            .find(|other| constructor.has_same_arguments(other))
+            .find(|other| constructor.collides_with(other))
         {
             return Err(BindingError::StructDuplicateConstructorArgs {
                 struct_name: self.builder.declaration.name.clone(),
@@ -589,13 +608,6 @@ where
                 other_constructor: x.name.clone(),
             });
         }
-
-        if self
-            .builder
-            .constructors
-            .iter()
-            .any(|other| constructor.has_same_arguments(other))
-        {}
 
         self.builder.constructors.push(constructor);
         Ok(self.builder)

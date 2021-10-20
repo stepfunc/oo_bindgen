@@ -60,6 +60,26 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         .add(&inner_field, ConstructorDefault::DefaultStruct)?
         .end_constructor()?
         // -- end constructor --
+        // -- constructor --
+        .new_constructor(
+            "special_one",
+            ConstructorType::Static,
+            "Construct a special fully initialized {struct:UniversalOuterStruct}",
+        )?
+        .add(&inner_field, ConstructorDefault::DefaultStruct)?
+        .add(&delay_field, ConstructorDefault::Duration(Duration::from_secs(1)))?
+        .end_constructor()?
+        // -- end constructor --
+        // -- constructor --
+        .new_constructor(
+            "special_two",
+            ConstructorType::Static,
+            "Construct a special fully initialized {struct:UniversalOuterStruct}",
+        )?
+        .add(&inner_field, ConstructorDefault::DefaultStruct)?
+        .add(&delay_field, ConstructorDefault::Duration(Duration::from_secs(2)))?
+        .end_constructor()?
+        // -- end constructor --
         .build()?;
 
     Ok(outer_struct)

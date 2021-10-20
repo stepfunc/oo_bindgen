@@ -170,8 +170,7 @@ where
 
     let invocation_args = handle
         .fields()
-        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
-        .map(|sf| sf.name.to_mixed_case())
+        .map(|sf| get_field_value(sf, constructor))
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -297,18 +296,14 @@ where
                     write_constructor(f, Visibility::Public, lib, st, c)?;
                 }
                 ConstructorType::Static => {
-                    // write a private constructor that the static method will call
-                    write_constructor(f, Visibility::Private, lib, st, c)?;
-                    f.newline()?;
                     write_static_method_constructor(f, lib, st, c)?;
                 }
             }
         }
 
-        // write a full constructor that initializes all values if none are present
-        if st.constructors.is_empty() {
+        if !st.has_full_constructor() {
             let constructor = Handle::new(Constructor::full(
-                "init".into(),
+                "".to_string(),
                 ConstructorType::Normal,
                 format!(
                     "Initialize all values of {{struct:{}}}",
@@ -316,7 +311,9 @@ where
                 )
                 .into(),
             ));
-            write_constructor(f, Visibility::Public, lib, st, &constructor)?;
+
+            f.newline()?;
+            write_constructor(f, Visibility::Private, lib, st, &constructor)?;
         }
 
         Ok(())

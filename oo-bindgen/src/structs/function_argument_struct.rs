@@ -1,5 +1,6 @@
 use crate::collection::CollectionHandle;
 use crate::structs::common::*;
+use crate::structs::UniversalStructHandle;
 use crate::types::{DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 
@@ -64,6 +65,12 @@ impl From<StringType> for FunctionArgStructField {
 impl From<FunctionArgStructHandle> for FunctionArgStructField {
     fn from(x: FunctionArgStructHandle) -> Self {
         FunctionArgStructField::Struct(x.into())
+    }
+}
+
+impl From<UniversalStructHandle> for FunctionArgStructField {
+    fn from(x: UniversalStructHandle) -> Self {
+        Self::Struct(UniversalOr::Universal(x))
     }
 }
 

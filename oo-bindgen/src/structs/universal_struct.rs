@@ -50,6 +50,12 @@ impl From<DurationType> for UniversalStructField {
     }
 }
 
+impl From<EnumHandle> for UniversalStructField {
+    fn from(x: EnumHandle) -> Self {
+        Self::Basic(BasicType::Enum(x))
+    }
+}
+
 impl From<UniversalStructHandle> for UniversalStructField {
     fn from(x: UniversalStructHandle) -> Self {
         UniversalStructField::Struct(x)

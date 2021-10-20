@@ -36,6 +36,12 @@ impl From<BasicType> for CallbackArgument {
     }
 }
 
+impl From<EnumHandle> for CallbackArgument {
+    fn from(x: EnumHandle) -> Self {
+        Self::Basic(BasicType::Enum(x))
+    }
+}
+
 impl From<DurationType> for CallbackArgument {
     fn from(x: DurationType) -> Self {
         CallbackArgument::Basic(BasicType::Duration(x))

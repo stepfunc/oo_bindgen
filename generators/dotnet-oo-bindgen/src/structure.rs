@@ -62,19 +62,7 @@ fn write_static_constructor<T>(
 where
     T: StructFieldType + DotnetType,
 {
-    write_constructor_documentation(f, lib, handle, constructor)?;
-
-    let args = handle
-        .constructor_args(constructor.clone())
-        .map(|sf| {
-            format!(
-                "{} {}",
-                sf.field_type.as_dotnet_type(),
-                sf.name.to_mixed_case(),
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
+    write_constructor_documentation(f, lib, handle, constructor, true)?;
 
     let invocation_args = handle
         .constructor_args(constructor.clone())
@@ -86,7 +74,7 @@ where
         "public static {} {}({})",
         handle.name().to_camel_case(),
         constructor.name.to_camel_case(),
-        args
+        constructor_parameters(handle, constructor)
     ))?;
     blocked(f, |f| {
         f.writeln(&format!(
@@ -101,6 +89,7 @@ fn write_constructor_documentation<T>(
     lib: &Library,
     handle: &Struct<T>,
     constructor: &Handle<Constructor>,
+    write_return_info: bool,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + DotnetType,
@@ -114,8 +103,32 @@ where
             f.write("</param>")?;
         }
 
+        if write_return_info {
+            f.writeln(&format!(
+                "<returns> initialized {} instance </returns>",
+                handle.name().to_camel_case()
+            ))?;
+        }
+
         Ok(())
     })
+}
+
+fn constructor_parameters<T>(handle: &Struct<T>, constructor: &Handle<Constructor>) -> String
+where
+    T: StructFieldType + DotnetType,
+{
+    handle
+        .constructor_args(constructor.clone())
+        .map(|sf| {
+            format!(
+                "{} {}",
+                sf.field_type.as_dotnet_type(),
+                sf.name.to_mixed_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ")
 }
 
 fn write_constructor<T>(
@@ -129,20 +142,8 @@ where
     T: StructFieldType + DotnetType,
 {
     if visibility == Visibility::Public && handle.visibility == Visibility::Public {
-        write_constructor_documentation(f, lib, handle, constructor)?;
+        write_constructor_documentation(f, lib, handle, constructor, false)?;
     }
-
-    let params = handle
-        .constructor_args(constructor.clone())
-        .map(|sf| {
-            format!(
-                "{} {}",
-                sf.field_type.as_dotnet_type(),
-                sf.name.to_mixed_case()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
 
     let visibility = match visibility {
         Visibility::Public => handle.visibility,
@@ -153,7 +154,7 @@ where
         "{} {}({})",
         visibility.to_str(),
         handle.name().to_camel_case(),
-        params
+        constructor_parameters(handle, constructor)
     ))?;
     blocked(f, |f| {
         for field in &handle.fields {

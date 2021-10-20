@@ -131,6 +131,7 @@ fn write_constructor_docs<T>(
     lib: &Library,
     handle: &Struct<T>,
     constructor: &Handle<Constructor>,
+    write_return_info: bool,
 ) -> FormattingResult<()>
 where
     T: StructFieldType,
@@ -143,6 +144,13 @@ where
         for field in handle.constructor_args(constructor.clone()) {
             f.writeln(&format!("@param {} ", field.name.to_mixed_case()))?;
             docstring_print(f, &field.doc.brief, lib)?;
+        }
+
+        if write_return_info {
+            f.writeln(&format!(
+                "@return initialized {} instance",
+                handle.name().to_camel_case()
+            ))?;
         }
 
         Ok(())
@@ -158,7 +166,7 @@ fn write_static_method_constructor<T>(
 where
     T: StructFieldType + JavaType,
 {
-    write_constructor_docs(f, lib, handle, constructor)?;
+    write_constructor_docs(f, lib, handle, constructor, true)?;
 
     let invocation_args = handle
         .fields()
@@ -213,7 +221,7 @@ where
     T: StructFieldType + JavaType,
 {
     if visibility == Visibility::Public && handle.visibility == Visibility::Public {
-        write_constructor_docs(f, lib, handle, constructor)?;
+        write_constructor_docs(f, lib, handle, constructor, false)?;
     }
 
     let visibility = match visibility {

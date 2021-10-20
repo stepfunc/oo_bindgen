@@ -1,4 +1,4 @@
-use crate::structs::FunctionReturnStructHandle;
+use crate::structs::FunctionReturnStructField;
 use crate::*;
 
 #[derive(Debug)]
@@ -6,14 +6,14 @@ pub struct Iterator {
     pub has_lifetime_annotation: bool,
     pub function: FunctionHandle,
     pub iter_type: ClassDeclarationHandle,
-    pub item_type: FunctionReturnStructHandle,
+    pub item_type: UniversalOr<FunctionReturnStructField>,
 }
 
 impl Iterator {
     pub(crate) fn new(
         has_lifetime_annotation: bool,
         function: &FunctionHandle,
-        item_type: &FunctionReturnStructHandle,
+        item_type: UniversalOr<FunctionReturnStructField>,
     ) -> BindResult<Iterator> {
         match &function.return_type {
             FReturnType::Void => {
@@ -22,7 +22,7 @@ impl Iterator {
                 })
             }
             FReturnType::Type(return_type, _) => {
-                if *return_type != FunctionReturnValue::StructRef(item_type.declaration.clone()) {
+                if *return_type != FunctionReturnValue::StructRef(item_type.declaration()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: function.clone(),
                     });
@@ -49,7 +49,7 @@ impl Iterator {
                     has_lifetime_annotation,
                     function: function.clone(),
                     iter_type: iter_type.clone(),
-                    item_type: item_type.clone(),
+                    item_type,
                 })
             } else {
                 Err(BindingError::IteratorNotSingleClassRefParam {

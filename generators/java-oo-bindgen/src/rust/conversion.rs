@@ -1754,8 +1754,11 @@ impl TypeConverter for IteratorConverter {
                     f.writeln("None => { break; }")?;
                     f.writeln("Some(it) => ")?;
                     blocked(f, |f| {
-                        StructConverter::new(self.0.item_type.declaration.clone())
-                            .convert_from_rust(f, "it", "let item = ")?;
+                        StructConverter::new(self.0.item_type.declaration()).convert_from_rust(
+                            f,
+                            "it",
+                            "let item = ",
+                        )?;
                         f.write(";")?;
 
                         f.writeln(

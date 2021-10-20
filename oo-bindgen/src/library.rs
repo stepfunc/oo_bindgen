@@ -755,7 +755,7 @@ impl LibraryBuilder {
     pub fn define_iterator(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &FunctionReturnStructHandle,
+        item_type: UniversalOr<FunctionReturnStructField>,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(false, native_func, item_type)
     }
@@ -763,7 +763,7 @@ impl LibraryBuilder {
     pub fn define_iterator_with_lifetime(
         &mut self,
         native_func: &FunctionHandle,
-        item_type: &FunctionReturnStructHandle,
+        item_type: UniversalOr<FunctionReturnStructField>,
     ) -> BindResult<IteratorHandle> {
         self.define_iterator_impl(true, native_func, item_type)
     }
@@ -772,7 +772,7 @@ impl LibraryBuilder {
         &mut self,
         has_lifetime: bool,
         native_func: &FunctionHandle,
-        item_type: &FunctionReturnStructHandle,
+        item_type: UniversalOr<FunctionReturnStructField>,
     ) -> BindResult<IteratorHandle> {
         let iter = IteratorHandle::new(crate::iterator::Iterator::new(
             has_lifetime,

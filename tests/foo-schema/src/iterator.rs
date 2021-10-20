@@ -24,7 +24,7 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
         .build()?;
 
     // Define the actual iterator
-    lib.define_iterator(&iterator_next_fn, &iterator_item)
+    lib.define_iterator(&iterator_next_fn, iterator_item.into())
 }
 
 pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {

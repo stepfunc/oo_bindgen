@@ -19,7 +19,7 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Bin
         .end_fields()?
         .build()?;
 
-    lib.define_iterator_with_lifetime(&iterator_next_fn, &byte_value)
+    lib.define_iterator_with_lifetime(&iterator_next_fn, byte_value.into())
 }
 
 fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
@@ -47,7 +47,7 @@ fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Binding
         .end_fields()?
         .build()?;
 
-    lib.define_iterator_with_lifetime(&iterator_next_fn, &byte_values)
+    lib.define_iterator_with_lifetime(&iterator_next_fn, byte_values.into())
 }
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {

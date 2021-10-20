@@ -53,7 +53,50 @@ where
     }
 }
 
-fn write_constructor<T>(
+fn write_static_constructor<T>(
+    f: &mut dyn Printer,
+    lib: &Library,
+    handle: &Struct<T>,
+    constructor: &Handle<Constructor>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + DotnetType,
+{
+    write_constructor_documentation(f, lib, handle, constructor)?;
+
+    let args = handle
+        .constructor_args(constructor.clone())
+        .map(|sf| {
+            format!(
+                "{} {}",
+                sf.field_type.as_dotnet_type(),
+                sf.name.to_mixed_case(),
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    let invocation_args = handle
+        .constructor_args(constructor.clone())
+        .map(|sf| sf.name.to_mixed_case())
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "public static {} {}({})",
+        handle.name().to_camel_case(),
+        constructor.name.to_camel_case(),
+        args
+    ))?;
+    blocked(f, |f| {
+        f.writeln(&format!(
+            "return new {}({});",
+            handle.declaration.name, invocation_args
+        ))
+    })
+}
+
+fn write_constructor_documentation<T>(
     f: &mut dyn Printer,
     lib: &Library,
     handle: &Struct<T>,
@@ -72,7 +115,22 @@ where
         }
 
         Ok(())
-    })?;
+    })
+}
+
+fn write_constructor<T>(
+    f: &mut dyn Printer,
+    lib: &Library,
+    visibility: Visibility,
+    handle: &Struct<T>,
+    constructor: &Handle<Constructor>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + DotnetType,
+{
+    if visibility == Visibility::Public && handle.visibility == Visibility::Public {
+        write_constructor_documentation(f, lib, handle, constructor)?;
+    }
 
     let params = handle
         .constructor_args(constructor.clone())
@@ -86,9 +144,14 @@ where
         .collect::<Vec<String>>()
         .join(", ");
 
+    let visibility = match visibility {
+        Visibility::Public => handle.visibility,
+        Visibility::Private => Visibility::Private,
+    };
+
     f.writeln(&format!(
         "{} {}({})",
-        handle.visibility.to_str(),
+        visibility.to_str(),
         handle.name().to_camel_case(),
         params
     ))?;
@@ -155,8 +218,20 @@ where
             }
 
             for c in &handle.constructors {
-                f.newline()?;
-                write_constructor(f, lib, handle, c)?;
+                match c.constructor_type {
+                    ConstructorType::Normal => {
+                        f.newline()?;
+                        write_constructor(f, lib, Visibility::Public, handle, c)?;
+                    }
+                    ConstructorType::Static => {
+                        f.newline()?;
+                        // write a private constructor that the static method will use
+                        write_constructor(f, lib, Visibility::Private, handle, c)?;
+                        f.newline()?;
+                        // write the static factory function
+                        write_static_constructor(f, lib, handle, c)?;
+                    }
+                }
             }
 
             if !handle.has_default_constructor() {

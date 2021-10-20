@@ -38,6 +38,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
             "A duration value",
         )?
         .end_fields()?
+        // -- constructor --
         .new_constructor(
             "init",
             ConstructorType::Normal,
@@ -49,6 +50,16 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
             ConstructorDefault::Duration(Duration::from_secs(5)),
         )?
         .end_constructor()?
+        // -- end constructor --
+        // -- constructor --
+        .new_constructor(
+            "create_default_with_time",
+            ConstructorType::Static,
+            "Construct a {struct:UniversalOuterStruct} with a default inner value and the specified time",
+        )?
+        .add(&inner_field, ConstructorDefault::DefaultStruct)?
+        .end_constructor()?
+        // -- end constructor --
         .build()?;
 
     Ok(outer_struct)

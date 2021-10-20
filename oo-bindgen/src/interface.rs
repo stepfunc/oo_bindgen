@@ -74,6 +74,12 @@ impl From<StringType> for CallbackArgument {
     }
 }
 
+impl From<ClassDeclarationHandle> for CallbackArgument {
+    fn from(x: ClassDeclarationHandle) -> Self {
+        Self::Class(x)
+    }
+}
+
 /// types that can be returned from callback functions
 #[derive(Debug, Clone, PartialEq)]
 pub enum CallbackReturnValue {

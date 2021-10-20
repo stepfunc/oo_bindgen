@@ -160,18 +160,6 @@ where
 {
     write_constructor_docs(f, lib, handle, constructor)?;
 
-    let params = handle
-        .constructor_args(constructor.clone())
-        .map(|sf| {
-            format!(
-                "{} {}",
-                sf.field_type.as_java_primitive(),
-                sf.name.to_mixed_case()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
-
     let invocation_args = handle
         .fields()
         .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
@@ -180,9 +168,10 @@ where
         .join(", ");
 
     f.writeln(&format!(
-        "public static {}({})",
+        "public static {} {}({})",
+        handle.name().to_camel_case(),
         constructor.name.to_camel_case(),
-        params
+        constructor_args(handle, constructor)
     ))?;
 
     blocked(f, |f| {
@@ -194,6 +183,23 @@ where
             ))
         })
     })
+}
+
+fn constructor_args<T>(handle: &Struct<T>, constructor: &Handle<Constructor>) -> String
+where
+    T: StructFieldType + JavaType,
+{
+    handle
+        .constructor_args(constructor.clone())
+        .map(|sf| {
+            format!(
+                "{} {}",
+                sf.field_type.as_java_primitive(),
+                sf.name.to_mixed_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ")
 }
 
 fn write_constructor<T>(
@@ -210,18 +216,6 @@ where
         write_constructor_docs(f, lib, handle, constructor)?;
     }
 
-    let params = handle
-        .constructor_args(constructor.clone())
-        .map(|sf| {
-            format!(
-                "{} {}",
-                sf.field_type.as_java_primitive(),
-                sf.name.to_mixed_case()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
-
     let visibility = match visibility {
         Visibility::Public => constructor_visibility(handle.visibility),
         Visibility::Private => constructor_visibility(Visibility::Private),
@@ -231,7 +225,7 @@ where
         "{} {}({})",
         visibility,
         handle.name().to_camel_case(),
-        params
+        constructor_args(handle, constructor)
     ))?;
     blocked(f, |f| {
         for field in &handle.fields {

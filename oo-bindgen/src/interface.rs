@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
 use crate::return_type::ReturnType;
-use crate::structs::{CallbackArgStructField, UniversalStructHandle};
+use crate::structs::{CallbackArgStructField, CallbackStructHandle, UniversalStructHandle};
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 
@@ -57,6 +57,12 @@ impl From<IteratorHandle> for CallbackArgument {
 impl From<UniversalStructHandle> for CallbackArgument {
     fn from(x: UniversalStructHandle) -> Self {
         Self::Struct(UniversalOr::Universal(x))
+    }
+}
+
+impl From<CallbackStructHandle> for CallbackArgument {
+    fn from(x: CallbackStructHandle) -> Self {
+        Self::Struct(x.into())
     }
 }
 

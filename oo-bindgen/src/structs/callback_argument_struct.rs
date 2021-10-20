@@ -1,6 +1,6 @@
 use crate::iterator::IteratorHandle;
 use crate::structs::common::*;
-use crate::types::{TypeValidator, ValidatedType};
+use crate::types::{DurationType, TypeValidator, ValidatedType};
 use crate::*;
 
 /// Types that can be used as a callback argument
@@ -49,6 +49,18 @@ impl ConstructorValidator for CallbackArgStructField {
 impl From<BasicType> for CallbackArgStructField {
     fn from(x: BasicType) -> Self {
         CallbackArgStructField::Basic(x)
+    }
+}
+
+impl From<EnumHandle> for CallbackArgStructField {
+    fn from(x: EnumHandle) -> Self {
+        CallbackArgStructField::Basic(BasicType::Enum(x))
+    }
+}
+
+impl From<DurationType> for CallbackArgStructField {
+    fn from(x: DurationType) -> Self {
+        CallbackArgStructField::Basic(BasicType::Duration(x))
     }
 }
 

@@ -77,11 +77,11 @@ pub enum ConstructorDefault {
     DefaultStruct,
 }
 
-trait ToDefaultVariant {
+pub trait ToDefaultVariant {
     fn default_variant(&self) -> ConstructorDefault;
 }
 
-trait ToDefaultString {
+pub trait ToDefaultString {
     fn default_string(&self) -> ConstructorDefault;
 }
 

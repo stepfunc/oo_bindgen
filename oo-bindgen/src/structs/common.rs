@@ -23,6 +23,12 @@ impl FieldName {
     }
 }
 
+impl From<&FieldName> for FieldName {
+    fn from(x: &FieldName) -> Self {
+        x.clone()
+    }
+}
+
 impl std::ops::Deref for FieldName {
     type Target = String;
 

@@ -18,7 +18,7 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
     // Define the iterator item structure
     let iterator_item = lib
         .define_function_return_struct(&iterator_item)?
-        .add("value", BasicType::Uint8, "Character value")?
+        .add("value", BasicType::U8, "Character value")?
         .doc("Single iterator item")?
         .end_fields()?
         .build()?;

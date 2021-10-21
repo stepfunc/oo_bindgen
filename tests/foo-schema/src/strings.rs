@@ -30,7 +30,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let stringclass_length_func = lib
         .define_function("string_length")
         .param("value", StringType, "String")?
-        .returns(BasicType::Uint32, "String length")?
+        .returns(BasicType::U32, "String length")?
         .doc("Get the string length")?
         .build()?;
 

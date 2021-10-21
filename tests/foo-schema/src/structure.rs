@@ -18,14 +18,14 @@ pub fn define_inner_structure(
     let inner_structure = lib
         .define_function_argument_struct(&inner_structure)?
         .doc("Structure used within another structure")?
-        .add(test_field.clone(), BasicType::Uint16, "test uint16 field")?
+        .add(test_field.clone(), BasicType::U16, "test uint16 field")?
         // The following pattern used to crash in Java because of the way we handled boolean
         .add(
             first_enum_field.clone(),
             structure_enum.clone(),
             "first_enum_value",
         )?
-        .add(int1_field.clone(), BasicType::Sint16, "int field")?
+        .add(int1_field.clone(), BasicType::S16, "int field")?
         .add(bool2_field.clone(), BasicType::Bool, "boolean field")?
         .add(
             second_enum_field.clone(),
@@ -98,14 +98,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .add(boolean_value.clone(), BasicType::Bool, "boolean_value")?
         .add(boolean_value2.clone(), BasicType::Bool, "boolean_value2")?
         .add(enum_value2.clone(), structure_enum, "enum_value2")?
-        .add(uint8_value.clone(), BasicType::Uint8, "uint8_value")?
-        .add(int8_value.clone(), BasicType::Sint8, "int8_value")?
-        .add(uint16_value.clone(), BasicType::Uint16, "uint16_value")?
-        .add(int16_value.clone(), BasicType::Sint16, "int16_value")?
-        .add(uint32_value.clone(), BasicType::Uint32, "uint32_value")?
-        .add(int32_value.clone(), BasicType::Sint32, "int32_value")?
-        .add(uint64_value.clone(), BasicType::Uint64, "uint64_value")?
-        .add(int64_value.clone(), BasicType::Sint64, "int64_value")?
+        .add(uint8_value.clone(), BasicType::U8, "uint8_value")?
+        .add(int8_value.clone(), BasicType::S8, "int8_value")?
+        .add(uint16_value.clone(), BasicType::U16, "uint16_value")?
+        .add(int16_value.clone(), BasicType::S16, "int16_value")?
+        .add(uint32_value.clone(), BasicType::U32, "uint32_value")?
+        .add(int32_value.clone(), BasicType::S32, "int32_value")?
+        .add(uint64_value.clone(), BasicType::U64, "uint64_value")?
+        .add(int64_value.clone(), BasicType::S64, "int64_value")?
         .add(float_value.clone(), BasicType::Float32, "float_value")?
         .add(double_value.clone(), BasicType::Double64, "double_value")?
         .add(string_value.clone(), StringType, "string_value")?

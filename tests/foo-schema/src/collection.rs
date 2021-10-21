@@ -15,7 +15,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .define_function("collection_create_with_reserve")
         .param(
             "reserve",
-            BasicType::Uint32,
+            BasicType::U32,
             "Number of elements to pre-allocate",
         )?
         .returns(
@@ -58,14 +58,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let collection_size_func = lib
         .define_function("collection_size")
         .param("col", collection.clone(), "Collection")?
-        .returns(BasicType::Uint32, "Size of the collection")?
+        .returns(BasicType::U32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build()?;
 
     let collection_get_func = lib
         .define_function("collection_get")
         .param("col", collection, "Collection")?
-        .param("idx", BasicType::Uint32, "Index")?
+        .param("idx", BasicType::U32, "Index")?
         .returns(StringType, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
@@ -73,14 +73,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let collection_with_reserve_size_func = lib
         .define_function("collection_with_reserve_size")
         .param("col", collection_with_reserve.clone(), "Collection")?
-        .returns(BasicType::Uint32, "Size of the collection")?
+        .returns(BasicType::U32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build()?;
 
     let collection_with_reserve_get_func = lib
         .define_function("collection_with_reserve_get")
         .param("col", collection_with_reserve, "Collection")?
-        .param("idx", BasicType::Uint32, "Index")?
+        .param("idx", BasicType::U32, "Index")?
         .returns(StringType, "Value")?
         .doc("Get an item from the collection")?
         .build()?;

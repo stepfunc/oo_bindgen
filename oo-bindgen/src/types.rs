@@ -76,14 +76,14 @@ impl<T> Arg<T> {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BasicType {
     Bool,
-    Uint8,
-    Sint8,
-    Uint16,
-    Sint16,
-    Uint32,
-    Sint32,
-    Uint64,
-    Sint64,
+    U8,
+    S8,
+    U16,
+    S16,
+    U32,
+    S32,
+    U64,
+    S64,
     Float32,
     Double64,
     Duration(DurationType),
@@ -103,56 +103,56 @@ impl ConstructorValidator for BasicType {
                     value: value.clone(),
                 }),
             },
-            BasicType::Uint8 => match value {
+            BasicType::U8 => match value {
                 ConstructorDefault::Numeric(Number::U8(x)) => Ok(Number::U8(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "u8".to_string(),
                     value: value.clone(),
                 }),
             },
-            BasicType::Sint8 => match value {
+            BasicType::S8 => match value {
                 ConstructorDefault::Numeric(Number::S8(x)) => Ok(Number::S8(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "i8".to_string(),
                     value: value.clone(),
                 }),
             },
-            BasicType::Uint16 => match value {
+            BasicType::U16 => match value {
                 ConstructorDefault::Numeric(Number::U16(x)) => Ok(Number::U16(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "u16".to_string(),
                     value: value.clone(),
                 }),
             },
-            BasicType::Sint16 => match value {
+            BasicType::S16 => match value {
                 ConstructorDefault::Numeric(Number::S16(x)) => Ok(Number::S16(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "i16".to_string(),
                     value: value.clone(),
                 }),
             },
-            BasicType::Uint32 => match value {
+            BasicType::U32 => match value {
                 ConstructorDefault::Numeric(Number::U32(x)) => Ok(Number::U32(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "u32".to_string(),
                     value: value.clone(),
                 }),
             },
-            BasicType::Sint32 => match value {
+            BasicType::S32 => match value {
                 ConstructorDefault::Numeric(Number::S32(x)) => Ok(Number::S32(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "i32".to_string(),
                     value: value.clone(),
                 }),
             },
-            BasicType::Uint64 => match value {
+            BasicType::U64 => match value {
                 ConstructorDefault::Numeric(Number::U64(x)) => Ok(Number::U64(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "u64".to_string(),
                     value: value.clone(),
                 }),
             },
-            BasicType::Sint64 => match value {
+            BasicType::S64 => match value {
                 ConstructorDefault::Numeric(Number::S64(x)) => Ok(Number::S64(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
                     field_type: "i64".to_string(),
@@ -204,14 +204,14 @@ impl BasicType {
     pub fn get_c_rust_type(&self) -> &str {
         match self {
             Self::Bool => "bool",
-            Self::Uint8 => "u8",
-            Self::Sint8 => "i8",
-            Self::Uint16 => "u16",
-            Self::Sint16 => "i16",
-            Self::Uint32 => "u32",
-            Self::Sint32 => "i32",
-            Self::Uint64 => "u64",
-            Self::Sint64 => "i64",
+            Self::U8 => "u8",
+            Self::S8 => "i8",
+            Self::U16 => "u16",
+            Self::S16 => "i16",
+            Self::U32 => "u32",
+            Self::S32 => "i32",
+            Self::U64 => "u64",
+            Self::S64 => "i64",
             Self::Float32 => "f32",
             Self::Double64 => "f64",
             Self::Duration(_) => "u64",
@@ -293,14 +293,14 @@ impl TypeValidator for BasicType {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
             BasicType::Bool => None,
-            BasicType::Uint8 => None,
-            BasicType::Sint8 => None,
-            BasicType::Uint16 => None,
-            BasicType::Sint16 => None,
-            BasicType::Uint32 => None,
-            BasicType::Sint32 => None,
-            BasicType::Uint64 => None,
-            BasicType::Sint64 => None,
+            BasicType::U8 => None,
+            BasicType::S8 => None,
+            BasicType::U16 => None,
+            BasicType::S16 => None,
+            BasicType::U32 => None,
+            BasicType::S32 => None,
+            BasicType::U64 => None,
+            BasicType::S64 => None,
             BasicType::Float32 => None,
             BasicType::Double64 => None,
             BasicType::Duration(_) => None,

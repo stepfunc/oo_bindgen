@@ -11,7 +11,7 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
     let value_field = FieldName::new("value");
     lib.define_universal_struct(&inner)?
         .doc("Simple universal struct")?
-        .add(value_field.clone(), BasicType::Sint32, "integer value")?
+        .add(value_field.clone(), BasicType::S32, "integer value")?
         .end_fields()?
         .begin_constructor(
             "init",

@@ -15,7 +15,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let get_special_number_fb = lib
         .define_function("get_special_number")
         .param("password", StringType, "secret password")?
-        .returns(BasicType::Uint32, "unlocked value")?
+        .returns(BasicType::U32, "unlocked value")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
         .build()?;
@@ -47,7 +47,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let get_special_value_fn = lib
         .define_function("get_special_value_from_class")
         .param("instance", my_class.clone(), "class instance")?
-        .returns(BasicType::Uint32, "special value")?
+        .returns(BasicType::U32, "special value")?
         .fails_with(error_type)?
         .doc("extract a special value from the class instance")?
         .build()?;

@@ -6,8 +6,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let interface = lib
         .define_interface("CallbackInterface", "Test interface")
         .begin_callback("on_value", "On value callback")?
-        .param("value", BasicType::Uint32, "Value")?
-        .returns(BasicType::Uint32, "Some value")?
+        .param("value", BasicType::U32, "Value")?
+        .returns(BasicType::U32, "Some value")?
         .end_callback()?
         .begin_callback("on_duration", "On duration callback")?
         .param("value", DurationType::Milliseconds, "Value")?
@@ -43,8 +43,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let cbsource_set_value_func = lib
         .define_function("cbsource_set_value")
         .param("cbsource", cbsource.clone(), "Callback source")?
-        .param("value", BasicType::Uint32, "New value")?
-        .returns(BasicType::Uint32, "Value returned by the callback")?
+        .param("value", BasicType::U32, "New value")?
+        .returns(BasicType::U32, "Value returned by the callback")?
         .doc("Set the value and call all the callbacks")?
         .build()?;
 

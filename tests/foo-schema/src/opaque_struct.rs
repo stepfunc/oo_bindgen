@@ -7,7 +7,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let opaque_struct = lib
         .define_function_return_struct(&opaque_struct)?
         .make_opaque()
-        .add("id", BasicType::Uint64, "64-bit id")?
+        .add("id", BasicType::U64, "64-bit id")?
         .doc("Opaque structure")?
         .end_fields()?
         .build()?;
@@ -15,7 +15,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let get_id_fn = lib
         .define_function("opaque_struct_get_id")
         .param("value", opaque_struct.declaration.clone(), "struct value")?
-        .returns(BasicType::Uint64, "value of id field")?
+        .returns(BasicType::U64, "value of id field")?
         .doc("Get the id field of the struct")?
         .build()?;
 

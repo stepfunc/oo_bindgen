@@ -14,7 +14,7 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Bin
 
     let byte_value = lib
         .define_function_return_struct(&byte_value)?
-        .add("value", BasicType::Uint8, "byte")?
+        .add("value", BasicType::U8, "byte")?
         .doc("item type for inner iterator")?
         .end_fields()?
         .build()?;
@@ -72,7 +72,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             StringType,
             "String to pass to the callback interface",
         )?
-        .param("chunk_size", BasicType::Uint32, "size of each iteration")?
+        .param("chunk_size", BasicType::U32, "size of each iteration")?
         .param("callback", interface, "callback interface to invoke")?
         .returns_nothing()?
         .build()?;

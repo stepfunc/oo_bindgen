@@ -627,7 +627,7 @@ impl<'a, F> ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn add<D: Into<ConstructorDefault>>(
+    pub fn default<D: Into<ConstructorDefault>>(
         mut self,
         name: &FieldName,
         value: D,
@@ -659,6 +659,10 @@ where
         });
 
         Ok(self)
+    }
+
+    pub fn default_struct(self, name: &FieldName) -> BindResult<Self> {
+        self.default(name, ConstructorDefault::DefaultStruct)
     }
 
     pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {

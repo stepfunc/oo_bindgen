@@ -18,7 +18,7 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
             ConstructorType::Normal,
             "initializes {struct:UniversalInnerStruct} to default values",
         )?
-        .add(&value_field, Number::S32(-42))?
+        .default(&value_field, Number::S32(-42))?
         .end_constructor()?
         .build()
 }
@@ -46,8 +46,8 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
             ConstructorType::Normal,
             "Construct a {struct:UniversalOuterStruct} initialized to default values",
         )?
-        .add(&inner_field, ConstructorDefault::DefaultStruct)?
-        .add(
+        .default(&inner_field, ConstructorDefault::DefaultStruct)?
+        .default(
             &delay_field,
             ConstructorDefault::Duration(Duration::from_secs(5)),
         )?
@@ -59,7 +59,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
             ConstructorType::Static,
             "Construct a {struct:UniversalOuterStruct} with a default inner value and the specified time",
         )?
-        .add(&inner_field, ConstructorDefault::DefaultStruct)?
+        .default(&inner_field, ConstructorDefault::DefaultStruct)?
         .end_constructor()?
         // -- end constructor --
         // -- constructor --
@@ -68,8 +68,8 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
             ConstructorType::Static,
             "Construct a special fully initialized {struct:UniversalOuterStruct}",
         )?
-        .add(&inner_field, ConstructorDefault::DefaultStruct)?
-        .add(&delay_field, ConstructorDefault::Duration(Duration::from_secs(1)))?
+        .default(&inner_field, ConstructorDefault::DefaultStruct)?
+        .default(&delay_field, ConstructorDefault::Duration(Duration::from_secs(1)))?
         .end_constructor()?
         // -- end constructor --
         // -- constructor --
@@ -78,8 +78,8 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
             ConstructorType::Static,
             "Construct a special fully initialized {struct:UniversalOuterStruct}",
         )?
-        .add(&inner_field, ConstructorDefault::DefaultStruct)?
-        .add(&delay_field, ConstructorDefault::Duration(Duration::from_secs(2)))?
+        .default(&inner_field, ConstructorDefault::DefaultStruct)?
+        .default(&delay_field, ConstructorDefault::Duration(Duration::from_secs(2)))?
         .end_constructor()?
         // -- end constructor --
         .build()?;

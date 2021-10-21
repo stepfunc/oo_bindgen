@@ -517,7 +517,7 @@ impl<'a, F> MethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn new_constructor<D: Into<Doc>, S: Into<String>>(
+    pub fn begin_constructor<D: Into<Doc>, S: Into<String>>(
         self,
         name: S,
         constructor_type: ConstructorType,
@@ -540,6 +540,15 @@ where
             fields: Vec::new(),
             doc: doc.into(),
         })
+    }
+
+    pub fn add_full_constructor<D: Into<Doc>, S: Into<String>>(
+        self,
+        name: S,
+        doc: D,
+    ) -> BindResult<Self> {
+        self.begin_constructor(name, ConstructorType::Normal, doc)?
+            .end_constructor()
     }
 
     pub fn build(self) -> BindResult<Handle<Struct<F>>> {

@@ -11,7 +11,7 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         .doc("Simple universal struct")?
         .add(value_field.clone(), BasicType::Sint32, "integer value")?
         .end_fields()?
-        .new_constructor(
+        .begin_constructor(
             "init",
             ConstructorType::Normal,
             "initializes {struct:UniversalInnerStruct} to default values",
@@ -39,7 +39,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         )?
         .end_fields()?
         // -- constructor --
-        .new_constructor(
+        .begin_constructor(
             "init",
             ConstructorType::Normal,
             "Construct a {struct:UniversalOuterStruct} initialized to default values",
@@ -52,7 +52,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         .end_constructor()?
         // -- end constructor --
         // -- constructor --
-        .new_constructor(
+        .begin_constructor(
             "create_default_with_time",
             ConstructorType::Static,
             "Construct a {struct:UniversalOuterStruct} with a default inner value and the specified time",
@@ -61,7 +61,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         .end_constructor()?
         // -- end constructor --
         // -- constructor --
-        .new_constructor(
+        .begin_constructor(
             "special_one",
             ConstructorType::Static,
             "Construct a special fully initialized {struct:UniversalOuterStruct}",
@@ -71,7 +71,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         .end_constructor()?
         // -- end constructor --
         // -- constructor --
-        .new_constructor(
+        .begin_constructor(
             "special_two",
             ConstructorType::Static,
             "Construct a special fully initialized {struct:UniversalOuterStruct}",

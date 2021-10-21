@@ -34,7 +34,7 @@ pub fn define_inner_structure(
         )?
         .end_fields()?
         // constructor definition
-        .new_constructor(
+        .begin_constructor(
             "init",
             ConstructorType::Normal,
             "Initialize to default values",
@@ -128,7 +128,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Test structure")?
         .end_fields()?
         // construct all values with defaults
-        .new_constructor(
+        .begin_constructor(
             "init",
             ConstructorType::Normal,
             "Initialize {struct:Structure} to default values",

@@ -622,9 +622,7 @@ where
             });
         }
 
-        // check that the field exists in the struct definition
-        if !self.builder.fields.iter().any(|f| f.name == *name) {}
-
+        // find the field and validate it
         let value = match self.builder.fields.iter().find(|f| f.name == *name) {
             Some(x) => x.field_type.validate_constructor_default(&value)?,
             None => {

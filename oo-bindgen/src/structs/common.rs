@@ -542,13 +542,17 @@ where
         })
     }
 
-    pub fn add_full_constructor<D: Into<Doc>, S: Into<String>>(
-        self,
-        name: S,
-        doc: D,
-    ) -> BindResult<Self> {
-        self.begin_constructor(name, ConstructorType::Normal, doc)?
-            .end_constructor()
+    pub fn add_full_constructor<D: Into<Doc>, S: Into<String>>(self, name: S) -> BindResult<Self> {
+        let struct_name = self.declaration.name.clone();
+        self.begin_constructor(
+            name,
+            ConstructorType::Normal,
+            format!(
+                "Fully construct {{struct:{}}} specifying the value of each field",
+                struct_name
+            ),
+        )?
+        .end_constructor()
     }
 
     pub fn build(self) -> BindResult<Handle<Struct<F>>> {

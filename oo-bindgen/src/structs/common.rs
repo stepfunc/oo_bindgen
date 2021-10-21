@@ -77,6 +77,26 @@ pub enum ConstructorDefault {
     DefaultStruct,
 }
 
+trait ToDefaultVariant {
+    fn default_variant(&self) -> ConstructorDefault;
+}
+
+trait ToDefaultString {
+    fn default_string(&self) -> ConstructorDefault;
+}
+
+impl ToDefaultVariant for &str {
+    fn default_variant(&self) -> ConstructorDefault {
+        ConstructorDefault::Enum(self.to_string())
+    }
+}
+
+impl ToDefaultString for &str {
+    fn default_string(&self) -> ConstructorDefault {
+        ConstructorDefault::String(self.to_string())
+    }
+}
+
 impl From<Number> for ConstructorDefault {
     fn from(x: Number) -> Self {
         Self::Numeric(x)

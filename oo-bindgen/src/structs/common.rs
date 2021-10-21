@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::fmt::Formatter;
+use std::fmt::{Debug, Formatter};
 
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
@@ -9,6 +9,7 @@ use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::types::{DurationType, StringType, TypeValidator};
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
+use std::time::Duration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FieldName {
@@ -50,75 +51,93 @@ impl From<&str> for FieldName {
 }
 
 /// Value used to define constructor default
-#[derive(Debug, Clone)]
-pub enum ConstructorDefault {
-    Bool(bool),
-    Uint8(u8),
-    Sint8(i8),
-    Uint16(u16),
-    Sint16(i16),
-    Uint32(u32),
-    Sint32(i32),
-    Uint64(u64),
-    Sint64(i64),
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Number {
+    U8(u8),
+    S8(i8),
+    U16(u16),
+    S16(i16),
+    U32(u32),
+    S32(i32),
+    U64(u64),
+    S64(i64),
     Float(f32),
     Double(f64),
-    Duration(std::time::Duration),
+}
+
+/// Value used to define constructor default
+#[derive(Debug, Clone, PartialEq)]
+pub enum ConstructorDefault {
+    Bool(bool),
+    Numeric(Number),
+    Duration(Duration),
     Enum(String),
     String(String),
     /// requires that the struct have a default constructor
     DefaultStruct,
 }
 
+impl From<Number> for ConstructorDefault {
+    fn from(x: Number) -> Self {
+        Self::Numeric(x)
+    }
+}
+
+impl From<bool> for ConstructorDefault {
+    fn from(x: bool) -> Self {
+        ConstructorDefault::Bool(x)
+    }
+}
+
+impl From<Duration> for ConstructorDefault {
+    fn from(x: Duration) -> Self {
+        ConstructorDefault::Duration(x)
+    }
+}
+
 // Value used to define constructor default
 #[derive(Debug, Clone)]
 pub enum ValidatedConstructorDefault {
     Bool(bool),
-    Uint8(u8),
-    Sint8(i8),
-    Uint16(u16),
-    Sint16(i16),
-    Uint32(u32),
-    Sint32(i32),
-    Uint64(u64),
-    Sint64(i64),
-    Float(f32),
-    Double(f64),
-    Duration(DurationType, std::time::Duration),
+    Numeric(Number),
+    Duration(DurationType, Duration),
     Enum(EnumHandle, String),
     String(String),
     /// requires that the struct have a default constructor
     DefaultStruct(StructType, ConstructorType, String),
 }
 
-impl std::fmt::Display for ValidatedConstructorDefault {
+impl From<Number> for ValidatedConstructorDefault {
+    fn from(x: Number) -> Self {
+        Self::Numeric(x)
+    }
+}
+
+impl std::fmt::Display for Number {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Bool(x) => {
+            Self::U8(x) => {
                 write!(f, "{}", x)
             }
-            Self::Uint8(x) => {
+            Self::S8(x) => {
                 write!(f, "{}", x)
             }
-            Self::Sint8(x) => {
+            Self::U16(x) => {
                 write!(f, "{}", x)
             }
-            Self::Uint16(x) => {
+            Self::S16(x) => {
                 write!(f, "{}", x)
             }
-            Self::Sint16(x) => {
+            Self::U32(x) => {
                 write!(f, "{}", x)
             }
-            Self::Uint32(x) => {
+            Self::S32(x) => {
                 write!(f, "{}", x)
             }
-            Self::Sint32(x) => {
+            Self::U64(x) => {
                 write!(f, "{}", x)
             }
-            Self::Uint64(x) => {
-                write!(f, "{}", x)
-            }
-            Self::Sint64(x) => {
+            Self::S64(x) => {
                 write!(f, "{}", x)
             }
             Self::Float(x) => {
@@ -127,6 +146,17 @@ impl std::fmt::Display for ValidatedConstructorDefault {
             Self::Double(x) => {
                 write!(f, "{}", x)
             }
+        }
+    }
+}
+
+impl std::fmt::Display for ValidatedConstructorDefault {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bool(x) => {
+                write!(f, "{}", x)
+            }
+            Self::Numeric(x) => write!(f, "{}", x),
             Self::Duration(t, x) => match t {
                 DurationType::Milliseconds => write!(f, "{} milliseconds", x.as_millis()),
                 DurationType::Seconds => write!(f, "{} seconds", x.as_secs()),
@@ -577,7 +607,13 @@ impl<'a, F> ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn add(mut self, name: &FieldName, value: ConstructorDefault) -> BindResult<Self> {
+    pub fn add<D: Into<ConstructorDefault>>(
+        mut self,
+        name: &FieldName,
+        value: D,
+    ) -> BindResult<Self> {
+        let value = value.into();
+
         // check that we haven't already defined this field
         if self.fields.iter().any(|f| f.name == *name) {
             return Err(BindingError::StructConstructorDuplicateField {

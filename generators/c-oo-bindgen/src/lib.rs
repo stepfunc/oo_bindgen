@@ -396,16 +396,18 @@ where
             let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
                 Some(x) => match &x.value {
                     ValidatedConstructorDefault::Bool(x) => x.to_string(),
-                    ValidatedConstructorDefault::Uint8(x) => x.to_string(),
-                    ValidatedConstructorDefault::Sint8(x) => x.to_string(),
-                    ValidatedConstructorDefault::Uint16(x) => x.to_string(),
-                    ValidatedConstructorDefault::Sint16(x) => x.to_string(),
-                    ValidatedConstructorDefault::Uint32(x) => x.to_string(),
-                    ValidatedConstructorDefault::Sint32(x) => x.to_string(),
-                    ValidatedConstructorDefault::Uint64(x) => x.to_string(),
-                    ValidatedConstructorDefault::Sint64(x) => x.to_string(),
-                    ValidatedConstructorDefault::Float(x) => format!("{}f", x),
-                    ValidatedConstructorDefault::Double(x) => x.to_string(),
+                    ValidatedConstructorDefault::Numeric(x) => match x {
+                        Number::U8(x) => x.to_string(),
+                        Number::S8(x) => x.to_string(),
+                        Number::U16(x) => x.to_string(),
+                        Number::S16(x) => x.to_string(),
+                        Number::U32(x) => x.to_string(),
+                        Number::S32(x) => x.to_string(),
+                        Number::U64(x) => x.to_string(),
+                        Number::S64(x) => x.to_string(),
+                        Number::Float(x) => format!("{}f", x),
+                        Number::Double(x) => x.to_string(),
+                    },
                     ValidatedConstructorDefault::Duration(t, x) => t.get_value_string(*x),
                     ValidatedConstructorDefault::Enum(x, variant) => {
                         format!(

@@ -39,13 +39,13 @@ pub fn define_inner_structure(
             ConstructorType::Normal,
             "Initialize to default values",
         )?
-        .add(&test_field, ConstructorDefault::Uint16(41))?
+        .add(&test_field, Number::U16(41))?
         .add(
             &first_enum_field,
             ConstructorDefault::Enum("Var2".to_string()),
         )?
-        .add(&int1_field, ConstructorDefault::Sint16(1))?
-        .add(&bool2_field, ConstructorDefault::Bool(false))?
+        .add(&int1_field, Number::S16(1))?
+        .add(&bool2_field, false)?
         .add(
             &second_enum_field,
             ConstructorDefault::Enum("Var2".to_string()),
@@ -134,19 +134,19 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             "Initialize {struct:Structure} to default values",
         )?
         .add(&enum_value, ConstructorDefault::Enum("Var2".into()))?
-        .add(&boolean_value, ConstructorDefault::Bool(true))?
-        .add(&boolean_value2, ConstructorDefault::Bool(true))?
+        .add(&boolean_value, true)?
+        .add(&boolean_value2, true)?
         .add(&enum_value2, ConstructorDefault::Enum("Var2".into()))?
-        .add(&uint8_value, ConstructorDefault::Uint8(1))?
-        .add(&int8_value, ConstructorDefault::Sint8(-1))?
-        .add(&uint16_value, ConstructorDefault::Uint16(2))?
-        .add(&int16_value, ConstructorDefault::Sint16(-2))?
-        .add(&uint32_value, ConstructorDefault::Uint32(3))?
-        .add(&int32_value, ConstructorDefault::Sint32(-3))?
-        .add(&uint64_value, ConstructorDefault::Uint64(4))?
-        .add(&int64_value, ConstructorDefault::Sint64(-4))?
-        .add(&float_value, ConstructorDefault::Float(12.34))?
-        .add(&double_value, ConstructorDefault::Double(-56.78))?
+        .add(&uint8_value, Number::U8(1))?
+        .add(&int8_value, Number::S8(-1))?
+        .add(&uint16_value, Number::U16(2))?
+        .add(&int16_value, Number::S16(-2))?
+        .add(&uint32_value, Number::U32(3))?
+        .add(&int32_value, Number::S32(-3))?
+        .add(&uint64_value, Number::U64(4))?
+        .add(&int64_value, Number::S64(-4))?
+        .add(&float_value, Number::Float(12.34))?
+        .add(&double_value, Number::Double(-56.78))?
         .add(&string_value, ConstructorDefault::String("Hello".into()))?
         .add(&structure_value, ConstructorDefault::DefaultStruct)?
         .add(

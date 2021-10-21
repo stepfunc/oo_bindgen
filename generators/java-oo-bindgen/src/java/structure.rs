@@ -2,7 +2,7 @@ use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::structs::{
-    Constructor, ConstructorType, Struct, StructField, StructFieldType,
+    Constructor, ConstructorType, Number, Struct, StructField, StructFieldType,
     ValidatedConstructorDefault, Visibility,
 };
 use oo_bindgen::types::DurationType;
@@ -92,16 +92,18 @@ where
     match constructor.values.iter().find(|x| x.name == field.name) {
         Some(x) => match &x.value {
             ValidatedConstructorDefault::Bool(x) => x.to_string(),
-            ValidatedConstructorDefault::Uint8(x) => format!("UByte.valueOf({})", x),
-            ValidatedConstructorDefault::Sint8(x) => format!("(byte) {}", x),
-            ValidatedConstructorDefault::Uint16(x) => format!("UShort.valueOf({})", x),
-            ValidatedConstructorDefault::Sint16(x) => format!("(short) {}", x),
-            ValidatedConstructorDefault::Uint32(x) => format!("UInteger.valueOf({}L)", x),
-            ValidatedConstructorDefault::Sint32(x) => x.to_string(),
-            ValidatedConstructorDefault::Uint64(x) => format!("ULong.valueOf({}L)", x),
-            ValidatedConstructorDefault::Sint64(x) => x.to_string(),
-            ValidatedConstructorDefault::Float(x) => format!("{}F", x),
-            ValidatedConstructorDefault::Double(x) => x.to_string(),
+            ValidatedConstructorDefault::Numeric(x) => match x {
+                Number::U8(x) => format!("UByte.valueOf({})", x),
+                Number::S8(x) => format!("(byte) {}", x),
+                Number::U16(x) => format!("UShort.valueOf({})", x),
+                Number::S16(x) => format!("(short) {}", x),
+                Number::U32(x) => format!("UInteger.valueOf({}L)", x),
+                Number::S32(x) => x.to_string(),
+                Number::U64(x) => format!("ULong.valueOf({}L)", x),
+                Number::S64(x) => x.to_string(),
+                Number::Float(x) => format!("{}F", x),
+                Number::Double(x) => x.to_string(),
+            },
             ValidatedConstructorDefault::Duration(t, x) => match t {
                 DurationType::Milliseconds => {
                     format!("java.time.Duration.ofMillis({})", t.get_value_string(*x))

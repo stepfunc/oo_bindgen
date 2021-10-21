@@ -104,72 +104,72 @@ impl ConstructorValidator for BasicType {
                 }),
             },
             BasicType::Uint8 => match value {
-                ConstructorDefault::Uint8(x) => Ok(ValidatedConstructorDefault::Uint8(*x)),
+                ConstructorDefault::Numeric(Number::U8(x)) => Ok(Number::U8(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "uint8".to_string(),
+                    field_type: "u8".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint8 => match value {
-                ConstructorDefault::Sint8(x) => Ok(ValidatedConstructorDefault::Sint8(*x)),
+                ConstructorDefault::Numeric(Number::S8(x)) => Ok(Number::S8(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "sint8".to_string(),
+                    field_type: "i8".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Uint16 => match value {
-                ConstructorDefault::Uint16(x) => Ok(ValidatedConstructorDefault::Uint16(*x)),
+                ConstructorDefault::Numeric(Number::U16(x)) => Ok(Number::U16(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "uint16".to_string(),
+                    field_type: "u16".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint16 => match value {
-                ConstructorDefault::Sint16(x) => Ok(ValidatedConstructorDefault::Sint16(*x)),
+                ConstructorDefault::Numeric(Number::S16(x)) => Ok(Number::S16(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "sint16".to_string(),
+                    field_type: "i16".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Uint32 => match value {
-                ConstructorDefault::Uint32(x) => Ok(ValidatedConstructorDefault::Uint32(*x)),
+                ConstructorDefault::Numeric(Number::U32(x)) => Ok(Number::U32(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "uint32".to_string(),
+                    field_type: "u32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint32 => match value {
-                ConstructorDefault::Sint32(x) => Ok(ValidatedConstructorDefault::Sint32(*x)),
+                ConstructorDefault::Numeric(Number::S32(x)) => Ok(Number::S32(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "sint32".to_string(),
+                    field_type: "i32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Uint64 => match value {
-                ConstructorDefault::Uint64(x) => Ok(ValidatedConstructorDefault::Uint64(*x)),
+                ConstructorDefault::Numeric(Number::U64(x)) => Ok(Number::U64(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "uint64".to_string(),
+                    field_type: "u64".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Sint64 => match value {
-                ConstructorDefault::Sint64(x) => Ok(ValidatedConstructorDefault::Sint64(*x)),
+                ConstructorDefault::Numeric(Number::S64(x)) => Ok(Number::S64(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "sint64".to_string(),
+                    field_type: "i64".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Float32 => match value {
-                ConstructorDefault::Float(x) => Ok(ValidatedConstructorDefault::Float(*x)),
+                ConstructorDefault::Numeric(Number::Float(x)) => Ok(Number::Float(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "float32".to_string(),
+                    field_type: "f32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Double64 => match value {
-                ConstructorDefault::Double(x) => Ok(ValidatedConstructorDefault::Double(*x)),
+                ConstructorDefault::Numeric(Number::Double(x)) => Ok(Number::Double(*x).into()),
                 _ => Err(BindingError::StructConstructorBadValueForType {
-                    field_type: "double".to_string(),
+                    field_type: "f64".to_string(),
                     value: value.clone(),
                 }),
             },

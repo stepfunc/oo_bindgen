@@ -665,6 +665,18 @@ where
         self.default(name, ConstructorDefault::DefaultStruct)
     }
 
+    pub fn default_variant<S: Into<String>>(
+        self,
+        name: &FieldName,
+        variant: S,
+    ) -> BindResult<Self> {
+        self.default(name, ConstructorDefault::Enum(variant.into()))
+    }
+
+    pub fn default_string<S: Into<String>>(self, name: &FieldName, value: S) -> BindResult<Self> {
+        self.default(name, ConstructorDefault::String(value.into()))
+    }
+
     pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {
         let constructor = Handle::new(Constructor {
             name: self.name,

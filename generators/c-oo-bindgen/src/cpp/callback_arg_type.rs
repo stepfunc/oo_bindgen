@@ -1,16 +1,9 @@
 use crate::cpp::core_type::CoreType;
+use crate::cpp::{by_const_ref, by_ref};
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnType, CallbackReturnValue};
 
 pub(crate) trait CppCallbackArgType {
     fn get_cpp_callback_arg_type(&self) -> String;
-}
-
-fn by_ref(expr: String) -> String {
-    format!("{}&", expr)
-}
-
-fn by_const_ref(expr: String) -> String {
-    format!("const {}&", expr)
 }
 
 impl CppCallbackArgType for CallbackArgument {

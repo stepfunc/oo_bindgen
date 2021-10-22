@@ -2,9 +2,11 @@ use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
 };
+use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::constants::Constant;
 use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
 use oo_bindgen::error_type::ErrorType;
+use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::{CallbackFunction, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::*;
@@ -155,5 +157,20 @@ impl CoreType for AsyncMethod {
 impl CoreType for StaticClassHandle {
     fn core_type(&self) -> String {
         self.name.to_camel_case()
+    }
+}
+
+impl CoreType for CollectionHandle {
+    fn core_type(&self) -> String {
+        let inner = match &self.item_type {
+            FunctionArgument::Basic(x) => x.core_type(),
+            FunctionArgument::String(x) => x.core_type(),
+            FunctionArgument::Collection(x) => x.core_type(),
+            FunctionArgument::Struct(x) => x.core_type(),
+            FunctionArgument::StructRef(_) => unimplemented!(),
+            FunctionArgument::ClassRef(_) => unimplemented!(),
+            FunctionArgument::Interface(_) => unimplemented!(),
+        };
+        format!("std::vector<{}>", inner)
     }
 }

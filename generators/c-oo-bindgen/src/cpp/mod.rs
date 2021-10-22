@@ -1,4 +1,5 @@
 pub(crate) mod callback_arg_type;
+pub(crate) mod constructor_arg_type;
 pub(crate) mod core_type;
 mod formatting;
 pub(crate) mod struct_type;
@@ -8,7 +9,9 @@ use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::structs::{Constructor, Struct, StructDeclaration, StructFieldType, Visibility};
+use oo_bindgen::structs::{
+    Constructor, ConstructorType, Struct, StructDeclaration, StructFieldType, Visibility,
+};
 use oo_bindgen::{Handle, Library, Statement, StructType};
 
 use oo_bindgen::class::ClassDeclarationHandle;
@@ -16,11 +19,20 @@ use oo_bindgen::class::ClassDeclarationHandle;
 use std::path::Path;
 
 use crate::cpp::callback_arg_type::*;
+use crate::cpp::constructor_arg_type::CppConstructorArgType;
 use crate::cpp::core_type::CoreType;
 use crate::cpp::formatting::namespace;
 use crate::cpp::struct_type::CppStructType;
 use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
+
+pub(crate) fn by_ref(expr: String) -> String {
+    format!("{}&", expr)
+}
+
+pub(crate) fn by_const_ref(expr: String) -> String {
+    format!("const {}&", expr)
+}
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
@@ -116,58 +128,37 @@ fn print_struct_decl(f: &mut dyn Printer, s: &StructDeclaration) -> FormattingRe
     f.newline()
 }
 
-/* TODO
-fn get_struct_default_constructor_args(handle: &AnyStructHandle) -> String {
-    handle
-        .fields
-        .iter()
-        .flat_map(|x| {
-            if x.field_type.has_default() {
-                None
-            } else {
-                Some(format!(
-                    "{} {}",
-                    x.field_type.to_any_type().get_cpp_struct_constructor_type(),
-                    x.name
-                ))
-            }
-        })
-        .collect::<Vec<String>>()
-        .join(", ")
-}
-
-fn get_struct_full_constructor_args(handle: &AnyStructHandle) -> String {
-    handle
-        .fields
-        .iter()
+fn print_constructor_definition<T>(
+    f: &mut dyn Printer,
+    handle: &Handle<Struct<T>>,
+    constructor: &Handle<Constructor>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + CppConstructorArgType,
+{
+    let args = handle
+        .constructor_args(constructor.clone())
         .map(|x| {
             format!(
                 "{} {}",
-                x.field_type.to_any_type().get_cpp_struct_constructor_type(),
-                x.name
+                x.field_type.get_cpp_constructor_arg_type(),
+                x.name.to_snake_case()
             )
         })
         .collect::<Vec<String>>()
-        .join(", ")
-}
-*/
+        .join(", ");
 
-fn print_constructor_definition<T>(
-    f: &mut dyn Printer,
-    _handle: &Handle<Struct<T>>,
-    constructor: &Constructor,
-) -> FormattingResult<()>
-where
-    T: StructFieldType,
-{
-    f.writeln("/*")?;
-    f.writeln(&format!(
-        "Constructor {} ({:?}) with {} values",
-        constructor.name,
-        constructor.constructor_type,
-        constructor.values.len()
-    ))?;
-    f.writeln("*/")
+    match constructor.constructor_type {
+        ConstructorType::Normal => f.writeln(&format!("{}({});", handle.core_type(), args))?,
+        ConstructorType::Static => f.writeln(&format!(
+            "static {} {}({});",
+            handle.core_type(),
+            constructor.name.to_camel_case(),
+            args
+        ))?,
+    }
+
+    Ok(())
 }
 
 fn print_struct_definition<T>(
@@ -176,7 +167,7 @@ fn print_struct_definition<T>(
     _lib: &Library,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + CppStructType,
+    T: StructFieldType + CppStructType + CppConstructorArgType,
 {
     f.writeln(&format!("struct {} {{", handle.core_type()))?;
     //f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;

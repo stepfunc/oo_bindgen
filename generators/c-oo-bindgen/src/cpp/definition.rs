@@ -1,11 +1,8 @@
-use crate::cpp::callback_arg_type::{CppCallbackArgType, CppCallbackReturnType};
-use crate::cpp::core_type::CoreType;
+use crate::cpp::conversion::*;
 use crate::cpp::formatting::namespace;
-use crate::cpp::function_arg_type::CppFunctionArgType;
-use crate::cpp::struct_type::CppStructType;
 use crate::cpp::FRIEND_CLASS_NAME;
 use heck::{CamelCase, SnakeCase};
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle};
+use oo_bindgen::class::{AsyncMethod, ClassDeclarationHandle, ClassHandle, Method};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
@@ -319,21 +316,66 @@ fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> Formatti
         if handle.destructor.is_some() {
             f.writeln(&format!("~{}();", handle.core_type()))?;
         };
-        /*
+
         for method in &handle.methods {
+            f.newline()?;
             print_method(f, method)?;
         }
+
         for method in &handle.static_methods {
             print_static_method(f, method)?;
         }
+
         for method in &handle.async_methods {
             print_async_method(f, method)?;
         }
-         */
+
         Ok(())
     })?;
     f.writeln("};")?;
     f.newline()
+}
+
+fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+    let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
+
+    f.writeln(&format!(
+        "{} {}({});",
+        method
+            .native_function
+            .return_type
+            .get_cpp_function_return_type(),
+        method.name.to_snake_case(),
+        args
+    ))
+}
+
+fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+    let args = cpp_arguments(method.native_function.parameters.iter());
+
+    f.writeln(&format!(
+        "static {} {}({});",
+        method
+            .native_function
+            .return_type
+            .get_cpp_function_return_type(),
+        method.name.to_snake_case(),
+        args
+    ))
+}
+
+fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
+    let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
+
+    f.writeln(&format!(
+        "{} {}({});",
+        method
+            .native_function
+            .return_type
+            .get_cpp_function_return_type(),
+        method.name.to_snake_case(),
+        args
+    ))
 }
 
 fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {

@@ -1,4 +1,4 @@
-use crate::cpp::core_type::CoreType;
+use crate::cpp::conversion::*;
 use crate::cpp::formatting::namespace;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::enum_type::EnumHandle;

@@ -1,5 +1,5 @@
 use crate::cpp::by_unique_ptr;
-use crate::cpp::core_type::CoreType;
+use crate::cpp::conversion::CoreType;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::structs::{

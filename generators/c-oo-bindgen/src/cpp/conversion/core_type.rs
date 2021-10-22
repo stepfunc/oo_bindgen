@@ -1,7 +1,5 @@
 use heck::{CamelCase, SnakeCase};
-use oo_bindgen::class::{
-    AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
-};
+use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, StaticClassHandle};
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::constants::Constant;
 use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
@@ -139,18 +137,6 @@ impl CoreType for ClassDeclarationHandle {
 impl CoreType for ClassHandle {
     fn core_type(&self) -> String {
         self.name().to_camel_case()
-    }
-}
-
-impl CoreType for Method {
-    fn core_type(&self) -> String {
-        self.name.to_snake_case()
-    }
-}
-
-impl CoreType for AsyncMethod {
-    fn core_type(&self) -> String {
-        self.name.to_snake_case()
     }
 }
 

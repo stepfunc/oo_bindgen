@@ -1,4 +1,4 @@
-use crate::cpp::core_type::CoreType;
+use crate::cpp::conversion::CoreType;
 use crate::cpp::{by_const_ref, by_ref};
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnType, CallbackReturnValue};
 

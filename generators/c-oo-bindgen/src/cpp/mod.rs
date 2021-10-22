@@ -1,10 +1,7 @@
-pub(crate) mod callback_arg_type;
-pub(crate) mod core_type;
+pub(crate) mod conversion;
 pub(crate) mod definition;
 mod formatting;
-pub(crate) mod function_arg_type;
 pub(crate) mod implementation;
-pub(crate) mod struct_type;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
@@ -19,38 +16,6 @@ pub(crate) fn by_unique_ptr(expr: String) -> String {
 }
 
 /*
-fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
-
-    f.writeln(&format!(
-        "{} {}({});",
-        method.native_function.return_type.get_cpp_return_type(),
-        method.core_type(),
-        args
-    ))
-}
-
-fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
-    let args = cpp_arguments(method.native_function.parameters.iter());
-
-    f.writeln(&format!(
-        "static {} {}({});",
-        method.native_function.return_type.get_cpp_return_type(),
-        method.core_type(),
-        args
-    ))
-}
-
-fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
-    let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
-
-    f.writeln(&format!(
-        "{} {}({});",
-        method.native_function.return_type.get_cpp_return_type(),
-        method.core_type(),
-        args
-    ))
-}
 
 fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.core_type()))?;

@@ -179,7 +179,7 @@ where
     f.writeln(&format!(
         "public static {} {}({})",
         handle.name().to_camel_case(),
-        constructor.name.to_camel_case(),
+        constructor.name.to_mixed_case(),
         constructor_args(handle, constructor)
     ))?;
 

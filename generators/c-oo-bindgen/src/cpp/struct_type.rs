@@ -1,3 +1,4 @@
+use crate::cpp::by_unique_ptr;
 use crate::cpp::core_type::CoreType;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::function::FunctionArgument;
@@ -18,7 +19,7 @@ impl CppStructType for BasicType {
 
 impl CppStructType for StringType {
     fn struct_member_type(&self) -> String {
-        "std::string".to_string()
+        self.core_type()
     }
 }
 
@@ -47,9 +48,7 @@ impl CppStructType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.struct_member_type(),
             FunctionArgStructField::String(x) => x.struct_member_type(),
-            FunctionArgStructField::Interface(x) => {
-                format!("std::unique_ptr<{}>", x.core_type())
-            }
+            FunctionArgStructField::Interface(x) => by_unique_ptr(x.core_type()),
             FunctionArgStructField::Collection(x) => x.struct_member_type(),
             FunctionArgStructField::Struct(x) => x.core_type(),
         }

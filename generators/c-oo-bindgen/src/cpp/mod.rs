@@ -1,7 +1,7 @@
 pub(crate) mod callback_arg_type;
-pub(crate) mod constructor_arg_type;
 pub(crate) mod core_type;
 mod formatting;
+pub(crate) mod function_arg_type;
 pub(crate) mod struct_type;
 
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
@@ -14,17 +14,19 @@ use oo_bindgen::structs::{
 };
 use oo_bindgen::{Handle, Library, Statement, StructType};
 
-use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle};
 
 use std::path::Path;
 
 use crate::cpp::callback_arg_type::*;
-use crate::cpp::constructor_arg_type::CppConstructorArgType;
 use crate::cpp::core_type::CoreType;
 use crate::cpp::formatting::namespace;
+use crate::cpp::function_arg_type::CppFunctionArgType;
 use crate::cpp::struct_type::CppStructType;
+use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::types::Arg;
 
 pub(crate) fn by_ref(expr: String) -> String {
     format!("{}&", expr)
@@ -32,6 +34,10 @@ pub(crate) fn by_ref(expr: String) -> String {
 
 pub(crate) fn by_const_ref(expr: String) -> String {
     format!("const {}&", expr)
+}
+
+pub(crate) fn by_unique_ptr(expr: String) -> String {
+    format!("std::unique_ptr<{}>", expr)
 }
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
@@ -134,14 +140,14 @@ fn print_constructor_definition<T>(
     constructor: &Handle<Constructor>,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + CppConstructorArgType,
+    T: StructFieldType + CppFunctionArgType,
 {
     let args = handle
         .constructor_args(constructor.clone())
         .map(|x| {
             format!(
                 "{} {}",
-                x.field_type.get_cpp_constructor_arg_type(),
+                x.field_type.get_cpp_function_arg_type(),
                 x.name.to_snake_case()
             )
         })
@@ -167,7 +173,7 @@ fn print_struct_definition<T>(
     _lib: &Library,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + CppStructType + CppConstructorArgType,
+    T: StructFieldType + CppStructType + CppFunctionArgType,
 {
     f.writeln(&format!("struct {} {{", handle.core_type()))?;
     //f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
@@ -236,36 +242,33 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
     f.newline()
 }
 
-/*
 fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
     f.writeln("// non-copyable")?;
     f.writeln(&format!("{}(const {}&) = delete;", name, name))?;
     f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))
 }
- */
 
 fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {};", handle.core_type()))?;
     f.newline()
 }
 
-/*
 fn cpp_arguments<'a, T>(iter: T) -> String
 where
-    T: Iterator<Item = &'a Arg<FArgument>>,
+    T: Iterator<Item = &'a Arg<FunctionArgument>>,
 {
     iter.map(|p| {
         format!(
             "{} {}",
-            p.arg_type.to_any_type().get_cpp_func_argument_type(),
-            p.core_type()
+            p.arg_type.get_cpp_function_arg_type(),
+            p.core_type(),
         )
     })
     .collect::<Vec<String>>()
     .join(", ")
 }
 
-
+/*
 fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
@@ -298,8 +301,9 @@ fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingRe
         args
     ))
 }
+*/
 
-fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
+fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.core_type()))?;
     indented(f, |f| {
         f.writeln(&format!("friend class {};", FRIEND_CLASS_NAME))?;
@@ -322,6 +326,7 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
         if handle.destructor.is_some() {
             f.writeln(&format!("~{}();", handle.core_type()))?;
         };
+        /*
         for method in &handle.methods {
             print_method(f, method)?;
         }
@@ -331,12 +336,12 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
         for method in &handle.async_methods {
             print_async_method(f, method)?;
         }
+         */
         Ok(())
     })?;
     f.writeln("};")?;
     f.newline()
 }
-*/
 
 /*
 fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {
@@ -388,7 +393,7 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             },
             Statement::InterfaceDefinition(x) => print_interface(f, x)?,
             Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
-            Statement::ClassDefinition(_x) => {} //print_class(f, x)?,
+            Statement::ClassDefinition(x) => print_class_definition(f, x)?,
             Statement::StaticClassDefinition(_x) => {} //print_static_class(f, x)?,
             Statement::IteratorDeclaration(x) => {
                 print_iterator_definition(f, x)?;
@@ -404,28 +409,6 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
 
     Ok(())
 }
-
-/* TODO
-fn convert_native_struct_elem_to_cpp(elem: &AnyStructField) -> String {
-    let base_name = format!("x.{}", elem.name);
-    convert_to_cpp(&elem.field_type.to_any_type(), base_name)
-}
-
-fn convert_native_struct_ptr_elem_to_cpp(elem: &AnyStructField) -> String {
-    let base_name = format!("x->{}", elem.name);
-    convert_to_cpp(&elem.field_type.to_any_type(), base_name)
-}
-
-fn convert_native_struct_elem_from_cpp(elem: &AnyStructField) -> String {
-    let base_name = format!("x.{}", elem.name);
-    convert_to_c(&elem.field_type.to_any_type(), base_name)
-}
-
-fn convert_native_struct_ptr_elem_from_cpp(elem: &AnyStructField) -> String {
-    let base_name = format!("x->{}", elem.name);
-    convert_to_c(&elem.field_type.to_any_type(), base_name)
-}
-*/
 
 /*
 fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
@@ -674,74 +657,6 @@ fn print_enum_conversions(
     f.writeln("}")?;
     f.newline()
 }
-
-/*
-fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
-    match typ {
-        BasicType::Bool => expr,
-        BasicType::U8 => expr,
-        BasicType::S8 => expr,
-        BasicType::U16 => expr,
-        BasicType::S16 => expr,
-        BasicType::U32 => expr,
-        BasicType::S32 => expr,
-        BasicType::U64 => expr,
-        BasicType::S64 => expr,
-        BasicType::Float32 => expr,
-        BasicType::Double64 => expr,
-        BasicType::Duration(t) => match t {
-            DurationType::Milliseconds => {
-                format!("convert::from_sec_u64({})", expr)
-            }
-            DurationType::Seconds => {
-                format!("convert::from_msec_u64({})", expr)
-            }
-        },
-        BasicType::Enum(_) => format!("convert::to_cpp({})", expr),
-    }
-}
-
-
-fn convert_to_cpp(typ: &AnyType, expr: String) -> String {
-    match typ {
-        AnyType::Basic(x) => convert_basic_type_to_cpp(x, expr),
-        AnyType::String => format!("std::string({})", expr),
-        AnyType::Struct(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
-        AnyType::StructRef(_) => format!("{}::to_cpp_ref({})", FRIEND_CLASS_NAME, expr),
-        AnyType::ClassRef(_) => format!("{}::to_cpp({})", FRIEND_CLASS_NAME, expr),
-        AnyType::Interface(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
-        AnyType::Iterator(_) => format!("convert::to_vec({})", expr),
-        AnyType::Collection(_) => "nullptr".to_string(), // Conversion from C to C++ is not allowed
-    }
-}
- */
-
-/*
-fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
-    match t {
-        BasicType::Bool => expr,
-        BasicType::U8 => expr,
-        BasicType::S8 => expr,
-        BasicType::U16 => expr,
-        BasicType::S16 => expr,
-        BasicType::U32 => expr,
-        BasicType::S32 => expr,
-        BasicType::U64 => expr,
-        BasicType::S64 => expr,
-        BasicType::Float32 => expr,
-        BasicType::Double64 => expr,
-        BasicType::Duration(t) => match t {
-            DurationType::Milliseconds => {
-                format!("convert::to_sec_u64({})", expr)
-            }
-            DurationType::Seconds => {
-                format!("convert::to_msec_u64({})", expr)
-            }
-        },
-        BasicType::Enum(_) => format!("convert::from_cpp({})", expr),
-    }
-}
- */
 
 /* TODO
 fn convert_to_c(typ: &AnyType, expr: String) -> String {

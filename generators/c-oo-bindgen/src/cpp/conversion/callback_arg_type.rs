@@ -1,5 +1,5 @@
 use crate::cpp::conversion::CoreType;
-use crate::cpp::{by_const_ref, by_ref};
+use crate::cpp::{by_const_ref, by_mut_ref};
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnType, CallbackReturnValue};
 
 pub(crate) trait CppCallbackArgType {
@@ -11,8 +11,8 @@ impl CppCallbackArgType for CallbackArgument {
         match self {
             CallbackArgument::Basic(x) => x.core_type(),
             CallbackArgument::String(x) => x.core_type(),
-            CallbackArgument::Iterator(x) => by_ref(x.core_type()),
-            CallbackArgument::Class(x) => by_ref(x.core_type()),
+            CallbackArgument::Iterator(x) => by_mut_ref(x.core_type()),
+            CallbackArgument::Class(x) => by_mut_ref(x.core_type()),
             CallbackArgument::Struct(x) => by_const_ref(x.core_type()),
         }
     }

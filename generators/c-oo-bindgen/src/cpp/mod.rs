@@ -5,7 +5,7 @@ pub(crate) mod implementation;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
-pub(crate) fn by_ref(expr: String) -> String {
+pub(crate) fn by_mut_ref(expr: String) -> String {
     format!("{}&", expr)
 }
 pub(crate) fn by_const_ref(expr: String) -> String {

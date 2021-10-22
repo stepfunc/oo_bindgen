@@ -1,5 +1,5 @@
 use crate::cpp::conversion::CoreType;
-use crate::cpp::{by_const_ref, by_ref, by_unique_ptr};
+use crate::cpp::{by_const_ref, by_mut_ref, by_unique_ptr};
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
@@ -17,7 +17,7 @@ impl CppFunctionArgType for FunctionArgument {
             FunctionArgument::Collection(x) => by_const_ref(x.core_type()),
             FunctionArgument::Struct(x) => by_const_ref(x.core_type()),
             FunctionArgument::StructRef(_) => unimplemented!(),
-            FunctionArgument::ClassRef(x) => by_ref(x.core_type()),
+            FunctionArgument::ClassRef(x) => by_mut_ref(x.core_type()),
             FunctionArgument::Interface(x) => by_unique_ptr(x.core_type()),
         }
     }

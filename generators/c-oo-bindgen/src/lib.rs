@@ -90,8 +90,8 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     generate_c_header(lib, &include_path)?;
 
     // TODO - Create the C++ header
-    crate::cpp::generate_cpp_header(lib, &include_path)?;
-    crate::cpp::generate_cpp_impl(lib, &include_path)?;
+    crate::cpp::definition::generate_header(lib, &include_path)?;
+    crate::cpp::implementation::generate_impl(lib, &include_path)?;
 
     // Generate CMake config file
     generate_cmake_config(lib, config, &config.platform_location)?;

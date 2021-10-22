@@ -2,7 +2,7 @@ use crate::dotnet_type::DotnetType;
 use crate::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::interface::{CReturnType, CallbackFunction};
+use oo_bindgen::interface::{CallbackFunction, CallbackReturnType};
 
 pub(crate) fn generate_collection_helpers(
     f: &mut dyn Printer,
@@ -246,7 +246,7 @@ pub(crate) fn call_dotnet_function(
     // Call the .NET function
     f.newline()?;
     let method_name = method.name.to_camel_case();
-    if let CReturnType::Type(return_type, _) = &method.return_type {
+    if let CallbackReturnType::Type(return_type, _) = &method.return_type {
         if return_type.convert_to_native("_result").is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
@@ -267,7 +267,7 @@ pub(crate) fn call_dotnet_function(
     f.write(");")?;
 
     // Convert the result (if required)
-    if let CReturnType::Type(return_type, _) = &method.return_type {
+    if let CallbackReturnType::Type(return_type, _) = &method.return_type {
         if let Some(conversion) = return_type.convert_to_native("_result") {
             f.writeln(&format!("{}{};", return_destination, conversion))?;
         }

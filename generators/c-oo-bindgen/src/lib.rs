@@ -62,12 +62,12 @@ use oo_bindgen::*;
 use crate::ctype::CType;
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 mod chelpers;
-mod ctype;
 mod cpp;
+mod ctype;
 mod doc;
 mod formatting;
 
@@ -171,7 +171,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
     Ok(())
 }
 
-fn generate_c_header(lib: &Library, path: &PathBuf) -> FormattingResult<()> {
+fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     let uppercase_name = lib.c_ffi_prefix.to_uppercase();
 
     // Open file
@@ -822,7 +822,7 @@ fn write_interface(
                 docstring_print(f, &"Context data".into(), lib)?;
 
                 // Print return documentation
-                if let CReturnType::Type(_, doc) = &cb.return_type {
+                if let CallbackReturnType::Type(_, doc) = &cb.return_type {
                     f.writeln("@return ")?;
                     docstring_print(f, doc, lib)?;
                 }

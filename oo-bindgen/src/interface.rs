@@ -111,12 +111,12 @@ impl From<EnumHandle> for CallbackReturnValue {
     }
 }
 
-pub type CReturnType = ReturnType<CallbackReturnValue>;
+pub type CallbackReturnType = ReturnType<CallbackReturnValue>;
 
 #[derive(Debug)]
 pub struct CallbackFunction {
     pub name: String,
-    pub return_type: CReturnType,
+    pub return_type: CallbackReturnType,
     pub arguments: Vec<Arg<CallbackArgument>>,
     pub doc: Doc,
 }
@@ -210,7 +210,7 @@ impl<'a> InterfaceBuilder<'a> {
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: String,
-    return_type: Option<CReturnType>,
+    return_type: Option<CallbackReturnType>,
     arguments: Vec<Arg<CallbackArgument>>,
     doc: Doc,
 }
@@ -251,14 +251,14 @@ impl<'a> CallbackFunctionBuilder<'a> {
         t: T,
         d: D,
     ) -> BindResult<Self> {
-        self.return_type(CReturnType::new(t, d))
+        self.return_type(CallbackReturnType::new(t, d))
     }
 
     pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(CReturnType::Void)
+        self.return_type(CallbackReturnType::Void)
     }
 
-    fn return_type(mut self, return_type: CReturnType) -> BindResult<Self> {
+    fn return_type(mut self, return_type: CallbackReturnType) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

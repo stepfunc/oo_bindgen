@@ -1,11 +1,11 @@
 /**
- * @brief Iterator over <iter_type>
+ * @brief Iterator over @ref <iter_type> instances
  *
  * @example
  *
  * // always use this pattern to extract values from the iterator
  * while(iter.next()) {
- *     auto value = iter.get();
+ *     <iter_type> value = iter.get();
  * }
  */
 class <name> final {

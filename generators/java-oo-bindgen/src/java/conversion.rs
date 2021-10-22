@@ -222,7 +222,7 @@ impl JavaType for UniversalStructField {
     }
 }
 
-impl JavaType for FArgument {
+impl JavaType for FunctionArgument {
     fn as_java_primitive(&self) -> String {
         match self {
             Self::Basic(x) => x.as_java_primitive(),

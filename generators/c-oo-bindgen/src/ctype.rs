@@ -1,7 +1,7 @@
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::function::{FArgument, FunctionReturnValue};
+use oo_bindgen::function::{FunctionArgument, FunctionReturnValue};
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
@@ -218,16 +218,16 @@ impl CType for UniversalStructField {
     }
 }
 
-impl CType for FArgument {
+impl CType for FunctionArgument {
     fn to_c_type(&self, prefix: &str) -> String {
         match self {
-            FArgument::Basic(x) => x.to_c_type(prefix),
-            FArgument::String(x) => x.to_c_type(prefix),
-            FArgument::Collection(x) => pointer(x).to_c_type(prefix),
-            FArgument::Struct(x) => x.to_c_type(prefix),
-            FArgument::StructRef(x) => pointer(x).to_c_type(prefix),
-            FArgument::ClassRef(x) => pointer(x).to_c_type(prefix),
-            FArgument::Interface(x) => x.to_c_type(prefix),
+            FunctionArgument::Basic(x) => x.to_c_type(prefix),
+            FunctionArgument::String(x) => x.to_c_type(prefix),
+            FunctionArgument::Collection(x) => pointer(x).to_c_type(prefix),
+            FunctionArgument::Struct(x) => x.to_c_type(prefix),
+            FunctionArgument::StructRef(x) => pointer(x).to_c_type(prefix),
+            FunctionArgument::ClassRef(x) => pointer(x).to_c_type(prefix),
+            FunctionArgument::Interface(x) => x.to_c_type(prefix),
         }
     }
 }

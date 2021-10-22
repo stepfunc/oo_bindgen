@@ -311,7 +311,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         // Write each native functions
         for handle in lib.functions() {
             if let Some(first_param) = handle.parameters.first() {
-                if let FArgument::ClassRef(class_handle) = &first_param.arg_type {
+                if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
                     // We don't want to generate the `next` methods of iterators
                     if let Some(it) = lib.find_iterator(&class_handle.name) {
                         if &it.function == handle {
@@ -326,7 +326,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     }
                 }
             }
-            if let FReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
+            if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
                 &handle.return_type
             {
                 // We don't want to generate the `create` method of collections

@@ -62,12 +62,12 @@ use oo_bindgen::*;
 use crate::ctype::CType;
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 mod chelpers;
 mod ctype;
-//mod cpp;
+mod cpp;
 mod doc;
 mod formatting;
 
@@ -87,11 +87,11 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
 
     // Create header file
     let include_path = output_dir.join("include");
-    generate_c_header(lib, include_path)?;
+    generate_c_header(lib, &include_path)?;
 
     // TODO - Create the C++ header
-    // crate::cpp::generate_cpp_header(lib, &include_path)?;
-    // crate::cpp::generate_cpp_impl(lib, &include_path)?;
+    crate::cpp::generate_cpp_header(lib, &include_path)?;
+    crate::cpp::generate_cpp_impl(lib, &include_path)?;
 
     // Generate CMake config file
     generate_cmake_config(lib, config, &config.platform_location)?;
@@ -171,12 +171,12 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
     Ok(())
 }
 
-fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult<()> {
+fn generate_c_header(lib: &Library, path: &PathBuf) -> FormattingResult<()> {
     let uppercase_name = lib.c_ffi_prefix.to_uppercase();
 
     // Open file
     fs::create_dir_all(&path)?;
-    let filename = path.as_ref().join(format!("{}.h", lib.name));
+    let filename = path.join(format!("{}.h", lib.name));
     let mut f = FilePrinter::new(filename)?;
 
     // Print license
@@ -707,7 +707,7 @@ fn write_function_docs(
         for param in &handle.parameters {
             f.writeln(&format!("@param {} ", param.name))?;
             docstring_print(f, &param.doc, lib)?;
-            if let FArgument::Basic(BasicType::Duration(mapping)) = param.arg_type {
+            if let FunctionArgument::Basic(BasicType::Duration(mapping)) = param.arg_type {
                 f.write(&format!(" ({})", mapping.unit()))?;
             }
         }
@@ -781,7 +781,7 @@ fn write_function(
     )?;
 
     if handle.error_type.is_some() {
-        if let FReturnType::Type(x, _) = &handle.return_type {
+        if let FunctionReturnType::Type(x, _) = &handle.return_type {
             if !handle.parameters.is_empty() {
                 f.write(", ")?;
                 f.write(&format!("{}* out", x.to_c_type(&lib.c_ffi_prefix)))?;

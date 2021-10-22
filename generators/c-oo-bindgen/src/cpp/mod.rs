@@ -1,28 +1,23 @@
+pub(crate) mod conversion;
+mod name;
 mod formatting;
-mod names;
-mod types;
 
+use oo_bindgen::{Library, Statement, Handle, StructType};
+use oo_bindgen::formatting::{Printer, FormattingResult, indented, FilePrinter};
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::interface::InterfaceHandle;
-use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::{Library, Statement, Handle};
-use std::path::Path;
+use oo_bindgen::structs::{StructDeclaration, Struct, StructFieldType, Visibility, Constructor};
 
-use crate::CFormatting;
-use formatting::namespace;
-use names::*;
-use oo_bindgen::class::{
-    AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
-};
-use oo_bindgen::function::{FArgument, FReturnType, FunctionHandle};
-use oo_bindgen::structs::common::*;
-use oo_bindgen::types::{Arg, BasicType, DurationType};
-use oo_bindgen::util::WithLastIndication;
-use types::*;
+use oo_bindgen::class::ClassDeclarationHandle;
+
+use std::path::{Path, PathBuf};
+
+use crate::cpp::formatting::namespace;
+use crate::cpp::name::CppName;
+use crate::cpp::conversion::CppStructType;
+use oo_bindgen::iterator::IteratorHandle;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
@@ -150,49 +145,46 @@ fn get_struct_full_constructor_args(handle: &AnyStructHandle) -> String {
 }
 */
 
-fn print_struct_header<T>(
+fn print_constructor_definition<T>(
+    f: &mut dyn Printer,
+    _handle: &Handle<Struct<T>>,
+    constructor: &Constructor,
+) -> FormattingResult<()> where T: StructFieldType {
+    f.writeln("/*")?;
+    f.writeln(&format!("Constructor {} ({:?}) with {} values", constructor.name, constructor.constructor_type, constructor.values.len()))?;
+    f.writeln("*/")
+}
+
+fn print_struct_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T>>,
     _lib: &Library,
-) -> FormattingResult<()> where T: StructFieldType {
+) -> FormattingResult<()> where T: StructFieldType + CppStructType {
+
     f.writeln(&format!("struct {} {{", handle.cpp_name()))?;
-    f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
+    //f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
     if let Visibility::Private = handle.visibility {
         f.writeln("private:")?;
     }
     indented(f, |f| {
-        /* TODO
-        // delete the default constructor unless all fields have default values in which case it'll
-        // be written below
-        if !handle.all_fields_have_defaults() {
+
+        // delete the default constructor unless the struct has one
+        if !handle.has_default_constructor() {
+            f.newline()?;
             f.writeln(&format!("{}() = delete;", handle.cpp_name()))?;
         }
 
-
-        // constructor that applies the default values
-        f.writeln(&format!(
-            "{}({});",
-            handle.cpp_name(),
-            get_struct_default_constructor_args(handle)
-        ))?;
-        f.newline()?;
-
-
-        // write a full constructor unless the one above already takes all the values
-        if !handle.no_fields_have_defaults() {
-            f.writeln(&format!(
-                "{}({});",
-                handle.cpp_name(),
-                get_struct_full_constructor_args(handle)
-            ))?;
+        // write the constructors
+        for c in &handle.constructors {
             f.newline()?;
+            print_constructor_definition(f, handle, c)?;
         }
-        */
 
+        f.newline()?;
         for field in &handle.fields {
             f.writeln(&format!(
                 "{} {};",
-                field.field_type.to_any_type().get_cpp_struct_member_type(),
+                field.field_type.struct_member_type(),
                 field.cpp_name()
             ))?;
         }
@@ -204,6 +196,7 @@ fn print_struct_header<T>(
     f.newline()
 }
 
+/*
 fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.cpp_name()))?;
     f.writeln("public:")?;
@@ -237,17 +230,22 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
     f.newline()
 }
 
+ */
+
+/*
 fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
     f.writeln("// non-copyable")?;
     f.writeln(&format!("{}(const {}&) = delete;", name, name))?;
     f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))
 }
+ */
 
 fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {};", handle.cpp_name()))?;
     f.newline()
 }
 
+/*
 fn cpp_arguments<'a, T>(iter: T) -> String
 where
     T: Iterator<Item = &'a Arg<FArgument>>,
@@ -262,6 +260,7 @@ where
     .collect::<Vec<String>>()
     .join(", ")
 }
+
 
 fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
@@ -333,7 +332,9 @@ fn print_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()
     f.writeln("};")?;
     f.newline()
 }
+*/
 
+/*
 fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.cpp_name()))?;
     indented(f, |f| {
@@ -349,11 +350,15 @@ fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> Format
     f.writeln("};")?;
     f.newline()
 }
+*/
 
-fn print_iterator_definition(f: &mut dyn Printer) -> FormattingResult<()> {
+fn print_iterator_definition(f: &mut dyn Printer, iter: &IteratorHandle) -> FormattingResult<()> {
     let iterator = include_str!("./snippet/iterator.hpp");
     for line in iterator.lines() {
-        f.writeln(line)?;
+        let substituted = line
+            .replace("<name>", &iter.cpp_name())
+            .replace("<iter_type>", &iter.item_type.cpp_name());
+        f.writeln(&substituted)?;
     }
     f.newline()
 }
@@ -361,7 +366,6 @@ fn print_iterator_definition(f: &mut dyn Printer) -> FormattingResult<()> {
 fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
 
-    print_iterator_definition(f)?;
 
     f.writeln("// forward declare the friend class which can access C++ class internals")?;
     f.writeln(&format!("class {};", FRIEND_CLASS_NAME))?;
@@ -373,13 +377,20 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::EnumDefinition(x) => print_enum(f, x)?,
             Statement::ErrorType(x) => print_exception(f, x)?,
             Statement::StructDeclaration(x) => print_struct_decl(f, x)?,
-            Statement::StructDefinition(x) => print_struct_header(f, x.get_any_struct(), lib)?,
-            Statement::InterfaceDefinition(x) => print_interface(f, x)?,
+            Statement::StructDefinition(x) => {
+                match x {
+                    StructType::FStruct(x) => print_struct_definition(f, x, lib)?,
+                    StructType::RStruct(x) => print_struct_definition(f, x, lib)?,
+                    StructType::CStruct(x) => print_struct_definition(f, x, lib)?,
+                    StructType::UStruct(x) => print_struct_definition(f, x, lib)?,
+                }
+            },
+            Statement::InterfaceDefinition(_x) => {} //print_interface(f, x)?,
             Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
-            Statement::ClassDefinition(x) => print_class(f, x)?,
-            Statement::StaticClassDefinition(x) => print_static_class(f, x)?,
-            Statement::IteratorDeclaration(_) => {
-                // custom iterator type is only in CPP
+            Statement::ClassDefinition(_x) => {}, //print_class(f, x)?,
+            Statement::StaticClassDefinition(_x) => {}, //print_static_class(f, x)?,
+            Statement::IteratorDeclaration(x) => {
+                print_iterator_definition(f, x)?;
             }
             Statement::CollectionDeclaration(_) => {
                 // only used for transforms ATM
@@ -415,6 +426,7 @@ fn convert_native_struct_ptr_elem_from_cpp(elem: &AnyStructField) -> String {
 }
 */
 
+/*
 fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", FRIEND_CLASS_NAME))?;
     indented(f, |f| {
@@ -424,21 +436,25 @@ fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
             f.writeln(&format!(
                 "static {} to_cpp(const {}& x);",
                 handle.declaration().cpp_name(),
-                handle.to_c_type(&lib.c_ffi_prefix)
+                //handle.to_c_type(&lib.c_ffi_prefix)
+                todo!()
             ))?;
             f.writeln(&format!(
                 "static std::unique_ptr<{}> to_cpp_ref(const {}* x);",
                 handle.declaration().cpp_name(),
-                handle.to_c_type(&lib.c_ffi_prefix)
+                //handle.to_c_type(&lib.c_ffi_prefix)
+                todo!()
             ))?;
             f.writeln(&format!(
                 "static {} from_cpp(const {}& x);",
-                handle.to_c_type(&lib.c_ffi_prefix),
+                //handle.to_c_type(&lib.c_ffi_prefix),
+                todo!(),
                 handle.declaration().cpp_name()
             ))?;
             f.writeln(&format!(
                 "static std::unique_ptr<{}> from_cpp_ref(const {}* x);",
-                handle.to_c_type(&lib.c_ffi_prefix),
+                //handle.to_c_type(&lib.c_ffi_prefix),
+                todo!(),
                 handle.declaration().cpp_name()
             ))?;
             f.newline()?;
@@ -449,6 +465,7 @@ fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResu
     f.writeln("};")?;
     f.newline()
 }
+ */
 
 /* TODO
 fn print_friend_class_impl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
@@ -657,17 +674,18 @@ fn print_enum_conversions(
     f.newline()
 }
 
+/*
 fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
     match typ {
         BasicType::Bool => expr,
-        BasicType::Uint8 => expr,
-        BasicType::Sint8 => expr,
-        BasicType::Uint16 => expr,
-        BasicType::Sint16 => expr,
-        BasicType::Uint32 => expr,
-        BasicType::Sint32 => expr,
-        BasicType::Uint64 => expr,
-        BasicType::Sint64 => expr,
+        BasicType::U8 => expr,
+        BasicType::S8 => expr,
+        BasicType::U16 => expr,
+        BasicType::S16 => expr,
+        BasicType::U32 => expr,
+        BasicType::S32 => expr,
+        BasicType::U64 => expr,
+        BasicType::S64 => expr,
         BasicType::Float32 => expr,
         BasicType::Double64 => expr,
         BasicType::Duration(t) => match t {
@@ -682,7 +700,7 @@ fn convert_basic_type_to_cpp(typ: &BasicType, expr: String) -> String {
     }
 }
 
-/*
+
 fn convert_to_cpp(typ: &AnyType, expr: String) -> String {
     match typ {
         AnyType::Basic(x) => convert_basic_type_to_cpp(x, expr),
@@ -697,17 +715,18 @@ fn convert_to_cpp(typ: &AnyType, expr: String) -> String {
 }
  */
 
+/*
 fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
     match t {
         BasicType::Bool => expr,
-        BasicType::Uint8 => expr,
-        BasicType::Sint8 => expr,
-        BasicType::Uint16 => expr,
-        BasicType::Sint16 => expr,
-        BasicType::Uint32 => expr,
-        BasicType::Sint32 => expr,
-        BasicType::Uint64 => expr,
-        BasicType::Sint64 => expr,
+        BasicType::U8 => expr,
+        BasicType::S8 => expr,
+        BasicType::U16 => expr,
+        BasicType::S16 => expr,
+        BasicType::U32 => expr,
+        BasicType::S32 => expr,
+        BasicType::U64 => expr,
+        BasicType::S64 => expr,
         BasicType::Float32 => expr,
         BasicType::Double64 => expr,
         BasicType::Duration(t) => match t {
@@ -721,6 +740,7 @@ fn convert_basic_type_to_c(t: &BasicType, expr: String) -> String {
         BasicType::Enum(_) => format!("convert::from_cpp({})", expr),
     }
 }
+ */
 
 /* TODO
 fn convert_to_c(typ: &AnyType, expr: String) -> String {
@@ -816,6 +836,7 @@ fn print_interface_conversions(
 }
 */
 
+/*
 fn print_iterator_conversions(
     lib: &Library,
     f: &mut dyn Printer,
@@ -823,15 +844,18 @@ fn print_iterator_conversions(
 ) -> FormattingResult<()> {
     f.writeln(&format!(
         "std::vector<{}> to_vec({}* x)",
-        handle.item_type.cpp_name(),
-        handle.iter_type.to_c_type(&lib.c_ffi_prefix)
+        //handle.item_type.cpp_name(),
+        //handle.iter_type.to_c_type(&lib.c_ffi_prefix)
+        todo!(),
+        todo!(),
     ))?;
     f.writeln("{")?;
     indented(f, |f| {
         let function_name = format!("{}_{}", lib.c_ffi_prefix, handle.function.name);
         f.writeln(&format!(
             "auto result = std::vector<{}>();",
-            handle.item_type.cpp_name()
+            //handle.item_type.cpp_name(),
+            todo!()
         ))?;
         f.writeln(&format!("auto it = {}(x);", function_name))?;
         f.writeln("while (it != nullptr) {")?;
@@ -855,6 +879,7 @@ fn print_iterator_conversions(
     f.writeln("}")?;
     f.newline()
 }
+ */
 
 fn print_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> FormattingResult<()> {
     f.writeln(&format!(
@@ -913,6 +938,7 @@ fn print_struct_constructor_impl(
 }
 */
 
+/*
 fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     if !lib.functions().any(|f| f.error_type.is_some()) {
         return Ok(());
@@ -1021,11 +1047,12 @@ fn print_exception_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     })?;
     f.newline()
 }
+*/
 
 fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     let time_conversions = include_str!("./snippet/convert_time.cpp");
 
-    print_friend_class_decl(lib, f)?;
+    // TODO - print_friend_class_decl(lib, f)?;
 
     // conversions
     namespace(f, "convert", |f| {
@@ -1042,16 +1069,16 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
         for interface in lib.interfaces() {
             print_interface_conversions(lib, f, interface)?;
         }
-         */
 
         for handle in lib.iterators() {
             print_iterator_conversions(lib, f, handle)?;
         }
+         */
 
         Ok(())
     })?;
 
-    print_exception_wrappers(lib, f)?;
+    // TODO - print_exception_wrappers(lib, f)?;
 
     // enum to string helpers
     for e in lib.enums() {
@@ -1071,7 +1098,7 @@ fn print_impl_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Formatti
     Ok(())
 }
 
-pub(crate) fn generate_cpp_header(lib: &Library, path: &Path) -> FormattingResult<()> {
+pub(crate) fn generate_cpp_header(lib: &Library, path: &PathBuf) -> FormattingResult<()> {
     // Open the file
     std::fs::create_dir_all(&path)?;
     let filename = path.join(format!("{}.hpp", lib.name));

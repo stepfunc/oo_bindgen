@@ -8,7 +8,7 @@ pub struct Collection {
     pub delete_func: FunctionHandle,
     pub add_func: FunctionHandle,
     pub collection_type: ClassDeclarationHandle,
-    pub item_type: FArgument,
+    pub item_type: FunctionArgument,
     pub has_reserve: bool,
 }
 
@@ -20,7 +20,7 @@ impl Collection {
     ) -> BindResult<Collection> {
         // Validate constructor
         let collection_type =
-            if let FReturnType::Type(FunctionReturnValue::ClassRef(collection_type), _) =
+            if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(collection_type), _) =
                 &create_func.return_type
             {
                 collection_type
@@ -39,7 +39,7 @@ impl Collection {
         let mut iter = create_func.parameters.iter();
         let has_reserve = if let Some(param) = iter.next() {
             match &param.arg_type {
-                FArgument::Basic(BasicType::U32) => {}
+                FunctionArgument::Basic(BasicType::U32) => {}
                 _ => {
                     return Err(BindingError::CollectionCreateFuncInvalidSignature {
                         handle: create_func.clone(),
@@ -61,7 +61,7 @@ impl Collection {
         // Validate destructor
         let mut iter = delete_func.parameters.iter();
         if let Some(param) = iter.next() {
-            if let FArgument::ClassRef(iter_type) = &param.arg_type {
+            if let FunctionArgument::ClassRef(iter_type) = &param.arg_type {
                 if iter_type != collection_type {
                     return Err(BindingError::CollectionDeleteFuncInvalidSignature {
                         handle: delete_func.clone(),
@@ -93,7 +93,7 @@ impl Collection {
         // Validate add function
         let mut iter = add_func.parameters.iter();
         let item_type = if let Some(param) = iter.next() {
-            if let FArgument::ClassRef(iter_type) = &param.arg_type {
+            if let FunctionArgument::ClassRef(iter_type) = &param.arg_type {
                 if iter_type != collection_type {
                     return Err(BindingError::CollectionAddFuncInvalidSignature {
                         handle: add_func.clone(),

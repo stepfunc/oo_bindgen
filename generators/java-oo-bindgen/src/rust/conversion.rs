@@ -1052,7 +1052,7 @@ impl JniType for UniversalStructField {
     }
 }
 
-impl JniType for FArgument {
+impl JniType for FunctionArgument {
     fn as_raw_jni_type(&self) -> &str {
         match self {
             Self::Basic(x) => x.as_raw_jni_type(),

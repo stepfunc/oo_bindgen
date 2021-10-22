@@ -155,7 +155,7 @@ impl<'a> ClassBuilder<'a> {
         }
         self.lib.validate_function(native_function)?;
 
-        if let FReturnType::Type(FunctionReturnValue::ClassRef(return_type), _) =
+        if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(return_type), _) =
             &native_function.return_type
         {
             if return_type == &self.declaration {
@@ -242,7 +242,7 @@ impl<'a> ClassBuilder<'a> {
         let name = name.into();
         let mut async_method = None;
         for param in &native_function.parameters {
-            if let FArgument::Interface(ot_cb) = &param.arg_type {
+            if let FunctionArgument::Interface(ot_cb) = &param.arg_type {
                 if async_method.is_some() {
                     return Err(BindingError::AsyncMethodTooManyInterface {
                         handle: native_function.clone(),
@@ -356,7 +356,7 @@ impl<'a> ClassBuilder<'a> {
 
     fn validate_first_param(&self, native_function: &FunctionHandle) -> BindResult<()> {
         if let Some(first_param) = native_function.parameters.first() {
-            if let FArgument::ClassRef(first_param_type) = &first_param.arg_type {
+            if let FunctionArgument::ClassRef(first_param_type) = &first_param.arg_type {
                 if first_param_type == &self.declaration {
                     return Ok(());
                 }

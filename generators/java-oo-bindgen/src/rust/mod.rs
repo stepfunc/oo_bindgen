@@ -190,7 +190,7 @@ fn generate_functions(
 ) -> FormattingResult<()> {
     for handle in lib.functions() {
         if let Some(first_param) = handle.parameters.first() {
-            if let FArgument::ClassRef(class_handle) = &first_param.arg_type {
+            if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
                 // We don't want to generate the `next` methods of iterators
                 if let Some(it) = lib.find_iterator(&class_handle.name) {
                     if &it.function == handle {
@@ -206,7 +206,7 @@ fn generate_functions(
             }
         }
 
-        if let FReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
+        if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
             &handle.return_type
         {
             // We don't want to generate the `create` method of collections
@@ -233,7 +233,7 @@ fn generate_functions(
         )?;
         f.write(")")?;
 
-        if let FReturnType::Type(return_type, _) = &handle.return_type {
+        if let FunctionReturnType::Type(return_type, _) = &handle.return_type {
             f.write(&format!(" -> {}", return_type.as_raw_jni_type()))?;
         }
 
@@ -261,7 +261,7 @@ fn generate_functions(
             f.write(")()")?;
             blocked(f, |f| {
                 f.writeln("_env.throw_new(\"java/lang/IllegalArgumentException\", msg).unwrap();")?;
-                if let FReturnType::Type(return_type, _) = &handle.return_type {
+                if let FunctionReturnType::Type(return_type, _) = &handle.return_type {
                     f.writeln(&format!("return {}", return_type.default_value()))?;
                 } else {
                     f.writeln("return;")?;
@@ -318,7 +318,7 @@ fn generate_functions(
                     .parameters
                     .iter()
                     .map(|param| {
-                        if matches!(param.arg_type, FArgument::Struct(_)) {
+                        if matches!(param.arg_type, FunctionArgument::Struct(_)) {
                             format!("{}.clone()", &param.name.to_snake_case())
                         } else {
                             param.name.to_snake_case()
@@ -399,7 +399,7 @@ fn generate_functions(
                 }
 
                 // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
-                if matches!(param.arg_type, FArgument::Struct(_)) {
+                if matches!(param.arg_type, FunctionArgument::Struct(_)) {
                     f.writeln(&format!(
                         "std::mem::forget({});",
                         param.name.to_snake_case()

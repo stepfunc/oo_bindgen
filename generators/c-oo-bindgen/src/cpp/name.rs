@@ -6,16 +6,16 @@ use oo_bindgen::constants::Constant;
 use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::interface::{CallbackFunction, InterfaceHandle};
-use oo_bindgen::structs::common::StructDeclaration;
-use oo_bindgen::structs::function_return_struct::RStructHandle;
+use oo_bindgen::structs::*;
 use oo_bindgen::types::Arg;
 use oo_bindgen::StructType;
+use oo_bindgen::iterator::IteratorHandle;
 
 pub(crate) trait CppName {
     fn cpp_name(&self) -> String;
 }
 
-impl CppName for RStructHandle {
+impl<T> CppName for Struct<T> where T: StructFieldType {
     fn cpp_name(&self) -> String {
         self.name().to_camel_case()
     }
@@ -54,6 +54,18 @@ impl CppName for ErrorType {
 impl CppName for InterfaceHandle {
     fn cpp_name(&self) -> String {
         self.name.to_camel_case()
+    }
+}
+
+impl CppName for IteratorHandle {
+    fn cpp_name(&self) -> String {
+        format!("{}Iterator", self.item_type.cpp_name())
+    }
+}
+
+impl<T> CppName for StructField<T> where T: StructFieldType {
+    fn cpp_name(&self) -> String {
+        self.name.to_snake_case()
     }
 }
 

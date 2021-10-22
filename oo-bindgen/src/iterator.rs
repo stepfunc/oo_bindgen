@@ -16,12 +16,12 @@ impl Iterator {
         item_type: UniversalOr<FunctionReturnStructField>,
     ) -> BindResult<Iterator> {
         match &function.return_type {
-            FReturnType::Void => {
+            FunctionReturnType::Void => {
                 return Err(BindingError::IteratorReturnTypeNotStructRef {
                     handle: function.clone(),
                 })
             }
-            FReturnType::Type(return_type, _) => {
+            FunctionReturnType::Type(return_type, _) => {
                 if *return_type != FunctionReturnValue::StructRef(item_type.declaration()) {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: function.clone(),
@@ -38,7 +38,7 @@ impl Iterator {
 
         let mut iter = function.parameters.iter();
         if let Some(param) = iter.next() {
-            if let FArgument::ClassRef(iter_type) = &param.arg_type {
+            if let FunctionArgument::ClassRef(iter_type) = &param.arg_type {
                 if iter.next().is_some() {
                     return Err(BindingError::IteratorNotSingleClassRefParam {
                         handle: function.clone(),

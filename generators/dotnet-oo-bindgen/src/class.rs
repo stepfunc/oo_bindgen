@@ -129,7 +129,7 @@ fn generate_constructor(
         }
 
         // Print return value
-        if let FReturnType::Type(_, doc) = &constructor.return_type {
+        if let FunctionReturnType::Type(_, doc) = &constructor.return_type {
             f.writeln("<returns>")?;
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
@@ -234,7 +234,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
         }
 
         // Print return value
-        if let FReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("<returns>")?;
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
@@ -303,7 +303,7 @@ fn generate_static_method(
         }
 
         // Print return value
-        if let FReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("<returns>")?;
             docstring_print(f, doc, lib)?;
             f.write("</returns>")?;
@@ -396,7 +396,7 @@ fn generate_async_method(
             .parameters
             .iter()
             .skip(1)
-            .filter(|param| !matches!(param.arg_type, FArgument::Interface(_)))
+            .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
         {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc, lib)?;
@@ -430,7 +430,7 @@ fn generate_async_method(
             .parameters
             .iter()
             .skip(1)
-            .filter(|param| !matches!(param.arg_type, FArgument::Interface(_)))
+            .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
             .map(|param| {
                 format!(
                     "{} {}",

@@ -66,11 +66,11 @@ impl From<UniversalStructHandle> for FunctionReturnValue {
     }
 }
 
-pub type FReturnType = ReturnType<FunctionReturnValue>;
+pub type FunctionReturnType = ReturnType<FunctionReturnValue>;
 
 /// Types that can be used as native function arguments
 #[derive(Debug, Clone)]
-pub enum FArgument {
+pub enum FunctionArgument {
     Basic(BasicType),
     String(StringType),
     Collection(CollectionHandle),
@@ -80,75 +80,75 @@ pub enum FArgument {
     Interface(InterfaceHandle),
 }
 
-impl TypeValidator for FArgument {
+impl TypeValidator for FunctionArgument {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
-            FArgument::Basic(x) => x.get_validated_type(),
-            FArgument::String(_) => None,
-            FArgument::Collection(x) => x.get_validated_type(),
-            FArgument::Struct(x) => x.get_validated_type(),
-            FArgument::StructRef(x) => x.get_validated_type(),
-            FArgument::ClassRef(x) => x.get_validated_type(),
-            FArgument::Interface(x) => x.get_validated_type(),
+            FunctionArgument::Basic(x) => x.get_validated_type(),
+            FunctionArgument::String(_) => None,
+            FunctionArgument::Collection(x) => x.get_validated_type(),
+            FunctionArgument::Struct(x) => x.get_validated_type(),
+            FunctionArgument::StructRef(x) => x.get_validated_type(),
+            FunctionArgument::ClassRef(x) => x.get_validated_type(),
+            FunctionArgument::Interface(x) => x.get_validated_type(),
         }
     }
 }
 
-impl From<UniversalStructHandle> for FArgument {
+impl From<UniversalStructHandle> for FunctionArgument {
     fn from(x: UniversalStructHandle) -> Self {
         Self::Struct(UniversalOr::Universal(x))
     }
 }
 
-impl From<FunctionArgStructHandle> for FArgument {
+impl From<FunctionArgStructHandle> for FunctionArgument {
     fn from(x: FunctionArgStructHandle) -> Self {
         Self::Struct(x.into())
     }
 }
 
-impl From<ClassDeclarationHandle> for FArgument {
+impl From<ClassDeclarationHandle> for FunctionArgument {
     fn from(x: ClassDeclarationHandle) -> Self {
-        FArgument::ClassRef(x)
+        FunctionArgument::ClassRef(x)
     }
 }
 
-impl From<InterfaceHandle> for FArgument {
+impl From<InterfaceHandle> for FunctionArgument {
     fn from(x: InterfaceHandle) -> Self {
-        FArgument::Interface(x)
+        FunctionArgument::Interface(x)
     }
 }
 
-impl From<BasicType> for FArgument {
+impl From<BasicType> for FunctionArgument {
     fn from(x: BasicType) -> Self {
-        FArgument::Basic(x)
+        FunctionArgument::Basic(x)
     }
 }
 
-impl From<StringType> for FArgument {
+impl From<StringType> for FunctionArgument {
     fn from(x: StringType) -> Self {
-        FArgument::String(x)
+        FunctionArgument::String(x)
     }
 }
 
-impl From<CollectionHandle> for FArgument {
+impl From<CollectionHandle> for FunctionArgument {
     fn from(x: CollectionHandle) -> Self {
-        FArgument::Collection(x)
+        FunctionArgument::Collection(x)
     }
 }
 
-impl From<StructDeclarationHandle> for FArgument {
+impl From<StructDeclarationHandle> for FunctionArgument {
     fn from(x: StructDeclarationHandle) -> Self {
-        FArgument::StructRef(x)
+        FunctionArgument::StructRef(x)
     }
 }
 
-impl From<DurationType> for FArgument {
+impl From<DurationType> for FunctionArgument {
     fn from(x: DurationType) -> Self {
         BasicType::Duration(x).into()
     }
 }
 
-impl From<EnumHandle> for FArgument {
+impl From<EnumHandle> for FunctionArgument {
     fn from(x: EnumHandle) -> Self {
         BasicType::Enum(x).into()
     }
@@ -158,8 +158,8 @@ impl From<EnumHandle> for FArgument {
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
-    pub return_type: FReturnType,
-    pub parameters: Vec<Arg<FArgument>>,
+    pub return_type: FunctionReturnType,
+    pub parameters: Vec<Arg<FunctionArgument>>,
     pub error_type: Option<ErrorType>,
     pub doc: Doc,
 }
@@ -199,7 +199,7 @@ pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
     return_type: Option<ReturnType<FunctionReturnValue>>,
-    params: Vec<Arg<FArgument>>,
+    params: Vec<Arg<FunctionArgument>>,
     doc: Option<Doc>,
     error_type: Option<ErrorType>,
 }
@@ -216,7 +216,7 @@ impl<'a> FunctionBuilder<'a> {
         }
     }
 
-    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<FArgument>>(
+    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<FunctionArgument>>(
         mut self,
         name: T,
         param_type: P,
@@ -245,7 +245,7 @@ impl<'a> FunctionBuilder<'a> {
         self.return_type(ReturnType::new(return_type, doc))
     }
 
-    fn return_type(mut self, return_type: FReturnType) -> BindResult<Self> {
+    fn return_type(mut self, return_type: FunctionReturnType) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

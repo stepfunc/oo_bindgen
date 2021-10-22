@@ -526,64 +526,64 @@ impl DotnetType for EnumHandle {
     }
 }
 
-impl DotnetType for FArgument {
+impl DotnetType for FunctionArgument {
     fn as_dotnet_type(&self) -> String {
         match self {
-            FArgument::Basic(x) => x.as_dotnet_type(),
-            FArgument::String(x) => x.as_dotnet_type(),
-            FArgument::Collection(x) => x.as_dotnet_type(),
-            FArgument::Struct(x) => x.as_dotnet_type(),
-            FArgument::StructRef(x) => x.as_dotnet_type(),
-            FArgument::ClassRef(x) => x.as_dotnet_type(),
-            FArgument::Interface(x) => x.as_dotnet_type(),
+            FunctionArgument::Basic(x) => x.as_dotnet_type(),
+            FunctionArgument::String(x) => x.as_dotnet_type(),
+            FunctionArgument::Collection(x) => x.as_dotnet_type(),
+            FunctionArgument::Struct(x) => x.as_dotnet_type(),
+            FunctionArgument::StructRef(x) => x.as_dotnet_type(),
+            FunctionArgument::ClassRef(x) => x.as_dotnet_type(),
+            FunctionArgument::Interface(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
         match self {
-            FArgument::Basic(x) => x.as_native_type(),
-            FArgument::String(x) => x.as_native_type(),
-            FArgument::Collection(x) => x.as_native_type(),
-            FArgument::Struct(x) => x.as_native_type(),
-            FArgument::StructRef(x) => x.as_native_type(),
-            FArgument::ClassRef(x) => x.as_native_type(),
-            FArgument::Interface(x) => x.as_native_type(),
+            FunctionArgument::Basic(x) => x.as_native_type(),
+            FunctionArgument::String(x) => x.as_native_type(),
+            FunctionArgument::Collection(x) => x.as_native_type(),
+            FunctionArgument::Struct(x) => x.as_native_type(),
+            FunctionArgument::StructRef(x) => x.as_native_type(),
+            FunctionArgument::ClassRef(x) => x.as_native_type(),
+            FunctionArgument::Interface(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            FArgument::Basic(x) => x.convert_to_native(from),
-            FArgument::String(x) => x.convert_to_native(from),
-            FArgument::Collection(x) => x.convert_to_native(from),
-            FArgument::Struct(x) => x.convert_to_native(from),
-            FArgument::StructRef(x) => x.convert_to_native(from),
-            FArgument::ClassRef(x) => x.convert_to_native(from),
-            FArgument::Interface(x) => x.convert_to_native(from),
+            FunctionArgument::Basic(x) => x.convert_to_native(from),
+            FunctionArgument::String(x) => x.convert_to_native(from),
+            FunctionArgument::Collection(x) => x.convert_to_native(from),
+            FunctionArgument::Struct(x) => x.convert_to_native(from),
+            FunctionArgument::StructRef(x) => x.convert_to_native(from),
+            FunctionArgument::ClassRef(x) => x.convert_to_native(from),
+            FunctionArgument::Interface(x) => x.convert_to_native(from),
         }
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
         match self {
-            FArgument::Basic(x) => x.cleanup(from),
-            FArgument::String(x) => x.cleanup(from),
-            FArgument::Collection(x) => x.cleanup(from),
-            FArgument::Struct(x) => x.cleanup(from),
-            FArgument::StructRef(x) => x.cleanup(from),
-            FArgument::ClassRef(x) => x.cleanup(from),
-            FArgument::Interface(x) => x.cleanup(from),
+            FunctionArgument::Basic(x) => x.cleanup(from),
+            FunctionArgument::String(x) => x.cleanup(from),
+            FunctionArgument::Collection(x) => x.cleanup(from),
+            FunctionArgument::Struct(x) => x.cleanup(from),
+            FunctionArgument::StructRef(x) => x.cleanup(from),
+            FunctionArgument::ClassRef(x) => x.cleanup(from),
+            FunctionArgument::Interface(x) => x.cleanup(from),
         }
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
         match self {
-            FArgument::Basic(x) => x.convert_from_native(from),
-            FArgument::String(x) => x.convert_from_native(from),
-            FArgument::Collection(x) => x.convert_from_native(from),
-            FArgument::Struct(x) => x.convert_from_native(from),
-            FArgument::StructRef(x) => x.convert_from_native(from),
-            FArgument::ClassRef(x) => x.convert_from_native(from),
-            FArgument::Interface(x) => x.convert_from_native(from),
+            FunctionArgument::Basic(x) => x.convert_from_native(from),
+            FunctionArgument::String(x) => x.convert_from_native(from),
+            FunctionArgument::Collection(x) => x.convert_from_native(from),
+            FunctionArgument::Struct(x) => x.convert_from_native(from),
+            FunctionArgument::StructRef(x) => x.convert_from_native(from),
+            FunctionArgument::ClassRef(x) => x.convert_from_native(from),
+            FunctionArgument::Interface(x) => x.convert_from_native(from),
         }
     }
 }

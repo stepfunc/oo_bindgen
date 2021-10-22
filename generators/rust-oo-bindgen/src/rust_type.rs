@@ -3,7 +3,7 @@ use heck::CamelCase;
 use crate::type_converter::*;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::function::{FArgument, FunctionReturnValue};
+use oo_bindgen::function::{FunctionArgument, FunctionReturnValue};
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
@@ -177,28 +177,28 @@ impl LifetimeInfo for IteratorHandle {
     }
 }
 
-impl LifetimeInfo for FArgument {
+impl LifetimeInfo for FunctionArgument {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
-            FArgument::Basic(x) => x.rust_requires_lifetime(),
-            FArgument::String(x) => x.rust_requires_lifetime(),
-            FArgument::Collection(x) => x.rust_requires_lifetime(),
-            FArgument::Struct(x) => x.rust_requires_lifetime(),
-            FArgument::StructRef(x) => x.rust_requires_lifetime(),
-            FArgument::ClassRef(x) => x.rust_requires_lifetime(),
-            FArgument::Interface(x) => x.rust_requires_lifetime(),
+            FunctionArgument::Basic(x) => x.rust_requires_lifetime(),
+            FunctionArgument::String(x) => x.rust_requires_lifetime(),
+            FunctionArgument::Collection(x) => x.rust_requires_lifetime(),
+            FunctionArgument::Struct(x) => x.rust_requires_lifetime(),
+            FunctionArgument::StructRef(x) => x.rust_requires_lifetime(),
+            FunctionArgument::ClassRef(x) => x.rust_requires_lifetime(),
+            FunctionArgument::Interface(x) => x.rust_requires_lifetime(),
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
         match self {
-            FArgument::Basic(x) => x.c_requires_lifetime(),
-            FArgument::String(x) => x.c_requires_lifetime(),
-            FArgument::Collection(x) => x.c_requires_lifetime(),
-            FArgument::Struct(x) => x.c_requires_lifetime(),
-            FArgument::StructRef(x) => x.c_requires_lifetime(),
-            FArgument::ClassRef(x) => x.c_requires_lifetime(),
-            FArgument::Interface(x) => x.c_requires_lifetime(),
+            FunctionArgument::Basic(x) => x.c_requires_lifetime(),
+            FunctionArgument::String(x) => x.c_requires_lifetime(),
+            FunctionArgument::Collection(x) => x.c_requires_lifetime(),
+            FunctionArgument::Struct(x) => x.c_requires_lifetime(),
+            FunctionArgument::StructRef(x) => x.c_requires_lifetime(),
+            FunctionArgument::ClassRef(x) => x.c_requires_lifetime(),
+            FunctionArgument::Interface(x) => x.c_requires_lifetime(),
         }
     }
 }
@@ -373,52 +373,52 @@ impl RustType for IteratorHandle {
     }
 }
 
-impl RustType for FArgument {
+impl RustType for FunctionArgument {
     fn as_rust_type(&self) -> String {
         match self {
-            FArgument::Basic(x) => x.as_rust_type(),
-            FArgument::String(x) => x.as_rust_type(),
-            FArgument::Collection(x) => x.as_rust_type(),
-            FArgument::Struct(x) => x.as_rust_type(),
-            FArgument::StructRef(x) => x.as_rust_type(),
-            FArgument::ClassRef(x) => x.as_rust_type(),
-            FArgument::Interface(x) => x.as_rust_type(),
+            FunctionArgument::Basic(x) => x.as_rust_type(),
+            FunctionArgument::String(x) => x.as_rust_type(),
+            FunctionArgument::Collection(x) => x.as_rust_type(),
+            FunctionArgument::Struct(x) => x.as_rust_type(),
+            FunctionArgument::StructRef(x) => x.as_rust_type(),
+            FunctionArgument::ClassRef(x) => x.as_rust_type(),
+            FunctionArgument::Interface(x) => x.as_rust_type(),
         }
     }
 
     fn as_c_type(&self) -> String {
         match self {
-            FArgument::Basic(x) => x.as_c_type(),
-            FArgument::String(x) => x.as_c_type(),
-            FArgument::Collection(x) => x.as_c_type(),
-            FArgument::Struct(x) => x.as_c_type(),
-            FArgument::StructRef(x) => x.as_c_type(),
-            FArgument::ClassRef(x) => x.as_c_type(),
-            FArgument::Interface(x) => x.as_c_type(),
+            FunctionArgument::Basic(x) => x.as_c_type(),
+            FunctionArgument::String(x) => x.as_c_type(),
+            FunctionArgument::Collection(x) => x.as_c_type(),
+            FunctionArgument::Struct(x) => x.as_c_type(),
+            FunctionArgument::StructRef(x) => x.as_c_type(),
+            FunctionArgument::ClassRef(x) => x.as_c_type(),
+            FunctionArgument::Interface(x) => x.as_c_type(),
         }
     }
 
     fn is_copyable(&self) -> bool {
         match self {
-            FArgument::Basic(x) => x.is_copyable(),
-            FArgument::String(x) => x.is_copyable(),
-            FArgument::Collection(x) => x.is_copyable(),
-            FArgument::Struct(x) => x.is_copyable(),
-            FArgument::StructRef(x) => x.is_copyable(),
-            FArgument::ClassRef(x) => x.is_copyable(),
-            FArgument::Interface(x) => x.is_copyable(),
+            FunctionArgument::Basic(x) => x.is_copyable(),
+            FunctionArgument::String(x) => x.is_copyable(),
+            FunctionArgument::Collection(x) => x.is_copyable(),
+            FunctionArgument::Struct(x) => x.is_copyable(),
+            FunctionArgument::StructRef(x) => x.is_copyable(),
+            FunctionArgument::ClassRef(x) => x.is_copyable(),
+            FunctionArgument::Interface(x) => x.is_copyable(),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            FArgument::Basic(x) => x.conversion(),
-            FArgument::String(x) => x.conversion(),
-            FArgument::Collection(x) => x.conversion(),
-            FArgument::Struct(x) => x.conversion(),
-            FArgument::StructRef(x) => x.conversion(),
-            FArgument::ClassRef(x) => x.conversion(),
-            FArgument::Interface(x) => x.conversion(),
+            FunctionArgument::Basic(x) => x.conversion(),
+            FunctionArgument::String(x) => x.conversion(),
+            FunctionArgument::Collection(x) => x.conversion(),
+            FunctionArgument::Struct(x) => x.conversion(),
+            FunctionArgument::StructRef(x) => x.conversion(),
+            FunctionArgument::ClassRef(x) => x.conversion(),
+            FunctionArgument::Interface(x) => x.conversion(),
         }
     }
 }

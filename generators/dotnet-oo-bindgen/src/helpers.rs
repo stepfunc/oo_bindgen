@@ -175,7 +175,7 @@ pub(crate) fn call_native_function(
         f.write(");")?;
 
         // Convert the result (if required)
-        let return_name = if let FReturnType::Type(return_type, _) = &method.return_type {
+        let return_name = if let FunctionReturnType::Type(return_type, _) = &method.return_type {
             let mut return_name = "_result";
             if let Some(conversion) = return_type.convert_from_native("_result") {
                 if !is_constructor {

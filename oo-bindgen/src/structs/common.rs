@@ -382,10 +382,10 @@ where
     }
 
     pub fn get_default_constructor(&self) -> Option<&Handle<Constructor>> {
-        // do any of the constructors initialize ALL of the fields
-        self.constructors
-            .iter()
-            .find(|c| c.values.len() == self.fields.len())
+        // Are any of the constructors of normal type and initialize ALL of the fields
+        self.constructors.iter().find(|c| {
+            c.constructor_type == ConstructorType::Normal && c.values.len() == self.fields.len()
+        })
     }
 
     pub fn get_full_constructor(&self) -> Option<&Handle<Constructor>> {

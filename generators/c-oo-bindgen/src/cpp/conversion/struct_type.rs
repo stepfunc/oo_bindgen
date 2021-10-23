@@ -1,5 +1,5 @@
-use crate::cpp::by_unique_ptr;
 use crate::cpp::conversion::CoreType;
+use crate::cpp::formatting::*;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::structs::{
@@ -48,7 +48,7 @@ impl CppStructType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.struct_member_type(),
             FunctionArgStructField::String(x) => x.struct_member_type(),
-            FunctionArgStructField::Interface(x) => by_unique_ptr(x.core_type()),
+            FunctionArgStructField::Interface(x) => unique_ptr(x.core_type()),
             FunctionArgStructField::Collection(x) => x.struct_member_type(),
             FunctionArgStructField::Struct(x) => x.core_type(),
         }
@@ -70,7 +70,7 @@ impl CppStructType for CallbackArgStructField {
     fn struct_member_type(&self) -> String {
         match self {
             CallbackArgStructField::Basic(x) => x.struct_member_type(),
-            CallbackArgStructField::Iterator(x) => format!("{}&", x.core_type()),
+            CallbackArgStructField::Iterator(x) => mut_ref(x.core_type()),
             CallbackArgStructField::Struct(x) => x.core_type(),
         }
     }

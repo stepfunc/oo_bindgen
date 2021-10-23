@@ -45,7 +45,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let get_value_cb = lib
-        .define_interface("GetValueCallback", "GetValue callback handler")
+        .define_synchronous_interface("GetValueCallback", "GetValue callback handler")
         .begin_callback("on_value", "On value callback")?
         .param("value", BasicType::U32, "Value")?
         .returns_nothing()?

@@ -5,33 +5,9 @@ pub(crate) mod implementation;
 
 const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
 
-pub(crate) fn by_mut_ref(expr: String) -> String {
-    format!("{}&", expr)
-}
-pub(crate) fn by_const_ref(expr: String) -> String {
-    format!("const {}&", expr)
-}
-pub(crate) fn by_unique_ptr(expr: String) -> String {
-    format!("std::unique_ptr<{}>", expr)
-}
-
 /*
 
-fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {
-    f.writeln(&format!("class {} {{", handle.core_type()))?;
-    indented(f, |f| {
-        f.writeln(&format!("{}() = delete;", handle.core_type()))
-    })?;
-    f.writeln("public:")?;
-    indented(f, |f| {
-        for method in &handle.static_methods {
-            print_static_method(f, method)?;
-        }
-        Ok(())
-    })?;
-    f.writeln("};")?;
-    f.newline()
-}
+
 
 fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", FRIEND_CLASS_NAME))?;

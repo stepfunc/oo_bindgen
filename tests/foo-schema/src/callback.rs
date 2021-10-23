@@ -4,7 +4,7 @@ use oo_bindgen::*;
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     // Declare interface
     let interface = lib
-        .define_interface("CallbackInterface", "Test interface")
+        .define_synchronous_interface("CallbackInterface", "Test interface")
         .begin_callback("on_value", "On value callback")?
         .param("value", BasicType::U32, "Value")?
         .returns(BasicType::U32, "Some value")?

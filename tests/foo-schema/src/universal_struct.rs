@@ -91,7 +91,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
     let handle = define_outer_struct(lib)?;
 
     let interface = lib
-        .define_interface("UniversalInterface", "Interface that uses universal types")
+        .define_synchronous_interface("UniversalInterface", "Interface that uses universal types")
         .begin_callback(
             "on_value",
             "callback that receives and returns a universal struct",

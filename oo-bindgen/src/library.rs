@@ -744,12 +744,29 @@ impl LibraryBuilder {
         StaticClassBuilder::new(self, name.into())
     }
 
-    pub fn define_interface<T: Into<String>, D: Into<Doc>>(
+    pub fn define_synchronous_interface<T: Into<String>, D: Into<Doc>>(
         &mut self,
         name: T,
         doc: D,
     ) -> InterfaceBuilder {
-        InterfaceBuilder::new(self, name.into(), doc.into())
+        self.define_interface(name, InterfaceType::Synchronous, doc)
+    }
+
+    pub fn define_asynchronous_interface<T: Into<String>, D: Into<Doc>>(
+        &mut self,
+        name: T,
+        doc: D,
+    ) -> InterfaceBuilder {
+        self.define_interface(name, InterfaceType::Asynchronous, doc)
+    }
+
+    fn define_interface<T: Into<String>, D: Into<Doc>>(
+        &mut self,
+        name: T,
+        interface_type: InterfaceType,
+        doc: D,
+    ) -> InterfaceBuilder {
+        InterfaceBuilder::new(self, name.into(), interface_type, doc.into())
     }
 
     pub fn define_iterator(

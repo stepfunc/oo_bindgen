@@ -121,9 +121,22 @@ pub struct CallbackFunction {
     pub doc: Doc,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum InterfaceType {
+    /// The interface will only be used in a synchronous context and the Rust
+    /// backend will not generate Sync / Send implementations so it cannot be sent
+    /// to other threads.
+    Synchronous,
+    /// The interface is used in asynchronous contexts where it will be invoked after
+    /// a function call using it. The Rust backend will generate unsafe Sync / Send
+    /// implementations allowing it to be based to other threads
+    Asynchronous,
+}
+
 #[derive(Debug)]
 pub struct Interface {
     pub name: String,
+    pub interface_type: InterfaceType,
     pub callbacks: Vec<CallbackFunction>,
     pub doc: Doc,
 }
@@ -145,16 +158,23 @@ pub type InterfaceHandle = Handle<Interface>;
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: String,
+    interface_type: InterfaceType,
     callbacks: Vec<CallbackFunction>,
     callback_names: HashSet<String>,
     doc: Doc,
 }
 
 impl<'a> InterfaceBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String, doc: Doc) -> Self {
+    pub(crate) fn new(
+        lib: &'a mut LibraryBuilder,
+        name: String,
+        interface_type: InterfaceType,
+        doc: Doc,
+    ) -> Self {
         Self {
             lib,
             name,
+            interface_type,
             callbacks: Vec::new(),
             callback_names: Default::default(),
             doc,
@@ -174,6 +194,7 @@ impl<'a> InterfaceBuilder<'a> {
     pub fn build(self) -> BindResult<InterfaceHandle> {
         let handle = InterfaceHandle::new(Interface {
             name: self.name,
+            interface_type: self.interface_type,
             callbacks: self.callbacks,
             doc: self.doc,
         });

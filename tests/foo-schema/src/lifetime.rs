@@ -54,7 +54,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let outer_iter = define_outer_iter(lib)?;
 
     let interface = lib
-        .define_interface(
+        .define_synchronous_interface(
             "ChunkReceiver",
             "Callback interface for chunks of a byte array",
         )

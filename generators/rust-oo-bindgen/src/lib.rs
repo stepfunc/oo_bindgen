@@ -513,7 +513,12 @@ impl<'a> RustCodegen<'a> {
 
         f.newline()?;
 
-        self.write_callback_helpers(f, &interface_name, handle.callbacks.iter())?;
+        self.write_callback_helpers(
+            f,
+            handle.interface_type,
+            &interface_name,
+            handle.callbacks.iter(),
+        )?;
 
         f.newline()?;
 
@@ -533,12 +538,15 @@ impl<'a> RustCodegen<'a> {
     fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction>>(
         &self,
         f: &mut dyn Printer,
+        interface_type: InterfaceType,
         name: &str,
         callbacks: I,
     ) -> FormattingResult<()> {
         // Send/Sync trait
-        f.writeln(&format!("unsafe impl Send for {} {{}}", name))?;
-        f.writeln(&format!("unsafe impl Sync for {} {{}}", name))?;
+        if interface_type == InterfaceType::Asynchronous {
+            f.writeln(&format!("unsafe impl Send for {} {{}}", name))?;
+            f.writeln(&format!("unsafe impl Sync for {} {{}}", name))?;
+        }
 
         f.newline()?;
 

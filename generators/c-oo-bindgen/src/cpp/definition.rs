@@ -2,7 +2,9 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::namespace;
 use crate::cpp::FRIEND_CLASS_NAME;
 use heck::{CamelCase, SnakeCase};
-use oo_bindgen::class::{AsyncMethod, ClassDeclarationHandle, ClassHandle, Method};
+use oo_bindgen::class::{
+    AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
+};
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
@@ -62,12 +64,10 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::InterfaceDefinition(x) => print_interface(f, x)?,
             Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
             Statement::ClassDefinition(x) => print_class_definition(f, x)?,
-            Statement::StaticClassDefinition(_x) => {} //print_static_class(f, x)?,
-            Statement::IteratorDeclaration(x) => {
-                print_iterator_definition(f, x)?;
-            }
+            Statement::StaticClassDefinition(x) => print_static_class(f, x)?,
+            Statement::IteratorDeclaration(x) => print_iterator_definition(f, x)?,
             Statement::CollectionDeclaration(_) => {
-                // only used for transforms ATM
+                // collections are just vectors in C++
             }
             Statement::FunctionDefinition(_) => {
                 // not used in C++
@@ -376,6 +376,22 @@ fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingRe
         method.name.to_snake_case(),
         args
     ))
+}
+
+fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {
+    f.writeln(&format!("class {} {{", handle.core_type()))?;
+    indented(f, |f| {
+        f.writeln(&format!("{}() = delete;", handle.core_type()))
+    })?;
+    f.writeln("public:")?;
+    indented(f, |f| {
+        for method in &handle.static_methods {
+            print_static_method(f, method)?;
+        }
+        Ok(())
+    })?;
+    f.writeln("};")?;
+    f.newline()
 }
 
 fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {

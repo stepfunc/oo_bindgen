@@ -70,7 +70,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let structure = lib.declare_struct("Structure")?;
 
     let an_empty_interface = lib
-        .define_interface("EmptyInterface", "Interface within a structure")
+        .define_synchronous_interface("EmptyInterface", "Interface within a structure")
         .build()?;
 
     let enum_value = FieldName::new("enum_value");

@@ -83,10 +83,10 @@ impl<'a> RustCodegen<'a> {
         for statement in self.library.statements() {
             match statement {
                 Statement::StructDefinition(s) => match s {
-                    StructType::FStruct(s) => self.write_struct_definition(&mut f, s)?,
-                    StructType::RStruct(s) => self.write_struct_definition(&mut f, s)?,
-                    StructType::CStruct(s) => self.write_struct_definition(&mut f, s)?,
-                    StructType::UStruct(s) => self.write_struct_definition(&mut f, s)?,
+                    StructType::FunctionArg(s) => self.write_struct_definition(&mut f, s)?,
+                    StructType::FunctionReturn(s) => self.write_struct_definition(&mut f, s)?,
+                    StructType::CallbackArg(s) => self.write_struct_definition(&mut f, s)?,
+                    StructType::Universal(s) => self.write_struct_definition(&mut f, s)?,
                 },
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::FunctionDefinition(handle) => {

@@ -29,7 +29,7 @@ pub type FunctionReturnStructBuilder<'a> = StructFieldBuilder<'a, FunctionReturn
 
 impl StructFieldType for FunctionReturnStructField {
     fn create_struct_type(v: Handle<Struct<Self>>) -> StructType {
-        StructType::RStruct(v)
+        StructType::FunctionReturn(v)
     }
 }
 

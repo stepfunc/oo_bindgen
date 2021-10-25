@@ -26,7 +26,7 @@ pub type CallbackArgStructBuilder<'a> = StructFieldBuilder<'a, CallbackArgStruct
 
 impl StructFieldType for CallbackArgStructField {
     fn create_struct_type(v: Handle<Struct<CallbackArgStructField>>) -> StructType {
-        StructType::CStruct(v)
+        StructType::CallbackArg(v)
     }
 }
 

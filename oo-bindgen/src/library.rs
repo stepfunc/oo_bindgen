@@ -279,36 +279,36 @@ impl Library {
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum StructType {
     /// structs that may be used as native function parameters
-    FStruct(FunctionArgStructHandle),
+    FunctionArg(FunctionArgStructHandle),
     /// structs than can be used as native function return values
-    RStruct(FunctionReturnStructHandle),
+    FunctionReturn(FunctionReturnStructHandle),
     /// structs that may be used as callback function arguments in interfaces
-    CStruct(CallbackArgStructHandle),
+    CallbackArg(CallbackArgStructHandle),
     /// structs that can be used in any context and only contain basic types
-    UStruct(UniversalStructHandle),
+    Universal(UniversalStructHandle),
 }
 
 impl From<FunctionArgStructHandle> for StructType {
     fn from(x: FunctionArgStructHandle) -> Self {
-        StructType::FStruct(x)
+        StructType::FunctionArg(x)
     }
 }
 
 impl From<FunctionReturnStructHandle> for StructType {
     fn from(x: FunctionReturnStructHandle) -> Self {
-        StructType::RStruct(x)
+        StructType::FunctionReturn(x)
     }
 }
 
 impl From<CallbackArgStructHandle> for StructType {
     fn from(x: CallbackArgStructHandle) -> Self {
-        StructType::CStruct(x)
+        StructType::CallbackArg(x)
     }
 }
 
 impl From<UniversalStructHandle> for StructType {
     fn from(x: UniversalStructHandle) -> Self {
-        StructType::UStruct(x)
+        StructType::Universal(x)
     }
 }
 
@@ -391,7 +391,7 @@ where
     pub fn to_struct_type(&self) -> StructType {
         match self {
             UniversalOr::Specific(x) => T::create_struct_type(x.clone()),
-            UniversalOr::Universal(x) => StructType::UStruct(x.clone()),
+            UniversalOr::Universal(x) => StructType::Universal(x.clone()),
         }
     }
 }
@@ -408,37 +408,37 @@ where
 impl StructType {
     pub fn name(&self) -> &str {
         match self {
-            StructType::FStruct(x) => x.name(),
-            StructType::CStruct(x) => x.name(),
-            StructType::RStruct(x) => x.name(),
-            StructType::UStruct(x) => x.name(),
+            StructType::FunctionArg(x) => x.name(),
+            StructType::CallbackArg(x) => x.name(),
+            StructType::FunctionReturn(x) => x.name(),
+            StructType::Universal(x) => x.name(),
         }
     }
 
     pub fn declaration(&self) -> StructDeclarationHandle {
         match self {
-            StructType::FStruct(x) => x.declaration.clone(),
-            StructType::CStruct(x) => x.declaration.clone(),
-            StructType::RStruct(x) => x.declaration.clone(),
-            StructType::UStruct(x) => x.declaration.clone(),
+            StructType::FunctionArg(x) => x.declaration.clone(),
+            StructType::CallbackArg(x) => x.declaration.clone(),
+            StructType::FunctionReturn(x) => x.declaration.clone(),
+            StructType::Universal(x) => x.declaration.clone(),
         }
     }
 
     pub fn has_field_named(&self, name: &str) -> bool {
         match self {
-            StructType::FStruct(x) => x.has_field_named(name),
-            StructType::CStruct(x) => x.has_field_named(name),
-            StructType::RStruct(x) => x.has_field_named(name),
-            StructType::UStruct(x) => x.has_field_named(name),
+            StructType::FunctionArg(x) => x.has_field_named(name),
+            StructType::CallbackArg(x) => x.has_field_named(name),
+            StructType::FunctionReturn(x) => x.has_field_named(name),
+            StructType::Universal(x) => x.has_field_named(name),
         }
     }
 
     pub fn get_default_constructor(&self) -> Option<&Handle<Constructor>> {
         match self {
-            StructType::FStruct(x) => x.get_default_constructor(),
-            StructType::RStruct(x) => x.get_default_constructor(),
-            StructType::CStruct(x) => x.get_default_constructor(),
-            StructType::UStruct(x) => x.get_default_constructor(),
+            StructType::FunctionArg(x) => x.get_default_constructor(),
+            StructType::FunctionReturn(x) => x.get_default_constructor(),
+            StructType::CallbackArg(x) => x.get_default_constructor(),
+            StructType::Universal(x) => x.get_default_constructor(),
         }
     }
 }

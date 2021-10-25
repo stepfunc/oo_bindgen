@@ -379,10 +379,10 @@ fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
     for st in lib.structs() {
         let mut f = create_file(&st.name().to_camel_case(), config, lib)?;
         match st {
-            StructType::FStruct(x) => structure::generate(&mut f, x, lib)?,
-            StructType::RStruct(x) => structure::generate(&mut f, x, lib)?,
-            StructType::CStruct(x) => structure::generate(&mut f, x, lib)?,
-            StructType::UStruct(x) => structure::generate(&mut f, x, lib)?,
+            StructType::FunctionArg(x) => structure::generate(&mut f, x, lib)?,
+            StructType::FunctionReturn(x) => structure::generate(&mut f, x, lib)?,
+            StructType::CallbackArg(x) => structure::generate(&mut f, x, lib)?,
+            StructType::Universal(x) => structure::generate(&mut f, x, lib)?,
         }
     }
 

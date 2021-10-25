@@ -236,10 +236,10 @@ fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
                     ))?;
                 }
                 Statement::StructDefinition(st) => match st {
-                    StructType::FStruct(x) => write_struct_definition(f, x, lib)?,
-                    StructType::RStruct(x) => write_struct_definition(f, x, lib)?,
-                    StructType::CStruct(x) => write_struct_definition(f, x, lib)?,
-                    StructType::UStruct(x) => write_struct_definition(f, x, lib)?,
+                    StructType::FunctionArg(x) => write_struct_definition(f, x, lib)?,
+                    StructType::FunctionReturn(x) => write_struct_definition(f, x, lib)?,
+                    StructType::CallbackArg(x) => write_struct_definition(f, x, lib)?,
+                    StructType::Universal(x) => write_struct_definition(f, x, lib)?,
                 },
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
                 Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,

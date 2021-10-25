@@ -1,6 +1,5 @@
 use crate::cpp::conversion::*;
 use crate::cpp::formatting::namespace;
-use crate::cpp::FRIEND_CLASS_NAME;
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
@@ -44,9 +43,6 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
 
 fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
-
-    f.writeln("// forward declare the friend class which can access C++ class internals")?;
-    f.writeln(&format!("class {};", FRIEND_CLASS_NAME))?;
     f.newline()?;
 
     for statement in lib.statements() {
@@ -56,10 +52,10 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::ErrorType(x) => print_exception(f, x)?,
             Statement::StructDeclaration(x) => print_struct_decl(f, x)?,
             Statement::StructDefinition(x) => match x {
-                StructType::FStruct(x) => print_struct_definition(f, x, lib)?,
-                StructType::RStruct(x) => print_struct_definition(f, x, lib)?,
-                StructType::CStruct(x) => print_struct_definition(f, x, lib)?,
-                StructType::UStruct(x) => print_struct_definition(f, x, lib)?,
+                StructType::FunctionArg(x) => print_struct_definition(f, x)?,
+                StructType::FunctionReturn(x) => print_struct_definition(f, x)?,
+                StructType::CallbackArg(x) => print_struct_definition(f, x)?,
+                StructType::Universal(x) => print_struct_definition(f, x)?,
             },
             Statement::InterfaceDefinition(x) => print_interface(f, x)?,
             Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
@@ -189,13 +185,11 @@ fn print_struct_decl(f: &mut dyn Printer, s: &StructDeclaration) -> FormattingRe
 fn print_struct_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T>>,
-    _lib: &Library,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppStructType + CppFunctionArgType,
 {
     f.writeln(&format!("struct {} {{", handle.core_type()))?;
-    //f.writeln(&format!("    friend class {};", FRIEND_CLASS_NAME))?;
     if let Visibility::Private = handle.visibility {
         f.writeln("private:")?;
     }
@@ -296,7 +290,17 @@ where
 fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.core_type()))?;
     indented(f, |f| {
-        f.writeln(&format!("friend class {};", FRIEND_CLASS_NAME))?;
+        f.writeln(&format!(
+            "friend function void* cpp_{}_get_self({}&);",
+            handle.name().to_snake_case(),
+            handle.core_type()
+        ))?;
+        f.writeln(&format!(
+            "friend function {} cpp_{}_init(void*);",
+            handle.core_type(),
+            handle.name().to_snake_case()
+        ))?;
+
         f.writeln("// pointer to the underlying C type")?;
         f.writeln("void* self;")?;
         f.writeln("// constructor only accessible internally")?;

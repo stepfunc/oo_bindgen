@@ -57,10 +57,10 @@ pub(crate) fn generate_structs_cache(
     // Each struct implementation
     for structure in lib.structs() {
         match structure {
-            StructType::FStruct(x) => generate_struct(&mut f, x, lib, config)?,
-            StructType::RStruct(x) => generate_struct(&mut f, x, lib, config)?,
-            StructType::CStruct(x) => generate_struct(&mut f, x, lib, config)?,
-            StructType::UStruct(x) => generate_struct(&mut f, x, lib, config)?,
+            StructType::FunctionArg(x) => generate_struct(&mut f, x, lib, config)?,
+            StructType::FunctionReturn(x) => generate_struct(&mut f, x, lib, config)?,
+            StructType::CallbackArg(x) => generate_struct(&mut f, x, lib, config)?,
+            StructType::Universal(x) => generate_struct(&mut f, x, lib, config)?,
         }
     }
 

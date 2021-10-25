@@ -12,7 +12,9 @@ impl TypeValidator for UniversalStructField {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         match self {
             UniversalStructField::Basic(x) => x.get_validated_type(),
-            UniversalStructField::Struct(x) => StructType::UStruct(x.clone()).get_validated_type(),
+            UniversalStructField::Struct(x) => {
+                StructType::Universal(x.clone()).get_validated_type()
+            }
         }
     }
 }
@@ -22,7 +24,7 @@ pub type UniversalStructBuilder<'a> = StructFieldBuilder<'a, UniversalStructFiel
 
 impl StructFieldType for UniversalStructField {
     fn create_struct_type(v: Handle<Struct<UniversalStructField>>) -> StructType {
-        StructType::UStruct(v)
+        StructType::Universal(v)
     }
 }
 

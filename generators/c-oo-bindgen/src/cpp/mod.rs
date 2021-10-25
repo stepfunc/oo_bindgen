@@ -3,12 +3,7 @@ pub(crate) mod definition;
 mod formatting;
 pub(crate) mod implementation;
 
-const FRIEND_CLASS_NAME: &str = "InternalFriendClass";
-
 /*
-
-
-
 fn print_friend_class_decl(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", FRIEND_CLASS_NAME))?;
     indented(f, |f| {
@@ -201,82 +196,7 @@ fn convert_to_c(typ: &AnyType, expr: String) -> String {
     }
 }
 
-fn print_interface_conversions(
-    lib: &Library,
-    f: &mut dyn Printer,
-    handle: &InterfaceHandle,
-) -> FormattingResult<()> {
-    fn get_invocation(handle: &InterfaceHandle, func: &CallbackFunction) -> String {
-        let args = func
-            .arguments
-            .iter()
-            .map(|p| convert_to_cpp(&p.arg_type.clone().into(), p.core_type()))
-            .collect::<Vec<String>>()
-            .join(", ");
 
-        format!(
-            "reinterpret_cast<{}*>({})->{}({})",
-            handle.core_type(),
-            CTX_VARIABLE_NAME.to_snake_case(),
-            func.core_type(),
-            args
-        )
-    }
-
-    f.writeln(&format!(
-        "{}_{}_t from_cpp(std::unique_ptr<{}> value)",
-        lib.c_ffi_prefix,
-        handle.name.to_snake_case(),
-        handle.core_type(),
-    ))?;
-    f.writeln("{")?;
-    indented(f, |f| {
-        // Note: Designated initializers (i.e. C-style struct initialization) were standardized in C99,
-        // but only to C++ in C++20. Therefore, we cannot use it here as we target a lower version of C++.
-        f.writeln("return {")?;
-        indented(f, |f| {
-            for cb in &handle.callbacks {
-                f.writeln(&format!(
-                    "[]({}) -> {} {{",
-                    crate::chelpers::callback_parameters_with_var_names(lib, cb),
-                    cb.return_type.to_c_type(&lib.c_ffi_prefix)
-                ))?;
-                indented(f, |f| {
-                    match &cb.return_type {
-                        CReturnType::Type(t, _) => {
-                            let value = get_invocation(handle, cb);
-
-                            f.writeln(&format!(
-                                "return {};",
-                                "TODO!!!"
-                                // convert_to_c(&AnyType::from(t.clone()), value)
-                            ))?;
-                        }
-                        CReturnType::Void => {
-                            f.writeln(&format!("{};", get_invocation(handle, cb)))?;
-                        }
-                    }
-                    Ok(())
-                })?;
-                f.writeln("},")?;
-            }
-
-            f.writeln("value.release(),")?;
-
-            f.writeln(&format!(
-                "[](void* {}) {{ delete reinterpret_cast<{}*>({}); }},",
-                CTX_VARIABLE_NAME,
-                handle.core_type(),
-                CTX_VARIABLE_NAME
-            ))?;
-
-            Ok(())
-        })?;
-        f.writeln("};")
-    })?;
-    f.writeln("}")?;
-    f.newline()
-}
 
 fn print_iterator_conversions(
     lib: &Library,

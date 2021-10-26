@@ -15,7 +15,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             .details("Here is a reference to a constructor {class:TestClass.[constructor]} and to a destructor {class:TestClass.[destructor]}.")
             // TODO - restore this doc ref
             // .details("Here are some details about the struct {struct:Structure}. It has the {struct:Structure.boolean_value} element and the {struct:Structure.StructByValueEcho()} method." )
-            .details("Here are some details about the struct {struct:Structure}. It has the {struct:Structure.boolean_value} element and the struct:Structure.StructByValueEcho() method." )
+            .details("Here are some details about the struct {struct:Structure}. It has the {struct:Structure.boolean_true} element and the struct:Structure.StructByValueEcho() method." )
             .details("Here are some details about {enum:EnumZeroToFive}. It has the {enum:EnumZeroToFive.Two} variant.")
             .details("Here are some details about {interface:CallbackInterface}. It has the {interface:CallbackInterface.on_value()} callback.")
             .details("Here's a {null}. Here's the {iterator}.")

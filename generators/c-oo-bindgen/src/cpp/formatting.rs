@@ -9,6 +9,9 @@ pub(crate) fn const_ref(expr: String) -> String {
 pub(crate) fn unique_ptr(expr: String) -> String {
     format!("std::unique_ptr<{}>", expr)
 }
+pub(crate) fn friend_class(expr: String) -> String {
+    format!("Cpp{}Friend", expr)
+}
 
 pub(crate) fn namespace<F>(f: &mut dyn Printer, namespace: &str, cb: F) -> FormattingResult<()>
 where

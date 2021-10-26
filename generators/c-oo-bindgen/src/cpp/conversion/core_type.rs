@@ -97,7 +97,7 @@ impl CoreType for InterfaceHandle {
 
 impl CoreType for IteratorHandle {
     fn core_type(&self) -> String {
-        format!("{}Iterator", self.item_type.core_type())
+        self.iter_type.name.to_camel_case()
     }
 }
 

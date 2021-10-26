@@ -10,16 +10,20 @@
  */
 class <name> final {
 
+    friend class Cpp<name>Friend;
+
     void* iter;
     void* current;
-    <name>(void* iter, void* current);
 
-  public:
+    <name>(void* iter) : iter(iter), current(nullptr) {}
+
+public:
+
+    <name>(<name>&&) = default;
 
     <name>() = delete; // no default construction
     <name>(const <name>&) = delete; // no copies
     <name>& operator=(const <name>&) = delete; // no self-assignment
-    <name>(<name>&&) = delete; // no moves
     <name>& operator=(<name>&&) = delete; // no movie self-assignment
 
 

@@ -7,7 +7,7 @@ use oo_bindgen::types::{BasicType, DurationType, StringType};
 use oo_bindgen::UniversalOr;
 
 pub(crate) trait ToNativeStructField {
-    /// takes a C++ type and converts it to a native value of the same type
+    /// takes a C++ type and converts it to a native type
     fn to_native_struct_field(&self, expr: String) -> String;
 
     /// does the type require a move operation that modifies the C++ type
@@ -63,6 +63,8 @@ impl ToNativeStructField for BasicType {
 
 impl ToNativeStructField for StringType {
     fn to_native_struct_field(&self, expr: String) -> String {
+        // since the C++ struct will still be valid for the function call there's no need to copy
+        // the string. Rust immediately makes a copy of the string inside the FFI layer.
         format!("{}.c_str()", expr)
     }
 
@@ -97,6 +99,9 @@ impl ToNativeStructField for InterfaceHandle {
     }
 
     fn requires_move(&self) -> bool {
+        // interfaces in function arguments are passed by unique_ptr, therefore we
+        // have to move the unique_ptr into the interface conversion function where
+        // it will be released and Rust will manage the lifetime via a Drop impl
         true
     }
 }

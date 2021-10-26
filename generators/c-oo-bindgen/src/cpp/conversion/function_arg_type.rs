@@ -5,9 +5,65 @@ use oo_bindgen::interface::InterfaceType;
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
 };
+use oo_bindgen::UniversalOr;
 
 pub(crate) trait CppFunctionArgType {
     fn get_cpp_function_arg_type(&self) -> String;
+}
+
+pub(crate) trait IsConstructByMove {
+    fn is_construct_by_move(&self) -> bool;
+}
+
+impl IsConstructByMove for FunctionArgStructField {
+    fn is_construct_by_move(&self) -> bool {
+        match self {
+            FunctionArgStructField::Basic(_) => false,
+            FunctionArgStructField::String(_) => false,
+            FunctionArgStructField::Interface(_) => true,
+            FunctionArgStructField::Collection(_) => todo!(),
+            FunctionArgStructField::Struct(x) => match x {
+                UniversalOr::Specific(x) => {
+                    x.fields.iter().any(|f| f.field_type.is_construct_by_move())
+                }
+                UniversalOr::Universal(x) => {
+                    x.fields.iter().any(|f| f.field_type.is_construct_by_move())
+                }
+            },
+        }
+    }
+}
+
+impl IsConstructByMove for UniversalStructField {
+    fn is_construct_by_move(&self) -> bool {
+        match self {
+            UniversalStructField::Basic(_) => false,
+            UniversalStructField::Struct(x) => {
+                x.fields.iter().any(|f| f.field_type.is_construct_by_move())
+            }
+        }
+    }
+}
+
+impl IsConstructByMove for FunctionReturnStructField {
+    fn is_construct_by_move(&self) -> bool {
+        match self {
+            FunctionReturnStructField::Basic(_) => false,
+            FunctionReturnStructField::ClassRef(_) => false,
+            FunctionReturnStructField::Iterator(_) => true,
+            FunctionReturnStructField::Struct(_) => false,
+        }
+    }
+}
+
+impl IsConstructByMove for CallbackArgStructField {
+    fn is_construct_by_move(&self) -> bool {
+        match self {
+            CallbackArgStructField::Basic(_) => false,
+            CallbackArgStructField::Iterator(_) => true,
+            CallbackArgStructField::Struct(_) => false,
+        }
+    }
 }
 
 impl CppFunctionArgType for FunctionArgument {

@@ -1,5 +1,5 @@
 use crate::cpp::conversion::*;
-use crate::cpp::formatting::namespace;
+use crate::cpp::formatting::{friend_class, namespace};
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
@@ -79,6 +79,7 @@ fn print_iterator_definition(f: &mut dyn Printer, iter: &IteratorHandle) -> Form
     for line in iterator.lines() {
         let substituted = line
             .replace("<name>", &iter.core_type())
+            .replace("<snake_name>", &iter.core_type().to_snake_case())
             .replace("<iter_type>", &iter.item_type.core_type());
         f.writeln(&substituted)?;
     }
@@ -190,13 +191,41 @@ where
     T: StructFieldType + CppStructType + CppFunctionArgType,
 {
     f.writeln(&format!("struct {} {{", handle.core_type()))?;
+
+    indented(f, |f| {
+        f.writeln(&format!(
+            "friend class {};",
+            friend_class(handle.core_type())
+        ))?;
+        f.newline()
+    })?;
+
     if let Visibility::Private = handle.visibility {
         f.writeln("private:")?;
+        f.newline()?
     }
+
+    if !handle.has_full_constructor() {
+        if handle.visibility == Visibility::Public {
+            f.writeln("private:")?;
+        }
+        indented(f, |f| {
+            // write a default constructor
+            let constructor = Handle::new(Constructor::full(
+                "".to_string(),
+                ConstructorType::Normal,
+                "Fully initialize".into(),
+            ));
+            print_constructor_definition(f, handle, &constructor)
+        })?;
+        if handle.visibility == Visibility::Public {
+            f.writeln("public:")?;
+        }
+    }
+
     indented(f, |f| {
         // delete the default constructor unless the struct has one
         if !handle.has_default_constructor() {
-            f.newline()?;
             f.writeln(&format!("{}() = delete;", handle.core_type()))?;
         }
 
@@ -284,23 +313,16 @@ where
         ))?,
     }
 
-    Ok(())
+    f.newline()
 }
 
 fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.core_type()))?;
     indented(f, |f| {
         f.writeln(&format!(
-            "friend function void* cpp_{}_get_self({}&);",
-            handle.name().to_snake_case(),
-            handle.core_type()
+            "friend class {};",
+            friend_class(handle.core_type())
         ))?;
-        f.writeln(&format!(
-            "friend function {} cpp_{}_init(void*);",
-            handle.core_type(),
-            handle.name().to_snake_case()
-        ))?;
-
         f.writeln("// pointer to the underlying C type")?;
         f.writeln("void* self;")?;
         f.writeln("// constructor only accessible internally")?;

@@ -53,7 +53,7 @@ public class NullTest {
     @Test
     public void NullCollection() {
         assertThatIllegalArgumentException().isThrownBy(() -> {
-            StringCollection.getSize(null);
+            StringCollectionMethods.getSize(null);
         }).withMessage("col");
     }
 

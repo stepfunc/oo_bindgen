@@ -35,7 +35,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let collection_add_fn = lib
         .define_function("collection_add")
-        .param("col", collection_class.clone(), "Collection")?
+        .param("col", collection_class, "Collection")?
         .param("item", StringType, "Item")?
         .returns_nothing()?
         .doc("Add an item to the collection")?
@@ -85,7 +85,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Get an item from the collection")?
         .build()?;
 
-    lib.define_class(&collection_class)?
+    lib.define_static_class("StringCollectionMethods")
         .static_method("GetSize", &collection_size_func)?
         .static_method("GetValue", &collection_get_func)?
         .static_method("GetSizeWithReserve", &collection_with_reserve_size_func)?

@@ -23,6 +23,13 @@ impl Collection {
             if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(collection_type), _) =
                 &create_func.return_type
             {
+                if collection_type.class_type != ClassType::Collection {
+                    return Err(BindingError::WrongClassType {
+                        expected: ClassType::Collection,
+                        received: collection_type.class_type,
+                    });
+                }
+
                 collection_type
             } else {
                 return Err(BindingError::CollectionCreateFuncInvalidSignature {

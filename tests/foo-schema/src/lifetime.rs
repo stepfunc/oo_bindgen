@@ -3,7 +3,7 @@ use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
-    let inner_byte_iterator = lib.declare_class("InnerByteIterator")?;
+    let inner_byte_iterator = lib.declare_iterator("InnerByteIterator")?;
     let byte_value = lib.declare_struct("ByteValue")?;
     let iterator_next_fn = lib
         .define_function("next_byte_value")
@@ -25,7 +25,7 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Bin
 fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
     let inner_iter = define_inner_iterator(lib)?;
 
-    let chunk_iterator = lib.declare_class("ChunkIterator")?;
+    let chunk_iterator = lib.declare_iterator("ChunkIterator")?;
 
     let chunk = lib.declare_struct("Chunk")?;
 

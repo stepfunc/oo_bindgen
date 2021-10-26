@@ -721,7 +721,29 @@ impl LibraryBuilder {
         &mut self,
         name: T,
     ) -> BindResult<ClassDeclarationHandle> {
-        let handle = ClassDeclarationHandle::new(ClassDeclaration::new(name.into()));
+        self.declare_any_class(name, ClassType::Normal)
+    }
+
+    pub fn declare_iterator<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> BindResult<ClassDeclarationHandle> {
+        self.declare_any_class(name, ClassType::Iterator)
+    }
+
+    pub fn declare_collection<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> BindResult<ClassDeclarationHandle> {
+        self.declare_any_class(name, ClassType::Collection)
+    }
+
+    fn declare_any_class<T: Into<String>>(
+        &mut self,
+        name: T,
+        class_type: ClassType,
+    ) -> BindResult<ClassDeclarationHandle> {
+        let handle = ClassDeclarationHandle::new(ClassDeclaration::new(name.into(), class_type));
         self.add_statement(Statement::ClassDeclaration(handle.clone()))?;
         Ok(handle)
     }
@@ -730,6 +752,12 @@ impl LibraryBuilder {
         &mut self,
         declaration: &ClassDeclarationHandle,
     ) -> BindResult<ClassBuilder> {
+        if declaration.class_type != ClassType::Normal {
+            return Err(BindingError::WrongClassType {
+                expected: ClassType::Normal,
+                received: declaration.class_type,
+            });
+        }
         self.validate_class_declaration(declaration)?;
         if !self.classes.contains_key(declaration) {
             Ok(ClassBuilder::new(self, declaration.clone()))

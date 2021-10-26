@@ -6,7 +6,7 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
     // Define the iterator next function
     // Must always take a class pointer as a param and return a struct pointer
     // (null if no other value available)
-    let iterator_class = lib.declare_class("StringIterator")?;
+    let iterator_class = lib.declare_iterator("StringIterator")?;
     let iterator_item = lib.declare_struct("StringIteratorItem")?;
     let iterator_next_fn = lib
         .define_function("iterator_next")

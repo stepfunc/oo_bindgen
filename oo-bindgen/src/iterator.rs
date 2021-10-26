@@ -45,6 +45,13 @@ impl Iterator {
                     });
                 }
 
+                if iter_type.class_type != ClassType::Iterator {
+                    return Err(BindingError::WrongClassType {
+                        expected: ClassType::Iterator,
+                        received: iter_type.class_type,
+                    });
+                }
+
                 Ok(Iterator {
                     has_lifetime_annotation,
                     function: function.clone(),

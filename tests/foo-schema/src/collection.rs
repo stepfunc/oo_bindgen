@@ -2,7 +2,7 @@ use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
-    let collection_class = lib.declare_class("StringCollection")?;
+    let collection_class = lib.declare_collection("StringCollection")?;
 
     // Constructor method
     let collection_create_fn = lib
@@ -85,7 +85,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .doc("Get an item from the collection")?
         .build()?;
 
-    lib.define_static_class("StringCollectionMethods")
+    lib.define_static_class("StringCollectionTestMethods")
         .static_method("GetSize", &collection_size_func)?
         .static_method("GetValue", &collection_get_func)?
         .static_method("GetSizeWithReserve", &collection_with_reserve_size_func)?

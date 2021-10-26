@@ -1,15 +1,27 @@
 use crate::doc::DocString;
 use crate::*;
 
+/// Different types of classes
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ClassType {
+    /// A normal user class which will have a constructor, destructor, methods, etc
+    Normal,
+    /// An iterator class
+    Iterator,
+    /// A collection class
+    Collection,
+}
+
 /// C-style structure forward declaration
 #[derive(Debug)]
 pub struct ClassDeclaration {
     pub name: String,
+    pub class_type: ClassType,
 }
 
 impl ClassDeclaration {
-    pub(crate) fn new(name: String) -> Self {
-        Self { name }
+    pub(crate) fn new(name: String, class_type: ClassType) -> Self {
+        Self { name, class_type }
     }
 }
 

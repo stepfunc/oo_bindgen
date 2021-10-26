@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::class::ClassDeclarationHandle;
+use crate::class::{ClassDeclarationHandle, ClassType};
 use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::FunctionHandle;
@@ -120,6 +120,11 @@ pub enum BindingError {
         field_name: FieldName,
     },
     // Class errors
+    #[error("Expected '{:?}' but received {:?}", expected, received)]
+    WrongClassType {
+        expected: ClassType,
+        received: ClassType,
+    },
     #[error("Class '{}' was already defined", handle.name)]
     ClassAlreadyDefined { handle: ClassDeclarationHandle },
     #[error("Class '{}' is not part of this library", handle.name)]

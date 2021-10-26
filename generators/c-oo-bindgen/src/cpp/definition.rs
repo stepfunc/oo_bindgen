@@ -2,7 +2,7 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{friend_class, namespace};
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::{
-    AsyncMethod, ClassDeclarationHandle, ClassHandle, Method, StaticClassHandle,
+    AsyncMethod, ClassDeclarationHandle, ClassHandle, ClassType, Method, StaticClassHandle,
 };
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
@@ -58,7 +58,15 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
                 StructType::Universal(x) => print_struct_definition(f, x)?,
             },
             Statement::InterfaceDefinition(x) => print_interface(f, x)?,
-            Statement::ClassDeclaration(x) => print_class_decl(f, x)?,
+            Statement::ClassDeclaration(x) => {
+                match x.class_type {
+                    ClassType::Normal => print_class_decl(f, x)?,
+                    ClassType::Iterator => print_class_decl(f, x)?,
+                    // collections are mapped to Vec<T> in C++ and therefore
+                    // have no opaque declaration in the header
+                    ClassType::Collection => {}
+                }
+            }
             Statement::ClassDefinition(x) => print_class_definition(f, x)?,
             Statement::StaticClassDefinition(x) => print_static_class(f, x)?,
             Statement::IteratorDeclaration(x) => print_iterator_definition(f, x)?,

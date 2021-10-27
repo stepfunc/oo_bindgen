@@ -61,16 +61,8 @@ pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BindResult<FunctionAr
     let inner_structure = lib
         .define_function_argument_struct(&inner_structure)?
         .doc("A structure containing a {interface:empty_interface} and a {struct:numbers}")?
-        .add(
-            interface_field.clone(),
-            empty_interface.clone(),
-            "an empty interface",
-        )?
-        .add(
-            numbers_field.clone(),
-            numbers.clone(),
-            "struct full of numbers",
-        )?
+        .add(interface_field, empty_interface, "an empty interface")?
+        .add(numbers_field.clone(), numbers, "struct full of numbers")?
         .end_fields()?
         // constructor definition
         .begin_constructor(
@@ -144,11 +136,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             DurationType::Seconds,
             "duration in seconds",
         )?
-        .add(
-            inner_structure_field.clone(),
-            inner_structure,
-            "inner structure",
-        )?
+        .add(inner_structure_field, inner_structure, "inner structure")?
         .end_fields()?
         // construct all values with defaults
         .begin_constructor(

@@ -4,14 +4,14 @@ use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::interface::InterfaceHandle;
+use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::{Struct, StructFieldType};
 use oo_bindgen::util::WithLastIndication;
 use oo_bindgen::{Handle, Library, Statement, StructType};
 use std::path::Path;
 
-pub(crate) fn generate_impl(lib: &Library, path: &Path) -> FormattingResult<()> {
+pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
     std::fs::create_dir_all(&path)?;
     let filename = path.join(format!("{}.cpp", lib.name));
@@ -327,6 +327,85 @@ fn write_enum_conversions(
     f.newline()
 }
 
+fn write_callback_function(
+    f: &mut dyn Printer,
+    lib: &Library,
+    interface: &InterfaceHandle,
+    cb: &CallbackFunction,
+) -> FormattingResult<()> {
+    fn write_invocation_lines(f: &mut dyn Printer, cb: &CallbackFunction) -> FormattingResult<()> {
+        for (arg, last) in cb.arguments.iter().with_last() {
+            let conversion = if arg.arg_type.is_pass_by_mut_ref() {
+                format!("_{}", arg.name.to_snake_case())
+            } else {
+                arg.arg_type
+                    .to_native_callback_argument(arg.name.to_snake_case())
+            };
+            if last {
+                f.writeln(&conversion)?;
+            } else {
+                f.writeln(&format!("{},", conversion))?;
+            }
+        }
+        Ok(())
+    }
+
+    let args = cb
+        .arguments
+        .iter()
+        .map(|x| {
+            format!(
+                "{} {}",
+                x.arg_type.to_c_type(&lib.c_ffi_prefix),
+                x.name.to_snake_case()
+            )
+        })
+        .chain(std::iter::once("void* ctx".to_string()))
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "[]({}) -> {} {{",
+        args,
+        cb.return_type.to_c_type(&lib.c_ffi_prefix)
+    ))?;
+    indented(f, |f| {
+        for arg in &cb.arguments {
+            if arg.arg_type.is_pass_by_mut_ref() {
+                f.writeln(&format!(
+                    "auto _{} = {};",
+                    arg.name.to_snake_case(),
+                    arg.arg_type
+                        .to_native_callback_argument(arg.name.to_snake_case())
+                ))?;
+            }
+        }
+
+        let function = format!(
+            "reinterpret_cast<{}*>(ctx)->{}",
+            interface.core_type(),
+            cb.name.to_snake_case()
+        );
+        match &cb.return_type {
+            CallbackReturnType::Void => {
+                f.writeln(&format!("{}(", function))?;
+                indented(f, |f| write_invocation_lines(f, cb))?;
+                f.writeln(");")
+            }
+            CallbackReturnType::Type(t, _) => {
+                f.writeln(&format!("auto _cpp_return = {}(", function))?;
+                indented(f, |f| write_invocation_lines(f, cb))?;
+                f.writeln(");")?;
+                f.writeln(&format!(
+                    "return {};",
+                    t.to_native_callback_return_value("_cpp_return".to_string())
+                ))
+            }
+        }
+    })?;
+    f.writeln("},")
+}
+
 fn write_cpp_interface_to_native_conversion(
     f: &mut dyn Printer,
     lib: &Library,
@@ -339,7 +418,22 @@ fn write_cpp_interface_to_native_conversion(
         unique_ptr(handle.core_type())
     ))?;
     blocked(f, |f| {
-        f.writeln("throw std::logic_error(\"not implemented\");")?;
+        f.writeln(&format!(
+            "return {} {{",
+            handle.to_c_type(&lib.c_ffi_prefix)
+        ))?;
+        indented(f, |f| {
+            for cb in &handle.callbacks {
+                write_callback_function(f, lib, handle, cb)?;
+            }
+            f.writeln(&format!(
+                "[](void* ctx) {{ delete reinterpret_cast<{}*>(ctx); }},",
+                handle.core_type()
+            ))?;
+            f.writeln("value.release()")?;
+            Ok(())
+        })?;
+        f.writeln("};")?;
         Ok(())
     })?;
     f.newline()?;

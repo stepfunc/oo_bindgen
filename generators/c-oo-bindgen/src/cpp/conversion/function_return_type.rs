@@ -1,4 +1,5 @@
 use crate::cpp::conversion::CoreType;
+use crate::cpp::formatting::pointer;
 use oo_bindgen::function::{FunctionReturnType, FunctionReturnValue};
 
 pub(crate) trait CppFunctionReturnType {
@@ -14,7 +15,7 @@ impl CppFunctionReturnType for FunctionReturnType {
                 FunctionReturnValue::String(x) => x.core_type(),
                 FunctionReturnValue::ClassRef(x) => x.core_type(),
                 FunctionReturnValue::Struct(x) => x.core_type(),
-                FunctionReturnValue::StructRef(_) => unimplemented!(),
+                FunctionReturnValue::StructRef(x) => pointer(x.core_type()),
             },
         }
     }

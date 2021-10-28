@@ -1,10 +1,13 @@
-use oo_bindgen::enum_type::EnumHandle;
+use crate::cpp::conversion::ToNative;
+use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::interface::InterfaceHandle;
+use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::{
-    FunctionArgStructField, FunctionArgStructHandle, UniversalStructField, UniversalStructHandle,
+    CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
+    StructFieldType, UniversalStructField,
 };
-use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::UniversalOr;
+use oo_bindgen::types::{BasicType, StringType};
+use oo_bindgen::{Handle, UniversalOr};
 
 pub(crate) trait ToNativeStructField {
     /// takes a C++ type and converts it to a native type
@@ -14,58 +17,11 @@ pub(crate) trait ToNativeStructField {
     fn requires_move(&self) -> bool;
 }
 
-impl ToNativeStructField for DurationType {
-    fn to_native_struct_field(&self, expr: String) -> String {
-        match self {
-            DurationType::Milliseconds => format!("to_sec_u64({})", expr),
-            DurationType::Seconds => format!("to_milli_sec_u64({})", expr),
-        }
-    }
-
-    fn requires_move(&self) -> bool {
-        false
-    }
-}
-
-impl ToNativeStructField for EnumHandle {
-    fn to_native_struct_field(&self, expr: String) -> String {
-        format!("enum_to_native({})", expr)
-    }
-
-    fn requires_move(&self) -> bool {
-        false
-    }
-}
-
-impl ToNativeStructField for BasicType {
-    fn to_native_struct_field(&self, expr: String) -> String {
-        match self {
-            BasicType::Bool => expr,
-            BasicType::U8 => expr,
-            BasicType::S8 => expr,
-            BasicType::U16 => expr,
-            BasicType::S16 => expr,
-            BasicType::U32 => expr,
-            BasicType::S32 => expr,
-            BasicType::U64 => expr,
-            BasicType::S64 => expr,
-            BasicType::Float32 => expr,
-            BasicType::Double64 => expr,
-            BasicType::Duration(t) => t.to_native_struct_field(expr),
-            BasicType::Enum(t) => t.to_native_struct_field(expr),
-        }
-    }
-
-    fn requires_move(&self) -> bool {
-        false
-    }
-}
-
 impl ToNativeStructField for StringType {
     fn to_native_struct_field(&self, expr: String) -> String {
         // since the C++ struct will still be valid for the function call there's no need to copy
         // the string. Rust immediately makes a copy of the string inside the FFI layer.
-        format!("{}.c_str()", expr)
+        self.to_native(expr)
     }
 
     fn requires_move(&self) -> bool {
@@ -73,17 +29,10 @@ impl ToNativeStructField for StringType {
     }
 }
 
-impl ToNativeStructField for UniversalStructHandle {
-    fn to_native_struct_field(&self, expr: String) -> String {
-        format!("to_native({})", expr)
-    }
-
-    fn requires_move(&self) -> bool {
-        self.fields.iter().any(|x| x.field_type.requires_move())
-    }
-}
-
-impl ToNativeStructField for FunctionArgStructHandle {
+impl<T> ToNativeStructField for Handle<Struct<T>>
+where
+    T: StructFieldType + ToNativeStructField,
+{
     fn to_native_struct_field(&self, expr: String) -> String {
         format!("to_native({})", expr)
     }
@@ -103,6 +52,36 @@ impl ToNativeStructField for InterfaceHandle {
         // have to move the unique_ptr into the interface conversion function where
         // it will be released and Rust will manage the lifetime via a Drop impl
         true
+    }
+}
+
+impl ToNativeStructField for ClassDeclarationHandle {
+    fn to_native_struct_field(&self, expr: String) -> String {
+        format!("::convert::get({})", expr)
+    }
+
+    fn requires_move(&self) -> bool {
+        false
+    }
+}
+
+impl ToNativeStructField for IteratorHandle {
+    fn to_native_struct_field(&self, expr: String) -> String {
+        format!("::convert::to_native({})", expr)
+    }
+
+    fn requires_move(&self) -> bool {
+        false
+    }
+}
+
+impl ToNativeStructField for BasicType {
+    fn to_native_struct_field(&self, expr: String) -> String {
+        self.to_native(expr)
+    }
+
+    fn requires_move(&self) -> bool {
+        false
     }
 }
 
@@ -148,6 +127,56 @@ impl ToNativeStructField for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.requires_move(),
             UniversalStructField::Struct(x) => x.requires_move(),
+        }
+    }
+}
+
+impl ToNativeStructField for FunctionReturnStructField {
+    fn to_native_struct_field(&self, expr: String) -> String {
+        match self {
+            FunctionReturnStructField::Basic(x) => x.to_native_struct_field(expr),
+            FunctionReturnStructField::ClassRef(x) => x.to_native_struct_field(expr),
+            FunctionReturnStructField::Iterator(x) => x.to_native_struct_field(expr),
+            FunctionReturnStructField::Struct(x) => match x {
+                UniversalOr::Specific(x) => x.to_native_struct_field(expr),
+                UniversalOr::Universal(x) => x.to_native_struct_field(expr),
+            },
+        }
+    }
+
+    fn requires_move(&self) -> bool {
+        match self {
+            FunctionReturnStructField::Basic(x) => x.requires_move(),
+            FunctionReturnStructField::ClassRef(x) => x.requires_move(),
+            FunctionReturnStructField::Iterator(x) => x.requires_move(),
+            FunctionReturnStructField::Struct(x) => match x {
+                UniversalOr::Specific(x) => x.requires_move(),
+                UniversalOr::Universal(x) => x.requires_move(),
+            },
+        }
+    }
+}
+
+impl ToNativeStructField for CallbackArgStructField {
+    fn to_native_struct_field(&self, expr: String) -> String {
+        match self {
+            CallbackArgStructField::Basic(x) => x.to_native_struct_field(expr),
+            CallbackArgStructField::Iterator(x) => x.to_native_struct_field(expr),
+            CallbackArgStructField::Struct(x) => match x {
+                UniversalOr::Specific(x) => x.to_native_struct_field(expr),
+                UniversalOr::Universal(x) => x.to_native_struct_field(expr),
+            },
+        }
+    }
+
+    fn requires_move(&self) -> bool {
+        match self {
+            CallbackArgStructField::Basic(x) => x.requires_move(),
+            CallbackArgStructField::Iterator(x) => x.requires_move(),
+            CallbackArgStructField::Struct(x) => match x {
+                UniversalOr::Specific(x) => x.requires_move(),
+                UniversalOr::Universal(x) => x.requires_move(),
+            },
         }
     }
 }

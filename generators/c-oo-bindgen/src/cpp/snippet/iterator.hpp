@@ -24,7 +24,7 @@ public:
     <name>() = delete; // no default construction
     <name>(const <name>&) = delete; // no copies
     <name>& operator=(const <name>&) = delete; // no self-assignment
-    <name>& operator=(<name>&&) = delete; // no movie self-assignment
+    <name>& operator=(<name>&&) = delete; // no move self-assignment
 
 
     /// @brief move the iterator to the next value

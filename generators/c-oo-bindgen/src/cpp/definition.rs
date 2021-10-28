@@ -1,5 +1,5 @@
 use crate::cpp::conversion::*;
-use crate::cpp::formatting::{friend_class, namespace};
+use crate::cpp::formatting::{namespace, FriendClass};
 use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, ClassType, Method, StaticClassHandle,
@@ -201,10 +201,7 @@ where
     f.writeln(&format!("struct {} {{", handle.core_type()))?;
 
     indented(f, |f| {
-        f.writeln(&format!(
-            "friend class {};",
-            friend_class(handle.core_type())
-        ))?;
+        f.writeln(&format!("friend class {};", handle.friend_class()))?;
         f.newline()
     })?;
 
@@ -248,7 +245,7 @@ where
             f.writeln(&format!(
                 "{} {};",
                 field.field_type.struct_member_type(),
-                field.core_type()
+                field.name.to_snake_case()
             ))?;
         }
 
@@ -325,12 +322,10 @@ where
 }
 
 fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
-    f.writeln(&format!("class {} {{", handle.core_type()))?;
+    let class_name = handle.core_type();
+    f.writeln(&format!("class {} {{", class_name))?;
     indented(f, |f| {
-        f.writeln(&format!(
-            "friend class {};",
-            friend_class(handle.core_type())
-        ))?;
+        f.writeln(&format!("friend class {};", handle.friend_class()))?;
         f.writeln("// pointer to the underlying C type")?;
         f.writeln("void* self;")?;
         f.writeln("// constructor only accessible internally")?;
@@ -338,17 +333,22 @@ fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> Formatti
             "{}(void* self): self(self) {{}}",
             handle.core_type()
         ))?;
-        print_deleted_copy_and_assignment(f, &handle.core_type())
+        print_deleted_copy_and_assignment(f, &class_name)
     })?;
     f.newline()?;
     f.writeln("public:")?;
     indented(f, |f| {
+        f.writeln(&format!(
+            "{}({}&& other) : self(other.self) {{ other.self = nullptr; }}",
+            class_name, class_name
+        ))?;
+
         if let Some(x) = &handle.constructor {
             let args = cpp_arguments(x.parameters.iter());
-            f.writeln(&format!("{}({});", handle.core_type(), args))?;
+            f.writeln(&format!("{}({});", class_name, args))?;
         };
         if handle.destructor.is_some() {
-            f.writeln(&format!("~{}();", handle.core_type()))?;
+            f.writeln(&format!("~{}();", class_name))?;
         };
 
         for method in &handle.methods {

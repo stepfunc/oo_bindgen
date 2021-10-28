@@ -101,15 +101,6 @@ impl CoreType for IteratorHandle {
     }
 }
 
-impl<T> CoreType for StructField<T>
-where
-    T: StructFieldType,
-{
-    fn core_type(&self) -> String {
-        self.name.to_snake_case()
-    }
-}
-
 impl<T> CoreType for Arg<T> {
     fn core_type(&self) -> String {
         self.name.to_snake_case()

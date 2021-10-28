@@ -1,4 +1,4 @@
-use crate::cpp::conversion::ToNativeStructField;
+use crate::cpp::conversion::{ToNative, ToNativeStructField};
 use oo_bindgen::interface::CallbackReturnValue;
 
 pub(crate) trait ToNativeCallbackReturnValue {
@@ -8,7 +8,7 @@ pub(crate) trait ToNativeCallbackReturnValue {
 impl ToNativeCallbackReturnValue for CallbackReturnValue {
     fn to_native_callback_return_value(&self, expr: String) -> String {
         match self {
-            CallbackReturnValue::Basic(x) => x.to_native_struct_field(expr), // same impl
+            CallbackReturnValue::Basic(x) => x.to_native(expr),
             CallbackReturnValue::Struct(x) => x.to_native_struct_field(expr),
         }
     }

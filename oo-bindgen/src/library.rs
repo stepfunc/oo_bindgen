@@ -696,6 +696,21 @@ impl LibraryBuilder {
         }
     }
 
+    /// Define an opaque structure which must be of universal type
+    pub fn define_opaque_struct(
+        &mut self,
+        declaration: UniversalStructDeclaration,
+    ) -> BindResult<UniversalStructBuilder> {
+        self.validate_struct_declaration(&declaration.inner)?;
+        if self.structs.contains_key(&declaration.inner) {
+            Err(BindingError::StructAlreadyDefined {
+                handle: declaration.inner,
+            })
+        } else {
+            Ok(UniversalStructBuilder::opaque(self, declaration.inner))
+        }
+    }
+
     /// Define a structure that can be only be used in callback function arguments
     pub fn define_callback_argument_struct<T>(
         &mut self,

@@ -452,19 +452,29 @@ where
     F: StructFieldType,
 {
     pub(crate) fn new(lib: &'a mut LibraryBuilder, declaration: StructDeclarationHandle) -> Self {
+        Self::new_impl(lib, declaration, Visibility::Public)
+    }
+
+    pub(crate) fn opaque(
+        lib: &'a mut LibraryBuilder,
+        declaration: StructDeclarationHandle,
+    ) -> Self {
+        Self::new_impl(lib, declaration, Visibility::Private)
+    }
+
+    fn new_impl(
+        lib: &'a mut LibraryBuilder,
+        declaration: StructDeclarationHandle,
+        visibility: Visibility,
+    ) -> Self {
         Self {
             lib,
-            visibility: Visibility::Public, // defaults to a public struct
+            visibility,
             declaration,
             fields: Vec::new(),
             field_names: HashSet::new(),
             doc: None,
         }
-    }
-
-    pub fn make_opaque(mut self) -> Self {
-        self.visibility = Visibility::Private;
-        self
     }
 
     pub fn add<S: Into<FieldName>, V: Into<F>, D: Into<Doc>>(

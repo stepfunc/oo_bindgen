@@ -1,4 +1,4 @@
-use crate::cpp::conversion::CoreType;
+use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::pointer;
 use oo_bindgen::function::{FunctionReturnType, FunctionReturnValue};
 
@@ -11,11 +11,11 @@ impl CppFunctionReturnType for FunctionReturnType {
         match self {
             FunctionReturnType::Void => "void".to_string(),
             FunctionReturnType::Type(t, _) => match t {
-                FunctionReturnValue::Basic(x) => x.core_type(),
-                FunctionReturnValue::String(x) => x.core_type(),
-                FunctionReturnValue::ClassRef(x) => x.core_type(),
-                FunctionReturnValue::Struct(x) => x.core_type(),
-                FunctionReturnValue::StructRef(x) => pointer(x.inner.core_type()),
+                FunctionReturnValue::Basic(x) => x.core_cpp_type(),
+                FunctionReturnValue::String(x) => x.core_cpp_type(),
+                FunctionReturnValue::ClassRef(x) => x.core_cpp_type(),
+                FunctionReturnValue::Struct(x) => x.core_cpp_type(),
+                FunctionReturnValue::StructRef(x) => pointer(x.inner.core_cpp_type()),
             },
         }
     }

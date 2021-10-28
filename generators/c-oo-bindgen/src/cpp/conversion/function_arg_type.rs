@@ -1,4 +1,4 @@
-use crate::cpp::conversion::CoreType;
+use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::*;
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::InterfaceType;
@@ -69,15 +69,15 @@ impl IsConstructByMove for CallbackArgStructField {
 impl CppFunctionArgType for FunctionArgument {
     fn get_cpp_function_arg_type(&self) -> String {
         match self {
-            FunctionArgument::Basic(x) => x.core_type(),
-            FunctionArgument::String(x) => const_ref(x.core_type()),
-            FunctionArgument::Collection(x) => const_ref(x.core_type()),
-            FunctionArgument::Struct(x) => const_ref(x.core_type()),
-            FunctionArgument::StructRef(x) => const_ref(x.inner.core_type()),
-            FunctionArgument::ClassRef(x) => mut_ref(x.core_type()),
+            FunctionArgument::Basic(x) => x.core_cpp_type(),
+            FunctionArgument::String(x) => const_ref(x.core_cpp_type()),
+            FunctionArgument::Collection(x) => const_ref(x.core_cpp_type()),
+            FunctionArgument::Struct(x) => const_ref(x.core_cpp_type()),
+            FunctionArgument::StructRef(x) => const_ref(x.inner.core_cpp_type()),
+            FunctionArgument::ClassRef(x) => mut_ref(x.core_cpp_type()),
             FunctionArgument::Interface(x) => match x.interface_type {
-                InterfaceType::Synchronous => mut_ref(x.core_type()),
-                InterfaceType::Asynchronous => unique_ptr(x.core_type()),
+                InterfaceType::Synchronous => mut_ref(x.core_cpp_type()),
+                InterfaceType::Asynchronous => unique_ptr(x.core_cpp_type()),
             },
         }
     }
@@ -86,11 +86,11 @@ impl CppFunctionArgType for FunctionArgument {
 impl CppFunctionArgType for FunctionArgStructField {
     fn get_cpp_function_arg_type(&self) -> String {
         match self {
-            Self::Basic(x) => x.core_type(),
-            Self::String(x) => const_ref(x.core_type()),
-            Self::Interface(x) => unique_ptr(x.core_type()),
-            Self::Collection(x) => x.core_type(),
-            Self::Struct(x) => const_ref(x.core_type()),
+            Self::Basic(x) => x.core_cpp_type(),
+            Self::String(x) => const_ref(x.core_cpp_type()),
+            Self::Interface(x) => unique_ptr(x.core_cpp_type()),
+            Self::Collection(x) => x.core_cpp_type(),
+            Self::Struct(x) => const_ref(x.core_cpp_type()),
         }
     }
 }
@@ -98,10 +98,10 @@ impl CppFunctionArgType for FunctionArgStructField {
 impl CppFunctionArgType for FunctionReturnStructField {
     fn get_cpp_function_arg_type(&self) -> String {
         match self {
-            Self::Basic(x) => x.core_type(),
-            Self::ClassRef(x) => x.core_type(),
-            Self::Iterator(x) => x.core_type(),
-            Self::Struct(x) => const_ref(x.core_type()),
+            Self::Basic(x) => x.core_cpp_type(),
+            Self::ClassRef(x) => x.core_cpp_type(),
+            Self::Iterator(x) => x.core_cpp_type(),
+            Self::Struct(x) => const_ref(x.core_cpp_type()),
         }
     }
 }
@@ -109,9 +109,9 @@ impl CppFunctionArgType for FunctionReturnStructField {
 impl CppFunctionArgType for CallbackArgStructField {
     fn get_cpp_function_arg_type(&self) -> String {
         match self {
-            Self::Basic(x) => x.core_type(),
-            Self::Iterator(x) => x.core_type(),
-            Self::Struct(x) => const_ref(x.core_type()),
+            Self::Basic(x) => x.core_cpp_type(),
+            Self::Iterator(x) => x.core_cpp_type(),
+            Self::Struct(x) => const_ref(x.core_cpp_type()),
         }
     }
 }
@@ -119,8 +119,8 @@ impl CppFunctionArgType for CallbackArgStructField {
 impl CppFunctionArgType for UniversalStructField {
     fn get_cpp_function_arg_type(&self) -> String {
         match self {
-            Self::Basic(x) => x.core_type(),
-            Self::Struct(x) => const_ref(x.core_type()),
+            Self::Basic(x) => x.core_cpp_type(),
+            Self::Struct(x) => const_ref(x.core_cpp_type()),
         }
     }
 }

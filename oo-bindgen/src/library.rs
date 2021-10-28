@@ -899,6 +899,17 @@ impl LibraryBuilder {
             delete_func,
             add_func,
         )?);
+
+        if self
+            .collections
+            .iter()
+            .any(|col| col.collection_type == collection.collection_type)
+        {
+            return Err(BindingError::CollectionAlreadyDefinedForClass {
+                handle: collection.collection_type.clone(),
+            });
+        }
+
         self.add_statement(Statement::CollectionDeclaration(collection.clone()))?;
         Ok(collection)
     }

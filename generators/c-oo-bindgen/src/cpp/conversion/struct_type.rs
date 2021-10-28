@@ -1,4 +1,4 @@
-use crate::cpp::conversion::CoreType;
+use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::*;
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::function::FunctionArgument;
@@ -13,13 +13,13 @@ pub(crate) trait CppStructType {
 
 impl CppStructType for BasicType {
     fn struct_member_type(&self) -> String {
-        self.core_type()
+        self.core_cpp_type()
     }
 }
 
 impl CppStructType for StringType {
     fn struct_member_type(&self) -> String {
-        self.core_type()
+        self.core_cpp_type()
     }
 }
 
@@ -48,9 +48,9 @@ impl CppStructType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.struct_member_type(),
             FunctionArgStructField::String(x) => x.struct_member_type(),
-            FunctionArgStructField::Interface(x) => unique_ptr(x.core_type()),
+            FunctionArgStructField::Interface(x) => unique_ptr(x.core_cpp_type()),
             FunctionArgStructField::Collection(x) => x.struct_member_type(),
-            FunctionArgStructField::Struct(x) => x.core_type(),
+            FunctionArgStructField::Struct(x) => x.core_cpp_type(),
         }
     }
 }
@@ -59,9 +59,9 @@ impl CppStructType for FunctionReturnStructField {
     fn struct_member_type(&self) -> String {
         match self {
             FunctionReturnStructField::Basic(x) => x.struct_member_type(),
-            FunctionReturnStructField::ClassRef(x) => x.core_type(),
-            FunctionReturnStructField::Iterator(x) => x.core_type(),
-            FunctionReturnStructField::Struct(x) => x.core_type(),
+            FunctionReturnStructField::ClassRef(x) => x.core_cpp_type(),
+            FunctionReturnStructField::Iterator(x) => x.core_cpp_type(),
+            FunctionReturnStructField::Struct(x) => x.core_cpp_type(),
         }
     }
 }
@@ -70,8 +70,8 @@ impl CppStructType for CallbackArgStructField {
     fn struct_member_type(&self) -> String {
         match self {
             CallbackArgStructField::Basic(x) => x.struct_member_type(),
-            CallbackArgStructField::Iterator(x) => mut_ref(x.core_type()),
-            CallbackArgStructField::Struct(x) => x.core_type(),
+            CallbackArgStructField::Iterator(x) => mut_ref(x.core_cpp_type()),
+            CallbackArgStructField::Struct(x) => x.core_cpp_type(),
         }
     }
 }
@@ -80,7 +80,7 @@ impl CppStructType for UniversalStructField {
     fn struct_member_type(&self) -> String {
         match self {
             UniversalStructField::Basic(x) => x.struct_member_type(),
-            UniversalStructField::Struct(x) => x.core_type(),
+            UniversalStructField::Struct(x) => x.core_cpp_type(),
         }
     }
 }

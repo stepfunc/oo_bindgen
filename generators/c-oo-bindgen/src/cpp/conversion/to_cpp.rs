@@ -17,7 +17,7 @@ impl ToCpp for DurationType {
 
 impl ToCpp for EnumHandle {
     fn to_cpp(&self, expr: String) -> String {
-        format!("::convert::from_native({})", expr)
+        format!("::convert::to_cpp({})", expr)
     }
 }
 

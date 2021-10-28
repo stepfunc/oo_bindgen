@@ -108,7 +108,7 @@ fn print_friend_class(
 ) -> FormattingResult<()> {
     let iterator = include_str!("./snippet/class_friend_class.hpp");
     let c_type = format!("{}_{}_t", lib.c_ffi_prefix, handle.name().to_snake_case());
-    let cpp_type = handle.core_type();
+    let cpp_type = handle.core_cpp_type();
     for line in iterator.lines() {
         let substituted = line
             .replace("<c_type>", &c_type)
@@ -203,6 +203,8 @@ fn write_function_wrapper(
         .collect::<Vec<String>>()
         .join(", ");
 
+    println!("    args: {}", args);
+
     f.writeln(&format!(
         "{} {}({})",
         func.return_type.to_c_type(&lib.c_ffi_prefix),
@@ -287,7 +289,7 @@ fn write_iterator_construct_helper(
     f: &mut dyn Printer,
     handle: &IteratorHandle,
 ) -> FormattingResult<()> {
-    let cpp_type = handle.core_type();
+    let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "::{}::{} construct({}* self)",
         lib.c_ffi_prefix,
@@ -310,7 +312,7 @@ fn write_iterator_to_native_helper(
     f: &mut dyn Printer,
     handle: &IteratorHandle,
 ) -> FormattingResult<()> {
-    let cpp_type = handle.core_type();
+    let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "{}* to_native(const ::{}::{}& value)",
         handle.iter_type.to_c_type(&lib.c_ffi_prefix),
@@ -333,7 +335,7 @@ fn write_class_construct_helper(
     f: &mut dyn Printer,
     handle: &ClassHandle,
 ) -> FormattingResult<()> {
-    let cpp_type = handle.core_type();
+    let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "::{}::{} construct({}* self)",
         lib.c_ffi_prefix,
@@ -375,7 +377,7 @@ where
     f.writeln("{")?;
     f.writeln("public:")?;
     indented(f, |f| {
-        let cpp_type = handle.core_type();
+        let cpp_type = handle.core_cpp_type();
         f.writeln(&format!("static {} init({})", cpp_type, args))?;
         blocked(f, |f| {
             f.writeln(&format!("return {}(", cpp_type))?;
@@ -432,17 +434,17 @@ fn write_iterator_friend_class(
         f.newline()?;
         f.writeln(&format!(
             "static {} init({}* value)",
-            handle.core_type(),
+            handle.core_cpp_type(),
             handle.iter_type.to_c_type(&lib.c_ffi_prefix)
         ))?;
         blocked(f, |f| {
-            f.writeln(&format!("return {}(value);", handle.core_type()))
+            f.writeln(&format!("return {}(value);", handle.core_cpp_type()))
         })?;
         f.newline()?;
         f.writeln(&format!(
             "static {}* get(const {}& value)",
             c_type,
-            handle.core_type()
+            handle.core_cpp_type()
         ))?;
         blocked(f, |f| {
             f.writeln(&format!(
@@ -463,7 +465,7 @@ fn write_cpp_to_native_struct_conversion<T>(
 where
     T: StructFieldType + ToNativeStructField,
 {
-    let namespaced_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_type());
+    let namespaced_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
     let value_type = if handle.fields.iter().any(|f| f.field_type.requires_move()) {
         mut_ref(namespaced_type)
     } else {
@@ -513,7 +515,7 @@ where
 {
     let c_type = handle.to_c_type(&lib.c_ffi_prefix);
 
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_type());
+    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
     f.writeln(&format!("{} to_cpp({} value)", cpp_type, const_ref(c_type)))?;
     blocked(f, |f| {
         f.writeln(&format!(
@@ -543,7 +545,7 @@ where
 fn write_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> FormattingResult<()> {
     f.writeln(&format!(
         "const char* to_string({} value)",
-        handle.core_type()
+        handle.core_cpp_type()
     ))?;
     f.writeln("{")?;
     indented(f, |f| {
@@ -553,8 +555,8 @@ fn write_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
             for v in &handle.variants {
                 f.writeln(&format!(
                     "case {}::{}: return \"{}\";",
-                    handle.core_type(),
-                    v.core_type(),
+                    handle.core_cpp_type(),
+                    v.core_cpp_type(),
                     v.name
                 ))?;
             }
@@ -574,7 +576,7 @@ fn write_enum_to_native_conversion(
     f: &mut dyn Printer,
     handle: &EnumHandle,
 ) -> FormattingResult<()> {
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_type());
+    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
     f.writeln(&format!(
         "{}_{}_t to_native({} value)",
         lib.c_ffi_prefix,
@@ -611,7 +613,7 @@ fn write_enum_to_cpp_conversion(
     f: &mut dyn Printer,
     handle: &EnumHandle,
 ) -> FormattingResult<()> {
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_type());
+    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
     f.writeln(&format!(
         "{} to_cpp({}_{}_t value)",
         cpp_type,
@@ -650,7 +652,7 @@ fn write_callback_function(
     interface: &InterfaceHandle,
     cb: &CallbackFunction,
 ) -> FormattingResult<()> {
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, interface.core_type());
+    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, interface.core_cpp_type());
 
     fn write_invocation_lines(f: &mut dyn Printer, cb: &CallbackFunction) -> FormattingResult<()> {
         for (arg, last) in cb.arguments.iter().with_last() {
@@ -732,7 +734,7 @@ fn write_cpp_interface_to_native_conversion(
     interface_type: InterfaceType,
 ) -> FormattingResult<()> {
     let c_type = handle.to_c_type(&lib.c_ffi_prefix);
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_type());
+    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
     let argument_type = match interface_type {
         InterfaceType::Synchronous => mut_ref(cpp_type.clone()),
         InterfaceType::Asynchronous => unique_ptr(cpp_type.clone()),

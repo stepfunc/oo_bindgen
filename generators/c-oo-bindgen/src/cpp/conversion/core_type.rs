@@ -11,12 +11,12 @@ use oo_bindgen::structs::*;
 use oo_bindgen::types::{Arg, BasicType, StringType};
 use oo_bindgen::{StructType, UniversalOr};
 
-pub(crate) trait CoreType {
-    fn core_type(&self) -> String;
+pub(crate) trait CoreCppType {
+    fn core_cpp_type(&self) -> String;
 }
 
-impl CoreType for BasicType {
-    fn core_type(&self) -> String {
+impl CoreCppType for BasicType {
+    fn core_cpp_type(&self) -> String {
         match self {
             BasicType::Bool => "bool".to_string(),
             BasicType::U8 => "uint8_t".to_string(),
@@ -30,120 +30,120 @@ impl CoreType for BasicType {
             BasicType::Float32 => "float".to_string(),
             BasicType::Double64 => "double".to_string(),
             BasicType::Duration(_) => "std::chrono::steady_clock::duration".to_string(),
-            BasicType::Enum(x) => x.core_type(),
+            BasicType::Enum(x) => x.core_cpp_type(),
         }
     }
 }
 
-impl CoreType for StringType {
-    fn core_type(&self) -> String {
+impl CoreCppType for StringType {
+    fn core_cpp_type(&self) -> String {
         "std::string".to_string()
     }
 }
 
-impl<T> CoreType for Struct<T>
+impl<T> CoreCppType for Struct<T>
 where
     T: StructFieldType,
 {
-    fn core_type(&self) -> String {
+    fn core_cpp_type(&self) -> String {
         self.name().to_camel_case()
     }
 }
 
-impl<T> CoreType for UniversalOr<T>
+impl<T> CoreCppType for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn core_type(&self) -> String {
+    fn core_cpp_type(&self) -> String {
         self.name().to_camel_case()
     }
 }
 
-impl CoreType for StructDeclaration {
-    fn core_type(&self) -> String {
+impl CoreCppType for StructDeclaration {
+    fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreType for StructType {
-    fn core_type(&self) -> String {
-        self.declaration().core_type()
+impl CoreCppType for StructType {
+    fn core_cpp_type(&self) -> String {
+        self.declaration().core_cpp_type()
     }
 }
 
-impl CoreType for EnumHandle {
-    fn core_type(&self) -> String {
+impl CoreCppType for EnumHandle {
+    fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreType for EnumVariant {
-    fn core_type(&self) -> String {
+impl CoreCppType for EnumVariant {
+    fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
 }
 
-impl CoreType for ErrorType {
-    fn core_type(&self) -> String {
+impl CoreCppType for ErrorType {
+    fn core_cpp_type(&self) -> String {
         self.exception_name.to_camel_case()
     }
 }
 
-impl CoreType for InterfaceHandle {
-    fn core_type(&self) -> String {
+impl CoreCppType for InterfaceHandle {
+    fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreType for IteratorHandle {
-    fn core_type(&self) -> String {
+impl CoreCppType for IteratorHandle {
+    fn core_cpp_type(&self) -> String {
         self.iter_type.name.to_camel_case()
     }
 }
 
-impl<T> CoreType for Arg<T> {
-    fn core_type(&self) -> String {
+impl<T> CoreCppType for Arg<T> {
+    fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
 }
 
-impl CoreType for CallbackFunction {
-    fn core_type(&self) -> String {
+impl CoreCppType for CallbackFunction {
+    fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
 }
 
-impl CoreType for Constant {
-    fn core_type(&self) -> String {
+impl CoreCppType for Constant {
+    fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
 }
 
-impl CoreType for ClassDeclarationHandle {
-    fn core_type(&self) -> String {
+impl CoreCppType for ClassDeclarationHandle {
+    fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreType for ClassHandle {
-    fn core_type(&self) -> String {
+impl CoreCppType for ClassHandle {
+    fn core_cpp_type(&self) -> String {
         self.name().to_camel_case()
     }
 }
 
-impl CoreType for StaticClassHandle {
-    fn core_type(&self) -> String {
+impl CoreCppType for StaticClassHandle {
+    fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreType for CollectionHandle {
-    fn core_type(&self) -> String {
+impl CoreCppType for CollectionHandle {
+    fn core_cpp_type(&self) -> String {
         let inner = match &self.item_type {
-            FunctionArgument::Basic(x) => x.core_type(),
-            FunctionArgument::String(x) => x.core_type(),
-            FunctionArgument::Collection(x) => x.core_type(),
-            FunctionArgument::Struct(x) => x.core_type(),
+            FunctionArgument::Basic(x) => x.core_cpp_type(),
+            FunctionArgument::String(x) => x.core_cpp_type(),
+            FunctionArgument::Collection(x) => x.core_cpp_type(),
+            FunctionArgument::Struct(x) => x.core_cpp_type(),
             FunctionArgument::StructRef(_) => unimplemented!(),
             FunctionArgument::ClassRef(_) => unimplemented!(),
             FunctionArgument::Interface(_) => unimplemented!(),

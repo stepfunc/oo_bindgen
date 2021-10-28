@@ -208,6 +208,8 @@ pub enum BindingError {
     CollectionAddFuncInvalidSignature { handle: FunctionHandle },
     #[error("Collection native functions '{}' cannot fail", handle.name)]
     CollectionFunctionsCannotFail { handle: FunctionHandle },
+    #[error("Collection has already been defined for class '{}'", handle.name)]
+    CollectionAlreadyDefinedForClass { handle: ClassDeclarationHandle },
     #[error("Collection '{}' is not part of this library", handle.name())]
     CollectionNotPartOfThisLib { handle: CollectionHandle },
     #[error(

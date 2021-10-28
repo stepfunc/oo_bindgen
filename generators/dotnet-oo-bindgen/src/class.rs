@@ -377,7 +377,10 @@ fn generate_async_method(
             callback_name, return_type, callback_param_name
         ))?;
         blocked(f, |f| {
-            f.writeln(&format!("tcs.SetResult({});", callback_param_name))
+            f.writeln(&format!(
+                "Task.Run(() => tcs.SetResult({}));",
+                callback_param_name
+            ))
         })
     })?;
 

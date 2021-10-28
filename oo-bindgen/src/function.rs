@@ -2,8 +2,9 @@ use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
 use crate::return_type::ReturnType;
 use crate::structs::{
-    FunctionArgStructField, FunctionArgStructHandle, FunctionReturnStructField,
-    FunctionReturnStructHandle, UniversalStructHandle,
+    FunctionArgStructDeclaration, FunctionArgStructField, FunctionArgStructHandle,
+    FunctionReturnStructDeclaration, FunctionReturnStructField, FunctionReturnStructHandle,
+    UniversalStructDeclaration, UniversalStructHandle,
 };
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
@@ -15,7 +16,7 @@ pub enum FunctionReturnValue {
     String(StringType),
     ClassRef(ClassDeclarationHandle),
     Struct(UniversalOr<FunctionReturnStructField>),
-    StructRef(StructDeclarationHandle),
+    StructRef(FunctionReturnStructDeclaration),
 }
 
 impl From<BasicType> for FunctionReturnValue {
@@ -48,8 +49,8 @@ impl From<FunctionReturnStructHandle> for FunctionReturnValue {
     }
 }
 
-impl From<StructDeclarationHandle> for FunctionReturnValue {
-    fn from(x: StructDeclarationHandle) -> Self {
+impl From<FunctionReturnStructDeclaration> for FunctionReturnValue {
+    fn from(x: FunctionReturnStructDeclaration) -> Self {
         FunctionReturnValue::StructRef(x)
     }
 }
@@ -75,7 +76,7 @@ pub enum FunctionArgument {
     String(StringType),
     Collection(CollectionHandle),
     Struct(UniversalOr<FunctionArgStructField>),
-    StructRef(StructDeclarationHandle),
+    StructRef(FunctionArgStructDeclaration),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
 }
@@ -87,7 +88,7 @@ impl TypeValidator for FunctionArgument {
             FunctionArgument::String(_) => None,
             FunctionArgument::Collection(x) => x.get_validated_type(),
             FunctionArgument::Struct(x) => x.get_validated_type(),
-            FunctionArgument::StructRef(x) => x.get_validated_type(),
+            FunctionArgument::StructRef(x) => x.inner.get_validated_type(),
             FunctionArgument::ClassRef(x) => x.get_validated_type(),
             FunctionArgument::Interface(x) => x.get_validated_type(),
         }
@@ -136,9 +137,15 @@ impl From<CollectionHandle> for FunctionArgument {
     }
 }
 
-impl From<StructDeclarationHandle> for FunctionArgument {
-    fn from(x: StructDeclarationHandle) -> Self {
+impl From<FunctionArgStructDeclaration> for FunctionArgument {
+    fn from(x: FunctionArgStructDeclaration) -> Self {
         FunctionArgument::StructRef(x)
+    }
+}
+
+impl From<UniversalStructDeclaration> for FunctionArgument {
+    fn from(x: UniversalStructDeclaration) -> Self {
+        FunctionArgument::StructRef(FunctionArgStructDeclaration::new(x.inner))
     }
 }
 

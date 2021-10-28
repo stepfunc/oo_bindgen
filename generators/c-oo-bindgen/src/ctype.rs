@@ -69,7 +69,7 @@ impl CType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.to_c_type(prefix),
             FunctionReturnValue::ClassRef(x) => pointer(x).to_c_type(prefix),
             FunctionReturnValue::Struct(x) => x.to_c_type(prefix),
-            FunctionReturnValue::StructRef(x) => pointer(x).to_c_type(prefix),
+            FunctionReturnValue::StructRef(x) => pointer(&x.inner).to_c_type(prefix),
         }
     }
 }
@@ -225,7 +225,7 @@ impl CType for FunctionArgument {
             FunctionArgument::String(x) => x.to_c_type(prefix),
             FunctionArgument::Collection(x) => pointer(x).to_c_type(prefix),
             FunctionArgument::Struct(x) => x.to_c_type(prefix),
-            FunctionArgument::StructRef(x) => pointer(x).to_c_type(prefix),
+            FunctionArgument::StructRef(x) => pointer(&x.inner).to_c_type(prefix),
             FunctionArgument::ClassRef(x) => pointer(x).to_c_type(prefix),
             FunctionArgument::Interface(x) => x.to_c_type(prefix),
         }

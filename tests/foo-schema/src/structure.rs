@@ -15,8 +15,8 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BindResult<Universa
     let float_value = FieldName::new("float_value");
     let double_value = FieldName::new("double_value");
 
-    let numbers = lib.declare_struct("numbers")?;
-    lib.define_universal_struct(&numbers)?
+    let numbers = lib.declare_universal_struct("numbers")?;
+    lib.define_universal_struct(numbers)?
         .doc("structure containing all the numeric types")?
         .add(uint8_value.clone(), BasicType::U8, "uint8 value")?
         .add(int8_value.clone(), BasicType::S8, "int8 value")?
@@ -56,10 +56,10 @@ pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BindResult<FunctionAr
 
     let interface_field = FieldName::new("interface_field");
     let numbers_field = FieldName::new("numbers_field");
-    let inner_structure = lib.declare_struct("inner_structure")?;
+    let inner_structure = lib.declare_function_arg_struct("inner_structure")?;
 
     let inner_structure = lib
-        .define_function_argument_struct(&inner_structure)?
+        .define_function_argument_struct(inner_structure)?
         .doc("A structure containing a {interface:empty_interface} and a {struct:numbers}")?
         .add(interface_field, empty_interface, "an empty interface")?
         .add(numbers_field.clone(), numbers, "struct full of numbers")?
@@ -88,7 +88,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let inner_structure = define_inner_structure(lib)?;
 
-    let structure = lib.declare_struct("Structure")?;
+    let structure = lib.declare_function_arg_struct("Structure")?;
 
     let enum_var1_field = FieldName::new("enum_var1");
     let enum_var2_field = FieldName::new("enum_var2");
@@ -99,7 +99,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let duration_seconds_field = FieldName::new("duration_seconds");
     let inner_structure_field = FieldName::new("inner_structure");
 
-    lib.define_function_argument_struct(&structure)?
+    lib.define_function_argument_struct(structure)?
         .doc("Test structure")?
         .add(
             enum_var1_field.clone(),

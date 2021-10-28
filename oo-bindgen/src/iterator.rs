@@ -21,13 +21,20 @@ impl Iterator {
                     handle: function.clone(),
                 })
             }
-            FunctionReturnType::Type(return_type, _) => {
-                if *return_type != FunctionReturnValue::StructRef(item_type.declaration()) {
+            FunctionReturnType::Type(return_type, _) => match return_type {
+                FunctionReturnValue::StructRef(x) => {
+                    if x.inner != item_type.declaration() {
+                        return Err(BindingError::IteratorReturnTypeNotStructRef {
+                            handle: function.clone(),
+                        });
+                    }
+                }
+                _ => {
                     return Err(BindingError::IteratorReturnTypeNotStructRef {
                         handle: function.clone(),
                     });
                 }
-            }
+            },
         }
 
         if function.error_type.is_some() {

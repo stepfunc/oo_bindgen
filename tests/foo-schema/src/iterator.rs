@@ -7,7 +7,7 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
     // Must always take a class pointer as a param and return a struct pointer
     // (null if no other value available)
     let iterator_class = lib.declare_iterator("StringIterator")?;
-    let iterator_item = lib.declare_struct("StringIteratorItem")?;
+    let iterator_item = lib.declare_function_return_struct("StringIteratorItem")?;
     let iterator_next_fn = lib
         .define_function("iterator_next")
         .param("it", iterator_class, "Iterator")?
@@ -17,7 +17,7 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
 
     // Define the iterator item structure
     let iterator_item = lib
-        .define_function_return_struct(&iterator_item)?
+        .define_function_return_struct(iterator_item)?
         .add("value", BasicType::U8, "Character value")?
         .doc("Single iterator item")?
         .end_fields()?

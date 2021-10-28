@@ -46,8 +46,6 @@ clippy::all
 
 pub use semver::Version;
 
-use structs::StructDeclarationHandle;
-
 use crate::class::*;
 pub use crate::doc::doc;
 use crate::doc::Doc;

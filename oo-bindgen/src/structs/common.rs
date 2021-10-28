@@ -7,8 +7,12 @@ use crate::doc::Doc;
 use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
+use crate::structs::{
+    CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
+};
 use crate::types::{DurationType, StringType, TypeValidator};
 use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
+use std::marker::PhantomData;
 use std::time::Duration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -210,12 +214,49 @@ pub struct StructDeclaration {
 }
 
 impl StructDeclaration {
-    pub(crate) fn new(name: String) -> Self {
+    pub fn new(name: String) -> Self {
         Self { name }
     }
 }
 
 pub type StructDeclarationHandle = Handle<StructDeclaration>;
+
+/// Typed wrapper around an untyped struct declaration
+#[derive(Debug, Clone, Eq)]
+pub struct TypedStructDeclaration<T> {
+    pub inner: StructDeclarationHandle,
+    phantom: PhantomData<T>,
+}
+
+impl<T> AsRef<StructDeclarationHandle> for TypedStructDeclaration<T> {
+    fn as_ref(&self) -> &StructDeclarationHandle {
+        &self.inner
+    }
+}
+
+impl<T> PartialEq for TypedStructDeclaration<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl<T> TypedStructDeclaration<T> {
+    pub(crate) fn new(inner: StructDeclarationHandle) -> Self {
+        Self {
+            inner,
+            phantom: Default::default(),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.inner.name
+    }
+}
+
+pub type UniversalStructDeclaration = TypedStructDeclaration<UniversalStructField>;
+pub type FunctionArgStructDeclaration = TypedStructDeclaration<FunctionArgStructField>;
+pub type FunctionReturnStructDeclaration = TypedStructDeclaration<FunctionReturnStructField>;
+pub type CallbackArgStructDeclaration = TypedStructDeclaration<CallbackArgStructField>;
 
 pub trait ConstructorValidator {
     fn bad_constructor_value(
@@ -445,7 +486,7 @@ where
             Ok(self)
         } else {
             Err(BindingError::StructAlreadyContainsFieldWithSameName {
-                handle: self.declaration,
+                handle: self.declaration.clone(),
                 field_name: name,
             })
         }

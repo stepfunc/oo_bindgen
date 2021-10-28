@@ -229,7 +229,7 @@ impl JavaType for FunctionArgument {
             Self::String(x) => x.as_java_primitive(),
             Self::Collection(x) => x.as_java_primitive(),
             Self::Struct(x) => x.as_java_primitive(),
-            Self::StructRef(x) => x.as_java_primitive(),
+            Self::StructRef(x) => x.inner.as_java_primitive(),
             Self::ClassRef(x) => x.as_java_primitive(),
             Self::Interface(x) => x.as_java_primitive(),
         }
@@ -241,7 +241,7 @@ impl JavaType for FunctionArgument {
             Self::String(x) => x.as_java_object(),
             Self::Collection(x) => x.as_java_object(),
             Self::Struct(x) => x.as_java_object(),
-            Self::StructRef(x) => x.as_java_object(),
+            Self::StructRef(x) => x.inner.as_java_object(),
             Self::ClassRef(x) => x.as_java_object(),
             Self::Interface(x) => x.as_java_object(),
         }
@@ -293,7 +293,7 @@ impl JavaType for FunctionReturnValue {
             Self::String(x) => x.as_java_primitive(),
             Self::ClassRef(x) => x.as_java_primitive(),
             Self::Struct(x) => x.as_java_primitive(),
-            Self::StructRef(x) => x.as_java_primitive(),
+            Self::StructRef(x) => x.inner.as_java_primitive(),
         }
     }
 
@@ -303,7 +303,7 @@ impl JavaType for FunctionReturnValue {
             Self::String(x) => x.as_java_object(),
             Self::ClassRef(x) => x.as_java_object(),
             Self::Struct(x) => x.as_java_object(),
-            Self::StructRef(x) => x.as_java_object(),
+            Self::StructRef(x) => x.inner.as_java_object(),
         }
     }
 }

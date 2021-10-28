@@ -73,7 +73,7 @@ impl CppFunctionArgType for FunctionArgument {
             FunctionArgument::String(x) => const_ref(x.core_type()),
             FunctionArgument::Collection(x) => const_ref(x.core_type()),
             FunctionArgument::Struct(x) => const_ref(x.core_type()),
-            FunctionArgument::StructRef(x) => const_ref(x.core_type()),
+            FunctionArgument::StructRef(x) => const_ref(x.inner.core_type()),
             FunctionArgument::ClassRef(x) => mut_ref(x.core_type()),
             FunctionArgument::Interface(x) => match x.interface_type {
                 InterfaceType::Synchronous => mut_ref(x.core_type()),

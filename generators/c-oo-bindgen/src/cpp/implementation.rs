@@ -257,14 +257,8 @@ fn write_conversions(
     match statement {
         Statement::StructDefinition(x) => match x {
             StructType::FunctionArg(x) => write_cpp_to_native_struct_conversion(f, lib, x),
-            StructType::FunctionReturn(x) => {
-                write_cpp_to_native_struct_conversion(f, lib, x)?;
-                write_native_to_cpp_struct_conversion(f, lib, x)
-            }
-            StructType::CallbackArg(x) => {
-                write_cpp_to_native_struct_conversion(f, lib, x)?;
-                write_native_to_cpp_struct_conversion(f, lib, x)
-            }
+            StructType::FunctionReturn(x) => write_native_to_cpp_struct_conversion(f, lib, x),
+            StructType::CallbackArg(x) => write_native_to_cpp_struct_conversion(f, lib, x),
             StructType::Universal(x) => {
                 write_cpp_to_native_struct_conversion(f, lib, x)?;
                 write_native_to_cpp_struct_conversion(f, lib, x)

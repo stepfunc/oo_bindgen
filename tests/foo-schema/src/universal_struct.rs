@@ -6,10 +6,10 @@ use oo_bindgen::{BindResult, LibraryBuilder};
 use std::time::Duration;
 
 fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHandle> {
-    let inner = lib.declare_struct("UniversalInnerStruct")?;
+    let inner = lib.declare_universal_struct("UniversalInnerStruct")?;
 
     let value_field = FieldName::new("value");
-    lib.define_universal_struct(&inner)?
+    lib.define_universal_struct(inner)?
         .doc("Simple universal struct")?
         .add(value_field.clone(), BasicType::S32, "integer value")?
         .end_fields()?
@@ -29,9 +29,9 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
     let inner_field = FieldName::new("inner");
     let delay_field = FieldName::new("delay");
 
-    let outer_struct = lib.declare_struct("UniversalOuterStruct")?;
+    let outer_struct = lib.declare_universal_struct("UniversalOuterStruct")?;
     let outer_struct = lib
-        .define_universal_struct(&outer_struct)?
+        .define_universal_struct(outer_struct)?
         .doc("Simple universal struct with an inner structure")?
         .add(inner_field.clone(), inner_struct, "An inner structure")?
         .add(

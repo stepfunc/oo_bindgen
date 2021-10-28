@@ -2,10 +2,7 @@ use crate::cpp::conversion::ToNative;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::structs::{
-    CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
-    StructFieldType, UniversalStructField,
-};
+use oo_bindgen::structs::{FunctionArgStructField, Struct, StructFieldType, UniversalStructField};
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::{Handle, UniversalOr};
 
@@ -127,56 +124,6 @@ impl ToNativeStructField for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.requires_move(),
             UniversalStructField::Struct(x) => x.requires_move(),
-        }
-    }
-}
-
-impl ToNativeStructField for FunctionReturnStructField {
-    fn to_native_struct_field(&self, expr: String) -> String {
-        match self {
-            FunctionReturnStructField::Basic(x) => x.to_native_struct_field(expr),
-            FunctionReturnStructField::ClassRef(x) => x.to_native_struct_field(expr),
-            FunctionReturnStructField::Iterator(x) => x.to_native_struct_field(expr),
-            FunctionReturnStructField::Struct(x) => match x {
-                UniversalOr::Specific(x) => x.to_native_struct_field(expr),
-                UniversalOr::Universal(x) => x.to_native_struct_field(expr),
-            },
-        }
-    }
-
-    fn requires_move(&self) -> bool {
-        match self {
-            FunctionReturnStructField::Basic(x) => x.requires_move(),
-            FunctionReturnStructField::ClassRef(x) => x.requires_move(),
-            FunctionReturnStructField::Iterator(x) => x.requires_move(),
-            FunctionReturnStructField::Struct(x) => match x {
-                UniversalOr::Specific(x) => x.requires_move(),
-                UniversalOr::Universal(x) => x.requires_move(),
-            },
-        }
-    }
-}
-
-impl ToNativeStructField for CallbackArgStructField {
-    fn to_native_struct_field(&self, expr: String) -> String {
-        match self {
-            CallbackArgStructField::Basic(x) => x.to_native_struct_field(expr),
-            CallbackArgStructField::Iterator(x) => x.to_native_struct_field(expr),
-            CallbackArgStructField::Struct(x) => match x {
-                UniversalOr::Specific(x) => x.to_native_struct_field(expr),
-                UniversalOr::Universal(x) => x.to_native_struct_field(expr),
-            },
-        }
-    }
-
-    fn requires_move(&self) -> bool {
-        match self {
-            CallbackArgStructField::Basic(x) => x.requires_move(),
-            CallbackArgStructField::Iterator(x) => x.requires_move(),
-            CallbackArgStructField::Struct(x) => match x {
-                UniversalOr::Specific(x) => x.requires_move(),
-                UniversalOr::Universal(x) => x.requires_move(),
-            },
         }
     }
 }

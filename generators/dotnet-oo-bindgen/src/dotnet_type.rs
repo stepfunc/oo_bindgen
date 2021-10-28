@@ -533,7 +533,7 @@ impl DotnetType for FunctionArgument {
             FunctionArgument::String(x) => x.as_dotnet_type(),
             FunctionArgument::Collection(x) => x.as_dotnet_type(),
             FunctionArgument::Struct(x) => x.as_dotnet_type(),
-            FunctionArgument::StructRef(x) => x.as_dotnet_type(),
+            FunctionArgument::StructRef(x) => x.inner.as_dotnet_type(),
             FunctionArgument::ClassRef(x) => x.as_dotnet_type(),
             FunctionArgument::Interface(x) => x.as_dotnet_type(),
         }
@@ -545,7 +545,7 @@ impl DotnetType for FunctionArgument {
             FunctionArgument::String(x) => x.as_native_type(),
             FunctionArgument::Collection(x) => x.as_native_type(),
             FunctionArgument::Struct(x) => x.as_native_type(),
-            FunctionArgument::StructRef(x) => x.as_native_type(),
+            FunctionArgument::StructRef(x) => x.inner.as_native_type(),
             FunctionArgument::ClassRef(x) => x.as_native_type(),
             FunctionArgument::Interface(x) => x.as_native_type(),
         }
@@ -557,7 +557,7 @@ impl DotnetType for FunctionArgument {
             FunctionArgument::String(x) => x.convert_to_native(from),
             FunctionArgument::Collection(x) => x.convert_to_native(from),
             FunctionArgument::Struct(x) => x.convert_to_native(from),
-            FunctionArgument::StructRef(x) => x.convert_to_native(from),
+            FunctionArgument::StructRef(x) => x.inner.convert_to_native(from),
             FunctionArgument::ClassRef(x) => x.convert_to_native(from),
             FunctionArgument::Interface(x) => x.convert_to_native(from),
         }
@@ -569,7 +569,7 @@ impl DotnetType for FunctionArgument {
             FunctionArgument::String(x) => x.cleanup(from),
             FunctionArgument::Collection(x) => x.cleanup(from),
             FunctionArgument::Struct(x) => x.cleanup(from),
-            FunctionArgument::StructRef(x) => x.cleanup(from),
+            FunctionArgument::StructRef(x) => x.inner.cleanup(from),
             FunctionArgument::ClassRef(x) => x.cleanup(from),
             FunctionArgument::Interface(x) => x.cleanup(from),
         }
@@ -581,7 +581,7 @@ impl DotnetType for FunctionArgument {
             FunctionArgument::String(x) => x.convert_from_native(from),
             FunctionArgument::Collection(x) => x.convert_from_native(from),
             FunctionArgument::Struct(x) => x.convert_from_native(from),
-            FunctionArgument::StructRef(x) => x.convert_from_native(from),
+            FunctionArgument::StructRef(x) => x.inner.convert_from_native(from),
             FunctionArgument::ClassRef(x) => x.convert_from_native(from),
             FunctionArgument::Interface(x) => x.convert_from_native(from),
         }
@@ -684,7 +684,7 @@ impl DotnetType for FunctionReturnValue {
             Self::String(x) => x.as_dotnet_type(),
             Self::ClassRef(x) => x.as_dotnet_type(),
             Self::Struct(x) => x.as_dotnet_type(),
-            Self::StructRef(x) => x.as_dotnet_type(),
+            Self::StructRef(x) => x.inner.as_dotnet_type(),
         }
     }
 
@@ -694,7 +694,7 @@ impl DotnetType for FunctionReturnValue {
             Self::String(x) => x.as_native_type(),
             Self::ClassRef(x) => x.as_native_type(),
             Self::Struct(x) => x.as_native_type(),
-            Self::StructRef(x) => x.as_native_type(),
+            Self::StructRef(x) => x.inner.as_native_type(),
         }
     }
 
@@ -704,7 +704,7 @@ impl DotnetType for FunctionReturnValue {
             Self::String(x) => x.convert_to_native(from),
             Self::ClassRef(x) => x.convert_to_native(from),
             Self::Struct(x) => x.convert_to_native(from),
-            Self::StructRef(x) => x.convert_to_native(from),
+            Self::StructRef(x) => x.inner.convert_to_native(from),
         }
     }
 
@@ -714,7 +714,7 @@ impl DotnetType for FunctionReturnValue {
             Self::String(x) => x.cleanup(from),
             Self::ClassRef(x) => x.cleanup(from),
             Self::Struct(x) => x.cleanup(from),
-            Self::StructRef(x) => x.cleanup(from),
+            Self::StructRef(x) => x.inner.cleanup(from),
         }
     }
 
@@ -724,7 +724,7 @@ impl DotnetType for FunctionReturnValue {
             Self::String(x) => x.convert_from_native(from),
             Self::ClassRef(x) => x.convert_from_native(from),
             Self::Struct(x) => x.convert_from_native(from),
-            Self::StructRef(x) => x.convert_from_native(from),
+            Self::StructRef(x) => x.inner.convert_from_native(from),
         }
     }
 }

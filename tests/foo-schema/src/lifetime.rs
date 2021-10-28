@@ -4,7 +4,7 @@ use oo_bindgen::*;
 
 fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
     let inner_byte_iterator = lib.declare_iterator("InnerByteIterator")?;
-    let byte_value = lib.declare_struct("ByteValue")?;
+    let byte_value = lib.declare_function_return_struct("ByteValue")?;
     let iterator_next_fn = lib
         .define_function("next_byte_value")
         .param("it", inner_byte_iterator, "inner byte iterator")?
@@ -13,7 +13,7 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Bin
         .build()?;
 
     let byte_value = lib
-        .define_function_return_struct(&byte_value)?
+        .define_function_return_struct(byte_value)?
         .add("value", BasicType::U8, "byte")?
         .doc("item type for inner iterator")?
         .end_fields()?
@@ -27,7 +27,7 @@ fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Binding
 
     let chunk_iterator = lib.declare_iterator("ChunkIterator")?;
 
-    let chunk = lib.declare_struct("Chunk")?;
+    let chunk = lib.declare_function_return_struct("Chunk")?;
 
     let iterator_next_fn = lib
         .define_function("next_chunk")
@@ -37,7 +37,7 @@ fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Binding
         .build()?;
 
     let byte_values = lib
-        .define_function_return_struct(&chunk)?
+        .define_function_return_struct(chunk)?
         .add(
             "iter",
             inner_iter,

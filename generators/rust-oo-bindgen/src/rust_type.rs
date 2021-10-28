@@ -184,7 +184,7 @@ impl LifetimeInfo for FunctionArgument {
             FunctionArgument::String(x) => x.rust_requires_lifetime(),
             FunctionArgument::Collection(x) => x.rust_requires_lifetime(),
             FunctionArgument::Struct(x) => x.rust_requires_lifetime(),
-            FunctionArgument::StructRef(x) => x.rust_requires_lifetime(),
+            FunctionArgument::StructRef(x) => x.inner.rust_requires_lifetime(),
             FunctionArgument::ClassRef(x) => x.rust_requires_lifetime(),
             FunctionArgument::Interface(x) => x.rust_requires_lifetime(),
         }
@@ -196,7 +196,7 @@ impl LifetimeInfo for FunctionArgument {
             FunctionArgument::String(x) => x.c_requires_lifetime(),
             FunctionArgument::Collection(x) => x.c_requires_lifetime(),
             FunctionArgument::Struct(x) => x.c_requires_lifetime(),
-            FunctionArgument::StructRef(x) => x.c_requires_lifetime(),
+            FunctionArgument::StructRef(x) => x.inner.c_requires_lifetime(),
             FunctionArgument::ClassRef(x) => x.c_requires_lifetime(),
             FunctionArgument::Interface(x) => x.c_requires_lifetime(),
         }
@@ -380,7 +380,7 @@ impl RustType for FunctionArgument {
             FunctionArgument::String(x) => x.as_rust_type(),
             FunctionArgument::Collection(x) => x.as_rust_type(),
             FunctionArgument::Struct(x) => x.as_rust_type(),
-            FunctionArgument::StructRef(x) => x.as_rust_type(),
+            FunctionArgument::StructRef(x) => x.inner.as_rust_type(),
             FunctionArgument::ClassRef(x) => x.as_rust_type(),
             FunctionArgument::Interface(x) => x.as_rust_type(),
         }
@@ -392,7 +392,7 @@ impl RustType for FunctionArgument {
             FunctionArgument::String(x) => x.as_c_type(),
             FunctionArgument::Collection(x) => x.as_c_type(),
             FunctionArgument::Struct(x) => x.as_c_type(),
-            FunctionArgument::StructRef(x) => x.as_c_type(),
+            FunctionArgument::StructRef(x) => x.inner.as_c_type(),
             FunctionArgument::ClassRef(x) => x.as_c_type(),
             FunctionArgument::Interface(x) => x.as_c_type(),
         }
@@ -404,7 +404,7 @@ impl RustType for FunctionArgument {
             FunctionArgument::String(x) => x.is_copyable(),
             FunctionArgument::Collection(x) => x.is_copyable(),
             FunctionArgument::Struct(x) => x.is_copyable(),
-            FunctionArgument::StructRef(x) => x.is_copyable(),
+            FunctionArgument::StructRef(x) => x.inner.is_copyable(),
             FunctionArgument::ClassRef(x) => x.is_copyable(),
             FunctionArgument::Interface(x) => x.is_copyable(),
         }
@@ -416,7 +416,7 @@ impl RustType for FunctionArgument {
             FunctionArgument::String(x) => x.conversion(),
             FunctionArgument::Collection(x) => x.conversion(),
             FunctionArgument::Struct(x) => x.conversion(),
-            FunctionArgument::StructRef(x) => x.conversion(),
+            FunctionArgument::StructRef(x) => x.inner.conversion(),
             FunctionArgument::ClassRef(x) => x.conversion(),
             FunctionArgument::Interface(x) => x.conversion(),
         }
@@ -430,7 +430,7 @@ impl LifetimeInfo for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.rust_requires_lifetime(),
             FunctionReturnValue::ClassRef(x) => x.rust_requires_lifetime(),
             FunctionReturnValue::Struct(x) => x.rust_requires_lifetime(),
-            FunctionReturnValue::StructRef(x) => x.rust_requires_lifetime(),
+            FunctionReturnValue::StructRef(x) => x.inner.rust_requires_lifetime(),
         }
     }
 
@@ -440,7 +440,7 @@ impl LifetimeInfo for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.c_requires_lifetime(),
             FunctionReturnValue::ClassRef(x) => x.c_requires_lifetime(),
             FunctionReturnValue::Struct(x) => x.c_requires_lifetime(),
-            FunctionReturnValue::StructRef(x) => x.c_requires_lifetime(),
+            FunctionReturnValue::StructRef(x) => x.inner.c_requires_lifetime(),
         }
     }
 }
@@ -452,7 +452,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.as_rust_type(),
             FunctionReturnValue::ClassRef(x) => x.as_rust_type(),
             FunctionReturnValue::Struct(x) => x.as_rust_type(),
-            FunctionReturnValue::StructRef(x) => x.as_rust_type(),
+            FunctionReturnValue::StructRef(x) => x.inner.as_rust_type(),
         }
     }
 
@@ -462,7 +462,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.as_c_type(),
             FunctionReturnValue::ClassRef(x) => x.as_c_type(),
             FunctionReturnValue::Struct(x) => x.as_c_type(),
-            FunctionReturnValue::StructRef(x) => x.as_c_type(),
+            FunctionReturnValue::StructRef(x) => x.inner.as_c_type(),
         }
     }
 
@@ -472,7 +472,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.is_copyable(),
             FunctionReturnValue::ClassRef(x) => x.is_copyable(),
             FunctionReturnValue::Struct(x) => x.is_copyable(),
-            FunctionReturnValue::StructRef(x) => x.is_copyable(),
+            FunctionReturnValue::StructRef(x) => x.inner.is_copyable(),
         }
     }
 
@@ -482,7 +482,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.conversion(),
             FunctionReturnValue::ClassRef(x) => x.conversion(),
             FunctionReturnValue::Struct(x) => x.conversion(),
-            FunctionReturnValue::StructRef(x) => x.conversion(),
+            FunctionReturnValue::StructRef(x) => x.inner.conversion(),
         }
     }
 }

@@ -634,8 +634,7 @@ impl LibraryBuilder {
         ConstantSetBuilder::new(self, name.into())
     }
 
-    /// Forward declare a struct
-    pub fn declare_struct<T: Into<String>>(
+    pub(crate) fn declare_struct<T: Into<String>>(
         &mut self,
         name: T,
     ) -> BindResult<StructDeclarationHandle> {
@@ -645,66 +644,112 @@ impl LibraryBuilder {
         Ok(handle)
     }
 
+    pub fn declare_universal_struct<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> BindResult<UniversalStructDeclaration> {
+        Ok(UniversalStructDeclaration::new(self.declare_struct(name)?))
+    }
+
+    pub fn declare_function_arg_struct<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> BindResult<FunctionArgStructDeclaration> {
+        Ok(FunctionArgStructDeclaration::new(
+            self.declare_struct(name)?,
+        ))
+    }
+
+    pub fn declare_function_return_struct<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> BindResult<FunctionReturnStructDeclaration> {
+        Ok(FunctionReturnStructDeclaration::new(
+            self.declare_struct(name)?,
+        ))
+    }
+
+    pub fn declare_callback_arg_struct<T: Into<String>>(
+        &mut self,
+        name: T,
+    ) -> BindResult<CallbackArgStructDeclaration> {
+        Ok(CallbackArgStructDeclaration::new(
+            self.declare_struct(name)?,
+        ))
+    }
+
     /// Define a structure that can be used in any context.
     ///
     /// Backends will generate bi-directional conversion routines
     /// for this type of struct.
     pub fn define_universal_struct(
         &mut self,
-        declaration: &StructDeclarationHandle,
+        declaration: UniversalStructDeclaration,
     ) -> BindResult<UniversalStructBuilder> {
-        self.validate_struct_declaration(declaration)?;
-        if !self.structs.contains_key(declaration) {
-            Ok(UniversalStructBuilder::new(self, declaration.clone()))
-        } else {
+        self.validate_struct_declaration(&declaration.inner)?;
+        if self.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
-                handle: declaration.clone(),
+                handle: declaration.inner,
             })
+        } else {
+            Ok(UniversalStructBuilder::new(self, declaration.inner))
         }
     }
 
     /// Define a structure that can be only be used in callback function arguments
-    pub fn define_callback_argument_struct(
+    pub fn define_callback_argument_struct<T>(
         &mut self,
-        declaration: &StructDeclarationHandle,
-    ) -> BindResult<CallbackArgStructBuilder> {
-        self.validate_struct_declaration(declaration)?;
-        if !self.structs.contains_key(declaration) {
-            Ok(CallbackArgStructBuilder::new(self, declaration.clone()))
-        } else {
+        declaration: T,
+    ) -> BindResult<CallbackArgStructBuilder>
+    where
+        T: Into<CallbackArgStructDeclaration>,
+    {
+        let declaration = declaration.into();
+        self.validate_struct_declaration(&declaration.inner)?;
+        if self.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
-                handle: declaration.clone(),
+                handle: declaration.inner,
             })
+        } else {
+            Ok(CallbackArgStructBuilder::new(self, declaration.inner))
         }
     }
 
     /// Define a structure that can only be used as function return value
-    pub fn define_function_return_struct(
+    pub fn define_function_return_struct<T>(
         &mut self,
-        declaration: &StructDeclarationHandle,
-    ) -> BindResult<FunctionReturnStructBuilder> {
-        self.validate_struct_declaration(declaration)?;
-        if !self.structs.contains_key(declaration) {
-            Ok(FunctionReturnStructBuilder::new(self, declaration.clone()))
-        } else {
+        declaration: T,
+    ) -> BindResult<FunctionReturnStructBuilder>
+    where
+        T: Into<FunctionReturnStructDeclaration>,
+    {
+        let declaration = declaration.into();
+        self.validate_struct_declaration(&declaration.inner)?;
+        if self.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
-                handle: declaration.clone(),
+                handle: declaration.inner,
             })
+        } else {
+            Ok(FunctionReturnStructBuilder::new(self, declaration.inner))
         }
     }
 
     /// Define a structure that can only be be used as a function argument
-    pub fn define_function_argument_struct(
+    pub fn define_function_argument_struct<T>(
         &mut self,
-        declaration: &StructDeclarationHandle,
-    ) -> BindResult<FunctionArgStructBuilder> {
-        self.validate_struct_declaration(declaration)?;
-        if !self.structs.contains_key(declaration) {
-            Ok(FunctionArgStructBuilder::new(self, declaration.clone()))
-        } else {
+        declaration: T,
+    ) -> BindResult<FunctionArgStructBuilder>
+    where
+        T: Into<FunctionArgStructDeclaration>,
+    {
+        let declaration = declaration.into();
+        self.validate_struct_declaration(&declaration.inner)?;
+        if self.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
-                handle: declaration.clone(),
+                handle: declaration.inner,
             })
+        } else {
+            Ok(FunctionArgStructBuilder::new(self, declaration.inner))
         }
     }
 
@@ -955,5 +1000,11 @@ impl LibraryBuilder {
                 handle: collection.clone(),
             })
         }
+    }
+}
+
+impl From<UniversalStructDeclaration> for FunctionReturnStructDeclaration {
+    fn from(x: UniversalStructDeclaration) -> Self {
+        FunctionReturnStructDeclaration::new(x.inner)
     }
 }

@@ -1059,7 +1059,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.as_raw_jni_type(),
             Self::Collection(x) => x.as_raw_jni_type(),
             Self::Struct(x) => x.as_raw_jni_type(),
-            Self::StructRef(x) => x.as_raw_jni_type(),
+            Self::StructRef(x) => x.inner.as_raw_jni_type(),
             Self::ClassRef(x) => x.as_raw_jni_type(),
             Self::Interface(x) => x.as_raw_jni_type(),
         }
@@ -1071,7 +1071,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.as_jni_sig(lib_path),
             Self::Collection(x) => x.as_jni_sig(lib_path),
             Self::Struct(x) => x.as_jni_sig(lib_path),
-            Self::StructRef(x) => x.as_jni_sig(lib_path),
+            Self::StructRef(x) => x.inner.as_jni_sig(lib_path),
             Self::ClassRef(x) => x.as_jni_sig(lib_path),
             Self::Interface(x) => x.as_jni_sig(lib_path),
         }
@@ -1083,7 +1083,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.as_rust_type(ffi_name),
             Self::Collection(x) => x.as_rust_type(ffi_name),
             Self::Struct(x) => x.as_rust_type(ffi_name),
-            Self::StructRef(x) => x.as_rust_type(ffi_name),
+            Self::StructRef(x) => x.inner.as_rust_type(ffi_name),
             Self::ClassRef(x) => x.as_rust_type(ffi_name),
             Self::Interface(x) => x.as_rust_type(ffi_name),
         }
@@ -1095,7 +1095,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.convert_jvalue(),
             Self::Collection(x) => x.convert_jvalue(),
             Self::Struct(x) => x.convert_jvalue(),
-            Self::StructRef(x) => x.convert_jvalue(),
+            Self::StructRef(x) => x.inner.convert_jvalue(),
             Self::ClassRef(x) => x.convert_jvalue(),
             Self::Interface(x) => x.convert_jvalue(),
         }
@@ -1114,7 +1114,9 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::Collection(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            Self::StructRef(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::StructRef(x) => x
+                .inner
+                .convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::ClassRef(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::Interface(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
         }
@@ -1126,7 +1128,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.conversion(lib_name, prefix),
             Self::Collection(x) => x.conversion(lib_name, prefix),
             Self::Struct(x) => x.conversion(lib_name, prefix),
-            Self::StructRef(x) => x.conversion(lib_name, prefix),
+            Self::StructRef(x) => x.inner.conversion(lib_name, prefix),
             Self::ClassRef(x) => x.conversion(lib_name, prefix),
             Self::Interface(x) => x.conversion(lib_name, prefix),
         }
@@ -1138,7 +1140,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.requires_local_ref_cleanup(),
             Self::Collection(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
-            Self::StructRef(x) => x.requires_local_ref_cleanup(),
+            Self::StructRef(x) => x.inner.requires_local_ref_cleanup(),
             Self::ClassRef(x) => x.requires_local_ref_cleanup(),
             Self::Interface(x) => x.requires_local_ref_cleanup(),
         }
@@ -1150,7 +1152,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.check_null(f, param_name),
             Self::Collection(x) => x.check_null(f, param_name),
             Self::Struct(x) => x.check_null(f, param_name),
-            Self::StructRef(x) => x.check_null(f, param_name),
+            Self::StructRef(x) => x.inner.check_null(f, param_name),
             Self::ClassRef(x) => x.check_null(f, param_name),
             Self::Interface(x) => x.check_null(f, param_name),
         }
@@ -1162,7 +1164,7 @@ impl JniType for FunctionArgument {
             Self::String(x) => x.default_value(),
             Self::Collection(x) => x.default_value(),
             Self::Struct(x) => x.default_value(),
-            Self::StructRef(x) => x.default_value(),
+            Self::StructRef(x) => x.inner.default_value(),
             Self::ClassRef(x) => x.default_value(),
             Self::Interface(x) => x.default_value(),
         }
@@ -1275,7 +1277,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.as_raw_jni_type(),
             Self::ClassRef(x) => x.as_raw_jni_type(),
             Self::Struct(x) => x.as_raw_jni_type(),
-            Self::StructRef(x) => x.as_raw_jni_type(),
+            Self::StructRef(x) => x.inner.as_raw_jni_type(),
         }
     }
 
@@ -1285,7 +1287,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.as_jni_sig(lib_path),
             Self::ClassRef(x) => x.as_jni_sig(lib_path),
             Self::Struct(x) => x.as_jni_sig(lib_path),
-            Self::StructRef(x) => x.as_jni_sig(lib_path),
+            Self::StructRef(x) => x.inner.as_jni_sig(lib_path),
         }
     }
 
@@ -1295,7 +1297,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.as_rust_type(ffi_name),
             Self::ClassRef(x) => x.as_rust_type(ffi_name),
             Self::Struct(x) => x.as_rust_type(ffi_name),
-            Self::StructRef(x) => x.as_rust_type(ffi_name),
+            Self::StructRef(x) => x.inner.as_rust_type(ffi_name),
         }
     }
 
@@ -1305,7 +1307,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.convert_jvalue(),
             Self::ClassRef(x) => x.convert_jvalue(),
             Self::Struct(x) => x.convert_jvalue(),
-            Self::StructRef(x) => x.convert_jvalue(),
+            Self::StructRef(x) => x.inner.convert_jvalue(),
         }
     }
 
@@ -1322,7 +1324,9 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::ClassRef(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            Self::StructRef(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
+            Self::StructRef(x) => x
+                .inner
+                .convert_to_rust_from_object(f, from, to, lib_name, prefix),
         }
     }
 
@@ -1332,7 +1336,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.conversion(lib_name, prefix),
             Self::ClassRef(x) => x.conversion(lib_name, prefix),
             Self::Struct(x) => x.conversion(lib_name, prefix),
-            Self::StructRef(x) => x.conversion(lib_name, prefix),
+            Self::StructRef(x) => x.inner.conversion(lib_name, prefix),
         }
     }
 
@@ -1342,7 +1346,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.requires_local_ref_cleanup(),
             Self::ClassRef(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
-            Self::StructRef(x) => x.requires_local_ref_cleanup(),
+            Self::StructRef(x) => x.inner.requires_local_ref_cleanup(),
         }
     }
 
@@ -1352,7 +1356,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.check_null(f, param_name),
             Self::ClassRef(x) => x.check_null(f, param_name),
             Self::Struct(x) => x.check_null(f, param_name),
-            Self::StructRef(x) => x.check_null(f, param_name),
+            Self::StructRef(x) => x.inner.check_null(f, param_name),
         }
     }
 
@@ -1362,7 +1366,7 @@ impl JniType for FunctionReturnValue {
             Self::String(x) => x.default_value(),
             Self::ClassRef(x) => x.default_value(),
             Self::Struct(x) => x.default_value(),
-            Self::StructRef(x) => x.default_value(),
+            Self::StructRef(x) => x.inner.default_value(),
         }
     }
 }

@@ -264,7 +264,10 @@ fn write_conversions(
                 write_native_to_cpp_struct_conversion(f, lib, x)
             }
         },
-        Statement::EnumDefinition(x) => write_enum_conversions(lib, f, x),
+        Statement::EnumDefinition(x) => {
+            write_enum_to_native_conversion(lib, f, x)?;
+            write_enum_to_cpp_conversion(lib, f, x)
+        }
         Statement::InterfaceDefinition(x) => {
             // write synchronous and asynchronous conversions
             write_cpp_interface_to_native_conversion(f, lib, x, InterfaceType::Asynchronous)?;
@@ -566,43 +569,12 @@ fn write_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
     f.newline()
 }
 
-fn write_enum_conversions(
+fn write_enum_to_native_conversion(
     lib: &Library,
     f: &mut dyn Printer,
     handle: &EnumHandle,
 ) -> FormattingResult<()> {
     let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_type());
-    f.writeln(&format!(
-        "{} from_native({}_{}_t value)",
-        cpp_type,
-        lib.c_ffi_prefix,
-        handle.name.to_snake_case()
-    ))?;
-    f.writeln("{")?;
-    indented(f, |f| {
-        f.writeln("switch(value)")?;
-        f.writeln("{")?;
-        indented(f, |f| {
-            for v in &handle.variants {
-                f.writeln(&format!(
-                    "case {}_{}_{}: return ::{}::{}::{};",
-                    lib.c_ffi_prefix.to_shouty_snake_case(),
-                    handle.name.to_shouty_snake_case(),
-                    v.name.to_shouty_snake_case(),
-                    lib.c_ffi_prefix,
-                    handle.name.to_camel_case(),
-                    v.name.to_snake_case()
-                ))?;
-            }
-            f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
-            Ok(())
-        })?;
-        f.writeln("}")
-    })?;
-    f.writeln("}")?;
-
-    f.newline()?;
-
     f.writeln(&format!(
         "{}_{}_t to_native({} value)",
         lib.c_ffi_prefix,
@@ -631,6 +603,44 @@ fn write_enum_conversions(
         f.writeln("}")
     })?;
     f.writeln("}")?;
+    f.newline()
+}
+
+fn write_enum_to_cpp_conversion(
+    lib: &Library,
+    f: &mut dyn Printer,
+    handle: &EnumHandle,
+) -> FormattingResult<()> {
+    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_type());
+    f.writeln(&format!(
+        "{} to_cpp({}_{}_t value)",
+        cpp_type,
+        lib.c_ffi_prefix,
+        handle.name.to_snake_case()
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln("switch(value)")?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for v in &handle.variants {
+                f.writeln(&format!(
+                    "case {}_{}_{}: return ::{}::{}::{};",
+                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    handle.name.to_shouty_snake_case(),
+                    v.name.to_shouty_snake_case(),
+                    lib.c_ffi_prefix,
+                    handle.name.to_camel_case(),
+                    v.name.to_snake_case()
+                ))?;
+            }
+            f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
+            Ok(())
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
+
     f.newline()
 }
 

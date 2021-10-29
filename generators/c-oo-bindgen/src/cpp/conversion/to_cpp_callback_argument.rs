@@ -19,7 +19,7 @@ impl ToNativeCallbackArgument for BasicType {
 
 impl ToNativeCallbackArgument for StringType {
     fn to_cpp_callback_argument(&self, expr: String) -> String {
-        format!("std::string({})", expr)
+        self.to_cpp(expr)
     }
 
     fn requires_shadow_parameter(&self) -> bool {

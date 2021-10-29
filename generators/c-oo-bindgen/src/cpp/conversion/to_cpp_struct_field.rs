@@ -1,5 +1,4 @@
 use crate::cpp::conversion::ToCpp;
-use heck::SnakeCase;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::{
@@ -36,7 +35,7 @@ where
 
 impl ToCppStructField for ClassDeclarationHandle {
     fn to_cpp_struct_field(&self, expr: String) -> String {
-        format!("cpp_{}_init({})", self.name.to_snake_case(), expr)
+        self.to_cpp(expr)
     }
 }
 

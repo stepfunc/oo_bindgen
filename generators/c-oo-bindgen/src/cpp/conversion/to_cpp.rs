@@ -1,5 +1,7 @@
+use heck::SnakeCase;
+use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::types::{BasicType, DurationType};
+use oo_bindgen::types::{BasicType, DurationType, StringType};
 
 /// Some types have a C -> C++ conversion that is context independent
 pub(crate) trait ToCpp {
@@ -38,5 +40,17 @@ impl ToCpp for BasicType {
             Self::Duration(x) => x.to_cpp(expr),
             Self::Enum(x) => x.to_cpp(expr),
         }
+    }
+}
+
+impl ToCpp for StringType {
+    fn to_cpp(&self, expr: String) -> String {
+        format!("std::string({})", expr)
+    }
+}
+
+impl ToCpp for ClassDeclarationHandle {
+    fn to_cpp(&self, expr: String) -> String {
+        format!("cpp_{}_init({})", self.name.to_snake_case(), expr)
     }
 }

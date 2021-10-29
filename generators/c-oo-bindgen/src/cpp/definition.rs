@@ -336,7 +336,7 @@ fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> Formatti
             "{}(void* self): self(self) {{}}",
             handle.core_cpp_type()
         ))?;
-        print_deleted_copy_and_assignment(f, &class_name)
+        print_deleted_class_functions(f, &class_name)
     })?;
     f.newline()?;
     f.writeln("public:")?;
@@ -431,10 +431,13 @@ fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> Format
     f.newline()
 }
 
-fn print_deleted_copy_and_assignment(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
+fn print_deleted_class_functions(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
     f.writeln("// non-copyable")?;
     f.writeln(&format!("{}(const {}&) = delete;", name, name))?;
-    f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))
+    f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))?;
+
+    f.writeln("// no move assignment")?;
+    f.writeln(&format!("{}& operator=({}&& other) = delete;", name, name))
 }
 
 fn cpp_arguments<'a, T>(iter: T) -> String

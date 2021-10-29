@@ -1,6 +1,6 @@
 use crate::cpp::conversion::*;
 use crate::cpp::formatting::{namespace, FriendClass};
-use heck::{CamelCase, SnakeCase};
+use heck::SnakeCase;
 use oo_bindgen::class::{
     AsyncMethod, ClassDeclarationHandle, ClassHandle, ClassType, Method, StaticClassHandle,
 };
@@ -316,7 +316,7 @@ where
         ConstructorType::Static => f.writeln(&format!(
             "static {} {}({});",
             handle.core_cpp_type(),
-            constructor.name.to_camel_case(),
+            constructor.name.to_snake_case(),
             args
         ))?,
     }

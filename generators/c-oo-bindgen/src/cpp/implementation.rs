@@ -3,6 +3,7 @@ use crate::cpp::formatting::{const_ref, mut_ref, namespace, unique_ptr, FriendCl
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::class::ClassHandle;
+use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
@@ -44,6 +45,9 @@ pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<
     })?;
 
     namespace(&mut f, &lib.c_ffi_prefix, |f| {
+        write_collection_classes(lib, f)?;
+
+        // C++ wrappers around native functions that get used in class methods
         write_function_wrappers(lib, f)?;
 
         // finally, we can implement the public API
@@ -51,6 +55,65 @@ pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<
     })?;
 
     Ok(())
+}
+
+fn write_collection_classes(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+    for col in lib.collections() {
+        write_collection_class(lib, f, col)?;
+        write_collection_class_friend(lib, f, col)?;
+    }
+    Ok(())
+}
+
+fn write_collection_class(
+    lib: &Library,
+    f: &mut dyn Printer,
+    col: &CollectionHandle,
+) -> FormattingResult<()> {
+    let cpp_type = col.collection_type.core_cpp_type();
+    let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
+    f.writeln(&format!("class {}", cpp_type))?;
+    f.writeln("{")?;
+    indented(f, |f| {
+        f.writeln(&format!(
+            "friend class {};",
+            col.collection_type.friend_class()
+        ))?;
+        f.writeln(&format!("{}* self;", c_type))
+    })?;
+    f.writeln("public:")?;
+    indented(f, |f| {
+        f.writeln(&format!(
+            "{}({} values);",
+            cpp_type,
+            const_ref(col.core_cpp_type())
+        ))?;
+        f.writeln(&format!("~{}();", cpp_type))
+    })?;
+    f.writeln("};")?;
+    f.newline()
+}
+
+fn write_collection_class_friend(
+    lib: &Library,
+    f: &mut dyn Printer,
+    col: &CollectionHandle,
+) -> FormattingResult<()> {
+    let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
+    f.writeln(&format!("class {}", col.collection_type.friend_class()))?;
+    f.writeln("{")?;
+    f.writeln("public:")?;
+    indented(f, |f| {
+        f.writeln(&format!(
+            "static {}* get({}& value)",
+            c_type,
+            col.collection_type.core_cpp_type()
+        ))?;
+        blocked(f, |f| f.writeln("return value.self;"))?;
+        Ok(())
+    })?;
+    f.writeln("};")?;
+    f.newline()
 }
 
 fn write_friend_classes(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
@@ -202,8 +265,6 @@ fn write_function_wrapper(
         })
         .collect::<Vec<String>>()
         .join(", ");
-
-    println!("    args: {}", args);
 
     f.writeln(&format!(
         "{} {}({})",

@@ -45,10 +45,14 @@ pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<
     })?;
 
     namespace(&mut f, &lib.c_ffi_prefix, |f| {
-        write_collection_classes(lib, f)?;
+        // definitions of the collection classes and friends
+        write_collection_class_definitions(lib, f)?;
 
         // C++ wrappers around native functions that get used in class methods
         write_function_wrappers(lib, f)?;
+
+        // collection class constructors destructors that call the functions wrappers
+        write_collection_class_implementations(lib, f)?;
 
         // finally, we can implement the public API
         write_api_implementation(lib, f)
@@ -57,15 +61,69 @@ pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<
     Ok(())
 }
 
-fn write_collection_classes(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
+fn write_collection_class_definitions(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     for col in lib.collections() {
-        write_collection_class(lib, f, col)?;
+        write_collection_class_definition(lib, f, col)?;
         write_collection_class_friend(lib, f, col)?;
     }
     Ok(())
 }
 
-fn write_collection_class(
+fn write_collection_class_implementations(
+    lib: &Library,
+    f: &mut dyn Printer,
+) -> FormattingResult<()> {
+    for col in lib.collections() {
+        write_collection_class_implementation(f, col)?;
+    }
+    Ok(())
+}
+
+fn write_collection_class_implementation(
+    f: &mut dyn Printer,
+    col: &CollectionHandle,
+) -> FormattingResult<()> {
+    //let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
+    let cpp_type = col.collection_type.core_cpp_type();
+    let constructor = format!("fn::{}", col.create_func.name.to_snake_case());
+
+    let construct_self = if col.has_reserve {
+        format!("{}(static_cast<uint32_t>(values.size()))", constructor)
+    } else {
+        format!("{}()", constructor)
+    };
+
+    // write the constructor
+    f.writeln(&format!(
+        "{}::{}({} values) : self({})",
+        cpp_type,
+        cpp_type,
+        const_ref(col.core_cpp_type()),
+        construct_self
+    ))?;
+    blocked(f, |f| {
+        f.writeln("for(const auto& x : values)")?;
+        blocked(f, |f| {
+            f.writeln(&format!(
+                "fn::{}(*this, x);",
+                col.add_func.name.to_snake_case()
+            ))
+        })
+    })?;
+    f.newline()?;
+
+    // write the destructor
+    f.writeln(&format!("{}::~{}()", cpp_type, cpp_type))?;
+    blocked(f, |f| {
+        f.writeln(&format!(
+            "fn::{}(*this);",
+            col.delete_func.name.to_snake_case()
+        ))
+    })?;
+    f.newline()
+}
+
+fn write_collection_class_definition(
     lib: &Library,
     f: &mut dyn Printer,
     col: &CollectionHandle,
@@ -153,7 +211,8 @@ fn write_function_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResu
             write_function_wrapper(lib, f, func)?;
         }
         Ok(())
-    })
+    })?;
+    f.newline()
 }
 
 fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {

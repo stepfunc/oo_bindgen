@@ -404,6 +404,7 @@ fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult
 fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
     let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
+    f.writeln("// async method!")?;
     f.writeln(&format!(
         "{} {}({});",
         method

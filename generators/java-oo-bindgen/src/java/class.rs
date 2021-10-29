@@ -341,7 +341,7 @@ fn generate_async_method(
     lib: &Library,
 ) -> FormattingResult<()> {
     let return_type = method.return_type.as_java_object();
-    let one_time_callback_name = method.one_time_callback_name.to_camel_case();
+    let one_time_callback_name = method.one_time_callback.name.to_camel_case();
     let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
     let callback_param_name = method.callback_param_name.to_mixed_case();
 

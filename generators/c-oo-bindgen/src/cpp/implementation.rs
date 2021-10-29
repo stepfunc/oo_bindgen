@@ -221,6 +221,8 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
         write_enum_to_string_impl(f, e)?;
     }
 
+    f.newline()?;
+
     for c in lib.classes() {
         write_class_implementation(f, c)?;
     }

@@ -7,7 +7,7 @@ use oo_bindgen::class::{
 use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::{indented, FilePrinter, FormattingResult, Printer};
+use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
@@ -57,7 +57,14 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
                 StructType::CallbackArg(x) => print_struct_definition(f, x)?,
                 StructType::Universal(x) => print_struct_definition(f, x)?,
             },
-            Statement::InterfaceDefinition(x) => print_interface(f, x)?,
+            Statement::InterfaceDefinition(x) => {
+                print_interface(f, x)?;
+
+                if lib.async_method_interfaces().any(|i| i == x) {
+                    namespace(f, "helpers", |f| write_async_method_interface_helpers(f, x))?;
+                    f.newline()?;
+                }
+            }
             Statement::ClassDeclaration(x) => {
                 match x.class_type {
                     ClassType::Normal => print_class_decl(f, x)?,
@@ -80,6 +87,56 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     }
 
     Ok(())
+}
+
+fn write_async_method_interface_helpers(
+    f: &mut dyn Printer,
+    interface: &InterfaceHandle,
+) -> FormattingResult<()> {
+    let interface_name = interface.core_cpp_type();
+    let class_name = format!("{}Lambda", interface_name);
+    f.writeln("template <class T>")?;
+    f.writeln(&format!(
+        "class {} final : public {}",
+        class_name, interface_name
+    ))?;
+    f.writeln("{")?;
+    indented(f, |f| f.writeln("T lambda;"))?;
+    f.writeln("public:")?;
+    indented(f, |f| {
+        f.writeln(&format!(
+            "{}(const T& lambda) : lambda(lambda) {{}}",
+            class_name
+        ))?;
+        f.newline()?;
+
+        let callback = interface.callbacks.first().unwrap();
+        let argument = callback.arguments.first().unwrap();
+        f.writeln(&format!(
+            "void {}({} {}) override",
+            callback.name.to_snake_case(),
+            argument.arg_type.get_cpp_callback_arg_type(),
+            argument.name.to_snake_case()
+        ))?;
+        blocked(f, |f| {
+            f.writeln(&format!("lambda({});", argument.name.to_snake_case()))
+        })
+    })?;
+    f.writeln("};")?;
+
+    f.newline()?;
+
+    f.writeln("template <class T>")?;
+    f.writeln(&format!(
+        "{}<T> {}(const T& lambda)",
+        class_name,
+        class_name.to_snake_case()
+    ))?;
+    blocked(f, |f| {
+        f.writeln(&format!("return {}<T>(lambda); ", class_name))
+    })?;
+
+    f.newline()
 }
 
 fn print_iterator_definition(f: &mut dyn Printer, iter: &IteratorHandle) -> FormattingResult<()> {

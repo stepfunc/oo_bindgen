@@ -125,6 +125,17 @@ impl Library {
         })
     }
 
+    pub fn async_method_interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
+        let mut async_function_interfaces: HashSet<InterfaceHandle> = HashSet::new();
+        for c in self.classes() {
+            for method in &c.async_methods {
+                async_function_interfaces.insert(method.one_time_callback.clone());
+            }
+        }
+        self.interfaces()
+            .filter(move |x| async_function_interfaces.contains(x))
+    }
+
     pub fn structs(&self) -> impl Iterator<Item = &StructType> {
         self.structs.values()
     }

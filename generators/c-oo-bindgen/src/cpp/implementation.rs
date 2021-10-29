@@ -230,12 +230,26 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 fn write_class_implementation(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
     let cpp_name = handle.core_cpp_type();
 
+    // write constructor
+    for constructor in &handle.constructor {
+        f.writeln(&format!(
+            "{}::{}({}) : self(fn::{}({}))",
+            cpp_name,
+            cpp_name,
+            cpp_function_args(constructor),
+            constructor.name.to_snake_case(),
+            cpp_function_arg_invocation(constructor)
+        ))?;
+        f.writeln("{}")?;
+        f.newline()?;
+    }
+
     // write the destructor
     f.writeln(&format!("{}::~{}()", cpp_name, cpp_name))?;
     blocked(f, |f| {
         if let Some(destructor) = &handle.destructor {
             f.writeln("if(self)")?;
-            blocked(f, |f|{
+            blocked(f, |f| {
                 f.writeln(&format!("fn::{}(*this);", destructor.name.to_snake_case()))
             })?;
         }
@@ -243,7 +257,6 @@ fn write_class_implementation(f: &mut dyn Printer, handle: &ClassHandle) -> Form
     })?;
 
     f.newline()
-
 }
 
 fn print_friend_class(
@@ -261,6 +274,28 @@ fn print_friend_class(
         f.writeln(&substituted)?;
     }
     f.newline()
+}
+
+fn cpp_function_args(func: &FunctionHandle) -> String {
+    func.parameters
+        .iter()
+        .map(|arg| {
+            format!(
+                "{} {}",
+                arg.arg_type.get_cpp_function_arg_type(),
+                arg.name.to_snake_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
+fn cpp_function_arg_invocation(func: &FunctionHandle) -> String {
+    func.parameters
+        .iter()
+        .map(|x| x.name.to_snake_case())
+        .collect::<Vec<String>>()
+        .join(", ")
 }
 
 fn write_function_wrapper(
@@ -335,25 +370,13 @@ fn write_function_wrapper(
         Ok(())
     }
 
-    let args = func
-        .parameters
-        .iter()
-        .map(|arg| {
-            format!(
-                "{} {}",
-                arg.arg_type.get_cpp_function_arg_type(),
-                arg.name.to_snake_case()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
-
     f.writeln(&format!(
         "{} {}({})",
         func.return_type.to_c_type(&lib.c_ffi_prefix),
         func.name.to_snake_case(),
-        args
+        cpp_function_args(func)
     ))?;
+
     blocked(f, |f| {
         let c_func_name = format!("{}_{}", lib.c_ffi_prefix, func.name);
         write_shadowed_conversions(f, func)?;

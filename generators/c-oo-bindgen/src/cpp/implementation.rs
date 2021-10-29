@@ -2,7 +2,7 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, unique_ptr, FriendClass};
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::class::{ClassHandle, Method};
+use oo_bindgen::class::{AsyncMethod, ClassHandle, Method};
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
@@ -276,6 +276,11 @@ fn write_class_implementation(f: &mut dyn Printer, handle: &ClassHandle) -> Form
         write_class_method_impl(f, handle, method)?;
     }
 
+    // write the async methods
+    for method in &handle.async_methods {
+        write_class_async_method_impl(f, handle, method)?;
+    }
+
     f.newline()
 }
 
@@ -318,14 +323,26 @@ fn write_class_method_impl(
     handle: &ClassHandle,
     method: &Method,
 ) -> FormattingResult<()> {
-    let cpp_name = handle.core_cpp_type();
-    let return_type = method
-        .native_function
-        .return_type
-        .get_cpp_function_return_type();
+    write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
+}
 
-    let args = &method.native_function.parameters[1..];
-    let native_function_name = method.native_function.name.to_snake_case();
+fn write_class_async_method_impl(
+    f: &mut dyn Printer,
+    handle: &ClassHandle,
+    method: &AsyncMethod,
+) -> FormattingResult<()> {
+    write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
+}
+
+fn write_class_method_impl_generic(
+    f: &mut dyn Printer,
+    handle: &ClassHandle,
+    cpp_method_name: &str,
+    native_function: &FunctionHandle,
+) -> FormattingResult<()> {
+    let cpp_name = handle.core_cpp_type();
+    let args = &native_function.parameters[1..];
+    let native_function_name = native_function.name.to_snake_case();
     let invocation = if args.is_empty() {
         format!("fn::{}(*this)", native_function_name)
     } else {
@@ -338,16 +355,16 @@ fn write_class_method_impl(
 
     f.writeln(&format!(
         "{} {}::{}({})",
-        return_type,
+        native_function.return_type.get_cpp_function_return_type(),
         cpp_name,
-        method.name.to_snake_case(),
-        cpp_function_args(&method.native_function.parameters[1..])
+        cpp_method_name.to_snake_case(),
+        cpp_function_args(args)
     ))?;
     blocked(f, |f| {
         write_move_self_guard(f)?;
         f.newline()?;
 
-        match &method.native_function.return_type {
+        match &native_function.return_type {
             FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
             FunctionReturnType::Type(t, _) => {
                 f.writeln(&format!("return {};", t.to_cpp_return_value(invocation)))
@@ -387,9 +404,30 @@ fn cpp_function_args(args: &[Arg<FunctionArgument>]) -> String {
         .join(", ")
 }
 
+fn get_arg_transform(arg: &FunctionArgument) -> Option<fn(String) -> String> {
+    match arg {
+        FunctionArgument::Basic(_) => None,
+        FunctionArgument::String(_) => None,
+        FunctionArgument::Collection(_) => None,
+        FunctionArgument::Struct(_) => None,
+        FunctionArgument::StructRef(_) => None,
+        FunctionArgument::ClassRef(_) => None,
+        FunctionArgument::Interface(x) => match x.interface_type {
+            InterfaceType::Synchronous => None,
+            InterfaceType::Asynchronous => Some(|x| format!("std::move({})", x)),
+        },
+    }
+}
+
 fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument>]) -> String {
     args.iter()
-        .map(|x| x.name.to_snake_case())
+        .map(|x| {
+            let arg_name = x.name.to_snake_case();
+            match get_arg_transform(&x.arg_type) {
+                None => arg_name,
+                Some(transform) => transform(arg_name),
+            }
+        })
         .collect::<Vec<String>>()
         .join(", ")
 }

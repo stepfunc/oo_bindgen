@@ -220,7 +220,30 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
         write_enum_to_string_impl(f, e)?;
     }
 
+    for c in lib.classes() {
+        write_class_implementation(f, c)?;
+    }
+
     Ok(())
+}
+
+fn write_class_implementation(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
+    let cpp_name = handle.core_cpp_type();
+
+    // write the destructor
+    f.writeln(&format!("{}::~{}()", cpp_name, cpp_name))?;
+    blocked(f, |f| {
+        if let Some(destructor) = &handle.destructor {
+            f.writeln("if(self)")?;
+            blocked(f, |f|{
+                f.writeln(&format!("fn::{}(*this);", destructor.name.to_snake_case()))
+            })?;
+        }
+        Ok(())
+    })?;
+
+    f.newline()
+
 }
 
 fn print_friend_class(

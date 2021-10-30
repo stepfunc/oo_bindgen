@@ -12,19 +12,19 @@ endif()
 find_package(foo REQUIRED)
 
 set(tests
-    ./version_tests.c
-    ./enum_tests.c
-    ./duration_tests.c
-    ./error_tests.c
-    ./string_tests.c
-    ./structure_tests.c
-    ./callback_tests.c
-    ./iterator_tests.c
-    ./constant_tests.c
-    ./universal_tests.c
+        c_tests/version_tests.c
+        c_tests/enum_tests.c
+        c_tests/duration_tests.c
+        c_tests/error_tests.c
+        c_tests/string_tests.c
+        c_tests/structure_tests.c
+        c_tests/callback_tests.c
+        c_tests/iterator_tests.c
+        c_tests/constant_tests.c
+        c_tests/universal_tests.c
 )
 
-add_executable(foo_c main.c ${tests})
+add_executable(foo_c c_tests/main.c ${tests})
 target_link_libraries(foo_c PRIVATE foo)
 
 # Copy the DLL after build

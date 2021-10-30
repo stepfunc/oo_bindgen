@@ -244,6 +244,15 @@ fn write_struct_constructors<T>(f: &mut dyn Printer, st: &Handle<Struct<T>>) -> 
 where
     T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
+    if !st.has_full_constructor() {
+        let constructor = Handle::new(Constructor::full(
+            "".to_string(),
+            ConstructorType::Normal,
+            "".into(),
+        ));
+        write_struct_constructor(f, st, &constructor)?;
+    }
+
     for constructor in &st.constructors {
         write_struct_constructor(f, st, constructor)?;
     }
@@ -300,7 +309,7 @@ where
             )
         })
         .collect::<Vec<String>>()
-        .join(",");
+        .join(", ");
 
     match con.constructor_type {
         ConstructorType::Normal => {

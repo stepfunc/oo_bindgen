@@ -1,5 +1,5 @@
 use crate::cpp::conversion::*;
-use crate::cpp::formatting::{const_ref, mut_ref, namespace, unique_ptr, FriendClass};
+use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::class::{AsyncMethod, ClassHandle, Method};
@@ -242,7 +242,7 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 
 fn write_struct_constructors<T>(f: &mut dyn Printer, st: &Handle<Struct<T>>) -> FormattingResult<()>
 where
-    T: StructFieldType + CppFunctionArgType,
+    T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
     for constructor in &st.constructors {
         write_struct_constructor(f, st, constructor)?;
@@ -287,7 +287,7 @@ fn write_struct_constructor<T>(
     con: &Handle<Constructor>,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + CppFunctionArgType,
+    T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
     let struct_name = st.core_cpp_type();
     let args = st
@@ -309,11 +309,12 @@ where
                 for (field, last) in st.fields.iter().with_last() {
                     let value = match con.values.iter().find(|x| x.name == field.name) {
                         None => {
-                            format!(
-                                "{}({})",
-                                field.name.to_snake_case(),
+                            let argument = if field.field_type.is_move_type() {
+                                std_move(field.name.to_snake_case())
+                            } else {
                                 field.name.to_snake_case()
-                            )
+                            };
+                            format!("{}({})", field.name.to_snake_case(), argument)
                         }
                         Some(default) => {
                             format!(
@@ -796,7 +797,7 @@ fn write_cpp_struct_friend_class<T>(
     handle: &Handle<Struct<T>>,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + CppFunctionArgType + IsConstructByMove,
+    T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
     let args = handle
         .fields
@@ -821,7 +822,7 @@ where
             f.writeln(&format!("return {}(", cpp_type))?;
             indented(f, |f| {
                 for (field, last) in handle.fields().with_last() {
-                    let value = if field.field_type.is_construct_by_move() {
+                    let value = if field.field_type.is_move_type() {
                         format!("std::move({})", field.name.to_snake_case())
                     } else {
                         field.name.to_snake_case()

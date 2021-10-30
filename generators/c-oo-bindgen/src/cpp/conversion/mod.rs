@@ -11,6 +11,7 @@ mod to_native;
 mod to_native_callback_return_value;
 mod to_native_function_argument;
 mod to_native_struct_field;
+mod type_info;
 
 pub(crate) use callback_arg_type::*;
 pub(crate) use core_type::*;
@@ -25,3 +26,4 @@ pub(crate) use to_native::*;
 pub(crate) use to_native_callback_return_value::*;
 pub(crate) use to_native_function_argument::*;
 pub(crate) use to_native_struct_field::*;
+pub(crate) use type_info::*;

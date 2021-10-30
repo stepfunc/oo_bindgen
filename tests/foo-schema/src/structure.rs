@@ -50,7 +50,7 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BindResult<Universa
 
 pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BindResult<FunctionArgStructHandle> {
     let empty_interface = lib
-        .define_synchronous_interface("empty_interface", "Interface within a structure")
+        .define_asynchronous_interface("empty_interface", "Interface within a structure")
         .build()?;
     let numbers = define_numbers_structure(lib)?;
 

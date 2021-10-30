@@ -17,6 +17,9 @@ pub(crate) fn unique_ptr(expr: String) -> String {
 pub(crate) fn pointer(expr: String) -> String {
     format!("{}*", expr)
 }
+pub(crate) fn std_move(expr: String) -> String {
+    format!("std::move({})", expr)
+}
 
 pub(crate) fn namespace<F>(f: &mut dyn Printer, namespace: &str, cb: F) -> FormattingResult<()>
 where

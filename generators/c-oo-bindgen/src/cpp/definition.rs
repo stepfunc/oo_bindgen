@@ -128,7 +128,7 @@ fn write_async_method_interface_helpers(
 
     f.writeln("template <class T>")?;
     f.writeln(&format!(
-        "{}<T> {}(const T& lambda)",
+        "{}<T> create_{}(const T& lambda)",
         class_name,
         class_name.to_snake_case()
     ))?;
@@ -470,7 +470,9 @@ fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingRe
             .get_cpp_function_return_type(),
         method.name.to_snake_case(),
         args
-    ))
+    ))?;
+
+    f.newline()
 }
 
 fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {

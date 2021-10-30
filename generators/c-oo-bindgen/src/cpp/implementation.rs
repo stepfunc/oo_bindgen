@@ -10,7 +10,10 @@ use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, P
 use oo_bindgen::function::{FunctionArgument, FunctionHandle, FunctionReturnType};
 use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, InterfaceHandle, InterfaceType};
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::structs::{Struct, StructFieldType, Visibility};
+use oo_bindgen::structs::{
+    Constructor, ConstructorType, Number, Struct, StructFieldType, ValidatedConstructorDefault,
+    Visibility,
+};
 use oo_bindgen::types::Arg;
 use oo_bindgen::util::WithLastIndication;
 use oo_bindgen::{Handle, Library, Statement, StructType};
@@ -221,13 +224,146 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
         write_enum_to_string_impl(f, e)?;
     }
 
-    f.newline()?;
+    for st in lib.structs() {
+        match st {
+            StructType::FunctionArg(x) => write_struct_constructors(f, x)?,
+            StructType::FunctionReturn(x) => write_struct_constructors(f, x)?,
+            StructType::CallbackArg(x) => write_struct_constructors(f, x)?,
+            StructType::Universal(x) => write_struct_constructors(f, x)?,
+        }
+    }
 
     for c in lib.classes() {
         write_class_implementation(f, c)?;
     }
 
     Ok(())
+}
+
+fn write_struct_constructors<T>(f: &mut dyn Printer, st: &Handle<Struct<T>>) -> FormattingResult<()>
+where
+    T: StructFieldType + CppFunctionArgType,
+{
+    for constructor in &st.constructors {
+        write_struct_constructor(f, st, constructor)?;
+    }
+    Ok(())
+}
+
+fn get_default_value(default: &ValidatedConstructorDefault) -> String {
+    match default {
+        ValidatedConstructorDefault::Bool(x) => x.to_string(),
+        ValidatedConstructorDefault::Numeric(x) => match x {
+            Number::U8(x) => x.to_string(),
+            Number::S8(x) => x.to_string(),
+            Number::U16(x) => x.to_string(),
+            Number::S16(x) => x.to_string(),
+            Number::U32(x) => x.to_string(),
+            Number::S32(x) => x.to_string(),
+            Number::U64(x) => x.to_string(),
+            Number::S64(x) => x.to_string(),
+            Number::Float(x) => x.to_string(),
+            Number::Double(x) => x.to_string(),
+        },
+        ValidatedConstructorDefault::Duration(_, x) => {
+            format!("std::chrono::milliseconds({})", x.as_millis())
+        }
+        ValidatedConstructorDefault::Enum(x, variant) => {
+            format!("{}::{}", x.core_cpp_type(), variant.to_snake_case())
+        }
+        ValidatedConstructorDefault::String(x) => {
+            format!("\"{}\"", x)
+        }
+        ValidatedConstructorDefault::DefaultStruct(st, ct, c_name) => match ct {
+            ConstructorType::Normal => format!("{}()", st.name().to_camel_case()),
+            ConstructorType::Static => format!("{}()", c_name.to_camel_case()),
+        },
+    }
+}
+
+fn write_struct_constructor<T>(
+    f: &mut dyn Printer,
+    st: &Handle<Struct<T>>,
+    con: &Handle<Constructor>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + CppFunctionArgType,
+{
+    let struct_name = st.core_cpp_type();
+    let args = st
+        .constructor_args(con.clone())
+        .map(|f| {
+            format!(
+                "{} {}",
+                f.field_type.get_cpp_function_arg_type(),
+                f.name.to_snake_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(",");
+
+    match con.constructor_type {
+        ConstructorType::Normal => {
+            f.writeln(&format!("{}::{}({}) : ", struct_name, struct_name, args))?;
+            indented(f, |f| {
+                for (field, last) in st.fields.iter().with_last() {
+                    let value = match con.values.iter().find(|x| x.name == field.name) {
+                        None => {
+                            format!(
+                                "{}({})",
+                                field.name.to_snake_case(),
+                                field.name.to_snake_case()
+                            )
+                        }
+                        Some(default) => {
+                            format!(
+                                "{}({})",
+                                field.name.to_snake_case(),
+                                get_default_value(&default.value)
+                            )
+                        }
+                    };
+
+                    if last {
+                        f.writeln(&value)?;
+                    } else {
+                        f.writeln(&format!("{},", value))?;
+                    }
+                }
+                Ok(())
+            })?;
+            f.writeln("{}")?;
+        }
+        ConstructorType::Static => {
+            f.writeln(&format!(
+                "{} {}::{}({})",
+                struct_name,
+                struct_name,
+                con.name.to_snake_case(),
+                args
+            ))?;
+            blocked(f, |f| {
+                f.writeln(&format!("return {}(", struct_name))?;
+                indented(f, |f| {
+                    for (field, last) in st.fields.iter().with_last() {
+                        let value = match con.values.iter().find(|x| x.name == field.name) {
+                            None => field.name.to_snake_case(),
+                            Some(iv) => get_default_value(&iv.value),
+                        };
+                        if last {
+                            f.writeln(&value)?;
+                        } else {
+                            f.writeln(&format!("{},", value))?;
+                        }
+                    }
+                    Ok(())
+                })?;
+                f.writeln(");")
+            })?;
+        }
+    }
+
+    f.newline()
 }
 
 fn write_move_self_guard(f: &mut dyn Printer) -> FormattingResult<()> {

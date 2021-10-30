@@ -236,7 +236,7 @@ fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
         f.writeln("// underlying error enum")?;
         f.writeln(&format!("{} error;", e.inner.core_cpp_type()))?;
         f.writeln(&format!(
-            "{}({} error);",
+            "{}({} error) : std::logic_error(to_string(error)), error(error) {{}}",
             e.core_cpp_type(),
             e.inner.core_cpp_type()
         ))?;

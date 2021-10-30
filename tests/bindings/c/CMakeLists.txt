@@ -11,7 +11,7 @@ if(UNIX)
 endif()
 find_package(foo REQUIRED)
 
-set(tests
+set(c_test_files
         c_tests/version_tests.c
         c_tests/enum_tests.c
         c_tests/duration_tests.c
@@ -24,13 +24,22 @@ set(tests
         c_tests/universal_tests.c
 )
 
-add_executable(foo_c c_tests/main.c ${tests})
-target_link_libraries(foo_c PRIVATE foo)
-
-# Copy the DLL after build
-add_custom_command(TARGET foo_c POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:foo> $<TARGET_FILE_DIR:foo_c>
+set(cpp_test_files
+        cpp_tests/version_tests.cpp
+        cpp_tests/universal_tests.cpp
 )
 
+add_executable(foo_c_tests c_tests/main.c ${c_test_files})
+target_link_libraries(foo_c_tests PRIVATE foo)
+
+# Copy the DLL after build
+add_custom_command(TARGET foo_c_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:foo> $<TARGET_FILE_DIR:foo_c_tests>
+)
+
+add_executable(foo_cpp_tests ${CMAKE_PREFIX_PATH}/../include/foo.cpp cpp_tests/main.cpp ${cpp_test_files})
+target_link_libraries(foo_cpp_tests PRIVATE foo)
+
 enable_testing()
-add_test(NAME foo_c COMMAND foo_c)
+add_test(NAME foo_c_tests COMMAND foo_c_tests)
+add_test(NAME foo_cpp_tests COMMAND foo_cpp_tests)

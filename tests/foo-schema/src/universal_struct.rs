@@ -101,7 +101,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
         .end_callback()?
         .build()?;
 
-    lib.define_function("invoke_universal_interface")
+    let invoke = lib
+        .define_function("invoke_universal_interface")
         .doc("invokes a universal interface")?
         .param("value", handle.clone(), "value to apply to the interface")?
         .param(
@@ -110,6 +111,11 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
             "interface on which to apply the value",
         )?
         .returns(handle, "return value")?
+        .build()?;
+
+    lib.define_static_class("UniversalInterfaceTests")
+        .doc("test methods for universal interface")?
+        .static_method("invoke", &invoke)?
         .build()?;
 
     Ok(())

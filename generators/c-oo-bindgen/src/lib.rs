@@ -847,18 +847,7 @@ fn generate_cmake_config(
     f.writeln(")")?;
     f.newline()?;
 
-    let cpp_lib_name = format!("{}_cpp", lib.name);
-
-    // write the cpp library
-    f.writeln(&format!(
-        "add_library({} SHARED ${{prefix}}/include/{}.cpp)",
-        cpp_lib_name, lib.name
-    ))?;
-    f.writeln(&format!(
-        "target_link_libraries({}_cpp {})",
-        lib.name, lib.name
-    ))?;
-    f.writeln(&format!("set_target_properties({} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES \"${{prefix}}/include\")", cpp_lib_name))
+    Ok(())
 }
 
 fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {

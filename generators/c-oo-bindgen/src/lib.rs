@@ -335,6 +335,42 @@ where
     Ok(())
 }
 
+fn get_default_value(lib: &Library, default: &ValidatedConstructorDefault) -> String {
+    match default {
+        ValidatedConstructorDefault::Bool(x) => x.to_string(),
+        ValidatedConstructorDefault::Numeric(x) => match x {
+            Number::U8(x) => x.to_string(),
+            Number::S8(x) => x.to_string(),
+            Number::U16(x) => x.to_string(),
+            Number::S16(x) => x.to_string(),
+            Number::U32(x) => x.to_string(),
+            Number::S32(x) => x.to_string(),
+            Number::U64(x) => x.to_string(),
+            Number::S64(x) => x.to_string(),
+            Number::Float(x) => format!("{}f", x),
+            Number::Double(x) => x.to_string(),
+        },
+        ValidatedConstructorDefault::Duration(t, x) => t.get_value_string(*x),
+        ValidatedConstructorDefault::Enum(x, variant) => {
+            format!(
+                "{}_{}_{}",
+                lib.c_ffi_prefix.to_shouty_snake_case(),
+                x.name.to_shouty_snake_case(),
+                variant.to_shouty_snake_case()
+            )
+        }
+        ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
+        ValidatedConstructorDefault::DefaultStruct(handle, _, name) => {
+            format!(
+                "{}_{}_{}()",
+                &lib.c_ffi_prefix,
+                handle.name().to_snake_case(),
+                name.to_snake_case(),
+            )
+        }
+    }
+}
+
 fn write_struct_constructor<T>(
     f: &mut dyn Printer,
     lib: &Library,
@@ -390,204 +426,20 @@ where
     ))?;
 
     blocked(f, |f| {
-        f.writeln(&format!("return ({})", handle.to_c_type(&lib.c_ffi_prefix)))?;
-        f.writeln("{")?;
+        f.writeln(&format!("{} value;", handle.to_c_type(&lib.c_ffi_prefix)))?;
         for field in &handle.fields {
+            let field_name = field.name.to_snake_case();
             let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
-                Some(x) => match &x.value {
-                    ValidatedConstructorDefault::Bool(x) => x.to_string(),
-                    ValidatedConstructorDefault::Numeric(x) => match x {
-                        Number::U8(x) => x.to_string(),
-                        Number::S8(x) => x.to_string(),
-                        Number::U16(x) => x.to_string(),
-                        Number::S16(x) => x.to_string(),
-                        Number::U32(x) => x.to_string(),
-                        Number::S32(x) => x.to_string(),
-                        Number::U64(x) => x.to_string(),
-                        Number::S64(x) => x.to_string(),
-                        Number::Float(x) => format!("{}f", x),
-                        Number::Double(x) => x.to_string(),
-                    },
-                    ValidatedConstructorDefault::Duration(t, x) => t.get_value_string(*x),
-                    ValidatedConstructorDefault::Enum(x, variant) => {
-                        format!(
-                            "{}_{}_{}",
-                            lib.c_ffi_prefix.to_shouty_snake_case(),
-                            x.name.to_shouty_snake_case(),
-                            variant.to_shouty_snake_case()
-                        )
-                    }
-                    ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
-                    ValidatedConstructorDefault::DefaultStruct(handle, _, name) => {
-                        format!(
-                            "{}_{}_{}()",
-                            &lib.c_ffi_prefix,
-                            handle.name().to_snake_case(),
-                            name.to_snake_case(),
-                        )
-                    }
-                },
-                None => field.name.to_snake_case(),
+                Some(x) => get_default_value(lib, &x.value),
+                None => field_name.clone(),
             };
-            indented(f, |f| {
-                f.writeln(&format!(".{} = {},", field.name.to_snake_case(), value))
-            })?;
+            f.writeln(&format!("value.{} = {};", field_name, value))?;
         }
-        f.writeln("};")?;
-        Ok(())
+        f.writeln("return value;")
     })?;
 
     Ok(())
 }
-
-/* TODO
-fn write_struct_initializer(
-    f: &mut dyn Printer,
-    handle: &AnyStructHandle,
-    lib: &Library,
-) -> FormattingResult<()> {
-    doxygen(f, |f| {
-        f.writeln("@brief ")?;
-        docstring_print(
-            f,
-            &format!("Initialize {{struct:{}}} to default values", handle.name()).into(),
-            lib,
-        )?;
-
-        for param in handle.fields().filter(|el| !el.field_type.has_default()) {
-            f.writeln(&format!("@param {} ", param.name.to_snake_case()))?;
-            docstring_print(f, &param.doc.brief, lib)?;
-        }
-
-        f.writeln("@returns ")?;
-        docstring_print(
-            f,
-            &format!("New instance of {{struct:{}}}", handle.name()).into(),
-            lib,
-        )?;
-
-        Ok(())
-    })?;
-
-    let params = handle
-        .fields()
-        .filter(|el| !el.field_type.has_default())
-        .map(|el| {
-            format!(
-                "{} {}",
-                el.field_type.to_any_type().to_c_type(&lib.c_ffi_prefix),
-                el.name.to_snake_case()
-            )
-        })
-        .collect::<Vec<String>>()
-        .join(", ");
-
-    f.writeln(&format!(
-        "static {} {}_{}_init({})",
-        handle.to_c_type(&lib.c_ffi_prefix),
-        &lib.c_ffi_prefix,
-        handle.name().to_snake_case(),
-        params
-    ))?;
-    blocked(f, |f| {
-        f.writeln(&format!("return ({})", handle.to_c_type(&lib.c_ffi_prefix)))?;
-        f.writeln("{")?;
-        indented(f, |f| {
-            for el in handle.fields() {
-                let value = match &el.field_type {
-                    AnyType::Bool(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(false) => "false".to_string(),
-                        Some(true) => "true".to_string(),
-                    },
-                    AnyType::Uint8(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Sint8(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Uint16(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Sint16(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Uint32(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Sint32(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Uint64(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Sint64(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => value.to_string(),
-                    },
-                    AnyType::Float(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => format!("{:.}f", value),
-                    },
-                    AnyType::Double(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => format!("{:.}", value),
-                    },
-                    AnyType::String(default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => format!("\"{}\"", value),
-                    },
-                    AnyType::Struct(handle) => {
-                        if handle.all_fields_have_defaults() {
-                            format!(
-                                "{}_{}_init()",
-                                &lib.c_ffi_prefix,
-                                handle.name().to_snake_case()
-                            )
-                        } else {
-                            el.name.to_snake_case()
-                        }
-                    }
-                    AnyType::StructRef(_) => el.name.to_snake_case(),
-                    AnyType::Enum(field) => match &field.default_variant {
-                        None => el.name.to_snake_case(),
-                        Some(value) => match field.handle.find_variant_by_name(value.as_str()) {
-                            Some(variant) => format!(
-                                "{}_{}_{}",
-                                lib.c_ffi_prefix.to_shouty_snake_case(),
-                                field.handle.name.to_shouty_snake_case(),
-                                variant.name.to_shouty_snake_case()
-                            ),
-                            None => panic!("Variant {} not found in {}", value, field.handle.name),
-                        },
-                    },
-                    AnyType::ClassRef(_) => el.name.to_snake_case(),
-                    AnyType::Interface(_) => el.name.to_snake_case(),
-                    AnyType::Iterator(_) => el.name.to_snake_case(),
-                    AnyType::Collection(_) => el.name.to_snake_case(),
-                    AnyType::Duration(mapping, default) => match default {
-                        None => el.name.to_snake_case(),
-                        Some(value) => match mapping {
-                            DurationType::Milliseconds => value.as_millis().to_string(),
-                            DurationType::Seconds => value.as_secs().to_string(),
-                        },
-                    },
-                };
-                f.writeln(&format!(".{} = {},", el.name.to_snake_case(), value))?;
-            }
-            Ok(())
-        })?;
-        f.writeln("};")
-    })
-}
-*/
 
 fn write_enum_definition(
     f: &mut dyn Printer,
@@ -909,32 +761,23 @@ fn write_interface(
     f.writeln(")")?;
 
     blocked(f, |f| {
-        f.writeln(&format!("{} result = ", struct_name))?;
-        blocked(f, |f| {
-            for cb in &handle.callbacks {
-                f.writeln(&format!(
-                    ".{} = {},",
-                    cb.name.to_snake_case(),
-                    cb.name.to_snake_case()
-                ))?;
-            }
+        f.writeln(&format!("{} value;", struct_name))?;
 
-            f.writeln(&format!(
-                ".{} = {},",
-                DESTROY_FUNC_NAME.to_snake_case(),
-                DESTROY_FUNC_NAME.to_snake_case()
-            ))?;
+        for cb in &handle.callbacks {
+            let cb_name = cb.name.to_snake_case();
+            f.writeln(&format!("value.{} = {};", cb_name, cb_name))?;
+        }
 
-            f.writeln(&format!(
-                ".{} = {},",
-                CTX_VARIABLE_NAME.to_snake_case(),
-                CTX_VARIABLE_NAME.to_snake_case()
-            ))?;
+        f.writeln(&format!(
+            "value.{} = {};",
+            DESTROY_FUNC_NAME, DESTROY_FUNC_NAME
+        ))?;
+        f.writeln(&format!(
+            "value.{} = {};",
+            CTX_VARIABLE_NAME, CTX_VARIABLE_NAME
+        ))?;
 
-            Ok(())
-        })?;
-        f.write(";")?;
-        f.writeln("return result;")
+        f.writeln("return value;")
     })?;
 
     Ok(())
@@ -1001,7 +844,21 @@ fn generate_cmake_config(
             link_deps.join(";")
         ))
     })?;
-    f.writeln(")")
+    f.writeln(")")?;
+    f.newline()?;
+
+    let cpp_lib_name = format!("{}_cpp", lib.name);
+
+    // write the cpp library
+    f.writeln(&format!(
+        "add_library({} SHARED ${{prefix}}/include/{}.cpp)",
+        cpp_lib_name, lib.name
+    ))?;
+    f.writeln(&format!(
+        "target_link_libraries({}_cpp {})",
+        lib.name, lib.name
+    ))?;
+    f.writeln(&format!("set_target_properties({} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES \"${{prefix}}/include\")", cpp_lib_name))
 }
 
 fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {

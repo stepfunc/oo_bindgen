@@ -26,7 +26,7 @@ impl CoreCppType for BasicType {
             BasicType::U32 => "uint32_t".to_string(),
             BasicType::S32 => "int32_t".to_string(),
             BasicType::U64 => "uint64_t".to_string(),
-            BasicType::S64 => "int16_t".to_string(),
+            BasicType::S64 => "int64_t".to_string(),
             BasicType::Float32 => "float".to_string(),
             BasicType::Double64 => "double".to_string(),
             BasicType::Duration(_) => "std::chrono::steady_clock::duration".to_string(),

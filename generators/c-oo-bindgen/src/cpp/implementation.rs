@@ -271,7 +271,7 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
             Number::S32(x) => x.to_string(),
             Number::U64(x) => x.to_string(),
             Number::S64(x) => x.to_string(),
-            Number::Float(x) => x.to_string(),
+            Number::Float(x) => format!("{}f", x),
             Number::Double(x) => x.to_string(),
         },
         ValidatedConstructorDefault::Duration(_, x) => {

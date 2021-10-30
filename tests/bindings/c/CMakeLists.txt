@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-project(foo_c LANGUAGES C)
+project(foo_c LANGUAGES C CXX)
 
 # Find foo_ffi
 if(WIN32)

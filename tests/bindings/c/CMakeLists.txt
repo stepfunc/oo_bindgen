@@ -28,6 +28,7 @@ set(c_test_files
 set(cpp_test_files
         ${FOO_CPP_FILE}
         cpp_tests/main.cpp
+        cpp_tests/duration_tests.cpp
         cpp_tests/error_tests.cpp
         cpp_tests/version_tests.cpp
         cpp_tests/universal_tests.cpp

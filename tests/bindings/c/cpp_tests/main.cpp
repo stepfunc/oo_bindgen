@@ -13,6 +13,7 @@ int main()
 {
     version_tests();
     error_tests();
+    duration_tests();
     universal_tests();
 
     return 0;

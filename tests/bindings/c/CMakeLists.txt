@@ -13,25 +13,26 @@ find_package(foo REQUIRED)
 
 set(c_test_files
         c_tests/main.c
-        c_tests/version_tests.c
+        c_tests/callback_tests.c
+        c_tests/constant_tests.c
         c_tests/enum_tests.c
-        c_tests/duration_tests.c
         c_tests/error_tests.c
+        c_tests/duration_tests.c
+        c_tests/iterator_tests.c
         c_tests/string_tests.c
         c_tests/structure_tests.c
-        c_tests/callback_tests.c
-        c_tests/iterator_tests.c
-        c_tests/constant_tests.c
         c_tests/universal_tests.c
+        c_tests/version_tests.c
 )
 
 set(cpp_test_files
         ${FOO_CPP_FILE}
         cpp_tests/main.cpp
-        cpp_tests/duration_tests.cpp
         cpp_tests/error_tests.cpp
-        cpp_tests/version_tests.cpp
+        cpp_tests/duration_tests.cpp
+        cpp_tests/iterator_tests.cpp
         cpp_tests/universal_tests.cpp
+        cpp_tests/version_tests.cpp
 )
 
 add_executable(foo_c_tests ${c_test_files})

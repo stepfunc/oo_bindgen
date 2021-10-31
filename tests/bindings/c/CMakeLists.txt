@@ -25,8 +25,6 @@ set(c_test_files
         c_tests/universal_tests.c
 )
 
-message("Foo cpp file is : ${FOO_CPP_FILE}")
-
 set(cpp_test_files
         ${FOO_CPP_FILE}
         cpp_tests/main.cpp

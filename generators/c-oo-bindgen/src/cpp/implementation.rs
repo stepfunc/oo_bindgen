@@ -2,7 +2,7 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::class::{AsyncMethod, ClassHandle, Method};
+use oo_bindgen::class::{AsyncMethod, ClassHandle, Method, StaticClassHandle};
 use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::error_type::ErrorType;
@@ -237,7 +237,66 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
         write_class_implementation(f, c)?;
     }
 
+    for c in lib.static_classes() {
+        for m in &c.static_methods {
+            write_static_class_method(f, c, m)?;
+            f.newline()?;
+        }
+    }
+
     Ok(())
+}
+
+fn write_static_class_method(
+    f: &mut dyn Printer,
+    class: &StaticClassHandle,
+    method: &Method,
+) -> FormattingResult<()> {
+    fn get_invocation_args(args: &[Arg<FunctionArgument>]) -> String {
+        args.iter()
+            .map(|x| x.name.to_snake_case())
+            .collect::<Vec<String>>()
+            .join(", ")
+    }
+
+    let args: String = method
+        .native_function
+        .parameters
+        .iter()
+        .map(|arg| {
+            format!(
+                "{} {}",
+                arg.arg_type.get_cpp_function_arg_type(),
+                arg.name.to_snake_case()
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    f.writeln(&format!(
+        "{} {}::{}({})",
+        method
+            .native_function
+            .return_type
+            .get_cpp_function_return_type(),
+        class.core_cpp_type(),
+        method.name.to_snake_case(),
+        args
+    ))?;
+    blocked(f, |f| {
+        let invocation = format!(
+            "fn::{}({})",
+            method.native_function.name.to_snake_case(),
+            get_invocation_args(&method.native_function.parameters)
+        );
+
+        match &method.native_function.return_type {
+            FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
+            FunctionReturnType::Type(t, _) => {
+                f.writeln(&format!("return {};", t.to_cpp_return_value(invocation)))
+            }
+        }
+    })
 }
 
 fn write_struct_constructors<T>(f: &mut dyn Printer, st: &Handle<Struct<T>>) -> FormattingResult<()>
@@ -647,7 +706,7 @@ fn write_function_wrapper(
             }
         }
         if has_out_param {
-            f.writeln("_return_value")?;
+            f.writeln("&_return_value")?;
         }
         Ok(())
     }
@@ -684,14 +743,14 @@ fn write_function_wrapper(
                 }
                 FunctionReturnType::Type(t, _) => {
                     f.writeln(&format!(
-                        "{}* _return_value = nullptr;",
+                        "{} _return_value;",
                         t.to_c_type(&lib.c_ffi_prefix)
                     ))?;
                     f.writeln(&format!("const auto _error =  {}(", c_func_name))?;
                     indented(f, |f| write_args(f, func, true))?;
                     f.writeln(");")?;
                     write_error_check(lib, f, err)?;
-                    f.writeln("return *_return_value;")
+                    f.writeln("return _return_value;")
                 }
             },
         }

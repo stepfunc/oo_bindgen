@@ -800,7 +800,7 @@ fn generate_cmake_config(
     let link_deps = get_link_dependencies(config);
 
     // Prefix used everywhere else
-    f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/../\")")?;
+    f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/..\")")?;
     f.newline()?;
 
     // Write dynamic library version
@@ -845,9 +845,13 @@ fn generate_cmake_config(
         ))
     })?;
     f.writeln(")")?;
-    f.newline()?;
 
-    Ok(())
+    f.writeln(&format!(
+        "set({}_CPP_FILE ${{prefix}}/include/{}.cpp CACHE STRING \"CPP implementation\" FORCE)",
+        lib.name.to_shouty_snake_case(),
+        lib.name.to_snake_case()
+    ))?;
+    f.newline()
 }
 
 fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {

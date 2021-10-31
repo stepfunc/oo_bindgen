@@ -399,7 +399,7 @@ fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> Formatti
     f.writeln("public:")?;
     indented(f, |f| {
         f.writeln(&format!(
-            "{}({}&& other) : self(other.self) {{ other.self = nullptr; }}",
+            "{}({}&& other) noexcept : self(other.self) {{ other.self = nullptr; }}",
             class_name, class_name
         ))?;
 

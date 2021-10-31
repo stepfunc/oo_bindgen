@@ -12,6 +12,7 @@ void universal_tests();
 int main()
 {
     version_tests();
+    error_tests();
     universal_tests();
 
     return 0;

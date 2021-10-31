@@ -224,6 +224,10 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
         write_enum_to_string_impl(f, e)?;
     }
 
+    for it in lib.iterators() {
+        write_iterator_methods(lib, f, it)?;
+    }
+
     for st in lib.structs() {
         match st {
             StructType::FunctionArg(x) => write_struct_constructors(f, x)?,
@@ -243,6 +247,67 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
             f.newline()?;
         }
     }
+
+    Ok(())
+}
+
+/*
+Chunk ChunkIterator::get()
+{
+    if(!this->current)
+    {
+        throw std::logic_error("end of iterator");
+    }
+
+    return ::convert::to_cpp(*reinterpret_cast<foo_chunk_t*>());
+}
+ */
+
+fn write_iterator_methods(
+    lib: &Library,
+    f: &mut dyn Printer,
+    it: &IteratorHandle,
+) -> FormattingResult<()> {
+
+    let c_class_type = it.iter_type.to_c_type(&lib.c_ffi_prefix);
+    let cpp_class_type = it.iter_type.core_cpp_type();
+    let c_next = format!("{}_{}", lib.c_ffi_prefix, it.function.name.to_snake_case());
+    let cpp_value_type = it.item_type.core_cpp_type();
+    let c_value_type = it.item_type.to_c_type(&lib.c_ffi_prefix);
+
+
+    f.writeln(&format!("bool {}::next()", cpp_class_type))?;
+    blocked(f, |f| {
+        f.writeln("if(!this->iter)")?;
+        blocked(f, |f| {
+            f.writeln("return false;")
+        })?;
+
+        f.newline()?;
+
+        f.writeln(&format!("this->current = {}(reinterpret_cast<{}*>(this->iter));", c_next, c_class_type))?;
+        f.writeln("return this->current;")?;
+
+        Ok(())
+    })?;
+
+    f.newline()?;
+
+    f.writeln(&format!("{} {}::get()", cpp_value_type, cpp_class_type))?;
+    blocked(f, |f| {
+        f.writeln("if(!this->current)")?;
+        blocked(f, |f| {
+            f.writeln("throw std::logic_error(\"end of iterator\");")
+        })?;
+
+        f.newline()?;
+
+        f.writeln(&format!("return ::convert::to_cpp(*reinterpret_cast<{}*>(this->current));", c_value_type))?;
+
+        Ok(())
+    })?;
+
+    f.newline()?;
 
     Ok(())
 }

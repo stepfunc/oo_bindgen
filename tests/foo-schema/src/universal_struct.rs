@@ -36,7 +36,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         .add(inner_field.clone(), inner_struct, "An inner structure")?
         .add(
             delay_field.clone(),
-            DurationType::Seconds,
+            DurationType::Milliseconds,
             "A duration value",
         )?
         .end_fields()?

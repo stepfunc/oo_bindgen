@@ -515,16 +515,16 @@ fn write_class_implementation(f: &mut dyn Printer, handle: &ClassHandle) -> Form
     }
 
     // write the destructor
-    f.writeln(&format!("{}::~{}()", cpp_name, cpp_name))?;
-    blocked(f, |f| {
-        if let Some(destructor) = &handle.destructor {
+    for destructor in &handle.destructor {
+        f.writeln(&format!("{}::~{}()", cpp_name, cpp_name))?;
+        blocked(f, |f| {
             f.writeln("if(self)")?;
             blocked(f, |f| {
                 f.writeln(&format!("fn::{}(*this);", destructor.name.to_snake_case()))
             })?;
-        }
-        Ok(())
-    })?;
+            Ok(())
+        })?;
+    }
 
     f.newline()?;
 

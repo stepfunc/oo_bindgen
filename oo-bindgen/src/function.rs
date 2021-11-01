@@ -73,6 +73,12 @@ impl From<UniversalStructHandle> for FunctionReturnValue {
     }
 }
 
+impl From<CollectionClassDeclaration> for FunctionReturnValue {
+    fn from(x: CollectionClassDeclaration) -> Self {
+        Self::ClassRef(x.inner)
+    }
+}
+
 pub type FunctionReturnType = ReturnType<FunctionReturnValue>;
 
 /// Types that can be used as native function arguments
@@ -164,6 +170,18 @@ impl From<DurationType> for FunctionArgument {
 impl From<EnumHandle> for FunctionArgument {
     fn from(x: EnumHandle) -> Self {
         BasicType::Enum(x).into()
+    }
+}
+
+impl From<IteratorClassDeclaration> for FunctionArgument {
+    fn from(x: IteratorClassDeclaration) -> Self {
+        Self::ClassRef(x.inner)
+    }
+}
+
+impl From<CollectionClassDeclaration> for FunctionArgument {
+    fn from(x: CollectionClassDeclaration) -> Self {
+        Self::ClassRef(x.inner)
     }
 }
 

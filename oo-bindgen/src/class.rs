@@ -19,6 +19,28 @@ pub struct ClassDeclaration {
     pub class_type: ClassType,
 }
 
+#[derive(Debug, Clone)]
+pub struct IteratorClassDeclaration {
+    pub inner: ClassDeclarationHandle,
+}
+
+impl IteratorClassDeclaration {
+    pub(crate) fn new(inner: ClassDeclarationHandle) -> Self {
+        Self { inner }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CollectionClassDeclaration {
+    pub inner: ClassDeclarationHandle,
+}
+
+impl CollectionClassDeclaration {
+    pub(crate) fn new(inner: ClassDeclarationHandle) -> Self {
+        Self { inner }
+    }
+}
+
 impl ClassDeclaration {
     pub(crate) fn new(name: String, class_type: ClassType) -> Self {
         Self { name, class_type }

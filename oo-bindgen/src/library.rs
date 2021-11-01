@@ -841,15 +841,19 @@ impl LibraryBuilder {
     pub fn declare_iterator<T: Into<String>>(
         &mut self,
         name: T,
-    ) -> BindResult<ClassDeclarationHandle> {
-        self.declare_any_class(name, ClassType::Iterator)
+    ) -> BindResult<IteratorClassDeclaration> {
+        Ok(IteratorClassDeclaration::new(
+            self.declare_any_class(name, ClassType::Iterator)?,
+        ))
     }
 
     pub fn declare_collection<T: Into<String>>(
         &mut self,
         name: T,
-    ) -> BindResult<ClassDeclarationHandle> {
-        self.declare_any_class(name, ClassType::Collection)
+    ) -> BindResult<CollectionClassDeclaration> {
+        Ok(CollectionClassDeclaration::new(
+            self.declare_any_class(name, ClassType::Collection)?,
+        ))
     }
 
     fn declare_any_class<T: Into<String>>(

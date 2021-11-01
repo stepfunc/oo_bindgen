@@ -12,6 +12,7 @@ void universal_tests();
 int main()
 {
     version_tests();
+    constant_tests();
     error_tests();
     iterator_tests();
     duration_tests();

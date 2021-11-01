@@ -426,16 +426,19 @@ where
     ))?;
 
     blocked(f, |f| {
-        f.writeln(&format!("{} value;", handle.to_c_type(&lib.c_ffi_prefix)))?;
+        f.writeln(&format!(
+            "{} _return_value;",
+            handle.to_c_type(&lib.c_ffi_prefix)
+        ))?;
         for field in &handle.fields {
             let field_name = field.name.to_snake_case();
             let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
                 Some(x) => get_default_value(lib, &x.value),
                 None => field_name.clone(),
             };
-            f.writeln(&format!("value.{} = {};", field_name, value))?;
+            f.writeln(&format!("_return_value.{} = {};", field_name, value))?;
         }
-        f.writeln("return value;")
+        f.writeln("return _return_value;")
     })?;
 
     Ok(())

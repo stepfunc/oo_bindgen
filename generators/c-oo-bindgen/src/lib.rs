@@ -87,11 +87,11 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
 
     // Create header file
     let include_path = output_dir.join("include");
-    generate_c_header(lib, &include_path)?;
+    let source_path = output_dir.join("src");
 
-    // TODO - Create the C++ header
+    generate_c_header(lib, &include_path)?;
     crate::cpp::definition::generate_header(lib, &include_path)?;
-    crate::cpp::implementation::generate_cpp_file(lib, &include_path)?;
+    crate::cpp::implementation::generate_cpp_file(lib, &source_path)?;
 
     // Generate CMake config file
     generate_cmake_config(lib, config, &config.platform_location)?;
@@ -847,7 +847,7 @@ fn generate_cmake_config(
     f.writeln(")")?;
 
     f.writeln(&format!(
-        "set({}_CPP_FILE ${{prefix}}/include/{}.cpp CACHE STRING \"CPP implementation\" FORCE)",
+        "set({}_CPP_FILE ${{prefix}}/src/{}.cpp CACHE STRING \"CPP implementation\" FORCE)",
         lib.name.to_shouty_snake_case(),
         lib.name.to_snake_case()
     ))?;

@@ -18,6 +18,7 @@ int main()
     iterator_tests();
     duration_tests();
     string_tests();
+    structure_tests();
     callback_tests();
     universal_tests();
 

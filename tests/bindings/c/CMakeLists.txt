@@ -35,6 +35,7 @@ set(cpp_test_files
         cpp_tests/duration_tests.cpp
         cpp_tests/iterator_tests.cpp
         cpp_tests/string_tests.cpp
+        cpp_tests/structure_tests.cpp
         cpp_tests/universal_tests.cpp
         cpp_tests/version_tests.cpp
 )

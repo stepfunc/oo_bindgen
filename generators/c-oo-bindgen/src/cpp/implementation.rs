@@ -309,7 +309,7 @@ fn write_static_class_method(
 ) -> FormattingResult<()> {
     fn get_invocation_args(args: &[Arg<FunctionArgument>]) -> String {
         args.iter()
-            .map(|x| x.name.to_snake_case())
+            .map(|x| transform_arg(x))
             .collect::<Vec<String>>()
             .join(", ")
     }
@@ -666,30 +666,24 @@ fn cpp_function_args(args: &[Arg<FunctionArgument>]) -> String {
         .join(", ")
 }
 
+fn transform_arg(arg: &Arg<FunctionArgument>) -> String {
+    match get_arg_transform(&arg.arg_type) {
+        None => arg.name.to_snake_case(),
+        Some(x) => x(arg.name.to_snake_case()),
+    }
+}
+
 fn get_arg_transform(arg: &FunctionArgument) -> Option<fn(String) -> String> {
-    match arg {
-        FunctionArgument::Basic(_) => None,
-        FunctionArgument::String(_) => None,
-        FunctionArgument::Collection(_) => None,
-        FunctionArgument::Struct(_) => None,
-        FunctionArgument::StructRef(_) => None,
-        FunctionArgument::ClassRef(_) => None,
-        FunctionArgument::Interface(x) => match x.interface_type {
-            InterfaceType::Synchronous => None,
-            InterfaceType::Asynchronous => Some(|x| format!("std::move({})", x)),
-        },
+    if arg.is_move_type() {
+        Some(|x| std_move(x))
+    } else {
+        None
     }
 }
 
 fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument>]) -> String {
     args.iter()
-        .map(|x| {
-            let arg_name = x.name.to_snake_case();
-            match get_arg_transform(&x.arg_type) {
-                None => arg_name,
-                Some(transform) => transform(arg_name),
-            }
-        })
+        .map(|arg| transform_arg(arg))
         .collect::<Vec<String>>()
         .join(", ")
 }

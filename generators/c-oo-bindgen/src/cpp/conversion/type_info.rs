@@ -1,9 +1,11 @@
 use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::{InterfaceHandle, InterfaceType};
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
-    StructFieldType, UniversalStructField,
+    StructFieldType, TypedStructDeclaration, UniversalStructField,
 };
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::{Handle, UniversalOr};
@@ -137,6 +139,32 @@ impl TypeInfo for FunctionArgStructField {
                 todo!() // we shouldn't allow collections here
             }
             FunctionArgStructField::Struct(x) => x.pass_by(),
+        }
+    }
+}
+
+impl TypeInfo for CollectionHandle {
+    fn pass_by(&self) -> PassBy {
+        PassBy::MutRef
+    }
+}
+
+impl<T> TypeInfo for TypedStructDeclaration<T> {
+    fn pass_by(&self) -> PassBy {
+        PassBy::ConstRef
+    }
+}
+
+impl TypeInfo for FunctionArgument {
+    fn pass_by(&self) -> PassBy {
+        match self {
+            FunctionArgument::Basic(x) => x.pass_by(),
+            FunctionArgument::String(x) => x.pass_by(),
+            FunctionArgument::Collection(x) => x.pass_by(),
+            FunctionArgument::Struct(x) => x.pass_by(),
+            FunctionArgument::StructRef(x) => x.pass_by(),
+            FunctionArgument::ClassRef(x) => x.pass_by(),
+            FunctionArgument::Interface(x) => x.pass_by(),
         }
     }
 }

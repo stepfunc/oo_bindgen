@@ -30,6 +30,7 @@ set(cpp_test_files
         cpp_tests/main.cpp
         cpp_tests/callback_tests.cpp
         cpp_tests/constant_tests.cpp
+        cpp_tests/enum_tests.cpp
         cpp_tests/error_tests.cpp
         cpp_tests/duration_tests.cpp
         cpp_tests/iterator_tests.cpp

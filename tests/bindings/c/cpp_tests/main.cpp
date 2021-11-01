@@ -13,6 +13,7 @@ int main()
 {
     version_tests();
     constant_tests();
+    enum_tests();
     error_tests();
     iterator_tests();
     duration_tests();

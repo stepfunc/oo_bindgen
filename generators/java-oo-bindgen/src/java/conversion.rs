@@ -293,7 +293,7 @@ impl JavaType for FunctionReturnValue {
             Self::String(x) => x.as_java_primitive(),
             Self::ClassRef(x) => x.as_java_primitive(),
             Self::Struct(x) => x.as_java_primitive(),
-            Self::StructRef(x) => x.inner.as_java_primitive(),
+            Self::StructRef(x) => x.untyped().as_java_primitive(),
         }
     }
 
@@ -303,7 +303,7 @@ impl JavaType for FunctionReturnValue {
             Self::String(x) => x.as_java_object(),
             Self::ClassRef(x) => x.as_java_object(),
             Self::Struct(x) => x.as_java_object(),
-            Self::StructRef(x) => x.inner.as_java_object(),
+            Self::StructRef(x) => x.untyped().as_java_object(),
         }
     }
 }

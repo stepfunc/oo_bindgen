@@ -23,7 +23,7 @@ impl Iterator {
             }
             FunctionReturnType::Type(return_type, _) => match return_type {
                 FunctionReturnValue::StructRef(x) => {
-                    if x.inner != item_type.declaration() {
+                    if x.untyped().clone() != item_type.declaration() {
                         return Err(BindingError::IteratorReturnTypeNotStructRef {
                             handle: function.clone(),
                         });

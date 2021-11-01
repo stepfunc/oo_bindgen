@@ -16,7 +16,7 @@ pub enum FunctionReturnValue {
     String(StringType),
     ClassRef(ClassDeclarationHandle),
     Struct(UniversalOr<FunctionReturnStructField>),
-    StructRef(FunctionReturnStructDeclaration),
+    StructRef(UniversalDeclarationOr<FunctionReturnStructField>),
 }
 
 impl From<BasicType> for FunctionReturnValue {
@@ -51,7 +51,13 @@ impl From<FunctionReturnStructHandle> for FunctionReturnValue {
 
 impl From<FunctionReturnStructDeclaration> for FunctionReturnValue {
     fn from(x: FunctionReturnStructDeclaration) -> Self {
-        FunctionReturnValue::StructRef(x)
+        FunctionReturnValue::StructRef(UniversalDeclarationOr::Specific(x))
+    }
+}
+
+impl From<UniversalStructDeclaration> for FunctionReturnValue {
+    fn from(x: UniversalStructDeclaration) -> Self {
+        FunctionReturnValue::StructRef(UniversalDeclarationOr::Universal(x))
     }
 }
 

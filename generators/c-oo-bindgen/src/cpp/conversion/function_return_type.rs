@@ -15,7 +15,7 @@ impl CppFunctionReturnType for FunctionReturnType {
                 FunctionReturnValue::String(x) => x.core_cpp_type(),
                 FunctionReturnValue::ClassRef(x) => x.core_cpp_type(),
                 FunctionReturnValue::Struct(x) => x.core_cpp_type(),
-                FunctionReturnValue::StructRef(x) => pointer(x.inner.core_cpp_type()),
+                FunctionReturnValue::StructRef(x) => pointer(x.untyped().core_cpp_type()),
             },
         }
     }

@@ -323,6 +323,49 @@ impl From<UniversalStructHandle> for StructType {
     }
 }
 
+/// Structs refs can always be the Universal struct type, but may also be a
+/// more specific type depending on context
+#[derive(Debug, Clone)]
+pub enum UniversalDeclarationOr<T>
+where
+    T: StructFieldType,
+{
+    Specific(TypedStructDeclaration<T>),
+    Universal(UniversalStructDeclaration),
+}
+
+impl<T> UniversalDeclarationOr<T>
+where
+    T: StructFieldType,
+{
+    pub fn untyped(&self) -> &StructDeclarationHandle {
+        match self {
+            UniversalDeclarationOr::Specific(x) => &x.inner,
+            UniversalDeclarationOr::Universal(x) => &x.inner,
+        }
+    }
+}
+
+impl<T> PartialEq for UniversalDeclarationOr<T>
+where
+    T: StructFieldType,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            UniversalDeclarationOr::Specific(y) => match other {
+                UniversalDeclarationOr::Specific(x) => y == x,
+                UniversalDeclarationOr::Universal(_) => false,
+            },
+            UniversalDeclarationOr::Universal(x) => match other {
+                UniversalDeclarationOr::Specific(_) => false,
+                UniversalDeclarationOr::Universal(y) => x == y,
+            },
+        }
+    }
+}
+
+impl<T> Eq for UniversalDeclarationOr<T> where T: StructFieldType {}
+
 /// Structs can always be the Universal struct type, but may also be a
 /// more specific type depending on context
 #[derive(Debug, Clone, Eq)]

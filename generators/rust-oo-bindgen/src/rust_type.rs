@@ -430,7 +430,7 @@ impl LifetimeInfo for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.rust_requires_lifetime(),
             FunctionReturnValue::ClassRef(x) => x.rust_requires_lifetime(),
             FunctionReturnValue::Struct(x) => x.rust_requires_lifetime(),
-            FunctionReturnValue::StructRef(x) => x.inner.rust_requires_lifetime(),
+            FunctionReturnValue::StructRef(x) => x.untyped().rust_requires_lifetime(),
         }
     }
 
@@ -440,7 +440,7 @@ impl LifetimeInfo for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.c_requires_lifetime(),
             FunctionReturnValue::ClassRef(x) => x.c_requires_lifetime(),
             FunctionReturnValue::Struct(x) => x.c_requires_lifetime(),
-            FunctionReturnValue::StructRef(x) => x.inner.c_requires_lifetime(),
+            FunctionReturnValue::StructRef(x) => x.untyped().c_requires_lifetime(),
         }
     }
 }
@@ -452,7 +452,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.as_rust_type(),
             FunctionReturnValue::ClassRef(x) => x.as_rust_type(),
             FunctionReturnValue::Struct(x) => x.as_rust_type(),
-            FunctionReturnValue::StructRef(x) => x.inner.as_rust_type(),
+            FunctionReturnValue::StructRef(x) => x.untyped().as_rust_type(),
         }
     }
 
@@ -462,7 +462,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.as_c_type(),
             FunctionReturnValue::ClassRef(x) => x.as_c_type(),
             FunctionReturnValue::Struct(x) => x.as_c_type(),
-            FunctionReturnValue::StructRef(x) => x.inner.as_c_type(),
+            FunctionReturnValue::StructRef(x) => x.untyped().as_c_type(),
         }
     }
 
@@ -472,7 +472,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.is_copyable(),
             FunctionReturnValue::ClassRef(x) => x.is_copyable(),
             FunctionReturnValue::Struct(x) => x.is_copyable(),
-            FunctionReturnValue::StructRef(x) => x.inner.is_copyable(),
+            FunctionReturnValue::StructRef(x) => x.untyped().is_copyable(),
         }
     }
 
@@ -482,7 +482,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::String(x) => x.conversion(),
             FunctionReturnValue::ClassRef(x) => x.conversion(),
             FunctionReturnValue::Struct(x) => x.conversion(),
-            FunctionReturnValue::StructRef(x) => x.inner.conversion(),
+            FunctionReturnValue::StructRef(x) => x.untyped().conversion(),
         }
     }
 }

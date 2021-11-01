@@ -1,4 +1,3 @@
-use heck::SnakeCase;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
@@ -51,6 +50,6 @@ impl ToCpp for StringType {
 
 impl ToCpp for ClassDeclarationHandle {
     fn to_cpp(&self, expr: String) -> String {
-        format!("cpp_{}_init({})", self.name.to_snake_case(), expr)
+        format!("::convert::to_cpp({})", expr)
     }
 }

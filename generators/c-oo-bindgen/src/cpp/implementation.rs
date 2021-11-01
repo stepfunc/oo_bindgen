@@ -899,7 +899,7 @@ fn write_class_construct_helper(
 ) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
-        "::{}::{} construct({}* self)",
+        "::{}::{} to_cpp({}* self)",
         lib.c_ffi_prefix,
         cpp_type,
         handle.declaration.to_c_type(&lib.c_ffi_prefix)

@@ -16,6 +16,7 @@ int main()
     error_tests();
     iterator_tests();
     duration_tests();
+    callback_tests();
     universal_tests();
 
     return 0;

@@ -493,7 +493,6 @@ impl RustType for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.as_rust_type(),
             FunctionArgStructField::String(x) => x.as_rust_type(),
             FunctionArgStructField::Interface(x) => x.as_rust_type(),
-            FunctionArgStructField::Collection(x) => x.as_rust_type(),
             FunctionArgStructField::Struct(x) => x.as_rust_type(),
         }
     }
@@ -503,7 +502,6 @@ impl RustType for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.as_c_type(),
             FunctionArgStructField::String(x) => x.as_c_type(),
             FunctionArgStructField::Interface(x) => x.as_c_type(),
-            FunctionArgStructField::Collection(x) => x.as_c_type(),
             FunctionArgStructField::Struct(x) => x.as_c_type(),
         }
     }
@@ -513,7 +511,6 @@ impl RustType for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.is_copyable(),
             FunctionArgStructField::String(x) => x.is_copyable(),
             FunctionArgStructField::Interface(x) => x.is_copyable(),
-            FunctionArgStructField::Collection(x) => x.is_copyable(),
             FunctionArgStructField::Struct(x) => x.is_copyable(),
         }
     }
@@ -523,7 +520,6 @@ impl RustType for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.conversion(),
             FunctionArgStructField::String(x) => x.conversion(),
             FunctionArgStructField::Interface(x) => x.conversion(),
-            FunctionArgStructField::Collection(x) => x.conversion(),
             FunctionArgStructField::Struct(x) => x.conversion(),
         }
     }
@@ -805,7 +801,6 @@ impl LifetimeInfo for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.rust_requires_lifetime(),
             FunctionArgStructField::String(x) => x.rust_requires_lifetime(),
             FunctionArgStructField::Interface(x) => x.rust_requires_lifetime(),
-            FunctionArgStructField::Collection(x) => x.rust_requires_lifetime(),
             FunctionArgStructField::Struct(x) => x.rust_requires_lifetime(),
         }
     }
@@ -815,7 +810,6 @@ impl LifetimeInfo for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.c_requires_lifetime(),
             FunctionArgStructField::String(x) => x.c_requires_lifetime(),
             FunctionArgStructField::Interface(x) => x.c_requires_lifetime(),
-            FunctionArgStructField::Collection(x) => x.c_requires_lifetime(),
             FunctionArgStructField::Struct(x) => x.c_requires_lifetime(),
         }
     }

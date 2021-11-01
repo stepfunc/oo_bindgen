@@ -1,4 +1,3 @@
-use crate::collection::CollectionHandle;
 use crate::structs::common::*;
 use crate::structs::UniversalStructHandle;
 use crate::types::{DurationType, StringType, TypeValidator, ValidatedType};
@@ -10,7 +9,6 @@ pub enum FunctionArgStructField {
     Basic(BasicType),
     String(StringType),
     Interface(InterfaceHandle),
-    Collection(CollectionHandle),
     Struct(UniversalOr<FunctionArgStructField>),
 }
 
@@ -20,7 +18,6 @@ impl TypeValidator for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.get_validated_type(),
             FunctionArgStructField::String(x) => x.get_validated_type(),
             FunctionArgStructField::Interface(x) => x.get_validated_type(),
-            FunctionArgStructField::Collection(x) => x.get_validated_type(),
             FunctionArgStructField::Struct(x) => x.get_validated_type(),
         }
     }
@@ -44,7 +41,6 @@ impl ConstructorValidator for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.validate_constructor_default(value),
             FunctionArgStructField::String(x) => x.validate_constructor_default(value),
             FunctionArgStructField::Interface(x) => x.validate_constructor_default(value),
-            FunctionArgStructField::Collection(x) => x.validate_constructor_default(value),
             FunctionArgStructField::Struct(x) => x.validate_constructor_default(value),
         }
     }

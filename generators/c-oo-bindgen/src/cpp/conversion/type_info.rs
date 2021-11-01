@@ -135,9 +135,6 @@ impl TypeInfo for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.pass_by(),
             FunctionArgStructField::String(x) => x.pass_by(),
             FunctionArgStructField::Interface(x) => x.pass_by(),
-            FunctionArgStructField::Collection(_) => {
-                todo!() // we shouldn't allow collections here
-            }
             FunctionArgStructField::Struct(x) => x.pass_by(),
         }
     }

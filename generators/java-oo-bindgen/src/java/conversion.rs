@@ -152,7 +152,6 @@ impl JavaType for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.as_java_primitive(),
             FunctionArgStructField::String(x) => x.as_java_primitive(),
             FunctionArgStructField::Interface(x) => x.as_java_primitive(),
-            FunctionArgStructField::Collection(x) => x.as_java_primitive(),
             FunctionArgStructField::Struct(x) => x.as_java_primitive(),
         }
     }
@@ -162,7 +161,6 @@ impl JavaType for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.as_java_object(),
             FunctionArgStructField::String(x) => x.as_java_object(),
             FunctionArgStructField::Interface(x) => x.as_java_object(),
-            FunctionArgStructField::Collection(x) => x.as_java_object(),
             FunctionArgStructField::Struct(x) => x.as_java_object(),
         }
     }

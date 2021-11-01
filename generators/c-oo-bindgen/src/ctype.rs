@@ -204,7 +204,6 @@ impl CType for FunctionArgStructField {
             FunctionArgStructField::Basic(x) => x.to_c_type(),
             FunctionArgStructField::String(x) => x.to_c_type(),
             FunctionArgStructField::Interface(x) => x.to_c_type(),
-            FunctionArgStructField::Collection(x) => pointer(x).to_c_type(),
             FunctionArgStructField::Struct(x) => x.to_c_type(),
         }
     }

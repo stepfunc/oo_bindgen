@@ -1,7 +1,5 @@
 use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::*;
-use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
 };
@@ -23,33 +21,12 @@ impl CppStructType for StringType {
     }
 }
 
-impl CppStructType for CollectionHandle {
-    fn struct_member_type(&self) -> String {
-        format!("std::vector<{}>", self.item_type.struct_member_type())
-    }
-}
-
-impl CppStructType for FunctionArgument {
-    fn struct_member_type(&self) -> String {
-        match self {
-            FunctionArgument::Basic(x) => x.struct_member_type(),
-            FunctionArgument::String(x) => x.struct_member_type(),
-            FunctionArgument::Collection(x) => x.struct_member_type(),
-            FunctionArgument::Struct(_) => unimplemented!(),
-            FunctionArgument::StructRef(_) => unimplemented!(),
-            FunctionArgument::ClassRef(_) => unimplemented!(),
-            FunctionArgument::Interface(_) => unimplemented!(),
-        }
-    }
-}
-
 impl CppStructType for FunctionArgStructField {
     fn struct_member_type(&self) -> String {
         match self {
             FunctionArgStructField::Basic(x) => x.struct_member_type(),
             FunctionArgStructField::String(x) => x.struct_member_type(),
             FunctionArgStructField::Interface(x) => unique_ptr(x.core_cpp_type()),
-            FunctionArgStructField::Collection(x) => x.struct_member_type(),
             FunctionArgStructField::Struct(x) => x.core_cpp_type(),
         }
     }

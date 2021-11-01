@@ -716,7 +716,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.as_raw_jni_type(),
             Self::String(x) => x.as_raw_jni_type(),
             Self::Interface(x) => x.as_raw_jni_type(),
-            Self::Collection(x) => x.as_raw_jni_type(),
             Self::Struct(x) => x.as_raw_jni_type(),
         }
     }
@@ -726,7 +725,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.as_jni_sig(lib_path),
             Self::String(x) => x.as_jni_sig(lib_path),
             Self::Interface(x) => x.as_jni_sig(lib_path),
-            Self::Collection(x) => x.as_jni_sig(lib_path),
             Self::Struct(x) => x.as_jni_sig(lib_path),
         }
     }
@@ -736,7 +734,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.as_rust_type(ffi_name),
             Self::String(x) => x.as_rust_type(ffi_name),
             Self::Interface(x) => x.as_rust_type(ffi_name),
-            Self::Collection(x) => x.as_rust_type(ffi_name),
             Self::Struct(x) => x.as_rust_type(ffi_name),
         }
     }
@@ -746,7 +743,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.convert_jvalue(),
             Self::String(x) => x.convert_jvalue(),
             Self::Interface(x) => x.convert_jvalue(),
-            Self::Collection(x) => x.convert_jvalue(),
             Self::Struct(x) => x.convert_jvalue(),
         }
     }
@@ -763,7 +759,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::String(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::Interface(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
-            Self::Collection(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
             Self::Struct(x) => x.convert_to_rust_from_object(f, from, to, lib_name, prefix),
         }
     }
@@ -773,7 +768,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.conversion(lib_name, prefix),
             Self::String(x) => x.conversion(lib_name, prefix),
             Self::Interface(x) => x.conversion(lib_name, prefix),
-            Self::Collection(x) => x.conversion(lib_name, prefix),
             Self::Struct(x) => x.conversion(lib_name, prefix),
         }
     }
@@ -783,7 +777,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.requires_local_ref_cleanup(),
             Self::String(x) => x.requires_local_ref_cleanup(),
             Self::Interface(x) => x.requires_local_ref_cleanup(),
-            Self::Collection(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
@@ -793,7 +786,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.check_null(f, param_name),
             Self::String(x) => x.check_null(f, param_name),
             Self::Interface(x) => x.check_null(f, param_name),
-            Self::Collection(x) => x.check_null(f, param_name),
             Self::Struct(x) => x.check_null(f, param_name),
         }
     }
@@ -803,7 +795,6 @@ impl JniType for FunctionArgStructField {
             Self::Basic(x) => x.default_value(),
             Self::String(x) => x.default_value(),
             Self::Interface(x) => x.default_value(),
-            Self::Collection(x) => x.default_value(),
             Self::Struct(x) => x.default_value(),
         }
     }

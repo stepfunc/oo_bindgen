@@ -80,7 +80,6 @@ impl CppFunctionArgType for FunctionArgStructField {
             Self::Basic(x) => x.get_cpp_function_arg_type(),
             Self::String(x) => x.get_cpp_function_arg_type(),
             Self::Interface(x) => x.get_cpp_function_arg_type(),
-            Self::Collection(x) => x.core_cpp_type(),
             Self::Struct(x) => x.get_cpp_function_arg_type(),
         }
     }

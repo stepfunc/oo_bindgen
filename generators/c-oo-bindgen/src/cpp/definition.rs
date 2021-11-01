@@ -21,7 +21,7 @@ use std::path::Path;
 pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
     std::fs::create_dir_all(&path)?;
-    let filename = path.join(format!("{}.hpp", lib.name));
+    let filename = path.join(format!("{}.hpp", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 
     // include guard
@@ -34,7 +34,7 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
     f.writeln("#include <vector>")?;
     f.newline()?;
 
-    namespace(&mut f, &lib.c_ffi_prefix, |f| {
+    namespace(&mut f, &lib.settings.c_ffi_prefix, |f| {
         print_header_namespace_contents(lib, f)
     })?;
 
@@ -157,7 +157,7 @@ fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> For
 }
 
 fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
-    let name = lib.c_ffi_prefix.to_snake_case();
+    let name = lib.settings.c_ffi_prefix.to_snake_case();
 
     // Version number
     f.writeln(&format!(

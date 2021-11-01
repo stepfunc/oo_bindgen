@@ -9,7 +9,7 @@ pub(crate) fn generate_interfaces_cache(
     lib: &Library,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
-    let lib_path = config.java_signature_path(&lib.name);
+    let lib_path = config.java_signature_path(&lib.settings.name);
 
     let mut filename = config.rust_source_dir();
     filename.push("interfaces");
@@ -150,7 +150,7 @@ pub(crate) fn generate_interfaces_cache(
                     &cb.name.to_snake_case(),
                     &lib_path,
                     &config.ffi_name,
-                    &lib.c_ffi_prefix,
+                    &lib.settings.c_ffi_prefix,
                     CTX_VARIABLE_NAME,
                     &cb.arguments,
                     &cb.return_type,
@@ -159,7 +159,7 @@ pub(crate) fn generate_interfaces_cache(
                 // Convert return value
                 if let CallbackReturnType::Type(return_type, _) = &cb.return_type {
                     if let Some(conversion) =
-                        return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                        return_type.conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                     {
                         conversion.convert_to_rust(
                             f,

@@ -14,6 +14,7 @@ use crate::structs::*;
 use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
 use crate::{BindingError, Version};
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum Symbol {
@@ -85,6 +86,7 @@ pub struct DeveloperInfo {
     pub organization_url: String,
 }
 
+/// metadata related to the library
 pub struct LibraryInfo {
     /// Description of the library
     pub description: String,
@@ -102,11 +104,29 @@ pub struct LibraryInfo {
     pub developers: Vec<DeveloperInfo>,
 }
 
-pub struct Library {
+/// Settings that affect the names of things
+#[derive(Debug)]
+pub struct LibrarySettings {
+    /// name of the library
     pub name: String,
-    pub version: Version,
+    /// prefix given to all API types, e.g. structs, enums, functions, etc
     pub c_ffi_prefix: String,
+}
+
+impl LibrarySettings {
+    /// create an RC to the settings that is cheaply cloned
+    pub fn create<S: Into<String>, R: Into<String>>(name: S, c_ffi_prefix: R) -> Rc<Self> {
+        Rc::new(Self {
+            name: name.into(),
+            c_ffi_prefix: c_ffi_prefix.into(),
+        })
+    }
+}
+
+pub struct Library {
+    pub version: Version,
     pub info: LibraryInfo,
+    pub settings: Rc<LibrarySettings>,
     statements: Vec<Statement>,
     structs: HashMap<StructDeclarationHandle, StructType>,
     _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
@@ -469,6 +489,15 @@ impl StructType {
         }
     }
 
+    pub fn settings(&self) -> &LibrarySettings {
+        match self {
+            StructType::FunctionArg(x) => &x.declaration.settings,
+            StructType::FunctionReturn(x) => &x.declaration.settings,
+            StructType::CallbackArg(x) => &x.declaration.settings,
+            StructType::Universal(x) => &x.declaration.settings,
+        }
+    }
+
     pub fn declaration(&self) -> StructDeclarationHandle {
         match self {
             StructType::FunctionArg(x) => x.declaration.clone(),
@@ -498,10 +527,9 @@ impl StructType {
 }
 
 pub struct LibraryBuilder {
-    name: String,
     version: Version,
-    c_ffi_prefix: Option<String>,
     info: LibraryInfo,
+    pub(crate) settings: Rc<LibrarySettings>,
 
     // a record of statements preserved in order
     statements: Vec<Statement>,
@@ -526,12 +554,11 @@ pub struct LibraryBuilder {
 }
 
 impl LibraryBuilder {
-    pub fn new<T: Into<String>>(name: T, version: Version, info: LibraryInfo) -> Self {
+    pub fn new(version: Version, info: LibraryInfo, settings: Rc<LibrarySettings>) -> Self {
         Self {
-            name: name.into(),
             version,
-            c_ffi_prefix: None,
             info,
+            settings,
 
             statements: Vec::new(),
             symbol_names: HashSet::new(),
@@ -642,10 +669,9 @@ impl LibraryBuilder {
         }
 
         let lib = Library {
-            name: self.name.clone(),
             version: self.version,
-            c_ffi_prefix: self.c_ffi_prefix.unwrap_or(self.name),
             info: self.info,
+            settings: self.settings.clone(),
             statements: self.statements,
             structs: self.structs,
             _classes: self.classes,
@@ -655,16 +681,6 @@ impl LibraryBuilder {
         crate::doc::validate_library_docs(&lib)?;
 
         Ok(lib)
-    }
-
-    pub fn c_ffi_prefix<T: Into<String>>(&mut self, c_ffi_prefix: T) -> BindResult<()> {
-        match self.c_ffi_prefix {
-            Some(_) => Err(BindingError::FfiPrefixAlreadySet),
-            None => {
-                self.c_ffi_prefix = Some(c_ffi_prefix.into());
-                Ok(())
-            }
-        }
     }
 
     pub fn define_error_type<T: Into<String>>(
@@ -693,7 +709,8 @@ impl LibraryBuilder {
         name: T,
     ) -> BindResult<StructDeclarationHandle> {
         let name = name.into();
-        let handle = StructDeclarationHandle::new(StructDeclaration::new(name));
+        let handle =
+            StructDeclarationHandle::new(StructDeclaration::new(name, self.settings.clone()));
         self.add_statement(Statement::StructDeclaration(handle.clone()))?;
         Ok(handle)
     }
@@ -861,7 +878,11 @@ impl LibraryBuilder {
         name: T,
         class_type: ClassType,
     ) -> BindResult<ClassDeclarationHandle> {
-        let handle = ClassDeclarationHandle::new(ClassDeclaration::new(name.into(), class_type));
+        let handle = ClassDeclarationHandle::new(ClassDeclaration::new(
+            name.into(),
+            class_type,
+            self.settings.clone(),
+        ));
         self.add_statement(Statement::ClassDeclaration(handle.clone()))?;
         Ok(handle)
     }
@@ -941,6 +962,7 @@ impl LibraryBuilder {
             has_lifetime,
             native_func,
             item_type,
+            self.settings.clone(),
         )?);
         self.add_statement(Statement::IteratorDeclaration(iter.clone()))?;
         Ok(iter)

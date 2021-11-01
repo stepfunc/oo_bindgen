@@ -44,11 +44,10 @@ pub fn build_lib() -> Result<Library, BindingError> {
     };
 
     let mut builder = LibraryBuilder::new(
-        "foo",
         oo_bindgen::Version::parse("1.2.3").unwrap(),
         lib_info,
+        LibrarySettings::create("foo", "foo"),
     );
-    builder.c_ffi_prefix("foo")?;
 
     structure::define(&mut builder)?;
     constants::define(&mut builder)?;

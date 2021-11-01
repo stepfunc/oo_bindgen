@@ -98,14 +98,14 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln(&format!("<groupId>{}</groupId>", config.group_id))?;
         f.writeln(&format!(
             "<artifactId>{}</artifactId>",
-            lib.name.to_kebab_case()
+            lib.settings.name.to_kebab_case()
         ))?;
         f.writeln(&format!("<version>{}</version>", lib.version.to_string()))?;
 
         f.newline()?;
 
         // General metadata
-        f.writeln(&format!("<name>{}</name>", lib.name))?;
+        f.writeln(&format!("<name>{}</name>", lib.settings.name))?;
         f.writeln(&format!(
             "<description>{}</description>",
             lib.info.description
@@ -226,8 +226,10 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         blocked(f, |f| {
             f.writeln("try")?;
             blocked(f, |f| {
-                let env_variable_name =
-                    format!("{}_NATIVE_LIB_LOCATION", lib.name.to_shouty_snake_case());
+                let env_variable_name = format!(
+                    "{}_NATIVE_LIB_LOCATION",
+                    lib.settings.name.to_shouty_snake_case()
+                );
                 f.writeln(&format!(
                     "String nativeLibLocation = System.getenv(\"{}\");",
                     env_variable_name
@@ -456,7 +458,7 @@ fn print_package(
     f.writeln(&format!(
         "package {}.{};",
         config.group_id,
-        lib.name.to_kebab_case()
+        lib.settings.name.to_kebab_case()
     ))?;
     f.newline()?;
     f.writeln("import org.joou.*;")

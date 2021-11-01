@@ -14,7 +14,7 @@ pub(crate) fn generate(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
             xmldoc_print(f, &class.doc, lib)
@@ -91,7 +91,7 @@ pub(crate) fn generate_static(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
             xmldoc_print(f, &class.doc, lib)

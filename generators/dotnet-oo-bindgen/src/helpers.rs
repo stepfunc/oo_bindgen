@@ -13,7 +13,7 @@ pub(crate) fn generate_collection_helpers(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         f.writeln(&format!(
             "internal static class {}Helpers",
             coll.name().to_camel_case()
@@ -83,7 +83,7 @@ pub(crate) fn generate_iterator_helpers(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         f.writeln(&format!(
             "internal static class {}Helpers",
             iter.name().to_camel_case()

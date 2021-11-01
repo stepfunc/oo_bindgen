@@ -22,14 +22,16 @@ use std::path::Path;
 pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
     std::fs::create_dir_all(&path)?;
-    let filename = path.join(format!("{}.cpp", lib.name));
+    let filename = path.join(format!("{}.cpp", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 
-    f.writeln(&format!("#include \"{}.h\"", lib.name))?;
-    f.writeln(&format!("#include \"{}.hpp\"", lib.name))?;
+    f.writeln(&format!("#include \"{}.h\"", lib.settings.name))?;
+    f.writeln(&format!("#include \"{}.hpp\"", lib.settings.name))?;
     f.newline()?;
 
-    namespace(&mut f, &lib.c_ffi_prefix, |f| write_friend_classes(lib, f))?;
+    namespace(&mut f, &lib.settings.c_ffi_prefix, |f| {
+        write_friend_classes(lib, f)
+    })?;
 
     f.newline()?;
 
@@ -42,13 +44,13 @@ pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<
 
         // emit the conversions in statement order as some conversions reference other conversions
         for statement in lib.statements() {
-            write_conversions(lib, f, statement)?;
+            write_conversions(f, statement)?;
         }
 
         Ok(())
     })?;
 
-    namespace(&mut f, &lib.c_ffi_prefix, |f| {
+    namespace(&mut f, &lib.settings.c_ffi_prefix, |f| {
         // definitions of the collection classes and friends
         write_collection_class_definitions(lib, f)?;
 
@@ -67,8 +69,8 @@ pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<
 
 fn write_collection_class_definitions(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     for col in lib.collections() {
-        write_collection_class_definition(lib, f, col)?;
-        write_collection_class_friend(lib, f, col)?;
+        write_collection_class_definition(f, col)?;
+        write_collection_class_friend(f, col)?;
     }
     Ok(())
 }
@@ -128,12 +130,11 @@ fn write_collection_class_implementation(
 }
 
 fn write_collection_class_definition(
-    lib: &Library,
     f: &mut dyn Printer,
     col: &CollectionHandle,
 ) -> FormattingResult<()> {
     let cpp_type = col.collection_type.core_cpp_type();
-    let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
+    let c_type = col.collection_type.to_c_type();
     f.writeln(&format!("class {}", cpp_type))?;
     f.writeln("{")?;
     indented(f, |f| {
@@ -157,11 +158,10 @@ fn write_collection_class_definition(
 }
 
 fn write_collection_class_friend(
-    lib: &Library,
     f: &mut dyn Printer,
     col: &CollectionHandle,
 ) -> FormattingResult<()> {
-    let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
+    let c_type = col.collection_type.to_c_type();
     f.writeln(&format!("class {}", col.collection_type.friend_class()))?;
     f.writeln("{")?;
     f.writeln("public:")?;
@@ -197,11 +197,11 @@ fn write_friend_classes(lib: &Library, f: &mut dyn Printer) -> FormattingResult<
     }
 
     for it in lib.iterators() {
-        write_iterator_friend_class(lib, f, it)?;
+        write_iterator_friend_class(f, it)?;
     }
 
     for class in lib.classes() {
-        print_friend_class(f, lib, class)?;
+        print_friend_class(f, class)?;
     }
 
     Ok(())
@@ -212,7 +212,7 @@ fn write_function_wrappers(lib: &Library, f: &mut dyn Printer) -> FormattingResu
     f.writeln("// We don't convert the return type here as there are nuances that require it to be converted at the call site")?;
     namespace(f, "fn", |f| {
         for func in lib.functions() {
-            write_function_wrapper(lib, f, func)?;
+            write_function_wrapper(f, func)?;
         }
         Ok(())
     })?;
@@ -225,7 +225,7 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     }
 
     for it in lib.iterators() {
-        write_iterator_methods(lib, f, it)?;
+        write_iterator_methods(f, it)?;
     }
 
     for st in lib.structs() {
@@ -251,16 +251,12 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     Ok(())
 }
 
-fn write_iterator_methods(
-    lib: &Library,
-    f: &mut dyn Printer,
-    it: &IteratorHandle,
-) -> FormattingResult<()> {
-    let c_class_type = it.iter_type.to_c_type(&lib.c_ffi_prefix);
+fn write_iterator_methods(f: &mut dyn Printer, it: &IteratorHandle) -> FormattingResult<()> {
+    let c_class_type = it.iter_type.to_c_type();
     let cpp_class_type = it.iter_type.core_cpp_type();
-    let c_next = format!("{}_{}", lib.c_ffi_prefix, it.function.name.to_snake_case());
+    let c_next = it.function.to_c_type();
     let cpp_value_type = it.item_type.core_cpp_type();
-    let c_value_type = it.item_type.to_c_type(&lib.c_ffi_prefix);
+    let c_value_type = it.item_type.to_c_type();
 
     f.writeln(&format!("bool {}::next()", cpp_class_type))?;
     blocked(f, |f| {
@@ -636,13 +632,9 @@ fn write_class_method_impl_generic(
     f.newline()
 }
 
-fn print_friend_class(
-    f: &mut dyn Printer,
-    lib: &Library,
-    handle: &ClassHandle,
-) -> FormattingResult<()> {
+fn print_friend_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
     let iterator = include_str!("./snippet/class_friend_class.hpp");
-    let c_type = format!("{}_{}_t", lib.c_ffi_prefix, handle.name().to_snake_case());
+    let c_type = handle.declaration.to_c_type();
     let cpp_type = handle.core_cpp_type();
     for line in iterator.lines() {
         let substituted = line
@@ -667,17 +659,10 @@ fn cpp_function_args(args: &[Arg<FunctionArgument>]) -> String {
 }
 
 fn transform_arg(arg: &Arg<FunctionArgument>) -> String {
-    match get_arg_transform(&arg.arg_type) {
-        None => arg.name.to_snake_case(),
-        Some(x) => x(arg.name.to_snake_case()),
-    }
-}
-
-fn get_arg_transform(arg: &FunctionArgument) -> Option<fn(String) -> String> {
-    if arg.is_move_type() {
-        Some(|x| std_move(x))
+    if arg.arg_type.is_move_type() {
+        std_move(arg.name.to_snake_case())
     } else {
-        None
+        arg.name.to_snake_case()
     }
 }
 
@@ -688,19 +673,11 @@ fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument>]) -> String {
         .join(", ")
 }
 
-fn write_function_wrapper(
-    lib: &Library,
-    f: &mut dyn Printer,
-    func: &FunctionHandle,
-) -> FormattingResult<()> {
-    fn write_error_check(
-        lib: &Library,
-        f: &mut dyn Printer,
-        err: &ErrorType,
-    ) -> FormattingResult<()> {
+fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> FormattingResult<()> {
+    fn write_error_check(f: &mut dyn Printer, err: &ErrorType) -> FormattingResult<()> {
         let c_success_variant = &format!(
             "{}_{}_{}",
-            lib.c_ffi_prefix.to_shouty_snake_case(),
+            err.inner.settings.c_ffi_prefix.to_shouty_snake_case(),
             err.inner.name.to_shouty_snake_case(),
             err.inner
                 .variants
@@ -762,13 +739,13 @@ fn write_function_wrapper(
 
     f.writeln(&format!(
         "{} {}({})",
-        func.return_type.to_c_type(&lib.c_ffi_prefix),
+        func.return_type.to_c_type(),
         func.name.to_snake_case(),
         cpp_function_args(&func.parameters)
     ))?;
 
     blocked(f, |f| {
-        let c_func_name = format!("{}_{}", lib.c_ffi_prefix, func.name);
+        let c_func_name = func.to_c_type();
         write_shadowed_conversions(f, func)?;
         match &func.error_type {
             None => match &func.return_type {
@@ -788,17 +765,14 @@ fn write_function_wrapper(
                     f.writeln(&format!("const auto _error = {}(", c_func_name))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")?;
-                    write_error_check(lib, f, err)
+                    write_error_check(f, err)
                 }
                 FunctionReturnType::Type(t, _) => {
-                    f.writeln(&format!(
-                        "{} _return_value;",
-                        t.to_c_type(&lib.c_ffi_prefix)
-                    ))?;
+                    f.writeln(&format!("{} _return_value;", t.to_c_type()))?;
                     f.writeln(&format!("const auto _error =  {}(", c_func_name))?;
                     indented(f, |f| write_args(f, func, true))?;
                     f.writeln(");")?;
-                    write_error_check(lib, f, err)?;
+                    write_error_check(f, err)?;
                     f.writeln("return _return_value;")
                 }
             },
@@ -807,56 +781,51 @@ fn write_function_wrapper(
     f.newline()
 }
 
-fn write_conversions(
-    lib: &Library,
-    f: &mut dyn Printer,
-    statement: &Statement,
-) -> FormattingResult<()> {
+fn write_conversions(f: &mut dyn Printer, statement: &Statement) -> FormattingResult<()> {
     match statement {
         Statement::StructDefinition(x) => match x {
-            StructType::FunctionArg(x) => write_cpp_to_native_struct_conversion(f, lib, x),
-            StructType::FunctionReturn(x) => write_native_to_cpp_struct_conversion(f, lib, x),
-            StructType::CallbackArg(x) => write_native_to_cpp_struct_conversion(f, lib, x),
+            StructType::FunctionArg(x) => write_cpp_to_native_struct_conversion(f, x),
+            StructType::FunctionReturn(x) => write_native_to_cpp_struct_conversion(f, x),
+            StructType::CallbackArg(x) => write_native_to_cpp_struct_conversion(f, x),
             StructType::Universal(x) => {
-                write_cpp_to_native_struct_conversion(f, lib, x)?;
-                write_native_to_cpp_struct_conversion(f, lib, x)
+                write_cpp_to_native_struct_conversion(f, x)?;
+                write_native_to_cpp_struct_conversion(f, x)
             }
         },
         Statement::EnumDefinition(x) => {
-            write_enum_to_native_conversion(lib, f, x)?;
-            write_enum_to_cpp_conversion(lib, f, x)
+            write_enum_to_native_conversion(f, x)?;
+            write_enum_to_cpp_conversion(f, x)
         }
         Statement::InterfaceDefinition(x) => {
             // write synchronous and asynchronous conversions
-            write_cpp_interface_to_native_conversion(f, lib, x, InterfaceType::Asynchronous)?;
-            write_cpp_interface_to_native_conversion(f, lib, x, InterfaceType::Synchronous)
+            write_cpp_interface_to_native_conversion(f, x, InterfaceType::Asynchronous)?;
+            write_cpp_interface_to_native_conversion(f, x, InterfaceType::Synchronous)
         }
-        Statement::ClassDefinition(x) => write_class_construct_helper(lib, f, x),
+        Statement::ClassDefinition(x) => write_class_construct_helper(f, x),
         Statement::IteratorDeclaration(x) => {
-            write_iterator_construct_helper(lib, f, x)?;
-            write_iterator_to_native_helper(lib, f, x)
+            write_iterator_construct_helper(f, x)?;
+            write_iterator_to_native_helper(f, x)
         }
         _ => Ok(()),
     }
 }
 
 fn write_iterator_construct_helper(
-    lib: &Library,
     f: &mut dyn Printer,
     handle: &IteratorHandle,
 ) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "::{}::{} construct({}* self)",
-        lib.c_ffi_prefix,
+        handle.settings.c_ffi_prefix,
         cpp_type,
-        handle.iter_type.to_c_type(&lib.c_ffi_prefix)
+        handle.iter_type.to_c_type()
     );
     f.writeln(&signature)?;
     blocked(f, |f| {
         f.writeln(&format!(
             "return ::{}::{}::init(self);",
-            lib.c_ffi_prefix,
+            handle.settings.c_ffi_prefix,
             handle.friend_class()
         ))
     })?;
@@ -864,45 +833,40 @@ fn write_iterator_construct_helper(
 }
 
 fn write_iterator_to_native_helper(
-    lib: &Library,
     f: &mut dyn Printer,
     handle: &IteratorHandle,
 ) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "{}* to_native(const ::{}::{}& value)",
-        handle.iter_type.to_c_type(&lib.c_ffi_prefix),
-        lib.c_ffi_prefix,
+        handle.iter_type.to_c_type(),
+        handle.settings.c_ffi_prefix,
         cpp_type
     );
     f.writeln(&signature)?;
     blocked(f, |f| {
         f.writeln(&format!(
             "return ::{}::{}::get(value);",
-            lib.c_ffi_prefix,
+            handle.settings.c_ffi_prefix,
             handle.friend_class()
         ))
     })?;
     f.newline()
 }
 
-fn write_class_construct_helper(
-    lib: &Library,
-    f: &mut dyn Printer,
-    handle: &ClassHandle,
-) -> FormattingResult<()> {
+fn write_class_construct_helper(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "::{}::{} to_cpp({}* self)",
-        lib.c_ffi_prefix,
+        handle.settings.c_ffi_prefix,
         cpp_type,
-        handle.declaration.to_c_type(&lib.c_ffi_prefix)
+        handle.declaration.to_c_type()
     );
     f.writeln(&signature)?;
     blocked(f, |f| {
         f.writeln(&format!(
             "return ::{}::{}::init(self);",
-            lib.c_ffi_prefix,
+            handle.settings.c_ffi_prefix,
             handle.friend_class()
         ))
     })?;
@@ -977,11 +941,10 @@ where
 }
 
 fn write_iterator_friend_class(
-    lib: &Library,
     f: &mut dyn Printer,
     handle: &IteratorHandle,
 ) -> FormattingResult<()> {
-    let c_type = handle.iter_type.to_c_type(&lib.c_ffi_prefix);
+    let c_type = handle.iter_type.to_c_type();
 
     f.writeln(&format!("class {}", handle.friend_class()))?;
     f.writeln("{")?;
@@ -991,7 +954,7 @@ fn write_iterator_friend_class(
         f.writeln(&format!(
             "static {} init({}* value)",
             handle.core_cpp_type(),
-            handle.iter_type.to_c_type(&lib.c_ffi_prefix)
+            handle.iter_type.to_c_type()
         ))?;
         blocked(f, |f| {
             f.writeln(&format!("return {}(value);", handle.core_cpp_type()))
@@ -1015,20 +978,23 @@ fn write_iterator_friend_class(
 
 fn write_cpp_to_native_struct_conversion<T>(
     f: &mut dyn Printer,
-    lib: &Library,
     handle: &Handle<Struct<T>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + ToNativeStructField,
 {
-    let namespaced_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
+    let namespaced_type = format!(
+        "::{}::{}",
+        handle.declaration.settings.c_ffi_prefix,
+        handle.core_cpp_type()
+    );
     let value_type = if handle.fields.iter().any(|f| f.field_type.requires_move()) {
         mut_ref(namespaced_type)
     } else {
         const_ref(namespaced_type)
     };
 
-    let c_type = handle.to_c_type(&lib.c_ffi_prefix);
+    let c_type = handle.to_c_type();
     f.writeln(&format!(
         "static {} to_native({} value)",
         c_type, value_type
@@ -1044,7 +1010,7 @@ where
                     Visibility::Private => {
                         format!(
                             "::{}::{}::get_{}(value)",
-                            lib.c_ffi_prefix,
+                            handle.declaration.settings.c_ffi_prefix,
                             handle.friend_class(),
                             field.name.to_snake_case()
                         )
@@ -1063,20 +1029,23 @@ where
 
 fn write_native_to_cpp_struct_conversion<T>(
     f: &mut dyn Printer,
-    lib: &Library,
     handle: &Handle<Struct<T>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + ToCppStructField,
 {
-    let c_type = handle.to_c_type(&lib.c_ffi_prefix);
+    let c_type = handle.to_c_type();
 
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
+    let cpp_type = format!(
+        "::{}::{}",
+        handle.declaration.settings.c_ffi_prefix,
+        handle.core_cpp_type()
+    );
     f.writeln(&format!("{} to_cpp({} value)", cpp_type, const_ref(c_type)))?;
     blocked(f, |f| {
         f.writeln(&format!(
             "return ::{}::{}::init(",
-            lib.c_ffi_prefix,
+            handle.declaration.settings.c_ffi_prefix,
             handle.friend_class()
         ))?;
         indented(f, |f| {
@@ -1128,15 +1097,17 @@ fn write_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
 }
 
 fn write_enum_to_native_conversion(
-    lib: &Library,
     f: &mut dyn Printer,
     handle: &EnumHandle,
 ) -> FormattingResult<()> {
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
+    let cpp_type = format!(
+        "::{}::{}",
+        handle.settings.c_ffi_prefix,
+        handle.core_cpp_type()
+    );
     f.writeln(&format!(
-        "{}_{}_t to_native({} value)",
-        lib.c_ffi_prefix,
-        handle.name.to_snake_case(),
+        "{} to_native({} value)",
+        handle.to_c_type(),
         cpp_type
     ))?;
     f.writeln("{")?;
@@ -1147,10 +1118,10 @@ fn write_enum_to_native_conversion(
             for v in &handle.variants {
                 f.writeln(&format!(
                     "case ::{}::{}::{}: return {}_{}_{};",
-                    lib.c_ffi_prefix,
+                    handle.settings.c_ffi_prefix,
                     handle.name.to_camel_case(),
                     v.name.to_snake_case(),
-                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    handle.settings.c_ffi_prefix.to_shouty_snake_case(),
                     handle.name.to_shouty_snake_case(),
                     v.name.to_shouty_snake_case(),
                 ))?;
@@ -1164,17 +1135,16 @@ fn write_enum_to_native_conversion(
     f.newline()
 }
 
-fn write_enum_to_cpp_conversion(
-    lib: &Library,
-    f: &mut dyn Printer,
-    handle: &EnumHandle,
-) -> FormattingResult<()> {
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
+fn write_enum_to_cpp_conversion(f: &mut dyn Printer, handle: &EnumHandle) -> FormattingResult<()> {
+    let cpp_type = format!(
+        "::{}::{}",
+        handle.settings.c_ffi_prefix,
+        handle.core_cpp_type()
+    );
     f.writeln(&format!(
-        "{} to_cpp({}_{}_t value)",
+        "{} to_cpp({} value)",
         cpp_type,
-        lib.c_ffi_prefix,
-        handle.name.to_snake_case()
+        handle.to_c_type()
     ))?;
     f.writeln("{")?;
     indented(f, |f| {
@@ -1184,10 +1154,10 @@ fn write_enum_to_cpp_conversion(
             for v in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}_{}: return ::{}::{}::{};",
-                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    handle.settings.c_ffi_prefix.to_shouty_snake_case(),
                     handle.name.to_shouty_snake_case(),
                     v.name.to_shouty_snake_case(),
-                    lib.c_ffi_prefix,
+                    handle.settings.c_ffi_prefix,
                     handle.name.to_camel_case(),
                     v.name.to_snake_case()
                 ))?;
@@ -1204,11 +1174,14 @@ fn write_enum_to_cpp_conversion(
 
 fn write_callback_function(
     f: &mut dyn Printer,
-    lib: &Library,
     interface: &InterfaceHandle,
     cb: &CallbackFunction,
 ) -> FormattingResult<()> {
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, interface.core_cpp_type());
+    let cpp_type = format!(
+        "::{}::{}",
+        interface.settings.c_ffi_prefix,
+        interface.core_cpp_type()
+    );
 
     fn write_invocation_lines(f: &mut dyn Printer, cb: &CallbackFunction) -> FormattingResult<()> {
         for (arg, last) in cb.arguments.iter().with_last() {
@@ -1230,13 +1203,7 @@ fn write_callback_function(
     let args = cb
         .arguments
         .iter()
-        .map(|x| {
-            format!(
-                "{} {}",
-                x.arg_type.to_c_type(&lib.c_ffi_prefix),
-                x.name.to_snake_case()
-            )
-        })
+        .map(|x| format!("{} {}", x.arg_type.to_c_type(), x.name.to_snake_case()))
         .chain(std::iter::once("void* ctx".to_string()))
         .collect::<Vec<String>>()
         .join(", ");
@@ -1244,7 +1211,7 @@ fn write_callback_function(
     f.writeln(&format!(
         "[]({}) -> {} {{",
         args,
-        cb.return_type.to_c_type(&lib.c_ffi_prefix)
+        cb.return_type.to_c_type()
     ))?;
     indented(f, |f| {
         for arg in &cb.arguments {
@@ -1285,25 +1252,25 @@ fn write_callback_function(
 
 fn write_cpp_interface_to_native_conversion(
     f: &mut dyn Printer,
-    lib: &Library,
     handle: &InterfaceHandle,
     interface_type: InterfaceType,
 ) -> FormattingResult<()> {
-    let c_type = handle.to_c_type(&lib.c_ffi_prefix);
-    let cpp_type = format!("::{}::{}", lib.c_ffi_prefix, handle.core_cpp_type());
+    let c_type = handle.to_c_type();
+    let cpp_type = format!(
+        "::{}::{}",
+        handle.settings.c_ffi_prefix,
+        handle.core_cpp_type()
+    );
     let argument_type = match interface_type {
         InterfaceType::Synchronous => mut_ref(cpp_type.clone()),
         InterfaceType::Asynchronous => unique_ptr(cpp_type.clone()),
     };
     f.writeln(&format!("{} to_native({} value)", c_type, argument_type,))?;
     blocked(f, |f| {
-        f.writeln(&format!(
-            "return {} {{",
-            handle.to_c_type(&lib.c_ffi_prefix)
-        ))?;
+        f.writeln(&format!("return {} {{", handle.to_c_type()))?;
         indented(f, |f| {
             for cb in &handle.callbacks {
-                write_callback_function(f, lib, handle, cb)?;
+                write_callback_function(f, handle, cb)?;
             }
             match interface_type {
                 InterfaceType::Synchronous => {

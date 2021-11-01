@@ -197,7 +197,7 @@ where
             .warning("This class is an opaque handle and cannot be constructed by user code"),
     };
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
             xmldoc_print(f, &doc, lib)

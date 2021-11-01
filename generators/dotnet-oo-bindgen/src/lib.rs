@@ -118,7 +118,7 @@ fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
 fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     // Open file
     let mut filename = config.output_dir.clone();
-    filename.push(lib.name.clone());
+    filename.push(lib.settings.name.clone());
     filename.set_extension("csproj");
     let mut f = FilePrinter::new(filename)?;
 
@@ -130,7 +130,7 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("    <SymbolPackageFormat>snupkg</SymbolPackageFormat>")?; // Use new file format
     f.writeln(&format!(
         "    <PackageId>{}</PackageId>",
-        lib.name.to_string()
+        lib.settings.name.to_string()
     ))?;
     f.writeln(&format!(
         "    <PackageVersion>{}</PackageVersion>",
@@ -281,7 +281,7 @@ fn generate_constant_set(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
             xmldoc_print(f, &set.doc, lib)
@@ -312,7 +312,7 @@ fn generate_enum(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
             xmldoc_print(f, &native_enum.doc, lib)
@@ -342,7 +342,7 @@ fn generate_exception(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
             xmldoc_print(f, &err.inner.doc, lib)

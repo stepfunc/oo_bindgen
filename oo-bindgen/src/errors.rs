@@ -14,8 +14,6 @@ pub enum BindingError {
     // Global errors
     #[error("Symbol '{}' already used in the library", name)]
     SymbolAlreadyUsed { name: String },
-    #[error("C FFI prefix already set")]
-    FfiPrefixAlreadySet,
 
     // Documentation error
     #[error("Invalid documentation string")]

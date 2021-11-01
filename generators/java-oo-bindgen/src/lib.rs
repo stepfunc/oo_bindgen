@@ -79,7 +79,7 @@ impl JavaBindgenConfig {
         for dir in self.group_id.split('.') {
             result.push(dir);
         }
-        result.push(&lib.name.to_kebab_case());
+        result.push(&lib.settings.name.to_kebab_case());
         result
     }
 

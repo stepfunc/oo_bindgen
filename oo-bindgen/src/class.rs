@@ -1,5 +1,6 @@
 use crate::doc::DocString;
 use crate::*;
+use std::rc::Rc;
 
 /// Different types of classes
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -17,6 +18,7 @@ pub enum ClassType {
 pub struct ClassDeclaration {
     pub name: String,
     pub class_type: ClassType,
+    pub settings: Rc<LibrarySettings>,
 }
 
 #[derive(Debug, Clone)]
@@ -42,8 +44,12 @@ impl CollectionClassDeclaration {
 }
 
 impl ClassDeclaration {
-    pub(crate) fn new(name: String, class_type: ClassType) -> Self {
-        Self { name, class_type }
+    pub(crate) fn new(name: String, class_type: ClassType, settings: Rc<LibrarySettings>) -> Self {
+        Self {
+            name,
+            class_type,
+            settings,
+        }
     }
 }
 
@@ -106,6 +112,7 @@ pub struct Class {
     pub async_methods: Vec<AsyncMethod>,
     pub doc: Doc,
     pub destruction_mode: DestructionMode,
+    pub settings: Rc<LibrarySettings>,
 }
 
 impl Class {
@@ -380,6 +387,7 @@ impl<'a> ClassBuilder<'a> {
             async_methods: self.async_methods,
             doc,
             destruction_mode: self.destruction_mode,
+            settings: self.lib.settings.clone(),
         });
 
         self.lib

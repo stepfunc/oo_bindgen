@@ -17,12 +17,12 @@ pub(crate) fn generate_native_functions_class(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
         blocked(f, |f| {
             for func in lib.functions() {
                 f.newline()?;
-                write_conversion_wrapper(f, func, &lib.c_ffi_prefix)?;
+                write_conversion_wrapper(f, func, &lib.settings.c_ffi_prefix)?;
             }
             Ok(())
         })?;
@@ -32,7 +32,7 @@ pub(crate) fn generate_native_functions_class(
         blocked(f, |f| {
             for func in lib.functions().filter(|x| x.error_type.is_some()) {
                 f.newline()?;
-                write_exception_wrapper(f, func, &lib.c_ffi_prefix)?;
+                write_exception_wrapper(f, func, &lib.settings.c_ffi_prefix)?;
             }
             Ok(())
         })?;
@@ -42,7 +42,7 @@ pub(crate) fn generate_native_functions_class(
         f.writeln("internal class PInvoke")?;
         blocked(f, |f| {
             for func in lib.functions() {
-                write_pinvoke_signature(f, func, &lib.c_ffi_prefix, config)?;
+                write_pinvoke_signature(f, func, &lib.settings.c_ffi_prefix, config)?;
             }
             Ok(())
         })

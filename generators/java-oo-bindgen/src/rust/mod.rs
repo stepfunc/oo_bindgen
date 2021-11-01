@@ -216,7 +216,7 @@ fn generate_functions(
         }
 
         f.writeln("#[no_mangle]")?;
-        f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.name, handle.name.replace("_", "_1")))?;
+        f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.settings.name, handle.name.replace("_", "_1")))?;
         f.write(
             &handle
                 .parameters
@@ -275,7 +275,7 @@ fn generate_functions(
             for param in &handle.parameters {
                 if let Some(conversion) = param
                     .arg_type
-                    .conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                 {
                     conversion.convert_to_rust(
                         f,
@@ -311,7 +311,7 @@ fn generate_functions(
 
             f.write(&format!(
                 "unsafe {{ {}::ffi::{}_{}(",
-                config.ffi_name, lib.c_ffi_prefix, handle.name
+                config.ffi_name, lib.settings.c_ffi_prefix, handle.name
             ))?;
             f.write(
                 &handle
@@ -337,7 +337,7 @@ fn generate_functions(
                 SignatureType::NoErrorNoReturn => (),
                 SignatureType::NoErrorWithReturn(return_type, _) => {
                     if let Some(conversion) =
-                        return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                        return_type.conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                     {
                         conversion.convert_from_rust(f, "_result", "let _result = ")?;
                         f.write(";")?;
@@ -363,7 +363,7 @@ fn generate_functions(
                     blocked(f, |f| {
                         f.writeln("let _result = unsafe { _out.assume_init() };")?;
                         if let Some(conversion) =
-                            return_type.conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                            return_type.conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                         {
                             conversion.convert_from_rust(f, "_result", "")?;
                         }
@@ -393,7 +393,7 @@ fn generate_functions(
             for param in &handle.parameters {
                 if let Some(conversion) = param
                     .arg_type
-                    .conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                 {
                     conversion.convert_to_rust_cleanup(f, &param.name.to_snake_case())?;
                 }

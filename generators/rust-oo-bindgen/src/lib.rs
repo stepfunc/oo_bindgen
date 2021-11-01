@@ -90,7 +90,7 @@ impl<'a> RustCodegen<'a> {
                 },
                 Statement::EnumDefinition(handle) => self.write_enum_definition(&mut f, handle)?,
                 Statement::FunctionDefinition(handle) => {
-                    Self::write_function(&mut f, handle, &self.library.c_ffi_prefix)?
+                    Self::write_function(&mut f, handle, &self.library.settings.c_ffi_prefix)?
                 }
                 Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
                 _ => (),

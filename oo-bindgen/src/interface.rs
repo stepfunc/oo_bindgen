@@ -6,6 +6,7 @@ use crate::return_type::ReturnType;
 use crate::structs::{CallbackArgStructField, CallbackArgStructHandle, UniversalStructHandle};
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
+use std::rc::Rc;
 
 pub const CTX_VARIABLE_NAME: &str = "ctx";
 pub const DESTROY_FUNC_NAME: &str = "on_destroy";
@@ -139,6 +140,7 @@ pub struct Interface {
     pub interface_type: InterfaceType,
     pub callbacks: Vec<CallbackFunction>,
     pub doc: Doc,
+    pub settings: Rc<LibrarySettings>,
 }
 
 impl Interface {
@@ -197,6 +199,7 @@ impl<'a> InterfaceBuilder<'a> {
             interface_type: self.interface_type,
             callbacks: self.callbacks,
             doc: self.doc,
+            settings: self.lib.settings.clone(),
         });
 
         self.lib

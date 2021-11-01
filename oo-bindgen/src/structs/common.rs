@@ -11,8 +11,11 @@ use crate::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
 };
 use crate::types::{DurationType, StringType, TypeValidator};
-use crate::{BindResult, BindingError, Handle, LibraryBuilder, Statement, StructType};
+use crate::{
+    BindResult, BindingError, Handle, LibraryBuilder, LibrarySettings, Statement, StructType,
+};
 use std::marker::PhantomData;
+use std::rc::Rc;
 use std::time::Duration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -211,11 +214,12 @@ pub enum Visibility {
 #[derive(Debug)]
 pub struct StructDeclaration {
     pub name: String,
+    pub settings: Rc<LibrarySettings>,
 }
 
 impl StructDeclaration {
-    pub fn new(name: String) -> Self {
-        Self { name }
+    pub fn new(name: String, settings: Rc<LibrarySettings>) -> Self {
+        Self { name, settings }
     }
 }
 

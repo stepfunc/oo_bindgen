@@ -76,7 +76,7 @@ fn generate_struct<T>(
 where
     T: StructFieldType + JniType,
 {
-    let lib_path = config.java_signature_path(&lib.name);
+    let lib_path = config.java_signature_path(&lib.settings.name);
     let struct_name = structure.name().to_camel_case();
     let struct_sig = format!("\"L{}/{};\"", lib_path, struct_name);
 
@@ -130,7 +130,7 @@ where
                 for field in structure.fields() {
                     if let Some(conversion) = field
                         .field_type
-                        .conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                        .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                     {
                         conversion.convert_to_rust(
                             f,
@@ -156,7 +156,7 @@ where
             for field in structure.fields() {
                 if let Some(conversion) = field
                     .field_type
-                    .conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                 {
                     conversion.convert_to_rust_cleanup(
                         f,
@@ -176,7 +176,7 @@ where
             for field in structure.fields() {
                 if let Some(conversion) = field
                     .field_type
-                    .conversion(&config.ffi_name, &lib.c_ffi_prefix)
+                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
                 {
                     conversion.convert_from_rust(
                         f,

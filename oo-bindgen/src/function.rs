@@ -8,6 +8,7 @@ use crate::structs::{
 };
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
+use std::rc::Rc;
 
 /// types that can be returns from native functions
 #[derive(Debug, Clone, PartialEq)]
@@ -192,6 +193,7 @@ pub struct Function {
     pub return_type: FunctionReturnType,
     pub parameters: Vec<Arg<FunctionArgument>>,
     pub error_type: Option<ErrorType>,
+    pub settings: Rc<LibrarySettings>,
     pub doc: Doc,
 }
 
@@ -336,6 +338,7 @@ impl<'a> FunctionBuilder<'a> {
             return_type,
             parameters: self.params,
             error_type: self.error_type,
+            settings: self.lib.settings.clone(),
             doc,
         });
 

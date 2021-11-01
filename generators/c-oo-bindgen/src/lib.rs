@@ -147,7 +147,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
     {
         let stdin = command.stdin.as_mut().unwrap();
         stdin
-            .write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes())
+            .write_all(&format!("PROJECT_NAME = {}\n", lib.settings.name).into_bytes())
             .unwrap();
         stdin
             .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
@@ -172,11 +172,11 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
 }
 
 fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
-    let uppercase_name = lib.c_ffi_prefix.to_uppercase();
+    let uppercase_name = lib.settings.c_ffi_prefix.to_uppercase();
 
     // Open file
     fs::create_dir_all(&path)?;
-    let filename = path.join(format!("{}.h", lib.name));
+    let filename = path.join(format!("{}.h", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 
     // Print license
@@ -229,11 +229,8 @@ fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
             match statement {
                 Statement::Constants(handle) => write_constants_definition(f, handle, lib)?,
                 Statement::StructDeclaration(handle) => {
-                    f.writeln(&format!(
-                        "typedef struct {} {};",
-                        handle.to_c_type(&lib.c_ffi_prefix),
-                        handle.to_c_type(&lib.c_ffi_prefix)
-                    ))?;
+                    let c_type = handle.to_c_type();
+                    f.writeln(&format!("typedef struct {} {};", c_type, c_type))?;
                 }
                 Statement::StructDefinition(st) => match st {
                     StructType::FunctionArg(x) => write_struct_definition(f, x, lib)?,
@@ -269,7 +266,7 @@ fn write_constants_definition(
         doxygen(f, |f| doxygen_print(f, &item.doc, lib))?;
         f.writeln(&format!(
             "#define {}_{}_{} {}",
-            lib.c_ffi_prefix.to_shouty_snake_case(),
+            lib.settings.c_ffi_prefix.to_shouty_snake_case(),
             handle.name.to_shouty_snake_case(),
             item.name.to_shouty_snake_case(),
             get_constant_value(item.value)
@@ -297,10 +294,7 @@ where
     doxygen(f, |f| doxygen_print(f, &doc, lib))?;
 
     // Write the struct definition
-    f.writeln(&format!(
-        "typedef struct {}",
-        handle.to_c_type(&lib.c_ffi_prefix)
-    ))?;
+    f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for element in &handle.fields {
@@ -315,13 +309,13 @@ where
             })?;
             f.writeln(&format!(
                 "{} {};",
-                element.field_type.to_c_type(&lib.c_ffi_prefix),
+                element.field_type.to_c_type(),
                 element.name.to_snake_case(),
             ))?;
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_c_type(&lib.c_ffi_prefix)))?;
+    f.writeln(&format!("}} {};", handle.to_c_type()))?;
 
     // user should never try to initialize opaque structs, so don't suggest this is OK
     if handle.visibility != Visibility::Private {
@@ -335,7 +329,7 @@ where
     Ok(())
 }
 
-fn get_default_value(lib: &Library, default: &ValidatedConstructorDefault) -> String {
+fn get_default_value(default: &ValidatedConstructorDefault) -> String {
     match default {
         ValidatedConstructorDefault::Bool(x) => x.to_string(),
         ValidatedConstructorDefault::Numeric(x) => match x {
@@ -354,7 +348,7 @@ fn get_default_value(lib: &Library, default: &ValidatedConstructorDefault) -> St
         ValidatedConstructorDefault::Enum(x, variant) => {
             format!(
                 "{}_{}_{}",
-                lib.c_ffi_prefix.to_shouty_snake_case(),
+                x.settings.c_ffi_prefix.to_shouty_snake_case(),
                 x.name.to_shouty_snake_case(),
                 variant.to_shouty_snake_case()
             )
@@ -363,7 +357,7 @@ fn get_default_value(lib: &Library, default: &ValidatedConstructorDefault) -> St
         ValidatedConstructorDefault::DefaultStruct(handle, _, name) => {
             format!(
                 "{}_{}_{}()",
-                &lib.c_ffi_prefix,
+                &handle.settings().c_ffi_prefix,
                 handle.name().to_snake_case(),
                 name.to_snake_case(),
             )
@@ -406,34 +400,25 @@ where
     let params = handle
         .fields()
         .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
-        .map(|el| {
-            format!(
-                "{} {}",
-                el.field_type.to_c_type(&lib.c_ffi_prefix),
-                el.name.to_snake_case()
-            )
-        })
+        .map(|el| format!("{} {}", el.field_type.to_c_type(), el.name.to_snake_case()))
         .collect::<Vec<String>>()
         .join(", ");
 
     f.writeln(&format!(
         "static {} {}_{}_{}({})",
-        handle.to_c_type(&lib.c_ffi_prefix),
-        &lib.c_ffi_prefix,
+        handle.to_c_type(),
+        handle.declaration.settings.c_ffi_prefix,
         handle.name().to_snake_case(),
         constructor.name.to_snake_case(),
         params
     ))?;
 
     blocked(f, |f| {
-        f.writeln(&format!(
-            "{} _return_value;",
-            handle.to_c_type(&lib.c_ffi_prefix)
-        ))?;
+        f.writeln(&format!("{} _return_value;", handle.to_c_type()))?;
         for field in &handle.fields {
             let field_name = field.name.to_snake_case();
             let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
-                Some(x) => get_default_value(lib, &x.value),
+                Some(x) => get_default_value(&x.value),
                 None => field_name.clone(),
             };
             f.writeln(&format!("_return_value.{} = {};", field_name, value))?;
@@ -451,17 +436,14 @@ fn write_enum_definition(
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    f.writeln(&format!(
-        "typedef enum {}",
-        handle.to_c_type(&lib.c_ffi_prefix)
-    ))?;
+    f.writeln(&format!("typedef enum {}", handle.to_c_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
             doxygen(f, |f| doxygen_print(f, &variant.doc, lib))?;
             f.writeln(&format!(
                 "{}_{}_{} = {},",
-                lib.c_ffi_prefix.to_shouty_snake_case(),
+                lib.settings.c_ffi_prefix.to_shouty_snake_case(),
                 handle.name.to_shouty_snake_case(),
                 variant.name.to_shouty_snake_case(),
                 variant.value
@@ -469,7 +451,7 @@ fn write_enum_definition(
         }
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", handle.to_c_type(&lib.c_ffi_prefix)))?;
+    f.writeln(&format!("}} {};", handle.to_c_type()))?;
 
     f.newline()?;
 
@@ -485,9 +467,9 @@ fn write_enum_definition(
     })?;
     f.writeln(&format!(
         "static const char* {}_{}_to_string({} value)",
-        &lib.c_ffi_prefix,
+        &lib.settings.c_ffi_prefix,
         handle.name.to_snake_case(),
-        handle.to_c_type(&lib.c_ffi_prefix)
+        handle.to_c_type()
     ))?;
     blocked(f, |f| {
         f.writeln("switch (value)")?;
@@ -495,7 +477,7 @@ fn write_enum_definition(
             for variant in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}_{}: return \"{}\";",
-                    lib.c_ffi_prefix.to_shouty_snake_case(),
+                    lib.settings.c_ffi_prefix.to_shouty_snake_case(),
                     handle.name.to_shouty_snake_case(),
                     variant.name.to_shouty_snake_case(),
                     variant.name
@@ -519,7 +501,7 @@ fn write_class_declaration(
                 &Doc::from(&*format!(
                     "Iterator of {{struct:{}}}. See @ref {}_{}.",
                     handle.item_type.name(),
-                    lib.c_ffi_prefix,
+                    lib.settings.c_ffi_prefix,
                     handle.function.name
                 )),
                 lib,
@@ -530,10 +512,10 @@ fn write_class_declaration(
                 f,
                 &Doc::from(&*format!(
                     "Collection of {}. See @ref {}_{} and @ref {}_{}.",
-                    handle.item_type.to_c_type(&lib.c_ffi_prefix),
-                    lib.c_ffi_prefix,
+                    handle.item_type.to_c_type(),
+                    lib.settings.c_ffi_prefix,
                     handle.add_func.name,
-                    lib.c_ffi_prefix,
+                    lib.settings.c_ffi_prefix,
                     handle.delete_func.name
                 )),
                 lib,
@@ -544,8 +526,8 @@ fn write_class_declaration(
 
     f.writeln(&format!(
         "typedef struct {} {};",
-        handle.to_c_type(&lib.c_ffi_prefix),
-        handle.to_c_type(&lib.c_ffi_prefix)
+        handle.to_c_type(),
+        handle.to_c_type()
     ))
 }
 
@@ -607,15 +589,15 @@ fn write_function(
     if let Some(error_type) = &handle.error_type {
         f.writeln(&format!(
             "{} {}_{}(",
-            error_type.inner.to_c_type(&lib.c_ffi_prefix),
-            &lib.c_ffi_prefix,
+            error_type.inner.to_c_type(),
+            &lib.settings.c_ffi_prefix,
             handle.name
         ))?;
     } else {
         f.writeln(&format!(
             "{} {}_{}(",
-            handle.return_type.to_c_type(&lib.c_ffi_prefix),
-            &lib.c_ffi_prefix,
+            handle.return_type.to_c_type(),
+            &lib.settings.c_ffi_prefix,
             handle.name
         ))?;
     }
@@ -627,7 +609,7 @@ fn write_function(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.to_c_type(&lib.c_ffi_prefix),
+                    param.arg_type.to_c_type(),
                     param.name.to_snake_case()
                 )
             })
@@ -639,7 +621,7 @@ fn write_function(
         if let FunctionReturnType::Type(x, _) = &handle.return_type {
             if !handle.parameters.is_empty() {
                 f.write(", ")?;
-                f.write(&format!("{}* out", x.to_c_type(&lib.c_ffi_prefix)))?;
+                f.write(&format!("{}* out", x.to_c_type()))?;
             }
         }
     }
@@ -654,7 +636,7 @@ fn write_interface(
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
 
-    let struct_name = handle.to_c_type(&lib.c_ffi_prefix);
+    let struct_name = handle.to_c_type();
 
     f.writeln(&format!("typedef struct {}", struct_name))?;
     f.writeln("{")?;
@@ -690,11 +672,11 @@ fn write_interface(
             // Print function signature
             f.write(&format!(
                 "{} (*{})(",
-                cb.return_type.to_c_type(&lib.c_ffi_prefix),
+                cb.return_type.to_c_type(),
                 cb.name.to_snake_case(),
             ))?;
 
-            f.write(&chelpers::callback_parameters(lib, cb))?;
+            f.write(&chelpers::callback_parameters(cb))?;
 
             f.write(");")?;
         }
@@ -741,18 +723,18 @@ fn write_interface(
     f.writeln(&format!(
         "static {} {}_{}_init(",
         struct_name,
-        &lib.c_ffi_prefix,
+        &lib.settings.c_ffi_prefix,
         handle.name.to_snake_case()
     ))?;
     indented(f, |f| {
         for cb in &handle.callbacks {
             f.writeln(&format!(
                 "{} (*{})(",
-                cb.return_type.to_c_type(&lib.c_ffi_prefix),
+                cb.return_type.to_c_type(),
                 cb.name.to_snake_case(),
             ))?;
 
-            f.write(&chelpers::callback_parameters(lib, cb))?;
+            f.write(&chelpers::callback_parameters(cb))?;
             f.write("),")?;
         }
 
@@ -797,7 +779,7 @@ fn generate_cmake_config(
         .join(platform_location.platform.as_string())
         .join("cmake");
     fs::create_dir_all(&cmake_path)?;
-    let filename = cmake_path.join(format!("{}-config.cmake", lib.name));
+    let filename = cmake_path.join(format!("{}-config.cmake", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 
     let link_deps = get_link_dependencies(config);
@@ -807,8 +789,14 @@ fn generate_cmake_config(
     f.newline()?;
 
     // Write dynamic library version
-    f.writeln(&format!("add_library({} SHARED IMPORTED GLOBAL)", lib.name))?;
-    f.writeln(&format!("set_target_properties({} PROPERTIES", lib.name))?;
+    f.writeln(&format!(
+        "add_library({} SHARED IMPORTED GLOBAL)",
+        lib.settings.name
+    ))?;
+    f.writeln(&format!(
+        "set_target_properties({} PROPERTIES",
+        lib.settings.name
+    ))?;
     indented(&mut f, |f| {
         f.writeln(&format!(
             "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
@@ -829,11 +817,11 @@ fn generate_cmake_config(
     // Write static library
     f.writeln(&format!(
         "add_library({}_static STATIC IMPORTED GLOBAL)",
-        lib.name
+        lib.settings.name
     ))?;
     f.writeln(&format!(
         "set_target_properties({}_static PROPERTIES",
-        lib.name
+        lib.settings.name
     ))?;
     indented(&mut f, |f| {
         f.writeln(&format!(
@@ -851,8 +839,8 @@ fn generate_cmake_config(
 
     f.writeln(&format!(
         "set({}_CPP_FILE ${{prefix}}/src/{}.cpp CACHE STRING \"CPP implementation\" FORCE)",
-        lib.name.to_shouty_snake_case(),
-        lib.name.to_snake_case()
+        lib.settings.name.to_shouty_snake_case(),
+        lib.settings.name.to_snake_case()
     ))?;
     f.newline()
 }

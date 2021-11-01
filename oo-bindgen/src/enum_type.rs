@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::doc::Doc;
 use crate::*;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct EnumVariant {
@@ -13,6 +14,7 @@ pub struct EnumVariant {
 #[derive(Debug)]
 pub struct Enum {
     pub name: String,
+    pub settings: Rc<LibrarySettings>,
     pub variants: Vec<EnumVariant>,
     pub doc: Doc,
 }
@@ -124,6 +126,7 @@ impl<'a> EnumBuilder<'a> {
 
         let handle = EnumHandle::new(Enum {
             name: self.name,
+            settings: self.lib.settings.clone(),
             variants: self.variants,
             doc,
         });

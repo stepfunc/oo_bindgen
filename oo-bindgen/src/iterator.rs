@@ -1,5 +1,6 @@
 use crate::structs::FunctionReturnStructField;
 use crate::*;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Iterator {
@@ -7,6 +8,7 @@ pub struct Iterator {
     pub function: FunctionHandle,
     pub iter_type: ClassDeclarationHandle,
     pub item_type: UniversalOr<FunctionReturnStructField>,
+    pub settings: Rc<LibrarySettings>,
 }
 
 impl Iterator {
@@ -14,6 +16,7 @@ impl Iterator {
         has_lifetime_annotation: bool,
         function: &FunctionHandle,
         item_type: UniversalOr<FunctionReturnStructField>,
+        settings: Rc<LibrarySettings>,
     ) -> BindResult<Iterator> {
         match &function.return_type {
             FunctionReturnType::Void => {
@@ -64,6 +67,7 @@ impl Iterator {
                     function: function.clone(),
                     iter_type: iter_type.clone(),
                     item_type,
+                    settings,
                 })
             } else {
                 Err(BindingError::IteratorNotSingleClassRefParam {

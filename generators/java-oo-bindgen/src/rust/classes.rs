@@ -6,7 +6,7 @@ pub(crate) fn generate_classes_cache(
     lib: &Library,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
-    let lib_path = config.java_signature_path(&lib.name);
+    let lib_path = config.java_signature_path(&lib.settings.name);
 
     let mut filename = config.rust_source_dir();
     filename.push("classes");

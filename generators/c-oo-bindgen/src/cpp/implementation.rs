@@ -90,7 +90,7 @@ fn write_collection_class_implementation(
     col: &CollectionHandle,
 ) -> FormattingResult<()> {
     //let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
-    let cpp_type = col.collection_type.core_cpp_type();
+    let cpp_type = col.collection_class.core_cpp_type();
     let constructor = format!("fn::{}", col.create_func.name.to_snake_case());
 
     let construct_self = if col.has_reserve {
@@ -133,14 +133,14 @@ fn write_collection_class_definition(
     f: &mut dyn Printer,
     col: &CollectionHandle,
 ) -> FormattingResult<()> {
-    let cpp_type = col.collection_type.core_cpp_type();
-    let c_type = col.collection_type.to_c_type();
+    let cpp_type = col.collection_class.core_cpp_type();
+    let c_type = col.collection_class.to_c_type();
     f.writeln(&format!("class {}", cpp_type))?;
     f.writeln("{")?;
     indented(f, |f| {
         f.writeln(&format!(
             "friend class {};",
-            col.collection_type.friend_class()
+            col.collection_class.friend_class()
         ))?;
         f.writeln(&format!("{}* self;", c_type))
     })?;
@@ -161,15 +161,15 @@ fn write_collection_class_friend(
     f: &mut dyn Printer,
     col: &CollectionHandle,
 ) -> FormattingResult<()> {
-    let c_type = col.collection_type.to_c_type();
-    f.writeln(&format!("class {}", col.collection_type.friend_class()))?;
+    let c_type = col.collection_class.to_c_type();
+    f.writeln(&format!("class {}", col.collection_class.friend_class()))?;
     f.writeln("{")?;
     f.writeln("public:")?;
     indented(f, |f| {
         f.writeln(&format!(
             "static {}* get({}& value)",
             c_type,
-            col.collection_type.core_cpp_type()
+            col.collection_class.core_cpp_type()
         ))?;
         blocked(f, |f| f.writeln("return value.self;"))?;
         Ok(())

@@ -105,7 +105,7 @@ pub struct LibraryInfo {
     pub developers: Vec<DeveloperInfo>,
 }
 
-/// Settings that affect the names of things
+/// Settings that affect iterator function naming
 #[derive(Debug)]
 pub struct IteratorSettings {
     /// name of the C function which retrieve's the iterator's next value
@@ -127,6 +127,30 @@ impl IteratorSettings {
     }
 }
 
+/// Settings that affect collection function naming
+#[derive(Debug)]
+pub struct CollectionSettings {
+    /// name of the C function which creates a collection
+    /// is automatically generated as `<c_ffi_prefix>_<collection_class_name>_<create_function_suffix>`
+    pub create_function_suffix: Name,
+    /// name of the C function which creates a collection
+    /// is automatically generated as `<c_ffi_prefix>_<collection_class_name>_<add_function_suffix>`
+    pub add_function_suffix: Name,
+    /// name of the C function which destroys a collection
+    /// is automatically generated as `<c_ffi_prefix>_<collection_class_name>_<destroy_function_suffix>`
+    pub destroy_function_suffix: Name,
+}
+
+impl CollectionSettings {
+    pub fn default() -> Result<CollectionSettings, BadName> {
+        Ok(Self {
+            create_function_suffix: Name::create("create")?,
+            add_function_suffix: Name::create("add")?,
+            destroy_function_suffix: Name::create("destroy")?,
+        })
+    }
+}
+
 /// Settings that affect the names of things
 #[derive(Debug)]
 pub struct LibrarySettings {
@@ -136,6 +160,8 @@ pub struct LibrarySettings {
     pub c_ffi_prefix: Name,
     /// settings that control iterator generation
     pub iterator: IteratorSettings,
+    /// settings that control collection generation
+    pub collection: CollectionSettings,
 }
 
 impl LibrarySettings {
@@ -144,11 +170,13 @@ impl LibrarySettings {
         name: S,
         c_ffi_prefix: R,
         iterator: IteratorSettings,
+        collection: CollectionSettings,
     ) -> BindResult<Rc<Self>> {
         Ok(Rc::new(Self {
             name: name.into_name()?,
             c_ffi_prefix: c_ffi_prefix.into_name()?,
             iterator,
+            collection,
         }))
     }
 }
@@ -245,7 +273,7 @@ impl Library {
         self.symbol(name).iter().find_map(|symbol| match symbol {
             Symbol::Class(handle) => Some(&handle.declaration),
             Symbol::Iterator(handle) => Some(&handle.iter_class),
-            Symbol::Collection(handle) => Some(&handle.collection_type),
+            Symbol::Collection(handle) => Some(&handle.collection_class),
             _ => None,
         })
     }
@@ -905,16 +933,13 @@ impl LibraryBuilder {
         self.declare_any_class(name, ClassType::Normal)
     }
 
-    pub fn declare_iterator<T: IntoName>(
-        &mut self,
-        name: T,
-    ) -> BindResult<IteratorClassDeclaration> {
+    fn declare_iterator<T: IntoName>(&mut self, name: T) -> BindResult<IteratorClassDeclaration> {
         Ok(IteratorClassDeclaration::new(
             self.declare_any_class(name, ClassType::Iterator)?,
         ))
     }
 
-    pub fn declare_collection<T: IntoName>(
+    fn declare_collection<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<CollectionClassDeclaration> {
@@ -1047,27 +1072,62 @@ impl LibraryBuilder {
         Ok(iter)
     }
 
-    pub fn define_collection(
+    pub fn define_collection<N: IntoName, A: Into<FunctionArgument>>(
         &mut self,
-        create_func: &FunctionHandle,
-        delete_func: &FunctionHandle,
-        add_func: &FunctionHandle,
+        class_name: N,
+        value_type: A,
+        has_reserve: bool,
     ) -> BindResult<CollectionHandle> {
-        let collection = CollectionHandle::new(crate::collection::Collection::new(
-            create_func,
-            delete_func,
-            add_func,
-        )?);
+        let class_name = class_name.into_name()?;
+        let value_type = value_type.into();
 
-        if self
-            .collections
-            .iter()
-            .any(|col| col.collection_type == collection.collection_type)
-        {
-            return Err(BindingError::CollectionAlreadyDefinedForClass {
-                handle: collection.collection_type.clone(),
-            });
-        }
+        let class_decl = self.declare_collection(&class_name)?;
+
+        let builder = self
+            .define_function(class_name.append(&self.settings.collection.create_function_suffix))?
+            .doc("Creates an instance of the collection")?;
+
+        let builder = if has_reserve {
+            builder.param(
+                "reserve_size",
+                BasicType::U32,
+                "preallocate a particular size",
+            )?
+        } else {
+            builder
+        };
+
+        let create_func = builder
+            .returns(class_decl.clone(), "Allocated opaque collection instance")?
+            .build()?;
+
+        let destroy_func = self
+            .define_function(class_name.append(&self.settings.collection.destroy_function_suffix))?
+            .doc("Destroys an instance of the collection")?
+            .param("instance", class_decl.clone(), "instance to destroy")?
+            .returns_nothing()?
+            .build()?;
+
+        let add_func = self
+            .define_function(class_name.append(&self.settings.collection.add_function_suffix))?
+            .doc("Add a value to the collection")?
+            .param(
+                "instance",
+                class_decl.clone(),
+                "instance to which to add the value",
+            )?
+            .param("value", value_type.clone(), "value to add to the instance")?
+            .returns_nothing()?
+            .build()?;
+
+        let collection = Handle::new(crate::collection::Collection::new(
+            class_decl.inner,
+            value_type,
+            create_func,
+            destroy_func,
+            add_func,
+            has_reserve,
+        ));
 
         self.add_statement(Statement::CollectionDeclaration(collection.clone()))?;
         Ok(collection)

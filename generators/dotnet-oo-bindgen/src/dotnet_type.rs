@@ -236,7 +236,7 @@ impl DotnetType for CollectionHandle {
     fn convert_to_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Helpers.ToNative({})",
-            self.collection_type.name.to_camel_case(),
+            self.collection_class.name.to_camel_case(),
             from
         ))
     }
@@ -244,7 +244,7 @@ impl DotnetType for CollectionHandle {
     fn cleanup(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Helpers.Cleanup({});",
-            self.collection_type.name.to_camel_case(),
+            self.collection_class.name.to_camel_case(),
             from
         ))
     }

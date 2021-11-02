@@ -30,36 +30,41 @@ impl StringCollectionWithReserve {
     }
 }
 
-pub unsafe fn collection_create() -> *mut StringCollection {
+pub unsafe fn string_collection_create() -> *mut StringCollection {
     let it = Box::new(StringCollection::new());
     Box::into_raw(it)
 }
 
-pub unsafe fn collection_create_with_reserve(reserve: u32) -> *mut StringCollectionWithReserve {
-    let it = Box::new(StringCollectionWithReserve::new(reserve as usize));
-    Box::into_raw(it)
-}
-
-pub unsafe fn collection_with_reserve_destroy(col: *mut StringCollectionWithReserve) {
+pub unsafe fn string_collection_destroy(col: *mut StringCollection) {
     if !col.is_null() {
         Box::from_raw(col);
     }
 }
 
-pub unsafe fn collection_destroy(col: *mut StringCollection) {
-    if !col.is_null() {
-        Box::from_raw(col);
-    }
-}
-
-pub unsafe fn collection_add(col: *mut StringCollection, value: &CStr) {
+pub unsafe fn string_collection_add(col: *mut StringCollection, value: &CStr) {
     if let Some(col) = col.as_mut() {
         let value = value.to_owned();
         col.add(value);
     }
 }
 
-pub unsafe fn collection_with_reserve_add(col: *mut StringCollectionWithReserve, value: &CStr) {
+pub unsafe fn string_collection_with_reserve_create(
+    reserve: u32,
+) -> *mut StringCollectionWithReserve {
+    let it = Box::new(StringCollectionWithReserve::new(reserve as usize));
+    Box::into_raw(it)
+}
+
+pub unsafe fn string_collection_with_reserve_destroy(col: *mut StringCollectionWithReserve) {
+    if !col.is_null() {
+        Box::from_raw(col);
+    }
+}
+
+pub unsafe fn string_collection_with_reserve_add(
+    col: *mut StringCollectionWithReserve,
+    value: &CStr,
+) {
     if let Some(col) = col.as_mut() {
         let value = value.to_owned();
         col.add(value);

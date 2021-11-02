@@ -1,88 +1,12 @@
-use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
-fn define_string_collection_without_reserve(
-    lib: &mut LibraryBuilder,
-) -> Result<CollectionHandle, BindingError> {
-    let collection_class = lib.declare_collection("string_collection")?;
-
-    // Constructor method
-    let collection_create_fn = lib
-        .define_function("collection_create")?
-        .returns(collection_class.clone(), "New collection")?
-        .doc("Create a collection")?
-        .build()?;
-
-    // Destructor method
-    let collection_destroy_fn = lib
-        .define_function("collection_destroy")?
-        .param("col", collection_class.clone(), "Collection")?
-        .returns_nothing()?
-        .doc("Destroy a collection")?
-        .build()?;
-
-    let collection_add_fn = lib
-        .define_function("collection_add")?
-        .param("col", collection_class, "Collection")?
-        .param("item", StringType, "Item")?
-        .returns_nothing()?
-        .doc("Add an item to the collection")?
-        .build()?;
-
-    lib.define_collection(
-        &collection_create_fn,
-        &collection_destroy_fn,
-        &collection_add_fn,
-    )
-}
-
-fn define_string_collection_with_reserve(
-    lib: &mut LibraryBuilder,
-) -> Result<CollectionHandle, BindingError> {
-    let collection_class = lib.declare_collection("string_collection_with_reserve")?;
-
-    // Constructor method
-    let collection_create_with_reserve_fn = lib
-        .define_function("collection_create_with_reserve")?
-        .param(
-            "reserve",
-            BasicType::U32,
-            "Number of elements to pre-allocate",
-        )?
-        .returns(
-            collection_class.clone(),
-            "New collection (with reserve optimization)",
-        )?
-        .doc("Create a collection")?
-        .build()?;
-
-    // Destructor method
-    let collection_destroy_fn = lib
-        .define_function("collection_with_reserve_destroy")?
-        .param("col", collection_class.clone(), "Collection")?
-        .returns_nothing()?
-        .doc("Destroy a collection")?
-        .build()?;
-
-    let collection_add_fn = lib
-        .define_function("collection_with_reserve_add")?
-        .param("col", collection_class, "Collection")?
-        .param("item", StringType, "Item")?
-        .returns_nothing()?
-        .doc("Add an item to the collection")?
-        .build()?;
-
-    lib.define_collection(
-        &collection_create_with_reserve_fn,
-        &collection_destroy_fn,
-        &collection_add_fn,
-    )
-}
-
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
-    let collection_without_reserve = define_string_collection_without_reserve(lib)?;
-    let collection_with_reserve = define_string_collection_with_reserve(lib)?;
+    let collection_without_reserve =
+        lib.define_collection("string_collection", StringType, false)?;
+
+    let collection_with_reserve =
+        lib.define_collection("string_collection_with_reserve", StringType, true)?;
 
     // Define test method
     let collection_size_func = lib

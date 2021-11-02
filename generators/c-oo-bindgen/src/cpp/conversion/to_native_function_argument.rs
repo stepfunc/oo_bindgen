@@ -22,7 +22,7 @@ impl ToNativeFunctionArgument for FunctionArgument {
             FunctionArgument::Basic(x) => x.to_native(expr),
             FunctionArgument::String(x) => x.to_native(expr),
             FunctionArgument::Collection(x) => {
-                format!("{}({})", x.collection_type.core_cpp_type(), expr)
+                format!("{}({})", x.collection_class.core_cpp_type(), expr)
             }
             FunctionArgument::Struct(_) => {
                 format!("::convert::to_native({})", expr)
@@ -49,7 +49,7 @@ impl ToNativeFunctionArgument for FunctionArgument {
             FunctionArgument::Basic(_) => None,
             FunctionArgument::String(_) => None,
             FunctionArgument::Collection(x) => {
-                let friend_class = x.collection_type.friend_class();
+                let friend_class = x.collection_class.friend_class();
                 Some(Box::new(move |e| format!("{}::get({})", friend_class, e)))
             }
             FunctionArgument::Struct(_) => None,

@@ -144,7 +144,7 @@ impl CType for InterfaceHandle {
 
 impl CType for CollectionHandle {
     fn to_c_type(&self) -> String {
-        self.collection_type.to_c_type()
+        self.collection_class.to_c_type()
     }
 }
 
@@ -164,7 +164,7 @@ impl CType for Symbol {
             Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
             Symbol::Interface(handle) => handle.to_c_type(),
             Symbol::Iterator(handle) => handle.iter_class.to_c_type(),
-            Symbol::Collection(handle) => handle.collection_type.to_c_type(),
+            Symbol::Collection(handle) => handle.collection_class.to_c_type(),
         }
     }
 }

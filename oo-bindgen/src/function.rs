@@ -1,5 +1,6 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocString};
+use crate::name::{IntoName, Name};
 use crate::return_type::ReturnType;
 use crate::structs::{
     FunctionArgStructDeclaration, FunctionArgStructField, FunctionArgStructHandle,
@@ -189,7 +190,7 @@ impl From<CollectionClassDeclaration> for FunctionArgument {
 /// C function
 #[derive(Debug)]
 pub struct Function {
-    pub name: String,
+    pub name: Name,
     pub return_type: FunctionReturnType,
     pub parameters: Vec<Arg<FunctionArgument>>,
     pub error_type: Option<ErrorType>,
@@ -230,7 +231,7 @@ pub type FunctionHandle = Handle<Function>;
 
 pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
-    name: String,
+    name: Name,
     return_type: Option<ReturnType<FunctionReturnValue>>,
     params: Vec<Arg<FunctionArgument>>,
     doc: Option<Doc>,
@@ -238,7 +239,7 @@ pub struct FunctionBuilder<'a> {
 }
 
 impl<'a> FunctionBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
         Self {
             lib,
             name,
@@ -249,17 +250,18 @@ impl<'a> FunctionBuilder<'a> {
         }
     }
 
-    pub fn param<T: Into<String>, D: Into<DocString>, P: Into<FunctionArgument>>(
+    pub fn param<T: IntoName, D: Into<DocString>, P: Into<FunctionArgument>>(
         mut self,
         name: T,
         param_type: P,
         doc: D,
     ) -> BindResult<Self> {
         let param_type = param_type.into();
+        let name = name.into_name()?;
 
         self.lib.validate_type(&param_type)?;
         self.params.push(Arg {
-            name: name.into(),
+            name,
             arg_type: param_type,
             doc: doc.into(),
         });

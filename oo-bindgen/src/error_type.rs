@@ -1,4 +1,5 @@
 use crate::doc::Doc;
+use crate::name::{IntoName, Name};
 use crate::*;
 
 /// Type of exception to generate (only used in Java atm)
@@ -13,20 +14,20 @@ pub enum ExceptionType {
 // error types are just special kinds of enums
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ErrorType {
-    pub exception_name: String,
+    pub exception_name: Name,
     pub exception_type: ExceptionType,
     pub inner: EnumHandle,
 }
 
 pub struct ErrorTypeBuilder<'a> {
-    exception_name: String,
+    exception_name: Name,
     exception_type: ExceptionType,
     inner: EnumBuilder<'a>,
 }
 
 impl<'a> ErrorTypeBuilder<'a> {
     pub(crate) fn new(
-        exception_name: String,
+        exception_name: Name,
         exception_type: ExceptionType,
         inner: EnumBuilder<'a>,
     ) -> Self {
@@ -37,9 +38,9 @@ impl<'a> ErrorTypeBuilder<'a> {
         }
     }
 
-    pub fn add_error<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
+    pub fn add_error<T: IntoName, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
         Ok(Self {
-            inner: self.inner.push(name, doc)?,
+            inner: self.inner.push(name.into_name()?, doc)?,
             ..self
         })
     }

@@ -97,7 +97,7 @@ impl CoreCppType for InterfaceHandle {
 
 impl CoreCppType for IteratorHandle {
     fn core_cpp_type(&self) -> String {
-        self.iter_type.name.to_camel_case()
+        self.iter_class.name.to_camel_case()
     }
 }
 

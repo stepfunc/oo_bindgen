@@ -252,9 +252,9 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 }
 
 fn write_iterator_methods(f: &mut dyn Printer, it: &IteratorHandle) -> FormattingResult<()> {
-    let c_class_type = it.iter_type.to_c_type();
-    let cpp_class_type = it.iter_type.core_cpp_type();
-    let c_next = it.function.to_c_type();
+    let c_class_type = it.iter_class.to_c_type();
+    let cpp_class_type = it.iter_class.core_cpp_type();
+    let c_next = it.next_function.to_c_type();
     let cpp_value_type = it.item_type.core_cpp_type();
     let c_value_type = it.item_type.to_c_type();
 
@@ -355,11 +355,7 @@ where
     T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
     if !st.has_full_constructor() {
-        let constructor = Handle::new(Constructor::full(
-            "".to_string(),
-            ConstructorType::Normal,
-            "".into(),
-        ));
+        let constructor = Handle::new(Constructor::full(ConstructorType::Normal, "".into()));
         write_struct_constructor(f, st, &constructor)?;
     }
 
@@ -819,7 +815,7 @@ fn write_iterator_construct_helper(
         "::{}::{} construct({}* self)",
         handle.settings.c_ffi_prefix,
         cpp_type,
-        handle.iter_type.to_c_type()
+        handle.iter_class.to_c_type()
     );
     f.writeln(&signature)?;
     blocked(f, |f| {
@@ -839,7 +835,7 @@ fn write_iterator_to_native_helper(
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "{}* to_native(const ::{}::{}& value)",
-        handle.iter_type.to_c_type(),
+        handle.iter_class.to_c_type(),
         handle.settings.c_ffi_prefix,
         cpp_type
     );
@@ -944,7 +940,7 @@ fn write_iterator_friend_class(
     f: &mut dyn Printer,
     handle: &IteratorHandle,
 ) -> FormattingResult<()> {
-    let c_type = handle.iter_type.to_c_type();
+    let c_type = handle.iter_class.to_c_type();
 
     f.writeln(&format!("class {}", handle.friend_class()))?;
     f.writeln("{")?;
@@ -954,7 +950,7 @@ fn write_iterator_friend_class(
         f.writeln(&format!(
             "static {} init({}* value)",
             handle.core_cpp_type(),
-            handle.iter_type.to_c_type()
+            handle.iter_class.to_c_type()
         ))?;
         blocked(f, |f| {
             f.writeln(&format!("return {}(value);", handle.core_cpp_type()))

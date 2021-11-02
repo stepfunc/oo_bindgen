@@ -5,25 +5,25 @@ use oo_bindgen::*;
 fn define_string_collection_without_reserve(
     lib: &mut LibraryBuilder,
 ) -> Result<CollectionHandle, BindingError> {
-    let collection_class = lib.declare_collection("StringCollection")?;
+    let collection_class = lib.declare_collection("string_collection")?;
 
     // Constructor method
     let collection_create_fn = lib
-        .define_function("collection_create")
+        .define_function("collection_create")?
         .returns(collection_class.clone(), "New collection")?
         .doc("Create a collection")?
         .build()?;
 
     // Destructor method
     let collection_destroy_fn = lib
-        .define_function("collection_destroy")
+        .define_function("collection_destroy")?
         .param("col", collection_class.clone(), "Collection")?
         .returns_nothing()?
         .doc("Destroy a collection")?
         .build()?;
 
     let collection_add_fn = lib
-        .define_function("collection_add")
+        .define_function("collection_add")?
         .param("col", collection_class, "Collection")?
         .param("item", StringType, "Item")?
         .returns_nothing()?
@@ -40,11 +40,11 @@ fn define_string_collection_without_reserve(
 fn define_string_collection_with_reserve(
     lib: &mut LibraryBuilder,
 ) -> Result<CollectionHandle, BindingError> {
-    let collection_class = lib.declare_collection("StringCollectionWithReserve")?;
+    let collection_class = lib.declare_collection("string_collection_with_reserve")?;
 
     // Constructor method
     let collection_create_with_reserve_fn = lib
-        .define_function("collection_create_with_reserve")
+        .define_function("collection_create_with_reserve")?
         .param(
             "reserve",
             BasicType::U32,
@@ -59,14 +59,14 @@ fn define_string_collection_with_reserve(
 
     // Destructor method
     let collection_destroy_fn = lib
-        .define_function("collection_with_reserve_destroy")
+        .define_function("collection_with_reserve_destroy")?
         .param("col", collection_class.clone(), "Collection")?
         .returns_nothing()?
         .doc("Destroy a collection")?
         .build()?;
 
     let collection_add_fn = lib
-        .define_function("collection_with_reserve_add")
+        .define_function("collection_with_reserve_add")?
         .param("col", collection_class, "Collection")?
         .param("item", StringType, "Item")?
         .returns_nothing()?
@@ -86,14 +86,14 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     // Define test method
     let collection_size_func = lib
-        .define_function("collection_size")
+        .define_function("collection_size")?
         .param("col", collection_without_reserve.clone(), "Collection")?
         .returns(BasicType::U32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build()?;
 
     let collection_get_func = lib
-        .define_function("collection_get")
+        .define_function("collection_get")?
         .param("col", collection_without_reserve, "Collection")?
         .param("idx", BasicType::U32, "Index")?
         .returns(StringType, "Value")?
@@ -101,25 +101,25 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let collection_with_reserve_size_func = lib
-        .define_function("collection_with_reserve_size")
+        .define_function("collection_with_reserve_size")?
         .param("col", collection_with_reserve.clone(), "Collection")?
         .returns(BasicType::U32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build()?;
 
     let collection_with_reserve_get_func = lib
-        .define_function("collection_with_reserve_get")
+        .define_function("collection_with_reserve_get")?
         .param("col", collection_with_reserve, "Collection")?
         .param("idx", BasicType::U32, "Index")?
         .returns(StringType, "Value")?
         .doc("Get an item from the collection")?
         .build()?;
 
-    lib.define_static_class("StringCollectionTestMethods")
-        .static_method("GetSize", &collection_size_func)?
-        .static_method("GetValue", &collection_get_func)?
-        .static_method("GetSizeWithReserve", &collection_with_reserve_size_func)?
-        .static_method("GetValueWithReserve", &collection_with_reserve_get_func)?
+    lib.define_static_class("string_collection_test_methods")?
+        .static_method("get_size", &collection_size_func)?
+        .static_method("get_value", &collection_get_func)?
+        .static_method("get_size_with_reserve", &collection_with_reserve_size_func)?
+        .static_method("get_value_with_reserve", &collection_with_reserve_get_func)?
         .doc("Collection helper functions")?
         .build()?;
 

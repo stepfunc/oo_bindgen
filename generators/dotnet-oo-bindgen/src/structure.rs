@@ -236,12 +236,7 @@ where
 
             // If the struct doesn't already define a full constructor, write a private one
             if !handle.has_full_constructor() {
-                let constructor = Handle::new(Constructor {
-                    name: "".to_string(),
-                    constructor_type: ConstructorType::Normal,
-                    values: Vec::new(),
-                    doc,
-                });
+                let constructor = Handle::new(Constructor::full(ConstructorType::Normal, doc));
 
                 f.newline()?;
                 write_constructor(f, lib, Visibility::Private, handle, &constructor)?;

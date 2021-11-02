@@ -112,7 +112,7 @@ fn write_conversion_wrapper(
     let params = func
         .parameters
         .iter()
-        .map(|p| p.name.clone())
+        .map(|p| p.name.to_string())
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -157,7 +157,7 @@ fn write_exception_wrapper(
     let params = func
         .parameters
         .iter()
-        .map(|p| p.name.clone())
+        .map(|p| p.name.to_string())
         .collect::<Vec<String>>()
         .join(", ");
 

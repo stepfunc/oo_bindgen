@@ -316,7 +316,7 @@ impl<'a> DotnetBindingBuilder<'a> {
 
     fn build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
-        output_dir.push(self.settings.library.settings.name.to_owned());
+        output_dir.push(self.settings.library.settings.name.to_string());
         output_dir
     }
 }
@@ -414,7 +414,7 @@ impl<'a> JavaBindingBuilder<'a> {
 
     fn java_build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
-        output_dir.push(self.settings.library.settings.name.to_owned());
+        output_dir.push(self.settings.library.settings.name.to_string());
         output_dir
     }
 

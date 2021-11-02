@@ -46,7 +46,7 @@ pub fn build_lib() -> Result<Library, BindingError> {
     let mut builder = LibraryBuilder::new(
         oo_bindgen::Version::parse("1.2.3").unwrap(),
         lib_info,
-        LibrarySettings::create("foo", "foo"),
+        LibrarySettings::create("foo", "foo")?,
     );
 
     structure::define(&mut builder)?;

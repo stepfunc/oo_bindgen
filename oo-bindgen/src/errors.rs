@@ -5,7 +5,8 @@ use crate::collection::CollectionHandle;
 use crate::enum_type::EnumHandle;
 use crate::function::FunctionHandle;
 use crate::interface::InterfaceHandle;
-use crate::structs::{ConstructorDefault, FieldName, StructDeclarationHandle};
+use crate::name::{BadName, Name};
+use crate::structs::{ConstructorDefault, StructDeclarationHandle};
 
 pub type BindResult<T> = Result<T, BindingError>;
 
@@ -13,15 +14,19 @@ pub type BindResult<T> = Result<T, BindingError>;
 pub enum BindingError {
     // Global errors
     #[error("Symbol '{}' already used in the library", name)]
-    SymbolAlreadyUsed { name: String },
+    SymbolAlreadyUsed { name: Name },
+
+    // Bad name
+    #[error("'{}'", err)]
+    BadName { err: BadName },
 
     // Documentation error
     #[error("Invalid documentation string")]
     InvalidDocString,
     #[error("Documentation of '{}' was already defined", symbol_name)]
-    DocAlreadyDefined { symbol_name: String },
+    DocAlreadyDefined { symbol_name: Name },
     #[error("Documentation of '{}' was not defined", symbol_name)]
-    DocNotDefined { symbol_name: String },
+    DocNotDefined { symbol_name: Name },
     #[error(
         "Documentation of '{}' references '{}' which does not exist",
         symbol_name,
@@ -36,9 +41,9 @@ pub enum BindingError {
     #[error("Function '{}' is not part of this library", handle.name)]
     FunctionNotPartOfThisLib { handle: FunctionHandle },
     #[error("Return type of native function '{}' was already defined", func_name)]
-    ReturnTypeAlreadyDefined { func_name: String },
+    ReturnTypeAlreadyDefined { func_name: Name },
     #[error("Return type of native function '{}' was not defined", func_name)]
-    ReturnTypeNotDefined { func_name: String },
+    ReturnTypeNotDefined { func_name: Name },
 
     // enum errors
     #[error("Enum '{}' is not part of this library", handle.name)]
@@ -48,15 +53,15 @@ pub enum BindingError {
         name,
         variant_name
     )]
-    EnumAlreadyContainsVariantWithSameName { name: String, variant_name: String },
+    EnumAlreadyContainsVariantWithSameName { name: Name, variant_name: String },
     #[error(
         "Enum '{}' already contains a variant with value '{}'",
         name,
         variant_value
     )]
-    EnumAlreadyContainsVariantWithSameValue { name: String, variant_value: i32 },
+    EnumAlreadyContainsVariantWithSameValue { name: Name, variant_value: i32 },
     #[error("Enum '{}' does not contain a variant named '{}'", name, variant_name)]
-    EnumDoesNotContainVariant { name: String, variant_name: String },
+    EnumDoesNotContainVariant { name: Name, variant_name: String },
 
     // Structure errors
     #[error(
@@ -64,10 +69,7 @@ pub enum BindingError {
         field_name,
         struct_name
     )]
-    StructConstructorDuplicateField {
-        struct_name: String,
-        field_name: String,
-    },
+    StructConstructorDuplicateField { struct_name: Name, field_name: Name },
     #[error(
         "Struct ({}) constructor {} uses the same arguments as constructor {}",
         struct_name,
@@ -75,19 +77,16 @@ pub enum BindingError {
         other_constructor
     )]
     StructDuplicateConstructorArgs {
-        struct_name: String,
-        this_constructor: String,
-        other_constructor: String,
+        struct_name: Name,
+        this_constructor: Name,
+        other_constructor: Name,
     },
     #[error(
         "Constructor field '{}' doesn't exist within struct '{}",
         field_name,
         struct_name
     )]
-    StructConstructorUnknownField {
-        struct_name: String,
-        field_name: String,
-    },
+    StructConstructorUnknownField { struct_name: Name, field_name: Name },
     #[error(
         "Constructor field type '{}' doesn't match value '{:?}",
         field_type,
@@ -105,8 +104,8 @@ pub enum BindingError {
         constructor_name
     )]
     StructConstructorDuplicateName {
-        struct_name: String,
-        constructor_name: String,
+        struct_name: Name,
+        constructor_name: Name,
     },
     #[error("Native struct '{}' was already defined", handle.name)]
     StructAlreadyDefined { handle: StructDeclarationHandle },
@@ -115,7 +114,7 @@ pub enum BindingError {
     #[error("Native struct '{}' already contains field with name '{}'", handle.name, field_name)]
     StructAlreadyContainsFieldWithSameName {
         handle: StructDeclarationHandle,
-        field_name: FieldName,
+        field_name: Name,
     },
     // Class errors
     #[error("Expected '{:?}' but received {:?}", expected, received)]
@@ -215,17 +214,17 @@ pub enum BindingError {
         set_name,
         constant_name
     )]
-    ConstantNameAlreadyUsed {
-        set_name: String,
-        constant_name: String,
-    },
+    ConstantNameAlreadyUsed { set_name: Name, constant_name: Name },
     #[error(
         "Function '{}' already has an error type specified: '{}'",
         function,
         error_type
     )]
-    ErrorTypeAlreadyDefined {
-        function: String,
-        error_type: String,
-    },
+    ErrorTypeAlreadyDefined { function: Name, error_type: Name },
+}
+
+impl From<BadName> for BindingError {
+    fn from(err: BadName) -> Self {
+        BindingError::BadName { err }
+    }
 }

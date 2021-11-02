@@ -280,7 +280,7 @@ impl DotnetType for IteratorHandle {
     fn convert_from_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Helpers.FromNative({})",
-            self.iter_type.name.to_camel_case(),
+            self.iter_class.name.to_camel_case(),
             from
         ))
     }

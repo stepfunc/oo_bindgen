@@ -1,19 +1,20 @@
 use std::collections::HashSet;
 
 use crate::doc::Doc;
+use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct EnumVariant {
-    pub name: String,
+    pub name: Name,
     pub value: i32,
     pub doc: Doc,
 }
 
 #[derive(Debug)]
 pub struct Enum {
-    pub name: String,
+    pub name: Name,
     pub settings: Rc<LibrarySettings>,
     pub variants: Vec<EnumVariant>,
     pub doc: Doc,
@@ -23,13 +24,13 @@ impl Enum {
     pub fn find_variant_by_name<T: AsRef<str>>(&self, variant_name: T) -> Option<&EnumVariant> {
         self.variants
             .iter()
-            .find(|variant| variant.name == variant_name.as_ref())
+            .find(|variant| variant.name.as_ref() == variant_name.as_ref())
     }
 
     pub fn validate_contains_variant_name(&self, variant_name: &str) -> BindResult<()> {
         if self.find_variant_by_name(variant_name).is_none() {
             Err(BindingError::EnumDoesNotContainVariant {
-                name: self.name.to_string(),
+                name: self.name.clone(),
                 variant_name: variant_name.to_string(),
             })
         } else {
@@ -46,7 +47,7 @@ pub type EnumHandle = Handle<Enum>;
 
 pub struct EnumBuilder<'a> {
     pub(crate) lib: &'a mut LibraryBuilder,
-    name: String,
+    name: Name,
     variants: Vec<EnumVariant>,
     variant_names: HashSet<String>,
     variant_values: HashSet<i32>,
@@ -55,7 +56,7 @@ pub struct EnumBuilder<'a> {
 }
 
 impl<'a> EnumBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
         Self {
             lib,
             name,
@@ -67,13 +68,13 @@ impl<'a> EnumBuilder<'a> {
         }
     }
 
-    pub fn variant<T: Into<String>, D: Into<Doc>>(
+    pub fn variant<T: IntoName, D: Into<Doc>>(
         mut self,
         name: T,
         value: i32,
         doc: D,
     ) -> BindResult<Self> {
-        let name = name.into();
+        let name = name.into_name()?;
         let unique_name = self.variant_names.insert(name.to_string());
         let unique_value = self.variant_values.insert(value);
         if unique_name && unique_value {
@@ -87,7 +88,7 @@ impl<'a> EnumBuilder<'a> {
         } else if !unique_name {
             Err(BindingError::EnumAlreadyContainsVariantWithSameName {
                 name: self.name,
-                variant_name: name,
+                variant_name: name.to_string(),
             })
         } else {
             Err(BindingError::EnumAlreadyContainsVariantWithSameValue {
@@ -97,9 +98,9 @@ impl<'a> EnumBuilder<'a> {
         }
     }
 
-    pub fn push<T: Into<String>, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
+    pub fn push<T: IntoName, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
         let value = self.next_value;
-        self.variant(name, value, doc)
+        self.variant(name.into_name()?, value, doc)
     }
 
     pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {

@@ -7,6 +7,7 @@ use crate::doc::Doc;
 use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
+use crate::name::{IntoName, Name};
 use crate::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
 };
@@ -17,45 +18,6 @@ use crate::{
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::time::Duration;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct FieldName {
-    name: Handle<String>,
-}
-
-impl FieldName {
-    pub fn new<T: Into<String>>(name: T) -> Self {
-        Self {
-            name: Handle::new(name.into()),
-        }
-    }
-}
-
-impl From<&FieldName> for FieldName {
-    fn from(x: &FieldName) -> Self {
-        x.clone()
-    }
-}
-
-impl std::ops::Deref for FieldName {
-    type Target = String;
-
-    fn deref(&self) -> &Self::Target {
-        &self.name
-    }
-}
-
-impl std::fmt::Display for FieldName {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&*self.name)
-    }
-}
-
-impl From<&str> for FieldName {
-    fn from(x: &str) -> Self {
-        FieldName::new(x)
-    }
-}
 
 /// Value used to define constructor default
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -213,12 +175,12 @@ pub enum Visibility {
 /// C-style structure forward declaration
 #[derive(Debug)]
 pub struct StructDeclaration {
-    pub name: String,
+    pub name: Name,
     pub settings: Rc<LibrarySettings>,
 }
 
 impl StructDeclaration {
-    pub fn new(name: String, settings: Rc<LibrarySettings>) -> Self {
+    pub fn new(name: Name, settings: Rc<LibrarySettings>) -> Self {
         Self { name, settings }
     }
 }
@@ -252,7 +214,7 @@ impl<T> TypedStructDeclaration<T> {
         }
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &Name {
         &self.inner.name
     }
 }
@@ -338,7 +300,7 @@ pub struct StructField<F>
 where
     F: StructFieldType,
 {
-    pub name: FieldName,
+    pub name: Name,
     pub field_type: F,
     pub doc: Doc,
 }
@@ -394,10 +356,10 @@ where
     }
 
     pub fn has_field_named(&self, name: &str) -> bool {
-        self.fields.iter().any(|x| x.name.as_str() == name)
+        self.fields.iter().any(|x| x.name == name)
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &Name {
         &self.declaration.name
     }
 
@@ -481,17 +443,17 @@ where
         }
     }
 
-    pub fn add<S: Into<FieldName>, V: Into<F>, D: Into<Doc>>(
+    pub fn add<S: IntoName, V: Into<F>, D: Into<Doc>>(
         mut self,
         name: S,
         field_type: V,
         doc: D,
     ) -> BindResult<Self> {
-        let name = name.into();
+        let name = name.into_name()?;
         let field_type = field_type.into();
 
         self.lib.validate_type(&field_type)?;
-        if self.field_names.insert((*name).clone()) {
+        if self.field_names.insert(name.to_string()) {
             self.fields.push(StructField {
                 name,
                 field_type,
@@ -541,7 +503,7 @@ where
 
 #[derive(Debug, Clone)]
 pub struct InitializedValue {
-    pub name: FieldName,
+    pub name: Name,
     pub value: ValidatedConstructorDefault,
 }
 
@@ -563,18 +525,18 @@ impl ConstructorType {
 
 #[derive(Debug, Clone)]
 pub struct Constructor {
-    pub name: String,
+    pub name: Name,
     pub constructor_type: ConstructorType,
     pub values: Vec<InitializedValue>,
     pub doc: Doc,
 }
 
 impl Constructor {
-    fn argument_names(&self) -> HashSet<FieldName> {
+    fn argument_names(&self) -> HashSet<Name> {
         self.values
             .iter()
             .map(|x| x.name.clone())
-            .collect::<HashSet<FieldName>>()
+            .collect::<HashSet<Name>>()
     }
 
     pub fn collides_with(&self, other: &Self) -> bool {
@@ -585,9 +547,9 @@ impl Constructor {
         false
     }
 
-    pub fn full(name: String, constructor_type: ConstructorType, doc: Doc) -> Self {
+    pub fn full(constructor_type: ConstructorType, doc: Doc) -> Self {
         Self {
-            name,
+            name: Name::create("some_unused_name").unwrap(),
             constructor_type,
             values: Vec::new(),
             doc,
@@ -599,7 +561,7 @@ pub struct ConstructorBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    name: String,
+    name: Name,
     constructor_type: ConstructorType,
     builder: MethodBuilder<'a, F>,
     fields: Vec<InitializedValue>,
@@ -622,16 +584,16 @@ impl<'a, F> MethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn begin_constructor<D: Into<Doc>, S: Into<String>>(
+    pub fn begin_constructor<D: Into<Doc>, S: IntoName>(
         self,
         name: S,
         constructor_type: ConstructorType,
         doc: D,
     ) -> BindResult<ConstructorBuilder<'a, F>> {
-        let name = name.into();
+        let name = name.into_name()?;
 
         // check that we don't have any other constructors with this name
-        if self.constructors.iter().any(|c| c.name == name) {
+        if self.constructors.iter().any(|c| name == c.name) {
             return Err(BindingError::StructConstructorDuplicateName {
                 struct_name: self.declaration.name.clone(),
                 constructor_name: name,
@@ -647,7 +609,8 @@ where
         })
     }
 
-    pub fn add_full_constructor<S: Into<String>>(self, name: S) -> BindResult<Self> {
+    pub fn add_full_constructor<S: IntoName>(self, name: S) -> BindResult<Self> {
+        let name = name.into_name()?;
         let struct_name = self.declaration.name.clone();
         self.begin_constructor(
             name,
@@ -684,7 +647,7 @@ where
 {
     pub fn default<D: Into<ConstructorDefault>>(
         mut self,
-        name: &FieldName,
+        name: &Name,
         value: D,
     ) -> BindResult<Self> {
         let value = value.into();
@@ -693,7 +656,7 @@ where
         if self.fields.iter().any(|f| f.name == *name) {
             return Err(BindingError::StructConstructorDuplicateField {
                 struct_name: self.builder.declaration.name.clone(),
-                field_name: name.to_string(),
+                field_name: name.clone(),
             });
         }
 
@@ -703,7 +666,7 @@ where
             None => {
                 return Err(BindingError::StructConstructorUnknownField {
                     struct_name: self.builder.declaration.name.clone(),
-                    field_name: name.to_string(),
+                    field_name: name.clone(),
                 });
             }
         };
@@ -716,19 +679,15 @@ where
         Ok(self)
     }
 
-    pub fn default_struct(self, name: &FieldName) -> BindResult<Self> {
+    pub fn default_struct(self, name: &Name) -> BindResult<Self> {
         self.default(name, ConstructorDefault::DefaultStruct)
     }
 
-    pub fn default_variant<S: Into<String>>(
-        self,
-        name: &FieldName,
-        variant: S,
-    ) -> BindResult<Self> {
+    pub fn default_variant<S: Into<String>>(self, name: &Name, variant: S) -> BindResult<Self> {
         self.default(name, ConstructorDefault::Enum(variant.into()))
     }
 
-    pub fn default_string<S: Into<String>>(self, name: &FieldName, value: S) -> BindResult<Self> {
+    pub fn default_string<S: Into<String>>(self, name: &Name, value: S) -> BindResult<Self> {
         self.default(name, ConstructorDefault::String(value.into()))
     }
 

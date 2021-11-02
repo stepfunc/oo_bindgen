@@ -316,7 +316,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
                     // We don't want to generate the `next` methods of iterators
                     if let Some(it) = lib.find_iterator(&class_handle.name) {
-                        if &it.function == handle {
+                        if &it.next_function == handle {
                             continue;
                         }
                     }

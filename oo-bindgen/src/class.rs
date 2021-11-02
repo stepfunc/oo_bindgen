@@ -1,4 +1,5 @@
 use crate::doc::DocString;
+use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
 
@@ -16,7 +17,7 @@ pub enum ClassType {
 /// C-style structure forward declaration
 #[derive(Debug)]
 pub struct ClassDeclaration {
-    pub name: String,
+    pub name: Name,
     pub class_type: ClassType,
     pub settings: Rc<LibrarySettings>,
 }
@@ -44,7 +45,7 @@ impl CollectionClassDeclaration {
 }
 
 impl ClassDeclaration {
-    pub(crate) fn new(name: String, class_type: ClassType, settings: Rc<LibrarySettings>) -> Self {
+    pub(crate) fn new(name: Name, class_type: ClassType, settings: Rc<LibrarySettings>) -> Self {
         Self {
             name,
             class_type,
@@ -57,20 +58,20 @@ pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
 #[derive(Debug)]
 pub struct Method {
-    pub name: String,
+    pub name: Name,
     pub native_function: FunctionHandle,
 }
 
 #[derive(Debug)]
 pub struct AsyncMethod {
-    pub name: String,
+    pub name: Name,
     pub native_function: FunctionHandle,
     pub return_type: CallbackArgument,
     pub return_type_doc: DocString,
     pub one_time_callback: InterfaceHandle,
-    pub one_time_callback_param_name: String,
-    pub callback_name: String,
-    pub callback_param_name: String,
+    pub one_time_callback_param_name: Name,
+    pub callback_name: Name,
+    pub callback_param_name: Name,
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -116,7 +117,7 @@ pub struct Class {
 }
 
 impl Class {
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &Name {
         &self.declaration.name
     }
 
@@ -125,20 +126,22 @@ impl Class {
     }
 
     pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&FunctionHandle> {
+        let method_name = method_name.as_ref();
+
         for method in &self.methods {
-            if method.name == method_name.as_ref() {
+            if method.name.as_ref() == method_name {
                 return Some(&method.native_function);
             }
         }
 
         for method in &self.static_methods {
-            if method.name == method_name.as_ref() {
+            if method.name.as_ref() == method_name {
                 return Some(&method.native_function);
             }
         }
 
         for method in &self.async_methods {
-            if method.name == method_name.as_ref() {
+            if method.name.as_ref() == method_name {
                 return Some(&method.native_function);
             }
         }
@@ -238,38 +241,41 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn method<T: Into<String>>(
+    pub fn method<T: IntoName>(
         mut self,
         name: T,
         native_function: &FunctionHandle,
     ) -> BindResult<Self> {
+        let name = name.into_name()?;
+
         self.lib.validate_function(native_function)?;
         self.validate_first_param(native_function)?;
 
         self.methods.push(Method {
-            name: name.into(),
+            name,
             native_function: native_function.clone(),
         });
 
         Ok(self)
     }
 
-    pub fn static_method<T: Into<String>>(
+    pub fn static_method<T: IntoName>(
         mut self,
         name: T,
         native_function: &FunctionHandle,
     ) -> BindResult<Self> {
+        let name = name.into_name()?;
         self.lib.validate_function(native_function)?;
 
         self.static_methods.push(Method {
-            name: name.into(),
+            name,
             native_function: native_function.clone(),
         });
 
         Ok(self)
     }
 
-    pub fn async_method<T: Into<String>>(
+    pub fn async_method<T: IntoName>(
         mut self,
         name: T,
         native_function: &FunctionHandle,
@@ -280,7 +286,7 @@ impl<'a> ClassBuilder<'a> {
         // Check that native method has a single callback with a single method,
         // with a single argument
 
-        let name = name.into();
+        let name = name.into_name()?;
         let mut async_method = None;
         for param in &native_function.parameters {
             if let FunctionArgument::Interface(ot_cb) = &param.arg_type {
@@ -301,7 +307,7 @@ impl<'a> ClassBuilder<'a> {
                     let mut iter = cb.arguments.iter();
                     if let Some(cb_param) = iter.next() {
                         async_method = Some(AsyncMethod {
-                            name: name.to_string(),
+                            name: name.clone(),
                             native_function: native_function.clone(),
                             return_type: cb_param.arg_type.clone(),
                             return_type_doc: cb_param.doc.clone(),
@@ -415,7 +421,7 @@ impl<'a> ClassBuilder<'a> {
 /// Static class definition
 #[derive(Debug)]
 pub struct StaticClass {
-    pub name: String,
+    pub name: Name,
     pub static_methods: Vec<Method>,
     pub doc: Doc,
 }
@@ -424,13 +430,13 @@ pub type StaticClassHandle = Handle<StaticClass>;
 
 pub struct StaticClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
-    name: String,
+    name: Name,
     static_methods: Vec<Method>,
     doc: Option<Doc>,
 }
 
 impl<'a> StaticClassBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
         Self {
             lib,
             name,
@@ -451,15 +457,16 @@ impl<'a> StaticClassBuilder<'a> {
         }
     }
 
-    pub fn static_method<T: Into<String>>(
+    pub fn static_method<T: IntoName>(
         mut self,
         name: T,
         native_function: &FunctionHandle,
     ) -> BindResult<Self> {
+        let name = name.into_name()?;
         self.lib.validate_function(native_function)?;
 
         self.static_methods.push(Method {
-            name: name.into(),
+            name,
             native_function: native_function.clone(),
         });
 

@@ -94,7 +94,7 @@ pub(crate) fn generate_iterator_helpers(
             blocked(f, |f| {
                 let next_call = format!(
                     "{}.{}(value)",
-                    NATIVE_FUNCTIONS_CLASSNAME, iter.function.name
+                    NATIVE_FUNCTIONS_CLASSNAME, iter.next_function.name
                 );
 
                 f.writeln(&format!(

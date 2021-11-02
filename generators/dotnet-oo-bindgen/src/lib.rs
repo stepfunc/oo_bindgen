@@ -118,7 +118,7 @@ fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
 fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     // Open file
     let mut filename = config.output_dir.clone();
-    filename.push(lib.settings.name.clone());
+    filename.push(lib.settings.name.to_string());
     filename.set_extension("csproj");
     let mut f = FilePrinter::new(filename)?;
 
@@ -203,7 +203,7 @@ fn generate_constants(lib: &Library, config: &DotnetBindgenConfig) -> Formatting
     for constants in lib.constants() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&constants.name);
+        filename.push(constants.name.to_string());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -236,7 +236,7 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
     for native_enum in lib.enums() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&native_enum.name);
+        filename.push(native_enum.name.to_string());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -250,7 +250,7 @@ fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for err in lib.error_types() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&err.exception_name);
+        filename.push(err.exception_name.to_string());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -373,7 +373,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(class.name());
+        filename.push(class.name().to_string());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -383,7 +383,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.static_classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&class.name);
+        filename.push(class.name.to_string());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 

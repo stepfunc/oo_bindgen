@@ -50,7 +50,7 @@ impl FriendClass for StructDeclarationHandle {
 
 impl FriendClass for IteratorHandle {
     fn friend_class(&self) -> String {
-        self.iter_type.friend_class()
+        self.iter_class.friend_class()
     }
 }
 

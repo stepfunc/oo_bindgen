@@ -46,7 +46,7 @@ impl CType for StringType {
 
 impl CType for IteratorHandle {
     fn to_c_type(&self) -> String {
-        format!("{}*", self.iter_type.to_c_type())
+        format!("{}*", self.iter_class.to_c_type())
     }
 }
 
@@ -163,7 +163,7 @@ impl CType for Symbol {
             Symbol::Class(handle) => handle.declaration.to_c_type(),
             Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
             Symbol::Interface(handle) => handle.to_c_type(),
-            Symbol::Iterator(handle) => handle.iter_type.to_c_type(),
+            Symbol::Iterator(handle) => handle.iter_class.to_c_type(),
             Symbol::Collection(handle) => handle.collection_type.to_c_type(),
         }
     }

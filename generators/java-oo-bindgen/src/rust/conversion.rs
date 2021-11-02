@@ -1741,7 +1741,7 @@ impl TypeConverter for IteratorConverter {
             f.writeln("let array_list = _cache.collection.new_array_list(&_env);")?;
             f.writeln(&format!(
                 "while let it = unsafe {{ {}::ffi::{}_{}({}) }}",
-                self.1, self.2, self.0.function.name, from
+                self.1, self.2, self.0.next_function.name, from
             ))?;
             blocked(f, |f| {
                 f.writeln("match unsafe { it.as_ref() }")?;

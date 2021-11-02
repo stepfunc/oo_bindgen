@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use crate::doc::Doc;
+use crate::name::{IntoName, Name};
 use crate::*;
 
 /// How to render a numeric constant
@@ -18,7 +19,7 @@ pub enum ConstantValue {
 /// Constant belonging to a set of constants
 #[derive(Debug)]
 pub struct Constant {
-    pub name: String,
+    pub name: Name,
     pub value: ConstantValue,
     pub doc: Doc,
 }
@@ -27,7 +28,7 @@ pub struct Constant {
 #[derive(Debug)]
 pub struct ConstantSet {
     /// Name of the set
-    pub name: String,
+    pub name: Name,
     /// values
     pub values: Vec<Constant>,
     /// documentation
@@ -38,14 +39,14 @@ pub type ConstantSetHandle = Handle<ConstantSet>;
 
 pub struct ConstantSetBuilder<'a> {
     lib: &'a mut LibraryBuilder,
-    name: String,
+    name: Name,
     names: HashSet<String>,
     values: Vec<Constant>,
     doc: Option<Doc>,
 }
 
 impl<'a> ConstantSetBuilder<'a> {
-    pub fn new(lib: &'a mut LibraryBuilder, name: String) -> Self {
+    pub fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
         Self {
             lib,
             name,
@@ -67,14 +68,14 @@ impl<'a> ConstantSetBuilder<'a> {
         }
     }
 
-    pub fn add<T: Into<String>, D: Into<Doc>>(
+    pub fn add<T: IntoName, D: Into<Doc>>(
         mut self,
         name: T,
         value: ConstantValue,
         doc: D,
     ) -> BindResult<Self> {
-        let name = name.into();
-        if self.names.contains(&name) {
+        let name = name.into_name()?;
+        if self.names.contains(name.as_ref()) {
             return Err(BindingError::ConstantNameAlreadyUsed {
                 set_name: self.name,
                 constant_name: name,

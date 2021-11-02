@@ -1,19 +1,20 @@
+use oo_bindgen::name::Name;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
 use oo_bindgen::*;
 use std::time::Duration;
 
 pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHandle> {
-    let uint8_value = FieldName::new("uint8_value");
-    let int8_value = FieldName::new("int8_value");
-    let uint16_value = FieldName::new("uint16_value");
-    let int16_value = FieldName::new("int16_value");
-    let uint32_value = FieldName::new("uint32_value");
-    let int32_value = FieldName::new("int32_value");
-    let uint64_value = FieldName::new("uint64_value");
-    let int64_value = FieldName::new("int64_value");
-    let float_value = FieldName::new("float_value");
-    let double_value = FieldName::new("double_value");
+    let uint8_value = Name::create("uint8_value")?;
+    let int8_value = Name::create("int8_value")?;
+    let uint16_value = Name::create("uint16_value")?;
+    let int16_value = Name::create("int16_value")?;
+    let uint32_value = Name::create("uint32_value")?;
+    let int32_value = Name::create("int32_value")?;
+    let uint64_value = Name::create("uint64_value")?;
+    let int64_value = Name::create("int64_value")?;
+    let float_value = Name::create("float_value")?;
+    let double_value = Name::create("double_value")?;
 
     let numbers = lib.declare_universal_struct("numbers")?;
     lib.define_universal_struct(numbers)?
@@ -50,12 +51,12 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BindResult<Universa
 
 pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BindResult<FunctionArgStructHandle> {
     let empty_interface = lib
-        .define_asynchronous_interface("empty_interface", "Interface within a structure")
+        .define_asynchronous_interface("empty_interface", "Interface within a structure")?
         .build()?;
     let numbers = define_numbers_structure(lib)?;
 
-    let interface_field = FieldName::new("interface_field");
-    let numbers_field = FieldName::new("numbers_field");
+    let interface_field = Name::create("interface_field")?;
+    let numbers_field = Name::create("numbers_field")?;
     let inner_structure = lib.declare_function_arg_struct("inner_structure")?;
 
     let inner_structure = lib
@@ -79,25 +80,25 @@ pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BindResult<FunctionAr
 
 pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
     let structure_enum = lib
-        .define_enum("StructureEnum")
-        .push("Var1", "Var1")?
-        .push("Var2", "Var2")?
-        .push("Var3", "Var3")?
+        .define_enum("structure_enum")?
+        .push("var1", "Var1")?
+        .push("var2", "Var2")?
+        .push("var3", "Var3")?
         .doc("Enum")?
         .build()?;
 
     let inner_structure = define_inner_structure(lib)?;
 
-    let structure = lib.declare_function_arg_struct("Structure")?;
+    let structure = lib.declare_function_arg_struct("structure")?;
 
-    let enum_var1_field = FieldName::new("enum_var1");
-    let enum_var2_field = FieldName::new("enum_var2");
-    let boolean_true_field = FieldName::new("boolean_true");
-    let boolean_false_field = FieldName::new("boolean_false");
-    let string_hello_field = FieldName::new("string_hello");
-    let duration_millis_field = FieldName::new("duration_millis");
-    let duration_seconds_field = FieldName::new("duration_seconds");
-    let inner_structure_field = FieldName::new("inner_structure");
+    let enum_var1_field = Name::create("enum_var1")?;
+    let enum_var2_field = Name::create("enum_var2")?;
+    let boolean_true_field = Name::create("boolean_true")?;
+    let boolean_false_field = Name::create("boolean_false")?;
+    let string_hello_field = Name::create("string_hello")?;
+    let duration_millis_field = Name::create("duration_millis")?;
+    let duration_seconds_field = Name::create("duration_seconds")?;
+    let inner_structure_field = Name::create("inner_structure")?;
 
     lib.define_function_argument_struct(structure)?
         .doc("Test structure")?
@@ -144,8 +145,8 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
             ConstructorType::Normal,
             "Initialize {struct:Structure} to default values",
         )?
-        .default_variant(&enum_var1_field, "Var1")?
-        .default_variant(&enum_var2_field, "Var2")?
+        .default_variant(&enum_var1_field, "var1")?
+        .default_variant(&enum_var2_field, "var2")?
         .default(&boolean_true_field, true)?
         .default(&boolean_false_field, false)?
         .default_string(&string_hello_field, "Hello")?

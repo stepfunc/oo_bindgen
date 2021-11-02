@@ -277,7 +277,6 @@ where
         indented(f, |f| {
             // write a default constructor
             let constructor = Handle::new(Constructor::full(
-                "".to_string(),
                 ConstructorType::Normal,
                 "Fully initialize".into(),
             ));

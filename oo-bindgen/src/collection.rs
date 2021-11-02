@@ -1,3 +1,4 @@
+use crate::name::Name;
 use crate::types::BasicType;
 use crate::BindResult;
 use crate::*;
@@ -149,7 +150,7 @@ impl Collection {
         })
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &Name {
         &self.collection_type.name
     }
 }

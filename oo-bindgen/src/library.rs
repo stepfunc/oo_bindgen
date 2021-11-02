@@ -10,6 +10,7 @@ use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
+use crate::name::{IntoName, Name};
 use crate::structs::*;
 use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
@@ -45,23 +46,23 @@ pub enum Statement {
 }
 
 impl Statement {
-    pub(crate) fn unique_name(&self) -> Option<&str> {
+    pub(crate) fn unique_name(&self) -> Option<&Name> {
         match self {
-            Statement::Constants(x) => Some(x.name.as_str()),
-            Statement::StructDeclaration(x) => Some(x.name.as_str()),
+            Statement::Constants(x) => Some(&x.name),
+            Statement::StructDeclaration(x) => Some(&x.name),
             Statement::StructDefinition(_) => {
                 // the name is shared with the declaration
                 None
             }
-            Statement::EnumDefinition(x) => Some(x.name.as_str()),
-            Statement::ErrorType(x) => Some(x.exception_name.as_str()),
-            Statement::ClassDeclaration(x) => Some(x.name.as_str()),
+            Statement::EnumDefinition(x) => Some(&x.name),
+            Statement::ErrorType(x) => Some(&x.exception_name),
+            Statement::ClassDeclaration(x) => Some(&x.name),
             Statement::ClassDefinition(_) => {
                 // the name is shared with the declaration
                 None
             }
-            Statement::StaticClassDefinition(x) => Some(x.name.as_str()),
-            Statement::InterfaceDefinition(x) => Some(x.name.as_str()),
+            Statement::StaticClassDefinition(x) => Some(&x.name),
+            Statement::InterfaceDefinition(x) => Some(&x.name),
             Statement::IteratorDeclaration(_) => {
                 // the name is derived in a language specific way
                 None
@@ -70,7 +71,7 @@ impl Statement {
                 // the name is derived in a language specific way
                 None
             }
-            Statement::FunctionDefinition(x) => Some(x.name.as_str()),
+            Statement::FunctionDefinition(x) => Some(&x.name),
         }
     }
 }
@@ -108,18 +109,18 @@ pub struct LibraryInfo {
 #[derive(Debug)]
 pub struct LibrarySettings {
     /// name of the library
-    pub name: String,
+    pub name: Name,
     /// prefix given to all API types, e.g. structs, enums, functions, etc
-    pub c_ffi_prefix: String,
+    pub c_ffi_prefix: Name,
 }
 
 impl LibrarySettings {
     /// create an RC to the settings that is cheaply cloned
-    pub fn create<S: Into<String>, R: Into<String>>(name: S, c_ffi_prefix: R) -> Rc<Self> {
-        Rc::new(Self {
-            name: name.into(),
-            c_ffi_prefix: c_ffi_prefix.into(),
-        })
+    pub fn create<S: IntoName, R: IntoName>(name: S, c_ffi_prefix: R) -> BindResult<Rc<Self>> {
+        Ok(Rc::new(Self {
+            name: name.into_name()?,
+            c_ffi_prefix: c_ffi_prefix.into_name()?,
+        }))
     }
 }
 
@@ -214,7 +215,7 @@ impl Library {
     ) -> Option<&ClassDeclarationHandle> {
         self.symbol(name).iter().find_map(|symbol| match symbol {
             Symbol::Class(handle) => Some(&handle.declaration),
-            Symbol::Iterator(handle) => Some(&handle.iter_type),
+            Symbol::Iterator(handle) => Some(&handle.iter_class),
             Symbol::Collection(handle) => Some(&handle.collection_type),
             _ => None,
         })
@@ -628,19 +629,19 @@ impl LibraryBuilder {
 
     pub fn build(self) -> BindResult<Library> {
         // Build symbols map
-        let mut symbols = HashMap::new();
+        let mut symbols: HashMap<String, Symbol> = HashMap::new();
         for statement in &self.statements {
             match statement {
                 Statement::Constants(_) => {}
                 Statement::StructDeclaration(handle) => {
                     symbols.insert(
-                        handle.name.clone(),
+                        handle.name.to_string(),
                         Symbol::Struct(self.structs.get(handle).unwrap().clone()),
                     );
                 }
                 Statement::StructDefinition(_) => (),
                 Statement::EnumDefinition(handle) => {
-                    symbols.insert(handle.name.clone(), Symbol::Enum(handle.clone()));
+                    symbols.insert(handle.name.to_string(), Symbol::Enum(handle.clone()));
                 }
                 Statement::ErrorType(_) => {}
                 Statement::ClassDeclaration(_) => (),
@@ -648,10 +649,10 @@ impl LibraryBuilder {
                     symbols.insert(handle.name().to_string(), Symbol::Class(handle.clone()));
                 }
                 Statement::StaticClassDefinition(handle) => {
-                    symbols.insert(handle.name.clone(), Symbol::StaticClass(handle.clone()));
+                    symbols.insert(handle.name.to_string(), Symbol::StaticClass(handle.clone()));
                 }
                 Statement::InterfaceDefinition(handle) => {
-                    symbols.insert(handle.name.clone(), Symbol::Interface(handle.clone()));
+                    symbols.insert(handle.name.to_string(), Symbol::Interface(handle.clone()));
                 }
                 Statement::IteratorDeclaration(handle) => {
                     symbols.insert(handle.name().to_string(), Symbol::Iterator(handle.clone()));
@@ -663,7 +664,7 @@ impl LibraryBuilder {
                     );
                 }
                 Statement::FunctionDefinition(handle) => {
-                    symbols.insert(handle.name.clone(), Symbol::Function(handle.clone()));
+                    symbols.insert(handle.name.to_string(), Symbol::Function(handle.clone()));
                 }
             }
         }
@@ -683,69 +684,72 @@ impl LibraryBuilder {
         Ok(lib)
     }
 
-    pub fn define_error_type<T: Into<String>>(
+    pub fn define_error_type<T: IntoName>(
         &mut self,
         error_name: T,
         exception_name: T,
         exception_type: ExceptionType,
     ) -> BindResult<ErrorTypeBuilder> {
+        let exception_name = exception_name.into_name()?;
         let builder = self
-            .define_enum(error_name)
-            .push("Ok", "Success, i.e. no error occurred")?;
+            .define_enum(error_name)?
+            .push("ok", "Success, i.e. no error occurred")?;
 
         Ok(ErrorTypeBuilder::new(
-            exception_name.into(),
+            exception_name,
             exception_type,
             builder,
         ))
     }
 
-    pub fn define_constants<T: Into<String>>(&mut self, name: T) -> ConstantSetBuilder {
-        ConstantSetBuilder::new(self, name.into())
+    pub fn define_constants<T: IntoName>(&mut self, name: T) -> BindResult<ConstantSetBuilder> {
+        Ok(ConstantSetBuilder::new(self, name.into_name()?))
     }
 
-    pub(crate) fn declare_struct<T: Into<String>>(
+    pub(crate) fn declare_struct<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<StructDeclarationHandle> {
-        let name = name.into();
+        let name = name.into_name()?;
         let handle =
             StructDeclarationHandle::new(StructDeclaration::new(name, self.settings.clone()));
         self.add_statement(Statement::StructDeclaration(handle.clone()))?;
         Ok(handle)
     }
 
-    pub fn declare_universal_struct<T: Into<String>>(
+    pub fn declare_universal_struct<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<UniversalStructDeclaration> {
-        Ok(UniversalStructDeclaration::new(self.declare_struct(name)?))
+        Ok(UniversalStructDeclaration::new(
+            self.declare_struct(name.into_name()?)?,
+        ))
     }
 
-    pub fn declare_function_arg_struct<T: Into<String>>(
+    pub fn declare_function_arg_struct<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<FunctionArgStructDeclaration> {
         Ok(FunctionArgStructDeclaration::new(
-            self.declare_struct(name)?,
+            self.declare_struct(name.into_name()?)?,
         ))
     }
 
-    pub fn declare_function_return_struct<T: Into<String>>(
+    pub fn declare_function_return_struct<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<FunctionReturnStructDeclaration> {
         Ok(FunctionReturnStructDeclaration::new(
-            self.declare_struct(name)?,
+            self.declare_struct(name.into_name()?)?,
         ))
     }
 
-    pub fn declare_callback_arg_struct<T: Into<String>>(
+    pub fn declare_callback_arg_struct<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<CallbackArgStructDeclaration> {
         Ok(CallbackArgStructDeclaration::new(
-            self.declare_struct(name)?,
+            self.declare_struct(name.into_name()?)?,
         ))
     }
 
@@ -840,22 +844,19 @@ impl LibraryBuilder {
     }
 
     /// Define an enumeration
-    pub fn define_enum<T: Into<String>>(&mut self, name: T) -> EnumBuilder {
-        EnumBuilder::new(self, name.into())
+    pub fn define_enum<T: IntoName>(&mut self, name: T) -> BindResult<EnumBuilder> {
+        Ok(EnumBuilder::new(self, name.into_name()?))
     }
 
-    pub fn define_function<T: Into<String>>(&mut self, name: T) -> FunctionBuilder {
-        FunctionBuilder::new(self, name.into())
+    pub fn define_function<T: IntoName>(&mut self, name: T) -> BindResult<FunctionBuilder> {
+        Ok(FunctionBuilder::new(self, name.into_name()?))
     }
 
-    pub fn declare_class<T: Into<String>>(
-        &mut self,
-        name: T,
-    ) -> BindResult<ClassDeclarationHandle> {
+    pub fn declare_class<T: IntoName>(&mut self, name: T) -> BindResult<ClassDeclarationHandle> {
         self.declare_any_class(name, ClassType::Normal)
     }
 
-    pub fn declare_iterator<T: Into<String>>(
+    pub fn declare_iterator<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<IteratorClassDeclaration> {
@@ -864,22 +865,24 @@ impl LibraryBuilder {
         ))
     }
 
-    pub fn declare_collection<T: Into<String>>(
+    pub fn declare_collection<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<CollectionClassDeclaration> {
-        Ok(CollectionClassDeclaration::new(
-            self.declare_any_class(name, ClassType::Collection)?,
-        ))
+        Ok(CollectionClassDeclaration::new(self.declare_any_class(
+            name.into_name()?,
+            ClassType::Collection,
+        )?))
     }
 
-    fn declare_any_class<T: Into<String>>(
+    fn declare_any_class<T: IntoName>(
         &mut self,
         name: T,
         class_type: ClassType,
     ) -> BindResult<ClassDeclarationHandle> {
+        let name = name.into_name()?;
         let handle = ClassDeclarationHandle::new(ClassDeclaration::new(
-            name.into(),
+            name,
             class_type,
             self.settings.clone(),
         ));
@@ -907,33 +910,38 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn define_static_class<T: Into<String>>(&mut self, name: T) -> StaticClassBuilder {
-        StaticClassBuilder::new(self, name.into())
+    pub fn define_static_class<T: IntoName>(&mut self, name: T) -> BindResult<StaticClassBuilder> {
+        Ok(StaticClassBuilder::new(self, name.into_name()?))
     }
 
-    pub fn define_synchronous_interface<T: Into<String>, D: Into<Doc>>(
+    pub fn define_synchronous_interface<T: IntoName, D: Into<Doc>>(
         &mut self,
         name: T,
         doc: D,
-    ) -> InterfaceBuilder {
+    ) -> BindResult<InterfaceBuilder> {
         self.define_interface(name, InterfaceType::Synchronous, doc)
     }
 
-    pub fn define_asynchronous_interface<T: Into<String>, D: Into<Doc>>(
+    pub fn define_asynchronous_interface<T: IntoName, D: Into<Doc>>(
         &mut self,
         name: T,
         doc: D,
-    ) -> InterfaceBuilder {
+    ) -> BindResult<InterfaceBuilder> {
         self.define_interface(name, InterfaceType::Asynchronous, doc)
     }
 
-    fn define_interface<T: Into<String>, D: Into<Doc>>(
+    fn define_interface<T: IntoName, D: Into<Doc>>(
         &mut self,
         name: T,
         interface_type: InterfaceType,
         doc: D,
-    ) -> InterfaceBuilder {
-        InterfaceBuilder::new(self, name.into(), interface_type, doc.into())
+    ) -> BindResult<InterfaceBuilder> {
+        Ok(InterfaceBuilder::new(
+            self,
+            name.into_name()?,
+            interface_type,
+            doc.into(),
+        ))
     }
 
     pub fn define_iterator(
@@ -994,13 +1002,11 @@ impl LibraryBuilder {
         Ok(collection)
     }
 
-    fn check_unique_symbol(&mut self, name: &str) -> BindResult<()> {
+    fn check_unique_symbol(&mut self, name: &Name) -> BindResult<()> {
         if self.symbol_names.insert(name.to_string()) {
             Ok(())
         } else {
-            Err(BindingError::SymbolAlreadyUsed {
-                name: name.to_string(),
-            })
+            Err(BindingError::SymbolAlreadyUsed { name: name.clone() })
         }
     }
 

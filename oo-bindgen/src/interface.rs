@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::doc::{Doc, DocString};
 use crate::iterator::IteratorHandle;
+use crate::name::{IntoName, Name};
 use crate::return_type::ReturnType;
 use crate::structs::{CallbackArgStructField, CallbackArgStructHandle, UniversalStructHandle};
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
@@ -116,7 +117,7 @@ pub type CallbackReturnType = ReturnType<CallbackReturnValue>;
 
 #[derive(Debug)]
 pub struct CallbackFunction {
-    pub name: String,
+    pub name: Name,
     pub return_type: CallbackReturnType,
     pub arguments: Vec<Arg<CallbackArgument>>,
     pub doc: Doc,
@@ -136,7 +137,7 @@ pub enum InterfaceType {
 
 #[derive(Debug)]
 pub struct Interface {
-    pub name: String,
+    pub name: Name,
     pub interface_type: InterfaceType,
     pub callbacks: Vec<CallbackFunction>,
     pub doc: Doc,
@@ -147,7 +148,7 @@ impl Interface {
     pub fn find_callback<T: AsRef<str>>(&self, name: T) -> Option<&CallbackFunction> {
         self.callbacks
             .iter()
-            .find(|callback| callback.name == name.as_ref())
+            .find(|callback| callback.name.as_ref() == name.as_ref())
     }
 
     pub fn is_functional(&self) -> bool {
@@ -159,7 +160,7 @@ pub type InterfaceHandle = Handle<Interface>;
 
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
-    name: String,
+    name: Name,
     interface_type: InterfaceType,
     callbacks: Vec<CallbackFunction>,
     callback_names: HashSet<String>,
@@ -169,7 +170,7 @@ pub struct InterfaceBuilder<'a> {
 impl<'a> InterfaceBuilder<'a> {
     pub(crate) fn new(
         lib: &'a mut LibraryBuilder,
-        name: String,
+        name: Name,
         interface_type: InterfaceType,
         doc: Doc,
     ) -> Self {
@@ -183,12 +184,12 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn begin_callback<T: Into<String>, D: Into<Doc>>(
+    pub fn begin_callback<T: IntoName, D: Into<Doc>>(
         mut self,
         name: T,
         doc: D,
     ) -> BindResult<CallbackFunctionBuilder<'a>> {
-        let name = name.into();
+        let name = name.into_name()?;
         self.check_unique_callback_name(&name)?;
         Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
     }
@@ -207,7 +208,7 @@ impl<'a> InterfaceBuilder<'a> {
         Ok(handle)
     }
 
-    fn check_unique_callback_name(&mut self, name: &str) -> BindResult<()> {
+    fn check_unique_callback_name(&mut self, name: &Name) -> BindResult<()> {
         if name == DESTROY_FUNC_NAME {
             return Err(BindingError::InterfaceMethodWithReservedName {
                 name: DESTROY_FUNC_NAME,
@@ -224,7 +225,7 @@ impl<'a> InterfaceBuilder<'a> {
             Ok(())
         } else {
             Err(BindingError::InterfaceHasElementWithSameName {
-                interface_name: self.name.clone(),
+                interface_name: self.name.to_string(),
                 element_name: name.to_string(),
             })
         }
@@ -233,14 +234,14 @@ impl<'a> InterfaceBuilder<'a> {
 
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
-    name: String,
+    name: Name,
     return_type: Option<CallbackReturnType>,
     arguments: Vec<Arg<CallbackArgument>>,
     doc: Doc,
 }
 
 impl<'a> CallbackFunctionBuilder<'a> {
-    pub(crate) fn new(builder: InterfaceBuilder<'a>, name: String, doc: Doc) -> Self {
+    pub(crate) fn new(builder: InterfaceBuilder<'a>, name: Name, doc: Doc) -> Self {
         Self {
             builder,
             name,
@@ -250,14 +251,14 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: Into<String>, D: Into<DocString>, P: Into<CallbackArgument>>(
+    pub fn param<S: IntoName, D: Into<DocString>, P: Into<CallbackArgument>>(
         mut self,
         name: S,
         arg_type: P,
         doc: D,
     ) -> BindResult<Self> {
         let arg_type = arg_type.into();
-        let name = name.into();
+        let name = name.into_name()?;
 
         if name == CTX_VARIABLE_NAME {
             return Err(BindingError::CallbackMethodArgumentWithReservedName {

@@ -6,6 +6,7 @@ use crate::doc::DocString;
 use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
+use crate::name::Name;
 use crate::structs::*;
 use crate::{BindResult, BindingError, StructType};
 
@@ -57,12 +58,12 @@ impl From<DurationType> for BasicType {
 #[derive(Debug, Clone)]
 pub struct Arg<T> {
     pub arg_type: T,
-    pub name: String,
+    pub name: Name,
     pub doc: DocString,
 }
 
 impl<T> Arg<T> {
-    pub fn new(arg_type: T, name: String, doc: DocString) -> Self {
+    pub fn new(arg_type: T, name: Name, doc: DocString) -> Self {
         Self {
             arg_type,
             name,

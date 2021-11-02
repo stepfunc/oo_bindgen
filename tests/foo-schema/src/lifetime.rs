@@ -3,10 +3,10 @@ use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
-    let inner_byte_iterator = lib.declare_iterator("InnerByteIterator")?;
-    let byte_value = lib.declare_function_return_struct("ByteValue")?;
+    let inner_byte_iterator = lib.declare_iterator("inner_byte_iterator")?;
+    let byte_value = lib.declare_function_return_struct("byte_value")?;
     let iterator_next_fn = lib
-        .define_function("next_byte_value")
+        .define_function("next_byte_value")?
         .param("it", inner_byte_iterator, "inner byte iterator")?
         .returns(byte_value.clone(), "next byte value")?
         .doc("returns the next byte value")?
@@ -25,12 +25,12 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Bin
 fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
     let inner_iter = define_inner_iterator(lib)?;
 
-    let chunk_iterator = lib.declare_iterator("ChunkIterator")?;
+    let chunk_iterator = lib.declare_iterator("chunk_iterator")?;
 
-    let chunk = lib.declare_function_return_struct("Chunk")?;
+    let chunk = lib.declare_function_return_struct("chunk")?;
 
     let iterator_next_fn = lib
-        .define_function("next_chunk")
+        .define_function("next_chunk")?
         .param("it", chunk_iterator, "iterator over chunks of bytes")?
         .returns(chunk.clone(), "next chunk struct")?
         .doc("returns the next Chunk struct")?
@@ -55,9 +55,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
 
     let interface = lib
         .define_synchronous_interface(
-            "ChunkReceiver",
+            "chunk_receiver",
             "Callback interface for chunks of a byte array",
-        )
+        )?
         .begin_callback("on_chunk", "callback to bytes")?
         .param("values", outer_iter, "iterator over an iterator of bytes")?
         .returns_nothing()?
@@ -65,7 +65,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .build()?;
 
     let invoke_fn = lib
-        .define_function("iterate_string_by_chunks")
+        .define_function("iterate_string_by_chunks")?
         .doc("iterate over a string by invoking the callback interface with chunks of the string")?
         .param(
             "values",
@@ -77,9 +77,9 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .returns_nothing()?
         .build()?;
 
-    lib.define_static_class("DoubleIteratorTestHelper")
+    lib.define_static_class("double_iterator_test_helper")?
         .doc("Helper methods for the double iterator tests with lifetimes")?
-        .static_method("IterateStringByChunks", &invoke_fn)?
+        .static_method("iterate_string_by_chunks", &invoke_fn)?
         .build()?;
 
     Ok(())

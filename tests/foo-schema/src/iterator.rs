@@ -6,10 +6,10 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
     // Define the iterator next function
     // Must always take a class pointer as a param and return a struct pointer
     // (null if no other value available)
-    let iterator_class = lib.declare_iterator("StringIterator")?;
-    let iterator_item = lib.declare_function_return_struct("StringIteratorItem")?;
+    let iterator_class = lib.declare_iterator("string_iterator")?;
+    let iterator_item = lib.declare_function_return_struct("string_iterator_item")?;
     let iterator_next_fn = lib
-        .define_function("iterator_next")
+        .define_function("iterator_next")?
         .param("it", iterator_class, "Iterator")?
         .returns(iterator_item.clone(), "Iterator value")?
         .doc("Get the next value, or NULL if the iterator reached the end")?
@@ -32,7 +32,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
     let iterator = define_iterator(lib)?;
 
     let interface = lib
-        .define_synchronous_interface("ValuesReceiver", "Callback interface for receiving values")
+        .define_synchronous_interface("values_receiver", "Callback interface for receiving values")?
         .begin_callback("on_characters", "callback to receive character values")?
         .param("values", iterator, "byte value for each character")?
         .returns_nothing()?
@@ -40,7 +40,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
         .build()?;
 
     let invoke_fn = lib
-        .define_function("invoke_callback")
+        .define_function("invoke_callback")?
         .doc("invokes the callback with an iterator over the elements of the string")?
         .param(
             "values",
@@ -51,9 +51,9 @@ pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
         .returns_nothing()?
         .build()?;
 
-    lib.define_static_class("IteratorTestHelper")
+    lib.define_static_class("iterator_test_helper")?
         .doc("Helper methods for the iterator tests")?
-        .static_method("InvokeCallback", &invoke_fn)?
+        .static_method("invoke_callback", &invoke_fn)?
         .build()?;
 
     Ok(())

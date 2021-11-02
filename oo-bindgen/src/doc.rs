@@ -308,7 +308,7 @@ impl TryFrom<&str> for DocStringElement {
 pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
     for native_function in lib.functions() {
         validate_doc_with_params(
-            &native_function.name,
+            native_function.name.as_ref(),
             &native_function.doc,
             &native_function.parameters,
             lib,
@@ -316,7 +316,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
 
         for param in &native_function.parameters {
             validate_docstring_with_params(
-                &native_function.name,
+                native_function.name.as_ref(),
                 &param.doc,
                 &native_function.parameters,
                 lib,
@@ -325,7 +325,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
     }
 
     for class in lib.classes() {
-        validate_doc(class.name(), &class.doc, lib)?;
+        validate_doc(class.name().as_ref(), &class.doc, lib)?;
     }
 
     /* TODO
@@ -342,7 +342,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
     */
 
     for enumeration in lib.enums() {
-        validate_doc(&enumeration.name, &enumeration.doc, lib)?;
+        validate_doc(enumeration.name.as_ref(), &enumeration.doc, lib)?;
         for variant in &enumeration.variants {
             validate_doc(
                 &format!("{}.{}", enumeration.name, variant.name),
@@ -353,7 +353,7 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
     }
 
     for interface in lib.interfaces() {
-        validate_doc(&interface.name, &interface.doc, lib)?;
+        validate_doc(interface.name.as_ref(), &interface.doc, lib)?;
         for cb in &interface.callbacks {
             let callback_name = format!("{}.{}", interface.name, cb.name);
             validate_doc_with_params(&callback_name, &cb.doc, cb.arguments.as_slice(), lib)?;
@@ -410,10 +410,13 @@ fn validate_reference_with_params<T>(
 ) -> Result<(), BindingError> {
     match reference {
         DocReference::Param(param_name) => {
-            if !params.iter().any(|param| &param.name == param_name) {
+            if !params
+                .iter()
+                .any(|param| param.name.as_ref() == param_name.as_str())
+            {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
-                    ref_name: param_name.to_string(),
+                    ref_name: param_name.clone(),
                 });
             }
         }
@@ -421,7 +424,7 @@ fn validate_reference_with_params<T>(
             if lib.find_class_declaration(class_name).is_none() {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
-                    ref_name: class_name.to_string(),
+                    ref_name: class_name.clone(),
                 });
             }
         }

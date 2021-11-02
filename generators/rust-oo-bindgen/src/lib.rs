@@ -293,7 +293,11 @@ impl<'a> RustCodegen<'a> {
         f.writeln(&format!("pub enum {}", enum_name))?;
         blocked(f, |f| {
             for variant in &handle.variants {
-                f.writeln(&format!("{} = {},", variant.name, variant.value))?;
+                f.writeln(&format!(
+                    "{} = {},",
+                    variant.name.to_camel_case(),
+                    variant.value
+                ))?;
             }
             Ok(())
         })?;
@@ -308,7 +312,9 @@ impl<'a> RustCodegen<'a> {
                     for variant in &handle.variants {
                         f.writeln(&format!(
                             "{}::{} => {},",
-                            enum_name, variant.name, variant.value
+                            enum_name,
+                            variant.name.to_camel_case(),
+                            variant.value
                         ))?;
                     }
                     Ok(())
@@ -325,7 +331,9 @@ impl<'a> RustCodegen<'a> {
                     for variant in &handle.variants {
                         f.writeln(&format!(
                             "{} => {}::{},",
-                            variant.value, enum_name, variant.name,
+                            variant.value,
+                            enum_name,
+                            variant.name.to_camel_case(),
                         ))?;
                     }
                     f.writeln(&format!(
@@ -435,7 +443,11 @@ impl<'a> RustCodegen<'a> {
                         let converter = TypeConverter::Enum(err.inner.clone());
                         f.writeln("Ok(()) =>")?;
                         blocked(f, |f| {
-                            converter.convert_to_c(f, &format!("{}::Ok", err.inner.name), "")
+                            converter.convert_to_c(
+                                f,
+                                &format!("{}::Ok", err.inner.name.to_camel_case()),
+                                "",
+                            )
                         })?;
                         f.writeln("Err(err) =>")?;
                         blocked(f, |f| converter.convert_to_c(f, "err", ""))
@@ -451,7 +463,11 @@ impl<'a> RustCodegen<'a> {
                                 f.write(";")?;
                             }
                             f.writeln("out.write(x);")?;
-                            converter.convert_to_c(f, &format!("{}::Ok", err.inner.name), "")
+                            converter.convert_to_c(
+                                f,
+                                &format!("{}::Ok", err.inner.name.to_camel_case()),
+                                "",
+                            )
                         })?;
                         f.writeln("Err(err) =>")?;
                         blocked(f, |f| converter.convert_to_c(f, "err", ""))

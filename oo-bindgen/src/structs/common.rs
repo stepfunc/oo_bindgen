@@ -312,7 +312,7 @@ where
     F: StructFieldType,
 {
     pub visibility: Visibility,
-    pub declaration: StructDeclarationHandle,
+    pub declaration: TypedStructDeclaration<F>,
     pub fields: Vec<StructField<F>>,
     pub constructors: Vec<Handle<Constructor>>,
     pub doc: Doc,
@@ -351,6 +351,10 @@ impl<F> Struct<F>
 where
     F: StructFieldType,
 {
+    pub fn settings(&self) -> &LibrarySettings {
+        &self.declaration.inner.settings
+    }
+
     pub fn requires_constructor(&self) -> bool {
         true
     }
@@ -360,11 +364,11 @@ where
     }
 
     pub fn name(&self) -> &Name {
-        &self.declaration.name
+        &self.declaration.inner.name
     }
 
     pub fn declaration(&self) -> StructDeclarationHandle {
-        self.declaration.clone()
+        self.declaration.inner.clone()
     }
 
     pub fn constructor_args(
@@ -407,7 +411,7 @@ where
 {
     lib: &'a mut LibraryBuilder,
     visibility: Visibility,
-    declaration: StructDeclarationHandle,
+    declaration: TypedStructDeclaration<F>,
     fields: Vec<StructField<F>>,
     field_names: HashSet<String>,
     doc: Option<Doc>,
@@ -417,20 +421,20 @@ impl<'a, F> StructFieldBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, declaration: StructDeclarationHandle) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, declaration: TypedStructDeclaration<F>) -> Self {
         Self::new_impl(lib, declaration, Visibility::Public)
     }
 
     pub(crate) fn opaque(
         lib: &'a mut LibraryBuilder,
-        declaration: StructDeclarationHandle,
+        declaration: TypedStructDeclaration<F>,
     ) -> Self {
         Self::new_impl(lib, declaration, Visibility::Private)
     }
 
     fn new_impl(
         lib: &'a mut LibraryBuilder,
-        declaration: StructDeclarationHandle,
+        declaration: TypedStructDeclaration<F>,
         visibility: Visibility,
     ) -> Self {
         Self {
@@ -462,7 +466,7 @@ where
             Ok(self)
         } else {
             Err(BindingError::StructAlreadyContainsFieldWithSameName {
-                handle: self.declaration.clone(),
+                handle: self.declaration.inner.clone(),
                 field_name: name,
             })
         }
@@ -475,7 +479,7 @@ where
                 Ok(self)
             }
             Some(_) => Err(BindingError::DocAlreadyDefined {
-                symbol_name: self.declaration.name.clone(),
+                symbol_name: self.declaration.name().clone(),
             }),
         }
     }
@@ -485,7 +489,7 @@ where
             Some(doc) => doc,
             None => {
                 return Err(BindingError::DocNotDefined {
-                    symbol_name: self.declaration.name.clone(),
+                    symbol_name: self.declaration.name().clone(),
                 })
             }
         };
@@ -574,7 +578,7 @@ where
 {
     lib: &'a mut LibraryBuilder,
     visibility: Visibility,
-    declaration: StructDeclarationHandle,
+    declaration: TypedStructDeclaration<F>,
     fields: Vec<StructField<F>>,
     constructors: Vec<Handle<Constructor>>,
     doc: Doc,
@@ -595,7 +599,7 @@ where
         // check that we don't have any other constructors with this name
         if self.constructors.iter().any(|c| name == c.name) {
             return Err(BindingError::StructConstructorDuplicateName {
-                struct_name: self.declaration.name.clone(),
+                struct_name: self.declaration.name().clone(),
                 constructor_name: name,
             });
         }
@@ -611,7 +615,7 @@ where
 
     pub fn add_full_constructor<S: IntoName>(self, name: S) -> BindResult<Self> {
         let name = name.into_name()?;
-        let struct_name = self.declaration.name.clone();
+        let struct_name = self.declaration.name().clone();
         self.begin_constructor(
             name,
             ConstructorType::Normal,
@@ -655,7 +659,7 @@ where
         // check that we haven't already defined this field
         if self.fields.iter().any(|f| f.name == *name) {
             return Err(BindingError::StructConstructorDuplicateField {
-                struct_name: self.builder.declaration.name.clone(),
+                struct_name: self.builder.declaration.name().clone(),
                 field_name: name.clone(),
             });
         }
@@ -665,7 +669,7 @@ where
             Some(x) => x.field_type.validate_constructor_default(&value)?,
             None => {
                 return Err(BindingError::StructConstructorUnknownField {
-                    struct_name: self.builder.declaration.name.clone(),
+                    struct_name: self.builder.declaration.name().clone(),
                     field_name: name.clone(),
                 });
             }
@@ -706,7 +710,7 @@ where
             .find(|other| constructor.collides_with(other))
         {
             return Err(BindingError::StructDuplicateConstructorArgs {
-                struct_name: self.builder.declaration.name.clone(),
+                struct_name: self.builder.declaration.name().clone(),
                 this_constructor: constructor.name.clone(),
                 other_constructor: x.name.clone(),
             });

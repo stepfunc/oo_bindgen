@@ -3,19 +3,8 @@ use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
 fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
-    // Define the iterator next function
-    // Must always take a class pointer as a param and return a struct pointer
-    // (null if no other value available)
-    let iterator_class = lib.declare_iterator("string_iterator")?;
-    let iterator_item = lib.declare_function_return_struct("string_iterator_item")?;
-    let iterator_next_fn = lib
-        .define_function("iterator_next")?
-        .param("it", iterator_class, "Iterator")?
-        .returns(iterator_item.clone(), "Iterator value")?
-        .doc("Get the next value, or NULL if the iterator reached the end")?
-        .build()?;
-
     // Define the iterator item structure
+    let iterator_item = lib.declare_function_return_struct("string_iterator_item")?;
     let iterator_item = lib
         .define_function_return_struct(iterator_item)?
         .add("value", BasicType::U8, "Character value")?
@@ -24,7 +13,7 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
         .build()?;
 
     // Define the actual iterator
-    lib.define_iterator(&iterator_next_fn, iterator_item.into())
+    lib.define_iterator("string_iterator", iterator_item)
 }
 
 pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {

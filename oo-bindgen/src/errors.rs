@@ -184,18 +184,12 @@ pub enum BindingError {
         name
     )]
     CallbackMethodArgumentWithReservedName { name: &'static str },
+
     // Iterator errors
-    #[error("Iterator native function '{}' does not take a single class ref parameter", handle.name)]
-    IteratorNotSingleClassRefParam { handle: FunctionHandle },
-    #[error("Iterator native function '{}' does not return a struct ref value", handle.name)]
-    IteratorReturnTypeNotStructRef { handle: FunctionHandle },
     #[error("Iterator '{}' is not part of this library", handle.name())]
     IteratorNotPartOfThisLib {
         handle: crate::iterator::IteratorHandle,
     },
-    #[error("Iterator native functions '{}' cannot fail", handle.name)]
-    IteratorFunctionsCannotFail { handle: FunctionHandle },
-
     // Collection errors
     #[error("Invalid native function '{}' signature for create_func of collection", handle.name)]
     CollectionCreateFuncInvalidSignature { handle: FunctionHandle },

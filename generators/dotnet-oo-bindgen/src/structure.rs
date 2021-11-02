@@ -82,7 +82,7 @@ where
     blocked(f, |f| {
         f.writeln(&format!(
             "return new {}({});",
-            handle.declaration.name.to_camel_case(),
+            handle.declaration.name().to_camel_case(),
             invocation_args
         ))
     })

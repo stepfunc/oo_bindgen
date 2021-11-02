@@ -43,10 +43,12 @@ pub fn build_lib() -> Result<Library, BindingError> {
         }],
     };
 
+    let settings = LibrarySettings::create("foo", "foo", IteratorSettings::default()?)?;
+
     let mut builder = LibraryBuilder::new(
         oo_bindgen::Version::parse("1.2.3").unwrap(),
         lib_info,
-        LibrarySettings::create("foo", "foo")?,
+        settings,
     );
 
     structure::define(&mut builder)?;

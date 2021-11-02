@@ -10,7 +10,7 @@ use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::IteratorHandle;
-use crate::name::{IntoName, Name};
+use crate::name::{BadName, IntoName, Name};
 use crate::structs::*;
 use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
@@ -107,19 +107,48 @@ pub struct LibraryInfo {
 
 /// Settings that affect the names of things
 #[derive(Debug)]
+pub struct IteratorSettings {
+    /// name of the C function which retrieve's the iterator's next value
+    /// is automatically generated as `<c_ffi_prefix>_<iterator_class_name>_<next_function_suffix>`
+    pub next_function_suffix: Name,
+}
+
+impl IteratorSettings {
+    pub fn new(name: &'static str) -> Result<IteratorSettings, BadName> {
+        Ok(Self {
+            next_function_suffix: Name::create(name)?,
+        })
+    }
+
+    pub fn default() -> Result<IteratorSettings, BadName> {
+        Ok(Self {
+            next_function_suffix: Name::create("next")?,
+        })
+    }
+}
+
+/// Settings that affect the names of things
+#[derive(Debug)]
 pub struct LibrarySettings {
     /// name of the library
     pub name: Name,
     /// prefix given to all API types, e.g. structs, enums, functions, etc
     pub c_ffi_prefix: Name,
+    /// settings that control iterator generation
+    pub iterator: IteratorSettings,
 }
 
 impl LibrarySettings {
     /// create an RC to the settings that is cheaply cloned
-    pub fn create<S: IntoName, R: IntoName>(name: S, c_ffi_prefix: R) -> BindResult<Rc<Self>> {
+    pub fn create<S: IntoName, R: IntoName>(
+        name: S,
+        c_ffi_prefix: R,
+        iterator: IteratorSettings,
+    ) -> BindResult<Rc<Self>> {
         Ok(Rc::new(Self {
             name: name.into_name()?,
             c_ffi_prefix: c_ffi_prefix.into_name()?,
+            iterator,
         }))
     }
 }
@@ -429,8 +458,22 @@ where
 
     pub fn declaration(&self) -> StructDeclarationHandle {
         match self {
-            UniversalOr::Specific(x) => x.declaration.clone(),
-            UniversalOr::Universal(x) => x.declaration.clone(),
+            UniversalOr::Specific(x) => x.declaration.inner.clone(),
+            UniversalOr::Universal(x) => x.declaration.inner.clone(),
+        }
+    }
+
+    pub fn typed_declaration(&self) -> UniversalDeclarationOr<T> {
+        match self {
+            UniversalOr::Specific(x) => UniversalDeclarationOr::Specific(x.declaration.clone()),
+            UniversalOr::Universal(x) => UniversalDeclarationOr::Universal(x.declaration.clone()),
+        }
+    }
+
+    pub fn to_struct_type(&self) -> StructType {
+        match self {
+            UniversalOr::Specific(x) => T::create_struct_type(x.clone()),
+            UniversalOr::Universal(x) => StructType::Universal(x.clone()),
         }
     }
 }
@@ -456,18 +499,6 @@ where
 {
     fn from(x: Handle<Struct<T>>) -> Self {
         UniversalOr::Specific(x)
-    }
-}
-
-impl<T> UniversalOr<T>
-where
-    T: StructFieldType,
-{
-    pub fn to_struct_type(&self) -> StructType {
-        match self {
-            UniversalOr::Specific(x) => T::create_struct_type(x.clone()),
-            UniversalOr::Universal(x) => StructType::Universal(x.clone()),
-        }
     }
 }
 
@@ -510,19 +541,19 @@ impl StructType {
 
     pub fn settings(&self) -> &LibrarySettings {
         match self {
-            StructType::FunctionArg(x) => &x.declaration.settings,
-            StructType::FunctionReturn(x) => &x.declaration.settings,
-            StructType::CallbackArg(x) => &x.declaration.settings,
-            StructType::Universal(x) => &x.declaration.settings,
+            StructType::FunctionArg(x) => &x.declaration.inner.settings,
+            StructType::FunctionReturn(x) => &x.declaration.inner.settings,
+            StructType::CallbackArg(x) => &x.declaration.inner.settings,
+            StructType::Universal(x) => &x.declaration.inner.settings,
         }
     }
 
     pub fn declaration(&self) -> StructDeclarationHandle {
         match self {
-            StructType::FunctionArg(x) => x.declaration.clone(),
-            StructType::CallbackArg(x) => x.declaration.clone(),
-            StructType::FunctionReturn(x) => x.declaration.clone(),
-            StructType::Universal(x) => x.declaration.clone(),
+            StructType::FunctionArg(x) => x.declaration.inner.clone(),
+            StructType::CallbackArg(x) => x.declaration.inner.clone(),
+            StructType::FunctionReturn(x) => x.declaration.inner.clone(),
+            StructType::Universal(x) => x.declaration.inner.clone(),
         }
     }
 
@@ -785,7 +816,7 @@ impl LibraryBuilder {
                 handle: declaration.inner,
             })
         } else {
-            Ok(UniversalStructBuilder::new(self, declaration.inner))
+            Ok(UniversalStructBuilder::new(self, declaration))
         }
     }
 
@@ -800,7 +831,7 @@ impl LibraryBuilder {
                 handle: declaration.inner,
             })
         } else {
-            Ok(UniversalStructBuilder::opaque(self, declaration.inner))
+            Ok(UniversalStructBuilder::opaque(self, declaration))
         }
     }
 
@@ -819,7 +850,7 @@ impl LibraryBuilder {
                 handle: declaration.inner,
             })
         } else {
-            Ok(CallbackArgStructBuilder::new(self, declaration.inner))
+            Ok(CallbackArgStructBuilder::new(self, declaration))
         }
     }
 
@@ -838,7 +869,7 @@ impl LibraryBuilder {
                 handle: declaration.inner,
             })
         } else {
-            Ok(FunctionReturnStructBuilder::new(self, declaration.inner))
+            Ok(FunctionReturnStructBuilder::new(self, declaration))
         }
     }
 
@@ -857,7 +888,7 @@ impl LibraryBuilder {
                 handle: declaration.inner,
             })
         } else {
-            Ok(FunctionArgStructBuilder::new(self, declaration.inner))
+            Ok(FunctionArgStructBuilder::new(self, declaration))
         }
     }
 
@@ -962,34 +993,56 @@ impl LibraryBuilder {
         ))
     }
 
-    pub fn define_iterator(
+    pub fn define_iterator<N: IntoName, T: Into<UniversalOr<FunctionReturnStructField>>>(
         &mut self,
-        native_func: &FunctionHandle,
-        item_type: UniversalOr<FunctionReturnStructField>,
+        class_name: N,
+        item_type: T,
     ) -> BindResult<IteratorHandle> {
-        self.define_iterator_impl(false, native_func, item_type)
+        self.define_iterator_impl(class_name, false, item_type)
     }
 
-    pub fn define_iterator_with_lifetime(
+    pub fn define_iterator_with_lifetime<
+        N: IntoName,
+        T: Into<UniversalOr<FunctionReturnStructField>>,
+    >(
         &mut self,
-        native_func: &FunctionHandle,
-        item_type: UniversalOr<FunctionReturnStructField>,
+        class_name: N,
+        item_type: T,
     ) -> BindResult<IteratorHandle> {
-        self.define_iterator_impl(true, native_func, item_type)
+        self.define_iterator_impl(class_name, true, item_type)
     }
 
-    fn define_iterator_impl(
+    fn define_iterator_impl<N: IntoName, T: Into<UniversalOr<FunctionReturnStructField>>>(
         &mut self,
+        class_name: N,
         has_lifetime: bool,
-        native_func: &FunctionHandle,
-        item_type: UniversalOr<FunctionReturnStructField>,
+        item_type: T,
     ) -> BindResult<IteratorHandle> {
+        let class_name = class_name.into_name()?;
+        let item_type = item_type.into();
+
+        let class = self.declare_iterator(&class_name)?;
+        let next_function = self
+            .define_function(class_name.append(&self.settings.iterator.next_function_suffix))?
+            .param(
+                "iter",
+                class.clone(),
+                "opaque iterator on which to retrieve the next value",
+            )?
+            .doc("returns a pointer to the next value or NULL")?
+            .returns(
+                FunctionReturnValue::StructRef(item_type.typed_declaration()),
+                "next value or NULL",
+            )?
+            .build()?;
+
         let iter = IteratorHandle::new(crate::iterator::Iterator::new(
             has_lifetime,
-            native_func,
+            class.inner,
+            next_function,
             item_type,
             self.settings.clone(),
-        )?);
+        ));
         self.add_statement(Statement::IteratorDeclaration(iter.clone()))?;
         Ok(iter)
     }

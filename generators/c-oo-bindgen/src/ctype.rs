@@ -106,7 +106,7 @@ where
     fn to_c_type(&self) -> String {
         format!(
             "{}_{}_t",
-            self.declaration.settings.c_ffi_prefix,
+            self.declaration.inner.settings.c_ffi_prefix,
             self.name().to_snake_case()
         )
     }

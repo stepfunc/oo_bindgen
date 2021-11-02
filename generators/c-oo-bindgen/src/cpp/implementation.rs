@@ -981,7 +981,7 @@ where
 {
     let namespaced_type = format!(
         "::{}::{}",
-        handle.declaration.settings.c_ffi_prefix,
+        handle.declaration.inner.settings.c_ffi_prefix,
         handle.core_cpp_type()
     );
     let value_type = if handle.fields.iter().any(|f| f.field_type.requires_move()) {
@@ -1006,7 +1006,7 @@ where
                     Visibility::Private => {
                         format!(
                             "::{}::{}::get_{}(value)",
-                            handle.declaration.settings.c_ffi_prefix,
+                            handle.settings().c_ffi_prefix,
                             handle.friend_class(),
                             field.name.to_snake_case()
                         )
@@ -1034,14 +1034,14 @@ where
 
     let cpp_type = format!(
         "::{}::{}",
-        handle.declaration.settings.c_ffi_prefix,
+        handle.settings().c_ffi_prefix,
         handle.core_cpp_type()
     );
     f.writeln(&format!("{} to_cpp({} value)", cpp_type, const_ref(c_type)))?;
     blocked(f, |f| {
         f.writeln(&format!(
             "return ::{}::{}::init(",
-            handle.declaration.settings.c_ffi_prefix,
+            handle.settings().c_ffi_prefix,
             handle.friend_class()
         ))?;
         indented(f, |f| {

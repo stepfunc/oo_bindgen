@@ -142,14 +142,18 @@ impl Name {
         Self::create_impl(value.as_ref())
     }
 
-    /// Append to an existing name
-    pub fn append<S: AsRef<str>>(&self, value: S) -> Result<Self, BadName> {
-        Self::create(format!("{}_{}", self.validated, value.as_ref()))
+    /// Append a name to this one
+    pub fn append(&self, other: &Name) -> Self {
+        Self {
+            validated: Rc::new(format!("{}_{}", self.validated, other.validated)),
+        }
     }
 
-    /// Prepend to an existing name
-    pub fn prepend<S: AsRef<str>>(&self, value: S) -> Result<Self, BadName> {
-        Self::create(format!("{}_{}", value.as_ref(), self.validated))
+    /// Prepend a name to this one
+    pub fn prepend(&self, other: &Name) -> Self {
+        Self {
+            validated: Rc::new(format!("{}_{}", other.validated, self.validated)),
+        }
     }
 
     fn is_allowed(c: char) -> bool {
@@ -566,7 +570,10 @@ mod tests {
     #[test]
     fn can_append_string() {
         assert_eq!(
-            Name::create("abc").unwrap().append("def").unwrap().as_ref(),
+            Name::create("abc")
+                .unwrap()
+                .append(&Name::create("def").unwrap())
+                .as_ref(),
             "abc_def"
         );
     }
@@ -576,8 +583,7 @@ mod tests {
         assert_eq!(
             Name::create("abc")
                 .unwrap()
-                .prepend("g123")
-                .unwrap()
+                .prepend(&Name::create("g123").unwrap())
                 .as_ref(),
             "g123_abc"
         );

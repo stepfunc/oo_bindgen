@@ -59,7 +59,7 @@ where
     T: StructFieldType,
 {
     fn friend_class(&self) -> String {
-        self.declaration.friend_class()
+        self.declaration.inner.friend_class()
     }
 }
 

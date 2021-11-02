@@ -27,7 +27,9 @@ pub unsafe fn invoke_callback(values: &CStr, callback: ffi::ValuesReceiver) {
     callback.on_characters(&mut iter)
 }
 
-pub unsafe fn iterator_next<'a>(value: *mut StringIterator) -> Option<&'a ffi::StringIteratorItem> {
+pub unsafe fn string_iterator_next<'a>(
+    value: *mut StringIterator,
+) -> Option<&'a ffi::StringIteratorItem> {
     if let Some(it) = value.as_mut() {
         it.next();
         match &it.current {

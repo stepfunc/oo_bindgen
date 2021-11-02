@@ -639,11 +639,13 @@ where
         _lib_name: &str,
         _prefix: &str,
     ) -> FormattingResult<()> {
-        StructConverter::new(self.declaration.clone()).convert_to_rust(f, from, to)
+        StructConverter::new(self.declaration.inner.clone()).convert_to_rust(f, from, to)
     }
 
     fn conversion(&self, _lib_name: &str, _prefix: &str) -> Option<Box<dyn TypeConverter>> {
-        Some(Box::new(StructConverter::new(self.declaration.clone())))
+        Some(Box::new(StructConverter::new(
+            self.declaration.inner.clone(),
+        )))
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {

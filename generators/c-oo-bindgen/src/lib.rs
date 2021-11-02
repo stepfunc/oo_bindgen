@@ -407,7 +407,7 @@ where
     f.writeln(&format!(
         "static {} {}_{}_{}({})",
         handle.to_c_type(),
-        handle.declaration.settings.c_ffi_prefix,
+        handle.declaration.inner.settings.c_ffi_prefix,
         handle.name().to_snake_case(),
         constructor.name.to_snake_case(),
         params

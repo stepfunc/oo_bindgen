@@ -5,7 +5,9 @@ pub struct InnerByteIterator<'a> {
     values: &'a [u8],
 }
 
-pub unsafe fn next_byte_value(it: *mut crate::InnerByteIterator) -> Option<&crate::ffi::ByteValue> {
+pub unsafe fn inner_byte_iterator_next(
+    it: *mut crate::InnerByteIterator,
+) -> Option<&crate::ffi::ByteValue> {
     if it.is_null() {
         return None;
     }
@@ -28,7 +30,7 @@ pub struct ChunkIterator<'a> {
     chunk_size: usize,
 }
 
-pub unsafe fn next_chunk(it: *mut crate::ChunkIterator) -> Option<&crate::ffi::Chunk> {
+pub unsafe fn chunk_iterator_next(it: *mut crate::ChunkIterator) -> Option<&crate::ffi::Chunk> {
     if it.is_null() {
         return None;
     }

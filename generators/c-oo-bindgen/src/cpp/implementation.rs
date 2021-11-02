@@ -1083,7 +1083,7 @@ fn write_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
             }
             f.writeln(&format!(
                 "default: throw std::invalid_argument(\"Undefined value for enum '{}'\");",
-                handle.name
+                handle.name.to_camel_case()
             ))
         })?;
         f.writeln("}")

@@ -48,7 +48,7 @@ where
             }
             ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
             ValidatedConstructorDefault::DefaultStruct(handle, _, _) => {
-                format!("new {}()", handle.name().to_camel_case(),)
+                format!("new {}()", handle.name().to_camel_case())
             }
         },
         None => field.name.to_mixed_case(),
@@ -82,7 +82,8 @@ where
     blocked(f, |f| {
         f.writeln(&format!(
             "return new {}({});",
-            handle.declaration.name, invocation_args
+            handle.declaration.name.to_camel_case(),
+            invocation_args
         ))
     })
 }

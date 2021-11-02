@@ -44,9 +44,10 @@ use std::convert::TryFrom;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::name::Name;
 use crate::structs::UniversalStructField;
 use crate::types::Arg;
-use crate::{BindingError, Library};
+use crate::{BindingError, Library, StructType};
 
 pub fn doc<D: Into<DocString>>(brief: D) -> Doc {
     Doc {
@@ -328,18 +329,36 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
         validate_doc(class.name().as_ref(), &class.doc, lib)?;
     }
 
-    /* TODO
     for structure in lib.structs() {
         validate_doc(structure.name(), structure.doc(), lib)?;
-        for field in structure.fields() {
-            validate_doc(
-                &format!("{}.{}()", structure.name(), field.name),
-                &field.doc,
-                lib,
-            )?;
+
+        for constructor in structure.construtors() {
+            validate_doc(&constructor.name, &constructor.doc, lib)?;
+        }
+
+        match structure {
+            StructType::FunctionArg(x) => {
+                for field in &x.fields {
+                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
+                }
+            }
+            StructType::FunctionReturn(x) => {
+                for field in &x.fields {
+                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
+                }
+            }
+            StructType::CallbackArg(x) => {
+                for field in &x.fields {
+                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
+                }
+            }
+            StructType::Universal(x) => {
+                for field in &x.fields {
+                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
+                }
+            }
         }
     }
-    */
 
     for enumeration in lib.enums() {
         validate_doc(enumeration.name.as_ref(), &enumeration.doc, lib)?;
@@ -370,6 +389,15 @@ pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
     }
 
     Ok(())
+}
+
+fn valid_field_doc(
+    structure: &Name,
+    field: &Name,
+    field_doc: &Doc,
+    lib: &Library,
+) -> Result<(), BindingError> {
+    validate_doc(&format!("{}.{}()", structure, field), field_doc, lib)
 }
 
 fn validate_doc(symbol_name: &str, doc: &Doc, lib: &Library) -> Result<(), BindingError> {

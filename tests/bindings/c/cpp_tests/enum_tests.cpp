@@ -65,9 +65,9 @@ static void test_enum_single()
 
 static void test_enum_to_string()
 {
-    assert(strcmp("Two", foo::to_string(foo::EnumZeroToFive::two)) == 0);    
-    assert(strcmp("Five", foo::to_string(foo::EnumDisjoint::five)) == 0);
-    assert(strcmp("Single", foo::to_string(foo::EnumSingle::single)) == 0);
+    assert(strcmp("two", foo::to_string(foo::EnumZeroToFive::two)) == 0);    
+    assert(strcmp("five", foo::to_string(foo::EnumDisjoint::five)) == 0);
+    assert(strcmp("single", foo::to_string(foo::EnumSingle::single)) == 0);
     try {
         foo::to_string((foo::EnumSingle)foo::EnumZeroToFive::four);
         assert(false);

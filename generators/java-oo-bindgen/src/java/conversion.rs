@@ -6,7 +6,6 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::name::Name;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
@@ -334,11 +333,9 @@ pub(crate) fn call_native_function(
 ) -> FormattingResult<()> {
     let params = method.parameters.iter().enumerate().map(|(idx, param)| {
         if first_param_is_this && idx == 0 {
-            let mut new_param = param.clone();
-            new_param.name = Name::create("this").unwrap();
-            new_param
+            "this".to_string()
         } else {
-            param.clone()
+            param.name.to_string()
         }
     });
 
@@ -351,7 +348,7 @@ pub(crate) fn call_native_function(
 
     f.write(
         &params
-            .map(|param| param.name.to_mixed_case())
+            .map(|param| param.to_mixed_case())
             .collect::<Vec<String>>()
             .join(", "),
     )?;

@@ -143,7 +143,7 @@ pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
         .begin_constructor(
             "init",
             ConstructorType::Normal,
-            "Initialize {struct:Structure} to default values",
+            "Initialize {struct:structure} to default values",
         )?
         .default_variant(&enum_var1_field, "var1")?
         .default_variant(&enum_var2_field, "var2")?

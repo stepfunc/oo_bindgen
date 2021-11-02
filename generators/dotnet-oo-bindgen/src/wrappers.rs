@@ -6,7 +6,7 @@ use crate::dotnet_type::DotnetType;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
 
-use heck::SnakeCase;
+use heck::{CamelCase, SnakeCase};
 
 pub(crate) fn generate_native_functions_class(
     f: &mut dyn Printer,
@@ -67,9 +67,15 @@ fn write_exception_and_return_block(
                 "var error = PInvoke.{}_{}({});",
                 prefix, func.name, params
             ))?;
-            f.writeln(&format!("if(error != {}.Ok)", err.inner.name))?;
+            f.writeln(&format!(
+                "if(error != {}.Ok)",
+                err.inner.name.to_camel_case()
+            ))?;
             blocked(f, |f| {
-                f.writeln(&format!("throw new {}(error);", err.exception_name))
+                f.writeln(&format!(
+                    "throw new {}(error);",
+                    err.exception_name.to_camel_case()
+                ))
             })
         }
         SignatureType::ErrorWithReturn(err, ret, _) => {
@@ -78,9 +84,15 @@ fn write_exception_and_return_block(
                 "var _error_result = PInvoke.{}_{}({}, out _return_value);",
                 prefix, func.name, params
             ))?;
-            f.writeln(&format!("if(_error_result != {}.Ok)", err.inner.name))?;
+            f.writeln(&format!(
+                "if(_error_result != {}.Ok)",
+                err.inner.name.to_camel_case()
+            ))?;
             blocked(f, |f| {
-                f.writeln(&format!("throw new {}(_error_result);", err.exception_name))
+                f.writeln(&format!(
+                    "throw new {}(_error_result);",
+                    err.exception_name.to_camel_case()
+                ))
             })?;
             f.writeln("return _return_value;")
         }

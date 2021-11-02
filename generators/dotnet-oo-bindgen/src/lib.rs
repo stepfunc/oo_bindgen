@@ -217,7 +217,7 @@ fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for st in lib.structs() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(st.name());
+        filename.push(st.name().to_camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -236,7 +236,7 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
     for native_enum in lib.enums() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(native_enum.name.to_string());
+        filename.push(native_enum.name.to_camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -373,7 +373,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(class.name().to_string());
+        filename.push(class.name().to_camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -383,7 +383,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.static_classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(class.name.to_string());
+        filename.push(class.name.to_camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 

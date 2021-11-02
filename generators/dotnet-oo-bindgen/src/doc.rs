@@ -81,6 +81,8 @@ fn reference_print(
                 .map(|param| param.arg_type.as_dotnet_type())
                 .collect::<Vec<_>>()
                 .join(", ");
+
+            let class_name = class_name.to_camel_case();
             f.write(&format!(
                 "<see cref=\"{}.{}({})\" />",
                 class_name, class_name, params

@@ -483,7 +483,10 @@ fn write_enum_definition(
                     variant.name
                 ))?;
             }
-            f.writeln(&format!("default: return \"Unknown{}\";", handle.name))
+            f.writeln(&format!(
+                "default: return \"unknown {} value\";",
+                handle.name
+            ))
         })
     })
 }

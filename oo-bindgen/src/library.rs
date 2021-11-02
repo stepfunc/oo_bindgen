@@ -481,12 +481,30 @@ where
 }
 
 impl StructType {
+    pub fn construtors(&self) -> &[Handle<Constructor>] {
+        match self {
+            StructType::FunctionArg(x) => &x.constructors,
+            StructType::FunctionReturn(x) => &x.constructors,
+            StructType::CallbackArg(x) => &x.constructors,
+            StructType::Universal(x) => &x.constructors,
+        }
+    }
+
     pub fn name(&self) -> &str {
         match self {
             StructType::FunctionArg(x) => x.name(),
             StructType::CallbackArg(x) => x.name(),
             StructType::FunctionReturn(x) => x.name(),
             StructType::Universal(x) => x.name(),
+        }
+    }
+
+    pub fn doc(&self) -> &Doc {
+        match self {
+            StructType::FunctionArg(x) => &x.doc,
+            StructType::FunctionReturn(x) => &x.doc,
+            StructType::CallbackArg(x) => &x.doc,
+            StructType::Universal(x) => &x.doc,
         }
     }
 

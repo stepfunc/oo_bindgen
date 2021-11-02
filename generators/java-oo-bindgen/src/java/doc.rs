@@ -67,7 +67,7 @@ fn reference_print(
         }
         DocReference::ClassConstructor(class_name) => {
             let func = lib
-                .find_class(class_name)
+                .find_class(&class_name)
                 .unwrap()
                 .constructor
                 .as_ref()
@@ -78,6 +78,8 @@ fn reference_print(
                 .map(|param| param.arg_type.as_java_primitive())
                 .collect::<Vec<_>>()
                 .join(", ");
+
+            let class_name = class_name.to_camel_case();
             f.write(&format!(
                 "{{@link {}#{}({})}}",
                 class_name, class_name, params

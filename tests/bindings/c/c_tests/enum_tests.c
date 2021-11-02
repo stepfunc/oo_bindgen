@@ -112,10 +112,10 @@ static void test_enum_single()
 
 static void test_enum_to_string()
 {
-    assert(strcmp("Two", foo_enum_zero_to_five_to_string(FOO_ENUM_ZERO_TO_FIVE_TWO)) == 0);
-    assert(strcmp("Five", foo_enum_disjoint_to_string(FOO_ENUM_DISJOINT_FIVE)) == 0);
-    assert(strcmp("Single", foo_enum_single_to_string(FOO_ENUM_SINGLE_SINGLE)) == 0);
-    assert(strcmp("UnknownEnumSingle", foo_enum_single_to_string((foo_enum_single_t)FOO_ENUM_ZERO_TO_FIVE_FOUR)) == 0);
+    assert(strcmp("two", foo_enum_zero_to_five_to_string(FOO_ENUM_ZERO_TO_FIVE_TWO)) == 0);
+    assert(strcmp("five", foo_enum_disjoint_to_string(FOO_ENUM_DISJOINT_FIVE)) == 0);
+    assert(strcmp("single", foo_enum_single_to_string(FOO_ENUM_SINGLE_SINGLE)) == 0);
+    assert(strcmp("unknown enum_single value", foo_enum_single_to_string((foo_enum_single_t)FOO_ENUM_ZERO_TO_FIVE_FOUR)) == 0);
 }
 
 void enum_tests()

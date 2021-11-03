@@ -110,6 +110,8 @@ pub enum NameError {
         id: &'static str,
         language: &'static str,
     },
+    #[error("'{}' is a sub-phrase reserved by oo-bindgen itself", phrase)]
+    BindgenConflict { phrase: &'static str },
     #[error("Names cannot contain double underscores")]
     ContainsDoubleUnderscore,
     #[error("Names cannot end in underscores")]
@@ -199,6 +201,15 @@ impl Name {
                 value.to_string(),
                 NameError::LastCharacterIsUnderscore,
             ));
+        }
+
+        for phrase in OO_BINDGEN_RESERVED_PHRASES {
+            if value.contains(phrase) {
+                return Err(BadName::new(
+                    value.to_string(),
+                    NameError::BindgenConflict { phrase },
+                ));
+            }
         }
 
         Ok(Name {
@@ -457,6 +468,13 @@ const CSHARP_KEYWORDS: &[&str] = &[
     "while",
 ];
 
+/// keywords reserved by oo_bindgen itself
+/// these strings cannot show up anywhere in a Name
+///
+/// this allows backends to use temporary variables that can never
+/// conflict with a Name used in an API
+const OO_BINDGEN_RESERVED_PHRASES: &[&str] = &["oo_bindgen"];
+
 type KeyWordMap = HashMap<&'static str, (&'static str, &'static str)>;
 
 struct KeywordMap {
@@ -564,6 +582,19 @@ mod tests {
         assert_eq!(
             Name::create("abc_def__ghi").err().unwrap().error,
             NameError::ContainsDoubleUnderscore
+        );
+    }
+
+    #[test]
+    fn cannot_contain_a_sub_phrase_reserved_by_oo_bindgen() {
+        assert_eq!(
+            Name::create("blah_blah_oo_bindgen_blad")
+                .err()
+                .unwrap()
+                .error,
+            NameError::BindgenConflict {
+                phrase: "oo_bindgen"
+            }
         );
     }
 

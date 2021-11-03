@@ -344,7 +344,15 @@ fn write_static_class_method(
         match &method.native_function.return_type {
             FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
             FunctionReturnType::Type(t, _) => {
-                f.writeln(&format!("return {};", t.to_cpp_return_value(invocation)))
+                let transformed_return_value = if t.transform_in_wrapper() {
+                    f.writeln("// return type already transformed in the wrapper")?;
+                    invocation
+                } else {
+                    // perform the transform here
+                    f.writeln("// transform the return value")?;
+                    t.to_cpp_return_value(invocation)
+                };
+                f.writeln(&format!("return {};", transformed_return_value))
             }
         }
     })
@@ -566,7 +574,15 @@ fn write_class_static_method_impl(
     blocked(f, |f| match &method.native_function.return_type {
         FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
         FunctionReturnType::Type(t, _) => {
-            f.writeln(&format!("return {};", t.to_cpp_return_value(invocation)))
+            let transformed_return_value = if t.transform_in_wrapper() {
+                f.writeln("// return type already transformed in the wrapper")?;
+                invocation
+            } else {
+                // perform the transform here
+                f.writeln("// transform the return value")?;
+                t.to_cpp_return_value(invocation)
+            };
+            f.writeln(&format!("return {};", transformed_return_value))
         }
     })?;
     f.newline()
@@ -621,7 +637,15 @@ fn write_class_method_impl_generic(
         match &native_function.return_type {
             FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
             FunctionReturnType::Type(t, _) => {
-                f.writeln(&format!("return {};", t.to_cpp_return_value(invocation)))
+                let transformed_return_value = if t.transform_in_wrapper() {
+                    f.writeln("// return type already transformed in the wrapper")?;
+                    invocation
+                } else {
+                    // perform the transform here
+                    f.writeln("// transform the return value")?;
+                    t.to_cpp_return_value(invocation)
+                };
+                f.writeln(&format!("return {};", transformed_return_value))
             }
         }
     })?;
@@ -668,6 +692,8 @@ fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument>]) -> String {
         .collect::<Vec<String>>()
         .join(", ")
 }
+
+const RETURN_VALUE: &str = "_oo_bindgen_return_value";
 
 fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> FormattingResult<()> {
     fn write_error_check(f: &mut dyn Printer, err: &ErrorType) -> FormattingResult<()> {
@@ -728,14 +754,25 @@ fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> Formatt
             }
         }
         if has_out_param {
-            f.writeln("&_return_value")?;
+            f.writeln(&format!("&{}", RETURN_VALUE))?;
         }
         Ok(())
     }
 
+    let return_type = match &func.return_type {
+        FunctionReturnType::Void => func.return_type.get_cpp_function_return_type(),
+        FunctionReturnType::Type(t, _) => {
+            if t.transform_in_wrapper() {
+                func.return_type.get_cpp_function_return_type()
+            } else {
+                t.to_c_type()
+            }
+        }
+    };
+
     f.writeln(&format!(
         "{} {}({})",
-        func.return_type.to_c_type(),
+        return_type,
         func.name.to_snake_case(),
         cpp_function_args(&func.parameters)
     ))?;
@@ -750,10 +787,14 @@ fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> Formatt
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")
                 }
-                FunctionReturnType::Type(_, _) => {
-                    f.writeln(&format!("return {}(", c_func_name))?;
+                FunctionReturnType::Type(t, _) => {
+                    f.writeln(&format!("const auto {} = {}(", RETURN_VALUE, c_func_name))?;
                     indented(f, |f| write_args(f, func, false))?;
-                    f.writeln(");")
+                    f.writeln(");")?;
+                    f.writeln(&format!(
+                        "return {};",
+                        t.to_cpp_return_value(RETURN_VALUE.to_string())
+                    ))
                 }
             },
             Some(err) => match &func.return_type {
@@ -764,12 +805,15 @@ fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> Formatt
                     write_error_check(f, err)
                 }
                 FunctionReturnType::Type(t, _) => {
-                    f.writeln(&format!("{} _return_value;", t.to_c_type()))?;
+                    f.writeln(&format!("{} {};", t.to_c_type(), RETURN_VALUE))?;
                     f.writeln(&format!("const auto _error =  {}(", c_func_name))?;
                     indented(f, |f| write_args(f, func, true))?;
                     f.writeln(");")?;
                     write_error_check(f, err)?;
-                    f.writeln("return _return_value;")
+                    f.writeln(&format!(
+                        "return {};",
+                        t.to_cpp_return_value(RETURN_VALUE.to_string())
+                    ))
                 }
             },
         }

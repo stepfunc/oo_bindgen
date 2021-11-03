@@ -8,6 +8,7 @@ void structure_tests();
 void callback_tests();
 void iterator_tests();
 void universal_tests();
+void collection_tests();
 
 int main()
 {
@@ -21,6 +22,7 @@ int main()
     structure_tests();
     callback_tests();
     universal_tests();
+    collection_tests();
 
     return 0;
 }

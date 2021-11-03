@@ -3,7 +3,7 @@ use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::enum_type::EnumHandle;
 use oo_bindgen::function::{FunctionArgument, FunctionHandle, FunctionReturnValue};
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
-use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::iterator::{IteratorHandle, IteratorItemType};
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
@@ -145,6 +145,14 @@ impl CType for InterfaceHandle {
 impl CType for CollectionHandle {
     fn to_c_type(&self) -> String {
         self.collection_class.to_c_type()
+    }
+}
+
+impl CType for IteratorItemType {
+    fn to_c_type(&self) -> String {
+        match self {
+            IteratorItemType::Struct(x) => x.to_c_type(),
+        }
     }
 }
 

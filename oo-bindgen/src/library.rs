@@ -9,7 +9,7 @@ use crate::enum_type::{EnumBuilder, EnumHandle};
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
-use crate::iterator::IteratorHandle;
+use crate::iterator::{IteratorHandle, IteratorItemType};
 use crate::name::{BadName, IntoName, Name};
 use crate::structs::*;
 use crate::types::{TypeValidator, ValidatedType};
@@ -477,7 +477,7 @@ impl<T> UniversalOr<T>
 where
     T: StructFieldType,
 {
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &Name {
         match self {
             UniversalOr::Specific(x) => x.name(),
             UniversalOr::Universal(x) => x.name(),
@@ -1018,7 +1018,7 @@ impl LibraryBuilder {
         ))
     }
 
-    pub fn define_iterator<N: IntoName, T: Into<UniversalOr<FunctionReturnStructField>>>(
+    pub fn define_iterator<N: IntoName, T: Into<IteratorItemType>>(
         &mut self,
         class_name: N,
         item_type: T,
@@ -1026,10 +1026,7 @@ impl LibraryBuilder {
         self.define_iterator_impl(class_name, false, item_type)
     }
 
-    pub fn define_iterator_with_lifetime<
-        N: IntoName,
-        T: Into<UniversalOr<FunctionReturnStructField>>,
-    >(
+    pub fn define_iterator_with_lifetime<N: IntoName, T: Into<IteratorItemType>>(
         &mut self,
         class_name: N,
         item_type: T,
@@ -1037,7 +1034,7 @@ impl LibraryBuilder {
         self.define_iterator_impl(class_name, true, item_type)
     }
 
-    fn define_iterator_impl<N: IntoName, T: Into<UniversalOr<FunctionReturnStructField>>>(
+    fn define_iterator_impl<N: IntoName, T: Into<IteratorItemType>>(
         &mut self,
         class_name: N,
         has_lifetime: bool,
@@ -1055,10 +1052,7 @@ impl LibraryBuilder {
                 "opaque iterator on which to retrieve the next value",
             )?
             .doc("returns a pointer to the next value or NULL")?
-            .returns(
-                FunctionReturnValue::StructRef(item_type.typed_declaration()),
-                "next value or NULL",
-            )?
+            .returns(item_type.get_function_return_value(), "next value or NULL")?
             .build()?;
 
         let iter = IteratorHandle::new(crate::iterator::Iterator::new(

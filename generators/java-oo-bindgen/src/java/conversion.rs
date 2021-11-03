@@ -5,7 +5,7 @@ use oo_bindgen::collection::CollectionHandle;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
-use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::iterator::{IteratorHandle, IteratorItemType};
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
@@ -101,6 +101,20 @@ impl JavaType for StructDeclarationHandle {
 
     fn as_java_object(&self) -> String {
         self.name.to_camel_case()
+    }
+}
+
+impl JavaType for IteratorItemType {
+    fn as_java_primitive(&self) -> String {
+        match self {
+            IteratorItemType::Struct(x) => x.as_java_primitive(),
+        }
+    }
+
+    fn as_java_object(&self) -> String {
+        match self {
+            IteratorItemType::Struct(x) => x.as_java_object(),
+        }
     }
 }
 

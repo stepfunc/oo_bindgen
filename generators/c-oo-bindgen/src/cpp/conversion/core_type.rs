@@ -6,7 +6,7 @@ use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::{CallbackFunction, InterfaceHandle};
-use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::iterator::{IteratorHandle, IteratorItemType};
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{Arg, BasicType, StringType};
 use oo_bindgen::{StructType, UniversalOr};
@@ -98,6 +98,14 @@ impl CoreCppType for InterfaceHandle {
 impl CoreCppType for IteratorHandle {
     fn core_cpp_type(&self) -> String {
         self.iter_class.name.to_camel_case()
+    }
+}
+
+impl CoreCppType for IteratorItemType {
+    fn core_cpp_type(&self) -> String {
+        match self {
+            IteratorItemType::Struct(x) => x.core_cpp_type(),
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 use oo_bindgen::types::DurationType;
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare each echo function
     let duration_ms_echo_func = lib
         .define_function("duration_ms_echo")?

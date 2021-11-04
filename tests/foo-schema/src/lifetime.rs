@@ -2,7 +2,7 @@ use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
-fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
+fn define_inner_iterator(lib: &mut LibraryBuilder) -> BackTraced<IteratorHandle> {
     let byte_value = lib.declare_function_return_struct("byte_value")?;
     let byte_value = lib
         .define_function_return_struct(byte_value)?
@@ -11,10 +11,12 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Bin
         .end_fields()?
         .build()?;
 
-    lib.define_iterator_with_lifetime("inner_byte_iterator", byte_value)
+    let iterator = lib.define_iterator_with_lifetime("inner_byte_iterator", byte_value)?;
+
+    Ok(iterator)
 }
 
-fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, BindingError> {
+fn define_outer_iter(lib: &mut LibraryBuilder) -> BackTraced<IteratorHandle> {
     let inner_iter = define_inner_iterator(lib)?;
     let chunk = lib.declare_function_return_struct("chunk")?;
     let chunk = lib
@@ -28,10 +30,12 @@ fn define_outer_iter(lib: &mut LibraryBuilder) -> Result<IteratorHandle, Binding
         .end_fields()?
         .build()?;
 
-    lib.define_iterator_with_lifetime("chunk_iterator", chunk)
+    let iterator = lib.define_iterator_with_lifetime("chunk_iterator", chunk)?;
+
+    Ok(iterator)
 }
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let outer_iter = define_outer_iter(lib)?;
 
     let interface = lib

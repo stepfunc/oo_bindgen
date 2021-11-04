@@ -1,14 +1,15 @@
 use oo_bindgen::name::Name;
 use oo_bindgen::structs::{ConstructorDefault, ConstructorType, Number, UniversalStructHandle};
 use oo_bindgen::types::{BasicType, DurationType};
-use oo_bindgen::{BindResult, LibraryBuilder};
+use oo_bindgen::{BackTraced, LibraryBuilder};
 use std::time::Duration;
 
-fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHandle> {
+fn define_inner_struct(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHandle> {
     let inner = lib.declare_universal_struct("universal_inner_struct")?;
 
     let value_field = Name::create("value")?;
-    lib.define_universal_struct(inner)?
+    let inner = lib
+        .define_universal_struct(inner)?
         .doc("Simple universal struct")?
         .add(value_field.clone(), BasicType::S32, "integer value")?
         .end_fields()?
@@ -19,10 +20,12 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
         )?
         .default(&value_field, Number::S32(-42))?
         .end_constructor()?
-        .build()
+        .build()?;
+
+    Ok(inner)
 }
 
-fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHandle> {
+fn define_outer_struct(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHandle> {
     let inner_struct = define_inner_struct(lib)?;
 
     let inner_field = Name::create("inner")?;
@@ -86,7 +89,7 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHa
     Ok(outer_struct)
 }
 
-pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let handle = define_outer_struct(lib)?;
 
     let interface = lib

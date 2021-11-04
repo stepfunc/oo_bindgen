@@ -95,9 +95,9 @@ impl Display for BadName {
 
 #[derive(Error, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NameError {
-    #[error("Names cannot be an empty string")]
+    #[error("Name is an empty string")]
     IsEmpty,
-    #[error("Names contains an valid character '{}'", c)]
+    #[error("Name contains invalid character '{}'", c)]
     CharacterNeverAllowed { c: char },
     #[error("Name must start with lowercase ascii but first character is '{}'", c)]
     FirstCharacterNotLowercaseAscii { c: char },

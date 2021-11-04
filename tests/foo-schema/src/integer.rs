@@ -1,7 +1,7 @@
 use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let uint8_echo = lib
         .define_function("uint8_echo")?
         .param("value", BasicType::U8, "Uint8")?

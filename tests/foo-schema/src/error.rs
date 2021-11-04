@@ -1,8 +1,8 @@
 use oo_bindgen::error_type::ExceptionType;
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{BindingError, LibraryBuilder};
+use oo_bindgen::{BackTraced, LibraryBuilder};
 
-pub(crate) fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let error_type = lib
         .define_error_type(
             "my_error",

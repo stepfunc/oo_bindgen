@@ -1,7 +1,7 @@
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let collection_without_reserve =
         lib.define_collection("string_collection", StringType, false)?;
 

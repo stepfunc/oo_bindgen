@@ -2,7 +2,7 @@ use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::*;
 
-fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
+fn define_iterator(lib: &mut LibraryBuilder) -> BackTraced<IteratorHandle> {
     // Define the iterator item structure
     let iterator_item = lib.declare_function_return_struct("string_iterator_item")?;
     let iterator_item = lib
@@ -13,10 +13,12 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BindResult<IteratorHandle> {
         .build()?;
 
     // Define the actual iterator
-    lib.define_iterator("string_iterator", iterator_item)
+    let iterator = lib.define_iterator("string_iterator", iterator_item)?;
+
+    Ok(iterator)
 }
 
-pub fn define(lib: &mut LibraryBuilder) -> BindResult<()> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // iterators can only be used in callback arguments, so we need an interface
     let iterator = define_iterator(lib)?;
 

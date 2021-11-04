@@ -1,6 +1,6 @@
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Define each enum
     let enum_zero_to_five = lib
         .define_enum("enum_zero_to_five")?

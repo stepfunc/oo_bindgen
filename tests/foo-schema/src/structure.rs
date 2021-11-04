@@ -4,7 +4,7 @@ use oo_bindgen::types::{BasicType, DurationType, StringType};
 use oo_bindgen::*;
 use std::time::Duration;
 
-pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BindResult<UniversalStructHandle> {
+pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHandle> {
     let uint8_value = Name::create("uint8_value")?;
     let int8_value = Name::create("int8_value")?;
     let uint16_value = Name::create("uint16_value")?;
@@ -17,7 +17,8 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BindResult<Universa
     let double_value = Name::create("double_value")?;
 
     let numbers = lib.declare_universal_struct("numbers")?;
-    lib.define_universal_struct(numbers)?
+    let numbers = lib
+        .define_universal_struct(numbers)?
         .doc("structure containing all the numeric types")?
         .add(uint8_value.clone(), BasicType::U8, "uint8 value")?
         .add(int8_value.clone(), BasicType::S8, "int8 value")?
@@ -46,13 +47,16 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BindResult<Universa
         .default(&float_value, Number::Float(12.34))?
         .default(&double_value, Number::Double(-56.78))?
         .end_constructor()?
-        .build()
+        .build()?;
+
+    Ok(numbers)
 }
 
-pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BindResult<FunctionArgStructHandle> {
+pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BackTraced<FunctionArgStructHandle> {
     let empty_interface = lib
         .define_asynchronous_interface("empty_interface", "Interface within a structure")?
         .build()?;
+
     let numbers = define_numbers_structure(lib)?;
 
     let interface_field = Name::create("interface_field")?;
@@ -78,7 +82,7 @@ pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BindResult<FunctionAr
     Ok(inner_structure)
 }
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let structure_enum = lib
         .define_enum("structure_enum")?
         .push("var1", "Var1")?

@@ -17,7 +17,7 @@ mod strings;
 mod structure;
 mod universal_struct;
 
-pub fn build_lib() -> Result<Library, BindingError> {
+pub fn build_lib() -> BackTraced<Library> {
     let lib_info = LibraryInfo {
         description: "Foo is an interesting library".to_string(),
         project_url: "https://stepfunc.io/".to_string(),
@@ -71,7 +71,9 @@ pub fn build_lib() -> Result<Library, BindingError> {
     collection::define(&mut builder)?;
     universal_struct::define(&mut builder)?;
 
-    builder.build()
+    let library = builder.build()?;
+
+    Ok(library)
 }
 
 #[cfg(test)]

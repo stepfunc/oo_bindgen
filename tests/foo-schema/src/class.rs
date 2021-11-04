@@ -1,7 +1,7 @@
 use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare the class
     let testclass = lib.declare_class("test_class")?;
 

@@ -1,10 +1,10 @@
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::collection::Collection;
+use oo_bindgen::doc::DocReference;
+use oo_bindgen::enum_type::Enum;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
-use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
@@ -164,7 +164,10 @@ impl DotnetType for StringType {
     }
 }
 
-impl DotnetType for InterfaceHandle {
+impl<D> DotnetType for Handle<Interface<D>>
+where
+    D: DocReference,
+{
     fn as_dotnet_type(&self) -> String {
         format!("I{}", self.name.to_camel_case())
     }
@@ -221,7 +224,10 @@ impl DotnetType for ClassDeclarationHandle {
     }
 }
 
-impl DotnetType for CollectionHandle {
+impl<D> DotnetType for Handle<Collection<D>>
+where
+    D: DocReference,
+{
     fn as_dotnet_type(&self) -> String {
         format!(
             "System.Collections.Generic.ICollection<{}>",
@@ -257,7 +263,10 @@ impl DotnetType for CollectionHandle {
     }
 }
 
-impl DotnetType for IteratorHandle {
+impl<D> DotnetType for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn as_dotnet_type(&self) -> String {
         format!(
             "System.Collections.Generic.ICollection<{}>",
@@ -499,7 +508,10 @@ impl DotnetType for UniversalStructField {
     }
 }
 
-impl DotnetType for EnumHandle {
+impl<D> DotnetType for Handle<Enum<D>>
+where
+    D: DocReference,
+{
     fn as_dotnet_type(&self) -> String {
         self.name.to_camel_case()
     }
@@ -758,8 +770,9 @@ impl DotnetType for StructDeclarationHandle {
     }
 }
 
-impl<T> DotnetType for Handle<Struct<T>>
+impl<T, D> DotnetType for Handle<Struct<T, D>>
 where
+    D: DocReference,
     T: StructFieldType,
 {
     fn as_dotnet_type(&self) -> String {
@@ -791,8 +804,9 @@ where
     }
 }
 
-impl<T> DotnetType for ReturnType<T>
+impl<T, D> DotnetType for ReturnType<T, D>
 where
+    D: DocReference,
     T: DotnetType,
 {
     fn as_dotnet_type(&self) -> String {

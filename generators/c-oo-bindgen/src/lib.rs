@@ -48,7 +48,7 @@ use crate::doc::*;
 use crate::formatting::*;
 use heck::{ShoutySnakeCase, SnakeCase};
 use oo_bindgen::class::*;
-use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
+use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
 use oo_bindgen::doc::*;
 use oo_bindgen::enum_type::*;
 use oo_bindgen::formatting::*;
@@ -239,7 +239,7 @@ fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
                     StructType::Universal(x) => write_struct_definition(f, x, lib)?,
                 },
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
-                Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
+                Statement::ClassDeclaration(handle) => write_class_declaration(f, handle)?,
                 Statement::FunctionDefinition(handle) => write_function(f, handle, lib)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
                 _ => (),
@@ -253,7 +253,7 @@ fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
 
 fn write_constants_definition(
     f: &mut dyn Printer,
-    handle: &ConstantSetHandle,
+    handle: &Handle<ConstantSet<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     fn get_constant_value(value: ConstantValue) -> String {
@@ -277,7 +277,7 @@ fn write_constants_definition(
 
 fn write_struct_definition<T>(
     f: &mut dyn Printer,
-    handle: &Handle<Struct<T>>,
+    handle: &Handle<Struct<T, Validated>>,
     lib: &Library,
 ) -> FormattingResult<()>
 where
@@ -368,8 +368,8 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
 fn write_struct_constructor<T>(
     f: &mut dyn Printer,
     lib: &Library,
-    constructor: &Constructor,
-    handle: &Handle<Struct<T>>,
+    constructor: &Constructor<Validated>,
+    handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CType + TypeExtractor,
@@ -388,11 +388,7 @@ where
         }
 
         f.writeln("@returns ")?;
-        docstring_print(
-            f,
-            &format!("New instance of {{struct:{}}}", handle.name()).into(),
-            lib,
-        )?;
+        docstring_print(f, &text(&format!("New instance of {}", handle.name())), lib)?;
 
         Ok(())
     })?;
@@ -431,7 +427,7 @@ where
 
 fn write_enum_definition(
     f: &mut dyn Printer,
-    handle: &EnumHandle,
+    handle: &Handle<Enum<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
@@ -457,11 +453,7 @@ fn write_enum_definition(
 
     doxygen(f, |f| {
         f.writeln("@brief ")?;
-        docstring_print(
-            f,
-            &format!("Converts a {{enum:{}}} to a string", handle.name).into(),
-            lib,
-        )?;
+        docstring_print(f, &text("Converts the enum to a string"), lib)?;
         f.writeln("@param value Enum to convert")?;
         f.writeln("@returns String representation")
     })?;
@@ -494,39 +486,7 @@ fn write_enum_definition(
 fn write_class_declaration(
     f: &mut dyn Printer,
     handle: &ClassDeclarationHandle,
-    lib: &Library,
 ) -> FormattingResult<()> {
-    match lib.symbol(&handle.name) {
-        Some(Symbol::Class(handle)) => doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?,
-        Some(Symbol::Iterator(handle)) => doxygen(f, |f| {
-            doxygen_print(
-                f,
-                &Doc::from(&*format!(
-                    "Iterator of {{struct:{}}}. See @ref {}_{}.",
-                    handle.item_type.name(),
-                    lib.settings.c_ffi_prefix,
-                    handle.next_function.name
-                )),
-                lib,
-            )
-        })?,
-        Some(Symbol::Collection(handle)) => doxygen(f, |f| {
-            doxygen_print(
-                f,
-                &Doc::from(&*format!(
-                    "Collection of {}. See @ref {}_{} and @ref {}_{}.",
-                    handle.item_type.to_c_type(),
-                    lib.settings.c_ffi_prefix,
-                    handle.add_func.name,
-                    lib.settings.c_ffi_prefix,
-                    handle.delete_func.name
-                )),
-                lib,
-            )
-        })?,
-        _ => (),
-    }
-
     f.writeln(&format!(
         "typedef struct {} {};",
         handle.to_c_type(),
@@ -536,7 +496,7 @@ fn write_class_declaration(
 
 fn write_function_docs(
     f: &mut dyn Printer,
-    handle: &FunctionHandle,
+    handle: &Handle<Function<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     doxygen(f, |f| {
@@ -584,7 +544,7 @@ fn write_function_docs(
 
 fn write_function(
     f: &mut dyn Printer,
-    handle: &FunctionHandle,
+    handle: &Handle<Function<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     write_function_docs(f, handle, lib)?;
@@ -634,7 +594,7 @@ fn write_function(
 
 fn write_interface(
     f: &mut dyn Printer,
-    handle: &InterfaceHandle,
+    handle: &Handle<Interface<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
@@ -659,7 +619,7 @@ fn write_interface(
                 }
 
                 f.writeln(&format!("@param {} ", CTX_VARIABLE_NAME))?;
-                docstring_print(f, &"Context data".into(), lib)?;
+                docstring_print(f, &text("Context data"), lib)?;
 
                 // Print return documentation
                 if let CallbackReturnType::Type(_, doc) = &cb.return_type {
@@ -704,11 +664,7 @@ fn write_interface(
     // Write init helper
     doxygen(f, |f| {
         f.writeln("@brief ")?;
-        docstring_print(
-            f,
-            &format!("Initialize a {{interface:{}}} interface", handle.name).into(),
-            lib,
-        )?;
+        docstring_print(f, &text("Initialize an instance of the interface"), lib)?;
         for cb in &handle.callbacks {
             f.writeln(&format!("@param {} ", cb.name.to_snake_case()))?;
             docstring_print(f, &cb.doc.brief, lib)?;

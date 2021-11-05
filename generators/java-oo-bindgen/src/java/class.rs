@@ -2,17 +2,17 @@ use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
+use oo_bindgen::doc::Validated;
 use oo_bindgen::error_type::ExceptionType;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    class: &ClassHandle,
-    lib: &Library,
+    class: &Handle<Class<Validated>>,
 ) -> FormattingResult<()> {
     let classname = class.name().to_camel_case();
 
     // Documentation
-    documentation(f, |f| javadoc_print(f, &class.doc, lib))?;
+    documentation(f, |f| javadoc_print(f, &class.doc))?;
 
     // Class definition
     f.writeln(&format!("public final class {}", classname))?;
@@ -34,27 +34,27 @@ pub(crate) fn generate(
         f.newline()?;
 
         if let Some(constructor) = &class.constructor {
-            generate_constructor(f, &classname, constructor, lib)?;
+            generate_constructor(f, &classname, constructor)?;
             f.newline()?;
         }
 
         if let Some(destructor) = &class.destructor {
-            generate_destructor(f, destructor, &class.destruction_mode, lib)?;
+            generate_destructor(f, destructor, &class.destruction_mode)?;
             f.newline()?;
         }
 
         for method in &class.methods {
-            generate_method(f, method, lib)?;
+            generate_method(f, method)?;
             f.newline()?;
         }
 
         for method in &class.async_methods {
-            generate_async_method(f, method, lib)?;
+            generate_async_method(f, method)?;
             f.newline()?;
         }
 
         for method in &class.static_methods {
-            generate_static_method(f, method, lib)?;
+            generate_static_method(f, method)?;
             f.newline()?;
         }
 
@@ -64,13 +64,12 @@ pub(crate) fn generate(
 
 pub(crate) fn generate_static(
     f: &mut dyn Printer,
-    class: &StaticClassHandle,
-    lib: &Library,
+    class: &Handle<StaticClass<Validated>>,
 ) -> FormattingResult<()> {
     let classname = class.name.to_camel_case();
 
     // Documentation
-    documentation(f, |f| javadoc_print(f, &class.doc, lib))?;
+    documentation(f, |f| javadoc_print(f, &class.doc))?;
 
     // Class definition
     f.writeln(&format!("public final class {}", classname))?;
@@ -81,7 +80,7 @@ pub(crate) fn generate_static(
         f.newline()?;
 
         for method in &class.static_methods {
-            generate_static_method(f, method, lib)?;
+            generate_static_method(f, method)?;
             f.newline()?;
         }
 
@@ -92,18 +91,17 @@ pub(crate) fn generate_static(
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
-    constructor: &FunctionHandle,
-    lib: &Library,
+    constructor: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &constructor.doc, lib)?;
+        javadoc_print(f, &constructor.doc)?;
         f.newline()?;
 
         // Print each parameter value
         for param in constructor.parameters.iter() {
             f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print exception
@@ -144,20 +142,19 @@ fn generate_constructor(
 
 fn generate_destructor(
     f: &mut dyn Printer,
-    destructor: &FunctionHandle,
+    destructor: &Handle<Function<Validated>>,
     destruction_mode: &DestructionMode,
-    lib: &Library,
 ) -> FormattingResult<()> {
     if destruction_mode.is_manual_destruction() {
         documentation(f, |f| {
             // Print top-level documentation
-            javadoc_print(f, &destructor.doc, lib)?;
+            javadoc_print(f, &destructor.doc)?;
             f.newline()?;
 
             // Print each parameter value
             for param in destructor.parameters.iter().skip(1) {
                 f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-                docstring_print(f, &param.doc, lib)?;
+                docstring_print(f, &param.doc)?;
             }
 
             Ok(())
@@ -204,22 +201,22 @@ fn generate_destructor(
     })
 }
 
-fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
+fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &method.native_function.doc, lib)?;
+        javadoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
         for param in method.native_function.parameters.iter().skip(1) {
             f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print return value
         if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("@return ")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
         }
 
         // Print exception
@@ -268,26 +265,22 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
     })
 }
 
-fn generate_static_method(
-    f: &mut dyn Printer,
-    method: &Method,
-    lib: &Library,
-) -> FormattingResult<()> {
+fn generate_static_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &method.native_function.doc, lib)?;
+        javadoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
         for param in method.native_function.parameters.iter() {
             f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print return value
         if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("@return ")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
         }
 
         // Print exception
@@ -337,8 +330,7 @@ fn generate_static_method(
 
 fn generate_async_method(
     f: &mut dyn Printer,
-    method: &AsyncMethod,
-    lib: &Library,
+    method: &AsyncMethod<Validated>,
 ) -> FormattingResult<()> {
     let return_type = method.return_type.as_java_object();
     let one_time_callback_name = method.one_time_callback.name.to_camel_case();
@@ -350,7 +342,7 @@ fn generate_async_method(
     // Documentation
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &method.native_function.doc, lib)?;
+        javadoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
@@ -362,12 +354,12 @@ fn generate_async_method(
             .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
         {
             f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print return value
         f.writeln("@return ")?;
-        docstring_print(f, &method.return_type_doc, lib)?;
+        docstring_print(f, &method.return_type_doc)?;
 
         // Print exception
         if let Some(error) = &method.native_function.error_type {

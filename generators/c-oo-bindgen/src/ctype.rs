@@ -1,15 +1,16 @@
 use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::function::{FunctionArgument, FunctionHandle, FunctionReturnValue};
-use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
-use oo_bindgen::iterator::{IteratorHandle, IteratorItemType};
+use oo_bindgen::collection::Collection;
+use oo_bindgen::enum_type::Enum;
+use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnValue};
+use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, Interface};
+use oo_bindgen::iterator::IteratorItemType;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{StructType, Symbol, UniversalOr};
+use oo_bindgen::{Handle, StructType, Symbol, UniversalOr};
 
 use heck::SnakeCase;
+use oo_bindgen::doc::{DocReference, Validated};
 
 pub(crate) trait CType {
     fn to_c_type(&self) -> String;
@@ -44,7 +45,10 @@ impl CType for StringType {
     }
 }
 
-impl CType for IteratorHandle {
+impl<D> CType for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn to_c_type(&self) -> String {
         format!("{}*", self.iter_class.to_c_type())
     }
@@ -93,14 +97,18 @@ impl CType for StructDeclarationHandle {
     }
 }
 
-impl CType for StructType {
+impl<D> CType for StructType<D>
+where
+    D: DocReference,
+{
     fn to_c_type(&self) -> String {
         self.declaration().to_c_type()
     }
 }
 
-impl<T> CType for Struct<T>
+impl<T, D> CType for Struct<T, D>
 where
+    D: DocReference,
     T: StructFieldType,
 {
     fn to_c_type(&self) -> String {
@@ -112,7 +120,10 @@ where
     }
 }
 
-impl CType for EnumHandle {
+impl<D> CType for Handle<Enum<D>>
+where
+    D: DocReference,
+{
     fn to_c_type(&self) -> String {
         format!(
             "{}_{}_t",
@@ -132,7 +143,10 @@ impl CType for ClassDeclarationHandle {
     }
 }
 
-impl CType for InterfaceHandle {
+impl<D> CType for Handle<Interface<D>>
+where
+    D: DocReference,
+{
     fn to_c_type(&self) -> String {
         format!(
             "{}_{}_t",
@@ -142,7 +156,10 @@ impl CType for InterfaceHandle {
     }
 }
 
-impl CType for CollectionHandle {
+impl<D> CType for Handle<Collection<D>>
+where
+    D: DocReference,
+{
     fn to_c_type(&self) -> String {
         self.collection_class.to_c_type()
     }
@@ -156,13 +173,16 @@ impl CType for IteratorItemType {
     }
 }
 
-impl CType for FunctionHandle {
+impl<D> CType for Handle<Function<D>>
+where
+    D: DocReference,
+{
     fn to_c_type(&self) -> String {
         format!("{}_{}", self.settings.c_ffi_prefix, self.name)
     }
 }
 
-impl CType for Symbol {
+impl CType for Symbol<Validated> {
     fn to_c_type(&self) -> String {
         match self {
             Symbol::Function(handle) => handle.to_c_type(),
@@ -261,7 +281,7 @@ impl CType for FunctionArgument {
     }
 }
 
-impl<T> CType for ReturnType<T>
+impl<T> CType for ReturnType<T, Validated>
 where
     T: CType,
 {

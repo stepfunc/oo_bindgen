@@ -1,12 +1,13 @@
 use oo_bindgen::formatting::{blocked, FormattingResult, Printer};
-use oo_bindgen::function::{FunctionHandle, SignatureType};
-use oo_bindgen::Library;
+use oo_bindgen::function::{Function, SignatureType};
+use oo_bindgen::{Handle, Library};
 
 use crate::dotnet_type::DotnetType;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
 
 use heck::{CamelCase, SnakeCase};
+use oo_bindgen::doc::Validated;
 
 pub(crate) fn generate_native_functions_class(
     f: &mut dyn Printer,
@@ -51,7 +52,7 @@ pub(crate) fn generate_native_functions_class(
 
 fn write_exception_and_return_block(
     f: &mut dyn Printer,
-    func: &FunctionHandle,
+    func: &Handle<Function<Validated>>,
     params: &str,
     prefix: &str,
 ) -> FormattingResult<()> {
@@ -101,7 +102,7 @@ fn write_exception_and_return_block(
 
 fn write_conversion_wrapper(
     f: &mut dyn Printer,
-    func: &FunctionHandle,
+    func: &Handle<Function<Validated>>,
     prefix: &str,
 ) -> FormattingResult<()> {
     f.write(&format!(
@@ -145,7 +146,7 @@ fn write_conversion_wrapper(
 
 fn write_exception_wrapper(
     f: &mut dyn Printer,
-    func: &FunctionHandle,
+    func: &Handle<Function<Validated>>,
     prefix: &str,
 ) -> FormattingResult<()> {
     f.write(&format!(
@@ -180,7 +181,7 @@ fn write_exception_wrapper(
 
 fn write_pinvoke_signature(
     f: &mut dyn Printer,
-    handle: &FunctionHandle,
+    handle: &Handle<Function<Validated>>,
     prefix: &str,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {

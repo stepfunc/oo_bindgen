@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
-use crate::doc::Doc;
+use crate::doc::{Doc, DocReference, Unvalidated};
 use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
@@ -93,7 +93,7 @@ pub enum ValidatedConstructorDefault {
     Enum(EnumHandle, String),
     String(String),
     /// requires that the struct have a default constructor
-    DefaultStruct(StructType, ConstructorType, String),
+    DefaultStruct(StructType<Unvalidated>, ConstructorType, String),
 }
 
 impl From<Number> for ValidatedConstructorDefault {
@@ -292,33 +292,35 @@ impl ConstructorValidator for StringType {
 
 pub trait StructFieldType: Clone + Sized + TypeValidator + ConstructorValidator {
     /// convert a structure to a StructType
-    fn create_struct_type(v: Handle<Struct<Self>>) -> StructType;
+    fn create_struct_type(v: Handle<Struct<Self, Unvalidated>>) -> StructType<Unvalidated>;
 }
 
 #[derive(Debug)]
-pub struct StructField<F>
+pub struct StructField<F, D>
 where
     F: StructFieldType,
+    D: DocReference,
 {
     pub name: Name,
     pub field_type: F,
-    pub doc: Doc,
+    pub doc: Doc<D>,
 }
 
 /// C-style structure definition
 #[derive(Debug)]
-pub struct Struct<F>
+pub struct Struct<F, D>
 where
     F: StructFieldType,
+    D: DocReference,
 {
     pub visibility: Visibility,
     pub declaration: TypedStructDeclaration<F>,
-    pub fields: Vec<StructField<F>>,
-    pub constructors: Vec<Handle<Constructor>>,
-    pub doc: Doc,
+    pub fields: Vec<StructField<F, D>>,
+    pub constructors: Vec<Handle<Constructor<D>>>,
+    pub doc: Doc<D>,
 }
 
-impl<F> ConstructorValidator for Handle<Struct<F>>
+impl<F> ConstructorValidator for Handle<Struct<F, Unvalidated>>
 where
     F: StructFieldType,
 {
@@ -347,9 +349,10 @@ where
     }
 }
 
-impl<F> Struct<F>
+impl<F, D> Struct<F, D>
 where
     F: StructFieldType,
+    D: DocReference,
 {
     pub fn settings(&self) -> &LibrarySettings {
         &self.declaration.inner.settings
@@ -359,8 +362,11 @@ where
         true
     }
 
-    pub fn has_field_named(&self, name: &str) -> bool {
-        self.fields.iter().any(|x| x.name == name)
+    pub fn find_field_name(&self, name: &str) -> Option<Name> {
+        self.fields
+            .iter()
+            .find(|x| x.name == name)
+            .map(|x| x.name.clone())
     }
 
     pub fn name(&self) -> &Name {
@@ -373,14 +379,14 @@ where
 
     pub fn constructor_args(
         &self,
-        constructor: Handle<Constructor>,
-    ) -> impl Iterator<Item = &StructField<F>> {
+        constructor: Handle<Constructor<D>>,
+    ) -> impl Iterator<Item = &StructField<F, D>> {
         self.fields
             .iter()
             .filter(move |field| !constructor.values.iter().any(|c| c.name == field.name))
     }
 
-    pub fn fields(&self) -> impl Iterator<Item = &StructField<F>> {
+    pub fn fields(&self) -> impl Iterator<Item = &StructField<F, D>> {
         self.fields.iter()
     }
 
@@ -392,14 +398,14 @@ where
         self.get_full_constructor().is_some()
     }
 
-    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor>> {
+    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor<D>>> {
         // Are any of the constructors of normal type and initialize ALL of the fields
         self.constructors.iter().find(|c| {
             c.constructor_type == ConstructorType::Normal && c.values.len() == self.fields.len()
         })
     }
 
-    pub fn get_full_constructor(&self) -> Option<&Handle<Constructor>> {
+    pub fn get_full_constructor(&self) -> Option<&Handle<Constructor<D>>> {
         // do any of the constructors initialize NONE of the fields
         self.constructors.iter().find(|c| c.values.is_empty())
     }
@@ -412,9 +418,9 @@ where
     lib: &'a mut LibraryBuilder,
     visibility: Visibility,
     declaration: TypedStructDeclaration<F>,
-    fields: Vec<StructField<F>>,
+    fields: Vec<StructField<F, Unvalidated>>,
     field_names: HashSet<String>,
-    doc: Option<Doc>,
+    doc: Option<Doc<Unvalidated>>,
 }
 
 impl<'a, F> StructFieldBuilder<'a, F>
@@ -447,7 +453,7 @@ where
         }
     }
 
-    pub fn add<S: IntoName, V: Into<F>, D: Into<Doc>>(
+    pub fn add<S: IntoName, V: Into<F>, D: Into<Doc<Unvalidated>>>(
         mut self,
         name: S,
         field_type: V,
@@ -472,7 +478,7 @@ where
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
+    pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -528,14 +534,20 @@ impl ConstructorType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Constructor {
+pub struct Constructor<D>
+where
+    D: DocReference,
+{
     pub name: Name,
     pub constructor_type: ConstructorType,
     pub values: Vec<InitializedValue>,
-    pub doc: Doc,
+    pub doc: Doc<D>,
 }
 
-impl Constructor {
+impl<D> Constructor<D>
+where
+    D: DocReference,
+{
     fn argument_names(&self) -> HashSet<Name> {
         self.values
             .iter()
@@ -551,7 +563,7 @@ impl Constructor {
         false
     }
 
-    pub fn full(constructor_type: ConstructorType, doc: Doc) -> Self {
+    pub fn full(constructor_type: ConstructorType, doc: Doc<D>) -> Self {
         Self {
             name: Name::create("some_unused_name").unwrap(),
             constructor_type,
@@ -569,7 +581,7 @@ where
     constructor_type: ConstructorType,
     builder: MethodBuilder<'a, F>,
     fields: Vec<InitializedValue>,
-    doc: Doc,
+    doc: Doc<Unvalidated>,
 }
 
 pub struct MethodBuilder<'a, F>
@@ -579,16 +591,16 @@ where
     lib: &'a mut LibraryBuilder,
     visibility: Visibility,
     declaration: TypedStructDeclaration<F>,
-    fields: Vec<StructField<F>>,
-    constructors: Vec<Handle<Constructor>>,
-    doc: Doc,
+    fields: Vec<StructField<F, Unvalidated>>,
+    constructors: Vec<Handle<Constructor<Unvalidated>>>,
+    doc: Doc<Unvalidated>,
 }
 
 impl<'a, F> MethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn begin_constructor<D: Into<Doc>, S: IntoName>(
+    pub fn begin_constructor<D: Into<Doc<Unvalidated>>, S: IntoName>(
         self,
         name: S,
         constructor_type: ConstructorType,
@@ -627,7 +639,7 @@ where
         .end_constructor()
     }
 
-    pub fn build(self) -> BindResult<Handle<Struct<F>>> {
+    pub fn build(self) -> BindResult<Handle<Struct<F, Unvalidated>>> {
         let handle = Handle::new(Struct {
             visibility: self.visibility,
             declaration: self.declaration.clone(),

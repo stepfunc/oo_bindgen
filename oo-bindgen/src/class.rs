@@ -1,4 +1,4 @@
-use crate::doc::DocString;
+use crate::doc::{DocReference, DocString, Unvalidated};
 use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
@@ -57,18 +57,24 @@ impl ClassDeclaration {
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
 #[derive(Debug)]
-pub struct Method {
+pub struct Method<T>
+where
+    T: DocReference,
+{
     pub name: Name,
-    pub native_function: FunctionHandle,
+    pub native_function: Handle<Function<T>>,
 }
 
 #[derive(Debug)]
-pub struct AsyncMethod {
+pub struct AsyncMethod<T>
+where
+    T: DocReference,
+{
     pub name: Name,
-    pub native_function: FunctionHandle,
+    pub native_function: Handle<Function<T>>,
     pub return_type: CallbackArgument,
-    pub return_type_doc: DocString,
-    pub one_time_callback: InterfaceHandle,
+    pub return_type_doc: DocString<T>,
+    pub one_time_callback: Handle<Interface<T>>,
     pub one_time_callback_param_name: Name,
     pub callback_name: Name,
     pub callback_param_name: Name,
@@ -104,19 +110,25 @@ impl DestructionMode {
 
 /// Object-oriented class definition
 #[derive(Debug)]
-pub struct Class {
+pub struct Class<T>
+where
+    T: DocReference,
+{
     pub declaration: ClassDeclarationHandle,
-    pub constructor: Option<FunctionHandle>,
-    pub destructor: Option<FunctionHandle>,
-    pub methods: Vec<Method>,
-    pub static_methods: Vec<Method>,
-    pub async_methods: Vec<AsyncMethod>,
-    pub doc: Doc,
+    pub constructor: Option<Handle<Function<T>>>,
+    pub destructor: Option<Handle<Function<T>>>,
+    pub methods: Vec<Method<T>>,
+    pub static_methods: Vec<Method<T>>,
+    pub async_methods: Vec<AsyncMethod<T>>,
+    pub doc: Doc<T>,
     pub destruction_mode: DestructionMode,
     pub settings: Rc<LibrarySettings>,
 }
 
-impl Class {
+impl<T> Class<T>
+where
+    T: DocReference,
+{
     pub fn name(&self) -> &Name {
         &self.declaration.name
     }
@@ -125,7 +137,7 @@ impl Class {
         self.declaration.clone()
     }
 
-    pub fn find_method<T: AsRef<str>>(&self, method_name: T) -> Option<&FunctionHandle> {
+    pub fn find_method<S: AsRef<str>>(&self, method_name: S) -> Option<&Handle<Function<T>>> {
         let method_name = method_name.as_ref();
 
         for method in &self.methods {
@@ -150,17 +162,17 @@ impl Class {
     }
 }
 
-pub type ClassHandle = Handle<Class>;
+pub type ClassHandle = Handle<Class<Unvalidated>>;
 
 pub struct ClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     declaration: ClassDeclarationHandle,
-    constructor: Option<FunctionHandle>,
-    destructor: Option<FunctionHandle>,
-    methods: Vec<Method>,
-    static_methods: Vec<Method>,
-    async_methods: Vec<AsyncMethod>,
-    doc: Option<Doc>,
+    constructor: Option<Handle<Function<Unvalidated>>>,
+    destructor: Option<Handle<Function<Unvalidated>>>,
+    methods: Vec<Method<Unvalidated>>,
+    static_methods: Vec<Method<Unvalidated>>,
+    async_methods: Vec<AsyncMethod<Unvalidated>>,
+    doc: Option<Doc<Unvalidated>>,
     destruction_mode: DestructionMode,
 }
 
@@ -179,7 +191,7 @@ impl<'a> ClassBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
+    pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -420,19 +432,22 @@ impl<'a> ClassBuilder<'a> {
 
 /// Static class definition
 #[derive(Debug)]
-pub struct StaticClass {
+pub struct StaticClass<T>
+where
+    T: DocReference,
+{
     pub name: Name,
-    pub static_methods: Vec<Method>,
-    pub doc: Doc,
+    pub static_methods: Vec<Method<T>>,
+    pub doc: Doc<T>,
 }
 
-pub type StaticClassHandle = Handle<StaticClass>;
+pub type StaticClassHandle = Handle<StaticClass<Unvalidated>>;
 
 pub struct StaticClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
-    static_methods: Vec<Method>,
-    doc: Option<Doc>,
+    static_methods: Vec<Method<Unvalidated>>,
+    doc: Option<Doc<Unvalidated>>,
 }
 
 impl<'a> StaticClassBuilder<'a> {
@@ -445,7 +460,7 @@ impl<'a> StaticClassBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
+    pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());

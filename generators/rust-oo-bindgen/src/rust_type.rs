@@ -2,14 +2,14 @@ use heck::CamelCase;
 
 use crate::type_converter::*;
 use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::collection::Collection;
+use oo_bindgen::doc::{DocReference, Validated};
 use oo_bindgen::function::{FunctionArgument, FunctionReturnValue};
 use oo_bindgen::interface::*;
-use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::*;
-use oo_bindgen::UniversalOr;
+use oo_bindgen::{Handle, UniversalOr};
 
 pub(crate) trait LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool;
@@ -76,7 +76,7 @@ impl RustType for BasicType {
             Self::Float32 => None,
             Self::Double64 => None,
             Self::Duration(x) => Some(TypeConverter::Duration(*x)),
-            Self::Enum(x) => Some(TypeConverter::Enum(x.clone())),
+            Self::Enum(x) => Some(TypeConverter::UnvalidatedEnum(x.clone())),
         }
     }
 }
@@ -91,7 +91,10 @@ impl LifetimeInfo for StringType {
     }
 }
 
-impl LifetimeInfo for CollectionHandle {
+impl<D> LifetimeInfo for Handle<Collection<D>>
+where
+    D: DocReference,
+{
     fn rust_requires_lifetime(&self) -> bool {
         false
     }
@@ -120,8 +123,9 @@ where
     }
 }
 
-impl<T> LifetimeInfo for Struct<T>
+impl<T, D> LifetimeInfo for Struct<T, D>
 where
+    D: DocReference,
     T: StructFieldType + LifetimeInfo,
 {
     fn rust_requires_lifetime(&self) -> bool {
@@ -157,7 +161,10 @@ impl LifetimeInfo for ClassDeclarationHandle {
     }
 }
 
-impl LifetimeInfo for InterfaceHandle {
+impl<D> LifetimeInfo for Handle<Interface<D>>
+where
+    D: DocReference,
+{
     fn rust_requires_lifetime(&self) -> bool {
         false
     }
@@ -167,7 +174,10 @@ impl LifetimeInfo for InterfaceHandle {
     }
 }
 
-impl LifetimeInfo for IteratorHandle {
+impl<D> LifetimeInfo for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn rust_requires_lifetime(&self) -> bool {
         self.has_lifetime_annotation
     }
@@ -221,7 +231,10 @@ impl RustType for StringType {
     }
 }
 
-impl RustType for CollectionHandle {
+impl<D> RustType for Handle<Collection<D>>
+where
+    D: DocReference,
+{
     fn as_rust_type(&self) -> String {
         format!("*mut crate::{}", self.name().to_camel_case())
     }
@@ -273,8 +286,9 @@ where
     }
 }
 
-impl<T> RustType for Struct<T>
+impl<T, D> RustType for Struct<T, D>
 where
+    D: DocReference,
     T: StructFieldType + LifetimeInfo,
 {
     fn as_rust_type(&self) -> String {
@@ -331,7 +345,10 @@ impl RustType for ClassDeclarationHandle {
     }
 }
 
-impl RustType for InterfaceHandle {
+impl<D> RustType for Handle<Interface<D>>
+where
+    D: DocReference,
+{
     fn as_rust_type(&self) -> String {
         self.name.to_camel_case()
     }
@@ -349,7 +366,10 @@ impl RustType for InterfaceHandle {
     }
 }
 
-impl RustType for IteratorHandle {
+impl<D> RustType for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn as_rust_type(&self) -> String {
         let lifetime = if self.has_lifetime_annotation {
             "<'a>"
@@ -737,8 +757,9 @@ impl RustType for CallbackReturnValue {
     }
 }
 
-impl<T> LifetimeInfo for ReturnType<T>
+impl<T, D> LifetimeInfo for ReturnType<T, D>
 where
+    D: DocReference,
     T: LifetimeInfo,
 {
     fn rust_requires_lifetime(&self) -> bool {
@@ -758,8 +779,9 @@ where
     }
 }
 
-impl<T> RustType for ReturnType<T>
+impl<T, D> RustType for ReturnType<T, D>
 where
+    D: DocReference,
     T: RustType,
 {
     fn as_rust_type(&self) -> String {
@@ -869,7 +891,7 @@ impl LifetimeInfo for UniversalStructField {
     }
 }
 
-impl LifetimeInfo for CallbackFunction {
+impl LifetimeInfo for CallbackFunction<Validated> {
     fn rust_requires_lifetime(&self) -> bool {
         self.arguments
             .iter()

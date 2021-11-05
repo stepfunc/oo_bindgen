@@ -1,5 +1,6 @@
 use crate::cpp::conversion::ToNative;
 use oo_bindgen::class::ClassDeclarationHandle;
+use oo_bindgen::doc::DocReference;
 use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::{FunctionArgStructField, Struct, StructFieldType, UniversalStructField};
@@ -26,8 +27,9 @@ impl ToNativeStructField for StringType {
     }
 }
 
-impl<T> ToNativeStructField for Handle<Struct<T>>
+impl<T, D> ToNativeStructField for Handle<Struct<T, D>>
 where
+    D: DocReference,
     T: StructFieldType + ToNativeStructField,
 {
     fn to_native_struct_field(&self, expr: String) -> String {

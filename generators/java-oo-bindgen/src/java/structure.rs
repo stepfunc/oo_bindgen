@@ -1,6 +1,7 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
+use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::structs::{
     Constructor, ConstructorType, Number, Struct, StructField, StructFieldType,
     ValidatedConstructorDefault, Visibility,
@@ -21,7 +22,10 @@ fn field_visibility(struct_type: Visibility) -> &'static str {
     }
 }
 
-fn get_field_value<T>(field: &StructField<T>, constructor: &Constructor) -> String
+fn get_field_value<T>(
+    field: &StructField<T, Validated>,
+    constructor: &Constructor<Validated>,
+) -> String
 where
     T: StructFieldType,
 {
@@ -66,9 +70,8 @@ where
 
 fn write_constructor_docs<T>(
     f: &mut dyn Printer,
-    lib: &Library,
-    handle: &Struct<T>,
-    constructor: &Handle<Constructor>,
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
     write_return_info: bool,
 ) -> FormattingResult<()>
 where
@@ -76,12 +79,12 @@ where
 {
     documentation(f, |f| {
         f.newline()?;
-        javadoc_print(f, &constructor.doc, lib)?;
+        javadoc_print(f, &constructor.doc)?;
         f.newline()?;
 
         for field in handle.constructor_args(constructor.clone()) {
             f.writeln(&format!("@param {} ", field.name.to_mixed_case()))?;
-            docstring_print(f, &field.doc.brief, lib)?;
+            docstring_print(f, &field.doc.brief)?;
         }
 
         if write_return_info {
@@ -97,14 +100,13 @@ where
 
 fn write_static_method_constructor<T>(
     f: &mut dyn Printer,
-    lib: &Library,
-    handle: &Struct<T>,
-    constructor: &Handle<Constructor>,
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType,
 {
-    write_constructor_docs(f, lib, handle, constructor, true)?;
+    write_constructor_docs(f, handle, constructor, true)?;
 
     let invocation_args = handle
         .fields()
@@ -130,7 +132,10 @@ where
     })
 }
 
-fn constructor_args<T>(handle: &Struct<T>, constructor: &Handle<Constructor>) -> String
+fn constructor_args<T>(
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
+) -> String
 where
     T: StructFieldType + JavaType,
 {
@@ -150,15 +155,14 @@ where
 fn write_constructor<T>(
     f: &mut dyn Printer,
     visibility: Visibility,
-    lib: &Library,
-    handle: &Struct<T>,
-    constructor: &Handle<Constructor>,
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType,
 {
     if visibility == Visibility::Public && handle.visibility == Visibility::Public {
-        write_constructor_docs(f, lib, handle, constructor, false)?;
+        write_constructor_docs(f, handle, constructor, false)?;
     }
 
     let visibility = match visibility {
@@ -188,11 +192,7 @@ where
     Ok(())
 }
 
-pub(crate) fn generate<T>(
-    f: &mut dyn Printer,
-    st: &Struct<T>,
-    lib: &Library,
-) -> FormattingResult<()>
+pub(crate) fn generate<T>(f: &mut dyn Printer, st: &Struct<T, Validated>) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType,
 {
@@ -207,7 +207,7 @@ where
     };
 
     // Documentation
-    documentation(f, |f| javadoc_print(f, &doc, lib))?;
+    documentation(f, |f| javadoc_print(f, &doc))?;
 
     // Structure definition
     f.writeln(&format!("public final class {}", struct_name))?;
@@ -215,7 +215,7 @@ where
         // Write Java structure fields
         for field in st.fields() {
             documentation(f, |f| {
-                javadoc_print(f, &field.doc, lib)?;
+                javadoc_print(f, &field.doc)?;
                 Ok(())
             })?;
 
@@ -231,10 +231,10 @@ where
             f.newline()?;
             match &c.constructor_type {
                 ConstructorType::Normal => {
-                    write_constructor(f, Visibility::Public, lib, st, c)?;
+                    write_constructor(f, Visibility::Public, st, c)?;
                 }
                 ConstructorType::Static => {
-                    write_static_method_constructor(f, lib, st, c)?;
+                    write_static_method_constructor(f, st, c)?;
                 }
             }
         }
@@ -242,15 +242,11 @@ where
         if !st.has_full_constructor() {
             let constructor = Handle::new(Constructor::full(
                 ConstructorType::Normal,
-                format!(
-                    "Initialize all values of {{struct:{}}}",
-                    st.declaration().name
-                )
-                .into(),
+                brief("Initialize all values"),
             ));
 
             f.newline()?;
-            write_constructor(f, Visibility::Private, lib, st, &constructor)?;
+            write_constructor(f, Visibility::Private, st, &constructor)?;
         }
 
         Ok(())

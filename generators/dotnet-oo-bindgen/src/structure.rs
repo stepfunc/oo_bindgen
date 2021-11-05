@@ -16,7 +16,10 @@ impl DotNetVisibility for Visibility {
     }
 }
 
-fn get_field_value<T>(field: &StructField<T>, constructor: &Constructor) -> String
+fn get_field_value<T>(
+    field: &StructField<T, Validated>,
+    constructor: &Constructor<Validated>,
+) -> String
 where
     T: StructFieldType,
 {
@@ -57,14 +60,13 @@ where
 
 fn write_static_constructor<T>(
     f: &mut dyn Printer,
-    lib: &Library,
-    handle: &Struct<T>,
-    constructor: &Handle<Constructor>,
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + DotnetType,
 {
-    write_constructor_documentation(f, lib, handle, constructor, true)?;
+    write_constructor_documentation(f, handle, constructor, true)?;
 
     let invocation_args = handle
         .fields()
@@ -90,20 +92,19 @@ where
 
 fn write_constructor_documentation<T>(
     f: &mut dyn Printer,
-    lib: &Library,
-    handle: &Struct<T>,
-    constructor: &Handle<Constructor>,
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
     write_return_info: bool,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + DotnetType,
 {
     documentation(f, |f| {
-        xmldoc_print(f, &constructor.doc, lib)?;
+        xmldoc_print(f, &constructor.doc)?;
 
         for arg in handle.constructor_args(constructor.clone()) {
             f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
-            docstring_print(f, &arg.doc.brief, lib)?;
+            docstring_print(f, &arg.doc.brief)?;
             f.write("</param>")?;
         }
 
@@ -118,7 +119,10 @@ where
     })
 }
 
-fn constructor_parameters<T>(handle: &Struct<T>, constructor: &Handle<Constructor>) -> String
+fn constructor_parameters<T>(
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
+) -> String
 where
     T: StructFieldType + DotnetType,
 {
@@ -137,16 +141,15 @@ where
 
 fn write_constructor<T>(
     f: &mut dyn Printer,
-    lib: &Library,
     visibility: Visibility,
-    handle: &Struct<T>,
-    constructor: &Handle<Constructor>,
+    handle: &Struct<T, Validated>,
+    constructor: &Handle<Constructor<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + DotnetType,
 {
     if visibility == Visibility::Public && handle.visibility == Visibility::Public {
-        write_constructor_documentation(f, lib, handle, constructor, false)?;
+        write_constructor_documentation(f, handle, constructor, false)?;
     }
 
     let visibility = match visibility {
@@ -177,7 +180,7 @@ where
 
 pub(crate) fn generate<T>(
     f: &mut dyn Printer,
-    handle: &Struct<T>,
+    handle: &Struct<T, Validated>,
     lib: &Library,
 ) -> FormattingResult<()>
 where
@@ -201,7 +204,7 @@ where
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &doc, lib)
+            xmldoc_print(f, &doc)
         })?;
 
         f.writeln(&format!("public class {}", struct_name))?;
@@ -210,7 +213,7 @@ where
             for field in handle.fields() {
                 documentation(f, |f| {
                     // Print top-level documentation
-                    xmldoc_print(f, &field.doc, lib)?;
+                    xmldoc_print(f, &field.doc)?;
                     Ok(())
                 })?;
 
@@ -226,11 +229,11 @@ where
                 match c.constructor_type {
                     ConstructorType::Normal => {
                         f.newline()?;
-                        write_constructor(f, lib, Visibility::Public, handle, c)?;
+                        write_constructor(f, Visibility::Public, handle, c)?;
                     }
                     ConstructorType::Static => {
                         f.newline()?;
-                        write_static_constructor(f, lib, handle, c)?;
+                        write_static_constructor(f, handle, c)?;
                     }
                 }
             }
@@ -240,7 +243,7 @@ where
                 let constructor = Handle::new(Constructor::full(ConstructorType::Normal, doc));
 
                 f.newline()?;
-                write_constructor(f, lib, Visibility::Private, handle, &constructor)?;
+                write_constructor(f, Visibility::Private, handle, &constructor)?;
             }
 
             if !handle.has_default_constructor() {

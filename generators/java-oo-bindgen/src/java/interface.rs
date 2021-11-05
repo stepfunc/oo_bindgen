@@ -1,18 +1,18 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, MixedCase};
+use oo_bindgen::doc::Validated;
 use oo_bindgen::interface::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    interface: &InterfaceHandle,
-    lib: &Library,
+    interface: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
     let interface_name = interface.name.to_camel_case();
 
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &interface.doc, lib)
+        javadoc_print(f, &interface.doc)
     })?;
 
     if interface.is_functional() {
@@ -25,19 +25,19 @@ pub(crate) fn generate(
             // Documentation
             documentation(f, |f| {
                 // Print top-level documentation
-                javadoc_print(f, &func.doc, lib)?;
+                javadoc_print(f, &func.doc)?;
                 f.newline()?;
 
                 // Print each argument value
                 for arg in &func.arguments {
                     f.writeln(&format!("@param {} ", arg.name.to_mixed_case()))?;
-                    docstring_print(f, &arg.doc, lib)?;
+                    docstring_print(f, &arg.doc)?;
                 }
 
                 // Print return value
                 if let CallbackReturnType::Type(_, doc) = &func.return_type {
                     f.writeln("@return ")?;
-                    docstring_print(f, doc, lib)?;
+                    docstring_print(f, doc)?;
                 }
 
                 Ok(())

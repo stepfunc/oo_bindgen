@@ -2,9 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use crate::class::*;
-use crate::collection::CollectionHandle;
-use crate::constants::{ConstantSetBuilder, ConstantSetHandle};
-use crate::doc::Doc;
+use crate::collection::{Collection, CollectionHandle};
+use crate::constants::{ConstantSet, ConstantSetBuilder};
+use crate::doc::{Doc, DocReference, Unvalidated, Validated};
 use crate::enum_type::{EnumBuilder, EnumHandle};
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
@@ -18,34 +18,40 @@ use crate::{BindingError, Version};
 use std::rc::Rc;
 
 #[derive(Debug, Clone)]
-pub enum Symbol {
-    Function(FunctionHandle),
-    Struct(StructType),
-    Enum(EnumHandle),
-    Class(ClassHandle),
-    StaticClass(StaticClassHandle),
-    Interface(InterfaceHandle),
-    Iterator(IteratorHandle),
-    Collection(CollectionHandle),
+pub enum Symbol<D>
+where
+    D: DocReference,
+{
+    Function(Handle<Function<D>>),
+    Struct(StructType<D>),
+    Enum(Handle<Enum<D>>),
+    Class(Handle<Class<D>>),
+    StaticClass(Handle<StaticClass<D>>),
+    Interface(Handle<Interface<D>>),
+    Iterator(Handle<crate::iterator::Iterator<D>>),
+    Collection(Handle<Collection<D>>),
 }
 
 #[derive(Clone, Debug)]
-pub enum Statement {
-    Constants(ConstantSetHandle),
+pub enum Statement<D>
+where
+    D: DocReference,
+{
+    Constants(Handle<ConstantSet<D>>),
     StructDeclaration(StructDeclarationHandle),
-    StructDefinition(StructType),
-    EnumDefinition(EnumHandle),
-    ErrorType(ErrorType),
+    StructDefinition(StructType<D>),
+    EnumDefinition(Handle<Enum<D>>),
+    ErrorType(ErrorType<D>),
     ClassDeclaration(ClassDeclarationHandle),
-    ClassDefinition(ClassHandle),
-    StaticClassDefinition(StaticClassHandle),
-    InterfaceDefinition(InterfaceHandle),
-    IteratorDeclaration(IteratorHandle),
-    CollectionDeclaration(CollectionHandle),
-    FunctionDefinition(FunctionHandle),
+    ClassDefinition(Handle<Class<D>>),
+    StaticClassDefinition(Handle<StaticClass<D>>),
+    InterfaceDefinition(Handle<Interface<D>>),
+    IteratorDeclaration(Handle<crate::iterator::Iterator<D>>),
+    CollectionDeclaration(Handle<Collection<D>>),
+    FunctionDefinition(Handle<Function<D>>),
 }
 
-impl Statement {
+impl Statement<Unvalidated> {
     pub(crate) fn unique_name(&self) -> Option<&Name> {
         match self {
             Statement::Constants(x) => Some(&x.name),
@@ -74,6 +80,31 @@ impl Statement {
             Statement::FunctionDefinition(x) => Some(&x.name),
         }
     }
+}
+
+impl Statement<Unvalidated> {
+    /* todo
+    fn validate(&self) -> BindResult<Statement<Validated>> {
+        match self {
+            Statement::Constants(x) => {
+                Ok(())
+            }
+            Statement::StructDeclaration(x) => {
+                Ok(Statement::StructDeclaration(x.clone()))
+            },
+            Statement::StructDefinition(_) => {}
+            Statement::EnumDefinition(_) => {}
+            Statement::ErrorType(_) => {}
+            Statement::ClassDeclaration(_) => {}
+            Statement::ClassDefinition(_) => {}
+            Statement::StaticClassDefinition(_) => {}
+            Statement::InterfaceDefinition(_) => {}
+            Statement::IteratorDeclaration(_) => {}
+            Statement::CollectionDeclaration(_) => {}
+            Statement::FunctionDefinition(_) => {}
+        }
+    }
+     */
 }
 
 pub struct DeveloperInfo {
@@ -185,26 +216,26 @@ pub struct Library {
     pub version: Version,
     pub info: LibraryInfo,
     pub settings: Rc<LibrarySettings>,
-    statements: Vec<Statement>,
-    structs: HashMap<StructDeclarationHandle, StructType>,
-    _classes: HashMap<ClassDeclarationHandle, ClassHandle>,
-    symbols: HashMap<String, Symbol>,
+    statements: Vec<Statement<Validated>>,
+    structs: HashMap<StructDeclarationHandle, StructType<Validated>>,
+    classes: HashMap<ClassDeclarationHandle, Handle<Class<Validated>>>,
+    symbols: HashMap<String, Symbol<Validated>>,
 }
 
 impl Library {
-    pub fn statements(&self) -> impl Iterator<Item = &Statement> {
+    pub fn statements(&self) -> impl Iterator<Item = &Statement<Validated>> {
         self.statements.iter()
     }
 
-    pub fn functions(&self) -> impl Iterator<Item = &FunctionHandle> {
+    pub fn functions(&self) -> impl Iterator<Item = &Handle<Function<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::FunctionDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn async_method_interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
-        let mut async_function_interfaces: HashSet<InterfaceHandle> = HashSet::new();
+    pub fn async_method_interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
+        let mut async_function_interfaces: HashSet<Handle<Interface<Validated>>> = HashSet::new();
         for c in self.classes() {
             for method in &c.async_methods {
                 async_function_interfaces.insert(method.one_time_callback.clone());
@@ -214,188 +245,105 @@ impl Library {
             .filter(move |x| async_function_interfaces.contains(x))
     }
 
-    pub fn structs(&self) -> impl Iterator<Item = &StructType> {
+    pub fn structs(&self) -> impl Iterator<Item = &StructType<Validated>> {
         self.structs.values()
     }
 
-    pub fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&StructType> {
-        self.symbol(name).iter().find_map(|symbol| {
-            if let Symbol::Struct(handle) = symbol {
-                Some(handle)
-            } else {
-                None
-            }
-        })
-    }
-
-    pub fn constants(&self) -> impl Iterator<Item = &ConstantSetHandle> {
+    pub fn constants(&self) -> impl Iterator<Item = &Handle<ConstantSet<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::Constants(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn enums(&self) -> impl Iterator<Item = &EnumHandle> {
+    pub fn enums(&self) -> impl Iterator<Item = &Handle<Enum<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::EnumDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn error_types(&self) -> impl Iterator<Item = &ErrorType> {
-        self.statements().filter_map(|statement| match statement {
-            Statement::ErrorType(err) => Some(err),
-            _ => None,
-        })
-    }
-
-    pub fn find_enum<T: AsRef<str>>(&self, name: T) -> Option<&EnumHandle> {
-        self.symbol(name).iter().find_map(|symbol| {
-            if let Symbol::Enum(handle) = symbol {
-                Some(handle)
-            } else {
-                None
-            }
-        })
-    }
-
-    pub fn classes(&self) -> impl Iterator<Item = &ClassHandle> {
+    pub fn classes(&self) -> impl Iterator<Item = &Handle<Class<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::ClassDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn find_class_declaration<T: AsRef<str>>(
-        &self,
-        name: T,
-    ) -> Option<&ClassDeclarationHandle> {
-        self.symbol(name).iter().find_map(|symbol| match symbol {
-            Symbol::Class(handle) => Some(&handle.declaration),
-            Symbol::Iterator(handle) => Some(&handle.iter_class),
-            Symbol::Collection(handle) => Some(&handle.collection_class),
+    pub fn error_types(&self) -> impl Iterator<Item = &ErrorType<Validated>> {
+        self.statements().filter_map(|statement| match statement {
+            Statement::ErrorType(err) => Some(err),
             _ => None,
         })
     }
 
-    pub fn find_class<T: AsRef<str>>(&self, name: T) -> Option<&ClassHandle> {
-        self.symbol(name).iter().find_map(|symbol| {
-            if let Symbol::Class(handle) = symbol {
-                Some(handle)
-            } else {
-                None
-            }
-        })
-    }
-
-    pub fn static_classes(&self) -> impl Iterator<Item = &StaticClassHandle> {
+    pub fn static_classes(&self) -> impl Iterator<Item = &Handle<StaticClass<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::StaticClassDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn find_static_class<T: AsRef<str>>(&self, name: T) -> Option<&StaticClassHandle> {
-        self.symbol(name).iter().find_map(|symbol| {
-            if let Symbol::StaticClass(handle) = symbol {
-                Some(handle)
-            } else {
-                None
-            }
-        })
-    }
-
-    pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceHandle> {
+    pub fn interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::InterfaceDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn find_interface<T: AsRef<str>>(&self, name: T) -> Option<&InterfaceHandle> {
-        self.symbol(name).iter().find_map(|symbol| {
-            if let Symbol::Interface(handle) = symbol {
-                Some(handle)
-            } else {
-                None
-            }
-        })
-    }
-
-    pub fn iterators(&self) -> impl Iterator<Item = &IteratorHandle> {
+    pub fn iterators(&self) -> impl Iterator<Item = &Handle<crate::iterator::Iterator<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::IteratorDeclaration(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn find_iterator<T: AsRef<str>>(&self, name: T) -> Option<&IteratorHandle> {
-        self.statements.iter().find_map(|statement| {
-            if let Statement::IteratorDeclaration(handle) = statement {
-                if handle.name() == name.as_ref() {
-                    return Some(handle);
-                }
-            }
-
-            None
-        })
-    }
-
-    pub fn collections(&self) -> impl Iterator<Item = &CollectionHandle> {
+    pub fn collections(&self) -> impl Iterator<Item = &Handle<Collection<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::CollectionDeclaration(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn find_collection<T: AsRef<str>>(&self, name: T) -> Option<&CollectionHandle> {
-        self.statements.iter().find_map(|statement| {
-            if let Statement::CollectionDeclaration(handle) = statement {
-                if handle.name() == name.as_ref() {
-                    return Some(handle);
-                }
-            }
-
-            None
-        })
-    }
-
-    pub fn symbol<T: AsRef<str>>(&self, symbol_name: T) -> Option<&Symbol> {
+    pub fn symbol<T: AsRef<str>>(&self, symbol_name: T) -> Option<&Symbol<Validated>> {
         self.symbols.get(symbol_name.as_ref())
     }
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum StructType {
+pub enum StructType<D>
+where
+    D: DocReference,
+{
     /// structs that may be used as native function parameters
-    FunctionArg(FunctionArgStructHandle),
+    FunctionArg(Handle<Struct<FunctionArgStructField, D>>),
     /// structs than can be used as native function return values
-    FunctionReturn(FunctionReturnStructHandle),
+    FunctionReturn(Handle<Struct<FunctionReturnStructField, D>>),
     /// structs that may be used as callback function arguments in interfaces
-    CallbackArg(CallbackArgStructHandle),
+    CallbackArg(Handle<Struct<CallbackArgStructField, D>>),
     /// structs that can be used in any context and only contain basic types
-    Universal(UniversalStructHandle),
+    Universal(Handle<Struct<UniversalStructField, D>>),
 }
 
-impl From<FunctionArgStructHandle> for StructType {
+impl From<FunctionArgStructHandle> for StructType<Unvalidated> {
     fn from(x: FunctionArgStructHandle) -> Self {
         StructType::FunctionArg(x)
     }
 }
 
-impl From<FunctionReturnStructHandle> for StructType {
+impl From<FunctionReturnStructHandle> for StructType<Unvalidated> {
     fn from(x: FunctionReturnStructHandle) -> Self {
         StructType::FunctionReturn(x)
     }
 }
 
-impl From<CallbackArgStructHandle> for StructType {
+impl From<CallbackArgStructHandle> for StructType<Unvalidated> {
     fn from(x: CallbackArgStructHandle) -> Self {
         StructType::CallbackArg(x)
     }
 }
 
-impl From<UniversalStructHandle> for StructType {
+impl From<UniversalStructHandle> for StructType<Unvalidated> {
     fn from(x: UniversalStructHandle) -> Self {
         StructType::Universal(x)
     }
@@ -451,7 +399,7 @@ pub enum UniversalOr<T>
 where
     T: StructFieldType,
 {
-    Specific(Handle<Struct<T>>),
+    Specific(Handle<Struct<T, Unvalidated>>),
     Universal(UniversalStructHandle),
 }
 
@@ -498,7 +446,7 @@ where
         }
     }
 
-    pub fn to_struct_type(&self) -> StructType {
+    pub fn to_struct_type(&self) -> StructType<Unvalidated> {
         match self {
             UniversalOr::Specific(x) => T::create_struct_type(x.clone()),
             UniversalOr::Universal(x) => StructType::Universal(x.clone()),
@@ -521,11 +469,11 @@ where
     }
 }
 
-impl<T> From<Handle<Struct<T>>> for UniversalOr<T>
+impl<T> From<Handle<Struct<T, Unvalidated>>> for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn from(x: Handle<Struct<T>>) -> Self {
+    fn from(x: Handle<Struct<T, Unvalidated>>) -> Self {
         UniversalOr::Specific(x)
     }
 }
@@ -539,8 +487,11 @@ where
     }
 }
 
-impl StructType {
-    pub fn construtors(&self) -> &[Handle<Constructor>] {
+impl<D> StructType<D>
+where
+    D: DocReference,
+{
+    pub fn construtors(&self) -> &[Handle<Constructor<D>>] {
         match self {
             StructType::FunctionArg(x) => &x.constructors,
             StructType::FunctionReturn(x) => &x.constructors,
@@ -558,7 +509,7 @@ impl StructType {
         }
     }
 
-    pub fn doc(&self) -> &Doc {
+    pub fn doc(&self) -> &Doc<D> {
         match self {
             StructType::FunctionArg(x) => &x.doc,
             StructType::FunctionReturn(x) => &x.doc,
@@ -585,16 +536,16 @@ impl StructType {
         }
     }
 
-    pub fn has_field_named(&self, name: &str) -> bool {
+    pub fn find_field_name(&self, name: &str) -> Option<Name> {
         match self {
-            StructType::FunctionArg(x) => x.has_field_named(name),
-            StructType::CallbackArg(x) => x.has_field_named(name),
-            StructType::FunctionReturn(x) => x.has_field_named(name),
-            StructType::Universal(x) => x.has_field_named(name),
+            StructType::FunctionArg(x) => x.find_field_name(name),
+            StructType::CallbackArg(x) => x.find_field_name(name),
+            StructType::FunctionReturn(x) => x.find_field_name(name),
+            StructType::Universal(x) => x.find_field_name(name),
         }
     }
 
-    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor>> {
+    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor<D>>> {
         match self {
             StructType::FunctionArg(x) => x.get_default_constructor(),
             StructType::FunctionReturn(x) => x.get_default_constructor(),
@@ -604,42 +555,80 @@ impl StructType {
     }
 }
 
-pub struct LibraryBuilder {
-    version: Version,
-    info: LibraryInfo,
-    pub(crate) settings: Rc<LibrarySettings>,
-
+pub(crate) struct UnvalidatedFields {
     // a record of statements preserved in order
-    statements: Vec<Statement>,
-    // names of symbols used in the library
-    symbol_names: HashSet<String>,
+    pub(crate) statements: Vec<Statement<Unvalidated>>,
 
     // native stuff
-    structs_declarations: HashSet<StructDeclarationHandle>,
-    structs: HashMap<StructDeclarationHandle, StructType>,
-    functions: HashSet<FunctionHandle>,
-    enums: HashSet<EnumHandle>,
+    pub(crate) structs_declarations: HashSet<StructDeclarationHandle>,
+    pub(crate) structs: HashMap<StructDeclarationHandle, StructType<Unvalidated>>,
+    pub(crate) functions: HashSet<Handle<Function<Unvalidated>>>,
+    pub(crate) enums: HashSet<Handle<Enum<Unvalidated>>>,
 
     // oo stuff
-    class_declarations: HashSet<ClassDeclarationHandle>,
-    classes: HashMap<ClassDeclarationHandle, ClassHandle>,
-    static_classes: HashSet<StaticClassHandle>,
-    interfaces: HashSet<InterfaceHandle>,
+    pub(crate) class_declarations: HashSet<ClassDeclarationHandle>,
+    pub(crate) classes: HashMap<ClassDeclarationHandle, Handle<Class<Unvalidated>>>,
+    pub(crate) static_classes: HashSet<Handle<StaticClass<Unvalidated>>>,
+    pub(crate) interfaces: HashSet<Handle<Interface<Unvalidated>>>,
 
     // specialized types
-    iterators: HashSet<IteratorHandle>,
-    collections: HashSet<CollectionHandle>,
+    pub(crate) iterators: HashSet<Handle<crate::iterator::Iterator<Unvalidated>>>,
+    pub(crate) collections: HashSet<Handle<Collection<Unvalidated>>>,
 }
 
-impl LibraryBuilder {
-    pub fn new(version: Version, info: LibraryInfo, settings: Rc<LibrarySettings>) -> Self {
-        Self {
-            version,
-            info,
-            settings,
+impl UnvalidatedFields {
+    pub(crate) fn find_struct<T: AsRef<str>>(&self, name: T) -> Option<&StructType<Unvalidated>> {
+        self.structs.values().find(|x| x.name() == name.as_ref())
+    }
 
+    pub(crate) fn find_enum<T: AsRef<str>>(&self, name: T) -> Option<&Handle<Enum<Unvalidated>>> {
+        self.enums.iter().find(|x| x.name == name.as_ref())
+    }
+
+    pub(crate) fn find_iterator<T: AsRef<str>>(
+        &self,
+        name: T,
+    ) -> Option<&Handle<crate::iterator::Iterator<Unvalidated>>> {
+        self.iterators.iter().find(|x| x.name() == name.as_ref())
+    }
+
+    pub(crate) fn find_collection<T: AsRef<str>>(
+        &self,
+        name: T,
+    ) -> Option<&Handle<Collection<Unvalidated>>> {
+        self.collections.iter().find(|x| x.name() == name.as_ref())
+    }
+
+    pub(crate) fn find_class_declaration<T: AsRef<str>>(
+        &self,
+        name: T,
+    ) -> Option<&ClassDeclarationHandle> {
+        self.class_declarations
+            .iter()
+            .find(|x| x.name == name.as_ref())
+    }
+
+    pub(crate) fn find_static_class<T: AsRef<str>>(
+        &self,
+        name: T,
+    ) -> Option<&Handle<StaticClass<Unvalidated>>> {
+        self.static_classes.iter().find(|x| x.name == name.as_ref())
+    }
+
+    pub(crate) fn find_class<T: AsRef<str>>(&self, name: T) -> Option<&Handle<Class<Unvalidated>>> {
+        self.classes.values().find(|x| x.name() == name.as_ref())
+    }
+
+    pub(crate) fn find_interface<T: AsRef<str>>(
+        &self,
+        name: T,
+    ) -> Option<&Handle<Interface<Unvalidated>>> {
+        self.interfaces.iter().find(|x| x.name == name.as_ref())
+    }
+
+    pub(crate) fn new() -> Self {
+        Self {
             statements: Vec::new(),
-            symbol_names: HashSet::new(),
 
             structs_declarations: HashSet::new(),
             structs: HashMap::new(),
@@ -658,46 +647,69 @@ impl LibraryBuilder {
             functions: HashSet::new(),
         }
     }
+}
 
-    pub(crate) fn add_statement(&mut self, statement: Statement) -> BindResult<()> {
+pub struct LibraryBuilder {
+    version: Version,
+    info: LibraryInfo,
+
+    pub(crate) settings: Rc<LibrarySettings>,
+
+    // names of symbols used in the library
+    symbol_names: HashSet<String>,
+    fields: UnvalidatedFields,
+}
+
+impl LibraryBuilder {
+    pub fn new(version: Version, info: LibraryInfo, settings: Rc<LibrarySettings>) -> Self {
+        Self {
+            version,
+            info,
+            settings,
+            symbol_names: HashSet::new(),
+            fields: UnvalidatedFields::new(),
+        }
+    }
+
+    pub(crate) fn add_statement(&mut self, statement: Statement<Unvalidated>) -> BindResult<()> {
         if let Some(name) = statement.unique_name() {
             self.check_unique_symbol(name)?;
         }
 
-        self.statements.push(statement.clone());
+        self.fields.statements.push(statement.clone());
 
         match statement {
             Statement::Constants(_) => {}
             Statement::StructDeclaration(x) => {
-                self.structs_declarations.insert(x);
+                self.fields.structs_declarations.insert(x);
             }
             Statement::StructDefinition(x) => {
-                self.structs.insert(x.declaration(), x);
+                self.fields.structs.insert(x.declaration(), x);
             }
             Statement::EnumDefinition(x) => {
-                self.enums.insert(x);
+                self.fields.enums.insert(x);
             }
             Statement::ErrorType(_) => {}
             Statement::ClassDeclaration(x) => {
-                self.class_declarations.insert(x);
+                self.fields.class_declarations.insert(x);
             }
             Statement::ClassDefinition(x) => {
-                self.classes.insert(x.declaration.clone(), x);
+                self.fields.classes.insert(x.declaration.clone(), x);
             }
             Statement::StaticClassDefinition(x) => {
-                self.static_classes.insert(x);
+                self.fields.static_classes.insert(x);
             }
             Statement::InterfaceDefinition(x) => {
-                self.interfaces.insert(x);
+                self.fields.interfaces.insert(x);
             }
             Statement::IteratorDeclaration(x) => {
-                self.iterators.insert(x);
+                self.fields.iterators.insert(x);
             }
             Statement::CollectionDeclaration(x) => {
-                self.collections.insert(x);
+                self.fields.collections.insert(x);
             }
             Statement::FunctionDefinition(x) => {
-                self.functions.insert(x);
+                self.fields.functions.insert(x);
             }
         }
 
@@ -705,58 +717,15 @@ impl LibraryBuilder {
     }
 
     pub fn build(self) -> BindResult<Library> {
-        // Build symbols map
-        let mut symbols: HashMap<String, Symbol> = HashMap::new();
-        for statement in &self.statements {
-            match statement {
-                Statement::Constants(_) => {}
-                Statement::StructDeclaration(handle) => {
-                    symbols.insert(
-                        handle.name.to_string(),
-                        Symbol::Struct(self.structs.get(handle).unwrap().clone()),
-                    );
-                }
-                Statement::StructDefinition(_) => (),
-                Statement::EnumDefinition(handle) => {
-                    symbols.insert(handle.name.to_string(), Symbol::Enum(handle.clone()));
-                }
-                Statement::ErrorType(_) => {}
-                Statement::ClassDeclaration(_) => (),
-                Statement::ClassDefinition(handle) => {
-                    symbols.insert(handle.name().to_string(), Symbol::Class(handle.clone()));
-                }
-                Statement::StaticClassDefinition(handle) => {
-                    symbols.insert(handle.name.to_string(), Symbol::StaticClass(handle.clone()));
-                }
-                Statement::InterfaceDefinition(handle) => {
-                    symbols.insert(handle.name.to_string(), Symbol::Interface(handle.clone()));
-                }
-                Statement::IteratorDeclaration(handle) => {
-                    symbols.insert(handle.name().to_string(), Symbol::Iterator(handle.clone()));
-                }
-                Statement::CollectionDeclaration(handle) => {
-                    symbols.insert(
-                        handle.name().to_string(),
-                        Symbol::Collection(handle.clone()),
-                    );
-                }
-                Statement::FunctionDefinition(handle) => {
-                    symbols.insert(handle.name.to_string(), Symbol::Function(handle.clone()));
-                }
-            }
-        }
-
         let lib = Library {
             version: self.version,
             info: self.info,
             settings: self.settings.clone(),
-            statements: self.statements,
-            structs: self.structs,
-            _classes: self.classes,
-            symbols,
+            statements: unimplemented!(),
+            structs: unimplemented!(),
+            classes: unimplemented!(),
+            symbols: HashMap::new(),
         };
-
-        crate::doc::validate_library_docs(&lib)?;
 
         Ok(lib)
     }
@@ -839,7 +808,7 @@ impl LibraryBuilder {
         declaration: UniversalStructDeclaration,
     ) -> BindResult<UniversalStructBuilder> {
         self.validate_struct_declaration(&declaration.inner)?;
-        if self.structs.contains_key(&declaration.inner) {
+        if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
             })
@@ -854,7 +823,7 @@ impl LibraryBuilder {
         declaration: UniversalStructDeclaration,
     ) -> BindResult<UniversalStructBuilder> {
         self.validate_struct_declaration(&declaration.inner)?;
-        if self.structs.contains_key(&declaration.inner) {
+        if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
             })
@@ -873,7 +842,7 @@ impl LibraryBuilder {
     {
         let declaration = declaration.into();
         self.validate_struct_declaration(&declaration.inner)?;
-        if self.structs.contains_key(&declaration.inner) {
+        if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
             })
@@ -892,7 +861,7 @@ impl LibraryBuilder {
     {
         let declaration = declaration.into();
         self.validate_struct_declaration(&declaration.inner)?;
-        if self.structs.contains_key(&declaration.inner) {
+        if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
             })
@@ -911,7 +880,7 @@ impl LibraryBuilder {
     {
         let declaration = declaration.into();
         self.validate_struct_declaration(&declaration.inner)?;
-        if self.structs.contains_key(&declaration.inner) {
+        if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
             })
@@ -975,7 +944,7 @@ impl LibraryBuilder {
             });
         }
         self.validate_class_declaration(declaration)?;
-        if !self.classes.contains_key(declaration) {
+        if !self.fields.classes.contains_key(declaration) {
             Ok(ClassBuilder::new(self, declaration.clone()))
         } else {
             Err(BindingError::ClassAlreadyDefined {
@@ -988,7 +957,7 @@ impl LibraryBuilder {
         Ok(StaticClassBuilder::new(self, name.into_name()?))
     }
 
-    pub fn define_synchronous_interface<T: IntoName, D: Into<Doc>>(
+    pub fn define_synchronous_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
         &mut self,
         name: T,
         doc: D,
@@ -996,7 +965,7 @@ impl LibraryBuilder {
         self.define_interface(name, InterfaceType::Synchronous, doc)
     }
 
-    pub fn define_asynchronous_interface<T: IntoName, D: Into<Doc>>(
+    pub fn define_asynchronous_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
         &mut self,
         name: T,
         doc: D,
@@ -1004,7 +973,7 @@ impl LibraryBuilder {
         self.define_interface(name, InterfaceType::Asynchronous, doc)
     }
 
-    fn define_interface<T: IntoName, D: Into<Doc>>(
+    fn define_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
         &mut self,
         name: T,
         interface_type: InterfaceType,
@@ -1136,7 +1105,7 @@ impl LibraryBuilder {
     }
 
     pub(crate) fn validate_function(&self, native_function: &FunctionHandle) -> BindResult<()> {
-        if self.functions.contains(native_function) {
+        if self.fields.functions.contains(native_function) {
             Ok(())
         } else {
             Err(BindingError::FunctionNotPartOfThisLib {
@@ -1167,7 +1136,7 @@ impl LibraryBuilder {
         &self,
         native_struct: &StructDeclarationHandle,
     ) -> BindResult<()> {
-        if self.structs_declarations.contains(native_struct) {
+        if self.fields.structs_declarations.contains(native_struct) {
             Ok(())
         } else {
             Err(BindingError::StructNotPartOfThisLib {
@@ -1176,8 +1145,12 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_struct(&self, native_struct: &StructType) -> BindResult<()> {
-        if self.structs.contains_key(&native_struct.declaration()) {
+    fn validate_struct(&self, native_struct: &StructType<Unvalidated>) -> BindResult<()> {
+        if self
+            .fields
+            .structs
+            .contains_key(&native_struct.declaration())
+        {
             Ok(())
         } else {
             Err(BindingError::StructNotPartOfThisLib {
@@ -1187,7 +1160,7 @@ impl LibraryBuilder {
     }
 
     fn validate_enum(&self, native_enum: &EnumHandle) -> BindResult<()> {
-        if self.enums.contains(native_enum) {
+        if self.fields.enums.contains(native_enum) {
             Ok(())
         } else {
             Err(BindingError::EnumNotPartOfThisLib {
@@ -1197,7 +1170,7 @@ impl LibraryBuilder {
     }
 
     fn validate_interface(&self, interface: &InterfaceHandle) -> BindResult<()> {
-        if self.interfaces.contains(interface) {
+        if self.fields.interfaces.contains(interface) {
             Ok(())
         } else {
             Err(BindingError::InterfaceNotPartOfThisLib {
@@ -1210,7 +1183,7 @@ impl LibraryBuilder {
         &self,
         class_declaration: &ClassDeclarationHandle,
     ) -> BindResult<()> {
-        if self.class_declarations.contains(class_declaration) {
+        if self.fields.class_declarations.contains(class_declaration) {
             Ok(())
         } else {
             Err(BindingError::ClassNotPartOfThisLib {
@@ -1220,7 +1193,7 @@ impl LibraryBuilder {
     }
 
     fn validate_iterator(&self, iter: &IteratorHandle) -> BindResult<()> {
-        if self.iterators.contains(iter) {
+        if self.fields.iterators.contains(iter) {
             Ok(())
         } else {
             Err(BindingError::IteratorNotPartOfThisLib {
@@ -1230,7 +1203,7 @@ impl LibraryBuilder {
     }
 
     fn validate_collection(&self, collection: &CollectionHandle) -> BindResult<()> {
-        if self.collections.contains(collection) {
+        if self.fields.collections.contains(collection) {
             Ok(())
         } else {
             Err(BindingError::CollectionNotPartOfThisLib {

@@ -191,6 +191,7 @@ fn generate_functions(
     for handle in lib.functions() {
         if let Some(first_param) = handle.parameters.first() {
             if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
+                /* todo - we can filter these in a different way b/c we now tag these special functions at the location they are generated
                 // We don't want to generate the `next` methods of iterators
                 if let Some(it) = lib.find_iterator(&class_handle.name) {
                     if &it.next_function == handle {
@@ -203,6 +204,7 @@ fn generate_functions(
                         continue;
                     }
                 }
+                 */
             }
         }
 
@@ -210,9 +212,11 @@ fn generate_functions(
             &handle.return_type
         {
             // We don't want to generate the `create` method of collections
+            /* todo we can filter this in a different way now
             if lib.find_collection(&class_handle.name).is_some() {
                 continue;
             }
+             */
         }
 
         f.writeln("#[no_mangle]")?;
@@ -346,7 +350,7 @@ fn generate_functions(
                 SignatureType::ErrorNoReturn(error_type) => {
                     f.writeln("if _result != 0")?;
                     blocked(f, |f| {
-                        EnumConverter(error_type.inner).convert_from_rust(
+                        EnumConverter::new(error_type.inner).convert_from_rust(
                             f,
                             "_result",
                             "let _error = ",
@@ -371,7 +375,7 @@ fn generate_functions(
                     })?;
                     f.writeln("else")?;
                     blocked(f, |f| {
-                        EnumConverter(error_type.inner).convert_from_rust(
+                        EnumConverter::new(error_type.inner).convert_from_rust(
                             f,
                             "_result",
                             "let _error = ",

@@ -44,56 +44,132 @@ use std::convert::TryFrom;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::class::{ClassDeclarationHandle, ClassHandle};
+use crate::enum_type::EnumHandle;
+use crate::function::FunctionHandle;
+use crate::interface::InterfaceHandle;
 use crate::name::Name;
-use crate::structs::UniversalStructField;
-use crate::types::Arg;
-use crate::{BindingError, Library, StructType};
+use crate::{BindResult, BindingError, StructType, UnvalidatedFields};
+use std::fmt::Debug;
 
-pub fn doc<D: Into<DocString>>(brief: D) -> Doc {
+pub trait DocReference: Debug + Clone {}
+
+pub fn doc<D: Into<DocString<Unvalidated>>>(brief: D) -> Doc<Unvalidated> {
     Doc {
         brief: brief.into(),
         details: Vec::new(),
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Doc {
-    pub brief: DocString,
-    pub details: Vec<DocParagraph>,
+pub fn text(text: &str) -> DocString<Validated> {
+    DocString {
+        elements: vec![DocStringElement::Text(text.to_string())],
+    }
 }
 
-impl Doc {
-    pub fn details<D: Into<DocString>>(mut self, details: D) -> Self {
-        self.details.push(DocParagraph::Details(details.into()));
+pub fn brief(text: &str) -> Doc<Validated> {
+    Doc {
+        brief: DocString {
+            elements: vec![DocStringElement::Text(text.to_string())],
+        },
+        details: Vec::new(),
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Doc<T>
+where
+    T: DocReference,
+{
+    pub brief: DocString<T>,
+    pub details: Vec<DocParagraph<T>>,
+}
+
+impl Doc<Validated> {
+    pub fn warning(mut self, warning: &str) -> Self {
+        self.details.push(DocParagraph::Warning(text(warning)));
         self
     }
+}
 
-    pub fn warning<D: Into<DocString>>(mut self, warning: D) -> Self {
+impl Doc<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        symbol_name: &str,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Doc<Validated>> {
+        let details: BindResult<Vec<DocParagraph<Validated>>> = self
+            .details
+            .iter()
+            .map(|x| x.validate(symbol_name, lib))
+            .collect();
+        Ok(Doc {
+            brief: self.brief.validate(symbol_name, lib)?,
+            details: details?,
+        })
+    }
+
+    pub fn warning<D: Into<DocString<Unvalidated>>>(mut self, warning: D) -> Self {
         self.details.push(DocParagraph::Warning(warning.into()));
         self
     }
 
-    fn references(&self) -> impl Iterator<Item = &DocReference> {
+    pub fn details<D: Into<DocString<Unvalidated>>>(mut self, details: D) -> Self {
+        self.details.push(DocParagraph::Details(details.into()));
+        self
+    }
+
+    fn references(&self) -> impl Iterator<Item = &Unvalidated> {
         self.brief
             .references()
             .chain(self.details.iter().flat_map(|para| para.references()))
     }
 }
 
-impl<T: AsRef<str>> From<T> for Doc {
+impl<T: AsRef<str>> From<T> for Doc<Unvalidated> {
     fn from(from: T) -> Self {
         doc(from)
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum DocParagraph {
-    Details(DocString),
-    Warning(DocString),
+impl Doc<Validated> {
+    fn simple(text: &str) -> Doc<Validated> {
+        Doc {
+            brief: DocString {
+                elements: vec![DocStringElement::Text(text.to_string())],
+            },
+            details: Vec::new(),
+        }
+    }
 }
 
-impl DocParagraph {
-    fn references(&self) -> impl Iterator<Item = &DocReference> {
+#[derive(Debug, Clone)]
+pub enum DocParagraph<T>
+where
+    T: DocReference,
+{
+    Details(DocString<T>),
+    Warning(DocString<T>),
+}
+
+impl DocParagraph<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        symbol_name: &str,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<DocParagraph<Validated>> {
+        Ok(match self {
+            DocParagraph::Details(x) => DocParagraph::Details(x.validate(symbol_name, lib)?),
+            DocParagraph::Warning(x) => DocParagraph::Warning(x.validate(symbol_name, lib)?),
+        })
+    }
+}
+
+impl<T> DocParagraph<T>
+where
+    T: DocReference,
+{
+    fn references(&self) -> impl Iterator<Item = &T> {
         match self {
             Self::Details(string) => string.references(),
             Self::Warning(string) => string.references(),
@@ -102,26 +178,49 @@ impl DocParagraph {
 }
 
 #[derive(Debug, Clone)]
-pub struct DocString {
-    elements: Vec<DocStringElement>,
+pub struct DocString<T>
+where
+    T: DocReference,
+{
+    elements: Vec<DocStringElement<T>>,
 }
 
-impl DocString {
+impl DocString<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        symbol_name: &str,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<DocString<Validated>> {
+        let elements: BindResult<Vec<DocStringElement<Validated>>> = self
+            .elements
+            .iter()
+            .map(|x| x.validate(symbol_name, lib))
+            .collect();
+        Ok(DocString {
+            elements: elements?,
+        })
+    }
+}
+
+impl<T> DocString<T>
+where
+    T: DocReference,
+{
     pub fn new() -> Self {
         Self {
             elements: Vec::new(),
         }
     }
 
-    pub fn push(&mut self, element: DocStringElement) {
+    pub fn push(&mut self, element: DocStringElement<T>) {
         self.elements.push(element);
     }
 
-    pub fn elements(&self) -> impl Iterator<Item = &DocStringElement> {
+    pub fn elements(&self) -> impl Iterator<Item = &DocStringElement<T>> {
         self.elements.iter()
     }
 
-    fn references(&self) -> impl Iterator<Item = &DocReference> {
+    fn references(&self) -> impl Iterator<Item = &T> {
         self.elements.iter().filter_map(|el| {
             if let DocStringElement::Reference(reference) = el {
                 Some(reference)
@@ -132,14 +231,17 @@ impl DocString {
     }
 }
 
-impl Default for DocString {
+impl<T> Default for DocString<T>
+where
+    T: DocReference,
+{
     fn default() -> Self {
         DocString::new()
     }
 }
 
-impl<T: AsRef<str>> From<T> for DocString {
-    fn from(from: T) -> DocString {
+impl<U: AsRef<str>> From<U> for DocString<Unvalidated> {
+    fn from(from: U) -> DocString<Unvalidated> {
         let mut from = from.as_ref();
         let mut result = DocString::new();
         while let Some(start_idx) = from.find('{') {
@@ -168,16 +270,36 @@ impl<T: AsRef<str>> From<T> for DocString {
     }
 }
 
-#[derive(Debug, Clone, PartialOrd, PartialEq)]
-pub enum DocStringElement {
+#[derive(Debug, Clone)]
+pub enum DocStringElement<T>
+where
+    T: DocReference,
+{
     Text(String),
     Null,
     Iterator,
-    Reference(DocReference),
+    Reference(T),
 }
 
-#[derive(Debug, Clone, PartialOrd, PartialEq)]
-pub enum DocReference {
+impl DocStringElement<Unvalidated> {
+    pub(crate) fn validate<'a>(
+        &self,
+        symbol_name: &str,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<DocStringElement<Validated>> {
+        Ok(match self {
+            DocStringElement::Text(x) => DocStringElement::Text(x.clone()),
+            DocStringElement::Null => DocStringElement::Null,
+            DocStringElement::Iterator => DocStringElement::Iterator,
+            DocStringElement::Reference(x) => {
+                DocStringElement::Reference(x.validate(symbol_name, lib)?)
+            }
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Unvalidated {
     /// Reference to a parameter
     Param(String),
     /// Reference a class
@@ -192,10 +314,10 @@ pub enum DocReference {
     ClassDestructor(String),
     /// Reference a struct
     Struct(String),
-    /// Reference an element in a struct
+    /// Reference a field within a struct
     ///
-    /// First string is the struct name, second is the element name inside that struct
-    StructElement(String, String),
+    /// First string is the struct name, second is the field name
+    StructField(String, String),
     /// Reference an enum
     Enum(String),
     /// Reference an enum variant
@@ -210,10 +332,181 @@ pub enum DocReference {
     InterfaceMethod(String, String),
 }
 
-impl TryFrom<&str> for DocStringElement {
+impl DocReference for Unvalidated {}
+
+impl Unvalidated {
+    pub(crate) fn validate<'a>(
+        &self,
+        symbol_name: &str,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Validated> {
+        match self {
+            Self::Param(name) => {
+                todo!()
+                /*
+                match params.find(|p| p.as_ref() == name) {
+                    Some(name) => Ok(Validated::Param(name.clone())),
+                    None => Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: name.to_string(),
+                    }),
+                }
+                 */
+            }
+            Self::Class(name) => match lib.find_class_declaration(name) {
+                None => Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: name.to_string(),
+                }),
+                Some(x) => Ok(Validated::Class(x.clone())),
+            },
+            Self::ClassMethod(class_name, method_name) => {
+                match lib
+                    .find_class(class_name)
+                    .and_then(|class| class.find_method(method_name).map(|func| (class, func)))
+                {
+                    None => Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!(
+                            "{}.{}()",
+                            class_name.to_string(),
+                            method_name.to_string()
+                        ),
+                    }),
+                    Some((class, method)) => {
+                        Ok(Validated::ClassMethod(class.clone(), method.clone()))
+                    }
+                }
+            }
+            Self::ClassConstructor(class_name) => {
+                match lib
+                    .find_class(class_name)
+                    .and_then(|x| x.constructor.clone().map(|d| (x.clone(), d.clone())))
+                {
+                    None => Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!("{}.[constructor]", class_name.to_string(),),
+                    }),
+                    Some((class, constructor)) => Ok(Validated::ClassConstructor(
+                        class.clone(),
+                        constructor.clone(),
+                    )),
+                }
+            }
+            Self::ClassDestructor(class_name) => {
+                match lib
+                    .find_class(class_name)
+                    .and_then(|x| x.destructor.clone().map(|d| (x, d)))
+                {
+                    None => Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!("{}.[destructor]", class_name.to_string(),),
+                    }),
+                    Some((class, destructor)) => Ok(Validated::ClassConstructor(
+                        class.clone(),
+                        destructor.clone(),
+                    )),
+                }
+            }
+            Self::Struct(struct_name) => match lib.find_struct(struct_name) {
+                None => Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: struct_name.to_string(),
+                }),
+                Some(x) => Ok(Validated::Struct(x.clone())),
+            },
+            Self::StructField(struct_name, field_name) => {
+                match lib
+                    .find_struct(struct_name)
+                    .and_then(|st| st.find_field_name(field_name).map(|n| (st, n)))
+                {
+                    None => Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!("{}.{}", struct_name.to_string(), field_name.to_string()),
+                    }),
+                    Some((st, name)) => Ok(Validated::StructField(st.clone(), name.clone())),
+                }
+            }
+            Self::Enum(enum_name) => match lib.find_enum(enum_name) {
+                None => Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: enum_name.to_string(),
+                }),
+                Some(x) => Ok(Validated::Enum(x.clone())),
+            },
+            Self::EnumVariant(enum_name, variant_name) => {
+                match lib.find_enum(enum_name).and_then(|e| {
+                    e.find_variant_by_name(variant_name)
+                        .map(|v| (e, v.name.clone()))
+                }) {
+                    None => Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
+                    }),
+                    Some((e, v)) => Ok(Validated::EnumVariant(e.clone(), v)),
+                }
+            }
+            Self::Interface(interface_name) => match lib.find_interface(interface_name) {
+                None => Err(BindingError::DocInvalidReference {
+                    symbol_name: symbol_name.to_string(),
+                    ref_name: interface_name.to_string(),
+                }),
+                Some(x) => Ok(Validated::Interface(x.clone())),
+            },
+            Self::InterfaceMethod(interface_name, method_name) => {
+                match lib
+                    .find_interface(interface_name)
+                    .and_then(|i| i.find_callback(method_name).map(|m| (i, m)))
+                {
+                    None => Err(BindingError::DocInvalidReference {
+                        symbol_name: symbol_name.to_string(),
+                        ref_name: format!(
+                            "{}.{}()",
+                            interface_name.to_string(),
+                            method_name.to_string()
+                        ),
+                    }),
+                    Some((i, m)) => Ok(Validated::InterfaceMethod(i.clone(), m.name.clone())),
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Validated {
+    /// Reference to a parameter
+    Param(Name),
+    /// Reference a class
+    Class(ClassDeclarationHandle),
+    /// Reference a class method
+    ClassMethod(ClassHandle, FunctionHandle),
+    /// Reference to the class constructor
+    ClassConstructor(ClassHandle, FunctionHandle),
+    /// Reference to the class destructor
+    ClassDestructor(ClassHandle, FunctionHandle),
+    /// Reference a struct
+    Struct(StructType<Unvalidated>),
+    /// Reference a field within a struct
+    ///
+    /// Second parameter is the field name inside that struct
+    StructField(StructType<Unvalidated>, Name),
+    /// Reference an enum
+    Enum(EnumHandle),
+    /// Reference an enum variant
+    EnumVariant(EnumHandle, Name),
+    /// Reference an interface
+    Interface(InterfaceHandle),
+    /// Reference a method of a interface
+    InterfaceMethod(InterfaceHandle, Name),
+}
+
+impl DocReference for Validated {}
+
+impl TryFrom<&str> for DocStringElement<Unvalidated> {
     type Error = BindingError;
 
-    fn try_from(from: &str) -> Result<DocStringElement, BindingError> {
+    fn try_from(from: &str) -> Result<DocStringElement<Unvalidated>, BindingError> {
         lazy_static! {
             static ref RE_PARAM: Regex = Regex::new(r"\{param:([[:word:]]+)\}").unwrap();
             static ref RE_CLASS: Regex = Regex::new(r"\{class:([[:word:]]+)\}").unwrap();
@@ -236,65 +529,72 @@ impl TryFrom<&str> for DocStringElement {
                 Regex::new(r"\{interface:([[:word:]]+)\.([[:word:]]+)\(\)\}").unwrap();
         }
 
-        if let Some(capture) = RE_PARAM.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::Param(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
+        fn try_get_regex(from: &str) -> Option<Unvalidated> {
+            if let Some(capture) = RE_PARAM.captures(from) {
+                return Some(Unvalidated::Param(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_CLASS.captures(from) {
+                return Some(Unvalidated::Class(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_CLASS_METHOD.captures(from) {
+                return Some(Unvalidated::ClassMethod(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                    capture.get(2).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_CLASS_CONSTRUCTOR.captures(from) {
+                return Some(Unvalidated::ClassConstructor(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_CLASS_DESTRUCTOR.captures(from) {
+                return Some(Unvalidated::ClassDestructor(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_STRUCT.captures(from) {
+                return Some(Unvalidated::Struct(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_STRUCT_ELEMENT.captures(from) {
+                return Some(Unvalidated::StructField(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                    capture.get(2).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_ENUM.captures(from) {
+                return Some(Unvalidated::Enum(capture.get(1).unwrap().as_str().to_owned()).into());
+            }
+            if let Some(capture) = RE_ENUM_VARIANT.captures(from) {
+                return Some(Unvalidated::EnumVariant(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                    capture.get(2).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_INTERFACE.captures(from) {
+                return Some(Unvalidated::Interface(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                ));
+            }
+            if let Some(capture) = RE_INTERFACE_METHOD.captures(from) {
+                return Some(Unvalidated::InterfaceMethod(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                    capture.get(2).unwrap().as_str().to_owned(),
+                ));
+            }
+
+            None
         }
-        if let Some(capture) = RE_CLASS.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::Class(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
+
+        if let Some(x) = try_get_regex(from) {
+            return Ok(DocStringElement::Reference(x));
         }
-        if let Some(capture) = RE_CLASS_METHOD.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::ClassMethod(
-                capture.get(1).unwrap().as_str().to_owned(),
-                capture.get(2).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_CLASS_CONSTRUCTOR.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::ClassConstructor(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_CLASS_DESTRUCTOR.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::ClassDestructor(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_STRUCT.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::Struct(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_STRUCT_ELEMENT.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::StructElement(
-                capture.get(1).unwrap().as_str().to_owned(),
-                capture.get(2).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_ENUM.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::Enum(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_ENUM_VARIANT.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::EnumVariant(
-                capture.get(1).unwrap().as_str().to_owned(),
-                capture.get(2).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_INTERFACE.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::Interface(
-                capture.get(1).unwrap().as_str().to_owned(),
-            )));
-        }
-        if let Some(capture) = RE_INTERFACE_METHOD.captures(from) {
-            return Ok(DocStringElement::Reference(DocReference::InterfaceMethod(
-                capture.get(1).unwrap().as_str().to_owned(),
-                capture.get(2).unwrap().as_str().to_owned(),
-            )));
-        }
+
         if from == "{null}" {
             return Ok(DocStringElement::Null);
         }
@@ -306,6 +606,7 @@ impl TryFrom<&str> for DocStringElement {
     }
 }
 
+/*
 pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
     for native_function in lib.functions() {
         validate_doc_with_params(
@@ -419,7 +720,7 @@ fn validate_doc_with_params<T>(
 
 fn validate_docstring_with_params<T>(
     symbol_name: &str,
-    doc: &DocString,
+    doc: &Unvalidated,
     params: &[Arg<T>],
     lib: &Library,
 ) -> Result<(), BindingError> {
@@ -430,156 +731,19 @@ fn validate_docstring_with_params<T>(
     Ok(())
 }
 
-fn validate_reference_with_params<T>(
+fn validate_reference_with_params<U>(
     symbol_name: &str,
-    reference: &DocReference,
-    params: &[Arg<T>],
+    reference: &Unvalidated,
+    params: &[Arg<U>],
     lib: &Library,
 ) -> Result<(), BindingError> {
-    match reference {
-        DocReference::Param(param_name) => {
-            if !params
-                .iter()
-                .any(|param| param.name.as_ref() == param_name.as_str())
-            {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: param_name.clone(),
-                });
-            }
-        }
-        DocReference::Class(class_name) => {
-            if lib.find_class_declaration(class_name).is_none() {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: class_name.clone(),
-                });
-            }
-        }
-        DocReference::ClassMethod(class_name, method_name) => {
-            if let Some(handle) = lib.find_class(class_name) {
-                if handle.find_method(method_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}()",
-                            class_name.to_string(),
-                            method_name.to_string()
-                        ),
-                    });
-                }
-            } else {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}()", class_name.to_string(), method_name.to_string()),
-                });
-            }
-        }
-        DocReference::ClassConstructor(class_name) => {
-            if let Some(handle) = lib.find_class(class_name) {
-                if handle.constructor.is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.[constructor]", class_name.to_string(),),
-                    });
-                }
-            }
-        }
-        DocReference::ClassDestructor(class_name) => {
-            if let Some(handle) = lib.find_class(class_name) {
-                if handle.destructor.is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.[destructor]", class_name.to_string(),),
-                    });
-                }
-            }
-        }
-        DocReference::Struct(struct_name) => {
-            if lib.find_struct(struct_name).is_none() {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: struct_name.to_string(),
-                });
-            }
-        }
-        DocReference::StructElement(struct_name, method_name) => {
-            if let Some(handle) = lib.find_struct(struct_name) {
-                if !handle.has_field_named(method_name) {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}",
-                            struct_name.to_string(),
-                            method_name.to_string()
-                        ),
-                    });
-                }
-            } else {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}", struct_name.to_string(), method_name.to_string()),
-                });
-            }
-        }
-        DocReference::Enum(enum_name) => {
-            if lib.find_enum(enum_name).is_none() {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: enum_name.to_string(),
-                });
-            }
-        }
-        DocReference::EnumVariant(enum_name, variant_name) => {
-            if let Some(handle) = lib.find_enum(enum_name) {
-                if handle.find_variant_by_name(variant_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
-                    });
-                }
-            } else {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
-                });
-            }
-        }
-        DocReference::Interface(interface_name) => {
-            if lib.find_interface(interface_name).is_none() {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: interface_name.to_string(),
-                });
-            }
-        }
-        DocReference::InterfaceMethod(interface_name, method_name) => {
-            if let Some(handle) = lib.find_interface(interface_name) {
-                if handle.find_callback(method_name).is_none() {
-                    return Err(BindingError::DocInvalidReference {
-                        symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}()",
-                            interface_name.to_string(),
-                            method_name.to_string()
-                        ),
-                    });
-                }
-            } else {
-                return Err(BindingError::DocInvalidReference {
-                    symbol_name: symbol_name.to_string(),
-                    ref_name: format!(
-                        "{}.{}()",
-                        interface_name.to_string(),
-                        method_name.to_string()
-                    ),
-                });
-            }
-        }
+    if let Some(unvalidated) = reference.get_unvalidated() {
+        let validated = unvalidated.validate(symbol_name, params.iter().map(|x| &x.name), lib)?;
+        reference.validate(validated)
     }
-
     Ok(())
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -589,7 +753,7 @@ mod tests {
 
     #[test]
     fn parse_param_reference() {
-        let doc: DocString = "This is a {param:foo} test.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {param:foo} test.".try_into().unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -603,7 +767,7 @@ mod tests {
 
     #[test]
     fn parse_class_reference() {
-        let doc: DocString = "This is a {class:MyClass} test.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {class:MyClass} test.".try_into().unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -617,7 +781,7 @@ mod tests {
 
     #[test]
     fn parse_class_reference_at_the_end() {
-        let doc: DocString = "This is a test {class:MyClass2}".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a test {class:MyClass2}".try_into().unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a test ".to_owned()),
@@ -630,7 +794,7 @@ mod tests {
 
     #[test]
     fn parse_class_method() {
-        let doc: DocString = "This is a {class:MyClass.do_something()} method."
+        let doc: DocString<Unvalidated> = "This is a {class:MyClass.do_something()} method."
             .try_into()
             .unwrap();
         assert_eq!(
@@ -649,7 +813,7 @@ mod tests {
 
     #[test]
     fn parse_struct() {
-        let doc: DocString = "This is a {struct:MyStruct} struct.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct} struct.".try_into().unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -663,13 +827,13 @@ mod tests {
 
     #[test]
     fn parse_struct_element() {
-        let doc: DocString = "This is a {struct:MyStruct.foo} struct element."
+        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct.foo} struct element."
             .try_into()
             .unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::StructElement(
+                DocStringElement::Reference(DocReference::StructField(
                     "MyStruct".to_owned(),
                     "foo".to_owned()
                 )),
@@ -682,7 +846,7 @@ mod tests {
 
     #[test]
     fn parse_enum() {
-        let doc: DocString = "This is a {enum:MyEnum} enum.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum} enum.".try_into().unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -696,7 +860,7 @@ mod tests {
 
     #[test]
     fn parse_enum_element() {
-        let doc: DocString = "This is a {enum:MyEnum.foo} enum variant."
+        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum.foo} enum variant."
             .try_into()
             .unwrap();
         assert_eq!(
@@ -715,7 +879,7 @@ mod tests {
 
     #[test]
     fn parse_interface() {
-        let doc: DocString = "This is a {interface:Interface} interface."
+        let doc: DocString<Unvalidated> = "This is a {interface:Interface} interface."
             .try_into()
             .unwrap();
         assert_eq!(
@@ -731,7 +895,7 @@ mod tests {
 
     #[test]
     fn parse_interface_method() {
-        let doc: DocString = "This is a {interface:Interface.foo()} interface method."
+        let doc: DocString<Unvalidated> = "This is a {interface:Interface.foo()} interface method."
             .try_into()
             .unwrap();
         assert_eq!(
@@ -750,7 +914,7 @@ mod tests {
 
     #[test]
     fn parse_null() {
-        let doc: DocString = "This is a {null} null.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {null} null.".try_into().unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -764,7 +928,7 @@ mod tests {
 
     #[test]
     fn parse_iterator() {
-        let doc: DocString = "This is a {iterator} iterator.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {iterator} iterator.".try_into().unwrap();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),

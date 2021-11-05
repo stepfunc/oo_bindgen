@@ -1,6 +1,8 @@
 use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::doc::DocReference;
+use oo_bindgen::enum_type::Enum;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
+use oo_bindgen::Handle;
 
 /// Some types have a C -> C++ conversion that is context independent
 pub(crate) trait ToCpp {
@@ -16,7 +18,10 @@ impl ToCpp for DurationType {
     }
 }
 
-impl ToCpp for EnumHandle {
+impl<D> ToCpp for Handle<Enum<D>>
+where
+    D: DocReference,
+{
     fn to_cpp(&self, expr: String) -> String {
         format!("::convert::to_cpp({})", expr)
     }

@@ -5,7 +5,7 @@ use oo_bindgen::class::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    class: &ClassHandle,
+    class: &Handle<Class<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     let classname = class.name().to_camel_case();
@@ -17,7 +17,7 @@ pub(crate) fn generate(
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &class.doc, lib)
+            xmldoc_print(f, &class.doc)
         })?;
 
         f.writeln(&format!("public sealed class {}", classname))?;
@@ -51,27 +51,27 @@ pub(crate) fn generate(
             f.newline()?;
 
             if let Some(constructor) = &class.constructor {
-                generate_constructor(f, &classname, constructor, lib)?;
+                generate_constructor(f, &classname, constructor)?;
                 f.newline()?;
             }
 
             if let Some(destructor) = &class.destructor {
-                generate_destructor(f, &classname, destructor, &class.destruction_mode, lib)?;
+                generate_destructor(f, &classname, destructor, &class.destruction_mode)?;
                 f.newline()?;
             }
 
             for method in &class.methods {
-                generate_method(f, method, lib)?;
+                generate_method(f, method)?;
                 f.newline()?;
             }
 
             for method in &class.async_methods {
-                generate_async_method(f, method, lib)?;
+                generate_async_method(f, method)?;
                 f.newline()?;
             }
 
             for method in &class.static_methods {
-                generate_static_method(f, method, lib)?;
+                generate_static_method(f, method)?;
                 f.newline()?;
             }
 
@@ -82,7 +82,7 @@ pub(crate) fn generate(
 
 pub(crate) fn generate_static(
     f: &mut dyn Printer,
-    class: &StaticClassHandle,
+    class: &Handle<StaticClass<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     let classname = class.name.to_camel_case();
@@ -94,14 +94,14 @@ pub(crate) fn generate_static(
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &class.doc, lib)
+            xmldoc_print(f, &class.doc)
         })?;
 
         f.writeln(&format!("public static class {}", classname))?;
 
         blocked(f, |f| {
             for method in &class.static_methods {
-                generate_static_method(f, method, lib)?;
+                generate_static_method(f, method)?;
                 f.newline()?;
             }
 
@@ -113,25 +113,24 @@ pub(crate) fn generate_static(
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
-    constructor: &FunctionHandle,
-    lib: &Library,
+    constructor: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &constructor.doc, lib)?;
+        xmldoc_print(f, &constructor.doc)?;
         f.newline()?;
 
         // Print each parameter value
         for param in &constructor.parameters {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
         if let FunctionReturnType::Type(_, doc) = &constructor.return_type {
             f.writeln("<returns>")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
             f.write("</returns>")?;
         }
 
@@ -171,13 +170,12 @@ fn generate_constructor(
 fn generate_destructor(
     f: &mut dyn Printer,
     classname: &str,
-    destructor: &FunctionHandle,
+    destructor: &Handle<Function<Validated>>,
     destruction_mode: &DestructionMode,
-    lib: &Library,
 ) -> FormattingResult<()> {
     if destruction_mode.is_manual_destruction() {
         // Public Dispose method
-        documentation(f, |f| xmldoc_print(f, &destructor.doc, lib))?;
+        documentation(f, |f| xmldoc_print(f, &destructor.doc))?;
 
         let method_name = if let DestructionMode::Custom(name) = destruction_mode {
             name.to_camel_case()
@@ -220,23 +218,23 @@ fn generate_destructor(
     })
 }
 
-fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
+fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &method.native_function.doc, lib)?;
+        xmldoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
         for param in method.native_function.parameters.iter().skip(1) {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
         if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("<returns>")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
             f.write("</returns>")?;
         }
 
@@ -285,27 +283,23 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
     })
 }
 
-fn generate_static_method(
-    f: &mut dyn Printer,
-    method: &Method,
-    lib: &Library,
-) -> FormattingResult<()> {
+fn generate_static_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &method.native_function.doc, lib)?;
+        xmldoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
         for param in &method.native_function.parameters {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
         if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
             f.writeln("<returns>")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
             f.write("</returns>")?;
         }
 
@@ -349,8 +343,7 @@ fn generate_static_method(
 
 fn generate_async_method(
     f: &mut dyn Printer,
-    method: &AsyncMethod,
-    lib: &Library,
+    method: &AsyncMethod<Validated>,
 ) -> FormattingResult<()> {
     let method_name = method.name.to_camel_case();
     let async_handler_name = format!("{}Handler", method_name);
@@ -387,7 +380,7 @@ fn generate_async_method(
     // Documentation
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &method.native_function.doc, lib)?;
+        xmldoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
@@ -399,13 +392,13 @@ fn generate_async_method(
             .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
         {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
         f.writeln("<returns>")?;
-        docstring_print(f, &method.return_type_doc, lib)?;
+        docstring_print(f, &method.return_type_doc)?;
         f.write("</returns>")?;
 
         // Print exception

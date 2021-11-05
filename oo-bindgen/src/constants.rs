@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::doc::Doc;
+use crate::doc::{Doc, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 
@@ -18,31 +18,51 @@ pub enum ConstantValue {
 
 /// Constant belonging to a set of constants
 #[derive(Debug)]
-pub struct Constant {
+pub struct Constant<T>
+where
+    T: DocReference,
+{
     pub name: Name,
     pub value: ConstantValue,
-    pub doc: Doc,
+    pub doc: Doc<T>,
 }
 
 /// Set of constants
 #[derive(Debug)]
-pub struct ConstantSet {
+pub struct ConstantSet<T>
+where
+    T: DocReference,
+{
     /// Name of the set
     pub name: Name,
     /// values
-    pub values: Vec<Constant>,
+    pub values: Vec<Constant<T>>,
     /// documentation
-    pub doc: Doc,
+    pub doc: Doc<T>,
 }
 
-pub type ConstantSetHandle = Handle<ConstantSet>;
+impl ConstantSet<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        symbol_name: &str,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<ConstantSet<Validated>> {
+        Ok(ConstantSet {
+            name: self.name.clone(),
+            values: vec![],
+            doc: self.doc.validate(symbol_name, lib)?,
+        })
+    }
+}
+
+pub type ConstantSetHandle = Handle<ConstantSet<Unvalidated>>;
 
 pub struct ConstantSetBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
     names: HashSet<String>,
-    values: Vec<Constant>,
-    doc: Option<Doc>,
+    values: Vec<Constant<Unvalidated>>,
+    doc: Option<Doc<Unvalidated>>,
 }
 
 impl<'a> ConstantSetBuilder<'a> {
@@ -56,7 +76,7 @@ impl<'a> ConstantSetBuilder<'a> {
         }
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
+    pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());
@@ -68,7 +88,7 @@ impl<'a> ConstantSetBuilder<'a> {
         }
     }
 
-    pub fn add<T: IntoName, D: Into<Doc>>(
+    pub fn add<T: IntoName, D: Into<Doc<Unvalidated>>>(
         mut self,
         name: T,
         value: ConstantValue,

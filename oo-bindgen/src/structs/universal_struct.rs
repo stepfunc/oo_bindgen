@@ -1,3 +1,4 @@
+use crate::doc::Unvalidated;
 use crate::structs::common::*;
 use crate::types::{DurationType, TypeValidator, ValidatedType};
 use crate::*;
@@ -19,11 +20,13 @@ impl TypeValidator for UniversalStructField {
     }
 }
 
-pub type UniversalStructHandle = Handle<Struct<UniversalStructField>>;
+pub type UniversalStructHandle = Handle<Struct<UniversalStructField, Unvalidated>>;
 pub type UniversalStructBuilder<'a> = StructFieldBuilder<'a, UniversalStructField>;
 
 impl StructFieldType for UniversalStructField {
-    fn create_struct_type(v: Handle<Struct<UniversalStructField>>) -> StructType {
+    fn create_struct_type(
+        v: Handle<Struct<UniversalStructField, Unvalidated>>,
+    ) -> StructType<Unvalidated> {
         StructType::Universal(v)
     }
 }

@@ -2,6 +2,7 @@ use super::conversion::*;
 use super::formatting::*;
 use crate::*;
 use heck::{CamelCase, MixedCase, SnakeCase};
+use oo_bindgen::doc::Validated;
 use oo_bindgen::interface::*;
 use oo_bindgen::types::Arg;
 
@@ -196,7 +197,7 @@ fn write_interface_init(
     f: &mut dyn Printer,
     interface_name: &str,
     lib_path: &str,
-    callbacks: &[CallbackFunction],
+    callbacks: &[CallbackFunction<Validated>],
 ) -> FormattingResult<()> {
     f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
     blocked(f, |f| {
@@ -239,8 +240,8 @@ fn call_java_callback(
     ffi_name: &str,
     prefix: &str,
     arg_name: &str,
-    args: &[Arg<CallbackArgument>],
-    return_type: &CallbackReturnType,
+    args: &[Arg<CallbackArgument, Validated>],
+    return_type: &CallbackReturnType<Validated>,
 ) -> FormattingResult<()> {
     // Extract the global ref
     f.writeln(&format!(

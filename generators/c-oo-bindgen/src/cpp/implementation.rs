@@ -2,14 +2,14 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::class::{AsyncMethod, ClassHandle, Method, StaticClassHandle};
-use oo_bindgen::collection::CollectionHandle;
-use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::class::{AsyncMethod, Class, Method, StaticClass};
+use oo_bindgen::collection::Collection;
+use oo_bindgen::doc::{brief, Validated};
+use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::{FunctionArgument, FunctionHandle, FunctionReturnType};
-use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, InterfaceHandle, InterfaceType};
-use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnType};
+use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, Interface, InterfaceType};
 use oo_bindgen::structs::{
     Constructor, ConstructorType, Number, Struct, StructFieldType, ValidatedConstructorDefault,
     Visibility,
@@ -87,7 +87,7 @@ fn write_collection_class_implementations(
 
 fn write_collection_class_implementation(
     f: &mut dyn Printer,
-    col: &CollectionHandle,
+    col: &Handle<Collection<Validated>>,
 ) -> FormattingResult<()> {
     //let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
     let cpp_type = col.collection_class.core_cpp_type();
@@ -131,7 +131,7 @@ fn write_collection_class_implementation(
 
 fn write_collection_class_definition(
     f: &mut dyn Printer,
-    col: &CollectionHandle,
+    col: &Handle<Collection<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_type = col.collection_class.core_cpp_type();
     let c_type = col.collection_class.to_c_type();
@@ -159,7 +159,7 @@ fn write_collection_class_definition(
 
 fn write_collection_class_friend(
     f: &mut dyn Printer,
-    col: &CollectionHandle,
+    col: &Handle<Collection<Validated>>,
 ) -> FormattingResult<()> {
     let c_type = col.collection_class.to_c_type();
     f.writeln(&format!("class {}", col.collection_class.friend_class()))?;
@@ -251,7 +251,10 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
     Ok(())
 }
 
-fn write_iterator_methods(f: &mut dyn Printer, it: &IteratorHandle) -> FormattingResult<()> {
+fn write_iterator_methods(
+    f: &mut dyn Printer,
+    it: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
+) -> FormattingResult<()> {
     let c_class_type = it.iter_class.to_c_type();
     let cpp_class_type = it.iter_class.core_cpp_type();
     let c_next = it.next_function.to_c_type();
@@ -300,10 +303,10 @@ fn write_iterator_methods(f: &mut dyn Printer, it: &IteratorHandle) -> Formattin
 
 fn write_static_class_method(
     f: &mut dyn Printer,
-    class: &StaticClassHandle,
-    method: &Method,
+    class: &Handle<StaticClass<Validated>>,
+    method: &Method<Validated>,
 ) -> FormattingResult<()> {
-    fn get_invocation_args(args: &[Arg<FunctionArgument>]) -> String {
+    fn get_invocation_args(args: &[Arg<FunctionArgument, Validated>]) -> String {
         args.iter()
             .map(|x| transform_arg(x))
             .collect::<Vec<String>>()
@@ -358,12 +361,18 @@ fn write_static_class_method(
     })
 }
 
-fn write_struct_constructors<T>(f: &mut dyn Printer, st: &Handle<Struct<T>>) -> FormattingResult<()>
+fn write_struct_constructors<T>(
+    f: &mut dyn Printer,
+    st: &Handle<Struct<T, Validated>>,
+) -> FormattingResult<()>
 where
     T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
     if !st.has_full_constructor() {
-        let constructor = Handle::new(Constructor::full(ConstructorType::Normal, "".into()));
+        let constructor = Handle::new(Constructor::full(
+            ConstructorType::Normal,
+            brief("full constructor"),
+        ));
         write_struct_constructor(f, st, &constructor)?;
     }
 
@@ -406,8 +415,8 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
 
 fn write_struct_constructor<T>(
     f: &mut dyn Printer,
-    st: &Handle<Struct<T>>,
-    con: &Handle<Constructor>,
+    st: &Handle<Struct<T, Validated>>,
+    con: &Handle<Constructor<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppFunctionArgType + TypeInfo,
@@ -497,7 +506,10 @@ fn write_move_self_guard(f: &mut dyn Printer) -> FormattingResult<()> {
     })
 }
 
-fn write_class_implementation(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
+fn write_class_implementation(
+    f: &mut dyn Printer,
+    handle: &Handle<Class<Validated>>,
+) -> FormattingResult<()> {
     let cpp_name = handle.core_cpp_type();
 
     // write constructor
@@ -548,8 +560,8 @@ fn write_class_implementation(f: &mut dyn Printer, handle: &ClassHandle) -> Form
 
 fn write_class_static_method_impl(
     f: &mut dyn Printer,
-    handle: &ClassHandle,
-    method: &Method,
+    handle: &Handle<Class<Validated>>,
+    method: &Method<Validated>,
 ) -> FormattingResult<()> {
     let cpp_name = handle.core_cpp_type();
     let return_type = method
@@ -590,25 +602,25 @@ fn write_class_static_method_impl(
 
 fn write_class_method_impl(
     f: &mut dyn Printer,
-    handle: &ClassHandle,
-    method: &Method,
+    handle: &Handle<Class<Validated>>,
+    method: &Method<Validated>,
 ) -> FormattingResult<()> {
     write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
 }
 
 fn write_class_async_method_impl(
     f: &mut dyn Printer,
-    handle: &ClassHandle,
-    method: &AsyncMethod,
+    handle: &Handle<Class<Validated>>,
+    method: &AsyncMethod<Validated>,
 ) -> FormattingResult<()> {
     write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
 }
 
 fn write_class_method_impl_generic(
     f: &mut dyn Printer,
-    handle: &ClassHandle,
+    handle: &Handle<Class<Validated>>,
     cpp_method_name: &str,
-    native_function: &FunctionHandle,
+    native_function: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_name = handle.core_cpp_type();
     let args = &native_function.parameters[1..];
@@ -652,7 +664,10 @@ fn write_class_method_impl_generic(
     f.newline()
 }
 
-fn print_friend_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
+fn print_friend_class(
+    f: &mut dyn Printer,
+    handle: &Handle<Class<Validated>>,
+) -> FormattingResult<()> {
     let iterator = include_str!("./snippet/class_friend_class.hpp");
     let c_type = handle.declaration.to_c_type();
     let cpp_type = handle.core_cpp_type();
@@ -665,7 +680,7 @@ fn print_friend_class(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingRe
     f.newline()
 }
 
-fn cpp_function_args(args: &[Arg<FunctionArgument>]) -> String {
+fn cpp_function_args(args: &[Arg<FunctionArgument, Validated>]) -> String {
     args.iter()
         .map(|arg| {
             format!(
@@ -678,7 +693,7 @@ fn cpp_function_args(args: &[Arg<FunctionArgument>]) -> String {
         .join(", ")
 }
 
-fn transform_arg(arg: &Arg<FunctionArgument>) -> String {
+fn transform_arg(arg: &Arg<FunctionArgument, Validated>) -> String {
     if arg.arg_type.is_move_type() {
         std_move(arg.name.to_snake_case())
     } else {
@@ -686,7 +701,7 @@ fn transform_arg(arg: &Arg<FunctionArgument>) -> String {
     }
 }
 
-fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument>]) -> String {
+fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument, Validated>]) -> String {
     args.iter()
         .map(|arg| transform_arg(arg))
         .collect::<Vec<String>>()
@@ -695,8 +710,11 @@ fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument>]) -> String {
 
 const RETURN_VALUE: &str = "_oo_bindgen_return_value";
 
-fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> FormattingResult<()> {
-    fn write_error_check(f: &mut dyn Printer, err: &ErrorType) -> FormattingResult<()> {
+fn write_function_wrapper(
+    f: &mut dyn Printer,
+    func: &Handle<Function<Validated>>,
+) -> FormattingResult<()> {
+    fn write_error_check(f: &mut dyn Printer, err: &ErrorType<Validated>) -> FormattingResult<()> {
         let c_success_variant = &format!(
             "{}_{}_{}",
             err.inner.settings.c_ffi_prefix.to_shouty_snake_case(),
@@ -720,7 +738,7 @@ fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> Formatt
 
     fn write_shadowed_conversions(
         f: &mut dyn Printer,
-        func: &FunctionHandle,
+        func: &Handle<Function<Validated>>,
     ) -> FormattingResult<()> {
         for arg in &func.parameters {
             if arg.arg_type.requires_shadow_parameter() {
@@ -737,7 +755,7 @@ fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> Formatt
 
     fn write_args(
         f: &mut dyn Printer,
-        func: &FunctionHandle,
+        func: &Handle<Function<Validated>>,
         has_out_param: bool,
     ) -> FormattingResult<()> {
         for (arg, last) in func.parameters.iter().with_last() {
@@ -821,7 +839,10 @@ fn write_function_wrapper(f: &mut dyn Printer, func: &FunctionHandle) -> Formatt
     f.newline()
 }
 
-fn write_conversions(f: &mut dyn Printer, statement: &Statement) -> FormattingResult<()> {
+fn write_conversions(
+    f: &mut dyn Printer,
+    statement: &Statement<Validated>,
+) -> FormattingResult<()> {
     match statement {
         Statement::StructDefinition(x) => match x {
             StructType::FunctionArg(x) => write_cpp_to_native_struct_conversion(f, x),
@@ -852,7 +873,7 @@ fn write_conversions(f: &mut dyn Printer, statement: &Statement) -> FormattingRe
 
 fn write_iterator_construct_helper(
     f: &mut dyn Printer,
-    handle: &IteratorHandle,
+    handle: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
@@ -874,7 +895,7 @@ fn write_iterator_construct_helper(
 
 fn write_iterator_to_native_helper(
     f: &mut dyn Printer,
-    handle: &IteratorHandle,
+    handle: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
@@ -894,7 +915,10 @@ fn write_iterator_to_native_helper(
     f.newline()
 }
 
-fn write_class_construct_helper(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
+fn write_class_construct_helper(
+    f: &mut dyn Printer,
+    handle: &Handle<Class<Validated>>,
+) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
         "::{}::{} to_cpp({}* self)",
@@ -915,7 +939,7 @@ fn write_class_construct_helper(f: &mut dyn Printer, handle: &ClassHandle) -> Fo
 
 fn write_cpp_struct_friend_class<T>(
     f: &mut dyn Printer,
-    handle: &Handle<Struct<T>>,
+    handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppFunctionArgType + TypeInfo,
@@ -982,7 +1006,7 @@ where
 
 fn write_iterator_friend_class(
     f: &mut dyn Printer,
-    handle: &IteratorHandle,
+    handle: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
 ) -> FormattingResult<()> {
     let c_type = handle.iter_class.to_c_type();
 
@@ -1018,7 +1042,7 @@ fn write_iterator_friend_class(
 
 fn write_cpp_to_native_struct_conversion<T>(
     f: &mut dyn Printer,
-    handle: &Handle<Struct<T>>,
+    handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + ToNativeStructField,
@@ -1069,7 +1093,7 @@ where
 
 fn write_native_to_cpp_struct_conversion<T>(
     f: &mut dyn Printer,
-    handle: &Handle<Struct<T>>,
+    handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + ToCppStructField,
@@ -1107,7 +1131,10 @@ where
     f.newline()
 }
 
-fn write_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> FormattingResult<()> {
+fn write_enum_to_string_impl(
+    f: &mut dyn Printer,
+    handle: &Handle<Enum<Validated>>,
+) -> FormattingResult<()> {
     f.writeln(&format!(
         "const char* to_string({} value)",
         handle.core_cpp_type()
@@ -1138,7 +1165,7 @@ fn write_enum_to_string_impl(f: &mut dyn Printer, handle: &EnumHandle) -> Format
 
 fn write_enum_to_native_conversion(
     f: &mut dyn Printer,
-    handle: &EnumHandle,
+    handle: &Handle<Enum<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_type = format!(
         "::{}::{}",
@@ -1175,7 +1202,10 @@ fn write_enum_to_native_conversion(
     f.newline()
 }
 
-fn write_enum_to_cpp_conversion(f: &mut dyn Printer, handle: &EnumHandle) -> FormattingResult<()> {
+fn write_enum_to_cpp_conversion(
+    f: &mut dyn Printer,
+    handle: &Handle<Enum<Validated>>,
+) -> FormattingResult<()> {
     let cpp_type = format!(
         "::{}::{}",
         handle.settings.c_ffi_prefix,
@@ -1214,8 +1244,8 @@ fn write_enum_to_cpp_conversion(f: &mut dyn Printer, handle: &EnumHandle) -> For
 
 fn write_callback_function(
     f: &mut dyn Printer,
-    interface: &InterfaceHandle,
-    cb: &CallbackFunction,
+    interface: &Handle<Interface<Validated>>,
+    cb: &CallbackFunction<Validated>,
 ) -> FormattingResult<()> {
     let cpp_type = format!(
         "::{}::{}",
@@ -1223,7 +1253,10 @@ fn write_callback_function(
         interface.core_cpp_type()
     );
 
-    fn write_invocation_lines(f: &mut dyn Printer, cb: &CallbackFunction) -> FormattingResult<()> {
+    fn write_invocation_lines(
+        f: &mut dyn Printer,
+        cb: &CallbackFunction<Validated>,
+    ) -> FormattingResult<()> {
         for (arg, last) in cb.arguments.iter().with_last() {
             let conversion = if arg.arg_type.requires_shadow_parameter() {
                 format!("_{}", arg.name.to_snake_case())
@@ -1271,7 +1304,7 @@ fn write_callback_function(
             cb.name.to_snake_case()
         );
         match &cb.return_type {
-            CallbackReturnType::Void => {
+            CallbackReturnType::<Validated>::Void => {
                 f.writeln(&format!("{}(", function))?;
                 indented(f, |f| write_invocation_lines(f, cb))?;
                 f.writeln(");")
@@ -1292,7 +1325,7 @@ fn write_callback_function(
 
 fn write_cpp_interface_to_native_conversion(
     f: &mut dyn Printer,
-    handle: &InterfaceHandle,
+    handle: &Handle<Interface<Validated>>,
     interface_type: InterfaceType,
 ) -> FormattingResult<()> {
     let c_type = handle.to_c_type();

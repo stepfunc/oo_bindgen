@@ -1,24 +1,24 @@
 use super::doc::*;
 use super::*;
 use heck::{CamelCase, ShoutySnakeCase};
+use oo_bindgen::doc::Validated;
 use oo_bindgen::enum_type::*;
 
 pub(crate) fn generate(
     f: &mut impl Printer,
-    native_enum: &EnumHandle,
-    lib: &Library,
+    native_enum: &Handle<Enum<Validated>>,
 ) -> FormattingResult<()> {
     let enum_name = native_enum.name.to_camel_case();
 
     // Documentation
-    documentation(f, |f| javadoc_print(f, &native_enum.doc, lib))?;
+    documentation(f, |f| javadoc_print(f, &native_enum.doc))?;
 
     // Enum definition
     f.writeln(&format!("public enum {}", enum_name))?;
     blocked(f, |f| {
         // Write the variants
         for variant in &native_enum.variants {
-            documentation(f, |f| javadoc_print(f, &variant.doc, lib))?;
+            documentation(f, |f| javadoc_print(f, &variant.doc))?;
             f.writeln(&format!(
                 "{}({}),",
                 variant.name.to_shouty_snake_case(),

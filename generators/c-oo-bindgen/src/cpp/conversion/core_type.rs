@@ -1,15 +1,16 @@
 use heck::{CamelCase, SnakeCase};
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle, StaticClassHandle};
-use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::class::{Class, ClassDeclarationHandle, StaticClass};
+use oo_bindgen::collection::Collection;
 use oo_bindgen::constants::Constant;
-use oo_bindgen::enum_type::{EnumHandle, EnumVariant};
+use oo_bindgen::doc::DocReference;
+use oo_bindgen::enum_type::{Enum, EnumVariant};
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::{CallbackFunction, InterfaceHandle};
-use oo_bindgen::iterator::{IteratorHandle, IteratorItemType};
+use oo_bindgen::interface::{CallbackFunction, Interface};
+use oo_bindgen::iterator::IteratorItemType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{Arg, BasicType, StringType};
-use oo_bindgen::{StructType, UniversalOr};
+use oo_bindgen::{Handle, StructType, UniversalOr};
 
 pub(crate) trait CoreCppType {
     fn core_cpp_type(&self) -> String;
@@ -41,8 +42,9 @@ impl CoreCppType for StringType {
     }
 }
 
-impl<T> CoreCppType for Struct<T>
+impl<T, D> CoreCppType for Struct<T, D>
 where
+    D: DocReference,
     T: StructFieldType,
 {
     fn core_cpp_type(&self) -> String {
@@ -65,37 +67,55 @@ impl CoreCppType for StructDeclaration {
     }
 }
 
-impl CoreCppType for StructType {
+impl<D> CoreCppType for StructType<D>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.declaration().core_cpp_type()
     }
 }
 
-impl CoreCppType for EnumHandle {
+impl<D> CoreCppType for Handle<Enum<D>>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreCppType for EnumVariant {
+impl<D> CoreCppType for EnumVariant<D>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
 }
 
-impl CoreCppType for ErrorType {
+impl<D> CoreCppType for ErrorType<D>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.exception_name.to_camel_case()
     }
 }
 
-impl CoreCppType for InterfaceHandle {
+impl<D> CoreCppType for Handle<Interface<D>>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreCppType for IteratorHandle {
+impl<D> CoreCppType for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.iter_class.name.to_camel_case()
     }
@@ -109,19 +129,28 @@ impl CoreCppType for IteratorItemType {
     }
 }
 
-impl<T> CoreCppType for Arg<T> {
+impl<T, D> CoreCppType for Arg<T, D>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
 }
 
-impl CoreCppType for CallbackFunction {
+impl<D> CoreCppType for CallbackFunction<D>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
 }
 
-impl CoreCppType for Constant {
+impl<D> CoreCppType for Constant<D>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name.to_snake_case()
     }
@@ -133,19 +162,28 @@ impl CoreCppType for ClassDeclarationHandle {
     }
 }
 
-impl CoreCppType for ClassHandle {
+impl<D> CoreCppType for Handle<Class<D>>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name().to_camel_case()
     }
 }
 
-impl CoreCppType for StaticClassHandle {
+impl<D> CoreCppType for Handle<StaticClass<D>>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         self.name.to_camel_case()
     }
 }
 
-impl CoreCppType for CollectionHandle {
+impl<D> CoreCppType for Handle<Collection<D>>
+where
+    D: DocReference,
+{
     fn core_cpp_type(&self) -> String {
         let inner = match &self.item_type {
             FunctionArgument::Basic(x) => x.core_cpp_type(),

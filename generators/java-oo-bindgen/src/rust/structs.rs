@@ -4,6 +4,7 @@ use super::conversion::*;
 use crate::*;
 
 use heck::{CamelCase, MixedCase, SnakeCase};
+use oo_bindgen::doc::Validated;
 use oo_bindgen::structs::{Struct, StructFieldType};
 
 pub(crate) fn generate_structs_cache(
@@ -69,7 +70,7 @@ pub(crate) fn generate_structs_cache(
 
 fn generate_struct<T>(
     f: &mut dyn Printer,
-    structure: &Handle<Struct<T>>,
+    structure: &Handle<Struct<T, Validated>>,
     lib: &Library,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>

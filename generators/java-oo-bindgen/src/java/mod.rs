@@ -313,6 +313,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         // Write each native functions
         for handle in lib.functions() {
             if let Some(first_param) = handle.parameters.first() {
+                /* todo
                 if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
                     // We don't want to generate the `next` methods of iterators
                     if let Some(it) = lib.find_iterator(&class_handle.name) {
@@ -327,14 +328,18 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                         }
                     }
                 }
+                 */
             }
             if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
                 &handle.return_type
             {
+                /* todo
                 // We don't want to generate the `create` method of collections
                 if lib.find_collection(&class_handle.name).is_some() {
                     continue;
                 }
+
+                 */
             }
 
             f.writeln(&format!(
@@ -362,7 +367,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for set in lib.constants() {
         let mut f = create_file(&set.name.to_camel_case(), config, lib)?;
-        constant::generate(&mut f, set, lib)?;
+        constant::generate(&mut f, set)?;
     }
 
     Ok(())
@@ -371,7 +376,7 @@ fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingRe
 fn generate_exceptions(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for error in lib.error_types() {
         let mut f = create_file(&error.exception_name.to_camel_case(), config, lib)?;
-        exception::generate(&mut f, error, lib)?;
+        exception::generate(&mut f, error)?;
     }
 
     Ok(())
@@ -381,10 +386,10 @@ fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
     for st in lib.structs() {
         let mut f = create_file(&st.name().to_camel_case(), config, lib)?;
         match st {
-            StructType::FunctionArg(x) => structure::generate(&mut f, x, lib)?,
-            StructType::FunctionReturn(x) => structure::generate(&mut f, x, lib)?,
-            StructType::CallbackArg(x) => structure::generate(&mut f, x, lib)?,
-            StructType::Universal(x) => structure::generate(&mut f, x, lib)?,
+            StructType::FunctionArg(x) => structure::generate(&mut f, x)?,
+            StructType::FunctionReturn(x) => structure::generate(&mut f, x)?,
+            StructType::CallbackArg(x) => structure::generate(&mut f, x)?,
+            StructType::Universal(x) => structure::generate(&mut f, x)?,
         }
     }
 
@@ -394,7 +399,7 @@ fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
 fn generate_enums(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for native_enum in lib.enums() {
         let mut f = create_file(&native_enum.name.to_camel_case(), config, lib)?;
-        enumeration::generate(&mut f, native_enum, lib)?;
+        enumeration::generate(&mut f, native_enum)?;
     }
 
     Ok(())
@@ -403,12 +408,12 @@ fn generate_enums(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult
 fn generate_classes(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for class in lib.classes() {
         let mut f = create_file(&class.name().to_camel_case(), config, lib)?;
-        class::generate(&mut f, class, lib)?;
+        class::generate(&mut f, class)?;
     }
 
     for class in lib.static_classes() {
         let mut f = create_file(&class.name.to_camel_case(), config, lib)?;
-        class::generate_static(&mut f, class, lib)?;
+        class::generate_static(&mut f, class)?;
     }
 
     Ok(())
@@ -417,7 +422,7 @@ fn generate_classes(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
 fn generate_interfaces(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for interface in lib.interfaces() {
         let mut f = create_file(&interface.name.to_camel_case(), config, lib)?;
-        interface::generate(&mut f, interface, lib)?;
+        interface::generate(&mut f, interface)?;
     }
 
     Ok(())

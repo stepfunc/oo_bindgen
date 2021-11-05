@@ -1,3 +1,4 @@
+use crate::doc::Unvalidated;
 use crate::iterator::IteratorHandle;
 use crate::structs::common::*;
 use crate::types::{DurationType, TypeValidator, ValidatedType};
@@ -21,11 +22,13 @@ impl TypeValidator for CallbackArgStructField {
     }
 }
 
-pub type CallbackArgStructHandle = Handle<Struct<CallbackArgStructField>>;
+pub type CallbackArgStructHandle = Handle<Struct<CallbackArgStructField, Unvalidated>>;
 pub type CallbackArgStructBuilder<'a> = StructFieldBuilder<'a, CallbackArgStructField>;
 
 impl StructFieldType for CallbackArgStructField {
-    fn create_struct_type(v: Handle<Struct<CallbackArgStructField>>) -> StructType {
+    fn create_struct_type(
+        v: Handle<Struct<CallbackArgStructField, Unvalidated>>,
+    ) -> StructType<Unvalidated> {
         StructType::CallbackArg(v)
     }
 }

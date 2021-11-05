@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
-use crate::doc::DocString;
+use crate::doc::{DocReference, DocString, Unvalidated};
 use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
@@ -56,14 +56,20 @@ impl From<DurationType> for BasicType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Arg<T> {
+pub struct Arg<T, D>
+where
+    D: DocReference,
+{
     pub arg_type: T,
     pub name: Name,
-    pub doc: DocString,
+    pub doc: DocString<D>,
 }
 
-impl<T> Arg<T> {
-    pub fn new(arg_type: T, name: Name, doc: DocString) -> Self {
+impl<T, D> Arg<T, D>
+where
+    D: DocReference,
+{
+    pub fn new(arg_type: T, name: Name, doc: DocString<D>) -> Self {
         Self {
             arg_type,
             name,
@@ -279,7 +285,7 @@ impl TypeExtractor for UniversalStructField {
 pub enum ValidatedType {
     Enum(EnumHandle),
     StructRef(StructDeclarationHandle),
-    Struct(StructType),
+    Struct(StructType<Unvalidated>),
     Interface(InterfaceHandle),
     ClassRef(ClassDeclarationHandle),
     Iterator(IteratorHandle),
@@ -316,7 +322,7 @@ impl TypeValidator for StructDeclarationHandle {
     }
 }
 
-impl TypeValidator for StructType {
+impl TypeValidator for StructType<Unvalidated> {
     fn get_validated_type(&self) -> Option<ValidatedType> {
         Some(ValidatedType::Struct(self.clone()))
     }

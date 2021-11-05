@@ -1,3 +1,4 @@
+use crate::doc::Unvalidated;
 use crate::structs::common::*;
 use crate::structs::UniversalStructHandle;
 use crate::types::{DurationType, StringType, TypeValidator, ValidatedType};
@@ -23,12 +24,14 @@ impl TypeValidator for FunctionArgStructField {
     }
 }
 
-pub type FunctionArgStructHandle = Handle<Struct<FunctionArgStructField>>;
+pub type FunctionArgStructHandle = Handle<Struct<FunctionArgStructField, Unvalidated>>;
 pub type FunctionArgStructBuilder<'a> = StructFieldBuilder<'a, FunctionArgStructField>;
 
 impl StructFieldType for FunctionArgStructField {
-    fn create_struct_type(v: Handle<Struct<FunctionArgStructField>>) -> StructType {
-        v.into()
+    fn create_struct_type(
+        v: Handle<Struct<FunctionArgStructField, Unvalidated>>,
+    ) -> StructType<Unvalidated> {
+        StructType::FunctionArg(v)
     }
 }
 

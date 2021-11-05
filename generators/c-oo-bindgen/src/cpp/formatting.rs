@@ -1,9 +1,10 @@
-use oo_bindgen::class::{ClassDeclarationHandle, ClassHandle};
+use oo_bindgen::class::{Class, ClassDeclarationHandle};
 use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::iterator::IteratorHandle;
 use oo_bindgen::structs::{Struct, StructDeclarationHandle, StructFieldType};
 
 use heck::CamelCase;
+use oo_bindgen::doc::DocReference;
+use oo_bindgen::Handle;
 
 pub(crate) fn mut_ref(expr: String) -> String {
     format!("{}&", expr)
@@ -48,14 +49,18 @@ impl FriendClass for StructDeclarationHandle {
     }
 }
 
-impl FriendClass for IteratorHandle {
+impl<D> FriendClass for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn friend_class(&self) -> String {
         self.iter_class.friend_class()
     }
 }
 
-impl<T> FriendClass for Struct<T>
+impl<T, D> FriendClass for Struct<T, D>
 where
+    D: DocReference,
     T: StructFieldType,
 {
     fn friend_class(&self) -> String {
@@ -63,7 +68,10 @@ where
     }
 }
 
-impl FriendClass for ClassHandle {
+impl<D> FriendClass for Handle<Class<D>>
+where
+    D: DocReference,
+{
     fn friend_class(&self) -> String {
         self.declaration.friend_class()
     }

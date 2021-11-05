@@ -1,4 +1,4 @@
-use crate::doc::Doc;
+use crate::doc::{Doc, DocReference, Unvalidated};
 use crate::name::{IntoName, Name};
 use crate::*;
 
@@ -13,10 +13,13 @@ pub enum ExceptionType {
 
 // error types are just special kinds of enums
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct ErrorType {
+pub struct ErrorType<D>
+where
+    D: DocReference,
+{
     pub exception_name: Name,
     pub exception_type: ExceptionType,
-    pub inner: EnumHandle,
+    pub inner: Handle<Enum<D>>,
 }
 
 pub struct ErrorTypeBuilder<'a> {
@@ -38,21 +41,25 @@ impl<'a> ErrorTypeBuilder<'a> {
         }
     }
 
-    pub fn add_error<T: IntoName, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
+    pub fn add_error<T: IntoName, D: Into<Doc<Unvalidated>>>(
+        self,
+        name: T,
+        doc: D,
+    ) -> BindResult<Self> {
         Ok(Self {
             inner: self.inner.push(name.into_name()?, doc)?,
             ..self
         })
     }
 
-    pub fn doc<D: Into<Doc>>(self, doc: D) -> BindResult<Self> {
+    pub fn doc<D: Into<Doc<Unvalidated>>>(self, doc: D) -> BindResult<Self> {
         Ok(Self {
             inner: self.inner.doc(doc)?,
             ..self
         })
     }
 
-    pub fn build(self) -> BindResult<ErrorType> {
+    pub fn build(self) -> BindResult<ErrorType<Unvalidated>> {
         let (inner, lib) = self.inner.build_and_release()?;
 
         let err = ErrorType {

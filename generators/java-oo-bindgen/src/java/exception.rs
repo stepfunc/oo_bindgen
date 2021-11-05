@@ -1,15 +1,12 @@
 use super::doc::*;
 use super::*;
 use heck::CamelCase;
+use oo_bindgen::doc::Validated;
 use oo_bindgen::error_type::{ErrorType, ExceptionType};
 
-pub(crate) fn generate(
-    f: &mut impl Printer,
-    error: &ErrorType,
-    lib: &Library,
-) -> FormattingResult<()> {
+pub(crate) fn generate(f: &mut impl Printer, error: &ErrorType<Validated>) -> FormattingResult<()> {
     // Documentation
-    documentation(f, |f| javadoc_print(f, &error.inner.doc, lib))?;
+    documentation(f, |f| javadoc_print(f, &error.inner.doc))?;
 
     let exception_name = error.exception_name.to_camel_case();
     let error_name = error.inner.name.to_camel_case();

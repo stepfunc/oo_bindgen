@@ -49,6 +49,7 @@ use crate::dotnet_type::*;
 use crate::formatting::*;
 use heck::CamelCase;
 use oo_bindgen::constants::*;
+use oo_bindgen::doc::Validated;
 use oo_bindgen::enum_type::*;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::*;
@@ -262,7 +263,7 @@ fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
 
 fn generate_constant_set(
     f: &mut impl Printer,
-    set: &ConstantSetHandle,
+    set: &Handle<ConstantSet<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     fn get_type_as_string(value: &ConstantValue) -> &'static str {
@@ -284,13 +285,13 @@ fn generate_constant_set(
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &set.doc, lib)
+            xmldoc_print(f, &set.doc)
         })?;
 
         f.writeln(&format!("public static class {}", set.name.to_camel_case()))?;
         blocked(f, |f| {
             for value in &set.values {
-                documentation(f, |f| xmldoc_print(f, &value.doc, lib))?;
+                documentation(f, |f| xmldoc_print(f, &value.doc))?;
                 f.writeln(&format!(
                     "public const {} {} = {};",
                     get_type_as_string(&value.value),
@@ -305,7 +306,7 @@ fn generate_constant_set(
 
 fn generate_enum(
     f: &mut impl Printer,
-    native_enum: &EnumHandle,
+    native_enum: &Handle<Enum<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;
@@ -315,13 +316,13 @@ fn generate_enum(
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &native_enum.doc, lib)
+            xmldoc_print(f, &native_enum.doc)
         })?;
 
         f.writeln(&format!("public enum {}", native_enum.name.to_camel_case()))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
-                documentation(f, |f| xmldoc_print(f, &variant.doc, lib))?;
+                documentation(f, |f| xmldoc_print(f, &variant.doc))?;
                 f.writeln(&format!(
                     "{} =  {},",
                     variant.name.to_camel_case(),
@@ -335,7 +336,7 @@ fn generate_enum(
 
 fn generate_exception(
     f: &mut impl Printer,
-    err: &ErrorType,
+    err: &ErrorType<Validated>,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;
@@ -345,7 +346,7 @@ fn generate_exception(
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &err.inner.doc, lib)
+            xmldoc_print(f, &err.inner.doc)
         })?;
 
         let error_name = err.inner.name.to_camel_case();

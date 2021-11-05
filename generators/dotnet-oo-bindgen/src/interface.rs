@@ -5,7 +5,7 @@ use oo_bindgen::interface::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    interface: &InterfaceHandle,
+    interface: &Handle<Interface<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     let interface_name = format!("I{}", interface.name.to_camel_case());
@@ -17,7 +17,7 @@ pub(crate) fn generate(
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &interface.doc, lib)
+            xmldoc_print(f, &interface.doc)
         })?;
 
         f.writeln(&format!("public interface {}", interface_name))?;
@@ -27,20 +27,20 @@ pub(crate) fn generate(
                 // Documentation
                 documentation(f, |f| {
                     // Print top-level documentation
-                    xmldoc_print(f, &func.doc, lib)?;
+                    xmldoc_print(f, &func.doc)?;
                     f.newline()?;
 
                     // Print each parameter value
                     for arg in &func.arguments {
                         f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
-                        docstring_print(f, &arg.doc, lib)?;
+                        docstring_print(f, &arg.doc)?;
                         f.write("</param>")?;
                     }
 
                     // Print return value
                     if let CallbackReturnType::Type(_, doc) = &func.return_type {
                         f.writeln("<returns>")?;
-                        docstring_print(f, doc, lib)?;
+                        docstring_print(f, doc)?;
                         f.write("</returns>")?;
                     }
 
@@ -75,7 +75,7 @@ pub(crate) fn generate(
 
         // Write the Action<>/Func<> based implementation if it's a functional interface
         if interface.is_functional() {
-            generate_functional_callback(f, interface, interface.callbacks.first().unwrap(), lib)?;
+            generate_functional_callback(f, interface, interface.callbacks.first().unwrap())?;
             f.newline()?;
         }
 
@@ -236,9 +236,8 @@ pub(crate) fn generate(
 
 pub(crate) fn generate_functional_callback(
     f: &mut dyn Printer,
-    interface: &InterfaceHandle,
-    function: &CallbackFunction,
-    lib: &Library,
+    interface: &Handle<Interface<Validated>>,
+    function: &CallbackFunction<Validated>,
 ) -> FormattingResult<()> {
     let interface_name = format!("I{}", interface.name.to_camel_case());
     let class_name = interface.name.to_camel_case();
@@ -269,11 +268,7 @@ pub(crate) fn generate_functional_callback(
 
     documentation(f, |f| {
         f.writeln("<summary>")?;
-        docstring_print(
-            f,
-            &format!("Functional adapter of {{interface:{}}}", interface.name).into(),
-            lib,
-        )?;
+        f.writeln(&format!("Functional adapter for {}", interface.name))?;
         f.write("</summary>")
     })?;
     f.writeln(&format!("public class {} : {}", class_name, interface_name))?;
@@ -300,20 +295,20 @@ pub(crate) fn generate_functional_callback(
 
         // Write the required method
         documentation(f, |f| {
-            xmldoc_print(f, &function.doc, lib)?;
+            xmldoc_print(f, &function.doc)?;
             f.newline()?;
 
             // Print each parameter value
             for arg in &function.arguments {
                 f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
-                docstring_print(f, &arg.doc, lib)?;
+                docstring_print(f, &arg.doc)?;
                 f.write("</param>")?;
             }
 
             // Print return value
             if let CallbackReturnType::Type(_, doc) = &function.return_type {
                 f.writeln("<returns>")?;
-                docstring_print(f, doc, lib)?;
+                docstring_print(f, doc)?;
                 f.write("</returns>")?;
             }
             Ok(())

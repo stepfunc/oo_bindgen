@@ -2,15 +2,15 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{namespace, FriendClass};
 use heck::SnakeCase;
 use oo_bindgen::class::{
-    AsyncMethod, ClassDeclarationHandle, ClassHandle, ClassType, Method, StaticClassHandle,
+    AsyncMethod, Class, ClassDeclarationHandle, ClassType, Method, StaticClass,
 };
-use oo_bindgen::constants::{ConstantSetHandle, ConstantValue, Representation};
-use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
+use oo_bindgen::doc::{brief, Validated};
+use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::InterfaceHandle;
-use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::interface::Interface;
 use oo_bindgen::structs::{
     Constructor, ConstructorType, Struct, StructDeclaration, StructFieldType, Visibility,
 };
@@ -91,7 +91,7 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
 
 fn write_async_method_interface_helpers(
     f: &mut dyn Printer,
-    interface: &InterfaceHandle,
+    interface: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
     let interface_name = interface.core_cpp_type();
     let class_name = format!("{}Lambda", interface_name);
@@ -139,7 +139,10 @@ fn write_async_method_interface_helpers(
     f.newline()
 }
 
-fn print_iterator_definition(f: &mut dyn Printer, iter: &IteratorHandle) -> FormattingResult<()> {
+fn print_iterator_definition(
+    f: &mut dyn Printer,
+    iter: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
+) -> FormattingResult<()> {
     let iterator = include_str!("./snippet/iterator.hpp");
     for line in iterator.lines() {
         let substituted = line
@@ -180,7 +183,10 @@ fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()
 }
 
-fn print_constants(f: &mut dyn Printer, c: &ConstantSetHandle) -> FormattingResult<()> {
+fn print_constants(
+    f: &mut dyn Printer,
+    c: &Handle<ConstantSet<Validated>>,
+) -> FormattingResult<()> {
     fn get_value(v: ConstantValue) -> String {
         match v {
             ConstantValue::U8(v, Representation::Hex) => format!("0x{:02X}", v),
@@ -209,7 +215,7 @@ fn print_constants(f: &mut dyn Printer, c: &ConstantSetHandle) -> FormattingResu
     f.newline()
 }
 
-fn print_enum(f: &mut dyn Printer, e: &EnumHandle) -> FormattingResult<()> {
+fn print_enum(f: &mut dyn Printer, e: &Handle<Enum<Validated>>) -> FormattingResult<()> {
     f.writeln(&format!("enum class {} {{", e.core_cpp_type()))?;
     indented(f, |f| {
         for v in &e.variants {
@@ -226,7 +232,7 @@ fn print_enum(f: &mut dyn Printer, e: &EnumHandle) -> FormattingResult<()> {
     f.newline()
 }
 
-fn print_exception(f: &mut dyn Printer, e: &ErrorType) -> FormattingResult<()> {
+fn print_exception(f: &mut dyn Printer, e: &ErrorType<Validated>) -> FormattingResult<()> {
     f.writeln(&format!(
         "class {} : public std::logic_error {{",
         e.core_cpp_type()
@@ -253,7 +259,7 @@ fn print_struct_decl(f: &mut dyn Printer, s: &StructDeclaration) -> FormattingRe
 
 fn print_struct_definition<T>(
     f: &mut dyn Printer,
-    handle: &Handle<Struct<T>>,
+    handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppStructType + CppFunctionArgType,
@@ -278,7 +284,7 @@ where
             // write a default constructor
             let constructor = Handle::new(Constructor::full(
                 ConstructorType::Normal,
-                "Fully initialize".into(),
+                brief("Fully initialize"),
             ));
             print_constructor_definition(f, handle, &constructor)
         })?;
@@ -315,7 +321,10 @@ where
     f.newline()
 }
 
-fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingResult<()> {
+fn print_interface(
+    f: &mut dyn Printer,
+    handle: &Handle<Interface<Validated>>,
+) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.core_cpp_type()))?;
     f.writeln("public:")?;
     indented(f, |f| {
@@ -349,8 +358,8 @@ fn print_interface(f: &mut dyn Printer, handle: &InterfaceHandle) -> FormattingR
 }
 fn print_constructor_definition<T>(
     f: &mut dyn Printer,
-    handle: &Handle<Struct<T>>,
-    constructor: &Handle<Constructor>,
+    handle: &Handle<Struct<T, Validated>>,
+    constructor: &Handle<Constructor<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppFunctionArgType,
@@ -380,7 +389,10 @@ where
     f.newline()
 }
 
-fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> FormattingResult<()> {
+fn print_class_definition(
+    f: &mut dyn Printer,
+    handle: &Handle<Class<Validated>>,
+) -> FormattingResult<()> {
     let class_name = handle.core_cpp_type();
     f.writeln(&format!("class {} {{", class_name))?;
     indented(f, |f| {
@@ -429,7 +441,7 @@ fn print_class_definition(f: &mut dyn Printer, handle: &ClassHandle) -> Formatti
     f.newline()
 }
 
-fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+fn print_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
     f.writeln(&format!(
@@ -443,7 +455,7 @@ fn print_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
     ))
 }
 
-fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult<()> {
+fn print_static_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.parameters.iter());
 
     f.writeln(&format!(
@@ -457,7 +469,10 @@ fn print_static_method(f: &mut dyn Printer, method: &Method) -> FormattingResult
     ))
 }
 
-fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingResult<()> {
+fn print_async_method(
+    f: &mut dyn Printer,
+    method: &AsyncMethod<Validated>,
+) -> FormattingResult<()> {
     let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
     f.writeln("// async method!")?;
@@ -474,7 +489,10 @@ fn print_async_method(f: &mut dyn Printer, method: &AsyncMethod) -> FormattingRe
     f.newline()
 }
 
-fn print_static_class(f: &mut dyn Printer, handle: &StaticClassHandle) -> FormattingResult<()> {
+fn print_static_class(
+    f: &mut dyn Printer,
+    handle: &Handle<StaticClass<Validated>>,
+) -> FormattingResult<()> {
     f.writeln(&format!("class {} {{", handle.core_cpp_type()))?;
     indented(f, |f| {
         f.writeln(&format!("{}() = delete;", handle.core_cpp_type()))
@@ -501,7 +519,7 @@ fn print_deleted_class_functions(f: &mut dyn Printer, name: &str) -> FormattingR
 
 fn cpp_arguments<'a, T>(iter: T) -> String
 where
-    T: Iterator<Item = &'a Arg<FunctionArgument>>,
+    T: Iterator<Item = &'a Arg<FunctionArgument, Validated>>,
 {
     iter.map(|p| {
         format!(

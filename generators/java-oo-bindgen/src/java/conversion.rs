@@ -1,11 +1,12 @@
 use super::NATIVE_FUNCTIONS_CLASSNAME;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::collection::Collection;
+use oo_bindgen::doc::{DocReference, Validated};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
-use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, InterfaceHandle};
-use oo_bindgen::iterator::{IteratorHandle, IteratorItemType};
+use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, Interface};
+use oo_bindgen::iterator::IteratorItemType;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
@@ -64,7 +65,10 @@ impl JavaType for StringType {
     }
 }
 
-impl JavaType for InterfaceHandle {
+impl<D> JavaType for Handle<Interface<D>>
+where
+    D: DocReference,
+{
     fn as_java_primitive(&self) -> String {
         self.as_java_object()
     }
@@ -74,7 +78,10 @@ impl JavaType for InterfaceHandle {
     }
 }
 
-impl JavaType for CollectionHandle {
+impl<D> JavaType for Handle<Collection<D>>
+where
+    D: DocReference,
+{
     fn as_java_primitive(&self) -> String {
         self.as_java_object()
     }
@@ -118,7 +125,10 @@ impl JavaType for IteratorItemType {
     }
 }
 
-impl JavaType for IteratorHandle {
+impl<D> JavaType for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn as_java_primitive(&self) -> String {
         self.as_java_object()
     }
@@ -128,8 +138,9 @@ impl JavaType for IteratorHandle {
     }
 }
 
-impl<T> JavaType for Handle<Struct<T>>
+impl<T, D> JavaType for Handle<Struct<T, D>>
 where
+    D: DocReference,
     T: StructFieldType,
 {
     fn as_java_primitive(&self) -> String {
@@ -320,7 +331,7 @@ impl JavaType for FunctionReturnValue {
     }
 }
 
-impl<T> JavaType for ReturnType<T>
+impl<T> JavaType for ReturnType<T, Validated>
 where
     T: JavaType,
 {
@@ -341,7 +352,7 @@ where
 
 pub(crate) fn call_native_function(
     f: &mut dyn Printer,
-    method: &Function,
+    method: &Function<Validated>,
     return_destination: &str,
     first_param_is_this: bool,
 ) -> FormattingResult<()> {

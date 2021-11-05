@@ -1,17 +1,23 @@
-use crate::doc::DocString;
+use crate::doc::{DocReference, DocString};
 
 #[derive(Debug)]
-pub enum ReturnType<T> {
+pub enum ReturnType<T, D>
+where
+    D: DocReference,
+{
     Void,
-    Type(T, DocString),
+    Type(T, DocString<D>),
 }
 
-impl<T> ReturnType<T> {
+impl<T, D> ReturnType<T, D>
+where
+    D: DocReference,
+{
     pub fn void() -> Self {
         ReturnType::Void
     }
 
-    pub fn new<D: Into<DocString>, U: Into<T>>(return_type: U, doc: D) -> Self {
+    pub fn new<C: Into<DocString<D>>, U: Into<T>>(return_type: U, doc: C) -> Self {
         ReturnType::Type(return_type.into(), doc.into())
     }
 

@@ -4,7 +4,11 @@ use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::Library;
 
-pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> FormattingResult<()> {
+pub(crate) fn doxygen_print(
+    f: &mut dyn Printer,
+    doc: &Doc<Validated>,
+    lib: &Library,
+) -> FormattingResult<()> {
     f.writeln("@brief ")?;
     docstring_print(f, &doc.brief, lib)?;
 
@@ -28,7 +32,7 @@ pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc, lib: &Library) -> Fo
 
 pub(crate) fn docstring_print(
     f: &mut dyn Printer,
-    docstring: &DocString,
+    docstring: &DocString<Validated>,
     lib: &Library,
 ) -> FormattingResult<()> {
     for el in docstring.elements() {
@@ -45,60 +49,46 @@ pub(crate) fn docstring_print(
 
 fn reference_print(
     f: &mut dyn Printer,
-    reference: &DocReference,
+    reference: &Validated,
     lib: &Library,
 ) -> FormattingResult<()> {
     match reference {
-        DocReference::Param(param_name) => {
-            f.write(&format!("@p {}", param_name.to_snake_case()))?
+        Validated::Param(param_name) => f.write(&format!("@p {}", param_name.to_snake_case()))?,
+        Validated::Class(class) => {
+            f.write(&format!("@ref {}", class.to_c_type()))?;
         }
-        DocReference::Class(class_name) => {
-            let handle = lib.find_class_declaration(class_name).unwrap();
-            f.write(&format!("@ref {}", handle.to_c_type()))?;
-        }
-        DocReference::ClassMethod(class_name, method_name) => {
-            let func_name = &lib
-                .find_class(class_name)
-                .unwrap()
-                .find_method(method_name)
-                .unwrap()
-                .name;
-            f.write(&format!("@ref {}_{}", lib.settings.c_ffi_prefix, func_name))?;
-        }
-        DocReference::ClassConstructor(class_name) => {
-            let handle = lib.find_class(class_name).unwrap();
+        Validated::ClassMethod(_, method_name) => {
             f.write(&format!(
                 "@ref {}_{}",
-                lib.settings.c_ffi_prefix,
-                handle.constructor.as_ref().unwrap().name
+                lib.settings.c_ffi_prefix, method_name.name
             ))?;
         }
-        DocReference::ClassDestructor(class_name) => {
-            let handle = lib.find_class(class_name).unwrap();
+        Validated::ClassConstructor(_, constructor) => {
             f.write(&format!(
                 "@ref {}_{}",
-                lib.settings.c_ffi_prefix,
-                handle.destructor.as_ref().unwrap().name
+                lib.settings.c_ffi_prefix, constructor.name
             ))?;
         }
-        DocReference::Struct(struct_name) => {
-            let struct_name = lib.find_struct(struct_name).unwrap().declaration();
-            f.write(&format!("@ref {}", struct_name.to_c_type()))?;
+        Validated::ClassDestructor(_, destructor) => {
+            f.write(&format!(
+                "@ref {}_{}",
+                lib.settings.c_ffi_prefix, destructor.name
+            ))?;
         }
-        DocReference::StructElement(struct_name, element_name) => {
-            let handle = lib.find_struct(struct_name).unwrap();
+        Validated::Struct(st) => {
+            f.write(&format!("@ref {}", st.to_c_type()))?;
+        }
+        Validated::StructField(st, field_name) => {
             f.write(&format!(
                 "@ref {}.{}",
-                handle.to_c_type(),
-                element_name.to_snake_case()
+                st.to_c_type(),
+                field_name.to_snake_case()
             ))?;
         }
-        DocReference::Enum(enum_name) => {
-            let enum_name = lib.find_enum(enum_name).unwrap();
-            f.write(&format!("@ref {}", enum_name.to_c_type()))?;
+        Validated::Enum(handle) => {
+            f.write(&format!("@ref {}", handle.to_c_type()))?;
         }
-        DocReference::EnumVariant(enum_name, variant_name) => {
-            let handle = lib.find_enum(enum_name).unwrap();
+        Validated::EnumVariant(handle, variant_name) => {
             f.write(&format!(
                 "@ref {}_{}_{}",
                 lib.settings.c_ffi_prefix.to_shouty_snake_case(),
@@ -106,15 +96,13 @@ fn reference_print(
                 variant_name.to_shouty_snake_case()
             ))?;
         }
-        DocReference::Interface(interface_name) => {
-            let handle = lib.find_interface(interface_name).unwrap();
-            f.write(&format!("@ref {}", handle.to_c_type()))?;
+        Validated::Interface(interface) => {
+            f.write(&format!("@ref {}", interface.to_c_type()))?;
         }
-        DocReference::InterfaceMethod(interface_name, callback_name) => {
-            let handle = &lib.find_interface(interface_name).unwrap();
+        Validated::InterfaceMethod(interface, callback_name) => {
             f.write(&format!(
                 "@ref {}.{}",
-                handle.to_c_type(),
+                interface.to_c_type(),
                 callback_name.to_snake_case()
             ))?;
         }

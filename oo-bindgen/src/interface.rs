@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::doc::{Doc, DocString};
+use crate::doc::{Doc, DocReference, DocString, Unvalidated};
 use crate::iterator::IteratorHandle;
 use crate::name::{IntoName, Name};
 use crate::return_type::ReturnType;
@@ -113,14 +113,17 @@ impl From<EnumHandle> for CallbackReturnValue {
     }
 }
 
-pub type CallbackReturnType = ReturnType<CallbackReturnValue>;
+pub type CallbackReturnType<T> = ReturnType<CallbackReturnValue, T>;
 
 #[derive(Debug)]
-pub struct CallbackFunction {
+pub struct CallbackFunction<T>
+where
+    T: DocReference,
+{
     pub name: Name,
-    pub return_type: CallbackReturnType,
-    pub arguments: Vec<Arg<CallbackArgument>>,
-    pub doc: Doc,
+    pub return_type: ReturnType<CallbackReturnValue, T>,
+    pub arguments: Vec<Arg<CallbackArgument, T>>,
+    pub doc: Doc<T>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -136,16 +139,22 @@ pub enum InterfaceType {
 }
 
 #[derive(Debug)]
-pub struct Interface {
+pub struct Interface<D>
+where
+    D: DocReference,
+{
     pub name: Name,
     pub interface_type: InterfaceType,
-    pub callbacks: Vec<CallbackFunction>,
-    pub doc: Doc,
+    pub callbacks: Vec<CallbackFunction<D>>,
+    pub doc: Doc<D>,
     pub settings: Rc<LibrarySettings>,
 }
 
-impl Interface {
-    pub fn find_callback<T: AsRef<str>>(&self, name: T) -> Option<&CallbackFunction> {
+impl<D> Interface<D>
+where
+    D: DocReference,
+{
+    pub fn find_callback<S: AsRef<str>>(&self, name: S) -> Option<&CallbackFunction<D>> {
         self.callbacks
             .iter()
             .find(|callback| callback.name.as_ref() == name.as_ref())
@@ -156,15 +165,15 @@ impl Interface {
     }
 }
 
-pub type InterfaceHandle = Handle<Interface>;
+pub type InterfaceHandle = Handle<Interface<Unvalidated>>;
 
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
     interface_type: InterfaceType,
-    callbacks: Vec<CallbackFunction>,
+    callbacks: Vec<CallbackFunction<Unvalidated>>,
     callback_names: HashSet<String>,
-    doc: Doc,
+    doc: Doc<Unvalidated>,
 }
 
 impl<'a> InterfaceBuilder<'a> {
@@ -172,7 +181,7 @@ impl<'a> InterfaceBuilder<'a> {
         lib: &'a mut LibraryBuilder,
         name: Name,
         interface_type: InterfaceType,
-        doc: Doc,
+        doc: Doc<Unvalidated>,
     ) -> Self {
         Self {
             lib,
@@ -184,7 +193,7 @@ impl<'a> InterfaceBuilder<'a> {
         }
     }
 
-    pub fn begin_callback<T: IntoName, D: Into<Doc>>(
+    pub fn begin_callback<T: IntoName, D: Into<Doc<Unvalidated>>>(
         mut self,
         name: T,
         doc: D,
@@ -235,13 +244,13 @@ impl<'a> InterfaceBuilder<'a> {
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: Name,
-    return_type: Option<CallbackReturnType>,
-    arguments: Vec<Arg<CallbackArgument>>,
-    doc: Doc,
+    return_type: Option<CallbackReturnType<Unvalidated>>,
+    arguments: Vec<Arg<CallbackArgument, Unvalidated>>,
+    doc: Doc<Unvalidated>,
 }
 
 impl<'a> CallbackFunctionBuilder<'a> {
-    pub(crate) fn new(builder: InterfaceBuilder<'a>, name: Name, doc: Doc) -> Self {
+    pub(crate) fn new(builder: InterfaceBuilder<'a>, name: Name, doc: Doc<Unvalidated>) -> Self {
         Self {
             builder,
             name,
@@ -251,7 +260,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
-    pub fn param<S: IntoName, D: Into<DocString>, P: Into<CallbackArgument>>(
+    pub fn param<S: IntoName, D: Into<DocString<Unvalidated>>, P: Into<CallbackArgument>>(
         mut self,
         name: S,
         arg_type: P,
@@ -271,7 +280,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn returns<T: Into<CallbackReturnValue>, D: Into<DocString>>(
+    pub fn returns<T: Into<CallbackReturnValue>, D: Into<DocString<Unvalidated>>>(
         self,
         t: T,
         d: D,
@@ -283,7 +292,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         self.return_type(CallbackReturnType::Void)
     }
 
-    fn return_type(mut self, return_type: CallbackReturnType) -> BindResult<Self> {
+    fn return_type(mut self, return_type: CallbackReturnType<Unvalidated>) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);

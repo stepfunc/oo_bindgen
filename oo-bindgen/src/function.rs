@@ -1,5 +1,5 @@
 use crate::collection::CollectionHandle;
-use crate::doc::{Doc, DocString};
+use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::return_type::ReturnType;
 use crate::structs::{
@@ -81,7 +81,7 @@ impl From<CollectionClassDeclaration> for FunctionReturnValue {
     }
 }
 
-pub type FunctionReturnType = ReturnType<FunctionReturnValue>;
+pub type FunctionReturnType<D> = ReturnType<FunctionReturnValue, D>;
 
 /// Types that can be used as native function arguments
 #[derive(Debug, Clone)]
@@ -189,13 +189,16 @@ impl From<CollectionClassDeclaration> for FunctionArgument {
 
 /// C function
 #[derive(Debug)]
-pub struct Function {
+pub struct Function<T>
+where
+    T: DocReference,
+{
     pub name: Name,
-    pub return_type: FunctionReturnType,
-    pub parameters: Vec<Arg<FunctionArgument>>,
-    pub error_type: Option<ErrorType>,
+    pub return_type: ReturnType<FunctionReturnValue, T>,
+    pub parameters: Vec<Arg<FunctionArgument, T>>,
+    pub error_type: Option<ErrorType<T>>,
     pub settings: Rc<LibrarySettings>,
-    pub doc: Doc,
+    pub doc: Doc<T>,
 }
 
 #[derive(Debug, Clone)]
@@ -203,14 +206,18 @@ pub enum SignatureType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
-    NoErrorWithReturn(FunctionReturnValue, DocString),
+    NoErrorWithReturn(FunctionReturnValue, DocString<Validated>),
     /// function that can fail, but does not return a value
-    ErrorNoReturn(ErrorType),
+    ErrorNoReturn(ErrorType<Validated>),
     /// function that can fail and returns something via an out parameter
-    ErrorWithReturn(ErrorType, FunctionReturnValue, DocString),
+    ErrorWithReturn(
+        ErrorType<Validated>,
+        FunctionReturnValue,
+        DocString<Validated>,
+    ),
 }
 
-impl Function {
+impl Function<Validated> {
     pub fn get_signature_type(&self) -> SignatureType {
         match &self.error_type {
             Some(e) => match &self.return_type {
@@ -227,15 +234,15 @@ impl Function {
     }
 }
 
-pub type FunctionHandle = Handle<Function>;
+pub type FunctionHandle = Handle<Function<Unvalidated>>;
 
 pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
-    return_type: Option<ReturnType<FunctionReturnValue>>,
-    params: Vec<Arg<FunctionArgument>>,
-    doc: Option<Doc>,
-    error_type: Option<ErrorType>,
+    return_type: Option<ReturnType<FunctionReturnValue, Unvalidated>>,
+    params: Vec<Arg<FunctionArgument, Unvalidated>>,
+    doc: Option<Doc<Unvalidated>>,
+    error_type: Option<ErrorType<Unvalidated>>,
 }
 
 impl<'a> FunctionBuilder<'a> {
@@ -250,7 +257,7 @@ impl<'a> FunctionBuilder<'a> {
         }
     }
 
-    pub fn param<T: IntoName, D: Into<DocString>, P: Into<FunctionArgument>>(
+    pub fn param<T: IntoName, D: Into<DocString<Unvalidated>>, P: Into<FunctionArgument>>(
         mut self,
         name: T,
         param_type: P,
@@ -272,7 +279,7 @@ impl<'a> FunctionBuilder<'a> {
         self.return_type(ReturnType::Void)
     }
 
-    pub fn returns<D: Into<DocString>, T: Into<FunctionReturnValue>>(
+    pub fn returns<D: Into<DocString<Unvalidated>>, T: Into<FunctionReturnValue>>(
         self,
         return_type: T,
         doc: D,
@@ -280,7 +287,7 @@ impl<'a> FunctionBuilder<'a> {
         self.return_type(ReturnType::new(return_type, doc))
     }
 
-    fn return_type(mut self, return_type: FunctionReturnType) -> BindResult<Self> {
+    fn return_type(mut self, return_type: FunctionReturnType<Unvalidated>) -> BindResult<Self> {
         match self.return_type {
             None => {
                 self.return_type = Some(return_type);
@@ -292,7 +299,7 @@ impl<'a> FunctionBuilder<'a> {
         }
     }
 
-    pub fn fails_with(mut self, err: ErrorType) -> BindResult<Self> {
+    pub fn fails_with(mut self, err: ErrorType<Unvalidated>) -> BindResult<Self> {
         if let Some(x) = self.error_type {
             return Err(BindingError::ErrorTypeAlreadyDefined {
                 function: self.name,
@@ -304,7 +311,7 @@ impl<'a> FunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
+    pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());

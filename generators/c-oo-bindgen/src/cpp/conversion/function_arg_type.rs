@@ -1,5 +1,6 @@
 use crate::cpp::conversion::{CoreCppType, PassBy, TypeInfo};
 use crate::cpp::formatting::*;
+use oo_bindgen::doc::DocReference;
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::{InterfaceHandle, InterfaceType};
 use oo_bindgen::structs::{
@@ -13,8 +14,9 @@ pub(crate) trait CppFunctionArgType {
     fn get_cpp_function_arg_type(&self) -> String;
 }
 
-impl<T> CppFunctionArgType for Handle<Struct<T>>
+impl<T, D> CppFunctionArgType for Handle<Struct<T, D>>
 where
+    D: DocReference,
     T: StructFieldType + TypeInfo,
 {
     fn get_cpp_function_arg_type(&self) -> String {

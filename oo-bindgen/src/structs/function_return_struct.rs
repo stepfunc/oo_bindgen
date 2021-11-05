@@ -1,3 +1,4 @@
+use crate::doc::Unvalidated;
 use crate::iterator::IteratorHandle;
 use crate::structs::common::*;
 use crate::types::{TypeValidator, ValidatedType};
@@ -24,11 +25,11 @@ impl TypeValidator for FunctionReturnStructField {
     }
 }
 
-pub type FunctionReturnStructHandle = Handle<Struct<FunctionReturnStructField>>;
+pub type FunctionReturnStructHandle = Handle<Struct<FunctionReturnStructField, Unvalidated>>;
 pub type FunctionReturnStructBuilder<'a> = StructFieldBuilder<'a, FunctionReturnStructField>;
 
 impl StructFieldType for FunctionReturnStructField {
-    fn create_struct_type(v: Handle<Struct<Self>>) -> StructType {
+    fn create_struct_type(v: Handle<Struct<Self, Unvalidated>>) -> StructType<Unvalidated> {
         StructType::FunctionReturn(v)
     }
 }

@@ -1,12 +1,12 @@
 use crate::dotnet_type::DotnetType;
 use crate::*;
 use heck::{CamelCase, MixedCase};
-use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::collection::Collection;
 use oo_bindgen::interface::{CallbackFunction, CallbackReturnType};
 
 pub(crate) fn generate_collection_helpers(
     f: &mut dyn Printer,
-    coll: &CollectionHandle,
+    coll: &Handle<Collection<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;
@@ -76,7 +76,7 @@ pub(crate) fn generate_collection_helpers(
 
 pub(crate) fn generate_iterator_helpers(
     f: &mut dyn Printer,
-    iter: &iterator::IteratorHandle,
+    iter: &Handle<iterator::Iterator<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;
@@ -127,7 +127,7 @@ pub(crate) fn generate_iterator_helpers(
 
 pub(crate) fn call_native_function(
     f: &mut dyn Printer,
-    method: &Function,
+    method: &Function<Validated>,
     return_destination: &str,
     first_param_is_self: Option<String>,
     is_constructor: bool,
@@ -227,7 +227,7 @@ pub(crate) fn call_native_function(
 
 pub(crate) fn call_dotnet_function(
     f: &mut dyn Printer,
-    method: &CallbackFunction,
+    method: &CallbackFunction<Validated>,
     return_destination: &str,
 ) -> FormattingResult<()> {
     // Write the type conversions

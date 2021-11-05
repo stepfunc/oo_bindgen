@@ -1,8 +1,8 @@
 use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::CollectionHandle;
+use oo_bindgen::collection::Collection;
+use oo_bindgen::doc::DocReference;
 use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::{InterfaceHandle, InterfaceType};
-use oo_bindgen::iterator::IteratorHandle;
+use oo_bindgen::interface::{Interface, InterfaceType};
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
     StructFieldType, TypedStructDeclaration, UniversalStructField,
@@ -26,7 +26,10 @@ pub(crate) trait TypeInfo {
     }
 }
 
-impl TypeInfo for InterfaceHandle {
+impl<D> TypeInfo for Handle<Interface<D>>
+where
+    D: DocReference,
+{
     fn pass_by(&self) -> PassBy {
         match self.interface_type {
             InterfaceType::Synchronous => PassBy::MutRef,
@@ -55,8 +58,9 @@ impl TypeInfo for BasicType {
     }
 }
 
-impl<T> TypeInfo for Handle<Struct<T>>
+impl<T, D> TypeInfo for Handle<Struct<T, D>>
 where
+    D: DocReference,
     T: StructFieldType + TypeInfo,
 {
     fn pass_by(&self) -> PassBy {
@@ -96,7 +100,10 @@ impl TypeInfo for ClassDeclarationHandle {
     }
 }
 
-impl TypeInfo for IteratorHandle {
+impl<D> TypeInfo for Handle<oo_bindgen::iterator::Iterator<D>>
+where
+    D: DocReference,
+{
     fn pass_by(&self) -> PassBy {
         PassBy::Move
     }
@@ -140,7 +147,10 @@ impl TypeInfo for FunctionArgStructField {
     }
 }
 
-impl TypeInfo for CollectionHandle {
+impl<D> TypeInfo for Handle<Collection<D>>
+where
+    D: DocReference,
+{
     fn pass_by(&self) -> PassBy {
         PassBy::MutRef
     }

@@ -63,6 +63,8 @@ mod type_converter;
 use crate::rust_struct::*;
 use crate::rust_type::*;
 use crate::type_converter::*;
+use oo_bindgen::doc::Validated;
+use oo_bindgen::return_type::ReturnType;
 
 pub struct RustCodegen<'a> {
     library: &'a Library,
@@ -104,7 +106,7 @@ impl<'a> RustCodegen<'a> {
     fn write_struct_definition<T>(
         &self,
         f: &mut dyn Printer,
-        handle: &Handle<Struct<T>>,
+        handle: &Handle<Struct<T, Validated>>,
     ) -> FormattingResult<()>
     where
         T: StructFieldType + RustType,
@@ -285,7 +287,7 @@ impl<'a> RustCodegen<'a> {
     fn write_enum_definition(
         &self,
         f: &mut dyn Printer,
-        handle: &EnumHandle,
+        handle: &Handle<Enum<Validated>>,
     ) -> FormattingResult<()> {
         let enum_name = handle.name.to_camel_case();
         f.writeln("#[repr(C)]")?;
@@ -347,7 +349,7 @@ impl<'a> RustCodegen<'a> {
 
     fn write_function(
         f: &mut dyn Printer,
-        handle: &FunctionHandle,
+        handle: &Handle<Function<Validated>>,
         prefix: &str,
     ) -> FormattingResult<()> {
         f.writeln("#[allow(clippy::missing_safety_doc)]")?;
@@ -366,7 +368,10 @@ impl<'a> RustCodegen<'a> {
                 .join(", "),
         )?;
 
-        fn write_error_return(f: &mut dyn Printer, _error: &ErrorType) -> FormattingResult<()> {
+        fn write_error_return(
+            f: &mut dyn Printer,
+            _error: &ErrorType<Validated>,
+        ) -> FormattingResult<()> {
             f.write(") -> std::os::raw::c_int")
             //f.write(&format!(") -> {}", error.inner.name.to_camel_case()))
         }
@@ -440,7 +445,7 @@ impl<'a> RustCodegen<'a> {
                 }
                 SignatureType::ErrorNoReturn(err) => {
                     blocked(f, |f| {
-                        let converter = TypeConverter::Enum(err.inner.clone());
+                        let converter = TypeConverter::ValidatedEnum(err.inner.clone());
                         f.writeln("Ok(()) =>")?;
                         blocked(f, |f| {
                             converter.convert_to_c(
@@ -455,7 +460,7 @@ impl<'a> RustCodegen<'a> {
                 }
                 SignatureType::ErrorWithReturn(err, result_type, _) => {
                     blocked(f, |f| {
-                        let converter = TypeConverter::Enum(err.inner.clone());
+                        let converter = TypeConverter::ValidatedEnum(err.inner.clone());
                         f.writeln("Ok(x) =>")?;
                         blocked(f, |f| {
                             if let Some(converter) = result_type.conversion() {
@@ -479,7 +484,11 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_interface(&self, f: &mut dyn Printer, handle: &Interface) -> FormattingResult<()> {
+    fn write_interface(
+        &self,
+        f: &mut dyn Printer,
+        handle: &Interface<Validated>,
+    ) -> FormattingResult<()> {
         let interface_name = handle.name.to_camel_case();
         // C structure
         f.writeln("#[repr(C)]")?;
@@ -551,7 +560,7 @@ impl<'a> RustCodegen<'a> {
         })
     }
 
-    fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction>>(
+    fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction<Validated>>>(
         &self,
         f: &mut dyn Printer,
         interface_type: InterfaceType,
@@ -593,7 +602,9 @@ impl<'a> RustCodegen<'a> {
                 )?;
                 f.write(")")?;
 
-                if let CallbackReturnType::Type(return_type, _) = &callback.return_type {
+                if let ReturnType::<CallbackReturnValue, Validated>::Type(return_type, _) =
+                    &callback.return_type
+                {
                     f.write(&format!(" -> Option<{}>", return_type.as_rust_type()))?;
                 }
 
@@ -618,7 +629,9 @@ impl<'a> RustCodegen<'a> {
                         .join(", ");
                     let call = format!("cb({})", params);
 
-                    if let CallbackReturnType::Type(return_type, _) = &callback.return_type {
+                    if let ReturnType::<CallbackReturnValue, Validated>::Type(return_type, _) =
+                        &callback.return_type
+                    {
                         f.writeln(&format!("self.{}.map(|cb| ", callback.name))?;
                         blocked(f, |f| {
                             if let Some(conversion) = return_type.conversion() {

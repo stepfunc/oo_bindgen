@@ -1,7 +1,9 @@
-use oo_bindgen::enum_type::EnumHandle;
+use oo_bindgen::doc::{DocReference, Unvalidated, Validated};
+use oo_bindgen::enum_type::Enum;
 use oo_bindgen::formatting::{FormattingResult, Printer};
 use oo_bindgen::structs::StructDeclarationHandle;
 use oo_bindgen::types::{DurationType, StringType};
+use oo_bindgen::Handle;
 
 trait TypeConversion {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
@@ -13,7 +15,8 @@ trait TypeConversion {
 
 pub(crate) enum TypeConverter {
     String(StringType),
-    Enum(EnumHandle),
+    ValidatedEnum(Handle<Enum<Validated>>),
+    UnvalidatedEnum(Handle<Enum<Unvalidated>>),
     Struct(StructDeclarationHandle),
     Duration(DurationType),
 }
@@ -27,7 +30,8 @@ impl TypeConverter {
     ) -> FormattingResult<()> {
         match self {
             TypeConverter::String(x) => x.convert_to_c(f, from, to),
-            TypeConverter::Enum(x) => x.convert_to_c(f, from, to),
+            TypeConverter::ValidatedEnum(x) => x.convert_to_c(f, from, to),
+            TypeConverter::UnvalidatedEnum(x) => x.convert_to_c(f, from, to),
             TypeConverter::Struct(x) => x.convert_to_c(f, from, to),
             TypeConverter::Duration(x) => x.convert_to_c(f, from, to),
         }
@@ -41,7 +45,8 @@ impl TypeConverter {
     ) -> FormattingResult<()> {
         match self {
             TypeConverter::String(x) => x.convert_from_c(f, from, to),
-            TypeConverter::Enum(x) => x.convert_from_c(f, from, to),
+            TypeConverter::ValidatedEnum(x) => x.convert_from_c(f, from, to),
+            TypeConverter::UnvalidatedEnum(x) => x.convert_from_c(f, from, to),
             TypeConverter::Struct(x) => x.convert_from_c(f, from, to),
             TypeConverter::Duration(x) => x.convert_from_c(f, from, to),
         }
@@ -50,7 +55,8 @@ impl TypeConverter {
     pub(crate) fn is_unsafe(&self) -> bool {
         match self {
             TypeConverter::String(x) => x.is_unsafe(),
-            TypeConverter::Enum(x) => x.is_unsafe(),
+            TypeConverter::ValidatedEnum(x) => x.is_unsafe(),
+            TypeConverter::UnvalidatedEnum(x) => x.is_unsafe(),
             TypeConverter::Struct(x) => x.is_unsafe(),
             TypeConverter::Duration(x) => x.is_unsafe(),
         }
@@ -71,7 +77,10 @@ impl TypeConversion for StringType {
     }
 }
 
-impl TypeConversion for EnumHandle {
+impl<D> TypeConversion for Handle<Enum<D>>
+where
+    D: DocReference,
+{
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}{}.into()", to, from))
     }

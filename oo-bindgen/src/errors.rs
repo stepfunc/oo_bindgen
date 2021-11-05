@@ -70,7 +70,6 @@ pub enum BindingError {
         symbol_name: String,
         ref_name: String,
     },
-
     // function errors
     #[error("Function '{}' is not part of this library", handle.name)]
     FunctionNotPartOfThisLib { handle: FunctionHandle },

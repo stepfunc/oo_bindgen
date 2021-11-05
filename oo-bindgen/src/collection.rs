@@ -1,25 +1,32 @@
+use crate::doc::{DocReference, Unvalidated};
 use crate::name::Name;
 use crate::*;
 
 #[derive(Debug)]
-pub struct Collection {
+pub struct Collection<D>
+where
+    D: DocReference,
+{
     pub collection_class: ClassDeclarationHandle,
     pub item_type: FunctionArgument,
-    pub create_func: FunctionHandle,
-    pub delete_func: FunctionHandle,
-    pub add_func: FunctionHandle,
+    pub create_func: Handle<Function<D>>,
+    pub delete_func: Handle<Function<D>>,
+    pub add_func: Handle<Function<D>>,
     pub has_reserve: bool,
 }
 
-impl Collection {
+impl<D> Collection<D>
+where
+    D: DocReference,
+{
     pub(crate) fn new(
         collection_class: ClassDeclarationHandle,
         item_type: FunctionArgument,
-        create_func: FunctionHandle,
-        delete_func: FunctionHandle,
-        add_func: FunctionHandle,
+        create_func: Handle<Function<D>>,
+        delete_func: Handle<Function<D>>,
+        add_func: Handle<Function<D>>,
         has_reserve: bool,
-    ) -> Collection {
+    ) -> Collection<D> {
         Collection {
             collection_class,
             item_type,
@@ -35,4 +42,4 @@ impl Collection {
     }
 }
 
-pub type CollectionHandle = Handle<Collection>;
+pub type CollectionHandle = Handle<Collection<Unvalidated>>;

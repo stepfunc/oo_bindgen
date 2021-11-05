@@ -1,3 +1,4 @@
+use crate::doc::{DocReference, Unvalidated};
 use crate::name::Name;
 use crate::structs::{
     FunctionReturnStructField, FunctionReturnStructHandle, StructDeclarationHandle,
@@ -50,12 +51,15 @@ impl IteratorItemType {
 }
 
 #[derive(Debug)]
-pub struct Iterator {
+pub struct Iterator<D>
+where
+    D: DocReference,
+{
     /// underlying Rust iterator may have an associated lifetime annotation
     pub has_lifetime_annotation: bool,
     /// function used to retrieve the next value
     /// it takes the `iter_class` and returns a pointer to the `iter_type`
-    pub next_function: FunctionHandle,
+    pub next_function: Handle<Function<D>>,
     /// opaque c struct type for the iterator
     pub iter_class: ClassDeclarationHandle,
     /// type of the value returned as a possibly null pointer
@@ -64,14 +68,17 @@ pub struct Iterator {
     pub settings: Rc<LibrarySettings>,
 }
 
-impl Iterator {
+impl<D> Iterator<D>
+where
+    D: DocReference,
+{
     pub(crate) fn new(
         has_lifetime_annotation: bool,
         iter_class: ClassDeclarationHandle,
-        next_function: FunctionHandle,
+        next_function: Handle<Function<D>>,
         item_type: IteratorItemType,
         settings: Rc<LibrarySettings>,
-    ) -> Iterator {
+    ) -> Iterator<D> {
         Iterator {
             has_lifetime_annotation,
             next_function,
@@ -86,4 +93,4 @@ impl Iterator {
     }
 }
 
-pub type IteratorHandle = Handle<Iterator>;
+pub type IteratorHandle = Handle<Iterator<Unvalidated>>;

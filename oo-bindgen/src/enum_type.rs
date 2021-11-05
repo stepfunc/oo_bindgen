@@ -1,27 +1,36 @@
 use std::collections::HashSet;
 
-use crate::doc::Doc;
+use crate::doc::{Doc, DocReference, Unvalidated};
 use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct EnumVariant {
+pub struct EnumVariant<T>
+where
+    T: DocReference,
+{
     pub name: Name,
     pub value: i32,
-    pub doc: Doc,
+    pub doc: Doc<T>,
 }
 
 #[derive(Debug)]
-pub struct Enum {
+pub struct Enum<T>
+where
+    T: DocReference,
+{
     pub name: Name,
     pub settings: Rc<LibrarySettings>,
-    pub variants: Vec<EnumVariant>,
-    pub doc: Doc,
+    pub variants: Vec<EnumVariant<T>>,
+    pub doc: Doc<T>,
 }
 
-impl Enum {
-    pub fn find_variant_by_name<T: AsRef<str>>(&self, variant_name: T) -> Option<&EnumVariant> {
+impl<T> Enum<T>
+where
+    T: DocReference,
+{
+    pub fn find_variant_by_name<S: AsRef<str>>(&self, variant_name: S) -> Option<&EnumVariant<T>> {
         self.variants
             .iter()
             .find(|variant| variant.name.as_ref() == variant_name.as_ref())
@@ -38,21 +47,21 @@ impl Enum {
         }
     }
 
-    pub fn find_variant_by_value(&self, value: i32) -> Option<&EnumVariant> {
+    pub fn find_variant_by_value(&self, value: i32) -> Option<&EnumVariant<T>> {
         self.variants.iter().find(|variant| variant.value == value)
     }
 }
 
-pub type EnumHandle = Handle<Enum>;
+pub type EnumHandle = Handle<Enum<Unvalidated>>;
 
 pub struct EnumBuilder<'a> {
     pub(crate) lib: &'a mut LibraryBuilder,
     name: Name,
-    variants: Vec<EnumVariant>,
+    variants: Vec<EnumVariant<Unvalidated>>,
     variant_names: HashSet<String>,
     variant_values: HashSet<i32>,
     next_value: i32,
-    doc: Option<Doc>,
+    doc: Option<Doc<Unvalidated>>,
 }
 
 impl<'a> EnumBuilder<'a> {
@@ -68,7 +77,7 @@ impl<'a> EnumBuilder<'a> {
         }
     }
 
-    pub fn variant<T: IntoName, D: Into<Doc>>(
+    pub fn variant<T: IntoName, D: Into<Doc<Unvalidated>>>(
         mut self,
         name: T,
         value: i32,
@@ -98,12 +107,12 @@ impl<'a> EnumBuilder<'a> {
         }
     }
 
-    pub fn push<T: IntoName, D: Into<Doc>>(self, name: T, doc: D) -> BindResult<Self> {
+    pub fn push<T: IntoName, D: Into<Doc<Unvalidated>>>(self, name: T, doc: D) -> BindResult<Self> {
         let value = self.next_value;
         self.variant(name.into_name()?, value, doc)
     }
 
-    pub fn doc<D: Into<Doc>>(mut self, doc: D) -> BindResult<Self> {
+    pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
         match self.doc {
             None => {
                 self.doc = Some(doc.into());

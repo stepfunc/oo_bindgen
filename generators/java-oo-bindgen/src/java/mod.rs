@@ -311,9 +311,12 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         f.newline()?;
 
         // Write each native functions
+
+        // TODO - introduce a filter here by a type
         for handle in lib.functions() {
+            /*
             if let Some(first_param) = handle.parameters.first() {
-                /* todo
+
                 if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
                     // We don't want to generate the `next` methods of iterators
                     if let Some(it) = lib.find_iterator(&class_handle.name) {
@@ -328,19 +331,18 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                         }
                     }
                 }
-                 */
             }
             if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
                 &handle.return_type
             {
-                /* todo
+
                 // We don't want to generate the `create` method of collections
                 if lib.find_collection(&class_handle.name).is_some() {
                     continue;
                 }
 
-                 */
             }
+             */
 
             f.writeln(&format!(
                 "static native {} {}(",

@@ -150,8 +150,6 @@ pub(crate) fn generate_interfaces_cache(
                     &format!("interface_{}", interface_name.to_snake_case()),
                     &cb.name.to_snake_case(),
                     &lib_path,
-                    &config.ffi_name,
-                    &lib.settings.c_ffi_prefix,
                     CTX_VARIABLE_NAME,
                     &cb.arguments,
                     &cb.return_type,
@@ -159,9 +157,7 @@ pub(crate) fn generate_interfaces_cache(
 
                 // Convert return value
                 if let CallbackReturnType::Type(return_type, _) = &cb.return_type {
-                    if let Some(conversion) =
-                        return_type.conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                    {
+                    if let Some(conversion) = return_type.conversion() {
                         conversion.convert_to_rust(
                             f,
                             &format!("_result.{}", return_type.convert_jvalue()),
@@ -231,14 +227,11 @@ fn write_interface_init(
     })
 }
 
-#[allow(clippy::too_many_arguments)]
 fn call_java_callback(
     f: &mut dyn Printer,
     interface_name: &str,
     callback_name: &str,
     lib_path: &str,
-    ffi_name: &str,
-    prefix: &str,
     arg_name: &str,
     args: &[Arg<CallbackArgument, Validated>],
     return_type: &CallbackReturnType<Validated>,
@@ -260,7 +253,7 @@ fn call_java_callback(
 
     // Perform the conversion of the parameters
     for param in args {
-        if let Some(conversion) = param.arg_type.conversion(ffi_name, prefix) {
+        if let Some(conversion) = param.arg_type.conversion() {
             conversion.convert_from_rust(
                 f,
                 &param.name,

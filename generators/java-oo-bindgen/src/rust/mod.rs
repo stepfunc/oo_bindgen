@@ -188,10 +188,12 @@ fn generate_functions(
     lib: &Library,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
+    // TODO - filter here based on a function type
     for handle in lib.functions() {
+        /*
         if let Some(first_param) = handle.parameters.first() {
             if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
-                /* todo - we can filter these in a different way b/c we now tag these special functions at the location they are generated
+
                 // We don't want to generate the `next` methods of iterators
                 if let Some(it) = lib.find_iterator(&class_handle.name) {
                     if &it.next_function == handle {
@@ -204,7 +206,6 @@ fn generate_functions(
                         continue;
                     }
                 }
-                 */
             }
         }
 
@@ -212,12 +213,11 @@ fn generate_functions(
             &handle.return_type
         {
             // We don't want to generate the `create` method of collections
-            /* todo we can filter this in a different way now
             if lib.find_collection(&class_handle.name).is_some() {
                 continue;
             }
-             */
         }
+        */
 
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.settings.name, handle.name.replace("_", "_1")))?;
@@ -277,10 +277,7 @@ fn generate_functions(
 
             // Perform the conversion of the parameters
             for param in &handle.parameters {
-                if let Some(conversion) = param
-                    .arg_type
-                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                {
+                if let Some(conversion) = param.arg_type.conversion() {
                     conversion.convert_to_rust(
                         f,
                         &param.name,
@@ -340,9 +337,7 @@ fn generate_functions(
             match handle.get_signature_type() {
                 SignatureType::NoErrorNoReturn => (),
                 SignatureType::NoErrorWithReturn(return_type, _) => {
-                    if let Some(conversion) =
-                        return_type.conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                    {
+                    if let Some(conversion) = return_type.conversion() {
                         conversion.convert_from_rust(f, "_result", "let _result = ")?;
                         f.write(";")?;
                     }
@@ -366,9 +361,7 @@ fn generate_functions(
                     f.writeln("let _result = if _result == 0")?;
                     blocked(f, |f| {
                         f.writeln("let _result = unsafe { _out.assume_init() };")?;
-                        if let Some(conversion) =
-                            return_type.conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                        {
+                        if let Some(conversion) = return_type.conversion() {
                             conversion.convert_from_rust(f, "_result", "")?;
                         }
                         Ok(())
@@ -395,10 +388,7 @@ fn generate_functions(
 
             // Conversion cleanup
             for param in &handle.parameters {
-                if let Some(conversion) = param
-                    .arg_type
-                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                {
+                if let Some(conversion) = param.arg_type.conversion() {
                     conversion.convert_to_rust_cleanup(f, &param.name.to_snake_case())?;
                 }
 

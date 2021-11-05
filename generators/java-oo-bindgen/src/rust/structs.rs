@@ -129,10 +129,7 @@ where
             f.writeln(&ffi_struct_name)?;
             blocked(f, |f| {
                 for field in structure.fields() {
-                    if let Some(conversion) = field
-                        .field_type
-                        .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                    {
+                    if let Some(conversion) = field.field_type.conversion() {
                         conversion.convert_to_rust(
                             f,
                             &field.name.to_snake_case(),
@@ -155,10 +152,7 @@ where
         f.writeln(&format!("pub(crate) fn struct_to_rust_cleanup(&self, _cache: &super::JCache, _env: &jni::JNIEnv, _value: &{})", ffi_struct_name))?;
         blocked(f, |f| {
             for field in structure.fields() {
-                if let Some(conversion) = field
-                    .field_type
-                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                {
+                if let Some(conversion) = field.field_type.conversion() {
                     conversion.convert_to_rust_cleanup(
                         f,
                         &format!("_value.{}", field.name.to_snake_case()),
@@ -175,10 +169,7 @@ where
         blocked(f, |f| {
             f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
             for field in structure.fields() {
-                if let Some(conversion) = field
-                    .field_type
-                    .conversion(&config.ffi_name, &lib.settings.c_ffi_prefix)
-                {
+                if let Some(conversion) = field.field_type.conversion() {
                     conversion.convert_from_rust(
                         f,
                         &format!("value.{}", field.name.to_snake_case()),

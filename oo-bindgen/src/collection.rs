@@ -43,15 +43,18 @@ where
 }
 
 impl Collection<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Collection<Validated>> {
-        Ok(Collection {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Handle<Collection<Validated>>> {
+        Ok(Handle::new(Collection {
             collection_class: self.collection_class.clone(),
             item_type: self.item_type.clone(),
-            create_func: Handle::new(self.create_func.validate(lib)?),
-            delete_func: Handle::new(self.delete_func.validate(lib)?),
-            add_func: Handle::new(self.add_func.validate(lib)?),
+            create_func: self.create_func.validate(lib)?,
+            delete_func: self.delete_func.validate(lib)?,
+            add_func: self.add_func.validate(lib)?,
             has_reserve: self.has_reserve,
-        })
+        }))
     }
 }
 

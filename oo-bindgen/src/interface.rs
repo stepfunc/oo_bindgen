@@ -168,17 +168,20 @@ where
 }
 
 impl Interface<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Interface<Validated>> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Handle<Interface<Validated>>> {
         let callbacks: BindResult<Vec<CallbackFunction<Validated>>> =
             self.callbacks.iter().map(|x| x.validate(lib)).collect();
 
-        Ok(Interface {
+        Ok(Handle::new(Interface {
             name: self.name.clone(),
             interface_type: self.interface_type,
             callbacks: callbacks?,
             doc: self.doc.validate(&self.name, lib)?,
             settings: self.settings.clone(),
-        })
+        }))
     }
 }
 

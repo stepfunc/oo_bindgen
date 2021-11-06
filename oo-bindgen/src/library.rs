@@ -676,36 +676,34 @@ impl LibraryBuilder {
         statement: &Statement<Unvalidated>,
     ) -> BindResult<Statement<Validated>> {
         match statement {
-            Statement::Constants(x) => {
-                Ok(Statement::Constants(Handle::new(x.validate(&self.fields)?)))
-            }
+            Statement::Constants(x) => Ok(Statement::Constants(x.validate(&self.fields)?)),
             Statement::StructDeclaration(x) => Ok(Statement::StructDeclaration(x.clone())),
             Statement::StructDefinition(x) => {
                 Ok(Statement::StructDefinition(x.validate(&self.fields)?))
             }
-            Statement::EnumDefinition(x) => Ok(Statement::EnumDefinition(Handle::new(
-                x.validate(&self.fields)?,
-            ))),
+            Statement::EnumDefinition(x) => {
+                Ok(Statement::EnumDefinition(x.validate(&self.fields)?))
+            }
             Statement::ErrorType(x) => Ok(Statement::ErrorType(x.validate(&self.fields)?)),
             Statement::ClassDeclaration(x) => Ok(Statement::ClassDeclaration(x.clone())),
-            Statement::ClassDefinition(x) => Ok(Statement::ClassDefinition(Handle::new(
-                x.validate(&self.fields)?,
-            ))),
-            Statement::StaticClassDefinition(x) => Ok(Statement::StaticClassDefinition(
-                Handle::new(x.validate(&self.fields)?),
-            )),
-            Statement::InterfaceDefinition(x) => Ok(Statement::InterfaceDefinition(Handle::new(
-                x.validate(&self.fields)?,
-            ))),
-            Statement::IteratorDeclaration(x) => Ok(Statement::IteratorDeclaration(Handle::new(
-                x.validate(&self.fields)?,
-            ))),
-            Statement::CollectionDeclaration(x) => Ok(Statement::CollectionDeclaration(
-                Handle::new(x.validate(&self.fields)?),
-            )),
-            Statement::FunctionDefinition(x) => Ok(Statement::FunctionDefinition(Handle::new(
-                x.validate(&self.fields)?,
-            ))),
+            Statement::ClassDefinition(x) => {
+                Ok(Statement::ClassDefinition(x.validate(&self.fields)?))
+            }
+            Statement::StaticClassDefinition(x) => {
+                Ok(Statement::StaticClassDefinition(x.validate(&self.fields)?))
+            }
+            Statement::InterfaceDefinition(x) => {
+                Ok(Statement::InterfaceDefinition(x.validate(&self.fields)?))
+            }
+            Statement::IteratorDeclaration(x) => {
+                Ok(Statement::IteratorDeclaration(x.validate(&self.fields)?))
+            }
+            Statement::CollectionDeclaration(x) => {
+                Ok(Statement::CollectionDeclaration(x.validate(&self.fields)?))
+            }
+            Statement::FunctionDefinition(x) => {
+                Ok(Statement::FunctionDefinition(x.validate(&self.fields)?))
+            }
         }
     }
 

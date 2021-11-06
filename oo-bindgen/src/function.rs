@@ -202,7 +202,10 @@ where
 }
 
 impl Function<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Function<Validated>> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Handle<Function<Validated>>> {
         let parameters: BindResult<Vec<Arg<FunctionArgument, Validated>>> =
             self.parameters.iter().map(|x| x.validate(lib)).collect();
         let error_type = match &self.error_type {
@@ -210,14 +213,14 @@ impl Function<Unvalidated> {
             None => None,
         };
 
-        Ok(Function {
+        Ok(Handle::new(Function {
             name: self.name.clone(),
             return_type: self.return_type.validate(&self.name, lib)?,
             parameters: parameters?,
             error_type,
             settings: self.settings.clone(),
             doc: self.doc.validate(&self.name, lib)?,
-        })
+        }))
     }
 }
 

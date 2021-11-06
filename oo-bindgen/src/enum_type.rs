@@ -37,16 +37,16 @@ where
 }
 
 impl Enum<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Enum<Validated>> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Handle<Enum<Validated>>> {
         let variants: BindResult<Vec<EnumVariant<Validated>>> =
             self.variants.iter().map(|x| x.validate(lib)).collect();
 
-        Ok(Enum {
+        Ok(Handle::new(Enum {
             name: self.name.clone(),
             settings: self.settings.clone(),
             variants: variants?,
             doc: self.doc.validate(&self.name, lib)?,
-        })
+        }))
     }
 }
 

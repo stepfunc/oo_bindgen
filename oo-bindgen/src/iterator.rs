@@ -69,14 +69,17 @@ where
 }
 
 impl Iterator<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Iterator<Validated>> {
-        Ok(Iterator {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Handle<Iterator<Validated>>> {
+        Ok(Handle::new(Iterator {
             has_lifetime_annotation: self.has_lifetime_annotation,
-            next_function: Handle::new(self.next_function.validate(lib)?),
+            next_function: self.next_function.validate(lib)?,
             iter_class: self.iter_class.clone(),
             item_type: self.item_type.clone(),
             settings: self.settings.clone(),
-        })
+        }))
     }
 }
 

@@ -52,15 +52,18 @@ where
 }
 
 impl ConstantSet<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<ConstantSet<Validated>> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Handle<ConstantSet<Validated>>> {
         let values: BindResult<Vec<Constant<Validated>>> =
             self.values.iter().map(|x| x.validate(lib)).collect();
 
-        Ok(ConstantSet {
+        Ok(Handle::new(ConstantSet {
             name: self.name.clone(),
             values: values?,
             doc: self.doc.validate(&self.name, lib)?,
-        })
+        }))
     }
 }
 

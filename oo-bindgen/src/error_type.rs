@@ -27,7 +27,7 @@ impl ErrorType<Unvalidated> {
         Ok(ErrorType {
             exception_name: self.exception_name.clone(),
             exception_type: self.exception_type,
-            inner: Handle::new(self.inner.validate(lib)?),
+            inner: self.inner.validate(lib)?,
         })
     }
 }

@@ -194,25 +194,27 @@ where
     pub fn declaration(&self) -> ClassDeclarationHandle {
         self.declaration.clone()
     }
+}
 
-    pub fn find_method<S: AsRef<str>>(&self, method_name: S) -> Option<&Handle<Function<T>>> {
+impl Class<Unvalidated> {
+    pub(crate) fn find_method<S: AsRef<str>>(&self, method_name: S) -> Option<(Name, FunctionHandle)> {
         let method_name = method_name.as_ref();
 
         for method in &self.methods {
             if method.name.as_ref() == method_name {
-                return Some(&method.native_function);
+                return Some((method.name.clone(), method.native_function.clone()));
             }
         }
 
         for method in &self.static_methods {
             if method.name.as_ref() == method_name {
-                return Some(&method.native_function);
+                return Some((method.name.clone(), method.native_function.clone()));
             }
         }
 
         for method in &self.async_methods {
             if method.name.as_ref() == method_name {
-                return Some(&method.native_function);
+                return Some((method.name.clone(), method.native_function.clone()));
             }
         }
 

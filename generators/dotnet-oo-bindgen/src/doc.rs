@@ -55,10 +55,10 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
         Validated::Class(class) => {
             f.write(&format!("<see cref=\"{}\" />", class.name.to_camel_case()))?;
         }
-        Validated::ClassMethod(class, method) => f.write(&format!(
+        Validated::ClassMethod(class, method_name, _) => f.write(&format!(
             "<see cref=\"{}.{}\" />",
             class.name().to_camel_case(),
-            method.name.to_camel_case()
+            method_name.to_camel_case()
         ))?,
         Validated::ClassConstructor(class, constructor) => {
             let params = constructor

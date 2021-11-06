@@ -59,10 +59,10 @@ fn reference_print(
         Validated::Class(class) => {
             f.write(&format!("@ref {}", class.to_c_type()))?;
         }
-        Validated::ClassMethod(_, method_name) => {
+        Validated::ClassMethod(_, method_name, _) => {
             f.write(&format!(
                 "@ref {}_{}",
-                lib.settings.c_ffi_prefix, method_name.name
+                lib.settings.c_ffi_prefix, method_name
             ))?;
         }
         Validated::ClassConstructor(_, constructor) => {

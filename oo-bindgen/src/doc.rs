@@ -367,8 +367,8 @@ impl Unvalidated {
                             method_name.to_string()
                         ),
                     }),
-                    Some((class, method)) => {
-                        Ok(Validated::ClassMethod(class.clone(), method.clone()))
+                    Some((class, (name, function))) => {
+                        Ok(Validated::ClassMethod(class.clone(), name, function))
                     }
                 }
             }
@@ -396,7 +396,7 @@ impl Unvalidated {
                         ref_name: format!("{}.[destructor]", class_name.to_string(),),
                     }),
                     Some((class, destructor)) => {
-                        Ok(Validated::ClassConstructor(class.clone(), destructor))
+                        Ok(Validated::ClassDestructor(class.clone(), destructor))
                     }
                 }
             }
@@ -472,7 +472,7 @@ pub enum Validated {
     /// Reference a class
     Class(ClassDeclarationHandle),
     /// Reference a class method
-    ClassMethod(ClassHandle, FunctionHandle),
+    ClassMethod(ClassHandle, Name, FunctionHandle),
     /// Reference to the class constructor
     ClassConstructor(ClassHandle, FunctionHandle),
     /// Reference to the class destructor

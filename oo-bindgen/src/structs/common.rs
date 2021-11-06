@@ -341,7 +341,10 @@ impl<F> Struct<F, Unvalidated>
 where
     F: StructFieldType,
 {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Struct<F, Validated>> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<Handle<Struct<F, Validated>>> {
         let fields: BindResult<Vec<StructField<F, Validated>>> =
             self.fields.iter().map(|x| x.validate(lib)).collect();
         let constructors: BindResult<Vec<Constructor<Validated>>> =
@@ -351,13 +354,13 @@ where
             .map(|x| Handle::new(x.clone()))
             .collect();
 
-        Ok(Struct {
+        Ok(Handle::new(Struct {
             visibility: self.visibility,
             declaration: self.declaration.clone(),
             fields: fields?,
             constructors,
             doc: self.doc.validate(self.name(), lib)?,
-        })
+        }))
     }
 }
 

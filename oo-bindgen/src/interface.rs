@@ -134,11 +134,15 @@ impl CallbackFunction<Unvalidated> {
         let arguments: BindResult<Vec<Arg<CallbackArgument, Validated>>> =
             self.arguments.iter().map(|x| x.validate(lib)).collect();
 
+        let argument_names: Vec<Name> = self.arguments.iter().map(|x| x.name.clone()).collect();
+
         Ok(CallbackFunction {
             name: self.name.clone(),
             return_type: self.return_type.validate(&self.name, lib)?,
             arguments: arguments?,
-            doc: self.doc.validate(&self.name, lib)?,
+            doc: self
+                .doc
+                .validate_with_args(&self.name, lib, Some(&argument_names))?,
         })
     }
 }

@@ -213,13 +213,17 @@ impl Function<Unvalidated> {
             None => None,
         };
 
+        let arguments: Vec<Name> = self.parameters.iter().map(|x| x.name.clone()).collect();
+
         Ok(Handle::new(Function {
             name: self.name.clone(),
             return_type: self.return_type.validate(&self.name, lib)?,
             parameters: parameters?,
             error_type,
             settings: self.settings.clone(),
-            doc: self.doc.validate(&self.name, lib)?,
+            doc: self
+                .doc
+                .validate_with_args(&self.name, lib, Some(&arguments))?,
         }))
     }
 }

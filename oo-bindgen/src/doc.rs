@@ -98,13 +98,22 @@ impl Doc<Unvalidated> {
         symbol_name: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<Doc<Validated>> {
+        self.validate_with_args(symbol_name, lib, None)
+    }
+
+    pub(crate) fn validate_with_args(
+        &self,
+        symbol_name: &Name,
+        lib: &UnvalidatedFields,
+        args: Option<&[Name]>,
+    ) -> BindResult<Doc<Validated>> {
         let details: BindResult<Vec<DocParagraph<Validated>>> = self
             .details
             .iter()
-            .map(|x| x.validate(symbol_name, lib))
+            .map(|x| x.validate_with_args(symbol_name, lib, args))
             .collect();
         Ok(Doc {
-            brief: self.brief.validate(symbol_name, lib)?,
+            brief: self.brief.validate_with_args(symbol_name, lib, args)?,
             details: details?,
         })
     }
@@ -136,14 +145,19 @@ where
 }
 
 impl DocParagraph<Unvalidated> {
-    pub(crate) fn validate(
+    fn validate_with_args(
         &self,
         symbol_name: &Name,
         lib: &UnvalidatedFields,
+        args: Option<&[Name]>,
     ) -> BindResult<DocParagraph<Validated>> {
         Ok(match self {
-            DocParagraph::Details(x) => DocParagraph::Details(x.validate(symbol_name, lib)?),
-            DocParagraph::Warning(x) => DocParagraph::Warning(x.validate(symbol_name, lib)?),
+            DocParagraph::Details(x) => {
+                DocParagraph::Details(x.validate_with_args(symbol_name, lib, args)?)
+            }
+            DocParagraph::Warning(x) => {
+                DocParagraph::Warning(x.validate_with_args(symbol_name, lib, args)?)
+            }
         })
     }
 }
@@ -162,10 +176,19 @@ impl DocString<Unvalidated> {
         symbol_name: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<DocString<Validated>> {
+        self.validate_with_args(symbol_name, lib, None)
+    }
+
+    pub(crate) fn validate_with_args(
+        &self,
+        symbol_name: &Name,
+        lib: &UnvalidatedFields,
+        args: Option<&[Name]>,
+    ) -> BindResult<DocString<Validated>> {
         let elements: BindResult<Vec<DocStringElement<Validated>>> = self
             .elements
             .iter()
-            .map(|x| x.validate(symbol_name, lib))
+            .map(|x| x.validate(symbol_name, lib, args))
             .collect();
         Ok(DocString {
             elements: elements?,
@@ -247,13 +270,14 @@ impl DocStringElement<Unvalidated> {
         &self,
         symbol_name: &Name,
         lib: &UnvalidatedFields,
+        args: Option<&[Name]>,
     ) -> BindResult<DocStringElement<Validated>> {
         Ok(match self {
             DocStringElement::Text(x) => DocStringElement::Text(x.clone()),
             DocStringElement::Null => DocStringElement::Null,
             DocStringElement::Iterator => DocStringElement::Iterator,
             DocStringElement::Reference(x) => {
-                DocStringElement::Reference(x.validate(symbol_name, lib)?)
+                DocStringElement::Reference(x.validate(symbol_name, lib, args)?)
             }
         })
     }
@@ -300,19 +324,27 @@ impl Unvalidated {
         &self,
         symbol_name: &Name,
         lib: &UnvalidatedFields,
+        args: Option<&[Name]>,
     ) -> BindResult<Validated> {
         match self {
             Self::Param(name) => {
-                /*
-                match params.find(|p| p.as_ref() == name) {
-                    Some(name) => Ok(Validated::Param(name.clone())),
+                let args = match args {
+                    Some(args) => args,
+                    None => {
+                        return Err(BindingError::DocInvalidArgumentContext {
+                            symbol_name: symbol_name.to_string(),
+                            ref_name: name.to_string(),
+                        })
+                    }
+                };
+
+                match args.iter().find(|arg| arg.as_ref() == name) {
+                    Some(arg) => Ok(Validated::Param(arg.clone())),
                     None => Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: name.to_string(),
                     }),
                 }
-                 */
-                Ok(Validated::Param(name.clone()))
             }
             Self::Class(name) => match lib.find_class_declaration(name) {
                 None => Err(BindingError::DocInvalidReference {
@@ -435,7 +467,7 @@ impl Unvalidated {
 #[derive(Debug, Clone)]
 pub enum Validated {
     /// Reference to a parameter
-    Param(String),
+    Param(Name),
     /// Reference a class
     Class(ClassDeclarationHandle),
     /// Reference a class method

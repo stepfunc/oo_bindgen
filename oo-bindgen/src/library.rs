@@ -287,16 +287,10 @@ where
 impl StructType<Unvalidated> {
     pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<StructType<Validated>> {
         match self {
-            StructType::FunctionArg(x) => {
-                Ok(StructType::FunctionArg(Handle::new(x.validate(lib)?)))
-            }
-            StructType::FunctionReturn(x) => {
-                Ok(StructType::FunctionReturn(Handle::new(x.validate(lib)?)))
-            }
-            StructType::CallbackArg(x) => {
-                Ok(StructType::CallbackArg(Handle::new(x.validate(lib)?)))
-            }
-            StructType::Universal(x) => Ok(StructType::Universal(Handle::new(x.validate(lib)?))),
+            StructType::FunctionArg(x) => Ok(StructType::FunctionArg(x.validate(lib)?)),
+            StructType::FunctionReturn(x) => Ok(StructType::FunctionReturn(x.validate(lib)?)),
+            StructType::CallbackArg(x) => Ok(StructType::CallbackArg(x.validate(lib)?)),
+            StructType::Universal(x) => Ok(StructType::Universal(x.validate(lib)?)),
         }
     }
 }

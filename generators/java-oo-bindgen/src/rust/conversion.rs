@@ -1587,7 +1587,7 @@ impl UnsignedConverter {
     const U8: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("ubyte"));
     const U16: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("ushort"));
     const U32: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("uinteger"));
-    const U64: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("uinteger"));
+    const U64: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("ulong"));
 }
 
 impl TypeConverterTrait for UnsignedConverter {

@@ -49,7 +49,7 @@ pub(crate) fn docstring_print(
 
 fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
-        Validated::Param(param_name) => {
+        Validated::Argument(param_name) => {
             f.write(&format!("<c>{}</c>", param_name.to_mixed_case()))?
         }
         Validated::Class(class) => {

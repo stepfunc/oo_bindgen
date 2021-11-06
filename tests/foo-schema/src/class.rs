@@ -25,7 +25,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_function("testclass_destroy")?
         .param("testclass", testclass.clone(), "Class handle")?
         .returns_nothing()?
-        .doc("Destroy a test class")?
+        .doc("Destroy a test class using the parameter {param:testclass}")?
         .build()?;
 
     let testclass_get_value_func = lib

@@ -53,7 +53,9 @@ fn reference_print(
     lib: &Library,
 ) -> FormattingResult<()> {
     match reference {
-        Validated::Param(param_name) => f.write(&format!("@p {}", param_name.to_snake_case()))?,
+        Validated::Argument(param_name) => {
+            f.write(&format!("@p {}", param_name.to_snake_case()))?
+        }
         Validated::Class(class) => {
             f.write(&format!("@ref {}", class.to_c_type()))?;
         }

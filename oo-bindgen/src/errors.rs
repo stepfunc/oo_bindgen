@@ -62,7 +62,7 @@ pub enum BindingError {
     #[error("Documentation of '{}' was not defined", symbol_name)]
     DocNotDefined { symbol_name: Name },
     #[error(
-        "Documentation of '{}' cannot contain an argument reference ('{}')",
+        "Documentation of '{}' contains an argument reference to '{}' which is not valid in this context",
         symbol_name,
         ref_name
     )]

@@ -5,7 +5,10 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare interface
     let interface = lib
         .define_asynchronous_interface("callback_interface", "Test interface")?
-        .begin_callback("on_value", "On value callback")?
+        .begin_callback(
+            "on_value",
+            "On value callback which takes parameter {param:value}",
+        )?
         .param("value", BasicType::U32, "Value")?
         .returns(BasicType::U32, "Some value")?
         .end_callback()?

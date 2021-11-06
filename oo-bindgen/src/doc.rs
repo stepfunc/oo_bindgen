@@ -285,8 +285,9 @@ impl DocStringElement<Unvalidated> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Unvalidated {
-    /// Reference to a parameter
-    Param(String),
+    /// Reference to an argument
+    /// Can only be used within the context of a function or callback function
+    Argument(String),
     /// Reference a class
     Class(String),
     /// Reference a class method
@@ -327,7 +328,7 @@ impl Unvalidated {
         args: Option<&[Name]>,
     ) -> BindResult<Validated> {
         match self {
-            Self::Param(name) => {
+            Self::Argument(name) => {
                 let args = match args {
                     Some(args) => args,
                     None => {
@@ -339,7 +340,7 @@ impl Unvalidated {
                 };
 
                 match args.iter().find(|arg| arg.as_ref() == name) {
-                    Some(arg) => Ok(Validated::Param(arg.clone())),
+                    Some(arg) => Ok(Validated::Argument(arg.clone())),
                     None => Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: name.to_string(),
@@ -466,8 +467,8 @@ impl Unvalidated {
 
 #[derive(Debug, Clone)]
 pub enum Validated {
-    /// Reference to a parameter
-    Param(Name),
+    /// Reference to an argument
+    Argument(Name),
     /// Reference a class
     Class(ClassDeclarationHandle),
     /// Reference a class method
@@ -522,7 +523,7 @@ impl TryFrom<&str> for DocStringElement<Unvalidated> {
 
         fn try_get_regex(from: &str) -> Option<Unvalidated> {
             if let Some(capture) = RE_PARAM.captures(from) {
-                return Some(Unvalidated::Param(
+                return Some(Unvalidated::Argument(
                     capture.get(1).unwrap().as_str().to_owned(),
                 ));
             }
@@ -611,7 +612,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(Unvalidated::Param("foo".to_owned())),
+                DocStringElement::Reference(Unvalidated::Argument("foo".to_owned())),
                 DocStringElement::Text(" test.".to_owned()),
             ]
             .as_ref(),

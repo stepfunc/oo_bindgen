@@ -17,21 +17,6 @@ use crate::*;
 use crate::{BindingError, Version};
 use std::rc::Rc;
 
-#[derive(Debug, Clone)]
-pub enum Symbol<D>
-where
-    D: DocReference,
-{
-    Function(Handle<Function<D>>),
-    Struct(StructType<D>),
-    Enum(Handle<Enum<D>>),
-    Class(Handle<Class<D>>),
-    StaticClass(Handle<StaticClass<D>>),
-    Interface(Handle<Interface<D>>),
-    Iterator(Handle<crate::iterator::Iterator<D>>),
-    Collection(Handle<Collection<D>>),
-}
-
 #[derive(Clone, Debug)]
 pub enum Statement<D>
 where
@@ -80,31 +65,6 @@ impl Statement<Unvalidated> {
             Statement::FunctionDefinition(x) => Some(&x.name),
         }
     }
-}
-
-impl Statement<Unvalidated> {
-    /* todo
-    fn validate(&self) -> BindResult<Statement<Validated>> {
-        match self {
-            Statement::Constants(x) => {
-                Ok(())
-            }
-            Statement::StructDeclaration(x) => {
-                Ok(Statement::StructDeclaration(x.clone()))
-            },
-            Statement::StructDefinition(_) => {}
-            Statement::EnumDefinition(_) => {}
-            Statement::ErrorType(_) => {}
-            Statement::ClassDeclaration(_) => {}
-            Statement::ClassDefinition(_) => {}
-            Statement::StaticClassDefinition(_) => {}
-            Statement::InterfaceDefinition(_) => {}
-            Statement::IteratorDeclaration(_) => {}
-            Statement::CollectionDeclaration(_) => {}
-            Statement::FunctionDefinition(_) => {}
-        }
-    }
-     */
 }
 
 pub struct DeveloperInfo {
@@ -214,12 +174,10 @@ impl LibrarySettings {
 
 pub struct Library {
     pub version: Version,
-    pub info: LibraryInfo,
+    pub info: Rc<LibraryInfo>,
     pub settings: Rc<LibrarySettings>,
+    /// history of statements from which we can find other types
     statements: Vec<Statement<Validated>>,
-    structs: HashMap<StructDeclarationHandle, StructType<Validated>>,
-    classes: HashMap<ClassDeclarationHandle, Handle<Class<Validated>>>,
-    symbols: HashMap<String, Symbol<Validated>>,
 }
 
 impl Library {
@@ -246,7 +204,12 @@ impl Library {
     }
 
     pub fn structs(&self) -> impl Iterator<Item = &StructType<Validated>> {
-        self.structs.values()
+        self.statements
+            .iter()
+            .filter_map(|statement| match statement {
+                Statement::StructDefinition(x) => Some(x),
+                _ => None,
+            })
     }
 
     pub fn constants(&self) -> impl Iterator<Item = &Handle<ConstantSet<Validated>>> {
@@ -304,10 +267,6 @@ impl Library {
             _ => None,
         })
     }
-
-    pub fn symbol<T: AsRef<str>>(&self, symbol_name: T) -> Option<&Symbol<Validated>> {
-        self.symbols.get(symbol_name.as_ref())
-    }
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -323,6 +282,23 @@ where
     CallbackArg(Handle<Struct<CallbackArgStructField, D>>),
     /// structs that can be used in any context and only contain basic types
     Universal(Handle<Struct<UniversalStructField, D>>),
+}
+
+impl StructType<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<StructType<Validated>> {
+        match self {
+            StructType::FunctionArg(x) => {
+                Ok(StructType::FunctionArg(Handle::new(x.validate(lib)?)))
+            }
+            StructType::FunctionReturn(x) => {
+                Ok(StructType::FunctionReturn(Handle::new(x.validate(lib)?)))
+            }
+            StructType::CallbackArg(x) => {
+                Ok(StructType::CallbackArg(Handle::new(x.validate(lib)?)))
+            }
+            StructType::Universal(x) => Ok(StructType::Universal(Handle::new(x.validate(lib)?))),
+        }
+    }
 }
 
 impl From<FunctionArgStructHandle> for StructType<Unvalidated> {
@@ -491,7 +467,7 @@ impl<D> StructType<D>
 where
     D: DocReference,
 {
-    pub fn construtors(&self) -> &[Handle<Constructor<D>>] {
+    pub fn constructors(&self) -> &[Handle<Constructor<D>>] {
         match self {
             StructType::FunctionArg(x) => &x.constructors,
             StructType::FunctionReturn(x) => &x.constructors,
@@ -585,20 +561,6 @@ impl UnvalidatedFields {
         self.enums.iter().find(|x| x.name == name.as_ref())
     }
 
-    pub(crate) fn find_iterator<T: AsRef<str>>(
-        &self,
-        name: T,
-    ) -> Option<&Handle<crate::iterator::Iterator<Unvalidated>>> {
-        self.iterators.iter().find(|x| x.name() == name.as_ref())
-    }
-
-    pub(crate) fn find_collection<T: AsRef<str>>(
-        &self,
-        name: T,
-    ) -> Option<&Handle<Collection<Unvalidated>>> {
-        self.collections.iter().find(|x| x.name() == name.as_ref())
-    }
-
     pub(crate) fn find_class_declaration<T: AsRef<str>>(
         &self,
         name: T,
@@ -606,13 +568,6 @@ impl UnvalidatedFields {
         self.class_declarations
             .iter()
             .find(|x| x.name == name.as_ref())
-    }
-
-    pub(crate) fn find_static_class<T: AsRef<str>>(
-        &self,
-        name: T,
-    ) -> Option<&Handle<StaticClass<Unvalidated>>> {
-        self.static_classes.iter().find(|x| x.name == name.as_ref())
     }
 
     pub(crate) fn find_class<T: AsRef<str>>(&self, name: T) -> Option<&Handle<Class<Unvalidated>>> {
@@ -651,7 +606,7 @@ impl UnvalidatedFields {
 
 pub struct LibraryBuilder {
     version: Version,
-    info: LibraryInfo,
+    info: Rc<LibraryInfo>,
 
     pub(crate) settings: Rc<LibrarySettings>,
 
@@ -664,7 +619,7 @@ impl LibraryBuilder {
     pub fn new(version: Version, info: LibraryInfo, settings: Rc<LibrarySettings>) -> Self {
         Self {
             version,
-            info,
+            info: Rc::new(info),
             settings,
             symbol_names: HashSet::new(),
             fields: UnvalidatedFields::new(),
@@ -716,15 +671,57 @@ impl LibraryBuilder {
         Ok(())
     }
 
+    fn validate_statement(
+        &self,
+        statement: &Statement<Unvalidated>,
+    ) -> BindResult<Statement<Validated>> {
+        match statement {
+            Statement::Constants(x) => {
+                Ok(Statement::Constants(Handle::new(x.validate(&self.fields)?)))
+            }
+            Statement::StructDeclaration(x) => Ok(Statement::StructDeclaration(x.clone())),
+            Statement::StructDefinition(x) => {
+                Ok(Statement::StructDefinition(x.validate(&self.fields)?))
+            }
+            Statement::EnumDefinition(x) => Ok(Statement::EnumDefinition(Handle::new(
+                x.validate(&self.fields)?,
+            ))),
+            Statement::ErrorType(x) => Ok(Statement::ErrorType(x.validate(&self.fields)?)),
+            Statement::ClassDeclaration(x) => Ok(Statement::ClassDeclaration(x.clone())),
+            Statement::ClassDefinition(x) => Ok(Statement::ClassDefinition(Handle::new(
+                x.validate(&self.fields)?,
+            ))),
+            Statement::StaticClassDefinition(x) => Ok(Statement::StaticClassDefinition(
+                Handle::new(x.validate(&self.fields)?),
+            )),
+            Statement::InterfaceDefinition(x) => Ok(Statement::InterfaceDefinition(Handle::new(
+                x.validate(&self.fields)?,
+            ))),
+            Statement::IteratorDeclaration(x) => Ok(Statement::IteratorDeclaration(Handle::new(
+                x.validate(&self.fields)?,
+            ))),
+            Statement::CollectionDeclaration(x) => Ok(Statement::CollectionDeclaration(
+                Handle::new(x.validate(&self.fields)?),
+            )),
+            Statement::FunctionDefinition(x) => Ok(Statement::FunctionDefinition(Handle::new(
+                x.validate(&self.fields)?,
+            ))),
+        }
+    }
+
     pub fn build(self) -> BindResult<Library> {
+        let statements: BindResult<Vec<Statement<Validated>>> = self
+            .fields
+            .statements
+            .iter()
+            .map(|s| self.validate_statement(s))
+            .collect();
+
         let lib = Library {
-            version: self.version,
-            info: self.info,
-            settings: self.settings.clone(),
-            statements: unimplemented!(),
-            structs: unimplemented!(),
-            classes: unimplemented!(),
-            symbols: HashMap::new(),
+            version: self.version.clone(),
+            info: self.info.clone(),
+            settings: self.settings,
+            statements: statements?,
         };
 
         Ok(lib)

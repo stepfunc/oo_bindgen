@@ -333,7 +333,7 @@ impl JavaType for FunctionReturnValue {
 
 impl<T> JavaType for ReturnType<T, Validated>
 where
-    T: JavaType,
+    T: Clone + JavaType,
 {
     fn as_java_primitive(&self) -> String {
         match self {

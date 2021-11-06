@@ -381,7 +381,7 @@ where
         if !constructor.values.is_empty() {
             f.newline()?;
             f.writeln("@note")?;
-            for value in &constructor.values {
+            for value in constructor.values.iter() {
                 f.writeln(&format!("{} is initialized to {}", value.name, value.value))?;
             }
             f.newline()?;

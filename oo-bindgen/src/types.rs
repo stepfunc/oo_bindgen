@@ -2,13 +2,13 @@ use std::time::Duration;
 
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
-use crate::doc::{DocReference, DocString, Unvalidated};
+use crate::doc::{DocReference, DocString, Unvalidated, Validated};
 use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::name::Name;
 use crate::structs::*;
-use crate::{BindResult, BindingError, StructType};
+use crate::{BindResult, BindingError, StructType, UnvalidatedFields};
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -58,6 +58,7 @@ impl From<DurationType> for BasicType {
 #[derive(Debug, Clone)]
 pub struct Arg<T, D>
 where
+    T: Clone,
     D: DocReference,
 {
     pub arg_type: T,
@@ -65,8 +66,22 @@ where
     pub doc: DocString<D>,
 }
 
+impl<T> Arg<T, Unvalidated>
+where
+    T: Clone,
+{
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Arg<T, Validated>> {
+        Ok(Arg {
+            arg_type: self.arg_type.clone(),
+            name: self.name.clone(),
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
+}
+
 impl<T, D> Arg<T, D>
 where
+    T: Clone,
     D: DocReference,
 {
     pub fn new(arg_type: T, name: Name, doc: DocString<D>) -> Self {

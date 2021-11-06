@@ -27,6 +27,16 @@ where
     pub doc: Doc<T>,
 }
 
+impl Constant<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Constant<Validated>> {
+        Ok(Constant {
+            name: self.name.clone(),
+            value: self.value,
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
+}
+
 /// Set of constants
 #[derive(Debug)]
 pub struct ConstantSet<T>
@@ -42,15 +52,14 @@ where
 }
 
 impl ConstantSet<Unvalidated> {
-    pub(crate) fn validate(
-        &self,
-        symbol_name: &str,
-        lib: &UnvalidatedFields,
-    ) -> BindResult<ConstantSet<Validated>> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<ConstantSet<Validated>> {
+        let values: BindResult<Vec<Constant<Validated>>> =
+            self.values.iter().map(|x| x.validate(lib)).collect();
+
         Ok(ConstantSet {
             name: self.name.clone(),
-            values: vec![],
-            doc: self.doc.validate(symbol_name, lib)?,
+            values: values?,
+            doc: self.doc.validate(&self.name, lib)?,
         })
     }
 }

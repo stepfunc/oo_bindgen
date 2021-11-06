@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::doc::{Doc, DocReference, DocString, Unvalidated};
+use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
 use crate::iterator::IteratorHandle;
 use crate::name::{IntoName, Name};
 use crate::return_type::ReturnType;
@@ -116,14 +116,31 @@ impl From<EnumHandle> for CallbackReturnValue {
 pub type CallbackReturnType<T> = ReturnType<CallbackReturnValue, T>;
 
 #[derive(Debug)]
-pub struct CallbackFunction<T>
+pub struct CallbackFunction<D>
 where
-    T: DocReference,
+    D: DocReference,
 {
     pub name: Name,
-    pub return_type: ReturnType<CallbackReturnValue, T>,
-    pub arguments: Vec<Arg<CallbackArgument, T>>,
-    pub doc: Doc<T>,
+    pub return_type: ReturnType<CallbackReturnValue, D>,
+    pub arguments: Vec<Arg<CallbackArgument, D>>,
+    pub doc: Doc<D>,
+}
+
+impl CallbackFunction<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<CallbackFunction<Validated>> {
+        let arguments: BindResult<Vec<Arg<CallbackArgument, Validated>>> =
+            self.arguments.iter().map(|x| x.validate(lib)).collect();
+
+        Ok(CallbackFunction {
+            name: self.name.clone(),
+            return_type: self.return_type.validate(&self.name, lib)?,
+            arguments: arguments?,
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -148,6 +165,21 @@ where
     pub callbacks: Vec<CallbackFunction<D>>,
     pub doc: Doc<D>,
     pub settings: Rc<LibrarySettings>,
+}
+
+impl Interface<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Interface<Validated>> {
+        let callbacks: BindResult<Vec<CallbackFunction<Validated>>> =
+            self.callbacks.iter().map(|x| x.validate(lib)).collect();
+
+        Ok(Interface {
+            name: self.name.clone(),
+            interface_type: self.interface_type,
+            callbacks: callbacks?,
+            doc: self.doc.validate(&self.name, lib)?,
+            settings: self.settings.clone(),
+        })
+    }
 }
 
 impl<D> Interface<D>

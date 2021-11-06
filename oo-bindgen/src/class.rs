@@ -1,4 +1,4 @@
-use crate::doc::{DocReference, DocString, Unvalidated};
+use crate::doc::{DocReference, DocString, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
@@ -65,6 +65,15 @@ where
     pub native_function: Handle<Function<T>>,
 }
 
+impl Method<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Method<Validated>> {
+        Ok(Method {
+            name: self.name.clone(),
+            native_function: Handle::new(self.native_function.validate(lib)?),
+        })
+    }
+}
+
 #[derive(Debug)]
 pub struct AsyncMethod<T>
 where
@@ -78,6 +87,21 @@ where
     pub one_time_callback_param_name: Name,
     pub callback_name: Name,
     pub callback_param_name: Name,
+}
+
+impl AsyncMethod<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<AsyncMethod<Validated>> {
+        Ok(AsyncMethod {
+            name: self.name.clone(),
+            native_function: Handle::new(self.native_function.validate(lib)?),
+            return_type: self.return_type.clone(),
+            return_type_doc: self.return_type_doc.validate(&self.name, lib)?,
+            one_time_callback: Handle::new(self.one_time_callback.validate(lib)?),
+            one_time_callback_param_name: self.one_time_callback_param_name.clone(),
+            callback_name: self.callback_name.clone(),
+            callback_param_name: self.callback_param_name.clone(),
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -123,6 +147,40 @@ where
     pub doc: Doc<T>,
     pub destruction_mode: DestructionMode,
     pub settings: Rc<LibrarySettings>,
+}
+
+impl Class<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Class<Validated>> {
+        let constructor = match &self.constructor {
+            None => None,
+            Some(x) => Some(Handle::new(x.validate(lib)?)),
+        };
+        let destructor = match &self.destructor {
+            None => None,
+            Some(x) => Some(Handle::new(x.validate(lib)?)),
+        };
+        let methods: BindResult<Vec<Method<Validated>>> =
+            self.methods.iter().map(|x| x.validate(lib)).collect();
+        let static_methods: BindResult<Vec<Method<Validated>>> = self
+            .static_methods
+            .iter()
+            .map(|x| x.validate(lib))
+            .collect();
+        let async_methods: BindResult<Vec<AsyncMethod<Validated>>> =
+            self.async_methods.iter().map(|x| x.validate(lib)).collect();
+
+        Ok(Class {
+            declaration: self.declaration.clone(),
+            constructor,
+            destructor,
+            methods: methods?,
+            static_methods: static_methods?,
+            async_methods: async_methods?,
+            doc: self.doc.validate(self.name(), lib)?,
+            destruction_mode: self.destruction_mode.clone(),
+            settings: self.settings.clone(),
+        })
+    }
 }
 
 impl<T> Class<T>
@@ -439,6 +497,21 @@ where
     pub name: Name,
     pub static_methods: Vec<Method<T>>,
     pub doc: Doc<T>,
+}
+
+impl StaticClass<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<StaticClass<Validated>> {
+        let methods: BindResult<Vec<Method<Validated>>> = self
+            .static_methods
+            .iter()
+            .map(|x| x.validate(lib))
+            .collect();
+        Ok(StaticClass {
+            name: self.name.clone(),
+            static_methods: methods?,
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
 }
 
 pub type StaticClassHandle = Handle<StaticClass<Unvalidated>>;

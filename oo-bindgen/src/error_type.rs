@@ -1,4 +1,4 @@
-use crate::doc::{Doc, DocReference, Unvalidated};
+use crate::doc::{Doc, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 
@@ -20,6 +20,16 @@ where
     pub exception_name: Name,
     pub exception_type: ExceptionType,
     pub inner: Handle<Enum<D>>,
+}
+
+impl ErrorType<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<ErrorType<Validated>> {
+        Ok(ErrorType {
+            exception_name: self.exception_name.clone(),
+            exception_type: self.exception_type,
+            inner: Handle::new(self.inner.validate(lib)?),
+        })
+    }
 }
 
 pub struct ErrorTypeBuilder<'a> {

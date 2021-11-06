@@ -807,7 +807,7 @@ where
 impl<T, D> DotnetType for ReturnType<T, D>
 where
     D: DocReference,
-    T: DotnetType,
+    T: Clone + DotnetType,
 {
     fn as_dotnet_type(&self) -> String {
         match self {

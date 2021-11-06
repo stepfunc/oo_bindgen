@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::class::ClassDeclarationHandle;
 use crate::collection::CollectionHandle;
-use crate::doc::{Doc, DocReference, Unvalidated};
+use crate::doc::{Doc, DocReference, Unvalidated, Validated};
 use crate::enum_type::EnumHandle;
 use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
@@ -14,6 +14,7 @@ use crate::structs::{
 use crate::types::{DurationType, StringType, TypeValidator};
 use crate::{
     BindResult, BindingError, Handle, LibraryBuilder, LibrarySettings, Statement, StructType,
+    UnvalidatedFields,
 };
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -306,6 +307,22 @@ where
     pub doc: Doc<D>,
 }
 
+impl<F> StructField<F, Unvalidated>
+where
+    F: StructFieldType,
+{
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<StructField<F, Validated>> {
+        Ok(StructField {
+            name: self.name.clone(),
+            field_type: self.field_type.clone(),
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
+}
+
 /// C-style structure definition
 #[derive(Debug)]
 pub struct Struct<F, D>
@@ -318,6 +335,30 @@ where
     pub fields: Vec<StructField<F, D>>,
     pub constructors: Vec<Handle<Constructor<D>>>,
     pub doc: Doc<D>,
+}
+
+impl<F> Struct<F, Unvalidated>
+where
+    F: StructFieldType,
+{
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Struct<F, Validated>> {
+        let fields: BindResult<Vec<StructField<F, Validated>>> =
+            self.fields.iter().map(|x| x.validate(lib)).collect();
+        let constructors: BindResult<Vec<Constructor<Validated>>> =
+            self.constructors.iter().map(|x| x.validate(lib)).collect();
+        let constructors: Vec<Handle<Constructor<Validated>>> = constructors?
+            .iter()
+            .map(|x| Handle::new(x.clone()))
+            .collect();
+
+        Ok(Struct {
+            visibility: self.visibility,
+            declaration: self.declaration.clone(),
+            fields: fields?,
+            constructors,
+            doc: self.doc.validate(self.name(), lib)?,
+        })
+    }
 }
 
 impl<F> ConstructorValidator for Handle<Struct<F, Unvalidated>>
@@ -540,8 +581,19 @@ where
 {
     pub name: Name,
     pub constructor_type: ConstructorType,
-    pub values: Vec<InitializedValue>,
+    pub values: Rc<Vec<InitializedValue>>,
     pub doc: Doc<D>,
+}
+
+impl Constructor<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Constructor<Validated>> {
+        Ok(Constructor {
+            name: self.name.clone(),
+            constructor_type: self.constructor_type,
+            values: self.values.clone(),
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
 }
 
 impl<D> Constructor<D>
@@ -567,7 +619,7 @@ where
         Self {
             name: Name::create("some_unused_name").unwrap(),
             constructor_type,
-            values: Vec::new(),
+            values: Rc::new(Vec::new()),
             doc,
         }
     }
@@ -711,7 +763,7 @@ where
         let constructor = Handle::new(Constructor {
             name: self.name,
             constructor_type: self.constructor_type,
-            values: self.fields,
+            values: Rc::new(self.fields),
             doc: self.doc,
         });
 

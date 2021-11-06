@@ -131,6 +131,7 @@ impl CoreCppType for IteratorItemType {
 
 impl<T, D> CoreCppType for Arg<T, D>
 where
+    T: Clone,
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {

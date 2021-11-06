@@ -95,7 +95,7 @@ impl Doc<Validated> {
 impl Doc<Unvalidated> {
     pub(crate) fn validate(
         &self,
-        symbol_name: &str,
+        symbol_name: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<Doc<Validated>> {
         let details: BindResult<Vec<DocParagraph<Validated>>> = self
@@ -118,28 +118,11 @@ impl Doc<Unvalidated> {
         self.details.push(DocParagraph::Details(details.into()));
         self
     }
-
-    fn references(&self) -> impl Iterator<Item = &Unvalidated> {
-        self.brief
-            .references()
-            .chain(self.details.iter().flat_map(|para| para.references()))
-    }
 }
 
 impl<T: AsRef<str>> From<T> for Doc<Unvalidated> {
     fn from(from: T) -> Self {
         doc(from)
-    }
-}
-
-impl Doc<Validated> {
-    fn simple(text: &str) -> Doc<Validated> {
-        Doc {
-            brief: DocString {
-                elements: vec![DocStringElement::Text(text.to_string())],
-            },
-            details: Vec::new(),
-        }
     }
 }
 
@@ -155,25 +138,13 @@ where
 impl DocParagraph<Unvalidated> {
     pub(crate) fn validate(
         &self,
-        symbol_name: &str,
+        symbol_name: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<DocParagraph<Validated>> {
         Ok(match self {
             DocParagraph::Details(x) => DocParagraph::Details(x.validate(symbol_name, lib)?),
             DocParagraph::Warning(x) => DocParagraph::Warning(x.validate(symbol_name, lib)?),
         })
-    }
-}
-
-impl<T> DocParagraph<T>
-where
-    T: DocReference,
-{
-    fn references(&self) -> impl Iterator<Item = &T> {
-        match self {
-            Self::Details(string) => string.references(),
-            Self::Warning(string) => string.references(),
-        }
     }
 }
 
@@ -188,7 +159,7 @@ where
 impl DocString<Unvalidated> {
     pub(crate) fn validate(
         &self,
-        symbol_name: &str,
+        symbol_name: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<DocString<Validated>> {
         let elements: BindResult<Vec<DocStringElement<Validated>>> = self
@@ -218,16 +189,6 @@ where
 
     pub fn elements(&self) -> impl Iterator<Item = &DocStringElement<T>> {
         self.elements.iter()
-    }
-
-    fn references(&self) -> impl Iterator<Item = &T> {
-        self.elements.iter().filter_map(|el| {
-            if let DocStringElement::Reference(reference) = el {
-                Some(reference)
-            } else {
-                None
-            }
-        })
     }
 }
 
@@ -270,7 +231,7 @@ impl<U: AsRef<str>> From<U> for DocString<Unvalidated> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DocStringElement<T>
 where
     T: DocReference,
@@ -282,9 +243,9 @@ where
 }
 
 impl DocStringElement<Unvalidated> {
-    pub(crate) fn validate<'a>(
+    pub(crate) fn validate(
         &self,
-        symbol_name: &str,
+        symbol_name: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<DocStringElement<Validated>> {
         Ok(match self {
@@ -298,7 +259,7 @@ impl DocStringElement<Unvalidated> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Unvalidated {
     /// Reference to a parameter
     Param(String),
@@ -335,14 +296,13 @@ pub enum Unvalidated {
 impl DocReference for Unvalidated {}
 
 impl Unvalidated {
-    pub(crate) fn validate<'a>(
+    pub(crate) fn validate(
         &self,
-        symbol_name: &str,
+        symbol_name: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<Validated> {
         match self {
             Self::Param(name) => {
-                todo!()
                 /*
                 match params.find(|p| p.as_ref() == name) {
                     Some(name) => Ok(Validated::Param(name.clone())),
@@ -352,6 +312,7 @@ impl Unvalidated {
                     }),
                 }
                  */
+                Ok(Validated::Param(name.clone()))
             }
             Self::Class(name) => match lib.find_class_declaration(name) {
                 None => Err(BindingError::DocInvalidReference {
@@ -381,16 +342,15 @@ impl Unvalidated {
             Self::ClassConstructor(class_name) => {
                 match lib
                     .find_class(class_name)
-                    .and_then(|x| x.constructor.clone().map(|d| (x.clone(), d.clone())))
+                    .and_then(|x| x.constructor.clone().map(|d| (x.clone(), d)))
                 {
                     None => Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.[constructor]", class_name.to_string(),),
                     }),
-                    Some((class, constructor)) => Ok(Validated::ClassConstructor(
-                        class.clone(),
-                        constructor.clone(),
-                    )),
+                    Some((class, constructor)) => {
+                        Ok(Validated::ClassConstructor(class, constructor))
+                    }
                 }
             }
             Self::ClassDestructor(class_name) => {
@@ -402,10 +362,9 @@ impl Unvalidated {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.[destructor]", class_name.to_string(),),
                     }),
-                    Some((class, destructor)) => Ok(Validated::ClassConstructor(
-                        class.clone(),
-                        destructor.clone(),
-                    )),
+                    Some((class, destructor)) => {
+                        Ok(Validated::ClassConstructor(class.clone(), destructor))
+                    }
                 }
             }
             Self::Struct(struct_name) => match lib.find_struct(struct_name) {
@@ -424,7 +383,7 @@ impl Unvalidated {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}", struct_name.to_string(), field_name.to_string()),
                     }),
-                    Some((st, name)) => Ok(Validated::StructField(st.clone(), name.clone())),
+                    Some((st, name)) => Ok(Validated::StructField(st.clone(), name)),
                 }
             }
             Self::Enum(enum_name) => match lib.find_enum(enum_name) {
@@ -476,7 +435,7 @@ impl Unvalidated {
 #[derive(Debug, Clone)]
 pub enum Validated {
     /// Reference to a parameter
-    Param(Name),
+    Param(String),
     /// Reference a class
     Class(ClassDeclarationHandle),
     /// Reference a class method
@@ -568,7 +527,9 @@ impl TryFrom<&str> for DocStringElement<Unvalidated> {
                 ));
             }
             if let Some(capture) = RE_ENUM.captures(from) {
-                return Some(Unvalidated::Enum(capture.get(1).unwrap().as_str().to_owned()).into());
+                return Some(Unvalidated::Enum(
+                    capture.get(1).unwrap().as_str().to_owned(),
+                ));
             }
             if let Some(capture) = RE_ENUM_VARIANT.captures(from) {
                 return Some(Unvalidated::EnumVariant(
@@ -606,145 +567,6 @@ impl TryFrom<&str> for DocStringElement<Unvalidated> {
     }
 }
 
-/*
-pub(crate) fn validate_library_docs(lib: &Library) -> Result<(), BindingError> {
-    for native_function in lib.functions() {
-        validate_doc_with_params(
-            native_function.name.as_ref(),
-            &native_function.doc,
-            &native_function.parameters,
-            lib,
-        )?;
-
-        for param in &native_function.parameters {
-            validate_docstring_with_params(
-                native_function.name.as_ref(),
-                &param.doc,
-                &native_function.parameters,
-                lib,
-            )?;
-        }
-    }
-
-    for class in lib.classes() {
-        validate_doc(class.name().as_ref(), &class.doc, lib)?;
-    }
-
-    for structure in lib.structs() {
-        validate_doc(structure.name(), structure.doc(), lib)?;
-
-        for constructor in structure.construtors() {
-            validate_doc(&constructor.name, &constructor.doc, lib)?;
-        }
-
-        match structure {
-            StructType::FunctionArg(x) => {
-                for field in &x.fields {
-                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
-                }
-            }
-            StructType::FunctionReturn(x) => {
-                for field in &x.fields {
-                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
-                }
-            }
-            StructType::CallbackArg(x) => {
-                for field in &x.fields {
-                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
-                }
-            }
-            StructType::Universal(x) => {
-                for field in &x.fields {
-                    valid_field_doc(x.name(), &field.name, &field.doc, lib)?;
-                }
-            }
-        }
-    }
-
-    for enumeration in lib.enums() {
-        validate_doc(enumeration.name.as_ref(), &enumeration.doc, lib)?;
-        for variant in &enumeration.variants {
-            validate_doc(
-                &format!("{}.{}", enumeration.name, variant.name),
-                &variant.doc,
-                lib,
-            )?;
-        }
-    }
-
-    for interface in lib.interfaces() {
-        validate_doc(interface.name.as_ref(), &interface.doc, lib)?;
-        for cb in &interface.callbacks {
-            let callback_name = format!("{}.{}", interface.name, cb.name);
-            validate_doc_with_params(&callback_name, &cb.doc, cb.arguments.as_slice(), lib)?;
-
-            for arg in &cb.arguments {
-                validate_docstring_with_params(
-                    &callback_name,
-                    &arg.doc,
-                    cb.arguments.as_slice(),
-                    lib,
-                )?;
-            }
-        }
-    }
-
-    Ok(())
-}
-
-fn valid_field_doc(
-    structure: &Name,
-    field: &Name,
-    field_doc: &Doc,
-    lib: &Library,
-) -> Result<(), BindingError> {
-    validate_doc(&format!("{}.{}()", structure, field), field_doc, lib)
-}
-
-fn validate_doc(symbol_name: &str, doc: &Doc, lib: &Library) -> Result<(), BindingError> {
-    validate_doc_with_params::<UniversalStructField>(symbol_name, doc, &[], lib)
-}
-
-fn validate_doc_with_params<T>(
-    symbol_name: &str,
-    doc: &Doc,
-    params: &[Arg<T>],
-    lib: &Library,
-) -> Result<(), BindingError> {
-    for reference in doc.references() {
-        validate_reference_with_params(symbol_name, reference, params, lib)?;
-    }
-
-    Ok(())
-}
-
-fn validate_docstring_with_params<T>(
-    symbol_name: &str,
-    doc: &Unvalidated,
-    params: &[Arg<T>],
-    lib: &Library,
-) -> Result<(), BindingError> {
-    for reference in doc.references() {
-        validate_reference_with_params(symbol_name, reference, params, lib)?;
-    }
-
-    Ok(())
-}
-
-fn validate_reference_with_params<U>(
-    symbol_name: &str,
-    reference: &Unvalidated,
-    params: &[Arg<U>],
-    lib: &Library,
-) -> Result<(), BindingError> {
-    if let Some(unvalidated) = reference.get_unvalidated() {
-        let validated = unvalidated.validate(symbol_name, params.iter().map(|x| &x.name), lib)?;
-        reference.validate(validated)
-    }
-    Ok(())
-}
-*/
-
 #[cfg(test)]
 mod tests {
     use std::convert::TryInto;
@@ -757,7 +579,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::Param("foo".to_owned())),
+                DocStringElement::Reference(Unvalidated::Param("foo".to_owned())),
                 DocStringElement::Text(" test.".to_owned()),
             ]
             .as_ref(),
@@ -771,7 +593,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::Class("MyClass".to_owned())),
+                DocStringElement::Reference(Unvalidated::Class("MyClass".to_owned())),
                 DocStringElement::Text(" test.".to_owned()),
             ]
             .as_ref(),
@@ -785,7 +607,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a test ".to_owned()),
-                DocStringElement::Reference(DocReference::Class("MyClass2".to_owned())),
+                DocStringElement::Reference(Unvalidated::Class("MyClass2".to_owned())),
             ]
             .as_ref(),
             doc.elements.as_slice()
@@ -800,7 +622,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::ClassMethod(
+                DocStringElement::Reference(Unvalidated::ClassMethod(
                     "MyClass".to_owned(),
                     "do_something".to_owned()
                 )),
@@ -817,7 +639,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::Struct("MyStruct".to_owned())),
+                DocStringElement::Reference(Unvalidated::Struct("MyStruct".to_owned())),
                 DocStringElement::Text(" struct.".to_owned()),
             ]
             .as_ref(),
@@ -833,7 +655,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::StructField(
+                DocStringElement::Reference(Unvalidated::StructField(
                     "MyStruct".to_owned(),
                     "foo".to_owned()
                 )),
@@ -850,7 +672,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::Enum("MyEnum".to_owned())),
+                DocStringElement::Reference(Unvalidated::Enum("MyEnum".to_owned())),
                 DocStringElement::Text(" enum.".to_owned()),
             ]
             .as_ref(),
@@ -866,7 +688,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::EnumVariant(
+                DocStringElement::Reference(Unvalidated::EnumVariant(
                     "MyEnum".to_owned(),
                     "foo".to_owned()
                 )),
@@ -885,7 +707,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::Interface("Interface".to_owned())),
+                DocStringElement::Reference(Unvalidated::Interface("Interface".to_owned())),
                 DocStringElement::Text(" interface.".to_owned()),
             ]
             .as_ref(),
@@ -901,7 +723,7 @@ mod tests {
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
-                DocStringElement::Reference(DocReference::InterfaceMethod(
+                DocStringElement::Reference(Unvalidated::InterfaceMethod(
                     "Interface".to_owned(),
                     "foo".to_owned()
                 )),

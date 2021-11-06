@@ -1,4 +1,4 @@
-use crate::doc::{DocReference, Unvalidated};
+use crate::doc::{DocReference, Unvalidated, Validated};
 use crate::name::Name;
 use crate::structs::{
     FunctionReturnStructField, FunctionReturnStructHandle, StructDeclarationHandle,
@@ -66,6 +66,18 @@ where
     pub item_type: IteratorItemType,
     /// library settings
     pub settings: Rc<LibrarySettings>,
+}
+
+impl Iterator<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Iterator<Validated>> {
+        Ok(Iterator {
+            has_lifetime_annotation: self.has_lifetime_annotation,
+            next_function: Handle::new(self.next_function.validate(lib)?),
+            iter_class: self.iter_class.clone(),
+            item_type: self.item_type.clone(),
+            settings: self.settings.clone(),
+        })
+    }
 }
 
 impl<D> Iterator<D>

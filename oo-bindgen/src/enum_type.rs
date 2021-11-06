@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::doc::{Doc, DocReference, Unvalidated};
+use crate::doc::{Doc, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
@@ -15,6 +15,16 @@ where
     pub doc: Doc<T>,
 }
 
+impl EnumVariant<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<EnumVariant<Validated>> {
+        Ok(EnumVariant {
+            name: self.name.clone(),
+            value: self.value,
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
+}
+
 #[derive(Debug)]
 pub struct Enum<T>
 where
@@ -24,6 +34,20 @@ where
     pub settings: Rc<LibrarySettings>,
     pub variants: Vec<EnumVariant<T>>,
     pub doc: Doc<T>,
+}
+
+impl Enum<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Enum<Validated>> {
+        let variants: BindResult<Vec<EnumVariant<Validated>>> =
+            self.variants.iter().map(|x| x.validate(lib)).collect();
+
+        Ok(Enum {
+            name: self.name.clone(),
+            settings: self.settings.clone(),
+            variants: variants?,
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
 }
 
 impl<T> Enum<T>

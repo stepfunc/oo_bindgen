@@ -345,7 +345,7 @@ fn generate_functions(
                 SignatureType::ErrorNoReturn(error_type) => {
                     f.writeln("if _result != 0")?;
                     blocked(f, |f| {
-                        EnumConverter::new(error_type.inner).convert_from_rust(
+                        EnumConverter::wrap(error_type.inner).convert_from_rust(
                             f,
                             "_result",
                             "let _error = ",
@@ -368,7 +368,7 @@ fn generate_functions(
                     })?;
                     f.writeln("else")?;
                     blocked(f, |f| {
-                        EnumConverter::new(error_type.inner).convert_from_rust(
+                        EnumConverter::wrap(error_type.inner).convert_from_rust(
                             f,
                             "_result",
                             "let _error = ",

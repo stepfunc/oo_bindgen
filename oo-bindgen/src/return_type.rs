@@ -1,16 +1,36 @@
-use crate::doc::{DocReference, DocString};
+use crate::doc::{DocReference, DocString, Unvalidated, Validated};
+use crate::name::Name;
+use crate::{BindResult, UnvalidatedFields};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum ReturnType<T, D>
 where
+    T: Clone,
     D: DocReference,
 {
     Void,
     Type(T, DocString<D>),
 }
 
+impl<T> ReturnType<T, Unvalidated>
+where
+    T: Clone,
+{
+    pub(crate) fn validate(
+        &self,
+        name: &Name,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<ReturnType<T, Validated>> {
+        match self {
+            ReturnType::Void => Ok(ReturnType::Void),
+            ReturnType::Type(t, d) => Ok(ReturnType::Type(t.clone(), d.validate(name, lib)?)),
+        }
+    }
+}
+
 impl<T, D> ReturnType<T, D>
 where
+    T: Clone,
     D: DocReference,
 {
     pub fn void() -> Self {

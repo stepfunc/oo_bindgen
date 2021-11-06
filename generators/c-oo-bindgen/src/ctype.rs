@@ -7,7 +7,7 @@ use oo_bindgen::iterator::IteratorItemType;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{Handle, StructType, Symbol, UniversalOr};
+use oo_bindgen::{Handle, StructType, UniversalOr};
 
 use heck::SnakeCase;
 use oo_bindgen::doc::{DocReference, Validated};
@@ -182,21 +182,6 @@ where
     }
 }
 
-impl CType for Symbol<Validated> {
-    fn to_c_type(&self) -> String {
-        match self {
-            Symbol::Function(handle) => handle.to_c_type(),
-            Symbol::Struct(handle) => handle.declaration().to_c_type(),
-            Symbol::Enum(handle) => handle.to_c_type(),
-            Symbol::Class(handle) => handle.declaration.to_c_type(),
-            Symbol::StaticClass(_) => panic!("static classes cannot be referenced in C"),
-            Symbol::Interface(handle) => handle.to_c_type(),
-            Symbol::Iterator(handle) => handle.iter_class.to_c_type(),
-            Symbol::Collection(handle) => handle.collection_class.to_c_type(),
-        }
-    }
-}
-
 impl CType for BasicType {
     fn to_c_type(&self) -> String {
         match self {
@@ -283,7 +268,7 @@ impl CType for FunctionArgument {
 
 impl<T> CType for ReturnType<T, Validated>
 where
-    T: CType,
+    T: Clone + CType,
 {
     fn to_c_type(&self) -> String {
         match self {

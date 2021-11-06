@@ -760,7 +760,7 @@ impl RustType for CallbackReturnValue {
 impl<T, D> LifetimeInfo for ReturnType<T, D>
 where
     D: DocReference,
-    T: LifetimeInfo,
+    T: Clone + LifetimeInfo,
 {
     fn rust_requires_lifetime(&self) -> bool {
         if let Self::Type(t, _) = self {
@@ -782,7 +782,7 @@ where
 impl<T, D> RustType for ReturnType<T, D>
 where
     D: DocReference,
-    T: RustType,
+    T: Clone + RustType,
 {
     fn as_rust_type(&self) -> String {
         if let Self::Type(t, _) = self {

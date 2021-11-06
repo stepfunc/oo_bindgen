@@ -201,6 +201,26 @@ where
     pub doc: Doc<T>,
 }
 
+impl Function<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Function<Validated>> {
+        let parameters: BindResult<Vec<Arg<FunctionArgument, Validated>>> =
+            self.parameters.iter().map(|x| x.validate(lib)).collect();
+        let error_type = match &self.error_type {
+            Some(x) => Some(x.validate(lib)?),
+            None => None,
+        };
+
+        Ok(Function {
+            name: self.name.clone(),
+            return_type: self.return_type.validate(&self.name, lib)?,
+            parameters: parameters?,
+            error_type,
+            settings: self.settings.clone(),
+            doc: self.doc.validate(&self.name, lib)?,
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum SignatureType {
     /// function that cannot fail and returns nothing

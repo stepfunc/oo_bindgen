@@ -1857,8 +1857,8 @@ impl TypeConverterTrait for IteratorConverter {
         blocked(f, |f| {
             f.writeln("let array_list = _cache.collection.new_array_list(&_env);")?;
             f.writeln(&format!(
-                "while let it = unsafe {{ {}::ffi::{}_{}({}) }}",
-                self.settings.name, self.settings.c_ffi_prefix, self.next_func, from
+                "while let it = unsafe {{ {}_ffi::ffi::{}_{}({}) }}",
+                self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.next_func, from
             ))?;
             blocked(f, |f| {
                 f.writeln("match unsafe { it.as_ref() }")?;
@@ -1919,13 +1919,13 @@ impl TypeConverterTrait for CollectionConverter {
                     from
                 ))?;
                 f.writeln(&format!(
-                    "let result = unsafe {{ {}::ffi::{}_{}(_size) }};",
-                    self.settings.name, self.settings.c_ffi_prefix, self.create_func
+                    "let result = unsafe {{ {}_ffi::ffi::{}_{}(_size) }};",
+                    self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.create_func
                 ))?;
             } else {
                 f.writeln(&format!(
-                    "let result = unsafe {{ {}::ffi::{}_{}() }};",
-                    self.settings.name, self.settings.c_ffi_prefix, self.create_func
+                    "let result = unsafe {{ {}_ffi::ffi::{}_{}() }};",
+                    self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.create_func
                 ))?;
             }
             f.writeln(&format!(
@@ -1945,8 +1945,8 @@ impl TypeConverterTrait for CollectionConverter {
                     f.write(";")?;
 
                     f.writeln(&format!(
-                        "unsafe {{ {}::ffi::{}_{}(result, _next) }};",
-                        self.settings.name, self.settings.c_ffi_prefix, self.add_func
+                        "unsafe {{ {}_ffi::ffi::{}_{}(result, _next) }};",
+                        self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.add_func
                     ))?;
 
                     if let Some(converter) = self.item_type.conversion() {

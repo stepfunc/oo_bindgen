@@ -197,7 +197,10 @@ where
 }
 
 impl Class<Unvalidated> {
-    pub(crate) fn find_method<S: AsRef<str>>(&self, method_name: S) -> Option<(Name, FunctionHandle)> {
+    pub(crate) fn find_method<S: AsRef<str>>(
+        &self,
+        method_name: S,
+    ) -> Option<(Name, FunctionHandle)> {
         let method_name = method_name.as_ref();
 
         for method in &self.methods {

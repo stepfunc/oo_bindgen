@@ -188,37 +188,17 @@ fn generate_functions(
     lib: &Library,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
-    // TODO - filter here based on a function type
-    for handle in lib.functions() {
-        /*
-        if let Some(first_param) = handle.parameters.first() {
-            if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
-
-                // We don't want to generate the `next` methods of iterators
-                if let Some(it) = lib.find_iterator(&class_handle.name) {
-                    if &it.next_function == handle {
-                        continue;
-                    }
-                }
-                // We don't want to generate the `add` and `delete` methods of collections
-                if let Some(col) = lib.find_collection(&class_handle.name) {
-                    if &col.add_func == handle || &col.delete_func == handle {
-                        continue;
-                    }
-                }
-            }
+    fn skip(c: FunctionCategory) -> bool {
+        match c {
+            FunctionCategory::Native => false,
+            FunctionCategory::CollectionCreate => true,
+            FunctionCategory::CollectionDestroy => true,
+            FunctionCategory::CollectionAdd => true,
+            FunctionCategory::IteratorNext => true,
         }
+    }
 
-        if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
-            &handle.return_type
-        {
-            // We don't want to generate the `create` method of collections
-            if lib.find_collection(&class_handle.name).is_some() {
-                continue;
-            }
-        }
-        */
-
+    for handle in lib.functions().filter(|f| !skip(f.category)) {
         f.writeln("#[no_mangle]")?;
         f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.settings.name, handle.name.replace("_", "_1")))?;
         f.write(

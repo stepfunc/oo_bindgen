@@ -310,40 +310,18 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
         f.newline()?;
 
-        // Write each native functions
-
-        // TODO - introduce a filter here by a type
-        for handle in lib.functions() {
-            /*
-            if let Some(first_param) = handle.parameters.first() {
-
-                if let FunctionArgument::ClassRef(class_handle) = &first_param.arg_type {
-                    // We don't want to generate the `next` methods of iterators
-                    if let Some(it) = lib.find_iterator(&class_handle.name) {
-                        if &it.next_function == handle {
-                            continue;
-                        }
-                    }
-                    // We don't want to generate the `add` and `delete` methods of collections
-                    if let Some(col) = lib.find_collection(&class_handle.name) {
-                        if &col.add_func == handle || &col.delete_func == handle {
-                            continue;
-                        }
-                    }
-                }
+        fn skip(c: FunctionCategory) -> bool {
+            match c {
+                FunctionCategory::Native => false,
+                // we don't generate any of these
+                FunctionCategory::CollectionCreate => true,
+                FunctionCategory::CollectionDestroy => true,
+                FunctionCategory::CollectionAdd => true,
+                FunctionCategory::IteratorNext => true,
             }
-            if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(class_handle), _) =
-                &handle.return_type
-            {
+        }
 
-                // We don't want to generate the `create` method of collections
-                if lib.find_collection(&class_handle.name).is_some() {
-                    continue;
-                }
-
-            }
-             */
-
+        for handle in lib.functions().filter(|func| !skip(func.category)) {
             f.writeln(&format!(
                 "static native {} {}(",
                 handle.return_type.as_java_primitive(),

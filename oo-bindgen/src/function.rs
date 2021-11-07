@@ -187,6 +187,15 @@ impl From<CollectionClassDeclaration> for FunctionArgument {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum FunctionCategory {
+    Native,
+    CollectionCreate,
+    CollectionDestroy,
+    CollectionAdd,
+    IteratorNext,
+}
+
 /// C function
 #[derive(Debug)]
 pub struct Function<T>
@@ -194,6 +203,7 @@ where
     T: DocReference,
 {
     pub name: Name,
+    pub category: FunctionCategory,
     pub return_type: ReturnType<FunctionReturnValue, T>,
     pub parameters: Vec<Arg<FunctionArgument, T>>,
     pub error_type: Option<ErrorType<T>>,
@@ -217,6 +227,7 @@ impl Function<Unvalidated> {
 
         Ok(Handle::new(Function {
             name: self.name.clone(),
+            category: self.category,
             return_type: self.return_type.validate(&self.name, lib)?,
             parameters: parameters?,
             error_type,
@@ -266,6 +277,7 @@ pub type FunctionHandle = Handle<Function<Unvalidated>>;
 pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
+    function_type: FunctionCategory,
     return_type: Option<ReturnType<FunctionReturnValue, Unvalidated>>,
     params: Vec<Arg<FunctionArgument, Unvalidated>>,
     doc: Option<Doc<Unvalidated>>,
@@ -273,10 +285,15 @@ pub struct FunctionBuilder<'a> {
 }
 
 impl<'a> FunctionBuilder<'a> {
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
+    pub(crate) fn new(
+        lib: &'a mut LibraryBuilder,
+        name: Name,
+        function_type: FunctionCategory,
+    ) -> Self {
         Self {
             lib,
             name,
+            function_type,
             return_type: None,
             params: Vec::new(),
             doc: None,
@@ -371,6 +388,7 @@ impl<'a> FunctionBuilder<'a> {
 
         let handle = FunctionHandle::new(Function {
             name: self.name,
+            category: self.function_type,
             return_type,
             parameters: self.params,
             error_type: self.error_type,

@@ -884,7 +884,15 @@ impl LibraryBuilder {
     }
 
     pub fn define_function<T: IntoName>(&mut self, name: T) -> BindResult<FunctionBuilder> {
-        Ok(FunctionBuilder::new(self, name.into_name()?))
+        self.define_function_with_category(name, FunctionCategory::Native)
+    }
+
+    pub(crate) fn define_function_with_category<T: IntoName>(
+        &mut self,
+        name: T,
+        category: FunctionCategory,
+    ) -> BindResult<FunctionBuilder> {
+        Ok(FunctionBuilder::new(self, name.into_name()?, category))
     }
 
     pub fn declare_class<T: IntoName>(&mut self, name: T) -> BindResult<ClassDeclarationHandle> {
@@ -1003,7 +1011,10 @@ impl LibraryBuilder {
 
         let class = self.declare_iterator(&class_name)?;
         let next_function = self
-            .define_function(class_name.append(&self.settings.iterator.next_function_suffix))?
+            .define_function_with_category(
+                class_name.append(&self.settings.iterator.next_function_suffix),
+                FunctionCategory::IteratorNext,
+            )?
             .param(
                 "iter",
                 class.clone(),
@@ -1036,7 +1047,10 @@ impl LibraryBuilder {
         let class_decl = self.declare_collection(&class_name)?;
 
         let builder = self
-            .define_function(class_name.append(&self.settings.collection.create_function_suffix))?
+            .define_function_with_category(
+                class_name.append(&self.settings.collection.create_function_suffix),
+                FunctionCategory::CollectionCreate,
+            )?
             .doc("Creates an instance of the collection")?;
 
         let builder = if has_reserve {
@@ -1054,14 +1068,20 @@ impl LibraryBuilder {
             .build()?;
 
         let destroy_func = self
-            .define_function(class_name.append(&self.settings.collection.destroy_function_suffix))?
+            .define_function_with_category(
+                class_name.append(&self.settings.collection.destroy_function_suffix),
+                FunctionCategory::CollectionDestroy,
+            )?
             .doc("Destroys an instance of the collection")?
             .param("instance", class_decl.clone(), "instance to destroy")?
             .returns_nothing()?
             .build()?;
 
         let add_func = self
-            .define_function(class_name.append(&self.settings.collection.add_function_suffix))?
+            .define_function_with_category(
+                class_name.append(&self.settings.collection.add_function_suffix),
+                FunctionCategory::CollectionAdd,
+            )?
             .doc("Add a value to the collection")?
             .param(
                 "instance",

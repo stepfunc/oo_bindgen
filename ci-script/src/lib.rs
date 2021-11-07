@@ -129,9 +129,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
         );
     }
 
-    if platforms.is_empty() {
-        panic!("No platforms found!");
-    }
+    assert!(!platforms.is_empty(), "No platforms found!");
 
     let has_dynamic_libs = platforms.has_dynamic_lib();
 

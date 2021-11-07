@@ -818,9 +818,10 @@ fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {
         .output()
         .expect("failed to run cargo");
 
-    if !output.status.success() {
-        panic!("failed to get the link dependencies");
-    }
+    assert!(
+        output.status.success(),
+        "failed to get the link dependencies"
+    );
 
     // It prints to stderr for some reason
     let result = String::from_utf8_lossy(&output.stderr);

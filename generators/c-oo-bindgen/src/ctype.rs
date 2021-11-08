@@ -7,7 +7,7 @@ use oo_bindgen::iterator::IteratorItemType;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{Handle, StructType, UniversalOr};
+use oo_bindgen::Handle;
 
 use heck::SnakeCase;
 use oo_bindgen::doc::{DocReference, Validated};

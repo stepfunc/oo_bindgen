@@ -5,10 +5,10 @@ use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::{InterfaceHandle, InterfaceType};
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
-    StructFieldType, UniversalStructField,
+    StructFieldType, UniversalOr, UniversalStructField,
 };
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{Handle, UniversalOr};
+use oo_bindgen::Handle;
 
 pub(crate) trait CppFunctionArgType {
     fn get_cpp_function_arg_type(&self) -> String;

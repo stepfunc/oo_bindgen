@@ -9,7 +9,7 @@ use oo_bindgen::interface::*;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::*;
-use oo_bindgen::{Handle, UniversalOr};
+use oo_bindgen::Handle;
 
 pub(crate) trait LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool;

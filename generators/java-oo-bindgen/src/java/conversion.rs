@@ -10,7 +10,7 @@ use oo_bindgen::iterator::IteratorItemType;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{Handle, UniversalOr};
+use oo_bindgen::Handle;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;

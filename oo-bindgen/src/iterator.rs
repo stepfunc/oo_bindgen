@@ -1,7 +1,7 @@
 use crate::doc::{DocReference, Unvalidated, Validated};
 use crate::name::Name;
 use crate::structs::{
-    FunctionReturnStructField, FunctionReturnStructHandle, StructDeclarationHandle,
+    FunctionReturnStructField, FunctionReturnStructHandle, StructDeclarationHandle, UniversalOr,
     UniversalStructHandle,
 };
 use crate::*;

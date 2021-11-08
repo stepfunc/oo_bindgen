@@ -8,7 +8,7 @@ use oo_bindgen::interface::*;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::{Handle, UniversalOr};
+use oo_bindgen::Handle;
 
 const INT_PTR_STRING: &str = "IntPtr";
 

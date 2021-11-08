@@ -12,10 +12,11 @@ use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, P
 use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::Interface;
 use oo_bindgen::structs::{
-    Constructor, ConstructorType, Struct, StructDeclaration, StructFieldType, Visibility,
+    Constructor, ConstructorType, Struct, StructDeclaration, StructFieldType, StructType,
+    Visibility,
 };
 use oo_bindgen::types::Arg;
-use oo_bindgen::{Handle, Library, Statement, StructType};
+use oo_bindgen::{Handle, Library, Statement};
 use std::path::Path;
 
 pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()> {

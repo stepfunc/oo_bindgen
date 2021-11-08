@@ -5,7 +5,7 @@ use crate::return_type::ReturnType;
 use crate::structs::{
     FunctionArgStructDeclaration, FunctionArgStructField, FunctionArgStructHandle,
     FunctionReturnStructDeclaration, FunctionReturnStructField, FunctionReturnStructHandle,
-    UniversalStructDeclaration, UniversalStructHandle,
+    UniversalDeclarationOr, UniversalOr, UniversalStructDeclaration, UniversalStructHandle,
 };
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;

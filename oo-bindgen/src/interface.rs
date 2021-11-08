@@ -4,7 +4,9 @@ use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
 use crate::iterator::IteratorHandle;
 use crate::name::{IntoName, Name};
 use crate::return_type::ReturnType;
-use crate::structs::{CallbackArgStructField, CallbackArgStructHandle, UniversalStructHandle};
+use crate::structs::{
+    CallbackArgStructField, CallbackArgStructHandle, UniversalOr, UniversalStructHandle,
+};
 use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
 use crate::*;
 use std::rc::Rc;

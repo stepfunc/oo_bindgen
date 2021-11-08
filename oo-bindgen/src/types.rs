@@ -8,7 +8,7 @@ use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::name::Name;
 use crate::structs::*;
-use crate::{BindResult, BindingError, StructType, UnvalidatedFields};
+use crate::{BindResult, BindingError, UnvalidatedFields};
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug, PartialEq)]

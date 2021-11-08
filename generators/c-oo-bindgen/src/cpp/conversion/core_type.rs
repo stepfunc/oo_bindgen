@@ -10,7 +10,7 @@ use oo_bindgen::interface::{CallbackFunction, Interface};
 use oo_bindgen::iterator::IteratorItemType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{Arg, BasicType, StringType};
-use oo_bindgen::{Handle, StructType, UniversalOr};
+use oo_bindgen::Handle;
 
 pub(crate) trait CoreCppType {
     fn core_cpp_type(&self) -> String;

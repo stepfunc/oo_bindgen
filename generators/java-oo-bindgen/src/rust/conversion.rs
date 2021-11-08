@@ -11,7 +11,7 @@ use oo_bindgen::name::Name;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::{Handle, LibrarySettings, UniversalOr};
+use oo_bindgen::{Handle, LibrarySettings};
 use std::rc::Rc;
 
 const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";

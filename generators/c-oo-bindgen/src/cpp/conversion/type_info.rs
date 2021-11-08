@@ -5,10 +5,10 @@ use oo_bindgen::function::FunctionArgument;
 use oo_bindgen::interface::{Interface, InterfaceType};
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
-    StructFieldType, TypedStructDeclaration, UniversalStructField,
+    StructFieldType, TypedStructDeclaration, UniversalOr, UniversalStructField,
 };
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{Handle, UniversalOr};
+use oo_bindgen::Handle;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum PassBy {

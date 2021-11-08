@@ -3,9 +3,11 @@ use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::doc::DocReference;
 use oo_bindgen::interface::InterfaceHandle;
 use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::structs::{FunctionArgStructField, Struct, StructFieldType, UniversalStructField};
+use oo_bindgen::structs::{
+    FunctionArgStructField, Struct, StructFieldType, UniversalOr, UniversalStructField,
+};
 use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::{Handle, UniversalOr};
+use oo_bindgen::Handle;
 
 pub(crate) trait ToNativeStructField {
     /// takes a C++ type and converts it to a native type

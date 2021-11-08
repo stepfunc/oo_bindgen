@@ -2,10 +2,10 @@ use crate::cpp::conversion::ToCpp;
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::doc::DocReference;
 use oo_bindgen::structs::{
-    CallbackArgStructField, FunctionReturnStructField, Struct, StructFieldType,
+    CallbackArgStructField, FunctionReturnStructField, Struct, StructFieldType, UniversalOr,
     UniversalStructField,
 };
-use oo_bindgen::{Handle, UniversalOr};
+use oo_bindgen::Handle;
 
 pub(crate) trait ToCppStructField {
     /// takes a native type and converts it to a C++ type

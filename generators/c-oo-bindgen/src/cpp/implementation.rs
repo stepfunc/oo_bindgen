@@ -11,12 +11,12 @@ use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, P
 use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnType};
 use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, Interface, InterfaceType};
 use oo_bindgen::structs::{
-    Constructor, ConstructorType, Number, Struct, StructFieldType, ValidatedConstructorDefault,
-    Visibility,
+    Constructor, ConstructorType, Number, Struct, StructFieldType, StructType,
+    ValidatedConstructorDefault, Visibility,
 };
 use oo_bindgen::types::Arg;
 use oo_bindgen::util::WithLastIndication;
-use oo_bindgen::{Handle, Library, Statement, StructType};
+use oo_bindgen::{Handle, Library, Statement};
 use std::path::Path;
 
 pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<()> {

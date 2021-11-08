@@ -44,12 +44,13 @@ use std::convert::TryFrom;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::class::{ClassDeclarationHandle, ClassHandle};
-use crate::enum_type::EnumHandle;
-use crate::function::FunctionHandle;
-use crate::interface::InterfaceHandle;
+use crate::class::{Class, ClassDeclarationHandle};
+use crate::enum_type::Enum;
+use crate::function::Function;
+use crate::interface::Interface;
 use crate::name::Name;
-use crate::{BindResult, BindingError, StructType, UnvalidatedFields};
+use crate::structs::StructType;
+use crate::{BindResult, BindingError, Handle, UnvalidatedFields};
 use std::fmt::Debug;
 
 pub trait DocReference: Debug + Clone {}
@@ -472,11 +473,15 @@ pub enum Validated {
     /// Reference a class
     Class(ClassDeclarationHandle),
     /// Reference a class method
-    ClassMethod(ClassHandle, Name, FunctionHandle),
+    ClassMethod(
+        Handle<Class<Unvalidated>>,
+        Name,
+        Handle<Function<Unvalidated>>,
+    ),
     /// Reference to the class constructor
-    ClassConstructor(ClassHandle, FunctionHandle),
+    ClassConstructor(Handle<Class<Unvalidated>>, Handle<Function<Unvalidated>>),
     /// Reference to the class destructor
-    ClassDestructor(ClassHandle, FunctionHandle),
+    ClassDestructor(Handle<Class<Unvalidated>>, Handle<Function<Unvalidated>>),
     /// Reference a struct
     Struct(StructType<Unvalidated>),
     /// Reference a field within a struct
@@ -484,13 +489,13 @@ pub enum Validated {
     /// Second parameter is the field name inside that struct
     StructField(StructType<Unvalidated>, Name),
     /// Reference an enum
-    Enum(EnumHandle),
+    Enum(Handle<Enum<Unvalidated>>),
     /// Reference an enum variant
-    EnumVariant(EnumHandle, Name),
+    EnumVariant(Handle<Enum<Unvalidated>>, Name),
     /// Reference an interface
-    Interface(InterfaceHandle),
+    Interface(Handle<Interface<Unvalidated>>),
     /// Reference a method of a interface
-    InterfaceMethod(InterfaceHandle, Name),
+    InterfaceMethod(Handle<Interface<Unvalidated>>, Name),
 }
 
 impl DocReference for Validated {}

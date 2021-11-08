@@ -5,7 +5,7 @@ use crate::*;
 
 use heck::{CamelCase, MixedCase, SnakeCase};
 use oo_bindgen::doc::Validated;
-use oo_bindgen::structs::{Struct, StructFieldType};
+use oo_bindgen::structs::{Struct, StructFieldType, StructType};
 
 pub(crate) fn generate_structs_cache(
     lib: &Library,

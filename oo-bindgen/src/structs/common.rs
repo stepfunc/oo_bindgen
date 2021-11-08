@@ -9,12 +9,13 @@ use crate::interface::InterfaceHandle;
 use crate::iterator::IteratorHandle;
 use crate::name::{IntoName, Name};
 use crate::structs::{
-    CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
+    CallbackArgStructField, CallbackArgStructHandle, FunctionArgStructField,
+    FunctionArgStructHandle, FunctionReturnStructField, FunctionReturnStructHandle,
+    UniversalStructField, UniversalStructHandle,
 };
-use crate::types::{DurationType, StringType, TypeValidator};
+use crate::types::{DurationType, StringType, TypeValidator, ValidatedType};
 use crate::{
-    BindResult, BindingError, Handle, LibraryBuilder, LibrarySettings, Statement, StructType,
-    UnvalidatedFields,
+    BindResult, BindingError, Handle, LibraryBuilder, LibrarySettings, Statement, UnvalidatedFields,
 };
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -785,5 +786,261 @@ where
 
         self.builder.constructors.push(constructor);
         Ok(self.builder)
+    }
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum StructType<D>
+where
+    D: DocReference,
+{
+    /// structs that may be used as native function parameters
+    FunctionArg(Handle<Struct<FunctionArgStructField, D>>),
+    /// structs than can be used as native function return values
+    FunctionReturn(Handle<Struct<FunctionReturnStructField, D>>),
+    /// structs that may be used as callback function arguments in interfaces
+    CallbackArg(Handle<Struct<CallbackArgStructField, D>>),
+    /// structs that can be used in any context and only contain basic types
+    Universal(Handle<Struct<UniversalStructField, D>>),
+}
+
+impl StructType<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<StructType<Validated>> {
+        match self {
+            StructType::FunctionArg(x) => Ok(StructType::FunctionArg(x.validate(lib)?)),
+            StructType::FunctionReturn(x) => Ok(StructType::FunctionReturn(x.validate(lib)?)),
+            StructType::CallbackArg(x) => Ok(StructType::CallbackArg(x.validate(lib)?)),
+            StructType::Universal(x) => Ok(StructType::Universal(x.validate(lib)?)),
+        }
+    }
+}
+
+impl From<FunctionArgStructHandle> for StructType<Unvalidated> {
+    fn from(x: FunctionArgStructHandle) -> Self {
+        StructType::FunctionArg(x)
+    }
+}
+
+impl From<FunctionReturnStructHandle> for StructType<Unvalidated> {
+    fn from(x: FunctionReturnStructHandle) -> Self {
+        StructType::FunctionReturn(x)
+    }
+}
+
+impl From<CallbackArgStructHandle> for StructType<Unvalidated> {
+    fn from(x: CallbackArgStructHandle) -> Self {
+        StructType::CallbackArg(x)
+    }
+}
+
+impl From<UniversalStructHandle> for StructType<Unvalidated> {
+    fn from(x: UniversalStructHandle) -> Self {
+        StructType::Universal(x)
+    }
+}
+
+/// Structs refs can always be the Universal struct type, but may also be a
+/// more specific type depending on context
+#[derive(Debug, Clone)]
+pub enum UniversalDeclarationOr<T>
+where
+    T: StructFieldType,
+{
+    Specific(TypedStructDeclaration<T>),
+    Universal(UniversalStructDeclaration),
+}
+
+impl<T> UniversalDeclarationOr<T>
+where
+    T: StructFieldType,
+{
+    pub fn untyped(&self) -> &StructDeclarationHandle {
+        match self {
+            UniversalDeclarationOr::Specific(x) => &x.inner,
+            UniversalDeclarationOr::Universal(x) => &x.inner,
+        }
+    }
+}
+
+impl<T> PartialEq for UniversalDeclarationOr<T>
+where
+    T: StructFieldType,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            UniversalDeclarationOr::Specific(y) => match other {
+                UniversalDeclarationOr::Specific(x) => y == x,
+                UniversalDeclarationOr::Universal(_) => false,
+            },
+            UniversalDeclarationOr::Universal(x) => match other {
+                UniversalDeclarationOr::Specific(_) => false,
+                UniversalDeclarationOr::Universal(y) => x == y,
+            },
+        }
+    }
+}
+
+impl<T> Eq for UniversalDeclarationOr<T> where T: StructFieldType {}
+
+/// Structs can always be the Universal struct type, but may also be a
+/// more specific type depending on context
+#[derive(Debug, Clone, Eq)]
+pub enum UniversalOr<T>
+where
+    T: StructFieldType,
+{
+    Specific(Handle<Struct<T, Unvalidated>>),
+    Universal(UniversalStructHandle),
+}
+
+impl<T> PartialEq for UniversalOr<T>
+where
+    T: StructFieldType,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            UniversalOr::Specific(y) => match other {
+                UniversalOr::Specific(x) => y == x,
+                UniversalOr::Universal(_) => false,
+            },
+            UniversalOr::Universal(x) => match other {
+                UniversalOr::Specific(_) => false,
+                UniversalOr::Universal(y) => x == y,
+            },
+        }
+    }
+}
+
+impl<T> UniversalOr<T>
+where
+    T: StructFieldType,
+{
+    pub fn name(&self) -> &Name {
+        match self {
+            UniversalOr::Specific(x) => x.name(),
+            UniversalOr::Universal(x) => x.name(),
+        }
+    }
+
+    pub fn declaration(&self) -> StructDeclarationHandle {
+        match self {
+            UniversalOr::Specific(x) => x.declaration.inner.clone(),
+            UniversalOr::Universal(x) => x.declaration.inner.clone(),
+        }
+    }
+
+    pub fn typed_declaration(&self) -> UniversalDeclarationOr<T> {
+        match self {
+            UniversalOr::Specific(x) => UniversalDeclarationOr::Specific(x.declaration.clone()),
+            UniversalOr::Universal(x) => UniversalDeclarationOr::Universal(x.declaration.clone()),
+        }
+    }
+
+    pub fn to_struct_type(&self) -> StructType<Unvalidated> {
+        match self {
+            UniversalOr::Specific(x) => T::create_struct_type(x.clone()),
+            UniversalOr::Universal(x) => StructType::Universal(x.clone()),
+        }
+    }
+}
+
+impl<T> ConstructorValidator for UniversalOr<T>
+where
+    T: StructFieldType,
+{
+    fn validate_constructor_default(
+        &self,
+        value: &ConstructorDefault,
+    ) -> BindResult<ValidatedConstructorDefault> {
+        match self {
+            UniversalOr::Specific(x) => x.validate_constructor_default(value),
+            UniversalOr::Universal(x) => x.validate_constructor_default(value),
+        }
+    }
+}
+
+impl<T> From<Handle<Struct<T, Unvalidated>>> for UniversalOr<T>
+where
+    T: StructFieldType,
+{
+    fn from(x: Handle<Struct<T, Unvalidated>>) -> Self {
+        UniversalOr::Specific(x)
+    }
+}
+
+impl<T> TypeValidator for UniversalOr<T>
+where
+    T: StructFieldType,
+{
+    fn get_validated_type(&self) -> Option<ValidatedType> {
+        Some(ValidatedType::Struct(self.to_struct_type()))
+    }
+}
+
+impl<D> StructType<D>
+where
+    D: DocReference,
+{
+    pub fn constructors(&self) -> &[Handle<Constructor<D>>] {
+        match self {
+            StructType::FunctionArg(x) => &x.constructors,
+            StructType::FunctionReturn(x) => &x.constructors,
+            StructType::CallbackArg(x) => &x.constructors,
+            StructType::Universal(x) => &x.constructors,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            StructType::FunctionArg(x) => x.name(),
+            StructType::CallbackArg(x) => x.name(),
+            StructType::FunctionReturn(x) => x.name(),
+            StructType::Universal(x) => x.name(),
+        }
+    }
+
+    pub fn doc(&self) -> &Doc<D> {
+        match self {
+            StructType::FunctionArg(x) => &x.doc,
+            StructType::FunctionReturn(x) => &x.doc,
+            StructType::CallbackArg(x) => &x.doc,
+            StructType::Universal(x) => &x.doc,
+        }
+    }
+
+    pub fn settings(&self) -> &LibrarySettings {
+        match self {
+            StructType::FunctionArg(x) => &x.declaration.inner.settings,
+            StructType::FunctionReturn(x) => &x.declaration.inner.settings,
+            StructType::CallbackArg(x) => &x.declaration.inner.settings,
+            StructType::Universal(x) => &x.declaration.inner.settings,
+        }
+    }
+
+    pub fn declaration(&self) -> StructDeclarationHandle {
+        match self {
+            StructType::FunctionArg(x) => x.declaration.inner.clone(),
+            StructType::CallbackArg(x) => x.declaration.inner.clone(),
+            StructType::FunctionReturn(x) => x.declaration.inner.clone(),
+            StructType::Universal(x) => x.declaration.inner.clone(),
+        }
+    }
+
+    pub fn find_field_name(&self, name: &str) -> Option<Name> {
+        match self {
+            StructType::FunctionArg(x) => x.find_field_name(name),
+            StructType::CallbackArg(x) => x.find_field_name(name),
+            StructType::FunctionReturn(x) => x.find_field_name(name),
+            StructType::Universal(x) => x.find_field_name(name),
+        }
+    }
+
+    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor<D>>> {
+        match self {
+            StructType::FunctionArg(x) => x.get_default_constructor(),
+            StructType::FunctionReturn(x) => x.get_default_constructor(),
+            StructType::CallbackArg(x) => x.get_default_constructor(),
+            StructType::Universal(x) => x.get_default_constructor(),
+        }
     }
 }

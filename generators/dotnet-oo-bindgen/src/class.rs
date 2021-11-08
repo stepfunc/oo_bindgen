@@ -113,29 +113,29 @@ pub(crate) fn generate_static(
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
-    constructor: &Handle<Function<Validated>>,
+    constructor: &ClassConstructor<Validated>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &constructor.doc)?;
+        xmldoc_print(f, &constructor.function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in &constructor.parameters {
+        for param in &constructor.function.parameters {
             f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
-        if let FunctionReturnType::Type(_, doc) = &constructor.return_type {
+        if let FunctionReturnType::Type(_, doc) = &constructor.function.return_type {
             f.writeln("<returns>")?;
             docstring_print(f, doc)?;
             f.write("</returns>")?;
         }
 
         // Print exception
-        if let Some(error) = &constructor.error_type {
+        if let Some(error) = &constructor.function.error_type {
             f.writeln(&format!(
                 "<exception cref=\"{}\" />",
                 error.exception_name.to_camel_case()
@@ -148,6 +148,7 @@ fn generate_constructor(
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor
+            .function
             .parameters
             .iter()
             .map(|param| {
@@ -163,7 +164,7 @@ fn generate_constructor(
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, constructor, "this.self = ", None, true)
+        call_native_function(f, &constructor.function, "this.self = ", None, true)
     })
 }
 

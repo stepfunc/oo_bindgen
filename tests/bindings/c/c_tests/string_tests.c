@@ -6,7 +6,7 @@
 
 static void test_english_string()
 {
-    foo_string_class_t* string_class = foo_string_new();
+    foo_string_class_t* string_class = foo_string_class_create();
 
     #define ENGLISH_STRING_1 "I like to be home with my monkey and my dog"
     assert(strcmp(ENGLISH_STRING_1, foo_string_class_echo(string_class, ENGLISH_STRING_1)) == 0);
@@ -21,7 +21,7 @@ static void test_english_string()
 
 static void test_french_string()
 {
-    foo_string_class_t* string_class = foo_string_new();
+    foo_string_class_t* string_class = foo_string_class_create();
 
     #define FRENCH_STRING_1 "Devant mon miroir j'ai rêvé d'être une star, j'ai rêvé d'être immortellement belle"
     assert(strcmp(FRENCH_STRING_1, foo_string_class_echo(string_class, FRENCH_STRING_1)) == 0);

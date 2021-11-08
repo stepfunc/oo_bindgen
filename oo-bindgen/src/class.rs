@@ -174,7 +174,7 @@ where
     T: DocReference,
 {
     pub declaration: ClassDeclarationHandle,
-    pub constructor: Option<Handle<Function<T>>>,
+    pub constructor: Option<ClassConstructor<T>>,
     pub destructor: Option<ClassDestructor<T>>,
     pub methods: Vec<ClassMethod<T>>,
     pub static_methods: Vec<ClassStaticMethod<T>>,
@@ -265,7 +265,7 @@ pub type ClassHandle = Handle<Class<Unvalidated>>;
 pub struct ClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     declaration: ClassDeclarationHandle,
-    constructor: Option<Handle<Function<Unvalidated>>>,
+    constructor: Option<ClassConstructor<Unvalidated>>,
     destructor: Option<ClassDestructor<Unvalidated>>,
     methods: Vec<ClassMethod<Unvalidated>>,
     static_methods: Vec<ClassStaticMethod<Unvalidated>>,
@@ -301,27 +301,16 @@ impl<'a> ClassBuilder<'a> {
         }
     }
 
-    pub fn constructor(mut self, native_function: &FunctionHandle) -> BindResult<Self> {
+    pub fn constructor(mut self, constructor: ClassConstructor<Unvalidated>) -> BindResult<Self> {
         if self.constructor.is_some() {
             return Err(BindingError::ConstructorAlreadyDefined {
                 handle: self.declaration,
             });
         }
-        self.lib.validate_function(native_function)?;
 
-        if let FunctionReturnType::Type(FunctionReturnValue::ClassRef(return_type), _) =
-            &native_function.return_type
-        {
-            if return_type == &self.declaration {
-                self.constructor = Some(native_function.clone());
-                return Ok(self);
-            }
-        }
+        self.constructor = Some(constructor);
 
-        Err(BindingError::ConstructorReturnTypeDoesNotMatch {
-            handle: self.declaration,
-            function: native_function.clone(),
-        })
+        Ok(self)
     }
 
     pub fn destructor(mut self, destructor: ClassDestructor<Unvalidated>) -> BindResult<Self> {

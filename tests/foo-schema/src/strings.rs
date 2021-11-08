@@ -3,25 +3,24 @@ use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare the class
-    let stringclass = lib.declare_class("string_class")?;
+    let string_class = lib.declare_class("string_class")?;
 
     // Declare each native function
-    let stringclass_new_func = lib
-        .define_function("string_new")?
-        .returns(stringclass.clone(), "New StringClass")?
+    let constructor = lib
+        .define_constructor(string_class.clone())?
         .doc("Create a new StringClass")?
         .build()?;
 
-    let destructor = lib.define_destructor(stringclass.clone(), "Destroy a StringClass")?;
+    let destructor = lib.define_destructor(string_class.clone(), "Destroy a StringClass")?;
 
-    let echo_method = lib
-        .define_method("echo", stringclass.clone())?
+    let echo = lib
+        .define_method("echo", string_class.clone())?
         .param("value", StringType, "String to echo")?
         .returns(StringType, "Echoed string")?
         .doc("Echo a string")?
         .build()?;
 
-    let stringclass_length_func = lib
+    let string_length = lib
         .define_function("string_length")?
         .param("value", StringType, "String")?
         .returns(BasicType::U32, "String length")?
@@ -29,12 +28,11 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .build()?;
 
     // Define the class
-    let _testclass = lib
-        .define_class(&stringclass)?
-        .constructor(&stringclass_new_func)?
+    lib.define_class(&string_class)?
+        .constructor(constructor)?
         .destructor(destructor)?
-        .method(echo_method)?
-        .static_method("get_length", &stringclass_length_func)?
+        .method(echo)?
+        .static_method("get_length", &string_length)?
         .disposable_destroy()?
         .doc("StringClass")?
         .build()?;

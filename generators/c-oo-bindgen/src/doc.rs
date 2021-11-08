@@ -68,7 +68,7 @@ fn reference_print(
         Validated::ClassConstructor(_, constructor) => {
             f.write(&format!(
                 "@ref {}_{}",
-                lib.settings.c_ffi_prefix, constructor.name
+                lib.settings.c_ffi_prefix, constructor.function.name
             ))?;
         }
         Validated::ClassDestructor(_, destructor) => {

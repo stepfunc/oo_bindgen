@@ -417,7 +417,7 @@ fn print_class_definition(
         ))?;
 
         if let Some(x) = &handle.constructor {
-            let args = cpp_arguments(x.parameters.iter());
+            let args = cpp_arguments(x.function.parameters.iter());
             f.writeln(&format!("{}({});", class_name, args))?;
         };
         if handle.destructor.is_some() {

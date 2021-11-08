@@ -31,7 +31,7 @@ static void on_destroy(void* context)
 
 static void simple_callback_test()
 {
-    foo_callback_source_t* cb_source = foo_cbsource_new();
+    foo_callback_source_t* cb_source = foo_callback_source_create();
 
     data_t data =
     {
@@ -65,7 +65,7 @@ static void simple_callback_test()
 
 static void optional_callback_test()
 {
-    foo_callback_source_t* cb_source = foo_cbsource_new();
+    foo_callback_source_t* cb_source = foo_callback_source_create();
 
     foo_callback_interface_t interface = foo_callback_interface_init(NULL, NULL, NULL, NULL);
 

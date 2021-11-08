@@ -6,7 +6,7 @@ pub struct TestClass {
     value: u32,
 }
 
-pub unsafe fn testclass_new(value: u32) -> *mut TestClass {
+pub unsafe fn test_class_create(value: u32) -> *mut TestClass {
     CONSTRUCTION_COUNTER += 1;
     let testclass = Box::new(TestClass { value });
     Box::into_raw(testclass)

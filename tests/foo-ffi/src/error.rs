@@ -32,7 +32,7 @@ pub(crate) fn echo_password(password: &CStr) -> std::result::Result<&CStr, crate
     }
 }
 
-pub(crate) fn create_class_with_password(
+pub(crate) fn class_with_password_create(
     password: &CStr,
 ) -> std::result::Result<*mut crate::ClassWithPassword, crate::ffi::MyError> {
     if password.to_str()? == PASSWORD {

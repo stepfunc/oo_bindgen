@@ -20,9 +20,9 @@ static void test_integer_out_parameter()
 static void test_allocation_via_out_parameter()
 {
     foo_class_with_password_t* instance = NULL;
-    assert(foo_create_class_with_password(WRONG_PASSWORD, &instance) == FOO_MY_ERROR_BAD_PASSWORD);
+    assert(foo_class_with_password_create(WRONG_PASSWORD, &instance) == FOO_MY_ERROR_BAD_PASSWORD);
     assert(!instance);
-    assert(foo_create_class_with_password(CORRECT_PASSWORD, &instance) == FOO_MY_ERROR_OK);
+    assert(foo_class_with_password_create(CORRECT_PASSWORD, &instance) == FOO_MY_ERROR_OK);
     assert(instance);
 
     uint32_t number = 0;

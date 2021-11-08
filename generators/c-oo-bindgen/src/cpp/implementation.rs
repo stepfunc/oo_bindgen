@@ -518,9 +518,9 @@ fn write_class_implementation(
             "{}::{}({}) : self(fn::{}({}))",
             cpp_name,
             cpp_name,
-            cpp_function_args(&constructor.parameters),
-            constructor.name.to_snake_case(),
-            cpp_function_arg_invocation(&constructor.parameters)
+            cpp_function_args(&constructor.function.parameters),
+            constructor.function.name.to_snake_case(),
+            cpp_function_arg_invocation(&constructor.function.parameters)
         ))?;
         f.writeln("{}")?;
         f.newline()?;

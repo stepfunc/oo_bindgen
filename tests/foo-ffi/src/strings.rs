@@ -12,7 +12,7 @@ impl StringClass {
     }
 }
 
-pub unsafe fn string_new() -> *mut StringClass {
+pub unsafe fn string_class_create() -> *mut StringClass {
     let string_class = Box::new(StringClass::new());
     Box::into_raw(string_class)
 }

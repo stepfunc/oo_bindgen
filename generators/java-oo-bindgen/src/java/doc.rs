@@ -61,6 +61,7 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
         }
         Validated::ClassConstructor(class, constructor) => {
             let params = constructor
+                .function
                 .parameters
                 .iter()
                 .map(|param| param.arg_type.as_java_primitive())

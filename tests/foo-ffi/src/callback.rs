@@ -35,7 +35,7 @@ impl CallbackSource {
     }
 }
 
-pub unsafe fn cbsource_new() -> *mut CallbackSource {
+pub unsafe fn callback_source_create() -> *mut CallbackSource {
     let cb_source = Box::new(CallbackSource::new());
     Box::into_raw(cb_source)
 }

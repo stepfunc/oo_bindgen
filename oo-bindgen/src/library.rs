@@ -133,13 +133,23 @@ pub struct ClassSettings {
     ///
     /// This value defaults to 'destroy'
     pub class_destructor_suffix: Name,
+    /// suffix for C constructors.
+    /// The full C function name is automatically generated as `<c_ffi_prefix>_<class_name>_<class_constructor_suffix>`
+    ///
+    /// This value defaults to 'new'
+    pub class_constructor_suffix: Name,
 }
 
 impl ClassSettings {
-    pub fn new(method_instance_argument_name: Name, class_destructor_suffix: Name) -> Self {
+    pub fn new(
+        method_instance_argument_name: Name,
+        class_destructor_suffix: Name,
+        class_constructor_suffix: Name,
+    ) -> Self {
         Self {
             method_instance_argument_name,
             class_destructor_suffix,
+            class_constructor_suffix,
         }
     }
 }
@@ -149,6 +159,7 @@ impl Default for ClassSettings {
         Self {
             method_instance_argument_name: Name::create("instance").unwrap(),
             class_destructor_suffix: Name::create("destroy").unwrap(),
+            class_constructor_suffix: Name::create("create").unwrap(),
         }
     }
 }
@@ -690,6 +701,13 @@ impl LibraryBuilder {
         class: ClassDeclarationHandle,
     ) -> BindResult<ClassMethodBuilder> {
         ClassMethodBuilder::new(self, name.into_name()?, class)
+    }
+
+    pub fn define_constructor(
+        &mut self,
+        class: ClassDeclarationHandle,
+    ) -> BindResult<ClassConstructorBuilder> {
+        ClassConstructorBuilder::new(self, class)
     }
 
     pub fn define_destructor<D: Into<Doc<Unvalidated>>>(

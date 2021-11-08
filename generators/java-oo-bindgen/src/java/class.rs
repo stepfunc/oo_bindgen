@@ -91,21 +91,21 @@ pub(crate) fn generate_static(
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
-    constructor: &Handle<Function<Validated>>,
+    constructor: &ClassConstructor<Validated>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &constructor.doc)?;
+        javadoc_print(f, &constructor.function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in constructor.parameters.iter() {
+        for param in constructor.function.parameters.iter() {
             f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
             docstring_print(f, &param.doc)?;
         }
 
         // Print exception
-        if let Some(error) = &constructor.error_type {
+        if let Some(error) = &constructor.function.error_type {
             f.writeln(&format!(
                 "@throws {} {}",
                 error.exception_name.to_camel_case(),
@@ -119,6 +119,7 @@ fn generate_constructor(
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor
+            .function
             .parameters
             .iter()
             .map(|param| {
@@ -134,7 +135,12 @@ fn generate_constructor(
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, constructor, &format!("{} object = ", classname), false)?;
+        call_native_function(
+            f,
+            &constructor.function,
+            &format!("{} object = ", classname),
+            false,
+        )?;
         f.writeln("this.self = object.self;")?;
         f.writeln("object.disposed.set(true);")
     })

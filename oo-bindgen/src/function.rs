@@ -535,3 +535,89 @@ impl ClassDestructor<Unvalidated> {
         })
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct ClassConstructor<T>
+where
+    T: DocReference,
+{
+    pub class: ClassDeclarationHandle,
+    pub function: Handle<Function<T>>,
+}
+
+impl ClassConstructor<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<ClassConstructor<Validated>> {
+        Ok(ClassConstructor {
+            class: self.class.clone(),
+            function: self.function.validate(lib)?,
+        })
+    }
+
+    pub(crate) fn new(
+        class: ClassDeclarationHandle,
+        function: Handle<Function<Unvalidated>>,
+    ) -> Self {
+        Self { class, function }
+    }
+}
+
+pub struct ClassConstructorBuilder<'a> {
+    class: ClassDeclarationHandle,
+    inner: FunctionBuilder<'a>,
+}
+
+impl<'a> ClassConstructorBuilder<'a> {
+    pub(crate) fn new(
+        lib: &'a mut LibraryBuilder,
+        class: ClassDeclarationHandle,
+    ) -> BindResult<Self> {
+        let builder = lib
+            .define_function(
+                class
+                    .name
+                    .append(&lib.settings.class.class_constructor_suffix),
+            )?
+            .returns(
+                class.clone(),
+                format!("Instance of {{class:{}}}", class.name),
+            )?;
+
+        Ok(Self {
+            class,
+            inner: builder,
+        })
+    }
+
+    pub fn param<T: IntoName, D: Into<DocString<Unvalidated>>, P: Into<FunctionArgument>>(
+        self,
+        name: T,
+        param_type: P,
+        doc: D,
+    ) -> BindResult<Self> {
+        Ok(Self {
+            class: self.class,
+            inner: self.inner.param(name, param_type, doc)?,
+        })
+    }
+
+    pub fn fails_with(self, err: ErrorType<Unvalidated>) -> BindResult<Self> {
+        Ok(Self {
+            class: self.class,
+            inner: self.inner.fails_with(err)?,
+        })
+    }
+
+    pub fn doc<D: Into<Doc<Unvalidated>>>(self, doc: D) -> BindResult<Self> {
+        Ok(Self {
+            class: self.class,
+            inner: self.inner.doc(doc)?,
+        })
+    }
+
+    pub fn build(self) -> BindResult<ClassConstructor<Unvalidated>> {
+        Ok(ClassConstructor::new(self.class, self.inner.build()?))
+    }
+}

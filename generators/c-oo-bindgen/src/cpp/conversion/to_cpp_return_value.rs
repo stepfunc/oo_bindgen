@@ -12,8 +12,7 @@ impl ToCppReturnValue for FunctionReturnValue {
             FunctionReturnValue::Basic(x) => x.to_cpp(expr),
             FunctionReturnValue::String(x) => x.to_cpp(expr),
             FunctionReturnValue::ClassRef(_) => {
-                //  we don't transform class refs in the wrappers
-                expr
+                format!("::convert::to_cpp({})", expr)
             }
             FunctionReturnValue::Struct(_) => {
                 format!("::convert::to_cpp({})", expr)

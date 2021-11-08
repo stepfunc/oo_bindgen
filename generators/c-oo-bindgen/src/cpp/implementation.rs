@@ -809,10 +809,12 @@ fn write_function_wrapper(
                     f.writeln(&format!("const auto {} = {}(", RETURN_VALUE, c_func_name))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")?;
-                    f.writeln(&format!(
-                        "return {};",
+                    let return_value = if t.transform_in_wrapper() {
                         t.to_cpp_return_value(RETURN_VALUE.to_string())
-                    ))
+                    } else {
+                        RETURN_VALUE.to_string()
+                    };
+                    f.writeln(&format!("return {};", return_value))
                 }
             },
             Some(err) => match &func.return_type {
@@ -828,10 +830,12 @@ fn write_function_wrapper(
                     indented(f, |f| write_args(f, func, true))?;
                     f.writeln(");")?;
                     write_error_check(f, err)?;
-                    f.writeln(&format!(
-                        "return {};",
+                    let return_value = if t.transform_in_wrapper() {
                         t.to_cpp_return_value(RETURN_VALUE.to_string())
-                    ))
+                    } else {
+                        RETURN_VALUE.to_string()
+                    };
+                    f.writeln(&format!("return {};", return_value))
                 }
             },
         }

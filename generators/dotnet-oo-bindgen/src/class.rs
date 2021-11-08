@@ -170,12 +170,12 @@ fn generate_constructor(
 fn generate_destructor(
     f: &mut dyn Printer,
     classname: &str,
-    destructor: &Handle<Function<Validated>>,
+    destructor: &ClassDestructor<Validated>,
     destruction_mode: &DestructionMode,
 ) -> FormattingResult<()> {
     if destruction_mode.is_manual_destruction() {
         // Public Dispose method
-        documentation(f, |f| xmldoc_print(f, &destructor.doc))?;
+        documentation(f, |f| xmldoc_print(f, &destructor.function.doc))?;
 
         let method_name = if let DestructionMode::Custom(name) = destruction_mode {
             name.to_camel_case()
@@ -211,7 +211,7 @@ fn generate_destructor(
         f.newline()?;
         f.writeln(&format!(
             "{}.{}(this.self);",
-            NATIVE_FUNCTIONS_CLASSNAME, destructor.name
+            NATIVE_FUNCTIONS_CLASSNAME, destructor.function.name
         ))?;
         f.newline()?;
         f.writeln("this.disposed = true;")

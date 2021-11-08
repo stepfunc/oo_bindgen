@@ -59,7 +59,7 @@ static void simple_callback_test()
     assert(76 == data.last_duration);
 
     assert(!data.destroy_called);
-    foo_cbsource_destroy(cb_source);
+    foo_callback_source_destroy(cb_source);
     assert(data.destroy_called);
 }
 
@@ -74,7 +74,7 @@ static void optional_callback_test()
     foo_callback_source_set_value(cb_source, 24);
     foo_callback_source_set_duration(cb_source, 76);
 
-    foo_cbsource_destroy(cb_source);
+    foo_callback_source_destroy(cb_source);
 }
 
 void callback_tests()

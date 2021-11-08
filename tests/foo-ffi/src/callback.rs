@@ -40,7 +40,7 @@ pub unsafe fn cbsource_new() -> *mut CallbackSource {
     Box::into_raw(cb_source)
 }
 
-pub unsafe fn cbsource_destroy(cb_source: *mut CallbackSource) {
+pub unsafe fn callback_source_destroy(cb_source: *mut CallbackSource) {
     if !cb_source.is_null() {
         Box::from_raw(cb_source);
     }

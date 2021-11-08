@@ -17,7 +17,7 @@ pub unsafe fn string_new() -> *mut StringClass {
     Box::into_raw(string_class)
 }
 
-pub unsafe fn string_destroy(string_class: *mut StringClass) {
+pub unsafe fn string_class_destroy(string_class: *mut StringClass) {
     if !string_class.is_null() {
         Box::from_raw(string_class);
     }

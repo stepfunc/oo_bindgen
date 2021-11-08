@@ -16,7 +16,7 @@ static void test_english_string()
     assert(strcmp(ENGLISH_STRING_2, foo_string_class_echo(string_class, ENGLISH_STRING_2)) == 0);
     assert(strlen(ENGLISH_STRING_2) == foo_string_length(ENGLISH_STRING_2));
 
-    foo_string_destroy(string_class);
+    foo_string_class_destroy(string_class);
 }
 
 static void test_french_string()
@@ -31,7 +31,7 @@ static void test_french_string()
     assert(strcmp(FRENCH_STRING_2, foo_string_class_echo(string_class, FRENCH_STRING_2)) == 0);
     assert(strlen(FRENCH_STRING_2) == foo_string_length(FRENCH_STRING_2));
 
-    foo_string_destroy(string_class);
+    foo_string_class_destroy(string_class);
 }
 
 void string_tests()

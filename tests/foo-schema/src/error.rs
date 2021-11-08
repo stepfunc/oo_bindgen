@@ -55,16 +55,11 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("extract a special value from the class instance")?
         .build()?;
 
-    let destructor_fn = lib
-        .define_function("destroy_class_with_password")?
-        .param("instance", my_class.clone(), "class to destroy")?
-        .returns_nothing()?
-        .doc("Destroy an instance")?
-        .build()?;
+    let destructor = lib.define_destructor(my_class.clone(), "Destroy an instance")?;
 
     lib.define_class(&my_class)?
         .constructor(&constructor_fn)?
-        .destructor(&destructor_fn)?
+        .destructor(destructor)?
         .method(get_special_value_method)?
         .static_method("get_special_value", &get_special_number_fb)?
         .static_method("validate_password", &get_struct_fn)?

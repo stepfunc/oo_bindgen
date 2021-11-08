@@ -490,3 +490,48 @@ impl<'a> ClassMethodBuilder<'a> {
         Ok(ClassMethod::new(self.method_name, self.class, function))
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct ClassDestructor<T>
+where
+    T: DocReference,
+{
+    pub class: ClassDeclarationHandle,
+    pub function: Handle<Function<T>>,
+}
+
+impl ClassDestructor<Unvalidated> {
+    pub(crate) fn new(
+        lib: &mut LibraryBuilder,
+        class: ClassDeclarationHandle,
+        doc: Doc<Unvalidated>,
+    ) -> BindResult<Self> {
+        let destructor_function_name = class
+            .name
+            .append(&lib.settings.class.class_destructor_suffix);
+        let instance_name = lib.settings.class.method_instance_argument_name.clone();
+
+        let function = lib
+            .define_function(destructor_function_name)?
+            .param(
+                instance_name,
+                class.clone(),
+                format!("Instance of {{class:{}}} to destroy", class.name),
+            )?
+            .doc(doc)?
+            .returns_nothing()?
+            .build()?;
+
+        Ok(Self { class, function })
+    }
+
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<ClassDestructor<Validated>> {
+        Ok(ClassDestructor {
+            class: self.class.clone(),
+            function: self.function.validate(lib)?,
+        })
+    }
+}

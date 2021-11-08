@@ -124,15 +124,22 @@ impl Default for IteratorSettings {
 #[derive(Debug)]
 pub struct ClassSettings {
     /// Methods in C always take an instance of the class at the first parameter.
-    /// This setting controls the name automatically assigned to this paramter and defaults
-    /// to "instance"
+    /// This setting controls the name automatically assigned to this parameter.
+    ///
+    /// This value defaults to "instance"
     pub method_instance_argument_name: Name,
+    /// suffix for C destructors.
+    /// The full C function name is automatically generated as `<c_ffi_prefix>_<class_name>_<class_destructor_suffix>`
+    ///
+    /// This value defaults to 'destroy'
+    pub class_destructor_suffix: Name,
 }
 
 impl ClassSettings {
-    pub fn new(method_instance_argument_name: Name) -> Self {
+    pub fn new(method_instance_argument_name: Name, class_destructor_suffix: Name) -> Self {
         Self {
             method_instance_argument_name,
+            class_destructor_suffix,
         }
     }
 }
@@ -141,6 +148,7 @@ impl Default for ClassSettings {
     fn default() -> ClassSettings {
         Self {
             method_instance_argument_name: Name::create("instance").unwrap(),
+            class_destructor_suffix: Name::create("destroy").unwrap(),
         }
     }
 }
@@ -682,6 +690,14 @@ impl LibraryBuilder {
         class: ClassDeclarationHandle,
     ) -> BindResult<ClassMethodBuilder> {
         ClassMethodBuilder::new(self, name.into_name()?, class)
+    }
+
+    pub fn define_destructor<D: Into<Doc<Unvalidated>>>(
+        &mut self,
+        class: ClassDeclarationHandle,
+        doc: D,
+    ) -> BindResult<ClassDestructor<Unvalidated>> {
+        ClassDestructor::new(self, class, doc.into())
     }
 
     pub(crate) fn define_function_with_category<T: IntoName>(

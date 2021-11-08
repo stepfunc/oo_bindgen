@@ -142,17 +142,17 @@ fn generate_constructor(
 
 fn generate_destructor(
     f: &mut dyn Printer,
-    destructor: &Handle<Function<Validated>>,
+    destructor: &ClassDestructor<Validated>,
     destruction_mode: &DestructionMode,
 ) -> FormattingResult<()> {
     if destruction_mode.is_manual_destruction() {
         documentation(f, |f| {
             // Print top-level documentation
-            javadoc_print(f, &destructor.doc)?;
+            javadoc_print(f, &destructor.function.doc)?;
             f.newline()?;
 
             // Print each parameter value
-            for param in destructor.parameters.iter().skip(1) {
+            for param in destructor.function.parameters.iter().skip(1) {
                 f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
                 docstring_print(f, &param.doc)?;
             }
@@ -183,7 +183,7 @@ fn generate_destructor(
 
         f.writeln(&format!(
             "{}.{}(this);",
-            NATIVE_FUNCTIONS_CLASSNAME, destructor.name
+            NATIVE_FUNCTIONS_CLASSNAME, destructor.function.name
         ))
     })?;
 

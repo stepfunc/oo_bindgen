@@ -532,7 +532,10 @@ fn write_class_implementation(
         blocked(f, |f| {
             f.writeln("if(self)")?;
             blocked(f, |f| {
-                f.writeln(&format!("fn::{}(*this);", destructor.name.to_snake_case()))
+                f.writeln(&format!(
+                    "fn::{}(*this);",
+                    destructor.function.name.to_snake_case()
+                ))
             })?;
             Ok(())
         })?;

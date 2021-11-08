@@ -21,12 +21,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         )?
         .build()?;
 
-    let test_class_destroy_func = lib
-        .define_function("testclass_destroy")?
-        .param("testclass", test_class.clone(), "Class handle")?
-        .returns_nothing()?
-        .doc("Destroy a test class using the parameter {param:testclass}")?
-        .build()?;
+    let test_class_destructor =
+        lib.define_destructor(test_class.clone(), "Destroy a {class:test_class}")?;
 
     let get_value_method = lib
         .define_method("get_value", test_class.clone())?
@@ -66,7 +62,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let _test_class = lib
         .define_class(&test_class)?
         .constructor(&test_class_new_func)?
-        .destructor(&test_class_destroy_func)?
+        .destructor(test_class_destructor)?
         .method(get_value_method)?
         .method(increment_value_method)?
         .async_method("get_value_async", &test_class_get_value_async_func)?

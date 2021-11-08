@@ -12,12 +12,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Create a new StringClass")?
         .build()?;
 
-    let stringclass_destroy_func = lib
-        .define_function("string_destroy")?
-        .param("stringclass", stringclass.clone(), "StringClass")?
-        .returns_nothing()?
-        .doc("Destroy a StringClass")?
-        .build()?;
+    let destructor = lib.define_destructor(stringclass.clone(), "Destroy a StringClass")?;
 
     let echo_method = lib
         .define_method("echo", stringclass.clone())?
@@ -37,7 +32,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let _testclass = lib
         .define_class(&stringclass)?
         .constructor(&stringclass_new_func)?
-        .destructor(&stringclass_destroy_func)?
+        .destructor(destructor)?
         .method(echo_method)?
         .static_method("get_length", &stringclass_length_func)?
         .disposable_destroy()?

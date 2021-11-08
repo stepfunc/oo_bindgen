@@ -29,7 +29,7 @@ static void test_allocation_via_out_parameter()
     assert(foo_class_with_password_get_special_value(instance, &number) == FOO_MY_ERROR_OK);
     assert(number == MAGIC_NUMBER);
 
-    foo_destroy_class_with_password(instance);
+    foo_class_with_password_destroy(instance);
 }
 
 void error_tests()

@@ -28,12 +28,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Create a new CallbackSource")?
         .build()?;
 
-    let cbsource_destroy_func = lib
-        .define_function("cbsource_destroy")?
-        .param("cbsource", cbsource.clone(), "Callback source")?
-        .returns_nothing()?
-        .doc("Destroy a callback source")?
-        .build()?;
+    let callback_source_destructor =
+        lib.define_destructor(cbsource.clone(), "Destroy a callback source")?;
 
     let cbsource_set_interface = lib
         .define_method("set_interface", cbsource.clone())?
@@ -60,7 +56,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let _cbsource = lib
         .define_class(&cbsource)?
         .constructor(&cbsource_new_func)?
-        .destructor(&cbsource_destroy_func)?
+        .destructor(callback_source_destructor)?
         .method(cbsource_set_interface)?
         .method(cbsource_set_value_func)?
         .method(cbsource_set_duration_func)?

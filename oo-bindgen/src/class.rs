@@ -175,7 +175,7 @@ where
 {
     pub declaration: ClassDeclarationHandle,
     pub constructor: Option<Handle<Function<T>>>,
-    pub destructor: Option<Handle<Function<T>>>,
+    pub destructor: Option<ClassDestructor<T>>,
     pub methods: Vec<ClassMethod<T>>,
     pub static_methods: Vec<ClassStaticMethod<T>>,
     pub async_methods: Vec<AsyncMethod<T>>,
@@ -266,7 +266,7 @@ pub struct ClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     declaration: ClassDeclarationHandle,
     constructor: Option<Handle<Function<Unvalidated>>>,
-    destructor: Option<Handle<Function<Unvalidated>>>,
+    destructor: Option<ClassDestructor<Unvalidated>>,
     methods: Vec<ClassMethod<Unvalidated>>,
     static_methods: Vec<ClassStaticMethod<Unvalidated>>,
     async_methods: Vec<AsyncMethod<Unvalidated>>,
@@ -324,29 +324,22 @@ impl<'a> ClassBuilder<'a> {
         })
     }
 
-    pub fn destructor(mut self, native_function: &FunctionHandle) -> BindResult<Self> {
+    pub fn destructor(mut self, destructor: ClassDestructor<Unvalidated>) -> BindResult<Self> {
         if self.destructor.is_some() {
             return Err(BindingError::DestructorAlreadyDefined {
                 handle: self.declaration,
             });
         }
-        self.lib.validate_function(native_function)?;
-        self.validate_first_param(native_function)?;
 
-        if native_function.error_type.is_some() {
-            return Err(BindingError::DestructorCannotFail {
-                handle: self.declaration,
+        if self.declaration != destructor.class {
+            return Err(BindingError::ClassMethodWrongAssociatedClass {
+                name: destructor.function.name.clone(),
+                declared: destructor.class,
+                added_to: self.declaration,
             });
         }
 
-        if native_function.parameters.len() != 1 {
-            return Err(BindingError::DestructorTakesMoreThanOneParameter {
-                handle: self.declaration,
-                function: native_function.clone(),
-            });
-        }
-
-        self.destructor = Some(native_function.clone());
+        self.destructor = Some(destructor);
 
         Ok(self)
     }

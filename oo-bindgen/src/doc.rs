@@ -46,7 +46,7 @@ use regex::Regex;
 
 use crate::class::{Class, ClassDeclarationHandle};
 use crate::enum_type::Enum;
-use crate::function::Function;
+use crate::function::{ClassDestructor, Function};
 use crate::interface::Interface;
 use crate::name::Name;
 use crate::structs::StructType;
@@ -483,7 +483,7 @@ pub enum Validated {
     /// Reference to the class constructor
     ClassConstructor(Handle<Class<Unvalidated>>, Handle<Function<Unvalidated>>),
     /// Reference to the class destructor
-    ClassDestructor(Handle<Class<Unvalidated>>, Handle<Function<Unvalidated>>),
+    ClassDestructor(Handle<Class<Unvalidated>>, ClassDestructor<Unvalidated>),
     /// Reference a struct
     Struct(StructType<Unvalidated>),
     /// Reference a field within a struct

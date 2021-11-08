@@ -466,9 +466,11 @@ impl Unvalidated {
     }
 }
 
+/// Validated doc reference
 #[derive(Debug, Clone)]
 pub enum Validated {
     /// Reference to an argument
+    /// can only be used in docs for functions or callback methods
     Argument(Name),
     /// Reference a class
     Class(ClassDeclarationHandle),

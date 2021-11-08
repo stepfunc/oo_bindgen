@@ -57,7 +57,7 @@ namespace foo.Tests
             Assert.Throws<MyException>(() => new ClassWithPassword("hi!"));
 
             var secret = new ClassWithPassword("12345");
-            Assert.Equal(42u, secret.GetSpecialValueFromInstance());
+            Assert.Equal(42u, secret.GetSpecialValue());
         }
     }
 }

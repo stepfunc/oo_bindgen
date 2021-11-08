@@ -48,9 +48,8 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Use a password to allocate a class")?
         .build()?;
 
-    let get_special_value_fn = lib
-        .define_function("get_special_value_from_class")?
-        .param("instance", my_class.clone(), "class instance")?
+    let get_special_value_method = lib
+        .define_method("get_special_value", my_class.clone())?
         .returns(BasicType::U32, "special value")?
         .fails_with(error_type)?
         .doc("extract a special value from the class instance")?
@@ -66,7 +65,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     lib.define_class(&my_class)?
         .constructor(&constructor_fn)?
         .destructor(&destructor_fn)?
-        .method("get_special_value_from_instance", &get_special_value_fn)?
+        .method(get_special_value_method)?
         .static_method("get_special_value", &get_special_number_fb)?
         .static_method("validate_password", &get_struct_fn)?
         .static_method("echo_password", &echo_password_fn)?

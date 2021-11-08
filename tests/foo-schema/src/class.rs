@@ -3,13 +3,13 @@ use oo_bindgen::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare the class
-    let testclass = lib.declare_class("test_class")?;
+    let test_class = lib.declare_class("test_class")?;
 
     // Declare each native function
-    let testclass_new_func = lib
+    let test_class_new_func = lib
         .define_function("testclass_new")?
         .param("value", BasicType::U32, "Value")?
-        .returns(testclass.clone(), "New TestClass")?
+        .returns(test_class.clone(), "New TestClass")?
         .doc(doc("Create a new {class:test_class}")
             .details("Here are some details about {class:test_class}. You can call {class:test_class.get_value()} method.")
             .details("Here is a reference to a constructor {class:test_class.[constructor]} and to a destructor {class:test_class.[destructor]}.")
@@ -21,23 +21,21 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         )?
         .build()?;
 
-    let testclass_destroy_func = lib
+    let test_class_destroy_func = lib
         .define_function("testclass_destroy")?
-        .param("testclass", testclass.clone(), "Class handle")?
+        .param("testclass", test_class.clone(), "Class handle")?
         .returns_nothing()?
         .doc("Destroy a test class using the parameter {param:testclass}")?
         .build()?;
 
-    let testclass_get_value_func = lib
-        .define_function("testclass_get_value")?
-        .param("testclass", testclass.clone(), "TestClass handle")?
+    let get_value_method = lib
+        .define_method("get_value", test_class.clone())?
         .returns(BasicType::U32, "Current value")?
-        .doc("Get value (don't forget the {param:testclass}!)")?
+        .doc("Get the value")?
         .build()?;
 
-    let testclass_increment_value_func = lib
-        .define_function("testclass_increment_value")?
-        .param("testclass", testclass.clone(), "TestClass handle")?
+    let increment_value_method = lib
+        .define_method("increment_value", test_class.clone())?
         .returns_nothing()?
         .doc("Increment value")?
         .build()?;
@@ -50,29 +48,29 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .end_callback()?
         .build()?;
 
-    let testclass_get_value_async_func = lib
-        .define_function("testclass_get_value_async")?
-        .param("testclass", testclass.clone(), "TestClass handle")?
+    let test_class_get_value_async_func = lib
+        .define_function("get_value_async")?
+        .param("testclass", test_class.clone(), "TestClass handle")?
         .param("cb", get_value_cb, "Callback to call with the value")?
         .returns_nothing()?
         .doc("Get value through a callback")?
         .build()?;
 
-    let testclass_construction_counter = lib
-        .define_function("testclass_construction_counter")?
+    let test_class_construction_counter = lib
+        .define_function("construction_counter")?
         .returns(BasicType::U32, "Number of calls to the constructor")?
         .doc("Get number of calls to the constructor")?
         .build()?;
 
     // Define the class
-    let _testclass = lib
-        .define_class(&testclass)?
-        .constructor(&testclass_new_func)?
-        .destructor(&testclass_destroy_func)?
-        .method("get_value", &testclass_get_value_func)?
-        .method("increment_value", &testclass_increment_value_func)?
-        .async_method("get_value_async", &testclass_get_value_async_func)?
-        .static_method("construction_counter", &testclass_construction_counter)?
+    let _test_class = lib
+        .define_class(&test_class)?
+        .constructor(&test_class_new_func)?
+        .destructor(&test_class_destroy_func)?
+        .method(get_value_method)?
+        .method(increment_value_method)?
+        .async_method("get_value_async", &test_class_get_value_async_func)?
+        .static_method("construction_counter", &test_class_construction_counter)?
         .custom_destroy("delete")?
         .doc("A test class")?
         .build()?;

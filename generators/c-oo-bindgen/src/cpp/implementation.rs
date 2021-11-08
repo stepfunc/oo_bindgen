@@ -2,7 +2,7 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::class::{AsyncMethod, Class, Method, StaticClass};
+use oo_bindgen::class::{AsyncMethod, Class, ClassMethod, ClassStaticMethod, StaticClass};
 use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::enum_type::Enum;
@@ -304,7 +304,7 @@ fn write_iterator_methods(
 fn write_static_class_method(
     f: &mut dyn Printer,
     class: &Handle<StaticClass<Validated>>,
-    method: &Method<Validated>,
+    method: &ClassStaticMethod<Validated>,
 ) -> FormattingResult<()> {
     fn get_invocation_args(args: &[Arg<FunctionArgument, Validated>]) -> String {
         args.iter()
@@ -561,7 +561,7 @@ fn write_class_implementation(
 fn write_class_static_method_impl(
     f: &mut dyn Printer,
     handle: &Handle<Class<Validated>>,
-    method: &Method<Validated>,
+    method: &ClassStaticMethod<Validated>,
 ) -> FormattingResult<()> {
     let cpp_name = handle.core_cpp_type();
     let return_type = method
@@ -603,7 +603,7 @@ fn write_class_static_method_impl(
 fn write_class_method_impl(
     f: &mut dyn Printer,
     handle: &Handle<Class<Validated>>,
-    method: &Method<Validated>,
+    method: &ClassMethod<Validated>,
 ) -> FormattingResult<()> {
     write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
 }

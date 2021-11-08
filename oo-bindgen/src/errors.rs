@@ -54,6 +54,12 @@ pub enum BindingError {
     #[error("'{}'", err)]
     BadName { err: BadName },
 
+    #[error("Method name '{}' contains the name of the owning class '{}'", class.name, method_name)]
+    BadMethodName {
+        class: ClassDeclarationHandle,
+        method_name: Name,
+    },
+
     // Documentation error
     #[error("Invalid documentation string")]
     InvalidDocString,
@@ -166,6 +172,14 @@ pub enum BindingError {
     },
     #[error("Class '{}' was already defined", handle.name)]
     ClassAlreadyDefined { handle: ClassDeclarationHandle },
+
+    #[error("Method '{}' is associated with class '{}' but was added to '{}'", name, declared.name, added_to.name)]
+    ClassMethodWrongAssociatedClass {
+        name: Name,
+        declared: ClassDeclarationHandle,
+        added_to: ClassDeclarationHandle,
+    },
+
     #[error("Class '{}' is not part of this library", handle.name)]
     ClassNotPartOfThisLib { handle: ClassDeclarationHandle },
     #[error("First parameter of function '{}' is not of type '{}' as expected for a method of a class", function.name, handle.name)]

@@ -36,24 +36,21 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .build()?;
 
     let cbsource_set_interface = lib
-        .define_function("cbsource_set_interface")?
-        .param("cbsource", cbsource.clone(), "Callback source")?
+        .define_method("set_interface", cbsource.clone())?
         .param("cb", interface, "Callback to add")?
         .returns_nothing()?
         .doc("Add a callback")?
         .build()?;
 
     let cbsource_set_value_func = lib
-        .define_function("cbsource_set_value")?
-        .param("cbsource", cbsource.clone(), "Callback source")?
+        .define_method("set_value", cbsource.clone())?
         .param("value", BasicType::U32, "New value")?
         .returns(BasicType::U32, "Value returned by the callback")?
         .doc("Set the value and call all the callbacks")?
         .build()?;
 
     let cbsource_set_duration_func = lib
-        .define_function("cbsource_set_duration")?
-        .param("cbsource", cbsource.clone(), "Callback source")?
+        .define_method("set_duration", cbsource.clone())?
         .param("value", DurationType::Milliseconds, "New duration")?
         .returns(DurationType::Milliseconds, "Some value")?
         .doc("Set the duration and call all the callbacks")?
@@ -64,9 +61,9 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_class(&cbsource)?
         .constructor(&cbsource_new_func)?
         .destructor(&cbsource_destroy_func)?
-        .method("set_interface", &cbsource_set_interface)?
-        .method("set_value", &cbsource_set_value_func)?
-        .method("set_duration", &cbsource_set_duration_func)?
+        .method(cbsource_set_interface)?
+        .method(cbsource_set_value_func)?
+        .method(cbsource_set_duration_func)?
         .disposable_destroy()?
         .doc("Class that demonstrate the usage of an async interface")?
         .build()?;

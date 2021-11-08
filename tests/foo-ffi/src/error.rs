@@ -44,7 +44,7 @@ pub(crate) fn create_class_with_password(
     }
 }
 
-pub(crate) unsafe fn get_special_value_from_class(
+pub(crate) unsafe fn class_with_password_get_special_value(
     instance: *mut crate::ClassWithPassword,
 ) -> Result<u32, crate::ffi::MyError> {
     match instance.as_ref() {

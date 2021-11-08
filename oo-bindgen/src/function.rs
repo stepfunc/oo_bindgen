@@ -402,3 +402,91 @@ impl<'a> FunctionBuilder<'a> {
         Ok(handle)
     }
 }
+
+pub struct ClassMethodBuilder<'a> {
+    method_name: Name,
+    class: ClassDeclarationHandle,
+    inner: FunctionBuilder<'a>,
+}
+
+impl<'a> ClassMethodBuilder<'a> {
+    pub(crate) fn new(
+        lib: &'a mut LibraryBuilder,
+        method_name: Name,
+        class: ClassDeclarationHandle,
+    ) -> BindResult<Self> {
+        if method_name.contains(class.name.as_ref()) {
+            return Err(BindingError::BadMethodName { class, method_name });
+        }
+
+        let instance_arg_name = lib.settings.class.method_instance_argument_name.clone();
+
+        let builder = lib
+            .define_function(class.name.append(&method_name))?
+            .param(
+                instance_arg_name,
+                class.clone(),
+                format!("Instance of {{class:{}}}", class.name),
+            )?;
+
+        Ok(Self {
+            method_name,
+            class,
+            inner: builder,
+        })
+    }
+
+    pub fn param<T: IntoName, D: Into<DocString<Unvalidated>>, P: Into<FunctionArgument>>(
+        self,
+        name: T,
+        param_type: P,
+        doc: D,
+    ) -> BindResult<Self> {
+        Ok(Self {
+            method_name: self.method_name,
+            class: self.class,
+            inner: self.inner.param(name, param_type, doc)?,
+        })
+    }
+
+    pub fn returns_nothing(self) -> BindResult<Self> {
+        Ok(Self {
+            method_name: self.method_name,
+            class: self.class,
+            inner: self.inner.return_type(ReturnType::Void)?,
+        })
+    }
+
+    pub fn returns<D: Into<DocString<Unvalidated>>, T: Into<FunctionReturnValue>>(
+        self,
+        return_type: T,
+        doc: D,
+    ) -> BindResult<Self> {
+        Ok(Self {
+            method_name: self.method_name,
+            class: self.class,
+            inner: self.inner.return_type(ReturnType::new(return_type, doc))?,
+        })
+    }
+
+    pub fn fails_with(self, err: ErrorType<Unvalidated>) -> BindResult<Self> {
+        Ok(Self {
+            method_name: self.method_name,
+            class: self.class,
+            inner: self.inner.fails_with(err)?,
+        })
+    }
+
+    pub fn doc<D: Into<Doc<Unvalidated>>>(self, doc: D) -> BindResult<Self> {
+        Ok(Self {
+            method_name: self.method_name,
+            class: self.class,
+            inner: self.inner.doc(doc)?,
+        })
+    }
+
+    pub fn build(self) -> BindResult<ClassMethod<Unvalidated>> {
+        let function = self.inner.build()?;
+        Ok(ClassMethod::new(self.method_name, self.class, function))
+    }
+}

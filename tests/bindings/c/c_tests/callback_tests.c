@@ -46,15 +46,15 @@ static void simple_callback_test()
         &data
     );
 
-    foo_cbsource_set_interface(cb_source, interface);
+    foo_callback_source_set_interface(cb_source, interface);
 
     assert(0 == data.last_value);
-    uint32_t result = foo_cbsource_set_value(cb_source, 24);
+    uint32_t result = foo_callback_source_set_value(cb_source, 24);
     assert(24 == result);
     assert(24 == data.last_value);
 
     assert(0 == data.last_duration);
-    uint64_t duration_result = foo_cbsource_set_duration(cb_source, 76);
+    uint64_t duration_result = foo_callback_source_set_duration(cb_source, 76);
     assert(76 == duration_result);
     assert(76 == data.last_duration);
 
@@ -69,10 +69,10 @@ static void optional_callback_test()
 
     foo_callback_interface_t interface = foo_callback_interface_init(NULL, NULL, NULL, NULL);
 
-    foo_cbsource_set_interface(cb_source, interface);
+    foo_callback_source_set_interface(cb_source, interface);
 
-    foo_cbsource_set_value(cb_source, 24);
-    foo_cbsource_set_duration(cb_source, 76);
+    foo_callback_source_set_value(cb_source, 24);
+    foo_callback_source_set_duration(cb_source, 76);
 
     foo_cbsource_destroy(cb_source);
 }

@@ -26,7 +26,7 @@ static void test_allocation_via_out_parameter()
     assert(instance);
 
     uint32_t number = 0;
-    assert(foo_get_special_value_from_class(instance, &number) == FOO_MY_ERROR_OK);
+    assert(foo_class_with_password_get_special_value(instance, &number) == FOO_MY_ERROR_OK);
     assert(number == MAGIC_NUMBER);
 
     foo_destroy_class_with_password(instance);

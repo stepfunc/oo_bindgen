@@ -46,17 +46,23 @@ pub unsafe fn cbsource_destroy(cb_source: *mut CallbackSource) {
     }
 }
 
-pub unsafe fn cbsource_set_interface(cb_source: *mut CallbackSource, cb: ffi::CallbackInterface) {
+pub unsafe fn callback_source_set_interface(
+    cb_source: *mut CallbackSource,
+    cb: ffi::CallbackInterface,
+) {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set(cb);
 }
 
-pub unsafe fn cbsource_set_value(cb_source: *mut CallbackSource, value: u32) -> u32 {
+pub unsafe fn callback_source_set_value(cb_source: *mut CallbackSource, value: u32) -> u32 {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set_value(value)
 }
 
-pub unsafe fn cbsource_set_duration(cb_source: *mut CallbackSource, value: Duration) -> Duration {
+pub unsafe fn callback_source_set_duration(
+    cb_source: *mut CallbackSource,
+    value: Duration,
+) -> Duration {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set_duration(value)
 }

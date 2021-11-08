@@ -56,8 +56,40 @@ impl ClassDeclaration {
 
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
+#[derive(Debug, Clone)]
+pub struct ClassMethod<T>
+where
+    T: DocReference,
+{
+    pub name: Name,
+    pub associated_class: Handle<ClassDeclaration>,
+    pub native_function: Handle<Function<T>>,
+}
+
+impl ClassMethod<Unvalidated> {
+    pub(crate) fn new(
+        name: Name,
+        associated_class: Handle<ClassDeclaration>,
+        function: Handle<Function<Unvalidated>>,
+    ) -> Self {
+        Self {
+            name,
+            associated_class,
+            native_function: function,
+        }
+    }
+
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<ClassMethod<Validated>> {
+        Ok(ClassMethod {
+            name: self.name.clone(),
+            associated_class: self.associated_class.clone(),
+            native_function: self.native_function.validate(lib)?,
+        })
+    }
+}
+
 #[derive(Debug)]
-pub struct Method<T>
+pub struct ClassStaticMethod<T>
 where
     T: DocReference,
 {
@@ -65,9 +97,12 @@ where
     pub native_function: Handle<Function<T>>,
 }
 
-impl Method<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Method<Validated>> {
-        Ok(Method {
+impl ClassStaticMethod<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<ClassStaticMethod<Validated>> {
+        Ok(ClassStaticMethod {
             name: self.name.clone(),
             native_function: self.native_function.validate(lib)?,
         })
@@ -141,8 +176,8 @@ where
     pub declaration: ClassDeclarationHandle,
     pub constructor: Option<Handle<Function<T>>>,
     pub destructor: Option<Handle<Function<T>>>,
-    pub methods: Vec<Method<T>>,
-    pub static_methods: Vec<Method<T>>,
+    pub methods: Vec<ClassMethod<T>>,
+    pub static_methods: Vec<ClassStaticMethod<T>>,
     pub async_methods: Vec<AsyncMethod<T>>,
     pub doc: Doc<T>,
     pub destruction_mode: DestructionMode,
@@ -159,9 +194,9 @@ impl Class<Unvalidated> {
             None => None,
             Some(x) => Some(x.validate(lib)?),
         };
-        let methods: BindResult<Vec<Method<Validated>>> =
+        let methods: BindResult<Vec<ClassMethod<Validated>>> =
             self.methods.iter().map(|x| x.validate(lib)).collect();
-        let static_methods: BindResult<Vec<Method<Validated>>> = self
+        let static_methods: BindResult<Vec<ClassStaticMethod<Validated>>> = self
             .static_methods
             .iter()
             .map(|x| x.validate(lib))
@@ -232,8 +267,8 @@ pub struct ClassBuilder<'a> {
     declaration: ClassDeclarationHandle,
     constructor: Option<Handle<Function<Unvalidated>>>,
     destructor: Option<Handle<Function<Unvalidated>>>,
-    methods: Vec<Method<Unvalidated>>,
-    static_methods: Vec<Method<Unvalidated>>,
+    methods: Vec<ClassMethod<Unvalidated>>,
+    static_methods: Vec<ClassStaticMethod<Unvalidated>>,
     async_methods: Vec<AsyncMethod<Unvalidated>>,
     doc: Option<Doc<Unvalidated>>,
     destruction_mode: DestructionMode,
@@ -316,20 +351,32 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn method<T: IntoName>(
-        mut self,
-        name: T,
-        native_function: &FunctionHandle,
-    ) -> BindResult<Self> {
-        let name = name.into_name()?;
+    fn validate_first_param(&self, function: &FunctionHandle) -> BindResult<()> {
+        if let Some(first_param) = function.parameters.first() {
+            if let FunctionArgument::ClassRef(first_param_type) = &first_param.arg_type {
+                if first_param_type == &self.declaration {
+                    return Ok(());
+                }
+            }
+        }
 
-        self.lib.validate_function(native_function)?;
-        self.validate_first_param(native_function)?;
+        Err(BindingError::FirstMethodParameterIsNotClassType {
+            handle: self.declaration.clone(),
+            function: function.clone(),
+        })
+    }
 
-        self.methods.push(Method {
-            name,
-            native_function: native_function.clone(),
-        });
+    pub fn method(mut self, method: ClassMethod<Unvalidated>) -> BindResult<Self> {
+        // make sure the method is defined for this class
+        if method.associated_class != self.declaration {
+            return Err(BindingError::ClassMethodWrongAssociatedClass {
+                name: method.name.clone(),
+                declared: method.associated_class,
+                added_to: self.declaration.clone(),
+            });
+        }
+
+        self.methods.push(method);
 
         Ok(self)
     }
@@ -342,7 +389,7 @@ impl<'a> ClassBuilder<'a> {
         let name = name.into_name()?;
         self.lib.validate_function(native_function)?;
 
-        self.static_methods.push(Method {
+        self.static_methods.push(ClassStaticMethod {
             name,
             native_function: native_function.clone(),
         });
@@ -476,21 +523,6 @@ impl<'a> ClassBuilder<'a> {
 
         Ok(handle)
     }
-
-    fn validate_first_param(&self, native_function: &FunctionHandle) -> BindResult<()> {
-        if let Some(first_param) = native_function.parameters.first() {
-            if let FunctionArgument::ClassRef(first_param_type) = &first_param.arg_type {
-                if first_param_type == &self.declaration {
-                    return Ok(());
-                }
-            }
-        }
-
-        Err(BindingError::FirstMethodParameterIsNotClassType {
-            handle: self.declaration.clone(),
-            function: native_function.clone(),
-        })
-    }
 }
 
 /// Static class definition
@@ -500,7 +532,7 @@ where
     T: DocReference,
 {
     pub name: Name,
-    pub static_methods: Vec<Method<T>>,
+    pub static_methods: Vec<ClassStaticMethod<T>>,
     pub doc: Doc<T>,
 }
 
@@ -509,7 +541,7 @@ impl StaticClass<Unvalidated> {
         &self,
         lib: &UnvalidatedFields,
     ) -> BindResult<Handle<StaticClass<Validated>>> {
-        let methods: BindResult<Vec<Method<Validated>>> = self
+        let methods: BindResult<Vec<ClassStaticMethod<Validated>>> = self
             .static_methods
             .iter()
             .map(|x| x.validate(lib))
@@ -527,7 +559,7 @@ pub type StaticClassHandle = Handle<StaticClass<Unvalidated>>;
 pub struct StaticClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
-    static_methods: Vec<Method<Unvalidated>>,
+    static_methods: Vec<ClassStaticMethod<Unvalidated>>,
     doc: Option<Doc<Unvalidated>>,
 }
 
@@ -561,7 +593,7 @@ impl<'a> StaticClassBuilder<'a> {
         let name = name.into_name()?;
         self.lib.validate_function(native_function)?;
 
-        self.static_methods.push(Method {
+        self.static_methods.push(ClassStaticMethod {
             name,
             native_function: native_function.clone(),
         });

@@ -10,7 +10,7 @@ use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::{IteratorHandle, IteratorItemType};
-use crate::name::{BadName, IntoName, Name};
+use crate::name::{IntoName, Name};
 use crate::structs::*;
 use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
@@ -105,16 +105,43 @@ pub struct IteratorSettings {
 }
 
 impl IteratorSettings {
-    pub fn new(name: &'static str) -> Result<IteratorSettings, BadName> {
-        Ok(Self {
-            next_function_suffix: Name::create(name)?,
-        })
+    pub fn new(next_function_suffix: Name) -> IteratorSettings {
+        Self {
+            next_function_suffix,
+        }
     }
+}
 
-    pub fn default() -> Result<IteratorSettings, BadName> {
-        Ok(Self {
-            next_function_suffix: Name::create("next")?,
-        })
+impl Default for IteratorSettings {
+    fn default() -> Self {
+        Self {
+            next_function_suffix: Name::create("next").unwrap(),
+        }
+    }
+}
+
+/// Settings that affect class method naming
+#[derive(Debug)]
+pub struct ClassSettings {
+    /// Methods in C always take an instance of the class at the first parameter.
+    /// This setting controls the name automatically assigned to this paramter and defaults
+    /// to "instance"
+    pub method_instance_argument_name: Name,
+}
+
+impl ClassSettings {
+    pub fn new(method_instance_argument_name: Name) -> Self {
+        Self {
+            method_instance_argument_name,
+        }
+    }
+}
+
+impl Default for ClassSettings {
+    fn default() -> ClassSettings {
+        Self {
+            method_instance_argument_name: Name::create("instance").unwrap(),
+        }
     }
 }
 
@@ -133,12 +160,26 @@ pub struct CollectionSettings {
 }
 
 impl CollectionSettings {
-    pub fn default() -> Result<CollectionSettings, BadName> {
-        Ok(Self {
-            create_function_suffix: Name::create("create")?,
-            add_function_suffix: Name::create("add")?,
-            destroy_function_suffix: Name::create("destroy")?,
-        })
+    pub fn new(
+        create_function_suffix: Name,
+        add_function_suffix: Name,
+        destroy_function_suffix: Name,
+    ) -> Self {
+        Self {
+            create_function_suffix,
+            add_function_suffix,
+            destroy_function_suffix,
+        }
+    }
+}
+
+impl Default for CollectionSettings {
+    fn default() -> CollectionSettings {
+        Self {
+            create_function_suffix: Name::create("create").unwrap(),
+            add_function_suffix: Name::create("add").unwrap(),
+            destroy_function_suffix: Name::create("destroy").unwrap(),
+        }
     }
 }
 
@@ -149,6 +190,8 @@ pub struct LibrarySettings {
     pub name: Name,
     /// prefix given to all API types, e.g. structs, enums, functions, etc
     pub c_ffi_prefix: Name,
+    /// settings that control class generation
+    pub class: ClassSettings,
     /// settings that control iterator generation
     pub iterator: IteratorSettings,
     /// settings that control collection generation
@@ -160,12 +203,14 @@ impl LibrarySettings {
     pub fn create<S: IntoName, R: IntoName>(
         name: S,
         c_ffi_prefix: R,
+        class: ClassSettings,
         iterator: IteratorSettings,
         collection: CollectionSettings,
     ) -> BindResult<Rc<Self>> {
         Ok(Rc::new(Self {
             name: name.into_name()?,
             c_ffi_prefix: c_ffi_prefix.into_name()?,
+            class,
             iterator,
             collection,
         }))
@@ -629,6 +674,14 @@ impl LibraryBuilder {
 
     pub fn define_function<T: IntoName>(&mut self, name: T) -> BindResult<FunctionBuilder> {
         self.define_function_with_category(name, FunctionCategory::Native)
+    }
+
+    pub fn define_method<T: IntoName>(
+        &mut self,
+        name: T,
+        class: ClassDeclarationHandle,
+    ) -> BindResult<ClassMethodBuilder> {
+        ClassMethodBuilder::new(self, name.into_name()?, class)
     }
 
     pub(crate) fn define_function_with_category<T: IntoName>(

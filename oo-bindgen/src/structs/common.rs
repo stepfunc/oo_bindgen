@@ -535,7 +535,7 @@ where
         }
     }
 
-    pub fn end_fields(self) -> BindResult<MethodBuilder<'a, F>> {
+    pub fn end_fields(self) -> BindResult<StructMethodBuilder<'a, F>> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
@@ -545,7 +545,7 @@ where
             }
         };
 
-        Ok(MethodBuilder {
+        Ok(StructMethodBuilder {
             lib: self.lib,
             visibility: self.visibility,
             declaration: self.declaration,
@@ -635,12 +635,12 @@ where
 {
     name: Name,
     constructor_type: ConstructorType,
-    builder: MethodBuilder<'a, F>,
+    builder: StructMethodBuilder<'a, F>,
     fields: Vec<InitializedValue>,
     doc: Doc<Unvalidated>,
 }
 
-pub struct MethodBuilder<'a, F>
+pub struct StructMethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
@@ -652,7 +652,7 @@ where
     doc: Doc<Unvalidated>,
 }
 
-impl<'a, F> MethodBuilder<'a, F>
+impl<'a, F> StructMethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
@@ -763,7 +763,7 @@ where
         self.default(name, ConstructorDefault::String(value.into()))
     }
 
-    pub fn end_constructor(mut self) -> BindResult<MethodBuilder<'a, F>> {
+    pub fn end_constructor(mut self) -> BindResult<StructMethodBuilder<'a, F>> {
         let constructor = Handle::new(Constructor {
             name: self.name,
             constructor_type: self.constructor_type,

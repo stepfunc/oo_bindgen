@@ -19,21 +19,21 @@ pub unsafe fn testclass_destroy(testclass: *mut TestClass) {
     };
 }
 
-pub unsafe fn testclass_get_value(testclass: *const TestClass) -> u32 {
+pub unsafe fn test_class_get_value(testclass: *const TestClass) -> u32 {
     let testclass = testclass.as_ref().unwrap();
     testclass.value
 }
 
-pub unsafe fn testclass_increment_value(testclass: *mut TestClass) {
+pub unsafe fn test_class_increment_value(testclass: *mut TestClass) {
     let testclass = testclass.as_mut().unwrap();
     testclass.value += 1;
 }
 
-pub unsafe fn testclass_get_value_async(testclass: *const TestClass, cb: ffi::GetValueCallback) {
+pub unsafe fn get_value_async(testclass: *const TestClass, cb: ffi::GetValueCallback) {
     let testclass = testclass.as_ref().unwrap();
     cb.on_value(testclass.value);
 }
 
-pub unsafe fn testclass_construction_counter() -> u32 {
+pub unsafe fn construction_counter() -> u32 {
     CONSTRUCTION_COUNTER
 }

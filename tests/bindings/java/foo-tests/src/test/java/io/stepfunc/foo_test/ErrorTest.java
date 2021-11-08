@@ -52,6 +52,6 @@ public class ErrorTest {
         }).isInstanceOf(MyException.class);
 
         ClassWithPassword secret = new ClassWithPassword("12345");
-        assertThat(secret.getSpecialValueFromInstance()).isEqualTo(uint(42));
+        assertThat(secret.getSpecialValue()).isEqualTo(uint(42));
     }
 }

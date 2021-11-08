@@ -20,7 +20,7 @@ static void test_constructor_that_throws()
 
     foo::ClassWithPassword instance(std::string(CORRECT_PASSWORD));
 
-    assert(instance.get_special_value_from_instance() == MAGIC_NUMBER);
+    assert(instance.get_special_value() == MAGIC_NUMBER);
 }
 
 static void test_static_method_that_throws()
@@ -42,13 +42,13 @@ static void test_defensive_exception_after_move()
     foo::ClassWithPassword other(std::move(instance));
 
     try {
-        instance.get_special_value_from_instance();
+        instance.get_special_value();
     }
     catch (const std::logic_error& ex) {
         assert(strcmp(ex.what(), "class method invoked after move operation") == 0);
     }
 
-    assert(other.get_special_value_from_instance() == MAGIC_NUMBER);
+    assert(other.get_special_value() == MAGIC_NUMBER);
 }
 
 void error_tests()

@@ -1,4 +1,4 @@
-use crate::doc::{DocReference, Unvalidated, Validated};
+use crate::doc::{DocCell, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
@@ -56,7 +56,7 @@ impl ClassDeclaration {
 
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
-/// Represent an instance method on a class
+/// Represents an instance method on a class
 #[derive(Debug, Clone)]
 pub struct Method<T>
 where
@@ -91,7 +91,7 @@ impl Method<Unvalidated> {
 
 /// represents a static method associated with a class
 #[derive(Debug)]
-pub struct ClassStaticMethod<T>
+pub struct StaticMethod<T>
 where
     T: DocReference,
 {
@@ -99,12 +99,9 @@ where
     pub native_function: Handle<Function<T>>,
 }
 
-impl ClassStaticMethod<Unvalidated> {
-    pub(crate) fn validate(
-        &self,
-        lib: &UnvalidatedFields,
-    ) -> BindResult<ClassStaticMethod<Validated>> {
-        Ok(ClassStaticMethod {
+impl StaticMethod<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<StaticMethod<Validated>> {
+        Ok(StaticMethod {
             name: self.name.clone(),
             native_function: self.native_function.validate(lib)?,
         })
@@ -149,8 +146,8 @@ where
     pub constructor: Option<ClassConstructor<T>>,
     pub destructor: Option<ClassDestructor<T>>,
     pub methods: Vec<Method<T>>,
-    pub static_methods: Vec<ClassStaticMethod<T>>,
-    pub async_methods: Vec<FutureMethod<T>>,
+    pub static_methods: Vec<StaticMethod<T>>,
+    pub future_methods: Vec<FutureMethod<T>>,
     pub doc: Doc<T>,
     pub destruction_mode: DestructionMode,
     pub settings: Rc<LibrarySettings>,
@@ -168,13 +165,16 @@ impl Class<Unvalidated> {
         };
         let methods: BindResult<Vec<Method<Validated>>> =
             self.methods.iter().map(|x| x.validate(lib)).collect();
-        let static_methods: BindResult<Vec<ClassStaticMethod<Validated>>> = self
+        let static_methods: BindResult<Vec<StaticMethod<Validated>>> = self
             .static_methods
             .iter()
             .map(|x| x.validate(lib))
             .collect();
-        let async_methods: BindResult<Vec<FutureMethod<Validated>>> =
-            self.async_methods.iter().map(|x| x.validate(lib)).collect();
+        let async_methods: BindResult<Vec<FutureMethod<Validated>>> = self
+            .future_methods
+            .iter()
+            .map(|x| x.validate(lib))
+            .collect();
 
         Ok(Handle::new(Class {
             declaration: self.declaration.clone(),
@@ -182,7 +182,7 @@ impl Class<Unvalidated> {
             destructor,
             methods: methods?,
             static_methods: static_methods?,
-            async_methods: async_methods?,
+            future_methods: async_methods?,
             doc: self.doc.validate(self.name(), lib)?,
             destruction_mode: self.destruction_mode.clone(),
             settings: self.settings.clone(),
@@ -222,7 +222,7 @@ impl Class<Unvalidated> {
             }
         }
 
-        for async_method in &self.async_methods {
+        for async_method in &self.future_methods {
             if async_method.name.as_ref() == method_name {
                 return Some((
                     async_method.name.clone(),
@@ -243,7 +243,7 @@ pub struct ClassBuilder<'a> {
     constructor: Option<ClassConstructor<Unvalidated>>,
     destructor: Option<ClassDestructor<Unvalidated>>,
     methods: Vec<Method<Unvalidated>>,
-    static_methods: Vec<ClassStaticMethod<Unvalidated>>,
+    static_methods: Vec<StaticMethod<Unvalidated>>,
     async_methods: Vec<FutureMethod<Unvalidated>>,
     doc: Option<Doc<Unvalidated>>,
     destruction_mode: DestructionMode,
@@ -323,7 +323,7 @@ impl<'a> ClassBuilder<'a> {
         let name = name.into_name()?;
         self.lib.validate_function(native_function)?;
 
-        self.static_methods.push(ClassStaticMethod {
+        self.static_methods.push(StaticMethod {
             name,
             native_function: native_function.clone(),
         });
@@ -388,7 +388,7 @@ impl<'a> ClassBuilder<'a> {
             destructor: self.destructor,
             methods: self.methods,
             static_methods: self.static_methods,
-            async_methods: self.async_methods,
+            future_methods: self.async_methods,
             doc,
             destruction_mode: self.destruction_mode,
             settings: self.lib.settings.clone(),
@@ -408,7 +408,7 @@ where
     T: DocReference,
 {
     pub name: Name,
-    pub static_methods: Vec<ClassStaticMethod<T>>,
+    pub static_methods: Vec<StaticMethod<T>>,
     pub doc: Doc<T>,
 }
 
@@ -417,7 +417,7 @@ impl StaticClass<Unvalidated> {
         &self,
         lib: &UnvalidatedFields,
     ) -> BindResult<Handle<StaticClass<Validated>>> {
-        let methods: BindResult<Vec<ClassStaticMethod<Validated>>> = self
+        let methods: BindResult<Vec<StaticMethod<Validated>>> = self
             .static_methods
             .iter()
             .map(|x| x.validate(lib))
@@ -435,30 +435,23 @@ pub type StaticClassHandle = Handle<StaticClass<Unvalidated>>;
 pub struct StaticClassBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
-    static_methods: Vec<ClassStaticMethod<Unvalidated>>,
-    doc: Option<Doc<Unvalidated>>,
+    static_methods: Vec<StaticMethod<Unvalidated>>,
+    doc: DocCell,
 }
 
 impl<'a> StaticClassBuilder<'a> {
     pub(crate) fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
         Self {
             lib,
-            name,
+            name: name.clone(),
             static_methods: Vec::new(),
-            doc: None,
+            doc: DocCell::new(name),
         }
     }
 
     pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
-        match self.doc {
-            None => {
-                self.doc = Some(doc.into());
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
-                symbol_name: self.name,
-            }),
-        }
+        self.doc.set(doc.into())?;
+        Ok(self)
     }
 
     pub fn static_method<T: IntoName>(
@@ -469,7 +462,7 @@ impl<'a> StaticClassBuilder<'a> {
         let name = name.into_name()?;
         self.lib.validate_function(native_function)?;
 
-        self.static_methods.push(ClassStaticMethod {
+        self.static_methods.push(StaticMethod {
             name,
             native_function: native_function.clone(),
         });
@@ -478,19 +471,10 @@ impl<'a> StaticClassBuilder<'a> {
     }
 
     pub fn build(self) -> BindResult<StaticClassHandle> {
-        let doc = match self.doc {
-            Some(doc) => doc,
-            None => {
-                return Err(BindingError::DocNotDefined {
-                    symbol_name: self.name.clone(),
-                })
-            }
-        };
-
         let handle = StaticClassHandle::new(StaticClass {
             name: self.name,
             static_methods: self.static_methods,
-            doc,
+            doc: self.doc.extract()?,
         });
 
         self.lib

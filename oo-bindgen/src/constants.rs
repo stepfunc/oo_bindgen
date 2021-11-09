@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::doc::{Doc, DocReference, Unvalidated, Validated};
+use crate::doc::{Doc, DocCell, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 
@@ -74,30 +74,23 @@ pub struct ConstantSetBuilder<'a> {
     name: Name,
     names: HashSet<String>,
     values: Vec<Constant<Unvalidated>>,
-    doc: Option<Doc<Unvalidated>>,
+    doc: DocCell,
 }
 
 impl<'a> ConstantSetBuilder<'a> {
     pub fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
         Self {
             lib,
-            name,
+            name: name.clone(),
             names: HashSet::new(),
             values: Vec::new(),
-            doc: None,
+            doc: DocCell::new(name),
         }
     }
 
     pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
-        match self.doc {
-            None => {
-                self.doc = Some(doc.into());
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
-                symbol_name: self.name,
-            }),
-        }
+        self.doc.set(doc.into())?;
+        Ok(self)
     }
 
     pub fn add<T: IntoName, D: Into<Doc<Unvalidated>>>(
@@ -122,19 +115,10 @@ impl<'a> ConstantSetBuilder<'a> {
     }
 
     pub fn build(self) -> BindResult<()> {
-        let doc = match self.doc {
-            Some(doc) => doc,
-            None => {
-                return Err(BindingError::DocNotDefined {
-                    symbol_name: self.name,
-                })
-            }
-        };
-
         let handle = ConstantSetHandle::new(ConstantSet {
             name: self.name,
             values: self.values,
-            doc,
+            doc: self.doc.extract()?,
         });
 
         self.lib.add_statement(Statement::Constants(handle))?;

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::doc::{Doc, DocReference, Unvalidated, Validated};
+use crate::doc::{Doc, DocCell, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
@@ -85,19 +85,19 @@ pub struct EnumBuilder<'a> {
     variant_names: HashSet<String>,
     variant_values: HashSet<i32>,
     next_value: i32,
-    doc: Option<Doc<Unvalidated>>,
+    doc: DocCell,
 }
 
 impl<'a> EnumBuilder<'a> {
     pub(crate) fn new(lib: &'a mut LibraryBuilder, name: Name) -> Self {
         Self {
             lib,
-            name,
+            name: name.clone(),
             variants: Vec::new(),
             variant_names: HashSet::new(),
             variant_values: HashSet::new(),
             next_value: 0,
-            doc: None,
+            doc: DocCell::new(name),
         }
     }
 
@@ -137,32 +137,16 @@ impl<'a> EnumBuilder<'a> {
     }
 
     pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
-        match self.doc {
-            None => {
-                self.doc = Some(doc.into());
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
-                symbol_name: self.name,
-            }),
-        }
+        self.doc.set(doc.into())?;
+        Ok(self)
     }
 
     pub(crate) fn build_and_release(self) -> BindResult<(EnumHandle, &'a mut LibraryBuilder)> {
-        let doc = match self.doc {
-            Some(doc) => doc,
-            None => {
-                return Err(BindingError::DocNotDefined {
-                    symbol_name: self.name,
-                })
-            }
-        };
-
         let handle = EnumHandle::new(Enum {
             name: self.name,
             settings: self.lib.settings.clone(),
             variants: self.variants,
-            doc,
+            doc: self.doc.extract()?,
         });
 
         self.lib

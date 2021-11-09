@@ -2,7 +2,7 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{namespace, FriendClass};
 use heck::SnakeCase;
 use oo_bindgen::class::{
-    Class, ClassDeclarationHandle, ClassStaticMethod, ClassType, Method, StaticClass,
+    Class, ClassDeclarationHandle, ClassType, Method, StaticClass, StaticMethod,
 };
 use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
 use oo_bindgen::doc::{brief, Validated};
@@ -432,7 +432,7 @@ fn print_class_definition(
             print_static_method(f, method)?;
         }
 
-        for method in &handle.async_methods {
+        for method in &handle.future_methods {
             print_async_method(f, method)?;
         }
 
@@ -458,7 +458,7 @@ fn print_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingRe
 
 fn print_static_method(
     f: &mut dyn Printer,
-    method: &ClassStaticMethod<Validated>,
+    method: &StaticMethod<Validated>,
 ) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.parameters.iter());
 

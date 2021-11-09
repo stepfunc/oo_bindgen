@@ -1,5 +1,5 @@
 use crate::collection::CollectionHandle;
-use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
+use crate::doc::{Doc, DocCell, DocReference, DocString, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::return_type::ReturnType;
 use crate::structs::{
@@ -280,7 +280,7 @@ pub struct FunctionBuilder<'a> {
     function_type: FunctionCategory,
     return_type: Option<ReturnType<FunctionReturnValue, Unvalidated>>,
     params: Vec<Arg<FunctionArgument, Unvalidated>>,
-    doc: Option<Doc<Unvalidated>>,
+    doc: DocCell,
     error_type: Option<ErrorType<Unvalidated>>,
 }
 
@@ -292,11 +292,11 @@ impl<'a> FunctionBuilder<'a> {
     ) -> Self {
         Self {
             lib,
-            name,
+            name: name.clone(),
             function_type,
             return_type: None,
             params: Vec::new(),
-            doc: None,
+            doc: DocCell::new(name),
             error_type: None,
         }
     }
@@ -356,15 +356,8 @@ impl<'a> FunctionBuilder<'a> {
     }
 
     pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
-        match self.doc {
-            None => {
-                self.doc = Some(doc.into());
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
-                symbol_name: self.name,
-            }),
-        }
+        self.doc.set(doc.into())?;
+        Ok(self)
     }
 
     pub fn build(self) -> BindResult<FunctionHandle> {
@@ -377,15 +370,6 @@ impl<'a> FunctionBuilder<'a> {
             }
         };
 
-        let doc = match self.doc {
-            Some(doc) => doc,
-            None => {
-                return Err(BindingError::DocNotDefined {
-                    symbol_name: self.name,
-                })
-            }
-        };
-
         let handle = FunctionHandle::new(Function {
             name: self.name,
             category: self.function_type,
@@ -393,7 +377,7 @@ impl<'a> FunctionBuilder<'a> {
             parameters: self.params,
             error_type: self.error_type,
             settings: self.lib.settings.clone(),
-            doc,
+            doc: self.doc.extract()?,
         });
 
         self.lib

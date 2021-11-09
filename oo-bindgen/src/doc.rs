@@ -136,6 +136,42 @@ impl<T: AsRef<str>> From<T> for Doc<Unvalidated> {
     }
 }
 
+/// Used in builders
+pub(crate) struct DocCell {
+    parent_name: Name,
+    inner: Option<Doc<Unvalidated>>,
+}
+
+impl DocCell {
+    pub(crate) fn new(parent_name: Name) -> Self {
+        Self {
+            parent_name,
+            inner: None,
+        }
+    }
+
+    pub(crate) fn set(&mut self, doc: Doc<Unvalidated>) -> BindResult<()> {
+        match self.inner {
+            None => {
+                self.inner = Some(doc);
+                Ok(())
+            }
+            Some(_) => Err(BindingError::DocAlreadyDefined {
+                symbol_name: self.parent_name.clone(),
+            }),
+        }
+    }
+
+    pub(crate) fn extract(self) -> BindResult<Doc<Unvalidated>> {
+        match self.inner {
+            Some(doc) => Ok(doc),
+            None => Err(BindingError::DocNotDefined {
+                symbol_name: self.parent_name.clone(),
+            }),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum DocParagraph<T>
 where

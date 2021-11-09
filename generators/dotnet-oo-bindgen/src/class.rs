@@ -65,7 +65,7 @@ pub(crate) fn generate(
                 f.newline()?;
             }
 
-            for method in &class.async_methods {
+            for method in &class.future_methods {
                 generate_async_method(f, method)?;
                 f.newline()?;
             }
@@ -286,7 +286,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
 
 fn generate_static_method(
     f: &mut dyn Printer,
-    method: &ClassStaticMethod<Validated>,
+    method: &StaticMethod<Validated>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation

@@ -7,7 +7,7 @@ use crate::structs::{
     FunctionReturnStructDeclaration, FunctionReturnStructField, FunctionReturnStructHandle,
     UniversalDeclarationOr, UniversalOr, UniversalStructDeclaration, UniversalStructHandle,
 };
-use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
+use crate::types::{Arg, DurationType, StringType};
 use crate::*;
 use std::rc::Rc;
 
@@ -93,20 +93,6 @@ pub enum FunctionArgument {
     StructRef(FunctionArgStructDeclaration),
     ClassRef(ClassDeclarationHandle),
     Interface(InterfaceHandle),
-}
-
-impl TypeValidator for FunctionArgument {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        match self {
-            FunctionArgument::Basic(x) => x.get_validated_type(),
-            FunctionArgument::String(_) => None,
-            FunctionArgument::Collection(x) => x.get_validated_type(),
-            FunctionArgument::Struct(x) => x.get_validated_type(),
-            FunctionArgument::StructRef(x) => x.inner.get_validated_type(),
-            FunctionArgument::ClassRef(x) => x.get_validated_type(),
-            FunctionArgument::Interface(x) => x.get_validated_type(),
-        }
-    }
 }
 
 impl From<UniversalStructHandle> for FunctionArgument {
@@ -309,8 +295,6 @@ impl<'a> FunctionBuilder<'a> {
     ) -> BindResult<Self> {
         let param_type = param_type.into();
         let name = name.into_name()?;
-
-        self.lib.validate_type(&param_type)?;
         self.params.push(Arg {
             name,
             arg_type: param_type,

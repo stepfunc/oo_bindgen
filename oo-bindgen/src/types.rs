@@ -1,11 +1,7 @@
 use std::time::Duration;
 
-use crate::class::ClassDeclarationHandle;
-use crate::collection::CollectionHandle;
 use crate::doc::{DocReference, DocString, Unvalidated, Validated};
 use crate::enum_type::EnumHandle;
-use crate::interface::InterfaceHandle;
-use crate::iterator::IteratorHandle;
 use crate::name::Name;
 use crate::structs::*;
 use crate::{BindResult, BindingError, UnvalidatedFields};
@@ -13,12 +9,6 @@ use crate::{BindResult, BindingError, UnvalidatedFields};
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct StringType;
-
-impl TypeValidator for StringType {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        None
-    }
-}
 
 /// Durations may be represented in multiple ways in the underlying C API
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
@@ -288,76 +278,5 @@ impl TypeExtractor for UniversalStructField {
             Self::Basic(x) => Some(x),
             _ => None,
         }
-    }
-}
-
-/// types that require validation in the library
-pub enum ValidatedType {
-    Enum(EnumHandle),
-    StructRef(StructDeclarationHandle),
-    Struct(StructType<Unvalidated>),
-    Interface(InterfaceHandle),
-    ClassRef(ClassDeclarationHandle),
-    Iterator(IteratorHandle),
-    Collection(CollectionHandle),
-}
-
-pub trait TypeValidator {
-    fn get_validated_type(&self) -> Option<ValidatedType>;
-}
-
-impl TypeValidator for BasicType {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        match self {
-            BasicType::Bool => None,
-            BasicType::U8 => None,
-            BasicType::S8 => None,
-            BasicType::U16 => None,
-            BasicType::S16 => None,
-            BasicType::U32 => None,
-            BasicType::S32 => None,
-            BasicType::U64 => None,
-            BasicType::S64 => None,
-            BasicType::Float32 => None,
-            BasicType::Double64 => None,
-            BasicType::Duration(_) => None,
-            BasicType::Enum(x) => Some(ValidatedType::Enum(x.clone())),
-        }
-    }
-}
-
-impl TypeValidator for StructDeclarationHandle {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        Some(ValidatedType::StructRef(self.clone()))
-    }
-}
-
-impl TypeValidator for StructType<Unvalidated> {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        Some(ValidatedType::Struct(self.clone()))
-    }
-}
-
-impl TypeValidator for InterfaceHandle {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        Some(ValidatedType::Interface(self.clone()))
-    }
-}
-
-impl TypeValidator for IteratorHandle {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        Some(ValidatedType::Iterator(self.clone()))
-    }
-}
-
-impl TypeValidator for ClassDeclarationHandle {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        Some(ValidatedType::ClassRef(self.clone()))
-    }
-}
-
-impl TypeValidator for CollectionHandle {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        Some(ValidatedType::Collection(self.clone()))
     }
 }

@@ -1,7 +1,7 @@
 use crate::doc::Unvalidated;
 use crate::iterator::IteratorHandle;
 use crate::structs::common::*;
-use crate::types::{DurationType, TypeValidator, ValidatedType};
+use crate::types::DurationType;
 use crate::*;
 
 /// Types that can be used as a callback argument
@@ -10,16 +10,6 @@ pub enum CallbackArgStructField {
     Basic(BasicType),
     Iterator(IteratorHandle),
     Struct(UniversalOr<CallbackArgStructField>),
-}
-
-impl TypeValidator for CallbackArgStructField {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        match self {
-            CallbackArgStructField::Basic(x) => x.get_validated_type(),
-            CallbackArgStructField::Iterator(x) => x.get_validated_type(),
-            CallbackArgStructField::Struct(x) => Some(ValidatedType::Struct(x.to_struct_type())),
-        }
-    }
 }
 
 pub type CallbackArgStructHandle = Handle<Struct<CallbackArgStructField, Unvalidated>>;

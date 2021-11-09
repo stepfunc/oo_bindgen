@@ -1,7 +1,7 @@
 use crate::doc::Unvalidated;
 use crate::structs::common::*;
 use crate::structs::UniversalStructHandle;
-use crate::types::{DurationType, StringType, TypeValidator, ValidatedType};
+use crate::types::{DurationType, StringType};
 use crate::*;
 
 /// Types that can be used in a function struct, some of which might have a default value
@@ -11,17 +11,6 @@ pub enum FunctionArgStructField {
     String(StringType),
     Interface(InterfaceHandle),
     Struct(UniversalOr<FunctionArgStructField>),
-}
-
-impl TypeValidator for FunctionArgStructField {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        match self {
-            FunctionArgStructField::Basic(x) => x.get_validated_type(),
-            FunctionArgStructField::String(x) => x.get_validated_type(),
-            FunctionArgStructField::Interface(x) => x.get_validated_type(),
-            FunctionArgStructField::Struct(x) => x.get_validated_type(),
-        }
-    }
 }
 
 pub type FunctionArgStructHandle = Handle<Struct<FunctionArgStructField, Unvalidated>>;

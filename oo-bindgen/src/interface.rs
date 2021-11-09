@@ -7,7 +7,7 @@ use crate::return_type::ReturnType;
 use crate::structs::{
     CallbackArgStructField, CallbackArgStructHandle, UniversalOr, UniversalStructHandle,
 };
-use crate::types::{Arg, DurationType, StringType, TypeValidator, ValidatedType};
+use crate::types::{Arg, DurationType, StringType};
 use crate::*;
 use std::rc::Rc;
 
@@ -22,18 +22,6 @@ pub enum CallbackArgument {
     Iterator(IteratorHandle),
     Class(ClassDeclarationHandle),
     Struct(UniversalOr<CallbackArgStructField>),
-}
-
-impl TypeValidator for CallbackArgument {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        match self {
-            CallbackArgument::Basic(x) => x.get_validated_type(),
-            CallbackArgument::String(x) => x.get_validated_type(),
-            CallbackArgument::Iterator(x) => x.get_validated_type(),
-            CallbackArgument::Struct(x) => x.get_validated_type(),
-            CallbackArgument::Class(x) => x.get_validated_type(),
-        }
-    }
 }
 
 impl From<BasicType> for CallbackArgument {
@@ -353,7 +341,6 @@ impl<'a> CallbackFunctionBuilder<'a> {
             });
         }
 
-        self.builder.lib.validate_type(&arg_type)?;
         self.arguments.push(Arg::new(arg_type, name, doc.into()));
         Ok(self)
     }

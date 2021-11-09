@@ -13,7 +13,7 @@ use crate::structs::{
     FunctionArgStructHandle, FunctionReturnStructField, FunctionReturnStructHandle,
     UniversalStructField, UniversalStructHandle,
 };
-use crate::types::{DurationType, StringType, TypeValidator, ValidatedType};
+use crate::types::{DurationType, StringType};
 use crate::{
     BindResult, BindingError, Handle, LibraryBuilder, LibrarySettings, Statement, UnvalidatedFields,
 };
@@ -292,7 +292,7 @@ impl InitializerValidator for StringType {
     }
 }
 
-pub trait StructFieldType: Clone + Sized + TypeValidator + InitializerValidator {
+pub trait StructFieldType: Clone + Sized + InitializerValidator {
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self, Unvalidated>>) -> StructType<Unvalidated>;
 }
@@ -502,7 +502,6 @@ where
         let name = name.into_name()?;
         let field_type = field_type.into();
 
-        self.lib.validate_type(&field_type)?;
         if self.field_names.insert(name.to_string()) {
             self.fields.push(StructField {
                 name,
@@ -961,15 +960,6 @@ where
 {
     fn from(x: Handle<Struct<T, Unvalidated>>) -> Self {
         UniversalOr::Specific(x)
-    }
-}
-
-impl<T> TypeValidator for UniversalOr<T>
-where
-    T: StructFieldType,
-{
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        Some(ValidatedType::Struct(self.to_struct_type()))
     }
 }
 

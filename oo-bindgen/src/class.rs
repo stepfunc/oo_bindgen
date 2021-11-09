@@ -318,10 +318,7 @@ impl<'a> ClassBuilder<'a> {
     }
 
     pub fn static_method(mut self, method: StaticMethod<Unvalidated>) -> BindResult<Self> {
-        self.lib.validate_function(&method.native_function)?;
-
         self.static_methods.push(method);
-
         Ok(self)
     }
 
@@ -449,7 +446,6 @@ impl<'a> StaticClassBuilder<'a> {
     }
 
     pub fn static_method(mut self, method: StaticMethod<Unvalidated>) -> BindResult<Self> {
-        self.lib.validate_function(&method.native_function)?;
         self.static_methods.push(method);
         Ok(self)
     }

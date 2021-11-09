@@ -1,7 +1,6 @@
 use crate::doc::Unvalidated;
 use crate::iterator::IteratorHandle;
 use crate::structs::common::*;
-use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
 
 /// Types that can be used in a function return value
@@ -12,17 +11,6 @@ pub enum FunctionReturnStructField {
     // iterators must be allowed in return position so that you can have nested iterators
     Iterator(IteratorHandle),
     Struct(UniversalOr<FunctionReturnStructField>),
-}
-
-impl TypeValidator for FunctionReturnStructField {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        match self {
-            Self::Basic(x) => x.get_validated_type(),
-            Self::ClassRef(x) => x.get_validated_type(),
-            Self::Struct(x) => x.to_struct_type().get_validated_type(),
-            Self::Iterator(x) => x.get_validated_type(),
-        }
-    }
 }
 
 pub type FunctionReturnStructHandle = Handle<Struct<FunctionReturnStructField, Unvalidated>>;

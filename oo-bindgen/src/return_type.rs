@@ -26,6 +26,13 @@ where
             ReturnType::Type(t, d) => Ok(ReturnType::Type(t.clone(), d.validate(name, lib)?)),
         }
     }
+
+    pub fn get(&self) -> Option<&T> {
+        match self {
+            ReturnType::Void => None,
+            ReturnType::Type(t, _) => Some(t),
+        }
+    }
 }
 
 impl<T, D> ReturnType<T, D>

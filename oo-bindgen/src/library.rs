@@ -12,7 +12,6 @@ use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::{IteratorHandle, IteratorItemType};
 use crate::name::{IntoName, Name};
 use crate::structs::*;
-use crate::types::{TypeValidator, ValidatedType};
 use crate::*;
 use crate::{BindingError, Version};
 use std::rc::Rc;
@@ -462,6 +461,9 @@ impl LibraryBuilder {
     }
 
     pub(crate) fn add_statement(&mut self, statement: Statement<Unvalidated>) -> BindResult<()> {
+        // verify that all the pieces of the statement are from this library
+        self.check_statement(&statement)?;
+
         if let Some(name) = statement.unique_name() {
             self.check_unique_symbol(name)?;
         }
@@ -637,7 +639,6 @@ impl LibraryBuilder {
         &mut self,
         declaration: UniversalStructDeclaration,
     ) -> BindResult<UniversalStructBuilder> {
-        self.validate_struct_declaration(&declaration.inner)?;
         if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
@@ -652,7 +653,6 @@ impl LibraryBuilder {
         &mut self,
         declaration: UniversalStructDeclaration,
     ) -> BindResult<UniversalStructBuilder> {
-        self.validate_struct_declaration(&declaration.inner)?;
         if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
@@ -671,7 +671,6 @@ impl LibraryBuilder {
         T: Into<CallbackArgStructDeclaration>,
     {
         let declaration = declaration.into();
-        self.validate_struct_declaration(&declaration.inner)?;
         if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
@@ -690,7 +689,6 @@ impl LibraryBuilder {
         T: Into<FunctionReturnStructDeclaration>,
     {
         let declaration = declaration.into();
-        self.validate_struct_declaration(&declaration.inner)?;
         if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
@@ -709,7 +707,6 @@ impl LibraryBuilder {
         T: Into<FunctionArgStructDeclaration>,
     {
         let declaration = declaration.into();
-        self.validate_struct_declaration(&declaration.inner)?;
         if self.fields.structs.contains_key(&declaration.inner) {
             Err(BindingError::StructAlreadyDefined {
                 handle: declaration.inner,
@@ -813,7 +810,7 @@ impl LibraryBuilder {
                 received: declaration.class_type,
             });
         }
-        self.validate_class_declaration(declaration)?;
+        self.check_class_declaration(declaration)?;
         if !self.fields.classes.contains_key(declaration) {
             Ok(ClassBuilder::new(self, declaration.clone()))
         } else {
@@ -1028,38 +1025,86 @@ impl LibraryBuilder {
         }
     }
 
-    pub(crate) fn validate_function(&self, native_function: &FunctionHandle) -> BindResult<()> {
-        if self.fields.functions.contains(native_function) {
-            Ok(())
-        } else {
-            Err(BindingError::FunctionNotPartOfThisLib {
-                handle: native_function.clone(),
-            })
+    fn check_statement(&self, statement: &Statement<Unvalidated>) -> BindResult<()> {
+        match statement {
+            // no internals that can be from another library
+            Statement::Constants(_) => Ok(()),
+            Statement::StructDeclaration(_) => Ok(()),
+            Statement::EnumDefinition(_) => Ok(()),
+            Statement::ClassDeclaration(_) => Ok(()),
+            // these types have internals that must be checked
+            Statement::StructDefinition(x) => self.check_struct_declaration(&x.declaration()),
+            Statement::ErrorType(x) => self.check_enum(&x.inner),
+            Statement::ClassDefinition(x) => {
+                self.check_class_declaration(&x.declaration)?;
+                for x in x.constructor.iter() {
+                    self.check_function(&x.function)?;
+                }
+                for x in x.destructor.iter() {
+                    self.check_function(&x.function)?;
+                }
+                for x in x.static_methods.iter() {
+                    self.check_function(&x.native_function)?
+                }
+                for x in x.methods.iter() {
+                    self.check_function(&x.native_function)?
+                }
+                for x in x.future_methods.iter() {
+                    self.check_function(&x.native_function)?
+                }
+                Ok(())
+            }
+            Statement::StaticClassDefinition(x) => {
+                for x in x.static_methods.iter() {
+                    self.check_function(&x.native_function)?;
+                }
+                Ok(())
+            }
+            Statement::InterfaceDefinition(x) => {
+                for cb in x.callbacks.iter() {
+                    for arg in cb.arguments.iter() {
+                        self.check_callback_argument(&arg.arg_type)?;
+                    }
+                    if let Some(ret) = cb.return_type.get() {
+                        self.check_callback_return_value(ret)?;
+                    }
+                }
+                Ok(())
+            }
+            Statement::IteratorDeclaration(x) => {
+                self.check_class_declaration(&x.iter_class)?;
+                self.check_function(&x.next_function)?;
+                match &x.item_type {
+                    IteratorItemType::Struct(x) => {
+                        self.check_struct_declaration(&x.declaration())?;
+                    }
+                }
+                Ok(())
+            }
+            Statement::CollectionDeclaration(x) => {
+                self.check_class_declaration(&x.collection_class)?;
+                self.check_function(&x.create_func)?;
+                self.check_function(&x.add_func)?;
+                self.check_function(&x.delete_func)?;
+                self.check_function_argument(&x.item_type)?;
+                Ok(())
+            }
+            Statement::FunctionDefinition(x) => {
+                for p in x.parameters.iter() {
+                    self.check_function_argument(&p.arg_type)?;
+                }
+                if let Some(r) = x.return_type.get() {
+                    self.check_function_return_type(r)?;
+                }
+                for err in x.error_type.iter() {
+                    self.check_enum(&err.inner)?;
+                }
+                Ok(())
+            }
         }
     }
 
-    pub(crate) fn validate_type<T>(&self, type_to_validate: &T) -> BindResult<()>
-    where
-        T: TypeValidator,
-    {
-        match type_to_validate.get_validated_type() {
-            Some(x) => match x {
-                ValidatedType::Enum(x) => self.validate_enum(&x),
-                ValidatedType::StructRef(x) => self.validate_struct_declaration(&x),
-                ValidatedType::Struct(x) => self.validate_struct(&x),
-                ValidatedType::Interface(x) => self.validate_interface(&x),
-                ValidatedType::ClassRef(x) => self.validate_class_declaration(&x),
-                ValidatedType::Iterator(x) => self.validate_iterator(&x),
-                ValidatedType::Collection(x) => self.validate_collection(&x),
-            },
-            None => Ok(()),
-        }
-    }
-
-    fn validate_struct_declaration(
-        &self,
-        native_struct: &StructDeclarationHandle,
-    ) -> BindResult<()> {
+    fn check_struct_declaration(&self, native_struct: &StructDeclarationHandle) -> BindResult<()> {
         if self.fields.structs_declarations.contains(native_struct) {
             Ok(())
         } else {
@@ -1069,21 +1114,17 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_struct(&self, native_struct: &StructType<Unvalidated>) -> BindResult<()> {
-        if self
-            .fields
-            .structs
-            .contains_key(&native_struct.declaration())
-        {
+    fn check_function(&self, native_function: &FunctionHandle) -> BindResult<()> {
+        if self.fields.functions.contains(native_function) {
             Ok(())
         } else {
-            Err(BindingError::StructNotPartOfThisLib {
-                handle: native_struct.declaration(),
+            Err(BindingError::FunctionNotPartOfThisLib {
+                handle: native_function.clone(),
             })
         }
     }
 
-    fn validate_enum(&self, native_enum: &EnumHandle) -> BindResult<()> {
+    fn check_enum(&self, native_enum: &EnumHandle) -> BindResult<()> {
         if self.fields.enums.contains(native_enum) {
             Ok(())
         } else {
@@ -1093,7 +1134,7 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_interface(&self, interface: &InterfaceHandle) -> BindResult<()> {
+    fn check_interface(&self, interface: &InterfaceHandle) -> BindResult<()> {
         if self.fields.interfaces.contains(interface) {
             Ok(())
         } else {
@@ -1103,7 +1144,7 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_class_declaration(
+    fn check_class_declaration(
         &self,
         class_declaration: &ClassDeclarationHandle,
     ) -> BindResult<()> {
@@ -1116,7 +1157,64 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_iterator(&self, iter: &IteratorHandle) -> BindResult<()> {
+    fn check_function_argument(&self, arg: &FunctionArgument) -> BindResult<()> {
+        match arg {
+            FunctionArgument::Basic(x) => self.check_basic_type(x),
+            FunctionArgument::String(_) => Ok(()),
+            FunctionArgument::Collection(x) => self.check_collection(x),
+            FunctionArgument::Struct(x) => self.check_struct_declaration(&x.declaration()),
+            FunctionArgument::StructRef(x) => self.check_struct_declaration(&x.inner),
+            FunctionArgument::ClassRef(x) => self.check_class_declaration(x),
+            FunctionArgument::Interface(x) => self.check_interface(x),
+        }
+    }
+
+    fn check_callback_argument(&self, arg: &CallbackArgument) -> BindResult<()> {
+        match arg {
+            CallbackArgument::Basic(x) => self.check_basic_type(x),
+            CallbackArgument::String(_) => Ok(()),
+            CallbackArgument::Iterator(x) => self.check_iterator(x),
+            CallbackArgument::Class(x) => self.check_class_declaration(x),
+            CallbackArgument::Struct(x) => self.check_struct_declaration(&x.declaration()),
+        }
+    }
+
+    fn check_callback_return_value(&self, arg: &CallbackReturnValue) -> BindResult<()> {
+        match arg {
+            CallbackReturnValue::Basic(x) => self.check_basic_type(x),
+            CallbackReturnValue::Struct(x) => self.check_struct_declaration(&x.declaration()),
+        }
+    }
+
+    fn check_basic_type(&self, arg: &BasicType) -> BindResult<()> {
+        match arg {
+            BasicType::Bool => Ok(()),
+            BasicType::U8 => Ok(()),
+            BasicType::S8 => Ok(()),
+            BasicType::U16 => Ok(()),
+            BasicType::S16 => Ok(()),
+            BasicType::U32 => Ok(()),
+            BasicType::S32 => Ok(()),
+            BasicType::U64 => Ok(()),
+            BasicType::S64 => Ok(()),
+            BasicType::Float32 => Ok(()),
+            BasicType::Double64 => Ok(()),
+            BasicType::Duration(_) => Ok(()),
+            BasicType::Enum(x) => self.check_enum(x),
+        }
+    }
+
+    fn check_function_return_type(&self, value: &FunctionReturnValue) -> BindResult<()> {
+        match value {
+            FunctionReturnValue::Basic(x) => self.check_basic_type(x),
+            FunctionReturnValue::String(_) => Ok(()),
+            FunctionReturnValue::ClassRef(x) => self.check_class_declaration(x),
+            FunctionReturnValue::Struct(x) => self.check_struct_declaration(&x.declaration()),
+            FunctionReturnValue::StructRef(x) => self.check_struct_declaration(x.untyped()),
+        }
+    }
+
+    fn check_iterator(&self, iter: &IteratorHandle) -> BindResult<()> {
         if self.fields.iterators.contains(iter) {
             Ok(())
         } else {
@@ -1126,7 +1224,7 @@ impl LibraryBuilder {
         }
     }
 
-    fn validate_collection(&self, collection: &CollectionHandle) -> BindResult<()> {
+    fn check_collection(&self, collection: &CollectionHandle) -> BindResult<()> {
         if self.fields.collections.contains(collection) {
             Ok(())
         } else {

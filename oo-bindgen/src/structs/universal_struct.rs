@@ -1,6 +1,6 @@
 use crate::doc::Unvalidated;
 use crate::structs::common::*;
-use crate::types::{DurationType, TypeValidator, ValidatedType};
+use crate::types::DurationType;
 use crate::*;
 
 /// Types that can be used in a universal struct, some of which might have a default value
@@ -8,16 +8,6 @@ use crate::*;
 pub enum UniversalStructField {
     Basic(BasicType),
     Struct(UniversalStructHandle),
-}
-impl TypeValidator for UniversalStructField {
-    fn get_validated_type(&self) -> Option<ValidatedType> {
-        match self {
-            UniversalStructField::Basic(x) => x.get_validated_type(),
-            UniversalStructField::Struct(x) => {
-                StructType::Universal(x.clone()).get_validated_type()
-            }
-        }
-    }
 }
 
 pub type UniversalStructHandle = Handle<Struct<UniversalStructField, Unvalidated>>;

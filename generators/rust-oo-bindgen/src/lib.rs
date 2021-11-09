@@ -567,8 +567,14 @@ impl<'a> RustCodegen<'a> {
         name: &str,
         callbacks: I,
     ) -> FormattingResult<()> {
+        let generate_send_and_sync = match interface_type {
+            InterfaceType::Synchronous => false,
+            InterfaceType::Asynchronous => true,
+            InterfaceType::Future => true,
+        };
+
         // Send/Sync trait
-        if interface_type == InterfaceType::Asynchronous {
+        if generate_send_and_sync {
             f.writeln(&format!("unsafe impl Send for {} {{}}", name))?;
             f.writeln(&format!("unsafe impl Sync for {} {{}}", name))?;
         }

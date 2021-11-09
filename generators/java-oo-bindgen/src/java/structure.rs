@@ -3,8 +3,8 @@ use super::*;
 use heck::{CamelCase, MixedCase};
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::structs::{
-    Constructor, ConstructorType, Number, Struct, StructField, StructFieldType,
-    ValidatedConstructorDefault, Visibility,
+    Initializer, InitializerType, Number, Struct, StructField, StructFieldType,
+    ValidatedDefaultValue, Visibility,
 };
 use oo_bindgen::types::DurationType;
 
@@ -24,15 +24,15 @@ fn field_visibility(struct_type: Visibility) -> &'static str {
 
 fn get_field_value<T>(
     field: &StructField<T, Validated>,
-    constructor: &Constructor<Validated>,
+    constructor: &Initializer<Validated>,
 ) -> String
 where
     T: StructFieldType,
 {
     match constructor.values.iter().find(|x| x.name == field.name) {
         Some(x) => match &x.value {
-            ValidatedConstructorDefault::Bool(x) => x.to_string(),
-            ValidatedConstructorDefault::Numeric(x) => match x {
+            ValidatedDefaultValue::Bool(x) => x.to_string(),
+            ValidatedDefaultValue::Numeric(x) => match x {
                 Number::U8(x) => format!("UByte.valueOf({})", x),
                 Number::S8(x) => format!("(byte) {}", x),
                 Number::U16(x) => format!("UShort.valueOf({})", x),
@@ -44,7 +44,7 @@ where
                 Number::Float(x) => format!("{}F", x),
                 Number::Double(x) => x.to_string(),
             },
-            ValidatedConstructorDefault::Duration(t, x) => match t {
+            ValidatedDefaultValue::Duration(t, x) => match t {
                 DurationType::Milliseconds => {
                     format!("java.time.Duration.ofMillis({})", t.get_value_string(*x))
                 }
@@ -52,15 +52,15 @@ where
                     format!("java.time.Duration.ofSeconds({})", t.get_value_string(*x))
                 }
             },
-            ValidatedConstructorDefault::Enum(x, variant) => {
+            ValidatedDefaultValue::Enum(x, variant) => {
                 format!(
                     "{}.{}",
                     x.name.to_camel_case(),
                     variant.to_shouty_snake_case()
                 )
             }
-            ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
-            ValidatedConstructorDefault::DefaultStruct(handle, _, _) => {
+            ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+            ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
                 format!("new {}()", handle.name().to_camel_case(),)
             }
         },
@@ -71,7 +71,7 @@ where
 fn write_constructor_docs<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
     write_return_info: bool,
 ) -> FormattingResult<()>
 where
@@ -82,7 +82,7 @@ where
         javadoc_print(f, &constructor.doc)?;
         f.newline()?;
 
-        for field in handle.constructor_args(constructor.clone()) {
+        for field in handle.initializer_args(constructor.clone()) {
             f.writeln(&format!("@param {} ", field.name.to_mixed_case()))?;
             docstring_print(f, &field.doc.brief)?;
         }
@@ -101,7 +101,7 @@ where
 fn write_static_method_constructor<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType,
@@ -134,13 +134,13 @@ where
 
 fn constructor_args<T>(
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
 ) -> String
 where
     T: StructFieldType + JavaType,
 {
     handle
-        .constructor_args(constructor.clone())
+        .initializer_args(constructor.clone())
         .map(|sf| {
             format!(
                 "{} {}",
@@ -156,7 +156,7 @@ fn write_constructor<T>(
     f: &mut dyn Printer,
     visibility: Visibility,
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType,
@@ -227,21 +227,21 @@ where
             ))?;
         }
 
-        for c in &st.constructors {
+        for c in &st.initializers {
             f.newline()?;
-            match &c.constructor_type {
-                ConstructorType::Normal => {
+            match &c.initializer_type {
+                InitializerType::Normal => {
                     write_constructor(f, Visibility::Public, st, c)?;
                 }
-                ConstructorType::Static => {
+                InitializerType::Static => {
                     write_static_method_constructor(f, st, c)?;
                 }
             }
         }
 
-        if !st.has_full_constructor() {
-            let constructor = Handle::new(Constructor::full(
-                ConstructorType::Normal,
+        if !st.has_full_initializer() {
+            let constructor = Handle::new(Initializer::full(
+                InitializerType::Normal,
                 brief("Initialize all values"),
             ));
 

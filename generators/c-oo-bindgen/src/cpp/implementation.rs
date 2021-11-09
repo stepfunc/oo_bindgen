@@ -2,17 +2,17 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::class::{Class, ClassMethod, ClassStaticMethod, StaticClass};
+use oo_bindgen::class::{Class, ClassStaticMethod, Method, StaticClass};
 use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::{ClassAsyncMethod, Function, FunctionArgument, FunctionReturnType};
+use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnType, FutureMethod};
 use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, Interface, InterfaceType};
 use oo_bindgen::structs::{
-    Constructor, ConstructorType, Number, Struct, StructFieldType, StructType,
-    ValidatedConstructorDefault, Visibility,
+    Initializer, InitializerType, Number, Struct, StructFieldType, StructType,
+    ValidatedDefaultValue, Visibility,
 };
 use oo_bindgen::types::Arg;
 use oo_bindgen::util::WithLastIndication;
@@ -368,24 +368,24 @@ fn write_struct_constructors<T>(
 where
     T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
-    if !st.has_full_constructor() {
-        let constructor = Handle::new(Constructor::full(
-            ConstructorType::Normal,
+    if !st.has_full_initializer() {
+        let constructor = Handle::new(Initializer::full(
+            InitializerType::Normal,
             brief("full constructor"),
         ));
         write_struct_constructor(f, st, &constructor)?;
     }
 
-    for constructor in &st.constructors {
+    for constructor in &st.initializers {
         write_struct_constructor(f, st, constructor)?;
     }
     Ok(())
 }
 
-fn get_default_value(default: &ValidatedConstructorDefault) -> String {
+fn get_default_value(default: &ValidatedDefaultValue) -> String {
     match default {
-        ValidatedConstructorDefault::Bool(x) => x.to_string(),
-        ValidatedConstructorDefault::Numeric(x) => match x {
+        ValidatedDefaultValue::Bool(x) => x.to_string(),
+        ValidatedDefaultValue::Numeric(x) => match x {
             Number::U8(x) => x.to_string(),
             Number::S8(x) => x.to_string(),
             Number::U16(x) => x.to_string(),
@@ -397,18 +397,18 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
             Number::Float(x) => format!("{}f", x),
             Number::Double(x) => x.to_string(),
         },
-        ValidatedConstructorDefault::Duration(_, x) => {
+        ValidatedDefaultValue::Duration(_, x) => {
             format!("std::chrono::milliseconds({})", x.as_millis())
         }
-        ValidatedConstructorDefault::Enum(x, variant) => {
+        ValidatedDefaultValue::Enum(x, variant) => {
             format!("{}::{}", x.core_cpp_type(), variant.to_snake_case())
         }
-        ValidatedConstructorDefault::String(x) => {
+        ValidatedDefaultValue::String(x) => {
             format!("\"{}\"", x)
         }
-        ValidatedConstructorDefault::DefaultStruct(st, ct, c_name) => match ct {
-            ConstructorType::Normal => format!("{}()", st.name().to_camel_case()),
-            ConstructorType::Static => format!("{}()", c_name.to_camel_case()),
+        ValidatedDefaultValue::DefaultStruct(st, ct, c_name) => match ct {
+            InitializerType::Normal => format!("{}()", st.name().to_camel_case()),
+            InitializerType::Static => format!("{}()", c_name.to_camel_case()),
         },
     }
 }
@@ -416,14 +416,14 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
 fn write_struct_constructor<T>(
     f: &mut dyn Printer,
     st: &Handle<Struct<T, Validated>>,
-    con: &Handle<Constructor<Validated>>,
+    con: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppFunctionArgType + TypeInfo,
 {
     let struct_name = st.core_cpp_type();
     let args = st
-        .constructor_args(con.clone())
+        .initializer_args(con.clone())
         .map(|f| {
             format!(
                 "{} {}",
@@ -434,8 +434,8 @@ where
         .collect::<Vec<String>>()
         .join(", ");
 
-    match con.constructor_type {
-        ConstructorType::Normal => {
+    match con.initializer_type {
+        InitializerType::Normal => {
             f.writeln(&format!("{}::{}({}) : ", struct_name, struct_name, args))?;
             indented(f, |f| {
                 for (field, last) in st.fields.iter().with_last() {
@@ -467,7 +467,7 @@ where
             })?;
             f.writeln("{}")?;
         }
-        ConstructorType::Static => {
+        InitializerType::Static => {
             f.writeln(&format!(
                 "{} {}::{}({})",
                 struct_name,
@@ -606,7 +606,7 @@ fn write_class_static_method_impl(
 fn write_class_method_impl(
     f: &mut dyn Printer,
     handle: &Handle<Class<Validated>>,
-    method: &ClassMethod<Validated>,
+    method: &Method<Validated>,
 ) -> FormattingResult<()> {
     write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
 }
@@ -614,7 +614,7 @@ fn write_class_method_impl(
 fn write_class_async_method_impl(
     f: &mut dyn Printer,
     handle: &Handle<Class<Validated>>,
-    method: &ClassAsyncMethod<Validated>,
+    method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
     write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
 }

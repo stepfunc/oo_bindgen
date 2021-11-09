@@ -485,14 +485,16 @@ impl<'a> ClassMethodBuilder<'a> {
         })
     }
 
-    pub fn build(self) -> BindResult<ClassMethod<Unvalidated>> {
+    pub fn build(self) -> BindResult<Method<Unvalidated>> {
         let function = self.inner.build()?;
-        Ok(ClassMethod::new(self.method_name, self.class, function))
+        Ok(Method::new(self.method_name, self.class, function))
     }
 }
 
+/// represents a method that initiates an asynchronous operation
+/// an eventually completes an abstract future
 #[derive(Debug, Clone)]
-pub struct ClassAsyncMethod<T>
+pub struct FutureMethod<T>
 where
     T: DocReference,
 {
@@ -502,12 +504,9 @@ where
     pub native_function: Handle<Function<T>>,
 }
 
-impl ClassAsyncMethod<Unvalidated> {
-    pub(crate) fn validate(
-        &self,
-        lib: &UnvalidatedFields,
-    ) -> BindResult<ClassAsyncMethod<Validated>> {
-        Ok(ClassAsyncMethod {
+impl FutureMethod<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<FutureMethod<Validated>> {
+        Ok(FutureMethod {
             name: self.name.clone(),
             associated_class: self.associated_class.clone(),
             future: self.future.validate(lib)?,
@@ -516,12 +515,12 @@ impl ClassAsyncMethod<Unvalidated> {
     }
 }
 
-pub struct ClassAsyncMethodBuilder<'a> {
+pub struct FutureMethodBuilder<'a> {
     future: FutureInterface<Unvalidated>,
     inner: ClassMethodBuilder<'a>,
 }
 
-impl<'a> ClassAsyncMethodBuilder<'a> {
+impl<'a> FutureMethodBuilder<'a> {
     pub(crate) fn new(
         lib: &'a mut LibraryBuilder,
         method_name: Name,
@@ -568,7 +567,7 @@ impl<'a> ClassAsyncMethodBuilder<'a> {
         })
     }
 
-    pub fn build(self) -> BindResult<ClassAsyncMethod<Unvalidated>> {
+    pub fn build(self) -> BindResult<FutureMethod<Unvalidated>> {
         let future = self.future.clone();
         let callback_parameter_name = self
             .inner
@@ -587,7 +586,7 @@ impl<'a> ClassAsyncMethodBuilder<'a> {
             )?
             .build()?;
 
-        Ok(ClassAsyncMethod {
+        Ok(FutureMethod {
             name: method.name,
             associated_class: method.associated_class,
             future,

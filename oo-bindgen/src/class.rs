@@ -56,8 +56,9 @@ impl ClassDeclaration {
 
 pub type ClassDeclarationHandle = Handle<ClassDeclaration>;
 
+/// Represent an instance method on a class
 #[derive(Debug, Clone)]
-pub struct ClassMethod<T>
+pub struct Method<T>
 where
     T: DocReference,
 {
@@ -66,7 +67,7 @@ where
     pub native_function: Handle<Function<T>>,
 }
 
-impl ClassMethod<Unvalidated> {
+impl Method<Unvalidated> {
     pub(crate) fn new(
         name: Name,
         associated_class: Handle<ClassDeclaration>,
@@ -79,8 +80,8 @@ impl ClassMethod<Unvalidated> {
         }
     }
 
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<ClassMethod<Validated>> {
-        Ok(ClassMethod {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Method<Validated>> {
+        Ok(Method {
             name: self.name.clone(),
             associated_class: self.associated_class.clone(),
             native_function: self.native_function.validate(lib)?,
@@ -88,6 +89,7 @@ impl ClassMethod<Unvalidated> {
     }
 }
 
+/// represents a static method associated with a class
 #[derive(Debug)]
 pub struct ClassStaticMethod<T>
 where
@@ -146,9 +148,9 @@ where
     pub declaration: ClassDeclarationHandle,
     pub constructor: Option<ClassConstructor<T>>,
     pub destructor: Option<ClassDestructor<T>>,
-    pub methods: Vec<ClassMethod<T>>,
+    pub methods: Vec<Method<T>>,
     pub static_methods: Vec<ClassStaticMethod<T>>,
-    pub async_methods: Vec<ClassAsyncMethod<T>>,
+    pub async_methods: Vec<FutureMethod<T>>,
     pub doc: Doc<T>,
     pub destruction_mode: DestructionMode,
     pub settings: Rc<LibrarySettings>,
@@ -164,14 +166,14 @@ impl Class<Unvalidated> {
             None => None,
             Some(x) => Some(x.validate(lib)?),
         };
-        let methods: BindResult<Vec<ClassMethod<Validated>>> =
+        let methods: BindResult<Vec<Method<Validated>>> =
             self.methods.iter().map(|x| x.validate(lib)).collect();
         let static_methods: BindResult<Vec<ClassStaticMethod<Validated>>> = self
             .static_methods
             .iter()
             .map(|x| x.validate(lib))
             .collect();
-        let async_methods: BindResult<Vec<ClassAsyncMethod<Validated>>> =
+        let async_methods: BindResult<Vec<FutureMethod<Validated>>> =
             self.async_methods.iter().map(|x| x.validate(lib)).collect();
 
         Ok(Handle::new(Class {
@@ -240,9 +242,9 @@ pub struct ClassBuilder<'a> {
     declaration: ClassDeclarationHandle,
     constructor: Option<ClassConstructor<Unvalidated>>,
     destructor: Option<ClassDestructor<Unvalidated>>,
-    methods: Vec<ClassMethod<Unvalidated>>,
+    methods: Vec<Method<Unvalidated>>,
     static_methods: Vec<ClassStaticMethod<Unvalidated>>,
-    async_methods: Vec<ClassAsyncMethod<Unvalidated>>,
+    async_methods: Vec<FutureMethod<Unvalidated>>,
     doc: Option<Doc<Unvalidated>>,
     destruction_mode: DestructionMode,
 }
@@ -304,7 +306,7 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn method(mut self, method: ClassMethod<Unvalidated>) -> BindResult<Self> {
+    pub fn method(mut self, method: Method<Unvalidated>) -> BindResult<Self> {
         // make sure the method is defined for this class
         self.check_class(&method.name, method.associated_class.clone())?;
 
@@ -340,7 +342,7 @@ impl<'a> ClassBuilder<'a> {
         Ok(())
     }
 
-    pub fn async_method(mut self, method: ClassAsyncMethod<Unvalidated>) -> BindResult<Self> {
+    pub fn async_method(mut self, method: FutureMethod<Unvalidated>) -> BindResult<Self> {
         self.check_class(&method.name, method.associated_class.clone())?;
 
         self.async_methods.push(method);

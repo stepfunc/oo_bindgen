@@ -31,9 +31,9 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BackTraced<Universa
         .add(float_value.clone(), BasicType::Float32, "float value")?
         .add(double_value.clone(), BasicType::Double64, "double value")?
         .end_fields()?
-        .begin_constructor(
+        .begin_initializer(
             "init",
-            ConstructorType::Normal,
+            InitializerType::Normal,
             "Initialize {struct:numbers} to default values",
         )?
         .default(&uint8_value, Number::U8(1))?
@@ -46,7 +46,7 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BackTraced<Universa
         .default(&int64_value, Number::S64(-4))?
         .default(&float_value, Number::Float(12.34))?
         .default(&double_value, Number::Double(-56.78))?
-        .end_constructor()?
+        .end_initializer()?
         .build()?;
 
     Ok(numbers)
@@ -70,13 +70,13 @@ pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BackTraced<FunctionAr
         .add(numbers_field.clone(), numbers, "struct full of numbers")?
         .end_fields()?
         // constructor definition
-        .begin_constructor(
+        .begin_initializer(
             "init",
-            ConstructorType::Normal,
+            InitializerType::Normal,
             "Initialize to default values",
         )?
         .default_struct(&numbers_field)?
-        .end_constructor()?
+        .end_initializer()?
         .build()?;
 
     Ok(inner_structure)
@@ -144,9 +144,9 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .add(inner_structure_field, inner_structure, "inner structure")?
         .end_fields()?
         // construct all values with defaults
-        .begin_constructor(
+        .begin_initializer(
             "init",
-            ConstructorType::Normal,
+            InitializerType::Normal,
             "Initialize {struct:structure} to default values",
         )?
         .default_variant(&enum_var1_field, "var1")?
@@ -156,7 +156,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .default_string(&string_hello_field, "Hello")?
         .default(&duration_millis_field, Duration::from_millis(4200))?
         .default(&duration_seconds_field, Duration::from_secs(76))?
-        .end_constructor()?
+        .end_initializer()?
         .build()?;
 
     Ok(())

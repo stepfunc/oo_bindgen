@@ -736,13 +736,13 @@ impl LibraryBuilder {
         ClassMethodBuilder::new(self, name.into_name()?, class)
     }
 
-    pub fn define_async_method<T: IntoName>(
+    pub fn define_future_method<T: IntoName>(
         &mut self,
         name: T,
         class: ClassDeclarationHandle,
         future: FutureInterface<Unvalidated>,
-    ) -> BindResult<ClassAsyncMethodBuilder> {
-        ClassAsyncMethodBuilder::new(self, name.into_name()?, class, future)
+    ) -> BindResult<FutureMethodBuilder> {
+        FutureMethodBuilder::new(self, name.into_name()?, class, future)
     }
 
     pub fn define_constructor(

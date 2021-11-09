@@ -34,16 +34,16 @@ impl StructFieldType for FunctionReturnStructField {
     }
 }
 
-impl ConstructorValidator for FunctionReturnStructField {
-    fn validate_constructor_default(
+impl InitializerValidator for FunctionReturnStructField {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match self {
-            Self::Basic(x) => x.validate_constructor_default(value),
-            Self::ClassRef(x) => x.validate_constructor_default(value),
-            Self::Struct(x) => x.validate_constructor_default(value),
-            Self::Iterator(x) => x.validate_constructor_default(value),
+            Self::Basic(x) => x.validate_default_value(value),
+            Self::ClassRef(x) => x.validate_default_value(value),
+            Self::Struct(x) => x.validate_default_value(value),
+            Self::Iterator(x) => x.validate_default_value(value),
         }
     }
 }

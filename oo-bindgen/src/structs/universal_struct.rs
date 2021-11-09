@@ -31,14 +31,14 @@ impl StructFieldType for UniversalStructField {
     }
 }
 
-impl ConstructorValidator for UniversalStructField {
-    fn validate_constructor_default(
+impl InitializerValidator for UniversalStructField {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match self {
-            UniversalStructField::Basic(x) => x.validate_constructor_default(value),
-            UniversalStructField::Struct(x) => x.validate_constructor_default(value),
+            UniversalStructField::Basic(x) => x.validate_default_value(value),
+            UniversalStructField::Struct(x) => x.validate_default_value(value),
         }
     }
 }

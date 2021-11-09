@@ -42,7 +42,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     )?;
 
     let get_value_async = lib
-        .define_async_method("add_async", test_class.clone(), get_value_callback)?
+        .define_future_method("add_async", test_class.clone(), get_value_callback)?
         .param(
             "value",
             BasicType::U32,

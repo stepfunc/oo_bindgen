@@ -1,5 +1,5 @@
 use oo_bindgen::name::Name;
-use oo_bindgen::structs::{ConstructorDefault, ConstructorType, Number, UniversalStructHandle};
+use oo_bindgen::structs::{InitializerDefault, InitializerType, Number, UniversalStructHandle};
 use oo_bindgen::types::{BasicType, DurationType};
 use oo_bindgen::{BackTraced, LibraryBuilder};
 use std::time::Duration;
@@ -13,13 +13,13 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHa
         .doc("Simple universal struct")?
         .add(value_field.clone(), BasicType::S32, "integer value")?
         .end_fields()?
-        .begin_constructor(
+        .begin_initializer(
             "init",
-            ConstructorType::Normal,
+            InitializerType::Normal,
             "initializes {struct:universal_inner_struct} to default values",
         )?
         .default(&value_field, Number::S32(-42))?
-        .end_constructor()?
+        .end_initializer()?
         .build()?;
 
     Ok(inner)
@@ -43,46 +43,46 @@ fn define_outer_struct(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHa
         )?
         .end_fields()?
         // -- constructor --
-        .begin_constructor(
+        .begin_initializer(
             "init",
-            ConstructorType::Normal,
+            InitializerType::Normal,
             "Construct a {struct:universal_outer_struct} initialized to default values",
         )?
-        .default(&inner_field, ConstructorDefault::DefaultStruct)?
+        .default(&inner_field, InitializerDefault::DefaultStruct)?
         .default(
             &delay_field,
-            ConstructorDefault::Duration(Duration::from_secs(5)),
+            InitializerDefault::Duration(Duration::from_secs(5)),
         )?
-        .end_constructor()?
+        .end_initializer()?
         // -- end constructor --
         // -- constructor --
-        .begin_constructor(
+        .begin_initializer(
             "create_default_with_time",
-            ConstructorType::Static,
+            InitializerType::Static,
             "Construct a {struct:universal_outer_struct} with a default inner value and the specified time",
         )?
-        .default(&inner_field, ConstructorDefault::DefaultStruct)?
-        .end_constructor()?
+        .default(&inner_field, InitializerDefault::DefaultStruct)?
+        .end_initializer()?
         // -- end constructor --
         // -- constructor --
-        .begin_constructor(
+        .begin_initializer(
             "special_one",
-            ConstructorType::Static,
+            InitializerType::Static,
             "Construct a special fully initialized {struct:universal_outer_struct}",
         )?
-        .default(&inner_field, ConstructorDefault::DefaultStruct)?
-        .default(&delay_field, ConstructorDefault::Duration(Duration::from_secs(1)))?
-        .end_constructor()?
+        .default(&inner_field, InitializerDefault::DefaultStruct)?
+        .default(&delay_field, InitializerDefault::Duration(Duration::from_secs(1)))?
+        .end_initializer()?
         // -- end constructor --
         // -- constructor --
-        .begin_constructor(
+        .begin_initializer(
             "special_two",
-            ConstructorType::Static,
+            InitializerType::Static,
             "Construct a special fully initialized {struct:universal_outer_struct}",
         )?
-        .default(&inner_field, ConstructorDefault::DefaultStruct)?
-        .default(&delay_field, ConstructorDefault::Duration(Duration::from_secs(2)))?
-        .end_constructor()?
+        .default(&inner_field, InitializerDefault::DefaultStruct)?
+        .default(&delay_field, InitializerDefault::Duration(Duration::from_secs(2)))?
+        .end_initializer()?
         // -- end constructor --
         .build()?;
 

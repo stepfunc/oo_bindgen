@@ -35,16 +35,16 @@ impl StructFieldType for FunctionArgStructField {
     }
 }
 
-impl ConstructorValidator for FunctionArgStructField {
-    fn validate_constructor_default(
+impl InitializerValidator for FunctionArgStructField {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match self {
-            FunctionArgStructField::Basic(x) => x.validate_constructor_default(value),
-            FunctionArgStructField::String(x) => x.validate_constructor_default(value),
-            FunctionArgStructField::Interface(x) => x.validate_constructor_default(value),
-            FunctionArgStructField::Struct(x) => x.validate_constructor_default(value),
+            FunctionArgStructField::Basic(x) => x.validate_default_value(value),
+            FunctionArgStructField::String(x) => x.validate_default_value(value),
+            FunctionArgStructField::Interface(x) => x.validate_default_value(value),
+            FunctionArgStructField::Struct(x) => x.validate_default_value(value),
         }
     }
 }

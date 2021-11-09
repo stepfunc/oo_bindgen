@@ -33,17 +33,17 @@ impl StructFieldType for CallbackArgStructField {
     }
 }
 
-impl ConstructorValidator for CallbackArgStructField {
-    fn validate_constructor_default(
+impl InitializerValidator for CallbackArgStructField {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match self {
-            CallbackArgStructField::Basic(x) => x.validate_constructor_default(value),
-            CallbackArgStructField::Iterator(x) => x.validate_constructor_default(value),
+            CallbackArgStructField::Basic(x) => x.validate_default_value(value),
+            CallbackArgStructField::Iterator(x) => x.validate_default_value(value),
             CallbackArgStructField::Struct(x) => match x {
-                UniversalOr::Specific(x) => x.validate_constructor_default(value),
-                UniversalOr::Universal(x) => x.validate_constructor_default(value),
+                UniversalOr::Specific(x) => x.validate_default_value(value),
+                UniversalOr::Universal(x) => x.validate_default_value(value),
             },
         }
     }

@@ -112,107 +112,102 @@ pub enum BasicType {
     Enum(EnumHandle),
 }
 
-impl ConstructorValidator for BasicType {
-    fn validate_constructor_default(
+impl InitializerValidator for BasicType {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match self {
             BasicType::Bool => match value {
-                ConstructorDefault::Bool(x) => Ok(ValidatedConstructorDefault::Bool(*x)),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Bool(x) => Ok(ValidatedDefaultValue::Bool(*x)),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "bool".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::U8 => match value {
-                ConstructorDefault::Numeric(Number::U8(x)) => Ok(Number::U8(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::U8(x)) => Ok(Number::U8(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "u8".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::S8 => match value {
-                ConstructorDefault::Numeric(Number::S8(x)) => Ok(Number::S8(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::S8(x)) => Ok(Number::S8(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "i8".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::U16 => match value {
-                ConstructorDefault::Numeric(Number::U16(x)) => Ok(Number::U16(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::U16(x)) => Ok(Number::U16(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "u16".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::S16 => match value {
-                ConstructorDefault::Numeric(Number::S16(x)) => Ok(Number::S16(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::S16(x)) => Ok(Number::S16(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "i16".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::U32 => match value {
-                ConstructorDefault::Numeric(Number::U32(x)) => Ok(Number::U32(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::U32(x)) => Ok(Number::U32(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "u32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::S32 => match value {
-                ConstructorDefault::Numeric(Number::S32(x)) => Ok(Number::S32(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::S32(x)) => Ok(Number::S32(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "i32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::U64 => match value {
-                ConstructorDefault::Numeric(Number::U64(x)) => Ok(Number::U64(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::U64(x)) => Ok(Number::U64(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "u64".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::S64 => match value {
-                ConstructorDefault::Numeric(Number::S64(x)) => Ok(Number::S64(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::S64(x)) => Ok(Number::S64(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "i64".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Float32 => match value {
-                ConstructorDefault::Numeric(Number::Float(x)) => Ok(Number::Float(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::Float(x)) => Ok(Number::Float(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "f32".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Double64 => match value {
-                ConstructorDefault::Numeric(Number::Double(x)) => Ok(Number::Double(*x).into()),
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Numeric(Number::Double(x)) => Ok(Number::Double(*x).into()),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "f64".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Duration(dt) => match value {
-                ConstructorDefault::Duration(x) => {
-                    Ok(ValidatedConstructorDefault::Duration(*dt, *x))
-                }
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                InitializerDefault::Duration(x) => Ok(ValidatedDefaultValue::Duration(*dt, *x)),
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "Duration".to_string(),
                     value: value.clone(),
                 }),
             },
             BasicType::Enum(handle) => match value {
-                ConstructorDefault::Enum(value) => {
+                InitializerDefault::Enum(value) => {
                     handle.validate_contains_variant_name(value)?;
-                    Ok(ValidatedConstructorDefault::Enum(
-                        handle.clone(),
-                        value.clone(),
-                    ))
+                    Ok(ValidatedDefaultValue::Enum(handle.clone(), value.clone()))
                 }
-                _ => Err(BindingError::StructConstructorBadValueForType {
+                _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "Enum".to_string(),
                     value: value.clone(),
                 }),

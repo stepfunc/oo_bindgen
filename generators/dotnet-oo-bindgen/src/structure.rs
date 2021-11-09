@@ -18,15 +18,15 @@ impl DotNetVisibility for Visibility {
 
 fn get_field_value<T>(
     field: &StructField<T, Validated>,
-    constructor: &Constructor<Validated>,
+    constructor: &Initializer<Validated>,
 ) -> String
 where
     T: StructFieldType,
 {
     match constructor.values.iter().find(|x| x.name == field.name) {
         Some(x) => match &x.value {
-            ValidatedConstructorDefault::Bool(x) => x.to_string(),
-            ValidatedConstructorDefault::Numeric(x) => match x {
+            ValidatedDefaultValue::Bool(x) => x.to_string(),
+            ValidatedDefaultValue::Numeric(x) => match x {
                 Number::U8(x) => x.to_string(),
                 Number::S8(x) => x.to_string(),
                 Number::U16(x) => x.to_string(),
@@ -38,7 +38,7 @@ where
                 Number::Float(x) => format!("{}F", x),
                 Number::Double(x) => x.to_string(),
             },
-            ValidatedConstructorDefault::Duration(t, x) => match t {
+            ValidatedDefaultValue::Duration(t, x) => match t {
                 DurationType::Milliseconds => {
                     format!("TimeSpan.FromMilliseconds({})", t.get_value_string(*x))
                 }
@@ -46,11 +46,11 @@ where
                     format!("TimeSpan.FromSeconds({})", t.get_value_string(*x))
                 }
             },
-            ValidatedConstructorDefault::Enum(x, variant) => {
+            ValidatedDefaultValue::Enum(x, variant) => {
                 format!("{}.{}", x.name.to_camel_case(), variant.to_camel_case())
             }
-            ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
-            ValidatedConstructorDefault::DefaultStruct(handle, _, _) => {
+            ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+            ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
                 format!("new {}()", handle.name().to_camel_case())
             }
         },
@@ -61,7 +61,7 @@ where
 fn write_static_constructor<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + DotnetType,
@@ -93,7 +93,7 @@ where
 fn write_constructor_documentation<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
     write_return_info: bool,
 ) -> FormattingResult<()>
 where
@@ -102,7 +102,7 @@ where
     documentation(f, |f| {
         xmldoc_print(f, &constructor.doc)?;
 
-        for arg in handle.constructor_args(constructor.clone()) {
+        for arg in handle.initializer_args(constructor.clone()) {
             f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
             docstring_print(f, &arg.doc.brief)?;
             f.write("</param>")?;
@@ -121,13 +121,13 @@ where
 
 fn constructor_parameters<T>(
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
 ) -> String
 where
     T: StructFieldType + DotnetType,
 {
     handle
-        .constructor_args(constructor.clone())
+        .initializer_args(constructor.clone())
         .map(|sf| {
             format!(
                 "{} {}",
@@ -143,7 +143,7 @@ fn write_constructor<T>(
     f: &mut dyn Printer,
     visibility: Visibility,
     handle: &Struct<T, Validated>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + DotnetType,
@@ -225,13 +225,13 @@ where
                 ))?;
             }
 
-            for c in &handle.constructors {
-                match c.constructor_type {
-                    ConstructorType::Normal => {
+            for c in &handle.initializers {
+                match c.initializer_type {
+                    InitializerType::Normal => {
                         f.newline()?;
                         write_constructor(f, Visibility::Public, handle, c)?;
                     }
-                    ConstructorType::Static => {
+                    InitializerType::Static => {
                         f.newline()?;
                         write_static_constructor(f, handle, c)?;
                     }
@@ -239,14 +239,14 @@ where
             }
 
             // If the struct doesn't already define a full constructor, write a private one
-            if !handle.has_full_constructor() {
-                let constructor = Handle::new(Constructor::full(ConstructorType::Normal, doc));
+            if !handle.has_full_initializer() {
+                let constructor = Handle::new(Initializer::full(InitializerType::Normal, doc));
 
                 f.newline()?;
                 write_constructor(f, Visibility::Private, handle, &constructor)?;
             }
 
-            if !handle.has_default_constructor() {
+            if !handle.has_default_initializer() {
                 // Internal parameter-less constructor
                 f.newline()?;
                 f.writeln(&format!(

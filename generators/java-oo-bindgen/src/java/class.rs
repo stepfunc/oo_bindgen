@@ -207,7 +207,7 @@ fn generate_destructor(
     })
 }
 
-fn generate_method(f: &mut dyn Printer, method: &ClassMethod<Validated>) -> FormattingResult<()> {
+fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
         javadoc_print(f, &method.native_function.doc)?;
@@ -339,7 +339,7 @@ fn generate_static_method(
 
 fn generate_async_method(
     f: &mut dyn Printer,
-    method: &ClassAsyncMethod<Validated>,
+    method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
     let return_type = method.future.value_type.as_java_object();
     let settings = method.future.interface.settings.clone();

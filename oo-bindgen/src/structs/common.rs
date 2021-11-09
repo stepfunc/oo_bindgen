@@ -21,7 +21,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::time::Duration;
 
-/// Value used to define constructor default
+/// Value used to define initializer default
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Number {
     U8(u8),
@@ -36,69 +36,69 @@ pub enum Number {
     Double(f64),
 }
 
-/// Value used to define constructor default
+/// Default value for a field in struct initializer
 #[derive(Debug, Clone, PartialEq)]
-pub enum ConstructorDefault {
+pub enum InitializerDefault {
     Bool(bool),
     Numeric(Number),
     Duration(Duration),
     Enum(String),
     String(String),
-    /// requires that the struct have a default constructor
+    /// requires that the struct have a default initializer
     DefaultStruct,
 }
 
 pub trait ToDefaultVariant {
-    fn default_variant(&self) -> ConstructorDefault;
+    fn default_variant(&self) -> InitializerDefault;
 }
 
 pub trait ToDefaultString {
-    fn default_string(&self) -> ConstructorDefault;
+    fn default_string(&self) -> InitializerDefault;
 }
 
 impl ToDefaultVariant for &str {
-    fn default_variant(&self) -> ConstructorDefault {
-        ConstructorDefault::Enum(self.to_string())
+    fn default_variant(&self) -> InitializerDefault {
+        InitializerDefault::Enum(self.to_string())
     }
 }
 
 impl ToDefaultString for &str {
-    fn default_string(&self) -> ConstructorDefault {
-        ConstructorDefault::String(self.to_string())
+    fn default_string(&self) -> InitializerDefault {
+        InitializerDefault::String(self.to_string())
     }
 }
 
-impl From<Number> for ConstructorDefault {
+impl From<Number> for InitializerDefault {
     fn from(x: Number) -> Self {
         Self::Numeric(x)
     }
 }
 
-impl From<bool> for ConstructorDefault {
+impl From<bool> for InitializerDefault {
     fn from(x: bool) -> Self {
-        ConstructorDefault::Bool(x)
+        InitializerDefault::Bool(x)
     }
 }
 
-impl From<Duration> for ConstructorDefault {
+impl From<Duration> for InitializerDefault {
     fn from(x: Duration) -> Self {
-        ConstructorDefault::Duration(x)
+        InitializerDefault::Duration(x)
     }
 }
 
-// Value used to define constructor default
+// Value used to define a default in a struct initializer
 #[derive(Debug, Clone)]
-pub enum ValidatedConstructorDefault {
+pub enum ValidatedDefaultValue {
     Bool(bool),
     Numeric(Number),
     Duration(DurationType, Duration),
     Enum(EnumHandle, String),
     String(String),
-    /// requires that the struct have a default constructor
-    DefaultStruct(StructType<Unvalidated>, ConstructorType, String),
+    /// requires that the struct have a default initializer
+    DefaultStruct(StructType<Unvalidated>, InitializerType, String),
 }
 
-impl From<Number> for ValidatedConstructorDefault {
+impl From<Number> for ValidatedDefaultValue {
     fn from(x: Number) -> Self {
         Self::Numeric(x)
     }
@@ -141,7 +141,7 @@ impl std::fmt::Display for Number {
     }
 }
 
-impl std::fmt::Display for ValidatedConstructorDefault {
+impl std::fmt::Display for ValidatedDefaultValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Bool(x) => {
@@ -226,73 +226,73 @@ pub type FunctionArgStructDeclaration = TypedStructDeclaration<FunctionArgStruct
 pub type FunctionReturnStructDeclaration = TypedStructDeclaration<FunctionReturnStructField>;
 pub type CallbackArgStructDeclaration = TypedStructDeclaration<CallbackArgStructField>;
 
-pub trait ConstructorValidator {
-    fn bad_constructor_value(
+pub trait InitializerValidator {
+    fn bad_initializer_value(
         field_type: String,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
-        Err(BindingError::StructConstructorBadValueForType {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
+        Err(BindingError::StructInitializerBadValueForType {
             field_type,
             value: value.clone(),
         })
     }
 
     /// Check that the value is valid for the type
-    fn validate_constructor_default(
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault>;
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue>;
 }
 
-impl ConstructorValidator for IteratorHandle {
-    fn validate_constructor_default(
+impl InitializerValidator for IteratorHandle {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
-        Self::bad_constructor_value("IteratorHandle".to_string(), value)
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
+        Self::bad_initializer_value("IteratorHandle".to_string(), value)
     }
 }
 
-impl ConstructorValidator for ClassDeclarationHandle {
-    fn validate_constructor_default(
+impl InitializerValidator for ClassDeclarationHandle {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
-        Self::bad_constructor_value("ClassHandle".to_string(), value)
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
+        Self::bad_initializer_value("ClassHandle".to_string(), value)
     }
 }
 
-impl ConstructorValidator for InterfaceHandle {
-    fn validate_constructor_default(
+impl InitializerValidator for InterfaceHandle {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
-        Self::bad_constructor_value("InterfaceHandle".to_string(), value)
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
+        Self::bad_initializer_value("InterfaceHandle".to_string(), value)
     }
 }
 
-impl ConstructorValidator for CollectionHandle {
-    fn validate_constructor_default(
+impl InitializerValidator for CollectionHandle {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
-        Self::bad_constructor_value("CollectionHandle".to_string(), value)
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
+        Self::bad_initializer_value("CollectionHandle".to_string(), value)
     }
 }
 
-impl ConstructorValidator for StringType {
-    fn validate_constructor_default(
+impl InitializerValidator for StringType {
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match value {
-            ConstructorDefault::String(x) => Ok(ValidatedConstructorDefault::String(x.clone())),
-            _ => Self::bad_constructor_value("String".to_string(), value),
+            InitializerDefault::String(x) => Ok(ValidatedDefaultValue::String(x.clone())),
+            _ => Self::bad_initializer_value("String".to_string(), value),
         }
     }
 }
 
-pub trait StructFieldType: Clone + Sized + TypeValidator + ConstructorValidator {
+pub trait StructFieldType: Clone + Sized + TypeValidator + InitializerValidator {
     /// convert a structure to a StructType
     fn create_struct_type(v: Handle<Struct<Self, Unvalidated>>) -> StructType<Unvalidated>;
 }
@@ -334,7 +334,7 @@ where
     pub visibility: Visibility,
     pub declaration: TypedStructDeclaration<F>,
     pub fields: Vec<StructField<F, D>>,
-    pub constructors: Vec<Handle<Constructor<D>>>,
+    pub initializers: Vec<Handle<Initializer<D>>>,
     pub doc: Doc<D>,
 }
 
@@ -348,9 +348,9 @@ where
     ) -> BindResult<Handle<Struct<F, Validated>>> {
         let fields: BindResult<Vec<StructField<F, Validated>>> =
             self.fields.iter().map(|x| x.validate(lib)).collect();
-        let constructors: BindResult<Vec<Constructor<Validated>>> =
-            self.constructors.iter().map(|x| x.validate(lib)).collect();
-        let constructors: Vec<Handle<Constructor<Validated>>> = constructors?
+        let initializers: BindResult<Vec<Initializer<Validated>>> =
+            self.initializers.iter().map(|x| x.validate(lib)).collect();
+        let initializers: Vec<Handle<Initializer<Validated>>> = initializers?
             .iter()
             .map(|x| Handle::new(x.clone()))
             .collect();
@@ -359,34 +359,34 @@ where
             visibility: self.visibility,
             declaration: self.declaration.clone(),
             fields: fields?,
-            constructors,
+            initializers,
             doc: self.doc.validate(self.name(), lib)?,
         }))
     }
 }
 
-impl<F> ConstructorValidator for Handle<Struct<F, Unvalidated>>
+impl<F> InitializerValidator for Handle<Struct<F, Unvalidated>>
 where
     F: StructFieldType,
 {
-    fn validate_constructor_default(
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match value {
-            ConstructorDefault::DefaultStruct => match self.get_default_constructor() {
-                Some(c) => Ok(ValidatedConstructorDefault::DefaultStruct(
+            InitializerDefault::DefaultStruct => match self.get_default_initializer() {
+                Some(c) => Ok(ValidatedDefaultValue::DefaultStruct(
                     F::create_struct_type(self.clone()),
-                    c.constructor_type,
+                    c.initializer_type,
                     c.name.to_string(),
                 )),
                 None => Err(
-                    BindingError::StructConstructorStructFieldWithoutDefaultConstructor {
+                    BindingError::StructInitializerStructFieldWithoutDefaultInitializer {
                         struct_name: self.name().to_string(),
                     },
                 ),
             },
-            _ => Err(BindingError::StructConstructorBadValueForType {
+            _ => Err(BindingError::StructInitializerBadValueForType {
                 field_type: "Struct".to_string(),
                 value: value.clone(),
             }),
@@ -401,10 +401,6 @@ where
 {
     pub fn settings(&self) -> &LibrarySettings {
         &self.declaration.inner.settings
-    }
-
-    pub fn requires_constructor(&self) -> bool {
-        true
     }
 
     pub fn find_field_name(&self, name: &str) -> Option<Name> {
@@ -422,37 +418,36 @@ where
         self.declaration.inner.clone()
     }
 
-    pub fn constructor_args(
+    pub fn initializer_args(
         &self,
-        constructor: Handle<Constructor<D>>,
+        initializer: Handle<Initializer<D>>,
     ) -> impl Iterator<Item = &StructField<F, D>> {
         self.fields
             .iter()
-            .filter(move |field| !constructor.values.iter().any(|c| c.name == field.name))
+            .filter(move |field| !initializer.values.iter().any(|c| c.name == field.name))
     }
 
     pub fn fields(&self) -> impl Iterator<Item = &StructField<F, D>> {
         self.fields.iter()
     }
 
-    pub fn has_default_constructor(&self) -> bool {
-        self.get_default_constructor().is_some()
+    pub fn has_default_initializer(&self) -> bool {
+        self.get_default_initializer().is_some()
     }
 
-    pub fn has_full_constructor(&self) -> bool {
-        self.get_full_constructor().is_some()
+    pub fn has_full_initializer(&self) -> bool {
+        self.get_full_initializer().is_some()
     }
 
-    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor<D>>> {
-        // Are any of the constructors of normal type and initialize ALL of the fields
-        self.constructors.iter().find(|c| {
-            c.constructor_type == ConstructorType::Normal && c.values.len() == self.fields.len()
+    pub fn get_default_initializer(&self) -> Option<&Handle<Initializer<D>>> {
+        // Are any of the initializers of normal type and initialize ALL of the fields
+        self.initializers.iter().find(|c| {
+            c.initializer_type == InitializerType::Normal && c.values.len() == self.fields.len()
         })
     }
 
-    pub fn get_full_constructor(&self) -> Option<&Handle<Constructor<D>>> {
-        // do any of the constructors initialize NONE of the fields
-        self.constructors.iter().find(|c| c.values.is_empty())
+    pub fn get_full_initializer(&self) -> Option<&Handle<Initializer<D>>> {
+        self.initializers.iter().find(|c| c.values.is_empty())
     }
 }
 
@@ -550,7 +545,7 @@ where
             visibility: self.visibility,
             declaration: self.declaration,
             fields: self.fields,
-            constructors: Vec::new(),
+            initializers: Vec::new(),
             doc,
         })
     }
@@ -559,48 +554,49 @@ where
 #[derive(Debug, Clone)]
 pub struct InitializedValue {
     pub name: Name,
-    pub value: ValidatedConstructorDefault,
+    pub value: ValidatedDefaultValue,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum ConstructorType {
-    /// Normal constructors map to actual language constructors
+pub enum InitializerType {
+    /// Normal initializers map to actual language constructors
     /// A name is still required as some languages (e.g. C) don't support
     /// associated constructors and require free-standing functions instead
     Normal,
-    /// Static constructors are mapped to static methods in languages that support them (e.g. C++, Java, C#)
+    /// Static initializers are mapped to static methods in languages that support them (e.g. C++, Java, C#)
     Static,
 }
 
-impl ConstructorType {
+impl InitializerType {
     pub fn is_normal(&self) -> bool {
-        *self == ConstructorType::Normal
+        *self == InitializerType::Normal
     }
 }
 
+// An initializer defines how to construct a struct
 #[derive(Debug, Clone)]
-pub struct Constructor<D>
+pub struct Initializer<D>
 where
     D: DocReference,
 {
     pub name: Name,
-    pub constructor_type: ConstructorType,
+    pub initializer_type: InitializerType,
     pub values: Rc<Vec<InitializedValue>>,
     pub doc: Doc<D>,
 }
 
-impl Constructor<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Constructor<Validated>> {
-        Ok(Constructor {
+impl Initializer<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Initializer<Validated>> {
+        Ok(Initializer {
             name: self.name.clone(),
-            constructor_type: self.constructor_type,
+            initializer_type: self.initializer_type,
             values: self.values.clone(),
             doc: self.doc.validate(&self.name, lib)?,
         })
     }
 }
 
-impl<D> Constructor<D>
+impl<D> Initializer<D>
 where
     D: DocReference,
 {
@@ -613,28 +609,28 @@ where
 
     pub fn collides_with(&self, other: &Self) -> bool {
         if self.argument_names() == other.argument_names() {
-            // this is only a problem is both are normal constructors
-            return self.constructor_type.is_normal() && other.constructor_type.is_normal();
+            // this is only a problem if both are normal initializers
+            return self.initializer_type.is_normal() && other.initializer_type.is_normal();
         }
         false
     }
 
-    pub fn full(constructor_type: ConstructorType, doc: Doc<D>) -> Self {
+    pub fn full(initializer_type: InitializerType, doc: Doc<D>) -> Self {
         Self {
             name: Name::create("some_unused_name").unwrap(),
-            constructor_type,
+            initializer_type,
             values: Rc::new(Vec::new()),
             doc,
         }
     }
 }
 
-pub struct ConstructorBuilder<'a, F>
+pub struct StructInitializerBuilder<'a, F>
 where
     F: StructFieldType,
 {
     name: Name,
-    constructor_type: ConstructorType,
+    initializer_type: InitializerType,
     builder: StructMethodBuilder<'a, F>,
     fields: Vec<InitializedValue>,
     doc: Doc<Unvalidated>,
@@ -648,7 +644,7 @@ where
     visibility: Visibility,
     declaration: TypedStructDeclaration<F>,
     fields: Vec<StructField<F, Unvalidated>>,
-    constructors: Vec<Handle<Constructor<Unvalidated>>>,
+    initializers: Vec<Handle<Initializer<Unvalidated>>>,
     doc: Doc<Unvalidated>,
 }
 
@@ -656,43 +652,43 @@ impl<'a, F> StructMethodBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn begin_constructor<D: Into<Doc<Unvalidated>>, S: IntoName>(
+    pub fn begin_initializer<D: Into<Doc<Unvalidated>>, S: IntoName>(
         self,
         name: S,
-        constructor_type: ConstructorType,
+        initializer_type: InitializerType,
         doc: D,
-    ) -> BindResult<ConstructorBuilder<'a, F>> {
+    ) -> BindResult<StructInitializerBuilder<'a, F>> {
         let name = name.into_name()?;
 
-        // check that we don't have any other constructors with this name
-        if self.constructors.iter().any(|c| name == c.name) {
-            return Err(BindingError::StructConstructorDuplicateName {
+        // check that we don't have any other initializers with this name
+        if self.initializers.iter().any(|c| name == c.name) {
+            return Err(BindingError::StructInitializerDuplicateName {
                 struct_name: self.declaration.name().clone(),
-                constructor_name: name,
+                initializer_name: name,
             });
         }
 
-        Ok(ConstructorBuilder {
+        Ok(StructInitializerBuilder {
             name,
-            constructor_type,
+            initializer_type,
             builder: self,
             fields: Vec::new(),
             doc: doc.into(),
         })
     }
 
-    pub fn add_full_constructor<S: IntoName>(self, name: S) -> BindResult<Self> {
+    pub fn add_full_initializer<S: IntoName>(self, name: S) -> BindResult<Self> {
         let name = name.into_name()?;
         let struct_name = self.declaration.name().clone();
-        self.begin_constructor(
+        self.begin_initializer(
             name,
-            ConstructorType::Normal,
+            InitializerType::Normal,
             format!(
                 "Fully construct {{struct:{}}} specifying the value of each field",
                 struct_name
             ),
         )?
-        .end_constructor()
+        .end_initializer()
     }
 
     pub fn build(self) -> BindResult<Handle<Struct<F, Unvalidated>>> {
@@ -700,7 +696,7 @@ where
             visibility: self.visibility,
             declaration: self.declaration.clone(),
             fields: self.fields,
-            constructors: self.constructors,
+            initializers: self.initializers,
             doc: self.doc,
         });
 
@@ -713,11 +709,11 @@ where
     }
 }
 
-impl<'a, F> ConstructorBuilder<'a, F>
+impl<'a, F> StructInitializerBuilder<'a, F>
 where
     F: StructFieldType,
 {
-    pub fn default<D: Into<ConstructorDefault>>(
+    pub fn default<D: Into<InitializerDefault>>(
         mut self,
         name: &Name,
         value: D,
@@ -726,7 +722,7 @@ where
 
         // check that we haven't already defined this field
         if self.fields.iter().any(|f| f.name == *name) {
-            return Err(BindingError::StructConstructorDuplicateField {
+            return Err(BindingError::StructInitializerDuplicateField {
                 struct_name: self.builder.declaration.name().clone(),
                 field_name: name.clone(),
             });
@@ -734,9 +730,9 @@ where
 
         // find the field and validate it
         let value = match self.builder.fields.iter().find(|f| f.name == *name) {
-            Some(x) => x.field_type.validate_constructor_default(&value)?,
+            Some(x) => x.field_type.validate_default_value(&value)?,
             None => {
-                return Err(BindingError::StructConstructorUnknownField {
+                return Err(BindingError::StructInitializerUnknownField {
                     struct_name: self.builder.declaration.name().clone(),
                     field_name: name.clone(),
                 });
@@ -752,39 +748,39 @@ where
     }
 
     pub fn default_struct(self, name: &Name) -> BindResult<Self> {
-        self.default(name, ConstructorDefault::DefaultStruct)
+        self.default(name, InitializerDefault::DefaultStruct)
     }
 
     pub fn default_variant<S: Into<String>>(self, name: &Name, variant: S) -> BindResult<Self> {
-        self.default(name, ConstructorDefault::Enum(variant.into()))
+        self.default(name, InitializerDefault::Enum(variant.into()))
     }
 
     pub fn default_string<S: Into<String>>(self, name: &Name, value: S) -> BindResult<Self> {
-        self.default(name, ConstructorDefault::String(value.into()))
+        self.default(name, InitializerDefault::String(value.into()))
     }
 
-    pub fn end_constructor(mut self) -> BindResult<StructMethodBuilder<'a, F>> {
-        let constructor = Handle::new(Constructor {
+    pub fn end_initializer(mut self) -> BindResult<StructMethodBuilder<'a, F>> {
+        let initializer = Handle::new(Initializer {
             name: self.name,
-            constructor_type: self.constructor_type,
+            initializer_type: self.initializer_type,
             values: Rc::new(self.fields),
             doc: self.doc,
         });
 
         if let Some(x) = self
             .builder
-            .constructors
+            .initializers
             .iter()
-            .find(|other| constructor.collides_with(other))
+            .find(|other| initializer.collides_with(other))
         {
-            return Err(BindingError::StructDuplicateConstructorArgs {
+            return Err(BindingError::StructDuplicateInitializerArgs {
                 struct_name: self.builder.declaration.name().clone(),
-                this_constructor: constructor.name.clone(),
-                other_constructor: x.name.clone(),
+                this_initializer: initializer.name.clone(),
+                other_initializer: x.name.clone(),
             });
         }
 
-        self.builder.constructors.push(constructor);
+        self.builder.initializers.push(initializer);
         Ok(self.builder)
     }
 }
@@ -944,17 +940,17 @@ where
     }
 }
 
-impl<T> ConstructorValidator for UniversalOr<T>
+impl<T> InitializerValidator for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn validate_constructor_default(
+    fn validate_default_value(
         &self,
-        value: &ConstructorDefault,
-    ) -> BindResult<ValidatedConstructorDefault> {
+        value: &InitializerDefault,
+    ) -> BindResult<ValidatedDefaultValue> {
         match self {
-            UniversalOr::Specific(x) => x.validate_constructor_default(value),
-            UniversalOr::Universal(x) => x.validate_constructor_default(value),
+            UniversalOr::Specific(x) => x.validate_default_value(value),
+            UniversalOr::Universal(x) => x.validate_default_value(value),
         }
     }
 }
@@ -981,12 +977,12 @@ impl<D> StructType<D>
 where
     D: DocReference,
 {
-    pub fn constructors(&self) -> &[Handle<Constructor<D>>] {
+    pub fn initializers(&self) -> &[Handle<Initializer<D>>] {
         match self {
-            StructType::FunctionArg(x) => &x.constructors,
-            StructType::FunctionReturn(x) => &x.constructors,
-            StructType::CallbackArg(x) => &x.constructors,
-            StructType::Universal(x) => &x.constructors,
+            StructType::FunctionArg(x) => &x.initializers,
+            StructType::FunctionReturn(x) => &x.initializers,
+            StructType::CallbackArg(x) => &x.initializers,
+            StructType::Universal(x) => &x.initializers,
         }
     }
 
@@ -1035,12 +1031,12 @@ where
         }
     }
 
-    pub fn get_default_constructor(&self) -> Option<&Handle<Constructor<D>>> {
+    pub fn get_default_initializer(&self) -> Option<&Handle<Initializer<D>>> {
         match self {
-            StructType::FunctionArg(x) => x.get_default_constructor(),
-            StructType::FunctionReturn(x) => x.get_default_constructor(),
-            StructType::CallbackArg(x) => x.get_default_constructor(),
-            StructType::Universal(x) => x.get_default_constructor(),
+            StructType::FunctionArg(x) => x.get_default_initializer(),
+            StructType::FunctionReturn(x) => x.get_default_initializer(),
+            StructType::CallbackArg(x) => x.get_default_initializer(),
+            StructType::Universal(x) => x.get_default_initializer(),
         }
     }
 }

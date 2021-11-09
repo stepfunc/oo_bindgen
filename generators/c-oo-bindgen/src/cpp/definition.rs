@@ -2,17 +2,17 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{namespace, FriendClass};
 use heck::SnakeCase;
 use oo_bindgen::class::{
-    Class, ClassDeclarationHandle, ClassMethod, ClassStaticMethod, ClassType, StaticClass,
+    Class, ClassDeclarationHandle, ClassStaticMethod, ClassType, Method, StaticClass,
 };
 use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::{ClassAsyncMethod, FunctionArgument};
+use oo_bindgen::function::{FunctionArgument, FutureMethod};
 use oo_bindgen::interface::Interface;
 use oo_bindgen::structs::{
-    Constructor, ConstructorType, Struct, StructDeclaration, StructFieldType, StructType,
+    Initializer, InitializerType, Struct, StructDeclaration, StructFieldType, StructType,
     Visibility,
 };
 use oo_bindgen::types::Arg;
@@ -277,14 +277,14 @@ where
         f.newline()?
     }
 
-    if !handle.has_full_constructor() {
+    if !handle.has_full_initializer() {
         if handle.visibility == Visibility::Public {
             f.writeln("private:")?;
         }
         indented(f, |f| {
             // write a default constructor
-            let constructor = Handle::new(Constructor::full(
-                ConstructorType::Normal,
+            let constructor = Handle::new(Initializer::full(
+                InitializerType::Normal,
                 brief("Fully initialize"),
             ));
             print_constructor_definition(f, handle, &constructor)
@@ -296,12 +296,12 @@ where
 
     indented(f, |f| {
         // delete the default constructor unless the struct has one
-        if !handle.has_default_constructor() {
+        if !handle.has_default_initializer() {
             f.writeln(&format!("{}() = delete;", handle.core_cpp_type()))?;
         }
 
         // write the constructors
-        for c in &handle.constructors {
+        for c in &handle.initializers {
             f.newline()?;
             print_constructor_definition(f, handle, c)?;
         }
@@ -360,13 +360,13 @@ fn print_interface(
 fn print_constructor_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T, Validated>>,
-    constructor: &Handle<Constructor<Validated>>,
+    constructor: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppFunctionArgType,
 {
     let args = handle
-        .constructor_args(constructor.clone())
+        .initializer_args(constructor.clone())
         .map(|x| {
             format!(
                 "{} {}",
@@ -377,9 +377,9 @@ where
         .collect::<Vec<String>>()
         .join(", ");
 
-    match constructor.constructor_type {
-        ConstructorType::Normal => f.writeln(&format!("{}({});", handle.core_cpp_type(), args))?,
-        ConstructorType::Static => f.writeln(&format!(
+    match constructor.initializer_type {
+        InitializerType::Normal => f.writeln(&format!("{}({});", handle.core_cpp_type(), args))?,
+        InitializerType::Static => f.writeln(&format!(
             "static {} {}({});",
             handle.core_cpp_type(),
             constructor.name.to_snake_case(),
@@ -442,7 +442,7 @@ fn print_class_definition(
     f.newline()
 }
 
-fn print_method(f: &mut dyn Printer, method: &ClassMethod<Validated>) -> FormattingResult<()> {
+fn print_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
     f.writeln(&format!(
@@ -475,7 +475,7 @@ fn print_static_method(
 
 fn print_async_method(
     f: &mut dyn Printer,
-    method: &ClassAsyncMethod<Validated>,
+    method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
     let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
 

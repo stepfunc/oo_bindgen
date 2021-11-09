@@ -6,7 +6,7 @@ use crate::enum_type::EnumHandle;
 use crate::function::FunctionHandle;
 use crate::interface::InterfaceHandle;
 use crate::name::{BadName, Name};
-use crate::structs::{ConstructorDefault, StructDeclarationHandle};
+use crate::structs::{InitializerDefault, StructDeclarationHandle};
 use backtrace::Backtrace;
 use std::fmt::Formatter;
 
@@ -113,47 +113,47 @@ pub enum BindingError {
 
     // Structure errors
     #[error(
-        "Duplicate constructor field definition '{}' in struct '{}",
+        "Duplicate initializer field default '{}' in struct '{}",
         field_name,
         struct_name
     )]
-    StructConstructorDuplicateField { struct_name: Name, field_name: Name },
+    StructInitializerDuplicateField { struct_name: Name, field_name: Name },
     #[error(
-        "Struct ({}) constructor {} uses the same arguments as constructor {}",
+        "Struct ({}) initializer {} uses the same arguments as initializer {}",
         struct_name,
-        this_constructor,
-        other_constructor
+        this_initializer,
+        other_initializer
     )]
-    StructDuplicateConstructorArgs {
+    StructDuplicateInitializerArgs {
         struct_name: Name,
-        this_constructor: Name,
-        other_constructor: Name,
+        this_initializer: Name,
+        other_initializer: Name,
     },
     #[error(
-        "Constructor field '{}' doesn't exist within struct '{}",
+        "Initializer field '{}' doesn't exist within struct '{}",
         field_name,
         struct_name
     )]
-    StructConstructorUnknownField { struct_name: Name, field_name: Name },
+    StructInitializerUnknownField { struct_name: Name, field_name: Name },
     #[error(
-        "Constructor field type '{}' doesn't match value '{:?}",
+        "Initializer field type '{}' doesn't match value '{:?}",
         field_type,
         value
     )]
-    StructConstructorBadValueForType {
+    StructInitializerBadValueForType {
         field_type: String,
-        value: ConstructorDefault,
+        value: InitializerDefault,
     },
-    #[error("Constructor contains a default struct field but struct '{}' doesn't have a default constructor", struct_name)]
-    StructConstructorStructFieldWithoutDefaultConstructor { struct_name: String },
+    #[error("Initializer contains a default struct field but struct '{}' doesn't have a default initializer", struct_name)]
+    StructInitializerStructFieldWithoutDefaultInitializer { struct_name: String },
     #[error(
-        "Struct '{}' already contains a constructor with the name '{}'",
+        "Struct '{}' already contains an initializer with the name '{}'",
         struct_name,
-        constructor_name
+        initializer_name
     )]
-    StructConstructorDuplicateName {
+    StructInitializerDuplicateName {
         struct_name: Name,
-        constructor_name: Name,
+        initializer_name: Name,
     },
     #[error("Native struct '{}' was already defined", handle.name)]
     StructAlreadyDefined { handle: StructDeclarationHandle },

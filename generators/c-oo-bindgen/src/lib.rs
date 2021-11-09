@@ -320,7 +320,7 @@ where
     // user should never try to initialize opaque structs, so don't suggest this is OK
     if handle.visibility != Visibility::Private {
         f.newline()?;
-        for c in &handle.constructors {
+        for c in &handle.initializers {
             write_struct_constructor(f, lib, c, handle)?;
             f.newline()?;
         }
@@ -329,10 +329,10 @@ where
     Ok(())
 }
 
-fn get_default_value(default: &ValidatedConstructorDefault) -> String {
+fn get_default_value(default: &ValidatedDefaultValue) -> String {
     match default {
-        ValidatedConstructorDefault::Bool(x) => x.to_string(),
-        ValidatedConstructorDefault::Numeric(x) => match x {
+        ValidatedDefaultValue::Bool(x) => x.to_string(),
+        ValidatedDefaultValue::Numeric(x) => match x {
             Number::U8(x) => x.to_string(),
             Number::S8(x) => x.to_string(),
             Number::U16(x) => x.to_string(),
@@ -344,8 +344,8 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
             Number::Float(x) => format!("{}f", x),
             Number::Double(x) => x.to_string(),
         },
-        ValidatedConstructorDefault::Duration(t, x) => t.get_value_string(*x),
-        ValidatedConstructorDefault::Enum(x, variant) => {
+        ValidatedDefaultValue::Duration(t, x) => t.get_value_string(*x),
+        ValidatedDefaultValue::Enum(x, variant) => {
             format!(
                 "{}_{}_{}",
                 x.settings.c_ffi_prefix.to_shouty_snake_case(),
@@ -353,8 +353,8 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
                 variant.to_shouty_snake_case()
             )
         }
-        ValidatedConstructorDefault::String(x) => format!("\"{}\"", x),
-        ValidatedConstructorDefault::DefaultStruct(handle, _, name) => {
+        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::DefaultStruct(handle, _, name) => {
             format!(
                 "{}_{}_{}()",
                 &handle.settings().c_ffi_prefix,
@@ -368,7 +368,7 @@ fn get_default_value(default: &ValidatedConstructorDefault) -> String {
 fn write_struct_constructor<T>(
     f: &mut dyn Printer,
     lib: &Library,
-    constructor: &Constructor<Validated>,
+    constructor: &Initializer<Validated>,
     handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where

@@ -46,6 +46,7 @@ impl CppFunctionArgType for InterfaceHandle {
         match self.interface_type {
             InterfaceType::Synchronous => mut_ref(self.core_cpp_type()),
             InterfaceType::Asynchronous => unique_ptr(self.core_cpp_type()),
+            InterfaceType::Future => unique_ptr(self.core_cpp_type()),
         }
     }
 }

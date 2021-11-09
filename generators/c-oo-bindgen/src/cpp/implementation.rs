@@ -2,13 +2,13 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
 use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::class::{AsyncMethod, Class, ClassMethod, ClassStaticMethod, StaticClass};
+use oo_bindgen::class::{Class, ClassMethod, ClassStaticMethod, StaticClass};
 use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnType};
+use oo_bindgen::function::{ClassAsyncMethod, Function, FunctionArgument, FunctionReturnType};
 use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, Interface, InterfaceType};
 use oo_bindgen::structs::{
     Constructor, ConstructorType, Number, Struct, StructFieldType, StructType,
@@ -614,7 +614,7 @@ fn write_class_method_impl(
 fn write_class_async_method_impl(
     f: &mut dyn Printer,
     handle: &Handle<Class<Validated>>,
-    method: &AsyncMethod<Validated>,
+    method: &ClassAsyncMethod<Validated>,
 ) -> FormattingResult<()> {
     write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
 }
@@ -1344,6 +1344,7 @@ fn write_cpp_interface_to_native_conversion(
     let argument_type = match interface_type {
         InterfaceType::Synchronous => mut_ref(cpp_type.clone()),
         InterfaceType::Asynchronous => unique_ptr(cpp_type.clone()),
+        InterfaceType::Future => unique_ptr(cpp_type.clone()),
     };
     f.writeln(&format!("{} to_native({} value)", c_type, argument_type,))?;
     blocked(f, |f| {
@@ -1362,12 +1363,21 @@ fn write_cpp_interface_to_native_conversion(
                         cpp_type
                     ))?;
                 }
+                InterfaceType::Future => {
+                    f.writeln(&format!(
+                        "[](void* ctx) {{ delete reinterpret_cast<{}*>(ctx); }},",
+                        cpp_type
+                    ))?;
+                }
             }
             match interface_type {
                 InterfaceType::Synchronous => {
                     f.writeln("&value // the pointer will outlive the callbacks")?;
                 }
                 InterfaceType::Asynchronous => {
+                    f.writeln("value.release()")?;
+                }
+                InterfaceType::Future => {
                     f.writeln("value.release()")?;
                 }
             }

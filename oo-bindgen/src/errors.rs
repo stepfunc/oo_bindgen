@@ -207,6 +207,8 @@ pub enum BindingError {
     NoDestructorForManualDestruction { handle: ClassDeclarationHandle },
 
     // Async errors
+    #[error("AsyncMethods can only have one (implicit) interface parameter")]
+    AsyncMethodMoreThanOneInterface,
     #[error("Function '{}' cannot be used as an async method because it doesn't have a interface parameter", handle.name)]
     AsyncMethodNoInterface { handle: FunctionHandle },
     #[error("Function '{}' cannot be used as an async method because it has too many interface parameters", handle.name)]

@@ -49,6 +49,7 @@ pub fn build_lib() -> BackTraced<Library> {
         ClassSettings::default(),
         IteratorSettings::default(),
         CollectionSettings::default(),
+        FutureSettings::default(),
     )?;
 
     let mut builder = LibraryBuilder::new(

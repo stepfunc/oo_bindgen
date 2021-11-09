@@ -347,15 +347,18 @@ fn generate_static_method(
 
 fn generate_async_method(
     f: &mut dyn Printer,
-    method: &AsyncMethod<Validated>,
+    method: &ClassAsyncMethod<Validated>,
 ) -> FormattingResult<()> {
+    let settings = method.future.interface.settings.clone();
     let method_name = method.name.to_camel_case();
     let async_handler_name = format!("{}Handler", method_name);
-    let return_type = method.return_type.as_dotnet_type();
-    let one_time_callback_name = format!("I{}", method.one_time_callback.name.to_camel_case());
-    let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
-    let callback_name = method.callback_name.to_camel_case();
-    let callback_param_name = method.callback_param_name.to_mixed_case();
+    let return_type = method.future.value_type.as_dotnet_type();
+    let one_time_callback_name = format!("I{}", method.future.interface.name.to_camel_case());
+    let callback_name = settings.future.success_callback_method_name.to_camel_case();
+    let callback_param_name = settings
+        .future
+        .async_method_callback_parameter_name
+        .to_mixed_case();
 
     // Write the task completion handler
     f.writeln(&format!(
@@ -405,7 +408,7 @@ fn generate_async_method(
 
         // Print return value
         f.writeln("<returns>")?;
-        docstring_print(f, &method.return_type_doc)?;
+        docstring_print(f, &method.future.value_type_doc)?;
         f.write("</returns>")?;
 
         // Print exception
@@ -446,7 +449,7 @@ fn generate_async_method(
     blocked(f, |f| {
         f.writeln(&format!(
             "var {} = new {}();",
-            one_time_callback_param_name, async_handler_name
+            callback_param_name, async_handler_name
         ))?;
         call_native_function(
             f,
@@ -455,9 +458,6 @@ fn generate_async_method(
             Some("this".to_string()),
             false,
         )?;
-        f.writeln(&format!(
-            "return {}.tcs.Task;",
-            one_time_callback_param_name
-        ))
+        f.writeln(&format!("return {}.tcs.Task;", callback_param_name))
     })
 }

@@ -34,6 +34,7 @@ where
         match self.interface_type {
             InterfaceType::Synchronous => PassBy::MutRef,
             InterfaceType::Asynchronous => PassBy::Move,
+            InterfaceType::Future => PassBy::Move,
         }
     }
 }

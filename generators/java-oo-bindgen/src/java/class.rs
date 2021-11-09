@@ -339,12 +339,19 @@ fn generate_static_method(
 
 fn generate_async_method(
     f: &mut dyn Printer,
-    method: &AsyncMethod<Validated>,
+    method: &ClassAsyncMethod<Validated>,
 ) -> FormattingResult<()> {
-    let return_type = method.return_type.as_java_object();
-    let one_time_callback_name = method.one_time_callback.name.to_camel_case();
-    let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
-    let callback_param_name = method.callback_param_name.to_mixed_case();
+    let return_type = method.future.value_type.as_java_object();
+    let settings = method.future.interface.settings.clone();
+    let one_time_callback_name = method.future.interface.name.to_camel_case();
+    let one_time_callback_param_name = settings
+        .future
+        .success_single_parameter_name
+        .to_mixed_case();
+    let callback_param_name = settings
+        .future
+        .async_method_callback_parameter_name
+        .to_mixed_case();
 
     let future_type = format!("java.util.concurrent.CompletableFuture<{}>", return_type);
 
@@ -368,7 +375,7 @@ fn generate_async_method(
 
         // Print return value
         f.writeln("@return ")?;
-        docstring_print(f, &method.return_type_doc)?;
+        docstring_print(f, &method.future.value_type_doc)?;
 
         // Print exception
         if let Some(error) = &method.native_function.error_type {
@@ -417,10 +424,13 @@ fn generate_async_method(
 
         f.writeln(&format!(
             "{} {} = {} -> {{",
-            one_time_callback_name, one_time_callback_param_name, callback_param_name
+            one_time_callback_name, callback_param_name, one_time_callback_param_name
         ))?;
         indented(f, |f| {
-            f.writeln(&format!("future.complete({});", callback_param_name))
+            f.writeln(&format!(
+                "future.complete({});",
+                one_time_callback_param_name
+            ))
         })?;
         f.writeln("};")?;
 

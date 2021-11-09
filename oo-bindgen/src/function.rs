@@ -492,6 +492,111 @@ impl<'a> ClassMethodBuilder<'a> {
 }
 
 #[derive(Debug, Clone)]
+pub struct ClassAsyncMethod<T>
+where
+    T: DocReference,
+{
+    pub name: Name,
+    pub associated_class: Handle<ClassDeclaration>,
+    pub future: FutureInterface<T>,
+    pub native_function: Handle<Function<T>>,
+}
+
+impl ClassAsyncMethod<Unvalidated> {
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<ClassAsyncMethod<Validated>> {
+        Ok(ClassAsyncMethod {
+            name: self.name.clone(),
+            associated_class: self.associated_class.clone(),
+            future: self.future.validate(lib)?,
+            native_function: self.native_function.validate(lib)?,
+        })
+    }
+}
+
+pub struct ClassAsyncMethodBuilder<'a> {
+    future: FutureInterface<Unvalidated>,
+    inner: ClassMethodBuilder<'a>,
+}
+
+impl<'a> ClassAsyncMethodBuilder<'a> {
+    pub(crate) fn new(
+        lib: &'a mut LibraryBuilder,
+        method_name: Name,
+        class: ClassDeclarationHandle,
+        future: FutureInterface<Unvalidated>,
+    ) -> BindResult<Self> {
+        let builder = lib.define_method(method_name, class)?.returns_nothing()?;
+
+        Ok(Self {
+            future,
+            inner: builder,
+        })
+    }
+
+    pub fn param<T: IntoName, D: Into<DocString<Unvalidated>>, P: Into<FunctionArgument>>(
+        self,
+        name: T,
+        param_type: P,
+        doc: D,
+    ) -> BindResult<Self> {
+        let name = name.into_name()?;
+        let param_type = param_type.into();
+        if let FunctionArgument::Interface(_) = &param_type {
+            return Err(BindingError::AsyncMethodMoreThanOneInterface);
+        }
+        let builder = self.inner.param(name, param_type, doc)?;
+        Ok(Self {
+            future: self.future,
+            inner: builder,
+        })
+    }
+
+    pub fn fails_with(self, err: ErrorType<Unvalidated>) -> BindResult<Self> {
+        Ok(Self {
+            future: self.future,
+            inner: self.inner.fails_with(err)?,
+        })
+    }
+
+    pub fn doc<D: Into<Doc<Unvalidated>>>(self, doc: D) -> BindResult<Self> {
+        Ok(Self {
+            future: self.future,
+            inner: self.inner.doc(doc)?,
+        })
+    }
+
+    pub fn build(self) -> BindResult<ClassAsyncMethod<Unvalidated>> {
+        let future = self.future.clone();
+        let callback_parameter_name = self
+            .inner
+            .inner
+            .lib
+            .settings
+            .future
+            .async_method_callback_parameter_name
+            .clone();
+        let method = self
+            .inner
+            .param(
+                callback_parameter_name,
+                self.future.interface,
+                "callback invoked when the operation completes",
+            )?
+            .build()?;
+
+        Ok(ClassAsyncMethod {
+            name: method.name,
+            associated_class: method.associated_class,
+            future,
+            native_function: method.native_function,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ClassDestructor<T>
 where
     T: DocReference,

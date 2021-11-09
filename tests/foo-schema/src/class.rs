@@ -34,20 +34,21 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Increment value")?
         .build()?;
 
-    let get_value_callback = lib
-        .define_synchronous_interface("get_value_callback", "GetValue callback handler")?
-        .begin_callback("on_value", "On value callback")?
-        .param("value", BasicType::U32, "Value")?
-        .returns_nothing()?
-        .end_callback()?
-        .build()?;
+    let get_value_callback = lib.define_future_interface(
+        "get_value_callback",
+        "GetValue callback handler",
+        BasicType::U32,
+        "Result of the operation",
+    )?;
 
-    let test_class_get_value_async_func = lib
-        .define_function("get_value_async")?
-        .param("testclass", test_class.clone(), "TestClass handle")?
-        .param("cb", get_value_callback, "Callback to call with the value")?
-        .returns_nothing()?
-        .doc("Get value through a callback")?
+    let get_value_async = lib
+        .define_async_method("add_async", test_class.clone(), get_value_callback)?
+        .param(
+            "value",
+            BasicType::U32,
+            "value to add to the internal value",
+        )?
+        .doc("add a number to the class's internal value asynchronously")?
         .build()?;
 
     let test_class_construction_counter = lib
@@ -63,7 +64,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .destructor(destructor)?
         .method(get_value)?
         .method(increment_value)?
-        .async_method("get_value_async", &test_class_get_value_async_func)?
+        .async_method(get_value_async)?
         .static_method("construction_counter", &test_class_construction_counter)?
         .custom_destroy("delete")?
         .doc("A test class")?

@@ -1,4 +1,4 @@
-use crate::doc::{DocReference, DocString, Unvalidated, Validated};
+use crate::doc::{DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
@@ -109,36 +109,6 @@ impl ClassStaticMethod<Unvalidated> {
     }
 }
 
-#[derive(Debug)]
-pub struct AsyncMethod<T>
-where
-    T: DocReference,
-{
-    pub name: Name,
-    pub native_function: Handle<Function<T>>,
-    pub return_type: CallbackArgument,
-    pub return_type_doc: DocString<T>,
-    pub one_time_callback: Handle<Interface<T>>,
-    pub one_time_callback_param_name: Name,
-    pub callback_name: Name,
-    pub callback_param_name: Name,
-}
-
-impl AsyncMethod<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<AsyncMethod<Validated>> {
-        Ok(AsyncMethod {
-            name: self.name.clone(),
-            native_function: self.native_function.validate(lib)?,
-            return_type: self.return_type.clone(),
-            return_type_doc: self.return_type_doc.validate(&self.name, lib)?,
-            one_time_callback: self.one_time_callback.validate(lib)?,
-            one_time_callback_param_name: self.one_time_callback_param_name.clone(),
-            callback_name: self.callback_name.clone(),
-            callback_param_name: self.callback_param_name.clone(),
-        })
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum DestructionMode {
     /// Object is automatically deleted by the GC
@@ -178,7 +148,7 @@ where
     pub destructor: Option<ClassDestructor<T>>,
     pub methods: Vec<ClassMethod<T>>,
     pub static_methods: Vec<ClassStaticMethod<T>>,
-    pub async_methods: Vec<AsyncMethod<T>>,
+    pub async_methods: Vec<ClassAsyncMethod<T>>,
     pub doc: Doc<T>,
     pub destruction_mode: DestructionMode,
     pub settings: Rc<LibrarySettings>,
@@ -201,7 +171,7 @@ impl Class<Unvalidated> {
             .iter()
             .map(|x| x.validate(lib))
             .collect();
-        let async_methods: BindResult<Vec<AsyncMethod<Validated>>> =
+        let async_methods: BindResult<Vec<ClassAsyncMethod<Validated>>> =
             self.async_methods.iter().map(|x| x.validate(lib)).collect();
 
         Ok(Handle::new(Class {
@@ -250,9 +220,12 @@ impl Class<Unvalidated> {
             }
         }
 
-        for method in &self.async_methods {
-            if method.name.as_ref() == method_name {
-                return Some((method.name.clone(), method.native_function.clone()));
+        for async_method in &self.async_methods {
+            if async_method.name.as_ref() == method_name {
+                return Some((
+                    async_method.name.clone(),
+                    async_method.native_function.clone(),
+                ));
             }
         }
 
@@ -269,7 +242,7 @@ pub struct ClassBuilder<'a> {
     destructor: Option<ClassDestructor<Unvalidated>>,
     methods: Vec<ClassMethod<Unvalidated>>,
     static_methods: Vec<ClassStaticMethod<Unvalidated>>,
-    async_methods: Vec<AsyncMethod<Unvalidated>>,
+    async_methods: Vec<ClassAsyncMethod<Unvalidated>>,
     doc: Option<Doc<Unvalidated>>,
     destruction_mode: DestructionMode,
 }
@@ -302,6 +275,9 @@ impl<'a> ClassBuilder<'a> {
     }
 
     pub fn constructor(mut self, constructor: ClassConstructor<Unvalidated>) -> BindResult<Self> {
+        // make sure the method is defined for this class
+        self.check_class(&constructor.function.name, constructor.class.clone())?;
+
         if self.constructor.is_some() {
             return Err(BindingError::ConstructorAlreadyDefined {
                 handle: self.declaration,
@@ -320,43 +296,17 @@ impl<'a> ClassBuilder<'a> {
             });
         }
 
-        if self.declaration != destructor.class {
-            return Err(BindingError::ClassMethodWrongAssociatedClass {
-                name: destructor.function.name.clone(),
-                declared: destructor.class,
-                added_to: self.declaration,
-            });
-        }
+        // make sure the method is defined for this class
+        self.check_class(&destructor.function.name, destructor.class.clone())?;
 
         self.destructor = Some(destructor);
 
         Ok(self)
     }
 
-    fn validate_first_param(&self, function: &FunctionHandle) -> BindResult<()> {
-        if let Some(first_param) = function.parameters.first() {
-            if let FunctionArgument::ClassRef(first_param_type) = &first_param.arg_type {
-                if first_param_type == &self.declaration {
-                    return Ok(());
-                }
-            }
-        }
-
-        Err(BindingError::FirstMethodParameterIsNotClassType {
-            handle: self.declaration.clone(),
-            function: function.clone(),
-        })
-    }
-
     pub fn method(mut self, method: ClassMethod<Unvalidated>) -> BindResult<Self> {
         // make sure the method is defined for this class
-        if method.associated_class != self.declaration {
-            return Err(BindingError::ClassMethodWrongAssociatedClass {
-                name: method.name.clone(),
-                declared: method.associated_class,
-                added_to: self.declaration.clone(),
-            });
-        }
+        self.check_class(&method.name, method.associated_class.clone())?;
 
         self.methods.push(method);
 
@@ -379,79 +329,21 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn async_method<T: IntoName>(
-        mut self,
-        name: T,
-        native_function: &FunctionHandle,
-    ) -> BindResult<Self> {
-        self.lib.validate_function(native_function)?;
-        self.validate_first_param(native_function)?;
-
-        // Check that native method has a single callback with a single method,
-        // with a single argument
-
-        let name = name.into_name()?;
-        let mut async_method = None;
-        for param in &native_function.parameters {
-            if let FunctionArgument::Interface(ot_cb) = &param.arg_type {
-                if async_method.is_some() {
-                    return Err(BindingError::AsyncMethodTooManyInterface {
-                        handle: native_function.clone(),
-                    });
-                }
-
-                let mut cb_iter = ot_cb.callbacks.iter();
-                if let Some(cb) = cb_iter.next() {
-                    if !cb.return_type.is_void() {
-                        return Err(BindingError::AsyncCallbackReturnTypeNotVoid {
-                            handle: native_function.clone(),
-                        });
-                    }
-
-                    let mut iter = cb.arguments.iter();
-                    if let Some(cb_param) = iter.next() {
-                        async_method = Some(AsyncMethod {
-                            name: name.clone(),
-                            native_function: native_function.clone(),
-                            return_type: cb_param.arg_type.clone(),
-                            return_type_doc: cb_param.doc.clone(),
-                            one_time_callback: ot_cb.clone(),
-                            one_time_callback_param_name: param.name.clone(),
-                            callback_name: cb.name.clone(),
-                            callback_param_name: cb_param.name.clone(),
-                        });
-
-                        if iter.next().is_some() {
-                            return Err(BindingError::AsyncCallbackNotSingleParam {
-                                handle: native_function.clone(),
-                            });
-                        }
-                    } else {
-                        return Err(BindingError::AsyncCallbackNotSingleParam {
-                            handle: native_function.clone(),
-                        });
-                    }
-
-                    if cb_iter.next().is_some() {
-                        return Err(BindingError::AsyncInterfaceNotSingleCallback {
-                            handle: native_function.clone(),
-                        });
-                    }
-                } else {
-                    return Err(BindingError::AsyncInterfaceNotSingleCallback {
-                        handle: native_function.clone(),
-                    });
-                }
-            }
-        }
-
-        if let Some(method) = async_method {
-            self.async_methods.push(method);
-        } else {
-            return Err(BindingError::AsyncMethodNoInterface {
-                handle: native_function.clone(),
+    fn check_class(&self, name: &Name, other: ClassDeclarationHandle) -> BindResult<()> {
+        if self.declaration != other {
+            return Err(BindingError::ClassMethodWrongAssociatedClass {
+                name: name.clone(),
+                declared: other,
+                added_to: self.declaration.clone(),
             });
         }
+        Ok(())
+    }
+
+    pub fn async_method(mut self, method: ClassAsyncMethod<Unvalidated>) -> BindResult<Self> {
+        self.check_class(&method.name, method.associated_class.clone())?;
+
+        self.async_methods.push(method);
 
         Ok(self)
     }

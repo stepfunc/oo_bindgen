@@ -53,7 +53,7 @@ static void simple_callback_test()
             const auto result = cb_source.set_duration(value);
             assert(result == value);
             assert(data->duration == value);
-        }
+        }        
 
         assert(data->destructor_count == 0);
     }

@@ -40,6 +40,9 @@ impl ToNativeFunctionArgument for FunctionArgument {
                 InterfaceType::Asynchronous => {
                     format!("::convert::to_native(std::move({}))", expr)
                 }
+                InterfaceType::Future => {
+                    format!("::convert::to_native(std::move({}))", expr)
+                }
             },
         }
     }

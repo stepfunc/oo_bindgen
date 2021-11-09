@@ -159,6 +159,8 @@ pub enum InterfaceType {
     /// a function call using it. The Rust backend will generate unsafe Sync / Send
     /// implementations allowing it to be based to other threads
     Asynchronous,
+    /// An asynchronous interface which has particular properties
+    Future,
 }
 
 #[derive(Debug)]
@@ -207,6 +209,41 @@ where
 }
 
 pub type InterfaceHandle = Handle<Interface<Unvalidated>>;
+
+#[derive(Debug, Clone)]
+pub struct FutureInterface<D>
+where
+    D: DocReference,
+{
+    pub value_type: CallbackArgument,
+    pub value_type_doc: DocString<D>,
+    pub interface: Handle<Interface<D>>,
+}
+
+impl FutureInterface<Unvalidated> {
+    pub(crate) fn new(
+        value_type: CallbackArgument,
+        interface: Handle<Interface<Unvalidated>>,
+        value_type_doc: DocString<Unvalidated>,
+    ) -> Self {
+        Self {
+            value_type,
+            value_type_doc,
+            interface,
+        }
+    }
+
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<FutureInterface<Validated>> {
+        Ok(FutureInterface {
+            value_type: self.value_type.clone(),
+            value_type_doc: self.value_type_doc.validate(&self.interface.name, lib)?,
+            interface: self.interface.validate(lib)?,
+        })
+    }
+}
 
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,

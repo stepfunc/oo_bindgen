@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::class::*;
 use crate::collection::{Collection, CollectionHandle};
 use crate::constants::{ConstantSet, ConstantSetBuilder};
-use crate::doc::{Doc, DocReference, Unvalidated, Validated};
+use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
 use crate::enum_type::{EnumBuilder, EnumHandle};
 use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
 use crate::function::{FunctionBuilder, FunctionHandle};
@@ -164,6 +164,41 @@ impl Default for ClassSettings {
     }
 }
 
+/// Settings that affect how things are named in future-style callback interfaces
+#[derive(Debug)]
+pub struct FutureSettings {
+    /// The name given to the completion method on interface
+    pub success_callback_method_name: Name,
+    /// The name given to the result parameter of the completion method
+    pub success_single_parameter_name: Name,
+    /// The name given to the final callback parameter of the async methods
+    pub async_method_callback_parameter_name: Name,
+}
+
+impl FutureSettings {
+    pub fn new(
+        success_callback_method_name: Name,
+        success_single_parameter_name: Name,
+        async_method_callback_parameter_name: Name,
+    ) -> Self {
+        Self {
+            success_callback_method_name,
+            success_single_parameter_name,
+            async_method_callback_parameter_name,
+        }
+    }
+}
+
+impl Default for FutureSettings {
+    fn default() -> Self {
+        Self {
+            success_callback_method_name: Name::create("on_complete").unwrap(),
+            success_single_parameter_name: Name::create("result").unwrap(),
+            async_method_callback_parameter_name: Name::create("callback").unwrap(),
+        }
+    }
+}
+
 /// Settings that affect collection function naming
 #[derive(Debug)]
 pub struct CollectionSettings {
@@ -215,6 +250,8 @@ pub struct LibrarySettings {
     pub iterator: IteratorSettings,
     /// settings that control collection generation
     pub collection: CollectionSettings,
+    /// settings that control future-style interface generation
+    pub future: FutureSettings,
 }
 
 impl LibrarySettings {
@@ -225,6 +262,7 @@ impl LibrarySettings {
         class: ClassSettings,
         iterator: IteratorSettings,
         collection: CollectionSettings,
+        future: FutureSettings,
     ) -> BindResult<Rc<Self>> {
         Ok(Rc::new(Self {
             name: name.into_name()?,
@@ -232,6 +270,7 @@ impl LibrarySettings {
             class,
             iterator,
             collection,
+            future,
         }))
     }
 }
@@ -256,15 +295,9 @@ impl Library {
         })
     }
 
-    pub fn async_method_interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
-        let mut async_function_interfaces: HashSet<Handle<Interface<Validated>>> = HashSet::new();
-        for c in self.classes() {
-            for method in &c.async_methods {
-                async_function_interfaces.insert(method.one_time_callback.clone());
-            }
-        }
+    pub fn future_interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
         self.interfaces()
-            .filter(move |x| async_function_interfaces.contains(x))
+            .filter(|x| x.interface_type == InterfaceType::Future)
     }
 
     pub fn structs(&self) -> impl Iterator<Item = &StructType<Validated>> {
@@ -703,6 +736,15 @@ impl LibraryBuilder {
         ClassMethodBuilder::new(self, name.into_name()?, class)
     }
 
+    pub fn define_async_method<T: IntoName>(
+        &mut self,
+        name: T,
+        class: ClassDeclarationHandle,
+        future: FutureInterface<Unvalidated>,
+    ) -> BindResult<ClassAsyncMethodBuilder> {
+        ClassAsyncMethodBuilder::new(self, name.into_name()?, class, future)
+    }
+
     pub fn define_constructor(
         &mut self,
         class: ClassDeclarationHandle,
@@ -785,6 +827,9 @@ impl LibraryBuilder {
         Ok(StaticClassBuilder::new(self, name.into_name()?))
     }
 
+    /// A synchronous interface is one that is invoked only during a function call which
+    /// takes it as an argument. The Rust backend will NOT generate `Send` and `Sync`
+    /// implementations so that it be cannot be transferred across thread boundaries.
     pub fn define_synchronous_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
         &mut self,
         name: T,
@@ -793,12 +838,51 @@ impl LibraryBuilder {
         self.define_interface(name, InterfaceType::Synchronous, doc)
     }
 
+    /// An asynchronous interface is one that is invoked some time after it is
+    /// passed as a function argument. The Rust backend will mark the C representation
+    /// of this interface as `Send` and `Sync` so that it be transferred across thread
+    /// boundaries.
     pub fn define_asynchronous_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
         &mut self,
         name: T,
         doc: D,
     ) -> BindResult<InterfaceBuilder> {
         self.define_interface(name, InterfaceType::Asynchronous, doc)
+    }
+
+    /// A future interface is a specialized asynchronous which consists of
+    /// a single callback method providing a single value. The callback
+    /// represents the completion of a "future" and is mapped appropriately
+    /// in backends.
+    pub fn define_future_interface<
+        T: IntoName,
+        D: Into<Doc<Unvalidated>>,
+        E: Into<DocString<Unvalidated>>,
+        V: Into<CallbackArgument>,
+    >(
+        &mut self,
+        name: T,
+        interface_docs: D,
+        value_type: V,
+        value_type_docs: E,
+    ) -> BindResult<FutureInterface<Unvalidated>> {
+        let on_complete_name = self.settings.future.success_callback_method_name.clone();
+        let result_name = self.settings.future.success_single_parameter_name.clone();
+        let value_type = value_type.into();
+        let value_type_docs = value_type_docs.into();
+
+        let interface = self
+            .define_interface(name, InterfaceType::Future, interface_docs)?
+            .begin_callback(
+                on_complete_name,
+                "Invoked when the asynchronous operation completes",
+            )?
+            .param(result_name, value_type.clone(), value_type_docs.clone())?
+            .returns_nothing()?
+            .end_callback()?
+            .build()?;
+
+        Ok(FutureInterface::new(value_type, interface, value_type_docs))
     }
 
     fn define_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(

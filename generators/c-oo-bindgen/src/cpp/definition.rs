@@ -2,15 +2,14 @@ use crate::cpp::conversion::*;
 use crate::cpp::formatting::{namespace, FriendClass};
 use heck::SnakeCase;
 use oo_bindgen::class::{
-    AsyncMethod, Class, ClassDeclarationHandle, ClassMethod, ClassStaticMethod, ClassType,
-    StaticClass,
+    Class, ClassDeclarationHandle, ClassMethod, ClassStaticMethod, ClassType, StaticClass,
 };
 use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::FunctionArgument;
+use oo_bindgen::function::{ClassAsyncMethod, FunctionArgument};
 use oo_bindgen::interface::Interface;
 use oo_bindgen::structs::{
     Constructor, ConstructorType, Struct, StructDeclaration, StructFieldType, StructType,
@@ -62,7 +61,7 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::InterfaceDefinition(x) => {
                 print_interface(f, x)?;
 
-                if lib.async_method_interfaces().any(|i| i == x) {
+                if lib.future_interfaces().any(|i| i == x) {
                     namespace(f, "helpers", |f| write_async_method_interface_helpers(f, x))?;
                     f.newline()?;
                 }
@@ -476,7 +475,7 @@ fn print_static_method(
 
 fn print_async_method(
     f: &mut dyn Printer,
-    method: &AsyncMethod<Validated>,
+    method: &ClassAsyncMethod<Validated>,
 ) -> FormattingResult<()> {
     let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
 

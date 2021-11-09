@@ -42,40 +42,40 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .build()?;
 
     // Declare each echo function
-    let enum_zero_to_five_echo_function = lib
+    let enum_zero_to_five_echo = lib
         .define_function("enum_zero_to_five_echo")?
         .param("value", enum_zero_to_five.clone(), "Enum value")?
         .returns(enum_zero_to_five, "Enum value")?
         .doc("Echo a EnumZeroToFive enum")?
-        .build()?;
+        .build_static_with_same_name()?;
 
-    let enum_one_to_six_echo_function = lib
+    let enum_one_to_six_echo = lib
         .define_function("enum_one_to_six_echo")?
         .param("value", enum_one_to_six.clone(), "Enum value")?
         .returns(enum_one_to_six, "Enum value")?
         .doc("Echo a EnumOneToSix enum")?
-        .build()?;
+        .build_static_with_same_name()?;
 
-    let enum_disjoint_echo_function = lib
+    let enum_disjoint_echo = lib
         .define_function("enum_disjoint_echo")?
         .param("value", enum_disjoint.clone(), "Enum value")?
         .returns(enum_disjoint, "Enum value")?
         .doc("Echo a EnumDisjoint enum")?
-        .build()?;
+        .build_static_with_same_name()?;
 
-    let enum_single_echo_function = lib
+    let enum_single_echo = lib
         .define_function("enum_single_echo")?
         .param("value", enum_single.clone(), "Enum value")?
         .returns(enum_single, "Enum value")?
         .doc("Echo a EnumSingle enum")?
-        .build()?;
+        .build_static_with_same_name()?;
 
     // Declare static class
     lib.define_static_class("enum_echo_functions")?
-        .static_method("enum_zero_to_five_echo", &enum_zero_to_five_echo_function)?
-        .static_method("enum_one_to_six_echo", &enum_one_to_six_echo_function)?
-        .static_method("enum_disjoint_echo", &enum_disjoint_echo_function)?
-        .static_method("enum_single_echo", &enum_single_echo_function)?
+        .static_method(enum_zero_to_five_echo)?
+        .static_method(enum_one_to_six_echo)?
+        .static_method(enum_disjoint_echo)?
+        .static_method(enum_single_echo)?
         .doc("Enum echo functions")?
         .build()?;
 

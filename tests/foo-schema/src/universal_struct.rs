@@ -113,11 +113,11 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "interface on which to apply the value",
         )?
         .returns(handle, "return value")?
-        .build()?;
+        .build_static("invoke")?;
 
     lib.define_static_class("universal_interface_tests")?
         .doc("test methods for universal interface")?
-        .static_method("invoke", &invoke)?
+        .static_method(invoke)?
         .build()?;
 
     Ok(())

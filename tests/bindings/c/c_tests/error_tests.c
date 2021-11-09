@@ -11,9 +11,9 @@
 static void test_integer_out_parameter()
 {
     uint32_t number = 0;
-    assert(foo_get_special_number(WRONG_PASSWORD, &number) == FOO_MY_ERROR_BAD_PASSWORD);
+    assert(foo_get_special_value(WRONG_PASSWORD, &number) == FOO_MY_ERROR_BAD_PASSWORD);
     assert(number == 0);
-    assert(foo_get_special_number(CORRECT_PASSWORD, &number) == FOO_MY_ERROR_OK);
+    assert(foo_get_special_value(CORRECT_PASSWORD, &number) == FOO_MY_ERROR_OK);
     assert(number == MAGIC_NUMBER);
 }
 

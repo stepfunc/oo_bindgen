@@ -385,6 +385,24 @@ impl<'a> FunctionBuilder<'a> {
 
         Ok(handle)
     }
+
+    /// Build a static method with a different name than the native function
+    pub fn build_static<N: IntoName>(self, name: N) -> BindResult<StaticMethod<Unvalidated>> {
+        let handle = self.build()?;
+        Ok(StaticMethod {
+            name: name.into_name()?,
+            native_function: handle,
+        })
+    }
+
+    /// Build a static method with the same name as the native function
+    pub fn build_static_with_same_name(self) -> BindResult<StaticMethod<Unvalidated>> {
+        let handle = self.build()?;
+        Ok(StaticMethod {
+            name: handle.name.clone(),
+            native_function: handle,
+        })
+    }
 }
 
 pub struct ClassMethodBuilder<'a> {

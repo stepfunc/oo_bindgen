@@ -1,5 +1,5 @@
 use crate::doc::{DocCell, DocReference, Unvalidated, Validated};
-use crate::name::{IntoName, Name};
+use crate::name::Name;
 use crate::*;
 use std::rc::Rc;
 
@@ -90,6 +90,8 @@ impl Method<Unvalidated> {
 }
 
 /// represents a static method associated with a class
+///
+/// name given to the class method may differ from the name of the native function
 #[derive(Debug)]
 pub struct StaticMethod<T>
 where
@@ -315,18 +317,10 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn static_method<T: IntoName>(
-        mut self,
-        name: T,
-        native_function: &FunctionHandle,
-    ) -> BindResult<Self> {
-        let name = name.into_name()?;
-        self.lib.validate_function(native_function)?;
+    pub fn static_method(mut self, method: StaticMethod<Unvalidated>) -> BindResult<Self> {
+        self.lib.validate_function(&method.native_function)?;
 
-        self.static_methods.push(StaticMethod {
-            name,
-            native_function: native_function.clone(),
-        });
+        self.static_methods.push(method);
 
         Ok(self)
     }
@@ -454,19 +448,9 @@ impl<'a> StaticClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn static_method<T: IntoName>(
-        mut self,
-        name: T,
-        native_function: &FunctionHandle,
-    ) -> BindResult<Self> {
-        let name = name.into_name()?;
-        self.lib.validate_function(native_function)?;
-
-        self.static_methods.push(StaticMethod {
-            name,
-            native_function: native_function.clone(),
-        });
-
+    pub fn static_method(mut self, method: StaticMethod<Unvalidated>) -> BindResult<Self> {
+        self.lib.validate_function(&method.native_function)?;
+        self.static_methods.push(method);
         Ok(self)
     }
 

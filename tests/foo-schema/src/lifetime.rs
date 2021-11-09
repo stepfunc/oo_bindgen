@@ -60,11 +60,11 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .param("chunk_size", BasicType::U32, "size of each iteration")?
         .param("callback", interface, "callback interface to invoke")?
         .returns_nothing()?
-        .build()?;
+        .build_static_with_same_name()?;
 
     lib.define_static_class("double_iterator_test_helper")?
         .doc("Helper methods for the double iterator tests with lifetimes")?
-        .static_method("iterate_string_by_chunks", &invoke_fn)?
+        .static_method(invoke_fn)?
         .build()?;
 
     Ok(())

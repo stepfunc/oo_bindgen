@@ -9,7 +9,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .param("value", opaque_struct.clone(), "struct value")?
         .returns(BasicType::U64, "value of id field")?
         .doc("Get the id field of the struct")?
-        .build()?;
+        .build_static("get_id")?;
 
     let opaque_struct = lib
         .define_opaque_struct(opaque_struct)?
@@ -22,12 +22,12 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_function("opaque_struct_magic_init")?
         .returns(opaque_struct, "initialized value")?
         .doc("Create an OpaqueStruct initialized with a magic id")?
-        .build()?;
+        .build_static("create_magic_value")?;
 
     lib.define_static_class("opaque_struct_helpers")?
         .doc("Helpers for manipulating instances of {struct:opaque_struct}")?
-        .static_method("get_id", &get_id_fn)?
-        .static_method("create_magic_value", &opaque_struct_magic_init_fn)?
+        .static_method(get_id_fn)?
+        .static_method(opaque_struct_magic_init_fn)?
         .build()?;
 
     Ok(())

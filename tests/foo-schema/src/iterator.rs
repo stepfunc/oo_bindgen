@@ -40,11 +40,11 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         )?
         .param("callback", interface, "callback interface to invoke")?
         .returns_nothing()?
-        .build()?;
+        .build_static_with_same_name()?;
 
     lib.define_static_class("iterator_test_helper")?
         .doc("Helper methods for the iterator tests")?
-        .static_method("invoke_callback", &invoke_fn)?
+        .static_method(invoke_fn)?
         .build()?;
 
     Ok(())

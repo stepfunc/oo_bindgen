@@ -24,15 +24,15 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_function("string_length")?
         .param("value", StringType, "String")?
         .returns(BasicType::U32, "String length")?
-        .doc("Get the string length")?
-        .build()?;
+        .doc("Get the length of a string")?
+        .build_static("get_length")?;
 
     // Define the class
     lib.define_class(&string_class)?
         .constructor(constructor)?
         .destructor(destructor)?
         .method(echo)?
-        .static_method("get_length", &string_length)?
+        .static_method(string_length)?
         .disposable_destroy()?
         .doc("StringClass")?
         .build()?;

@@ -51,11 +51,11 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("add a number to the class's internal value asynchronously")?
         .build()?;
 
-    let test_class_construction_counter = lib
+    let construction_counter = lib
         .define_function("construction_counter")?
         .returns(BasicType::U32, "Number of calls to the constructor")?
         .doc("Get number of calls to the constructor")?
-        .build()?;
+        .build_static("construction_counter")?;
 
     // Define the class
     let _test_class = lib
@@ -65,7 +65,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .method(get_value)?
         .method(increment_value)?
         .async_method(get_value_async)?
-        .static_method("construction_counter", &test_class_construction_counter)?
+        .static_method(construction_counter)?
         .custom_destroy("delete")?
         .doc("A test class")?
         .build()?;

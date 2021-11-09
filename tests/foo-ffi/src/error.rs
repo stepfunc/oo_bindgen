@@ -8,7 +8,7 @@ pub struct ClassWithPassword {
 const SPECIAL_VALUE: u32 = 42;
 const PASSWORD: &str = "12345";
 
-pub(crate) fn get_special_number(password: &CStr) -> std::result::Result<u32, crate::ffi::MyError> {
+pub(crate) fn get_special_value(password: &CStr) -> std::result::Result<u32, crate::ffi::MyError> {
     if password.to_str()? == PASSWORD {
         Ok(SPECIAL_VALUE)
     } else {

@@ -9,6 +9,7 @@ void callback_tests();
 void iterator_tests();
 void universal_tests();
 void collection_tests();
+void class_tests();
 
 int main()
 {
@@ -23,6 +24,7 @@ int main()
     callback_tests();
     universal_tests();
     collection_tests();
+    class_tests();
 
     return 0;
 }

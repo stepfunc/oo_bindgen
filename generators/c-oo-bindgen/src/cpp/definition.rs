@@ -16,6 +16,7 @@ use oo_bindgen::structs::{
     Visibility,
 };
 use oo_bindgen::types::Arg;
+use oo_bindgen::util::WithLastIndication;
 use oo_bindgen::{Handle, Library, Statement};
 use std::path::Path;
 
@@ -62,7 +63,9 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
                 print_interface(f, x)?;
 
                 if lib.future_interfaces().any(|i| i == x) {
-                    namespace(f, "helpers", |f| write_async_method_interface_helpers(f, x))?;
+                    namespace(f, "helpers", |f| {
+                        write_future_method_interface_helpers(f, x)
+                    })?;
                     f.newline()?;
                 }
             }
@@ -90,7 +93,7 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
-fn write_async_method_interface_helpers(
+fn write_future_method_interface_helpers(
     f: &mut dyn Printer,
     interface: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
@@ -129,12 +132,15 @@ fn write_async_method_interface_helpers(
 
     f.writeln("template <class T>")?;
     f.writeln(&format!(
-        "{}<T> create_{}(const T& lambda)",
-        class_name,
+        "std::unique_ptr<{}> create_{}(const T& lambda)",
+        interface_name,
         class_name.to_snake_case()
     ))?;
     blocked(f, |f| {
-        f.writeln(&format!("return {}<T>(lambda); ", class_name))
+        f.writeln(&format!(
+            "return std::make_unique<{}<T>>(lambda); ",
+            class_name
+        ))
     })?;
 
     f.newline()
@@ -433,7 +439,7 @@ fn print_class_definition(
         }
 
         for method in &handle.future_methods {
-            print_async_method(f, method)?;
+            print_future_method(f, method)?;
         }
 
         Ok(())
@@ -473,13 +479,12 @@ fn print_static_method(
     ))
 }
 
-fn print_async_method(
+fn print_future_method(
     f: &mut dyn Printer,
     method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
     let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
 
-    f.writeln("// async method!")?;
     f.writeln(&format!(
         "{} {}({});",
         method
@@ -489,6 +494,38 @@ fn print_async_method(
         method.name.to_snake_case(),
         args
     ))?;
+
+    let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1).drop_last());
+    let args = format!("{}, T callback", args);
+
+    f.writeln("template<class T>")?;
+    f.writeln(&format!(
+        "{} {}({})",
+        method
+            .native_function
+            .return_type
+            .get_cpp_function_return_type(),
+        method.name.to_snake_case(),
+        args
+    ))?;
+    blocked(f, |f| {
+        let arg_names = method
+            .native_function
+            .parameters
+            .iter()
+            .skip(1)
+            .drop_last()
+            .map(|x| x.name.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        f.writeln(&format!(
+            "{}({}, helpers::create_{}_lambda(callback));",
+            method.name.to_snake_case(),
+            arg_names,
+            method.future.interface.name
+        ))
+    })?;
 
     f.newline()
 }

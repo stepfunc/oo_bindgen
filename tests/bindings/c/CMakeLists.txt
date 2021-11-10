@@ -29,6 +29,7 @@ set(cpp_test_files
         ${FOO_CPP_FILE}
         cpp_tests/main.cpp
         cpp_tests/callback_tests.cpp
+        cpp_tests/class_tests.cpp
         cpp_tests/collection_tests.cpp
         cpp_tests/constant_tests.cpp
         cpp_tests/enum_tests.cpp

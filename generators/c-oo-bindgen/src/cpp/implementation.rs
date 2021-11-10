@@ -555,7 +555,7 @@ fn write_class_implementation(
 
     // write the async methods
     for method in &handle.future_methods {
-        write_class_async_method_impl(f, handle, method)?;
+        write_class_future_method_impl(f, handle, method)?;
     }
 
     f.newline()
@@ -611,7 +611,7 @@ fn write_class_method_impl(
     write_class_method_impl_generic(f, handle, &method.name, &method.native_function)
 }
 
-fn write_class_async_method_impl(
+fn write_class_future_method_impl(
     f: &mut dyn Printer,
     handle: &Handle<Class<Validated>>,
     method: &FutureMethod<Validated>,
@@ -1357,13 +1357,7 @@ fn write_cpp_interface_to_native_conversion(
                 InterfaceType::Synchronous => {
                     f.writeln("[](void*){}, // nothing to free")?;
                 }
-                InterfaceType::Asynchronous => {
-                    f.writeln(&format!(
-                        "[](void* ctx) {{ delete reinterpret_cast<{}*>(ctx); }},",
-                        cpp_type
-                    ))?;
-                }
-                InterfaceType::Future => {
+                InterfaceType::Asynchronous | InterfaceType::Future => {
                     f.writeln(&format!(
                         "[](void* ctx) {{ delete reinterpret_cast<{}*>(ctx); }},",
                         cpp_type
@@ -1374,10 +1368,7 @@ fn write_cpp_interface_to_native_conversion(
                 InterfaceType::Synchronous => {
                     f.writeln("&value // the pointer will outlive the callbacks")?;
                 }
-                InterfaceType::Asynchronous => {
-                    f.writeln("value.release()")?;
-                }
-                InterfaceType::Future => {
+                InterfaceType::Asynchronous | InterfaceType::Future => {
                     f.writeln("value.release()")?;
                 }
             }

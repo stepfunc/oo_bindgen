@@ -9,6 +9,9 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     let interface_name = format!("I{}", interface.name.camel_case());
 
+    let destroy_func_name = lib.settings.interface.destroy_func_name.clone();
+    let ctx_variable_name = lib.settings.interface.context_variable_name.clone();
+
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
@@ -99,7 +102,10 @@ pub(crate) fn generate(
                                 arg.name.mixed_case()
                             )
                         })
-                        .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
+                        .chain(std::iter::once(format!(
+                            "IntPtr {}",
+                            lib.settings.interface.context_variable_name
+                        )))
                         .collect::<Vec<String>>()
                         .join(", "),
                 )?;
@@ -112,12 +118,12 @@ pub(crate) fn generate(
 
             f.writeln(&format!(
                 "private delegate void {}_delegate(IntPtr arg);",
-                DESTROY_FUNC_NAME
+                destroy_func_name
             ))?;
 
             f.writeln(&format!(
                 "private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;",
-                DESTROY_FUNC_NAME, DESTROY_FUNC_NAME, interface_name, DESTROY_FUNC_NAME
+                destroy_func_name, destroy_func_name, interface_name, destroy_func_name
             ))?;
 
             f.newline()?;
@@ -129,9 +135,9 @@ pub(crate) fn generate(
 
             f.writeln(&format!(
                 "private {}_delegate {};",
-                DESTROY_FUNC_NAME, DESTROY_FUNC_NAME
+                destroy_func_name, destroy_func_name
             ))?;
-            f.writeln(&format!("public IntPtr {};", CTX_VARIABLE_NAME))?;
+            f.writeln(&format!("public IntPtr {};", ctx_variable_name))?;
 
             f.newline()?;
 
@@ -155,12 +161,12 @@ pub(crate) fn generate(
 
                 f.writeln(&format!(
                     "this.{} = {}NativeAdapter.{}_static_delegate;",
-                    DESTROY_FUNC_NAME, interface_name, DESTROY_FUNC_NAME
+                    destroy_func_name, interface_name, destroy_func_name
                 ))?;
 
                 f.writeln(&format!(
                     "this.{} = GCHandle.ToIntPtr(_handle);",
-                    CTX_VARIABLE_NAME
+                    ctx_variable_name
                 ))?;
                 Ok(())
             })?;
@@ -182,7 +188,7 @@ pub(crate) fn generate(
                                 arg.name.mixed_case()
                             )
                         })
-                        .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
+                        .chain(std::iter::once(format!("IntPtr {}", ctx_variable_name)))
                         .collect::<Vec<String>>()
                         .join(", "),
                 )?;
@@ -191,7 +197,7 @@ pub(crate) fn generate(
                 blocked(f, |f| {
                     f.writeln(&format!(
                         "var _handle = GCHandle.FromIntPtr({});",
-                        CTX_VARIABLE_NAME
+                        ctx_variable_name
                     ))?;
                     f.writeln(&format!("var _impl = ({})_handle.Target;", interface_name))?;
                     call_dotnet_function(f, cb, "return ")
@@ -203,7 +209,7 @@ pub(crate) fn generate(
             // destroy delegate
             f.writeln(&format!(
                 "internal static void {}_cb(IntPtr arg)",
-                DESTROY_FUNC_NAME
+                destroy_func_name
             ))?;
 
             blocked(f, |f| {

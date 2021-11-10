@@ -57,6 +57,9 @@ pub(crate) fn generate_interfaces_cache(
         })
     })?;
 
+    let ctx_variable_name = lib.settings.interface.context_variable_name.clone();
+    let destroy_func_name = lib.settings.interface.destroy_func_name.clone();
+
     // Each interface implementation
     for interface in lib.interfaces() {
         let interface_name = interface.name.camel_case();
@@ -99,14 +102,14 @@ pub(crate) fn generate_interfaces_cache(
 
                     f.writeln(&format!(
                         "{}: Some({}_{}),",
-                        DESTROY_FUNC_NAME,
+                        destroy_func_name,
                         interface.name.camel_case(),
-                        DESTROY_FUNC_NAME
+                        destroy_func_name
                     ))?;
 
                     f.writeln(&format!(
                         "{}: Box::into_raw(Box::new(env.new_global_ref(obj).unwrap())) as *mut _,",
-                        CTX_VARIABLE_NAME
+                        ctx_variable_name
                     ))?;
 
                     Ok(())
@@ -129,7 +132,7 @@ pub(crate) fn generate_interfaces_cache(
                 })
                 .chain(std::iter::once(format!(
                     "{}: *mut std::ffi::c_void",
-                    CTX_VARIABLE_NAME
+                    ctx_variable_name
                 )))
                 .collect::<Vec<_>>()
                 .join(", ");
@@ -147,7 +150,7 @@ pub(crate) fn generate_interfaces_cache(
                     &interface.name,
                     &cb.name,
                     &lib_path,
-                    &CTX_VARIABLE_NAME,
+                    &ctx_variable_name,
                     &cb.arguments,
                     &cb.return_type,
                 )?;
@@ -176,7 +179,7 @@ pub(crate) fn generate_interfaces_cache(
         f.writeln(&format!(
             "extern \"C\" fn {}_{}(ctx: *mut std::ffi::c_void)",
             interface.name.camel_case(),
-            DESTROY_FUNC_NAME
+            destroy_func_name
         ))?;
         blocked(&mut f, |f| {
             f.writeln("unsafe { Box::from_raw(ctx as *mut jni::objects::GlobalRef) };")

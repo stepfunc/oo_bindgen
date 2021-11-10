@@ -26,28 +26,13 @@ use heck::{CamelCase, KebabCase, MixedCase, ShoutySnakeCase};
 /// - They cannot equal certain reserved identifiers in C and other languages
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum NameType {
-    Rc(Rc<String>),
-    Str(&'static str),
-}
-
-impl NameType {
-    fn as_str(&self) -> &str {
-        match self {
-            NameType::Rc(x) => x.as_str(),
-            NameType::Str(x) => x,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name {
-    name_type: NameType,
+    validated: Rc<String>,
 }
 
 impl From<Name> for String {
     fn from(x: Name) -> Self {
-        x.name_type.as_str().to_string()
+        x.validated.to_string()
     }
 }
 
@@ -55,13 +40,13 @@ impl std::ops::Deref for Name {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
-        self.name_type.as_str()
+        self.validated.as_str()
     }
 }
 
 impl Display for Name {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name_type.as_str())
+        write!(f, "{}", self.validated.as_str())
     }
 }
 
@@ -157,35 +142,29 @@ impl NameError {
 
 impl AsRef<str> for Name {
     fn as_ref(&self) -> &str {
-        self.name_type.as_str()
+        self.validated.as_str()
     }
 }
 
 impl Name {
-    pub(crate) const fn blind_create(str: &'static str) -> Self {
-        Self {
-            name_type: NameType::Str(str),
-        }
-    }
-
     /// convert to CamelCase
     pub fn camel_case(&self) -> String {
-        self.name_type.as_str().to_camel_case()
+        self.validated.to_camel_case()
     }
 
     /// convert to CAPITAL_SNAKE_CASE
     pub fn capital_snake_case(&self) -> String {
-        self.name_type.as_str().to_shouty_snake_case()
+        self.validated.to_shouty_snake_case()
     }
 
     /// convert to mixedCase
     pub fn mixed_case(&self) -> String {
-        self.name_type.as_str().to_mixed_case()
+        self.validated.to_mixed_case()
     }
 
     /// convert to kebab-case
     pub fn kebab_case(&self) -> String {
-        self.name_type.as_str().to_kebab_case()
+        self.validated.to_kebab_case()
     }
 
     /// Create a validated Name
@@ -196,22 +175,22 @@ impl Name {
     /// Append a name to this one
     pub fn append(&self, other: &Name) -> Self {
         Self {
-            name_type: NameType::Rc(Rc::new(format!(
+            validated: Rc::new(format!(
                 "{}_{}",
-                self.name_type.as_str(),
-                other.name_type.as_str()
-            ))),
+                self.validated.as_str(),
+                other.validated.as_str()
+            )),
         }
     }
 
     /// Prepend a name to this one
     pub fn prepend(&self, other: &Name) -> Self {
         Self {
-            name_type: NameType::Rc(Rc::new(format!(
+            validated: Rc::new(format!(
                 "{}_{}",
-                other.name_type.as_str(),
-                self.name_type.as_str()
-            ))),
+                other.validated.as_str(),
+                self.validated.as_str()
+            )),
         }
     }
 
@@ -270,7 +249,7 @@ impl Name {
         }
 
         Ok(Name {
-            name_type: NameType::Rc(Rc::new(value.to_string())),
+            validated: Rc::new(value.to_string()),
         })
     }
 }

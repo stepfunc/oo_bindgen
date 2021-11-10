@@ -483,11 +483,14 @@ impl JniType for Handle<Interface<Unvalidated>> {
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        InterfaceConverter::wrap(self.clone()).convert_to_rust(f, from, to)
+        InterfaceConverter::wrap(self.clone(), self.settings.clone()).convert_to_rust(f, from, to)
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
-        Some(InterfaceConverter::wrap(self.clone()))
+        Some(InterfaceConverter::wrap(
+            self.clone(),
+            self.settings.clone(),
+        ))
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
@@ -1783,12 +1786,17 @@ impl TypeConverterTrait for ClassConverter {
 
 pub(crate) struct InterfaceConverter {
     name: Name,
+    settings: Rc<LibrarySettings>,
 }
 
 impl InterfaceConverter {
-    pub(crate) fn wrap<D: DocReference>(handle: Handle<Interface<D>>) -> TypeConverter {
+    pub(crate) fn wrap<D: DocReference>(
+        handle: Handle<Interface<D>>,
+        settings: Rc<LibrarySettings>,
+    ) -> TypeConverter {
         TypeConverter::Interface(Self {
             name: handle.name.clone(),
+            settings,
         })
     }
 }
@@ -1804,7 +1812,7 @@ impl TypeConverterTrait for InterfaceConverter {
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
-            to, from, CTX_VARIABLE_NAME
+            to, from, self.settings.interface.context_variable_name
         ))?;
         blocked(f, |f| f.writeln("obj.as_obj()"))?;
         f.writeln("else")?;

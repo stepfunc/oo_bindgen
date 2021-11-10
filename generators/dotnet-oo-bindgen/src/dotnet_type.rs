@@ -4,7 +4,6 @@ use oo_bindgen::doc::DocReference;
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
-use oo_bindgen::name::Name;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
@@ -193,7 +192,7 @@ where
             "I{}NativeAdapter.FromNative({}.{})",
             self.name.camel_case(),
             from,
-            Name::create(CTX_VARIABLE_NAME).unwrap().mixed_case()
+            self.settings.interface.context_variable_name.mixed_case()
         ))
     }
 }

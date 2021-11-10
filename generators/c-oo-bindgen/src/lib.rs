@@ -600,6 +600,9 @@ fn write_interface(
 
     let struct_name = handle.to_c_type();
 
+    let ctx_variable_name = lib.settings.interface.context_variable_name.clone();
+    let destroy_func_name = lib.settings.interface.destroy_func_name.clone();
+
     f.writeln(&format!("typedef struct {}", struct_name))?;
     f.writeln("{")?;
     indented(f, |f| {
@@ -617,7 +620,7 @@ fn write_interface(
                     docstring_print(f, &arg.doc, lib)?;
                 }
 
-                f.writeln(&format!("@param {} ", CTX_VARIABLE_NAME))?;
+                f.writeln(&format!("@param {} ", ctx_variable_name))?;
                 docstring_print(f, &text("Context data"), lib)?;
 
                 // Print return documentation
@@ -645,10 +648,10 @@ fn write_interface(
             )?;
             f.writeln("@param arg Context data")
         })?;
-        f.writeln(&format!("void (*{})(void* arg);", DESTROY_FUNC_NAME))?;
+        f.writeln(&format!("void (*{})(void* arg);", destroy_func_name))?;
 
         doxygen(f, |f| f.writeln("@brief Context data"))?;
-        f.writeln(&format!("void* {};", CTX_VARIABLE_NAME))?;
+        f.writeln(&format!("void* {};", ctx_variable_name))?;
 
         Ok(())
     })?;
@@ -666,9 +669,9 @@ fn write_interface(
         }
         f.writeln(&format!(
             "@param {} Callback when the underlying owner doesn't need the interface anymore",
-            DESTROY_FUNC_NAME
+            destroy_func_name
         ))?;
-        f.writeln(&format!("@param {} Context data", CTX_VARIABLE_NAME))?;
+        f.writeln(&format!("@param {} Context data", ctx_variable_name))?;
         Ok(())
     })?;
     f.writeln(&format!(
@@ -683,8 +686,8 @@ fn write_interface(
             f.write("),")?;
         }
 
-        f.writeln(&format!("void (*{})(void* arg),", DESTROY_FUNC_NAME))?;
-        f.writeln(&format!("void* {}", CTX_VARIABLE_NAME))?;
+        f.writeln(&format!("void (*{})(void* arg),", destroy_func_name))?;
+        f.writeln(&format!("void* {}", ctx_variable_name))?;
 
         Ok(())
     })?;
@@ -696,8 +699,8 @@ fn write_interface(
             for cb in &handle.callbacks {
                 f.writeln(&format!("{},", cb.name))?;
             }
-            f.writeln(&format!("{},", DESTROY_FUNC_NAME))?;
-            f.writeln(CTX_VARIABLE_NAME.as_ref())
+            f.writeln(&format!("{},", destroy_func_name))?;
+            f.writeln(ctx_variable_name.as_ref())
         })?;
         f.writeln("};")?;
         f.writeln("return _return_value;")

@@ -119,6 +119,33 @@ impl Default for IteratorSettings {
     }
 }
 
+/// Settings that affect C interface member naming
+#[derive(Debug)]
+pub struct InterfaceSettings {
+    /// Name of the C void* context variable, defaults to "ctx"
+    pub context_variable_name: Name,
+    /// Name of the function that destroys an interface when it is dropped, defaults to "on_destroy"
+    pub destroy_func_name: Name,
+}
+
+impl InterfaceSettings {
+    pub fn new(context_variable_name: Name, destroy_func_name: Name) -> Self {
+        Self {
+            context_variable_name,
+            destroy_func_name,
+        }
+    }
+}
+
+impl Default for InterfaceSettings {
+    fn default() -> Self {
+        Self {
+            context_variable_name: Name::create("ctx").unwrap(),
+            destroy_func_name: Name::create("on_destroy").unwrap(),
+        }
+    }
+}
+
 /// Settings that affect class method naming
 #[derive(Debug)]
 pub struct ClassSettings {
@@ -251,6 +278,8 @@ pub struct LibrarySettings {
     pub collection: CollectionSettings,
     /// settings that control future-style interface generation
     pub future: FutureSettings,
+    /// settings that control C interface member naming
+    pub interface: InterfaceSettings,
 }
 
 impl LibrarySettings {
@@ -262,6 +291,7 @@ impl LibrarySettings {
         iterator: IteratorSettings,
         collection: CollectionSettings,
         future: FutureSettings,
+        interface: InterfaceSettings,
     ) -> BindResult<Rc<Self>> {
         Ok(Rc::new(Self {
             name: name.into_name()?,
@@ -270,6 +300,7 @@ impl LibrarySettings {
             iterator,
             collection,
             future,
+            interface,
         }))
     }
 }

@@ -65,6 +65,7 @@ use crate::rust_type::*;
 use crate::type_converter::*;
 use oo_bindgen::doc::Validated;
 use oo_bindgen::return_type::ReturnType;
+use std::rc::Rc;
 
 pub struct RustCodegen<'a> {
     library: &'a Library,
@@ -515,7 +516,7 @@ impl<'a> RustCodegen<'a> {
                         .map(|arg| format!("{}: {}", arg.name, arg.arg_type.as_c_type()))
                         .chain(std::iter::once(format!(
                             "{}: *mut std::os::raw::c_void",
-                            CTX_VARIABLE_NAME
+                            handle.settings.interface.context_variable_name
                         )))
                         .collect::<Vec<String>>()
                         .join(", "),
@@ -526,12 +527,12 @@ impl<'a> RustCodegen<'a> {
 
             f.writeln(&format!(
                 "pub {}: Option<extern \"C\" fn(ctx: *mut std::os::raw::c_void)>,",
-                DESTROY_FUNC_NAME
+                handle.settings.interface.destroy_func_name
             ))?;
 
             f.writeln(&format!(
                 "pub {}: *mut std::os::raw::c_void,",
-                CTX_VARIABLE_NAME
+                handle.settings.interface.context_variable_name
             ))?;
             Ok(())
         })?;
@@ -542,6 +543,7 @@ impl<'a> RustCodegen<'a> {
             f,
             handle.interface_type,
             &interface_name,
+            handle.settings.clone(),
             handle.callbacks.iter(),
         )?;
 
@@ -552,9 +554,15 @@ impl<'a> RustCodegen<'a> {
         blocked(f, |f| {
             f.writeln("fn drop(&mut self)")?;
             blocked(f, |f| {
-                f.writeln(&format!("if let Some(cb) = self.{}", DESTROY_FUNC_NAME))?;
+                f.writeln(&format!(
+                    "if let Some(cb) = self.{}",
+                    handle.settings.interface.destroy_func_name
+                ))?;
                 blocked(f, |f| {
-                    f.writeln(&format!("cb(self.{});", CTX_VARIABLE_NAME))
+                    f.writeln(&format!(
+                        "cb(self.{});",
+                        handle.settings.interface.context_variable_name
+                    ))
                 })
             })
         })
@@ -565,6 +573,7 @@ impl<'a> RustCodegen<'a> {
         f: &mut dyn Printer,
         interface_type: InterfaceType,
         name: &str,
+        settings: Rc<LibrarySettings>,
         callbacks: I,
     ) -> FormattingResult<()> {
         let generate_send_and_sync = match interface_type {
@@ -626,11 +635,15 @@ impl<'a> RustCodegen<'a> {
                             f.write(";")?;
                         }
                     }
+
                     let params = &callback
                         .arguments
                         .iter()
                         .map(|arg| arg.name.to_string())
-                        .chain(std::iter::once(format!("self.{}", CTX_VARIABLE_NAME)))
+                        .chain(std::iter::once(format!(
+                            "self.{}",
+                            settings.interface.context_variable_name
+                        )))
                         .collect::<Vec<_>>()
                         .join(", ");
                     let call = format!("cb({})", params);

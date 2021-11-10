@@ -11,9 +11,6 @@ use crate::types::{Arg, DurationType, StringType};
 use crate::*;
 use std::rc::Rc;
 
-pub const CTX_VARIABLE_NAME: Name = Name::blind_create("ctx");
-pub const DESTROY_FUNC_NAME: Name = Name::blind_create("on_destroy");
-
 /// Types that can be used as callback function arguments
 #[derive(Debug, Clone, PartialEq)]
 pub enum CallbackArgument {
@@ -284,15 +281,15 @@ impl<'a> InterfaceBuilder<'a> {
     }
 
     fn check_unique_callback_name(&mut self, name: &Name) -> BindResult<()> {
-        if name == &DESTROY_FUNC_NAME {
+        if name == &self.lib.settings.interface.destroy_func_name {
             return Err(BindingError::InterfaceMethodWithReservedName {
-                name: DESTROY_FUNC_NAME,
+                name: self.lib.settings.interface.destroy_func_name.clone(),
             });
         }
 
-        if name == &CTX_VARIABLE_NAME {
+        if name == &self.lib.settings.interface.context_variable_name.clone() {
             return Err(BindingError::InterfaceMethodWithReservedName {
-                name: CTX_VARIABLE_NAME,
+                name: self.lib.settings.interface.context_variable_name.clone(),
             });
         }
 
@@ -335,9 +332,15 @@ impl<'a> CallbackFunctionBuilder<'a> {
         let arg_type = arg_type.into();
         let name = name.into_name()?;
 
-        if name == CTX_VARIABLE_NAME {
+        if name == self.builder.lib.settings.interface.context_variable_name {
             return Err(BindingError::CallbackMethodArgumentWithReservedName {
-                name: CTX_VARIABLE_NAME,
+                name: self
+                    .builder
+                    .lib
+                    .settings
+                    .interface
+                    .context_variable_name
+                    .clone(),
             });
         }
 

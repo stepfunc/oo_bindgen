@@ -1,5 +1,4 @@
 use crate::*;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::structs::*;
 use oo_bindgen::types::DurationType;
 
@@ -47,14 +46,14 @@ where
                 }
             },
             ValidatedDefaultValue::Enum(x, variant) => {
-                format!("{}.{}", x.name.to_camel_case(), variant.to_camel_case())
+                format!("{}.{}", x.name.camel_case(), variant.camel_case())
             }
             ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
             ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
-                format!("new {}()", handle.name().to_camel_case())
+                format!("new {}()", handle.name().camel_case())
             }
         },
-        None => field.name.to_mixed_case(),
+        None => field.name.mixed_case(),
     }
 }
 
@@ -76,15 +75,15 @@ where
 
     f.writeln(&format!(
         "public static {} {}({})",
-        handle.name().to_camel_case(),
-        constructor.name.to_camel_case(),
+        handle.name().camel_case(),
+        constructor.name.camel_case(),
         constructor_parameters(handle, constructor)
     ))?;
 
     blocked(f, |f| {
         f.writeln(&format!(
             "return new {}({});",
-            handle.declaration.name().to_camel_case(),
+            handle.declaration.name().camel_case(),
             invocation_args
         ))
     })
@@ -103,7 +102,7 @@ where
         xmldoc_print(f, &constructor.doc)?;
 
         for arg in handle.initializer_args(constructor.clone()) {
-            f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
+            f.writeln(&format!("<param name=\"{}\">", arg.name.mixed_case()))?;
             docstring_print(f, &arg.doc.brief)?;
             f.write("</param>")?;
         }
@@ -111,7 +110,7 @@ where
         if write_return_info {
             f.writeln(&format!(
                 "<returns> initialized {} instance </returns>",
-                handle.name().to_camel_case()
+                handle.name().camel_case()
             ))?;
         }
 
@@ -132,7 +131,7 @@ where
             format!(
                 "{} {}",
                 sf.field_type.as_dotnet_type(),
-                sf.name.to_mixed_case()
+                sf.name.mixed_case()
             )
         })
         .collect::<Vec<String>>()
@@ -160,7 +159,7 @@ where
     f.writeln(&format!(
         "{} {}({})",
         visibility.to_str(),
-        handle.name().to_camel_case(),
+        handle.name().camel_case(),
         constructor_parameters(handle, constructor)
     ))?;
     blocked(f, |f| {
@@ -168,7 +167,7 @@ where
             indented(f, |f| {
                 f.writeln(&format!(
                     "this.{} = {};",
-                    field.name.to_camel_case(),
+                    field.name.camel_case(),
                     get_field_value(field, constructor)
                 ))
             })?;
@@ -186,7 +185,7 @@ pub(crate) fn generate<T>(
 where
     T: StructFieldType + DotnetType,
 {
-    let struct_name = handle.name().to_camel_case();
+    let struct_name = handle.name().camel_case();
     let struct_native_name = format!("{}Native", struct_name);
 
     print_license(f, &lib.info.license_description)?;
@@ -221,7 +220,7 @@ where
                     "{} {} {};",
                     handle.visibility.to_str(),
                     field.field_type.as_dotnet_type(),
-                    field.name.to_camel_case()
+                    field.name.camel_case()
                 ))?;
             }
 
@@ -249,10 +248,7 @@ where
             if !handle.has_default_initializer() {
                 // Internal parameter-less constructor
                 f.newline()?;
-                f.writeln(&format!(
-                    "internal {}() {{ }}",
-                    handle.name().to_camel_case()
-                ))?;
+                f.writeln(&format!("internal {}() {{ }}", handle.name().camel_case()))?;
             }
 
             Ok(())
@@ -269,7 +265,7 @@ where
                 f.writeln(&format!(
                     "{} {};",
                     el.field_type.as_native_type(),
-                    el.name.to_camel_case()
+                    el.name.camel_case()
                 ))?;
             }
 
@@ -283,7 +279,7 @@ where
             blocked(f, |f| {
                 f.writeln(&format!("{} result;", struct_native_name))?;
                 for el in handle.fields() {
-                    let el_name = el.name.to_camel_case();
+                    let el_name = el.name.camel_case();
 
                     let conversion = el
                         .field_type
@@ -304,7 +300,7 @@ where
             blocked(f, |f| {
                 f.writeln(&format!("{} result = new {}();", struct_name, struct_name))?;
                 for el in handle.fields() {
-                    let el_name = el.name.to_camel_case();
+                    let el_name = el.name.camel_case();
 
                     let conversion = el
                         .field_type
@@ -369,7 +365,7 @@ where
             f.writeln("internal void Dispose()")?;
             blocked(f, |f| {
                 for el in handle.fields() {
-                    let el_name = el.name.to_camel_case();
+                    let el_name = el.name.camel_case();
 
                     if let Some(cleanup) = el.field_type.cleanup(&format!("this.{}", el_name)) {
                         f.writeln(&cleanup)?;

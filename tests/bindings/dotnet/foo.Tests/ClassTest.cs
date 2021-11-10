@@ -18,7 +18,7 @@ namespace foo.Tests
             testclass.IncrementValue();
             Assert.Equal(42u, testclass.GetValue());
 
-            testclass.Delete();
+            testclass.Shutdown();
 
             Assert.Equal(0u, TestClass.ConstructionCounter());
         }
@@ -33,7 +33,7 @@ namespace foo.Tests
             testclass.IncrementValue();
             Assert.Equal(43u, await testclass.AddAsync(1));
 
-            testclass.Delete();
+            testclass.Shutdown();
         }
     }
 }

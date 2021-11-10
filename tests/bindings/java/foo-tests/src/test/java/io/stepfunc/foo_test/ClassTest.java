@@ -20,7 +20,7 @@ public class ClassTest {
         testclass.incrementValue();
         assertThat(testclass.getValue()).isEqualTo(uint(42));
 
-        testclass.delete();
+        testclass.shutdown();
 
         assertThat(TestClass.constructionCounter().intValue()).isZero();
     }
@@ -34,6 +34,6 @@ public class ClassTest {
         testclass.incrementValue();
         assertThat(testclass.addAsync(uint(1)).toCompletableFuture().get()).isEqualTo(uint(43));
 
-        testclass.delete();
+        testclass.shutdown();
     }
 }

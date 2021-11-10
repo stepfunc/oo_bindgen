@@ -150,7 +150,7 @@ pub(crate) fn generate_interfaces_cache(
                     &format!("interface_{}", interface_name.to_snake_case()),
                     &cb.name.to_snake_case(),
                     &lib_path,
-                    CTX_VARIABLE_NAME,
+                    &CTX_VARIABLE_NAME,
                     &cb.arguments,
                     &cb.return_type,
                 )?;

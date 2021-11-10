@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use thiserror::Error;
 
-use heck::{CamelCase, ShoutySnakeCase};
+use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 
 /// Names in oo_bindgen are subset of allowed C-style identifiers. They are
 /// enforce that names are a limited snake case.
@@ -24,15 +24,30 @@ use heck::{CamelCase, ShoutySnakeCase};
 /// - They CANNOT contain double underscores, e.g. foo__bar
 /// - They CANNOT end with an underscore, e.g. foo_bar_
 /// - They cannot equal certain reserved identifiers in C and other languages
-///
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum NameType {
+    Rc(Rc<String>),
+    Str(&'static str),
+}
+
+impl NameType {
+    fn as_str(&self) -> &str {
+        match self {
+            NameType::Rc(x) => x.as_str(),
+            NameType::Str(x) => x,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name {
-    validated: Rc<String>,
+    name_type: NameType,
 }
 
 impl From<Name> for String {
     fn from(x: Name) -> Self {
-        x.to_string()
+        x.name_type.as_str().to_string()
     }
 }
 
@@ -40,13 +55,13 @@ impl std::ops::Deref for Name {
     type Target = str;
 
     fn deref(&self) -> &Self::Target {
-        self.validated.as_str()
+        self.name_type.as_str()
     }
 }
 
 impl Display for Name {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.validated.as_str())
+        write!(f, "{}", self.name_type.as_str())
     }
 }
 
@@ -142,19 +157,30 @@ impl NameError {
 
 impl AsRef<str> for Name {
     fn as_ref(&self) -> &str {
-        self.validated.as_str()
+        self.name_type.as_str()
     }
 }
 
 impl Name {
+    pub(crate) const fn blind_create(str: &'static str) -> Self {
+        Self {
+            name_type: NameType::Str(str),
+        }
+    }
+
     /// convert to CamelCase
     pub fn camel_case(&self) -> String {
-        self.validated.to_camel_case()
+        self.name_type.as_str().to_camel_case()
     }
 
     /// convert to CAPITAL_SNAKE_CASE
     pub fn capital_snake_case(&self) -> String {
-        self.validated.to_shouty_snake_case()
+        self.name_type.as_str().to_shouty_snake_case()
+    }
+
+    /// convert to mixedCase
+    pub fn mixed_case(&self) -> String {
+        self.name_type.as_str().to_mixed_case()
     }
 
     /// Create a validated Name
@@ -165,14 +191,22 @@ impl Name {
     /// Append a name to this one
     pub fn append(&self, other: &Name) -> Self {
         Self {
-            validated: Rc::new(format!("{}_{}", self.validated, other.validated)),
+            name_type: NameType::Rc(Rc::new(format!(
+                "{}_{}",
+                self.name_type.as_str(),
+                other.name_type.as_str()
+            ))),
         }
     }
 
     /// Prepend a name to this one
     pub fn prepend(&self, other: &Name) -> Self {
         Self {
-            validated: Rc::new(format!("{}_{}", other.validated, self.validated)),
+            name_type: NameType::Rc(Rc::new(format!(
+                "{}_{}",
+                other.name_type.as_str(),
+                self.name_type.as_str()
+            ))),
         }
     }
 
@@ -231,7 +265,7 @@ impl Name {
         }
 
         Ok(Name {
-            validated: Rc::new(value.to_string()),
+            name_type: NameType::Rc(Rc::new(value.to_string())),
         })
     }
 }

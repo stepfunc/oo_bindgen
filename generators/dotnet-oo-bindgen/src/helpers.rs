@@ -1,6 +1,5 @@
 use crate::dotnet_type::DotnetType;
 use crate::*;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::collection::Collection;
 use oo_bindgen::interface::{CallbackFunction, CallbackReturnType};
 
@@ -16,7 +15,7 @@ pub(crate) fn generate_collection_helpers(
     namespaced(f, &lib.settings.name, |f| {
         f.writeln(&format!(
             "internal static class {}Helpers",
-            coll.name().to_camel_case()
+            coll.name().camel_case()
         ))?;
         blocked(f, |f| {
             // ToNative function
@@ -86,11 +85,11 @@ pub(crate) fn generate_iterator_helpers(
     namespaced(f, &lib.settings.name, |f| {
         f.writeln(&format!(
             "internal static class {}Helpers",
-            iter.name().to_camel_case()
+            iter.name().camel_case()
         ))?;
         blocked(f, |f| {
             // ToNative function
-            f.writeln(&format!("internal static System.Collections.Generic.ICollection<{}> FromNative(IntPtr value)", iter.item_type.name().to_camel_case()))?;
+            f.writeln(&format!("internal static System.Collections.Generic.ICollection<{}> FromNative(IntPtr value)", iter.item_type.name().camel_case()))?;
             blocked(f, |f| {
                 let next_call = format!(
                     "{}.{}(value)",
@@ -99,7 +98,7 @@ pub(crate) fn generate_iterator_helpers(
 
                 f.writeln(&format!(
                     "var builder = ImmutableArray.CreateBuilder<{}>();",
-                    iter.item_type.name().to_camel_case()
+                    iter.item_type.name().camel_case()
                 ))?;
                 f.writeln(&format!(
                     "for (var itRawValue = {}; itRawValue != IntPtr.Zero; itRawValue = {})",
@@ -108,7 +107,7 @@ pub(crate) fn generate_iterator_helpers(
                 blocked(f, |f| {
                     f.writeln(&format!(
                         "{} itValue = null;",
-                        iter.item_type.name().to_camel_case()
+                        iter.item_type.name().camel_case()
                     ))?;
                     f.writeln(&format!(
                         "itValue = {};",
@@ -134,7 +133,7 @@ pub(crate) fn call_native_function(
 ) -> FormattingResult<()> {
     // Write the type conversions
     for (idx, param) in method.parameters.iter().enumerate() {
-        let mut param_name = param.name.to_mixed_case();
+        let mut param_name = param.name.mixed_case();
         if idx == 0 {
             if let Some(first_param) = first_param_is_self.clone() {
                 param_name = first_param;
@@ -147,7 +146,7 @@ pub(crate) fn call_native_function(
             .unwrap_or(param_name);
         f.writeln(&format!(
             "var _{} = {};",
-            param.name.to_mixed_case(),
+            param.name.mixed_case(),
             conversion
         ))?;
     }
@@ -168,7 +167,7 @@ pub(crate) fn call_native_function(
             &method
                 .parameters
                 .iter()
-                .map(|param| format!("_{}", param.name.to_mixed_case()))
+                .map(|param| format!("_{}", param.name.mixed_case()))
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
@@ -211,7 +210,7 @@ pub(crate) fn call_native_function(
             for param in method.parameters.iter() {
                 if let Some(cleanup) = param
                     .arg_type
-                    .cleanup(&format!("_{}", param.name.to_mixed_case()))
+                    .cleanup(&format!("_{}", param.name.mixed_case()))
                 {
                     f.writeln(&cleanup)?;
                 }
@@ -234,18 +233,14 @@ pub(crate) fn call_dotnet_function(
     for arg in method.arguments.iter() {
         let conversion = arg
             .arg_type
-            .convert_from_native(&arg.name.to_mixed_case())
-            .unwrap_or_else(|| arg.name.to_mixed_case());
-        f.writeln(&format!(
-            "var _{} = {};",
-            arg.name.to_mixed_case(),
-            conversion
-        ))?;
+            .convert_from_native(&arg.name.mixed_case())
+            .unwrap_or_else(|| arg.name.mixed_case());
+        f.writeln(&format!("var _{} = {};", arg.name.mixed_case(), conversion))?;
     }
 
     // Call the .NET function
     f.newline()?;
-    let method_name = method.name.to_camel_case();
+    let method_name = method.name.camel_case();
     if let CallbackReturnType::Type(return_type, _) = &method.return_type {
         if return_type.convert_to_native("_result").is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
@@ -260,7 +255,7 @@ pub(crate) fn call_dotnet_function(
         &method
             .arguments
             .iter()
-            .map(|arg| format!("_{}", arg.name.to_mixed_case()))
+            .map(|arg| format!("_{}", arg.name.mixed_case()))
             .collect::<Vec<String>>()
             .join(", "),
     )?;

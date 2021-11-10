@@ -66,7 +66,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .method(increment_value)?
         .async_method(get_value_async)?
         .static_method(construction_counter)?
-        .custom_destroy("delete")?
+        .custom_destroy("shutdown")?
         .doc("A test class")?
         .build()?;
 

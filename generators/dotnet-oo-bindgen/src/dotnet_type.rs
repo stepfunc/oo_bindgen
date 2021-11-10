@@ -1,10 +1,10 @@
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::DocReference;
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
+use oo_bindgen::name::Name;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
@@ -169,17 +169,17 @@ where
     D: DocReference,
 {
     fn as_dotnet_type(&self) -> String {
-        format!("I{}", self.name.to_camel_case())
+        format!("I{}", self.name.camel_case())
     }
 
     fn as_native_type(&self) -> String {
-        format!("I{}NativeAdapter", self.name.to_camel_case())
+        format!("I{}NativeAdapter", self.name.camel_case())
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "new I{}NativeAdapter({})",
-            self.name.to_camel_case(),
+            self.name.camel_case(),
             from
         ))
     }
@@ -191,16 +191,16 @@ where
     fn convert_from_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "I{}NativeAdapter.FromNative({}.{})",
-            self.name.to_camel_case(),
+            self.name.camel_case(),
             from,
-            CTX_VARIABLE_NAME.to_mixed_case()
+            Name::create(CTX_VARIABLE_NAME).unwrap().mixed_case()
         ))
     }
 }
 
 impl DotnetType for ClassDeclarationHandle {
     fn as_dotnet_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 
     fn as_native_type(&self) -> String {
@@ -216,11 +216,7 @@ impl DotnetType for ClassDeclarationHandle {
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
-        Some(format!(
-            "{}.FromNative({})",
-            self.name.to_camel_case(),
-            from
-        ))
+        Some(format!("{}.FromNative({})", self.name.camel_case(), from))
     }
 }
 
@@ -242,7 +238,7 @@ where
     fn convert_to_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Helpers.ToNative({})",
-            self.collection_class.name.to_camel_case(),
+            self.collection_class.name.camel_case(),
             from
         ))
     }
@@ -250,7 +246,7 @@ where
     fn cleanup(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Helpers.Cleanup({});",
-            self.collection_class.name.to_camel_case(),
+            self.collection_class.name.camel_case(),
             from
         ))
     }
@@ -270,7 +266,7 @@ where
     fn as_dotnet_type(&self) -> String {
         format!(
             "System.Collections.Generic.ICollection<{}>",
-            self.item_type.name().to_camel_case()
+            self.item_type.name().camel_case()
         )
     }
 
@@ -289,7 +285,7 @@ where
     fn convert_from_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Helpers.FromNative({})",
-            self.iter_class.name.to_camel_case(),
+            self.iter_class.name.camel_case(),
             from
         ))
     }
@@ -513,11 +509,11 @@ where
     D: DocReference,
 {
     fn as_dotnet_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 
     fn as_native_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 
     fn convert_to_native(&self, _: &str) -> Option<String> {
@@ -738,7 +734,7 @@ impl DotnetType for FunctionReturnValue {
 
 impl DotnetType for StructDeclarationHandle {
     fn as_dotnet_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 
     fn as_native_type(&self) -> String {
@@ -748,7 +744,7 @@ impl DotnetType for StructDeclarationHandle {
     fn convert_to_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Native.ToNativeRef({})",
-            self.name.to_camel_case(),
+            self.name.camel_case(),
             from
         ))
     }
@@ -756,7 +752,7 @@ impl DotnetType for StructDeclarationHandle {
     fn cleanup(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Native.NativeRefCleanup({});",
-            self.name.to_camel_case(),
+            self.name.camel_case(),
             from
         ))
     }
@@ -764,7 +760,7 @@ impl DotnetType for StructDeclarationHandle {
     fn convert_from_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Native.FromNativeRef({})",
-            self.name.to_camel_case(),
+            self.name.camel_case(),
             from
         ))
     }
@@ -776,17 +772,17 @@ where
     T: StructFieldType,
 {
     fn as_dotnet_type(&self) -> String {
-        self.name().to_camel_case()
+        self.name().camel_case()
     }
 
     fn as_native_type(&self) -> String {
-        format!("{}Native", self.name().to_camel_case())
+        format!("{}Native", self.name().camel_case())
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Native.ToNative({})",
-            self.name().to_camel_case(),
+            self.name().camel_case(),
             from
         ))
     }
@@ -798,7 +794,7 @@ where
     fn convert_from_native(&self, from: &str) -> Option<String> {
         Some(format!(
             "{}Native.FromNative({})",
-            self.name().to_camel_case(),
+            self.name().camel_case(),
             from
         ))
     }

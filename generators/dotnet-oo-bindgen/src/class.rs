@@ -1,6 +1,5 @@
 use crate::helpers::call_native_function;
 use crate::*;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::*;
 
 pub(crate) fn generate(
@@ -8,7 +7,7 @@ pub(crate) fn generate(
     class: &Handle<Class<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let classname = class.name().to_camel_case();
+    let classname = class.name().camel_case();
 
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
@@ -85,7 +84,7 @@ pub(crate) fn generate_static(
     class: &Handle<StaticClass<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let classname = class.name.to_camel_case();
+    let classname = class.name.camel_case();
 
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
@@ -122,7 +121,7 @@ fn generate_constructor(
 
         // Print each parameter value
         for param in &constructor.function.parameters {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
@@ -138,7 +137,7 @@ fn generate_constructor(
         if let Some(error) = &constructor.function.error_type {
             f.writeln(&format!(
                 "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -155,7 +154,7 @@ fn generate_constructor(
                 format!(
                     "{} {}",
                     param.arg_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -179,7 +178,7 @@ fn generate_destructor(
         documentation(f, |f| xmldoc_print(f, &destructor.function.doc))?;
 
         let method_name = if let DestructionMode::Custom(name) = destruction_mode {
-            name.to_camel_case()
+            name.camel_case()
         } else {
             "Dispose".to_string()
         };
@@ -227,7 +226,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
 
         // Print each parameter value
         for param in method.native_function.parameters.iter().skip(1) {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
@@ -243,7 +242,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
         if let Some(error) = &method.native_function.error_type {
             f.writeln(&format!(
                 "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -253,7 +252,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
     f.writeln(&format!(
         "public {} {}(",
         method.native_function.return_type.as_dotnet_type(),
-        method.name.to_camel_case()
+        method.name.camel_case()
     ))?;
     f.write(
         &method
@@ -265,7 +264,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
                 format!(
                     "{} {}",
                     param.arg_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -295,7 +294,7 @@ fn generate_static_method(
 
         // Print each parameter value
         for param in &method.native_function.parameters {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
@@ -311,7 +310,7 @@ fn generate_static_method(
         if let Some(error) = &method.native_function.error_type {
             f.writeln(&format!(
                 "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -321,7 +320,7 @@ fn generate_static_method(
     f.writeln(&format!(
         "public static {} {}(",
         method.native_function.return_type.as_dotnet_type(),
-        method.name.to_camel_case()
+        method.name.camel_case()
     ))?;
     f.write(
         &method
@@ -332,7 +331,7 @@ fn generate_static_method(
                 format!(
                     "{} {}",
                     param.arg_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -350,15 +349,15 @@ fn generate_async_method(
     method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
     let settings = method.future.interface.settings.clone();
-    let method_name = method.name.to_camel_case();
+    let method_name = method.name.camel_case();
     let async_handler_name = format!("{}Handler", method_name);
     let return_type = method.future.value_type.as_dotnet_type();
-    let one_time_callback_name = format!("I{}", method.future.interface.name.to_camel_case());
-    let callback_name = settings.future.success_callback_method_name.to_camel_case();
+    let one_time_callback_name = format!("I{}", method.future.interface.name.camel_case());
+    let callback_name = settings.future.success_callback_method_name.camel_case();
     let callback_param_name = settings
         .future
         .async_method_callback_parameter_name
-        .to_mixed_case();
+        .mixed_case();
 
     // Write the task completion handler
     f.writeln(&format!(
@@ -401,7 +400,7 @@ fn generate_async_method(
             .skip(1)
             .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
         {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
@@ -415,7 +414,7 @@ fn generate_async_method(
         if let Some(error) = &method.native_function.error_type {
             f.writeln(&format!(
                 "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -425,7 +424,7 @@ fn generate_async_method(
     f.writeln(&format!(
         "public Task<{}> {}(",
         return_type,
-        method.name.to_camel_case()
+        method.name.camel_case()
     ))?;
     f.write(
         &method
@@ -438,7 +437,7 @@ fn generate_async_method(
                 format!(
                     "{} {}",
                     param.arg_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()

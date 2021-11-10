@@ -11,8 +11,8 @@ use crate::types::{Arg, DurationType, StringType};
 use crate::*;
 use std::rc::Rc;
 
-pub const CTX_VARIABLE_NAME: &str = "ctx";
-pub const DESTROY_FUNC_NAME: &str = "on_destroy";
+pub const CTX_VARIABLE_NAME: Name = Name::blind_create("ctx");
+pub const DESTROY_FUNC_NAME: Name = Name::blind_create("on_destroy");
 
 /// Types that can be used as callback function arguments
 #[derive(Debug, Clone, PartialEq)]
@@ -284,13 +284,13 @@ impl<'a> InterfaceBuilder<'a> {
     }
 
     fn check_unique_callback_name(&mut self, name: &Name) -> BindResult<()> {
-        if name == DESTROY_FUNC_NAME {
+        if name == &DESTROY_FUNC_NAME {
             return Err(BindingError::InterfaceMethodWithReservedName {
                 name: DESTROY_FUNC_NAME,
             });
         }
 
-        if name == CTX_VARIABLE_NAME {
+        if name == &CTX_VARIABLE_NAME {
             return Err(BindingError::InterfaceMethodWithReservedName {
                 name: CTX_VARIABLE_NAME,
             });

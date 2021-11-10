@@ -1,6 +1,5 @@
 use crate::helpers::call_dotnet_function;
 use crate::*;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::interface::*;
 
 pub(crate) fn generate(
@@ -8,7 +7,7 @@ pub(crate) fn generate(
     interface: &Handle<Interface<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let interface_name = format!("I{}", interface.name.to_camel_case());
+    let interface_name = format!("I{}", interface.name.camel_case());
 
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
@@ -32,7 +31,7 @@ pub(crate) fn generate(
 
                     // Print each parameter value
                     for arg in &func.arguments {
-                        f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
+                        f.writeln(&format!("<param name=\"{}\">", arg.name.mixed_case()))?;
                         docstring_print(f, &arg.doc)?;
                         f.write("</param>")?;
                     }
@@ -51,7 +50,7 @@ pub(crate) fn generate(
                 f.writeln(&format!(
                     "{} {}(",
                     func.return_type.as_dotnet_type(),
-                    func.name.to_camel_case()
+                    func.name.camel_case()
                 ))?;
                 f.write(
                     &func
@@ -61,7 +60,7 @@ pub(crate) fn generate(
                             format!(
                                 "{} {}",
                                 arg.arg_type.as_dotnet_type(),
-                                arg.name.to_mixed_case()
+                                arg.name.mixed_case()
                             )
                         })
                         .collect::<Vec<String>>()
@@ -97,7 +96,7 @@ pub(crate) fn generate(
                             format!(
                                 "{} {}",
                                 arg.arg_type.as_native_type(),
-                                arg.name.to_mixed_case()
+                                arg.name.mixed_case()
                             )
                         })
                         .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
@@ -180,7 +179,7 @@ pub(crate) fn generate(
                             format!(
                                 "{} {}",
                                 arg.arg_type.as_native_type(),
-                                arg.name.to_mixed_case()
+                                arg.name.mixed_case()
                             )
                         })
                         .chain(std::iter::once(format!("IntPtr {}", CTX_VARIABLE_NAME)))
@@ -239,8 +238,8 @@ pub(crate) fn generate_functional_callback(
     interface: &Handle<Interface<Validated>>,
     function: &CallbackFunction<Validated>,
 ) -> FormattingResult<()> {
-    let interface_name = format!("I{}", interface.name.to_camel_case());
-    let class_name = interface.name.to_camel_case();
+    let interface_name = format!("I{}", interface.name.camel_case());
+    let class_name = interface.name.camel_case();
 
     // Build the Action<>/Func<> signature
     let param_types = function
@@ -300,7 +299,7 @@ pub(crate) fn generate_functional_callback(
 
             // Print each parameter value
             for arg in &function.arguments {
-                f.writeln(&format!("<param name=\"{}\">", arg.name.to_mixed_case()))?;
+                f.writeln(&format!("<param name=\"{}\">", arg.name.mixed_case()))?;
                 docstring_print(f, &arg.doc)?;
                 f.write("</param>")?;
             }
@@ -316,7 +315,7 @@ pub(crate) fn generate_functional_callback(
         f.writeln(&format!(
             "public {} {}(",
             function.return_type.as_dotnet_type(),
-            function.name.to_camel_case()
+            function.name.camel_case()
         ))?;
         f.write(
             &function
@@ -326,7 +325,7 @@ pub(crate) fn generate_functional_callback(
                     format!(
                         "{} {}",
                         param.arg_type.as_dotnet_type(),
-                        param.name.to_mixed_case()
+                        param.name.mixed_case()
                     )
                 })
                 .collect::<Vec<_>>()
@@ -343,7 +342,7 @@ pub(crate) fn generate_functional_callback(
             let params = function
                 .arguments
                 .iter()
-                .map(|param| param.name.to_mixed_case())
+                .map(|param| param.name.mixed_case())
                 .collect::<Vec<_>>()
                 .join(", ");
 

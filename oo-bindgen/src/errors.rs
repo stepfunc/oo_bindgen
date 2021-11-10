@@ -234,14 +234,14 @@ pub enum BindingError {
         "Symbol '{}' is reserved and cannot be used as an interface method name",
         name
     )]
-    InterfaceMethodWithReservedName { name: &'static str },
+    InterfaceMethodWithReservedName { name: Name },
     #[error("Interface '{}' is not part of this library", handle.name)]
     InterfaceNotPartOfThisLib { handle: InterfaceHandle },
     #[error(
         "Symbol '{}' is reserved and cannot be used as a callback argument name",
         name
     )]
-    CallbackMethodArgumentWithReservedName { name: &'static str },
+    CallbackMethodArgumentWithReservedName { name: Name },
 
     // Iterator errors
     #[error("Iterator '{}' is not part of this library", handle.name())]

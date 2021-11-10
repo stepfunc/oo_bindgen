@@ -1,5 +1,4 @@
 use crate::dotnet_type::*;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::DestructionMode;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
@@ -50,15 +49,15 @@ pub(crate) fn docstring_print(
 fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
         Validated::Argument(param_name) => {
-            f.write(&format!("<c>{}</c>", param_name.to_mixed_case()))?
+            f.write(&format!("<c>{}</c>", param_name.mixed_case()))?
         }
         Validated::Class(class) => {
-            f.write(&format!("<see cref=\"{}\" />", class.name.to_camel_case()))?;
+            f.write(&format!("<see cref=\"{}\" />", class.name.camel_case()))?;
         }
         Validated::ClassMethod(class, method_name, _) => f.write(&format!(
             "<see cref=\"{}.{}\" />",
-            class.name().to_camel_case(),
-            method_name.to_camel_case()
+            class.name().camel_case(),
+            method_name.camel_case()
         ))?,
         Validated::ClassConstructor(class, constructor) => {
             let params = constructor
@@ -69,7 +68,7 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            let class_name = class.name().to_camel_case();
+            let class_name = class.name().camel_case();
             f.write(&format!(
                 "<see cref=\"{}.{}({})\" />",
                 class_name, class_name, params
@@ -77,48 +76,48 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
         }
         Validated::ClassDestructor(class, _) => {
             let method_name = if let DestructionMode::Custom(name) = &class.destruction_mode {
-                name.to_camel_case()
+                name.camel_case()
             } else {
                 "Dispose".to_string()
             };
 
             f.write(&format!(
                 "<see cref=\"{}.{}()\" />",
-                class.name().to_camel_case(),
+                class.name().camel_case(),
                 method_name,
             ))?;
         }
         Validated::Struct(st) => {
-            f.write(&format!("<see cref=\"{}\" />", st.name().to_camel_case()))?;
+            f.write(&format!("<see cref=\"{}\" />", st.name().camel_case()))?;
         }
         Validated::StructField(st, field_name) => {
             f.write(&format!(
                 "<see cref=\"{}.{}\" />",
-                st.name().to_camel_case(),
-                field_name.to_camel_case()
+                st.name().camel_case(),
+                field_name.camel_case()
             ))?;
         }
         Validated::Enum(handle) => {
-            f.write(&format!("<see cref=\"{}\" />", handle.name.to_camel_case()))?;
+            f.write(&format!("<see cref=\"{}\" />", handle.name.camel_case()))?;
         }
         Validated::EnumVariant(handle, variant) => {
             f.write(&format!(
                 "<see cref=\"{}.{}\" />",
-                handle.name.to_camel_case(),
-                variant.to_camel_case()
+                handle.name.camel_case(),
+                variant.camel_case()
             ))?;
         }
         Validated::Interface(interface) => {
             f.write(&format!(
                 "<see cref=\"I{}\" />",
-                interface.name.to_camel_case()
+                interface.name.camel_case()
             ))?;
         }
         Validated::InterfaceMethod(interface, callback_name) => {
             f.write(&format!(
                 "<see cref=\"I{}.{}\" />",
-                interface.name.to_camel_case(),
-                callback_name.to_camel_case()
+                interface.name.camel_case(),
+                callback_name.camel_case()
             ))?;
         }
     }

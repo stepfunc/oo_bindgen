@@ -6,7 +6,6 @@ use crate::dotnet_type::DotnetType;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
 
-use heck::{CamelCase, SnakeCase};
 use oo_bindgen::doc::Validated;
 
 pub(crate) fn generate_native_functions_class(
@@ -68,14 +67,11 @@ fn write_exception_and_return_block(
                 "var error = PInvoke.{}_{}({});",
                 prefix, func.name, params
             ))?;
-            f.writeln(&format!(
-                "if(error != {}.Ok)",
-                err.inner.name.to_camel_case()
-            ))?;
+            f.writeln(&format!("if(error != {}.Ok)", err.inner.name.camel_case()))?;
             blocked(f, |f| {
                 f.writeln(&format!(
                     "throw new {}(error);",
-                    err.exception_name.to_camel_case()
+                    err.exception_name.camel_case()
                 ))
             })
         }
@@ -87,12 +83,12 @@ fn write_exception_and_return_block(
             ))?;
             f.writeln(&format!(
                 "if(_error_result != {}.Ok)",
-                err.inner.name.to_camel_case()
+                err.inner.name.camel_case()
             ))?;
             blocked(f, |f| {
                 f.writeln(&format!(
                     "throw new {}(_error_result);",
-                    err.exception_name.to_camel_case()
+                    err.exception_name.camel_case()
                 ))
             })?;
             f.writeln("return _return_value;")
@@ -203,7 +199,7 @@ fn write_pinvoke_signature(
             "internal static extern {} {}_{}(",
             handle.return_type.as_native_type(),
             prefix,
-            handle.name.to_snake_case(),
+            handle.name
         ))?;
     }
 

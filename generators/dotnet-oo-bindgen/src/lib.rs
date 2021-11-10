@@ -47,7 +47,6 @@ clippy::all
 use crate::doc::*;
 use crate::dotnet_type::*;
 use crate::formatting::*;
-use heck::CamelCase;
 use oo_bindgen::constants::*;
 use oo_bindgen::doc::Validated;
 use oo_bindgen::enum_type::*;
@@ -219,7 +218,7 @@ fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for st in lib.structs() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(st.name().to_camel_case());
+        filename.push(st.name().camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -238,7 +237,7 @@ fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResu
     for native_enum in lib.enums() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(native_enum.name.to_camel_case());
+        filename.push(native_enum.name.camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -289,14 +288,14 @@ fn generate_constant_set(
             xmldoc_print(f, &set.doc)
         })?;
 
-        f.writeln(&format!("public static class {}", set.name.to_camel_case()))?;
+        f.writeln(&format!("public static class {}", set.name.camel_case()))?;
         blocked(f, |f| {
             for value in &set.values {
                 documentation(f, |f| xmldoc_print(f, &value.doc))?;
                 f.writeln(&format!(
                     "public const {} {} = {};",
                     get_type_as_string(&value.value),
-                    value.name.to_camel_case(),
+                    value.name.camel_case(),
                     get_value_as_string(&value.value),
                 ))?;
             }
@@ -320,13 +319,13 @@ fn generate_enum(
             xmldoc_print(f, &native_enum.doc)
         })?;
 
-        f.writeln(&format!("public enum {}", native_enum.name.to_camel_case()))?;
+        f.writeln(&format!("public enum {}", native_enum.name.camel_case()))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
                 documentation(f, |f| xmldoc_print(f, &variant.doc))?;
                 f.writeln(&format!(
                     "{} =  {},",
-                    variant.name.to_camel_case(),
+                    variant.name.camel_case(),
                     variant.value
                 ))?;
             }
@@ -350,8 +349,8 @@ fn generate_exception(
             xmldoc_print(f, &err.inner.doc)
         })?;
 
-        let error_name = err.inner.name.to_camel_case();
-        let exception_name = err.exception_name.to_camel_case();
+        let error_name = err.inner.name.camel_case();
+        let exception_name = err.exception_name.camel_case();
 
         f.writeln(&format!("public class {}: Exception", exception_name))?;
         blocked(f, |f| {
@@ -375,7 +374,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(class.name().to_camel_case());
+        filename.push(class.name().camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -385,7 +384,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.static_classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(class.name.to_camel_case());
+        filename.push(class.name.camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -399,7 +398,7 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for interface in lib.interfaces() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("I{}", interface.name.to_camel_case()));
+        filename.push(&format!("I{}", interface.name.camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -413,7 +412,7 @@ fn generate_iterator_helpers(lib: &Library, config: &DotnetBindgenConfig) -> For
     for iter in lib.iterators() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("{}Helpers", iter.name().to_camel_case()));
+        filename.push(&format!("{}Helpers", iter.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -430,7 +429,7 @@ fn generate_collection_helpers(
     for coll in lib.collections() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("{}Helpers", coll.name().to_camel_case()));
+        filename.push(&format!("{}Helpers", coll.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 

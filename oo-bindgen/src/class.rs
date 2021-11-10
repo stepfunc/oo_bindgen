@@ -1,5 +1,5 @@
 use crate::doc::{DocCell, DocReference, Unvalidated, Validated};
-use crate::name::Name;
+use crate::name::{IntoName, Name};
 use crate::*;
 use std::rc::Rc;
 
@@ -110,7 +110,7 @@ impl StaticMethod<Unvalidated> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DestructionMode {
     /// Object is automatically deleted by the GC
     Automatic,
@@ -119,7 +119,7 @@ pub enum DestructionMode {
     /// For safety, if the user never calls the destruction method, the object
     /// will still be deleted by the GC at some point. However, it is
     /// strongly advised to take care of the destruction manually.
-    Custom(String),
+    Custom(Name),
     /// Object is disposed of manually by calling a dispose()/close() method
     ///
     /// For safety, if the user never calls the destruction method, the object
@@ -341,14 +341,14 @@ impl<'a> ClassBuilder<'a> {
         Ok(self)
     }
 
-    pub fn custom_destroy<T: Into<String>>(mut self, name: T) -> BindResult<Self> {
+    pub fn custom_destroy<T: IntoName>(mut self, name: T) -> BindResult<Self> {
         if self.destructor.is_none() {
             return Err(BindingError::NoDestructorForManualDestruction {
                 handle: self.declaration,
             });
         }
 
-        self.destruction_mode = DestructionMode::Custom(name.into());
+        self.destruction_mode = DestructionMode::Custom(name.into_name()?);
         Ok(self)
     }
 

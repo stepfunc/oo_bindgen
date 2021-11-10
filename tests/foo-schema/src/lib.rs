@@ -15,6 +15,7 @@ mod lifetime;
 mod opaque_struct;
 mod strings;
 mod structure;
+mod thread_class;
 mod universal_struct;
 
 pub fn build_lib() -> BackTraced<Library> {
@@ -72,6 +73,7 @@ pub fn build_lib() -> BackTraced<Library> {
     lifetime::define(&mut builder)?;
     collection::define(&mut builder)?;
     universal_struct::define(&mut builder)?;
+    thread_class::define(&mut builder)?;
 
     let library = builder.build()?;
 

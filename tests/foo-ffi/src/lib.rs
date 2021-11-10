@@ -11,6 +11,7 @@ mod iterator;
 mod lifetime;
 mod opaque_struct;
 mod strings;
+mod thread_class;
 mod universal;
 
 pub use callback::*;
@@ -24,6 +25,7 @@ pub use iterator::*;
 pub use lifetime::*;
 pub use opaque_struct::*;
 pub use strings::*;
+pub use thread_class::*;
 use universal::*;
 
 pub mod ffi;

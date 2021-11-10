@@ -509,6 +509,7 @@ fn print_future_method(
             .collect::<Vec<String>>()
             .join(", ");
 
+        f.writeln("static_assert(std::is_copy_constructible<T>::value, \"Lambda expression must be copy constructible. Does it contain something that is move-only?\");")?;
         f.writeln(&format!(
             "{}({}, helpers::create_{}_lambda(callback));",
             method.name, arg_names, method.future.interface.name

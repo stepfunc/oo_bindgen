@@ -289,7 +289,7 @@ where
                 InitializerType::Normal,
                 brief("Fully initialize"),
             ));
-            print_constructor_definition(f, handle, &constructor)
+            print_initializer_definition(f, handle, &constructor)
         })?;
         if handle.visibility == Visibility::Public {
             f.writeln("public:")?;
@@ -305,7 +305,7 @@ where
         // write the constructors
         for c in &handle.initializers {
             f.newline()?;
-            print_constructor_definition(f, handle, c)?;
+            print_initializer_definition(f, handle, c)?;
         }
 
         f.newline()?;
@@ -359,7 +359,7 @@ fn print_interface(
     f.writeln("};")?;
     f.newline()
 }
-fn print_constructor_definition<T>(
+fn print_initializer_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T, Validated>>,
     constructor: &Handle<Initializer<Validated>>,

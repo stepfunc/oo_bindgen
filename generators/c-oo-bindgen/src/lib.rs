@@ -59,6 +59,7 @@ use oo_bindgen::types::{BasicType, TypeExtractor};
 use oo_bindgen::*;
 
 use crate::ctype::CType;
+use oo_bindgen::util::WithLastIndication;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -320,7 +321,7 @@ where
     if handle.visibility != Visibility::Private {
         f.newline()?;
         for c in &handle.initializers {
-            write_struct_constructor(f, lib, c, handle)?;
+            write_struct_initializer(f, lib, c, handle)?;
             f.newline()?;
         }
     }
@@ -364,10 +365,10 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
     }
 }
 
-fn write_struct_constructor<T>(
+fn write_struct_initializer<T>(
     f: &mut dyn Printer,
     lib: &Library,
-    constructor: &Initializer<Validated>,
+    initializer: &Initializer<Validated>,
     handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where
@@ -375,12 +376,12 @@ where
 {
     doxygen(f, |f| {
         f.writeln("@brief ")?;
-        docstring_print(f, &constructor.doc.brief, lib)?;
+        docstring_print(f, &initializer.doc.brief, lib)?;
 
-        if !constructor.values.is_empty() {
+        if !initializer.values.is_empty() {
             f.newline()?;
             f.writeln("@note")?;
-            for value in constructor.values.iter() {
+            for value in initializer.values.iter() {
                 f.writeln(&format!("{} is initialized to {}", value.name, value.value))?;
             }
             f.newline()?;
@@ -394,7 +395,7 @@ where
 
     let params = handle
         .fields()
-        .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
+        .filter(|f| !initializer.values.iter().any(|cf| cf.name == f.name))
         .map(|el| format!("{} {}", el.field_type.to_c_type(), el.name))
         .collect::<Vec<String>>()
         .join(", ");
@@ -404,19 +405,25 @@ where
         handle.to_c_type(),
         handle.declaration.inner.settings.c_ffi_prefix,
         handle.name(),
-        constructor.name,
+        initializer.name,
         params
     ))?;
 
     blocked(f, |f| {
-        f.writeln(&format!("{} _return_value;", handle.to_c_type()))?;
-        for field in &handle.fields {
-            let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
-                Some(x) => get_default_value(&x.value),
-                None => field.name.to_string(),
-            };
-            f.writeln(&format!("_return_value.{} = {};", field.name, value))?;
-        }
+        f.writeln(&format!("{} _return_value = {{", handle.to_c_type()))?;
+        indented(f, |f| {
+            for (field, last) in handle.fields.iter().with_last() {
+                let value: String = match initializer.values.iter().find(|x| x.name == field.name) {
+                    Some(x) => get_default_value(&x.value),
+                    None => field.name.to_string(),
+                };
+                let value = if last { value } else { format!("{},", value) };
+                f.writeln(&value)?;
+            }
+            Ok(())
+        })?;
+
+        f.writeln("};")?;
         f.writeln("return _return_value;")
     })?;
 
@@ -684,23 +691,16 @@ fn write_interface(
     f.writeln(")")?;
 
     blocked(f, |f| {
-        f.writeln(&format!("{} value;", struct_name))?;
-
-        for cb in &handle.callbacks {
-            let cb_name = cb.name.to_string();
-            f.writeln(&format!("value.{} = {};", cb_name, cb_name))?;
-        }
-
-        f.writeln(&format!(
-            "value.{} = {};",
-            DESTROY_FUNC_NAME, DESTROY_FUNC_NAME
-        ))?;
-        f.writeln(&format!(
-            "value.{} = {};",
-            CTX_VARIABLE_NAME, CTX_VARIABLE_NAME
-        ))?;
-
-        f.writeln("return value;")
+        f.writeln(&format!("{} _return_value = {{", struct_name))?;
+        indented(f, |f| {
+            for cb in &handle.callbacks {
+                f.writeln(&format!("{},", cb.name))?;
+            }
+            f.writeln(&format!("{},", DESTROY_FUNC_NAME))?;
+            f.writeln(CTX_VARIABLE_NAME.as_ref())
+        })?;
+        f.writeln("};")?;
+        f.writeln("return _return_value;")
     })?;
 
     Ok(())

@@ -5,26 +5,22 @@
 #include "foo.hpp"
 #include <future>
 
-using shared_value_list_t = std::shared_ptr<std::vector<uint32_t>>;
-
-class Listener : public foo::ValueChangeListener {
-    shared_value_list_t values;
-public:
-    Listener(shared_value_list_t values) : values(values) {}
-
-    void on_value_change(uint32_t value) override {
-        this->values->push_back(value);
-    }
-};
 
 static void test_async_callbacks()
 {
     auto changes = std::make_shared <std::vector<uint32_t>>();
-    {
-        foo::ThreadClass tc(42, std::make_unique<Listener>(changes));
+    {        
+        foo::ThreadClass tc(
+            42, 
+            foo::functional::value_change_listener(
+                [changes](uint32_t value) {
+                    changes->push_back(value); 
+                }
+            )
+        );
                 
         auto promise = std::make_shared<std::promise<uint32_t>>();        
-        auto future = promise->get_future();
+        auto future = promise->get_future();        
         tc.add(4, [promise](uint32_t result) {
             promise->set_value(result);
         });        

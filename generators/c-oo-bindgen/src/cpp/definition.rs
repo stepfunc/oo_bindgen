@@ -9,7 +9,7 @@ use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::function::{FunctionArgument, FutureMethod};
-use oo_bindgen::interface::Interface;
+use oo_bindgen::interface::{CallbackFunction, Interface};
 use oo_bindgen::structs::{
     Initializer, InitializerType, Struct, StructDeclaration, StructFieldType, StructType,
     Visibility,
@@ -61,9 +61,9 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
             Statement::InterfaceDefinition(x) => {
                 print_interface(f, x)?;
 
-                if lib.future_interfaces().any(|i| i == x) {
-                    namespace(f, "helpers", |f| {
-                        write_future_method_interface_helpers(f, x)
+                if let Some(callback) = x.get_functional_callback() {
+                    namespace(f, "functional", |f| {
+                        write_functional_interface_helpers(f, x, callback)
                     })?;
                     f.newline()?;
                 }
@@ -92,9 +92,10 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
     Ok(())
 }
 
-fn write_future_method_interface_helpers(
+fn write_functional_interface_helpers(
     f: &mut dyn Printer,
     interface: &Handle<Interface<Validated>>,
+    callback: &CallbackFunction<Validated>,
 ) -> FormattingResult<()> {
     let interface_name = interface.core_cpp_type();
     let class_name = format!("{}Lambda", interface_name);
@@ -105,6 +106,8 @@ fn write_future_method_interface_helpers(
     ))?;
     f.writeln("{")?;
     indented(f, |f| f.writeln("T lambda;"))?;
+    f.writeln("static_assert(std::is_copy_constructible<T>::value, \"Lambda expression must be copy constructible. Does it contain something that is move-only?\");")?;
+    f.newline()?;
     f.writeln("public:")?;
     indented(f, |f| {
         f.writeln(&format!(
@@ -113,15 +116,31 @@ fn write_future_method_interface_helpers(
         ))?;
         f.newline()?;
 
-        let callback = interface.callbacks.first().unwrap();
-        let argument = callback.arguments.first().unwrap();
+        let return_type = callback.return_type.get_cpp_callback_return_type();
+        let args = callback
+            .arguments
+            .iter()
+            .map(|x| format!("{} {}", x.arg_type.get_cpp_callback_arg_type(), x.name))
+            .collect::<Vec<String>>()
+            .join(", ");
+
         f.writeln(&format!(
-            "void {}({} {}) override",
-            callback.name,
-            argument.arg_type.get_cpp_callback_arg_type(),
-            argument.name
+            "{} {}({}) override",
+            return_type, callback.name, args
         ))?;
-        blocked(f, |f| f.writeln(&format!("lambda({});", argument.name)))
+        let args = callback
+            .arguments
+            .iter()
+            .map(|x| x.name.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        let invocation = &format!("lambda({});", args);
+        if callback.return_type.is_void() {
+            blocked(f, |f| f.writeln(invocation))?;
+        } else {
+            blocked(f, |f| f.writeln(&format!("return {}", invocation)))?;
+        }
+        Ok(())
     })?;
     f.writeln("};")?;
 
@@ -129,7 +148,7 @@ fn write_future_method_interface_helpers(
 
     f.writeln("template <class T>")?;
     f.writeln(&format!(
-        "std::unique_ptr<{}> create_{}_lambda(const T& lambda)",
+        "std::unique_ptr<{}> {}(const T& lambda)",
         interface_name, interface.name
     ))?;
     blocked(f, |f| {
@@ -508,10 +527,8 @@ fn print_future_method(
             .map(|x| x.name.to_string())
             .collect::<Vec<String>>()
             .join(", ");
-
-        f.writeln("static_assert(std::is_copy_constructible<T>::value, \"Lambda expression must be copy constructible. Does it contain something that is move-only?\");")?;
         f.writeln(&format!(
-            "{}({}, helpers::create_{}_lambda(callback));",
+            "{}({}, functional::{}(callback));",
             method.name, arg_names, method.future.interface.name
         ))
     })?;

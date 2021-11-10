@@ -1,6 +1,5 @@
 use super::formatting::*;
 use crate::*;
-use heck::{CamelCase, SnakeCase};
 
 pub(crate) fn generate_exceptions_cache(
     lib: &Library,
@@ -19,11 +18,11 @@ pub(crate) fn generate_exceptions_cache(
         for error in lib.error_types() {
             f.writeln(&format!(
                 "exception_{}_class: jni::objects::GlobalRef,",
-                error.exception_name.to_snake_case(),
+                error.exception_name,
             ))?;
             f.writeln(&format!(
                 "exception_{}_constructor: jni::objects::JMethodID<'static>,",
-                error.exception_name.to_snake_case(),
+                error.exception_name,
             ))?;
         }
 
@@ -37,9 +36,9 @@ pub(crate) fn generate_exceptions_cache(
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
             for error in lib.error_types() {
-                let snake_name = error.exception_name.to_snake_case();
-                let camel_name = error.exception_name.to_camel_case();
-                let enum_name = error.inner.name.to_camel_case();
+                let snake_name = error.exception_name.clone();
+                let camel_name = error.exception_name.camel_case();
+                let enum_name = error.inner.name.camel_case();
                 f.writeln(&format!(
                     "let exception_{snake_name}_class = env.find_class(\"L{lib_path}/{camel_name};\").expect(\"Unable to find exception {camel_name}\");",
                     snake_name=snake_name, camel_name=camel_name, lib_path=lib_path,
@@ -53,7 +52,7 @@ pub(crate) fn generate_exceptions_cache(
             f.writeln("Self")?;
             blocked(f, |f| {
                 for error in lib.error_types() {
-                    let snake_name = error.exception_name.to_snake_case();
+                    let snake_name = error.exception_name.clone();
                     f.writeln(&format!(
                         "exception_{snake_name}_class: env.new_global_ref(exception_{snake_name}_class).unwrap(),",
                         snake_name=snake_name
@@ -65,7 +64,7 @@ pub(crate) fn generate_exceptions_cache(
         })?;
 
         for error in lib.error_types() {
-            let snake_name = error.exception_name.to_snake_case();
+            let snake_name = error.exception_name.clone();
             f.writeln(&format!(
                 "pub fn throw_{}(&self, env: &jni::JNIEnv, error: jni::sys::jobject)",
                 snake_name

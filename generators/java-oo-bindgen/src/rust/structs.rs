@@ -3,7 +3,6 @@ use oo_bindgen::formatting::*;
 use super::conversion::*;
 use crate::*;
 
-use heck::{CamelCase, MixedCase, SnakeCase};
 use oo_bindgen::doc::Validated;
 use oo_bindgen::structs::{Struct, StructFieldType, StructType};
 
@@ -27,8 +26,8 @@ pub(crate) fn generate_structs_cache(
         for structure in lib.structs() {
             f.writeln(&format!(
                 "pub struct_{}: Struct{},",
-                structure.name().to_snake_case(),
-                structure.name().to_camel_case()
+                structure.name(),
+                structure.name().camel_case()
             ))?;
         }
 
@@ -46,8 +45,8 @@ pub(crate) fn generate_structs_cache(
                 for structure in lib.structs() {
                     f.writeln(&format!(
                         "struct_{}: Struct{}::init(env),",
-                        structure.name().to_snake_case(),
-                        structure.name().to_camel_case()
+                        structure.name(),
+                        structure.name().camel_case()
                     ))?;
                 }
                 Ok(())
@@ -78,7 +77,7 @@ where
     T: StructFieldType + JniType,
 {
     let lib_path = config.java_signature_path(&lib.settings.name);
-    let struct_name = structure.name().to_camel_case();
+    let struct_name = structure.name().camel_case();
     let struct_sig = format!("\"L{}/{};\"", lib_path, struct_name);
 
     f.writeln(&format!("pub struct Struct{}", struct_name))?;
@@ -87,7 +86,7 @@ where
         for field in structure.fields() {
             f.writeln(&format!(
                 "field_{}: jni::objects::JFieldID<'static>,",
-                field.name.to_snake_case()
+                field.name
             ))?;
         }
         Ok(())
@@ -104,13 +103,13 @@ where
                 struct_sig, struct_name
             ))?;
             for field in structure.fields() {
-                f.writeln(&format!("let field_{field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name.to_snake_case(), field_mixed=field.name.to_mixed_case(), field_sig=field.field_type.as_jni_sig(&lib_path)))?;
+                f.writeln(&format!("let field_{field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name, field_mixed=field.name.mixed_case(), field_sig=field.field_type.as_jni_sig(&lib_path)))?;
             }
             f.writeln("Self")?;
             blocked(f, |f| {
                 f.writeln("class: env.new_global_ref(class).unwrap(),")?;
                 for field in structure.fields() {
-                    f.writeln(&format!("field_{},", field.name.to_snake_case()))?;
+                    f.writeln(&format!("field_{},", field.name))?;
                 }
                 Ok(())
             })
@@ -123,21 +122,17 @@ where
         f.writeln(&format!("pub(crate) fn struct_to_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}", ffi_struct_name))?;
         blocked(f, |f| {
             for field in structure.fields() {
-                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name.to_snake_case(), field.name.to_snake_case(), field.field_type.as_jni_sig(&lib_path), field.field_type.convert_jvalue()))?;
+                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.as_jni_sig(&lib_path), field.field_type.convert_jvalue()))?;
             }
 
             f.writeln(&ffi_struct_name)?;
             blocked(f, |f| {
                 for field in structure.fields() {
                     if let Some(conversion) = field.field_type.conversion() {
-                        conversion.convert_to_rust(
-                            f,
-                            &field.name.to_snake_case(),
-                            &format!("{}: ", field.name.to_snake_case()),
-                        )?;
+                        conversion.convert_to_rust(f, &field.name, &format!("{}: ", field.name))?;
                         f.write(",")?;
                     } else {
-                        f.writeln(&format!("{},", field.name.to_snake_case()))?;
+                        f.writeln(&format!("{},", field.name))?;
                     }
                 }
 
@@ -153,10 +148,7 @@ where
         blocked(f, |f| {
             for field in structure.fields() {
                 if let Some(conversion) = field.field_type.conversion() {
-                    conversion.convert_to_rust_cleanup(
-                        f,
-                        &format!("_value.{}", field.name.to_snake_case()),
-                    )?;
+                    conversion.convert_to_rust_cleanup(f, &format!("_value.{}", field.name))?;
                 }
             }
 
@@ -172,16 +164,16 @@ where
                 if let Some(conversion) = field.field_type.conversion() {
                     conversion.convert_from_rust(
                         f,
-                        &format!("value.{}", field.name.to_snake_case()),
+                        &format!("value.{}", field.name),
                         "let temp = ",
                     )?;
                     f.write(";")?;
                 } else {
-                    f.writeln(&format!("let temp = value.{};", field.name.to_snake_case()))?;
+                    f.writeln(&format!("let temp = value.{};", field.name))?;
                 }
                 f.writeln(&format!(
                     "_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();",
-                    field.name.to_snake_case()
+                    field.name
                 ))?;
 
                 if field.field_type.requires_local_ref_cleanup() {
@@ -198,7 +190,7 @@ where
         f.writeln("pub(crate) fn check_null(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> Result<(), String>")?;
         blocked(f, |f| {
             for field in structure.fields() {
-                f.writeln(&format!("let temp = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name.to_snake_case(), field.field_type.as_jni_sig(&lib_path), field.field_type.convert_jvalue()))?;
+                f.writeln(&format!("let temp = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.field_type.as_jni_sig(&lib_path), field.field_type.convert_jvalue()))?;
                 field.field_type.check_null(f, "temp")?;
             }
             f.writeln("Ok(())")

@@ -1,6 +1,5 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, ShoutySnakeCase};
 use oo_bindgen::constants::*;
 use oo_bindgen::doc::Validated;
 
@@ -20,7 +19,7 @@ pub(crate) fn generate(
         }
     }
 
-    let set_name = set.name.to_camel_case();
+    let set_name = set.name.camel_case();
 
     // Documentation
     documentation(f, |f| javadoc_print(f, &set.doc))?;
@@ -37,7 +36,7 @@ pub(crate) fn generate(
             f.writeln(&format!(
                 "public static final {} {} = {};",
                 get_type_as_string(&constant.value),
-                constant.name.to_shouty_snake_case(),
+                constant.name.capital_snake_case(),
                 get_value_as_string(&constant.value)
             ))?;
         }

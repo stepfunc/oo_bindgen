@@ -44,7 +44,6 @@ clippy::all
     bare_trait_objects
 )]
 
-use heck::KebabCase;
 use oo_bindgen::platforms::*;
 use oo_bindgen::*;
 use std::path::PathBuf;
@@ -79,7 +78,7 @@ impl JavaBindgenConfig {
         for dir in self.group_id.split('.') {
             result.push(dir);
         }
-        result.push(&lib.settings.name.to_kebab_case());
+        result.push(&lib.settings.name.kebab_case());
         result
     }
 

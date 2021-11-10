@@ -1,5 +1,4 @@
 use super::formatting::*;
-use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::*;
 use oo_bindgen::collection::*;
 use oo_bindgen::doc::{DocReference, Unvalidated};
@@ -23,8 +22,8 @@ fn perform_null_check(f: &mut dyn Printer, param_name: &str) -> FormattingResult
     f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name))
 }
 
-fn jni_object_sig(lib_path: &str, object_name: &str) -> String {
-    format!("L{}/{};", lib_path, object_name.to_camel_case())
+fn jni_object_sig(lib_path: &str, object_name: &Name) -> String {
+    format!("L{}/{};", lib_path, object_name.camel_case())
 }
 
 pub(crate) trait JniType {
@@ -111,7 +110,7 @@ where
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
-        format!("L{}/{};", lib_path, self.name.to_camel_case())
+        format!("L{}/{};", lib_path, self.name.camel_case())
     }
 
     fn as_rust_type(&self, _ffi_name: &str) -> String {
@@ -382,7 +381,7 @@ impl JniType for StructDeclarationHandle {
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*const {}::ffi::{}", ffi_name, self.name.to_camel_case())
+        format!("*const {}::ffi::{}", ffi_name, self.name.camel_case())
     }
 
     fn convert_jvalue(&self) -> &str {
@@ -409,7 +408,7 @@ impl JniType for StructDeclarationHandle {
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         perform_null_check(f, param_name)?;
         blocked(f, |f| {
-            f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name.to_snake_case(), param_name, param_name))
+            f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name, param_name, param_name))
         })
     }
 
@@ -428,7 +427,7 @@ impl JniType for ClassDeclarationHandle {
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*mut {}::{}", ffi_name, self.name.to_camel_case())
+        format!("*mut {}::{}", ffi_name, self.name.camel_case())
     }
 
     fn convert_jvalue(&self) -> &str {
@@ -471,7 +470,7 @@ impl JniType for Handle<Interface<Unvalidated>> {
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("{}::ffi::{}", ffi_name, self.name.to_camel_case())
+        format!("{}::ffi::{}", ffi_name, self.name.camel_case())
     }
 
     fn convert_jvalue(&self) -> &str {
@@ -518,7 +517,7 @@ where
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*mut {}::{}", ffi_name, self.name().to_camel_case())
+        format!("*mut {}::{}", ffi_name, self.name().camel_case())
     }
 
     fn convert_jvalue(&self) -> &str {
@@ -564,7 +563,7 @@ where
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*mut {}::{}", ffi_name, self.name().to_camel_case())
+        format!("*mut {}::{}", ffi_name, self.name().camel_case())
     }
 
     fn convert_jvalue(&self) -> &str {
@@ -611,7 +610,7 @@ where
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("{}::ffi::{}", ffi_name, self.name().to_camel_case())
+        format!("{}::ffi::{}", ffi_name, self.name().camel_case())
     }
 
     fn convert_jvalue(&self) -> &str {
@@ -637,7 +636,7 @@ where
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         perform_null_check(f, param_name)?;
-        f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name().to_snake_case(), param_name, param_name))
+        f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name(), param_name, param_name))
     }
 
     fn default_value(&self) -> &str {
@@ -659,7 +658,7 @@ where
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("{}::ffi::{}", ffi_name, self.name().to_camel_case())
+        format!("{}::ffi::{}", ffi_name, self.name().camel_case())
     }
 
     fn convert_jvalue(&self) -> &str {
@@ -685,7 +684,7 @@ where
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
         perform_null_check(f, param_name)?;
-        f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name().to_snake_case(), param_name, param_name))
+        f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name(), param_name, param_name))
     }
 
     fn default_value(&self) -> &str {
@@ -1658,26 +1657,21 @@ impl TypeConverterTrait for StructConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
-            to,
-            self.inner.name.to_snake_case(),
-            from
+            to, self.inner.name, from
         ))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.structs.struct_{}.struct_from_rust(_cache, &_env, &{})",
-            to,
-            self.inner.name.to_snake_case(),
-            from
+            to, self.inner.name, from
         ))
     }
 
     fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &{});",
-            self.inner.name.to_snake_case(),
-            name
+            self.inner.name, name
         ))
     }
 }
@@ -1700,8 +1694,7 @@ impl TypeConverterTrait for StructRefConverter {
         blocked(f, |f| {
             f.writeln(&format!(
                 "let temp = Box::new(_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {}));",
-                self.handle.name.to_snake_case(),
-                from
+                self.handle.name, from
             ))?;
             f.writeln("Box::into_raw(temp)")
         })?;
@@ -1715,7 +1708,7 @@ impl TypeConverterTrait for StructRefConverter {
             f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
             f.writeln(&format!(
                 "Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),",
-                self.handle.name.to_snake_case()
+                self.handle.name
             ))
         })
     }
@@ -1729,7 +1722,7 @@ impl TypeConverterTrait for StructRefConverter {
             ))?;
             f.writeln(&format!(
                 "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &temp)",
-                self.handle.name.to_snake_case()
+                self.handle.name
             ))
         })
     }
@@ -1750,18 +1743,14 @@ impl TypeConverterTrait for EnumConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.enums.enum_{}.enum_to_rust(&_env, {})",
-            to,
-            self.name.to_snake_case(),
-            from
+            to, self.name, from
         ))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.enums.enum_{}.enum_from_rust(&_env, {})",
-            to,
-            self.name.to_snake_case(),
-            from
+            to, self.name, from
         ))
     }
 }
@@ -1780,18 +1769,14 @@ impl TypeConverterTrait for ClassConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.classes.{}_to_rust(&_env, {})",
-            to,
-            self.handle.name.to_snake_case(),
-            from
+            to, self.handle.name, from
         ))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.classes.{}_from_rust(&_env, {})",
-            to,
-            self.handle.name.to_snake_case(),
-            from
+            to, self.handle.name, from
         ))
     }
 }
@@ -1812,18 +1797,14 @@ impl TypeConverterTrait for InterfaceConverter {
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.interfaces.interface_{}.interface_to_rust(&_env, {})",
-            to,
-            self.name.to_snake_case(),
-            from
+            to, self.name, from
         ))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
-            to,
-            from,
-            CTX_VARIABLE_NAME.to_snake_case()
+            to, from, CTX_VARIABLE_NAME
         ))?;
         blocked(f, |f| f.writeln("obj.as_obj()"))?;
         f.writeln("else")?;

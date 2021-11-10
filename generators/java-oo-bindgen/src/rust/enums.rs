@@ -1,6 +1,5 @@
 use super::formatting::*;
 use crate::*;
-use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 
 pub(crate) fn generate_enums_cache(
     lib: &Library,
@@ -19,8 +18,8 @@ pub(crate) fn generate_enums_cache(
         for enumeration in lib.enums() {
             f.writeln(&format!(
                 "pub enum_{}: Enum{},",
-                enumeration.name.to_snake_case(),
-                enumeration.name.to_camel_case()
+                enumeration.name,
+                enumeration.name.camel_case()
             ))?;
         }
 
@@ -38,8 +37,8 @@ pub(crate) fn generate_enums_cache(
                 for enumeration in lib.enums() {
                     f.writeln(&format!(
                         "enum_{}: Enum{}::init(env),",
-                        enumeration.name.to_snake_case(),
-                        enumeration.name.to_camel_case()
+                        enumeration.name,
+                        enumeration.name.camel_case()
                     ))?;
                 }
                 Ok(())
@@ -49,7 +48,7 @@ pub(crate) fn generate_enums_cache(
 
     // Each enum implementation
     for enumeration in lib.enums() {
-        let enum_name = enumeration.name.to_camel_case();
+        let enum_name = enumeration.name.camel_case();
         let enum_sig = format!("\"L{}/{};\"", lib_path, enum_name);
 
         f.writeln(&format!("pub struct Enum{}", enum_name))?;
@@ -58,7 +57,7 @@ pub(crate) fn generate_enums_cache(
             for variant in &enumeration.variants {
                 f.writeln(&format!(
                     "variant_{}: jni::objects::GlobalRef,",
-                    variant.name.to_snake_case()
+                    variant.name
                 ))?;
             }
 
@@ -79,7 +78,7 @@ pub(crate) fn generate_enums_cache(
                 blocked(f, |f| {
                     f.writeln(&format!("value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {}\"),", enum_name))?;
                     for variant in &enumeration.variants {
-                        f.writeln(&format!("variant_{}: env.new_global_ref(env.get_static_field(class, \"{}\", {}).expect(\"Unable to find variant {}\").l().unwrap()).unwrap(),", variant.name.to_snake_case(), variant.name.to_shouty_snake_case(), enum_sig, variant.name.to_shouty_snake_case()))?;
+                        f.writeln(&format!("variant_{}: env.new_global_ref(env.get_static_field(class, \"{}\", {}).expect(\"Unable to find variant {}\").l().unwrap()).unwrap(),", variant.name, variant.name.capital_snake_case(), enum_sig, variant.name.capital_snake_case()))?;
                     }
                     Ok(())
                 })
@@ -101,8 +100,7 @@ pub(crate) fn generate_enums_cache(
                     for variant in &enumeration.variants {
                         f.writeln(&format!(
                             "{} => self.variant_{}.as_obj().into_inner(),",
-                            variant.value,
-                            variant.name.to_snake_case()
+                            variant.value, variant.name
                         ))?;
                     }
                     f.writeln(&format!(

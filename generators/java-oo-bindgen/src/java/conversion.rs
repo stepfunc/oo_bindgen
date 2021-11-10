@@ -1,5 +1,4 @@
 use super::NATIVE_FUNCTIONS_CLASSNAME;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::{DocReference, Validated};
@@ -32,7 +31,7 @@ impl JavaType for BasicType {
             Self::Float32 => "float".to_string(),
             Self::Double64 => "double".to_string(),
             Self::Duration(_) => "java.time.Duration".to_string(),
-            Self::Enum(handle) => handle.name.to_camel_case(),
+            Self::Enum(handle) => handle.name.camel_case(),
         }
     }
 
@@ -50,7 +49,7 @@ impl JavaType for BasicType {
             Self::Float32 => "Float".to_string(),
             Self::Double64 => "Double".to_string(),
             Self::Duration(_) => "java.time.Duration".to_string(),
-            Self::Enum(handle) => handle.name.to_camel_case(),
+            Self::Enum(handle) => handle.name.camel_case(),
         }
     }
 }
@@ -74,7 +73,7 @@ where
     }
 
     fn as_java_object(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 
@@ -97,7 +96,7 @@ impl JavaType for ClassDeclarationHandle {
     }
 
     fn as_java_object(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 
@@ -107,7 +106,7 @@ impl JavaType for StructDeclarationHandle {
     }
 
     fn as_java_object(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 
@@ -148,7 +147,7 @@ where
     }
 
     fn as_java_object(&self) -> String {
-        self.name().to_camel_case()
+        self.name().camel_case()
     }
 }
 
@@ -356,28 +355,29 @@ pub(crate) fn call_native_function(
     return_destination: &str,
     first_param_is_this: bool,
 ) -> FormattingResult<()> {
-    let params = method.parameters.iter().enumerate().map(|(idx, param)| {
-        if first_param_is_this && idx == 0 {
-            "this".to_string()
-        } else {
-            param.name.to_string()
-        }
-    });
+    let params = method
+        .parameters
+        .iter()
+        .enumerate()
+        .map(|(idx, param)| {
+            if first_param_is_this && idx == 0 {
+                "this".to_string()
+            } else {
+                param.name.mixed_case()
+            }
+        })
+        .collect::<Vec<String>>()
+        .join(", ");
 
     f.newline()?;
     if !method.return_type.is_void() {
         f.write(return_destination)?;
     }
 
-    f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
-
-    f.write(
-        &params
-            .map(|param| param.to_mixed_case())
-            .collect::<Vec<String>>()
-            .join(", "),
-    )?;
-    f.write(");")?;
+    f.write(&format!(
+        "{}.{}({});",
+        NATIVE_FUNCTIONS_CLASSNAME, method.name, params
+    ))?;
 
     Ok(())
 }

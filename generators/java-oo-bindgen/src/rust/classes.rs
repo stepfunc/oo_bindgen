@@ -1,6 +1,5 @@
 use super::formatting::*;
 use crate::*;
-use heck::{CamelCase, SnakeCase};
 
 pub(crate) fn generate_classes_cache(
     lib: &Library,
@@ -16,17 +15,14 @@ pub(crate) fn generate_classes_cache(
     f.writeln("pub struct Classes")?;
     blocked(&mut f, |f| {
         for class in lib.classes() {
-            f.writeln(&format!(
-                "class_{}: jni::objects::GlobalRef,",
-                class.name().to_snake_case()
-            ))?;
+            f.writeln(&format!("class_{}: jni::objects::GlobalRef,", class.name()))?;
             f.writeln(&format!(
                 "{}_constructor: jni::objects::JMethodID<'static>,",
-                class.name().to_snake_case()
+                class.name()
             ))?;
             f.writeln(&format!(
                 "{}_self_field: jni::objects::JFieldID<'static>,",
-                class.name().to_snake_case()
+                class.name()
             ))?;
         }
 
@@ -40,8 +36,8 @@ pub(crate) fn generate_classes_cache(
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
             for class in lib.classes() {
-                let class_name = class.name().to_camel_case();
-                let snake_name = class.name().to_snake_case();
+                let class_name = class.name().camel_case();
+                let snake_name = class.name();
                 f.writeln(&format!("let class_{snake_name} = env.find_class(\"L{lib_path}/{class_name};\").expect(\"Unable to find class {class_name}\");", snake_name=snake_name, class_name=class_name, lib_path=lib_path))?;
                 f.writeln(&format!("let {snake_name}_constructor = env.get_method_id(class_{snake_name}, \"<init>\", \"(J)V\").map(|mid| mid.into_inner().into()).expect(\"Unable to find constructor of {class_name}\");", snake_name=snake_name, class_name=class_name))?;
                 f.writeln(&format!("let {snake_name}_self_field = env.get_field_id(class_{snake_name}, \"self\", \"J\").map(|mid| mid.into_inner().into()).expect(\"Unable to find self field of {class_name}\");", snake_name=snake_name, class_name=class_name))?;
@@ -50,7 +46,7 @@ pub(crate) fn generate_classes_cache(
             f.writeln("Self")?;
             blocked(f, |f| {
                 for class in lib.classes() {
-                    let snake_name = class.name().to_snake_case();
+                    let snake_name = class.name();
                     f.writeln(&format!(
                         "class_{}: env.new_global_ref(class_{}).unwrap(),",
                         snake_name, snake_name
@@ -65,8 +61,8 @@ pub(crate) fn generate_classes_cache(
         f.newline()?;
 
         for class in lib.classes() {
-            let class_name = class.name().to_camel_case();
-            let snake_name = class.name().to_snake_case();
+            let class_name = class.name().camel_case();
+            let snake_name = class.name();
 
             f.writeln(&format!("pub fn {snake_name}_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> *mut {ffi_name}::{class_name}", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class_name))?;
             blocked(f, |f| {

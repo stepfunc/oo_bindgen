@@ -1,6 +1,5 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, ShoutySnakeCase};
 use oo_bindgen::doc::Validated;
 use oo_bindgen::enum_type::*;
 
@@ -8,7 +7,7 @@ pub(crate) fn generate(
     f: &mut impl Printer,
     native_enum: &Handle<Enum<Validated>>,
 ) -> FormattingResult<()> {
-    let enum_name = native_enum.name.to_camel_case();
+    let enum_name = native_enum.name.camel_case();
 
     // Documentation
     documentation(f, |f| javadoc_print(f, &native_enum.doc))?;
@@ -21,7 +20,7 @@ pub(crate) fn generate(
             documentation(f, |f| javadoc_print(f, &variant.doc))?;
             f.writeln(&format!(
                 "{}({}),",
-                variant.name.to_shouty_snake_case(),
+                variant.name.capital_snake_case(),
                 variant.value
             ))?;
         }

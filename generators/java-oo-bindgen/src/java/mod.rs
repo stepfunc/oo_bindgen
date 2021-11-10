@@ -1,8 +1,6 @@
 use self::conversion::*;
 use self::formatting::*;
 use crate::JavaBindgenConfig;
-use heck::ShoutySnakeCase;
-use heck::{CamelCase, KebabCase};
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::platforms::Platform;
@@ -99,7 +97,7 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln(&format!("<groupId>{}</groupId>", config.group_id))?;
         f.writeln(&format!(
             "<artifactId>{}</artifactId>",
-            lib.settings.name.to_kebab_case()
+            lib.settings.name.kebab_case()
         ))?;
         f.writeln(&format!("<version>{}</version>", lib.version.to_string()))?;
 
@@ -229,7 +227,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             blocked(f, |f| {
                 let env_variable_name = format!(
                     "{}_NATIVE_LIB_LOCATION",
-                    lib.settings.name.to_shouty_snake_case()
+                    lib.settings.name.capital_snake_case()
                 );
                 f.writeln(&format!(
                     "String nativeLibLocation = System.getenv(\"{}\");",
@@ -347,7 +345,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
 fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for set in lib.constants() {
-        let mut f = create_file(&set.name.to_camel_case(), config, lib)?;
+        let mut f = create_file(&set.name.camel_case(), config, lib)?;
         constant::generate(&mut f, set)?;
     }
 
@@ -356,7 +354,7 @@ fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingRe
 
 fn generate_exceptions(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for error in lib.error_types() {
-        let mut f = create_file(&error.exception_name.to_camel_case(), config, lib)?;
+        let mut f = create_file(&error.exception_name.camel_case(), config, lib)?;
         exception::generate(&mut f, error)?;
     }
 
@@ -365,7 +363,7 @@ fn generate_exceptions(lib: &Library, config: &JavaBindgenConfig) -> FormattingR
 
 fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for st in lib.structs() {
-        let mut f = create_file(&st.name().to_camel_case(), config, lib)?;
+        let mut f = create_file(&st.name().camel_case(), config, lib)?;
         match st {
             StructType::FunctionArg(x) => structure::generate(&mut f, x)?,
             StructType::FunctionReturn(x) => structure::generate(&mut f, x)?,
@@ -379,7 +377,7 @@ fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
 
 fn generate_enums(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for native_enum in lib.enums() {
-        let mut f = create_file(&native_enum.name.to_camel_case(), config, lib)?;
+        let mut f = create_file(&native_enum.name.camel_case(), config, lib)?;
         enumeration::generate(&mut f, native_enum)?;
     }
 
@@ -388,12 +386,12 @@ fn generate_enums(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult
 
 fn generate_classes(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for class in lib.classes() {
-        let mut f = create_file(&class.name().to_camel_case(), config, lib)?;
+        let mut f = create_file(&class.name().camel_case(), config, lib)?;
         class::generate(&mut f, class)?;
     }
 
     for class in lib.static_classes() {
-        let mut f = create_file(&class.name.to_camel_case(), config, lib)?;
+        let mut f = create_file(&class.name.camel_case(), config, lib)?;
         class::generate_static(&mut f, class)?;
     }
 
@@ -402,7 +400,7 @@ fn generate_classes(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
 
 fn generate_interfaces(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for interface in lib.interfaces() {
-        let mut f = create_file(&interface.name.to_camel_case(), config, lib)?;
+        let mut f = create_file(&interface.name.camel_case(), config, lib)?;
         interface::generate(&mut f, interface)?;
     }
 
@@ -444,7 +442,7 @@ fn print_package(
     f.writeln(&format!(
         "package {}.{};",
         config.group_id,
-        lib.settings.name.to_kebab_case()
+        lib.settings.name.kebab_case()
     ))?;
     f.newline()?;
     f.writeln("import org.joou.*;")

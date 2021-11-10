@@ -1,6 +1,5 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::doc::Validated;
 use oo_bindgen::interface::*;
 
@@ -8,7 +7,7 @@ pub(crate) fn generate(
     f: &mut dyn Printer,
     interface: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
-    let interface_name = interface.name.to_camel_case();
+    let interface_name = interface.name.camel_case();
 
     documentation(f, |f| {
         // Print top-level documentation
@@ -30,7 +29,7 @@ pub(crate) fn generate(
 
                 // Print each argument value
                 for arg in &func.arguments {
-                    f.writeln(&format!("@param {} ", arg.name.to_mixed_case()))?;
+                    f.writeln(&format!("@param {} ", arg.name.mixed_case()))?;
                     docstring_print(f, &arg.doc)?;
                 }
 
@@ -47,7 +46,7 @@ pub(crate) fn generate(
             f.writeln(&format!(
                 "{} {}(",
                 func.return_type.as_java_primitive(),
-                func.name.to_mixed_case()
+                func.name.mixed_case()
             ))?;
             f.write(
                 &func
@@ -57,7 +56,7 @@ pub(crate) fn generate(
                         format!(
                             "{} {}",
                             arg.arg_type.as_java_primitive(),
-                            arg.name.to_mixed_case()
+                            arg.name.mixed_case()
                         )
                     })
                     .collect::<Vec<String>>()

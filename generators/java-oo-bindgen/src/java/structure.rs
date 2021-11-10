@@ -1,6 +1,5 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, MixedCase};
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::structs::{
     Initializer, InitializerType, Number, Struct, StructField, StructFieldType,
@@ -53,18 +52,14 @@ where
                 }
             },
             ValidatedDefaultValue::Enum(x, variant) => {
-                format!(
-                    "{}.{}",
-                    x.name.to_camel_case(),
-                    variant.to_shouty_snake_case()
-                )
+                format!("{}.{}", x.name.camel_case(), variant.capital_snake_case())
             }
             ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
             ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
-                format!("new {}()", handle.name().to_camel_case(),)
+                format!("new {}()", handle.name().camel_case(),)
             }
         },
-        None => field.name.to_mixed_case(),
+        None => field.name.mixed_case(),
     }
 }
 
@@ -83,14 +78,14 @@ where
         f.newline()?;
 
         for field in handle.initializer_args(constructor.clone()) {
-            f.writeln(&format!("@param {} ", field.name.to_mixed_case()))?;
+            f.writeln(&format!("@param {} ", field.name.mixed_case()))?;
             docstring_print(f, &field.doc.brief)?;
         }
 
         if write_return_info {
             f.writeln(&format!(
                 "@return initialized {} instance",
-                handle.name().to_camel_case()
+                handle.name().camel_case()
             ))?;
         }
 
@@ -116,8 +111,8 @@ where
 
     f.writeln(&format!(
         "public static {} {}({})",
-        handle.name().to_camel_case(),
-        constructor.name.to_mixed_case(),
+        handle.name().camel_case(),
+        constructor.name.mixed_case(),
         constructor_args(handle, constructor)
     ))?;
 
@@ -125,7 +120,7 @@ where
         indented(f, |f| {
             f.writeln(&format!(
                 "return new {}({});",
-                handle.name().to_camel_case(),
+                handle.name().camel_case(),
                 invocation_args
             ))
         })
@@ -145,7 +140,7 @@ where
             format!(
                 "{} {}",
                 sf.field_type.as_java_primitive(),
-                sf.name.to_mixed_case()
+                sf.name.mixed_case()
             )
         })
         .collect::<Vec<String>>()
@@ -173,7 +168,7 @@ where
     f.writeln(&format!(
         "{} {}({})",
         visibility,
-        handle.name().to_camel_case(),
+        handle.name().camel_case(),
         constructor_args(handle, constructor)
     ))?;
     blocked(f, |f| {
@@ -181,7 +176,7 @@ where
             indented(f, |f| {
                 f.writeln(&format!(
                     "this.{} = {};",
-                    field.name.to_mixed_case(),
+                    field.name.mixed_case(),
                     get_field_value(field, constructor)
                 ))
             })?;
@@ -196,7 +191,7 @@ pub(crate) fn generate<T>(f: &mut dyn Printer, st: &Struct<T, Validated>) -> For
 where
     T: StructFieldType + JavaType,
 {
-    let struct_name = st.name().to_camel_case();
+    let struct_name = st.name().camel_case();
 
     let doc = match st.visibility {
         Visibility::Public => st.doc.clone(),
@@ -223,7 +218,7 @@ where
                 "{} {} {};",
                 field_visibility(st.visibility),
                 field.field_type.as_java_primitive(),
-                field.name.to_mixed_case()
+                field.name.mixed_case()
             ))?;
         }
 

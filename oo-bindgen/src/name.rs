@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use thiserror::Error;
 
-use heck::{CamelCase, MixedCase, ShoutySnakeCase};
+use heck::{CamelCase, KebabCase, MixedCase, ShoutySnakeCase};
 
 /// Names in oo_bindgen are subset of allowed C-style identifiers. They are
 /// enforce that names are a limited snake case.
@@ -181,6 +181,11 @@ impl Name {
     /// convert to mixedCase
     pub fn mixed_case(&self) -> String {
         self.name_type.as_str().to_mixed_case()
+    }
+
+    /// convert to kebab-case
+    pub fn kebab_case(&self) -> String {
+        self.name_type.as_str().to_kebab_case()
     }
 
     /// Create a validated Name

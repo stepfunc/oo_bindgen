@@ -1,6 +1,5 @@
 use crate::*;
 use conversion::*;
-use heck::SnakeCase;
 use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use std::fs;
@@ -205,13 +204,7 @@ fn generate_functions(
             &handle
                 .parameters
                 .iter()
-                .map(|param| {
-                    format!(
-                        "{}: {}",
-                        param.name.to_snake_case(),
-                        param.arg_type.as_raw_jni_type()
-                    )
-                })
+                .map(|param| format!("{}: {}", param.name, param.arg_type.as_raw_jni_type()))
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
@@ -238,7 +231,7 @@ fn generate_functions(
             f.writeln("if let Err(msg) = (|| -> Result<(), String>")?;
             blocked(f, |f| {
                 for param in &handle.parameters {
-                    param.arg_type.check_null(f, &param.name.to_snake_case())?;
+                    param.arg_type.check_null(f, &param.name)?;
                 }
                 f.writeln("Ok(())")
             })?;
@@ -261,7 +254,7 @@ fn generate_functions(
                     conversion.convert_to_rust(
                         f,
                         &param.name,
-                        &format!("let {} = ", param.name.to_snake_case()),
+                        &format!("let {} = ", param.name),
                     )?;
                     f.write(";")?;
                 }
@@ -300,9 +293,9 @@ fn generate_functions(
                     .iter()
                     .map(|param| {
                         if matches!(param.arg_type, FunctionArgument::Struct(_)) {
-                            format!("{}.clone()", &param.name.to_snake_case())
+                            format!("{}.clone()", &param.name)
                         } else {
-                            param.name.to_snake_case()
+                            param.name.to_string()
                         }
                     })
                     .chain(extra_param.into_iter())
@@ -333,7 +326,7 @@ fn generate_functions(
                         f.write(";")?;
                         f.writeln(&format!(
                             "let error = _cache.exceptions.throw_{}(&_env, _error);",
-                            error_type.exception_name.to_snake_case()
+                            error_type.exception_name
                         ))
                     })?;
                 }
@@ -356,7 +349,7 @@ fn generate_functions(
                         f.write(";")?;
                         f.writeln(&format!(
                             "let error = _cache.exceptions.throw_{}(&_env, _error);",
-                            error_type.exception_name.to_snake_case()
+                            error_type.exception_name
                         ))?;
                         f.writeln(return_type.default_value())
                     })?;
@@ -369,15 +362,12 @@ fn generate_functions(
             // Conversion cleanup
             for param in &handle.parameters {
                 if let Some(conversion) = param.arg_type.conversion() {
-                    conversion.convert_to_rust_cleanup(f, &param.name.to_snake_case())?;
+                    conversion.convert_to_rust_cleanup(f, &param.name)?;
                 }
 
                 // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
                 if matches!(param.arg_type, FunctionArgument::Struct(_)) {
-                    f.writeln(&format!(
-                        "std::mem::forget({});",
-                        param.name.to_snake_case()
-                    ))?;
+                    f.writeln(&format!("std::mem::forget({});", param.name))?;
                 }
             }
 

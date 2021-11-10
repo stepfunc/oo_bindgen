@@ -1,5 +1,4 @@
 use super::conversion::*;
-use heck::{CamelCase, MixedCase, ShoutySnakeCase};
 use oo_bindgen::class::DestructionMode;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
@@ -47,16 +46,16 @@ pub(crate) fn docstring_print(
 fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
         Validated::Argument(param_name) => {
-            f.write(&format!("{{@code {}}}", param_name.to_mixed_case()))?
+            f.write(&format!("{{@code {}}}", param_name.mixed_case()))?
         }
         Validated::Class(class) => {
-            f.write(&format!("{{@link {}}}", class.name.to_camel_case()))?;
+            f.write(&format!("{{@link {}}}", class.name.camel_case()))?;
         }
         Validated::ClassMethod(class, method_name, _) => {
             f.write(&format!(
                 "{{@link {}#{}}}",
-                class.name().to_camel_case(),
-                method_name.to_mixed_case()
+                class.name().camel_case(),
+                method_name.mixed_case()
             ))?;
         }
         Validated::ClassConstructor(class, constructor) => {
@@ -68,7 +67,7 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            let class_name = class.name().to_camel_case();
+            let class_name = class.name().camel_case();
             f.write(&format!(
                 "{{@link {}#{}({})}}",
                 class_name, class_name, params
@@ -76,45 +75,45 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
         }
         Validated::ClassDestructor(class, _) => {
             let method_name = if let DestructionMode::Custom(name) = &class.destruction_mode {
-                name.to_mixed_case()
+                name.mixed_case()
             } else {
                 "close".to_string()
             };
 
             f.write(&format!(
                 "{{@link {}#{}}}",
-                class.name().to_camel_case(),
+                class.name().camel_case(),
                 method_name
             ))?;
         }
         Validated::Struct(st) => {
-            f.write(&format!("{{@link {}}}", st.name().to_camel_case()))?;
+            f.write(&format!("{{@link {}}}", st.name().camel_case()))?;
         }
         Validated::StructField(st, field_name) => {
             f.write(&format!(
                 "{{@link {}#{}}}",
-                st.name().to_camel_case(),
-                field_name.to_mixed_case()
+                st.name().camel_case(),
+                field_name.mixed_case()
             ))?;
         }
         Validated::Enum(handle) => {
-            f.write(&format!("{{@link {}}}", handle.name.to_camel_case()))?;
+            f.write(&format!("{{@link {}}}", handle.name.camel_case()))?;
         }
         Validated::EnumVariant(handle, variant_name) => {
             f.write(&format!(
                 "{{@link {}#{}}}",
-                handle.name.to_camel_case(),
-                variant_name.to_shouty_snake_case()
+                handle.name.camel_case(),
+                variant_name.capital_snake_case()
             ))?;
         }
         Validated::Interface(interface) => {
-            f.write(&format!("{{@link {}}}", interface.name.to_camel_case()))?;
+            f.write(&format!("{{@link {}}}", interface.name.camel_case()))?;
         }
         Validated::InterfaceMethod(interface, callback_name) => {
             f.write(&format!(
                 "{{@link {}#{}}}",
-                interface.name.to_camel_case(),
-                callback_name.to_mixed_case()
+                interface.name.camel_case(),
+                callback_name.mixed_case()
             ))?;
         }
     }

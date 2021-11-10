@@ -92,10 +92,10 @@ pub enum ValidatedDefaultValue {
     Bool(bool),
     Numeric(Number),
     Duration(DurationType, Duration),
-    Enum(EnumHandle, String),
+    Enum(EnumHandle, Name),
     String(String),
     /// requires that the struct have a default initializer
-    DefaultStruct(StructType<Unvalidated>, InitializerType, String),
+    DefaultStruct(StructType<Unvalidated>, InitializerType, Name),
 }
 
 impl From<Number> for ValidatedDefaultValue {
@@ -378,7 +378,7 @@ where
                 Some(c) => Ok(ValidatedDefaultValue::DefaultStruct(
                     F::create_struct_type(self.clone()),
                     c.initializer_type,
-                    c.name.to_string(),
+                    c.name.clone(),
                 )),
                 None => Err(
                     BindingError::StructInitializerStructFieldWithoutDefaultInitializer {
@@ -976,7 +976,7 @@ where
         }
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &Name {
         match self {
             StructType::FunctionArg(x) => x.name(),
             StructType::CallbackArg(x) => x.name(),

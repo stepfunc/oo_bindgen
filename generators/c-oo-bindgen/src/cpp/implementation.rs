@@ -1,7 +1,6 @@
 use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
-use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
 use oo_bindgen::class::{Class, Method, StaticClass, StaticMethod};
 use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::{brief, Validated};
@@ -91,7 +90,7 @@ fn write_collection_class_implementation(
 ) -> FormattingResult<()> {
     //let c_type = col.collection_type.to_c_type(&lib.c_ffi_prefix);
     let cpp_type = col.collection_class.core_cpp_type();
-    let constructor = format!("fn::{}", col.create_func.name.to_snake_case());
+    let constructor = format!("fn::{}", col.create_func.name);
 
     let construct_self = if col.has_reserve {
         format!("{}(static_cast<uint32_t>(values.size()))", constructor)
@@ -110,10 +109,7 @@ fn write_collection_class_implementation(
     blocked(f, |f| {
         f.writeln("for(const auto& x : values)")?;
         blocked(f, |f| {
-            f.writeln(&format!(
-                "fn::{}(*this, x);",
-                col.add_func.name.to_snake_case()
-            ))
+            f.writeln(&format!("fn::{}(*this, x);", col.add_func.name))
         })
     })?;
     f.newline()?;
@@ -121,10 +117,7 @@ fn write_collection_class_implementation(
     // write the destructor
     f.writeln(&format!("{}::~{}()", cpp_type, cpp_type))?;
     blocked(f, |f| {
-        f.writeln(&format!(
-            "fn::{}(*this);",
-            col.delete_func.name.to_snake_case()
-        ))
+        f.writeln(&format!("fn::{}(*this);", col.delete_func.name))
     })?;
     f.newline()
 }
@@ -317,13 +310,7 @@ fn write_static_class_method(
         .native_function
         .parameters
         .iter()
-        .map(|arg| {
-            format!(
-                "{} {}",
-                arg.arg_type.get_cpp_function_arg_type(),
-                arg.name.to_snake_case()
-            )
-        })
+        .map(|arg| format!("{} {}", arg.arg_type.get_cpp_function_arg_type(), arg.name))
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -334,13 +321,13 @@ fn write_static_class_method(
             .return_type
             .get_cpp_function_return_type(),
         class.core_cpp_type(),
-        method.name.to_snake_case(),
+        method.name,
         args
     ))?;
     blocked(f, |f| {
         let invocation = format!(
             "fn::{}({})",
-            method.native_function.name.to_snake_case(),
+            method.native_function.name,
             get_invocation_args(&method.native_function.parameters)
         );
 
@@ -401,14 +388,14 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
             format!("std::chrono::milliseconds({})", x.as_millis())
         }
         ValidatedDefaultValue::Enum(x, variant) => {
-            format!("{}::{}", x.core_cpp_type(), variant.to_snake_case())
+            format!("{}::{}", x.core_cpp_type(), variant)
         }
         ValidatedDefaultValue::String(x) => {
             format!("\"{}\"", x)
         }
         ValidatedDefaultValue::DefaultStruct(st, ct, c_name) => match ct {
-            InitializerType::Normal => format!("{}()", st.name().to_camel_case()),
-            InitializerType::Static => format!("{}()", c_name.to_camel_case()),
+            InitializerType::Normal => format!("{}()", st.name().camel_case()),
+            InitializerType::Static => format!("{}()", c_name.camel_case()),
         },
     }
 }
@@ -424,13 +411,7 @@ where
     let struct_name = st.core_cpp_type();
     let args = st
         .initializer_args(con.clone())
-        .map(|f| {
-            format!(
-                "{} {}",
-                f.field_type.get_cpp_function_arg_type(),
-                f.name.to_snake_case()
-            )
-        })
+        .map(|f| format!("{} {}", f.field_type.get_cpp_function_arg_type(), f.name))
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -442,18 +423,14 @@ where
                     let value = match con.values.iter().find(|x| x.name == field.name) {
                         None => {
                             let argument = if field.field_type.is_move_type() {
-                                std_move(field.name.to_snake_case())
+                                std_move(field.name.clone())
                             } else {
-                                field.name.to_snake_case()
+                                field.name.to_string()
                             };
-                            format!("{}({})", field.name.to_snake_case(), argument)
+                            format!("{}({})", field.name, argument)
                         }
                         Some(default) => {
-                            format!(
-                                "{}({})",
-                                field.name.to_snake_case(),
-                                get_default_value(&default.value)
-                            )
+                            format!("{}({})", field.name, get_default_value(&default.value))
                         }
                     };
 
@@ -470,17 +447,14 @@ where
         InitializerType::Static => {
             f.writeln(&format!(
                 "{} {}::{}({})",
-                struct_name,
-                struct_name,
-                con.name.to_snake_case(),
-                args
+                struct_name, struct_name, con.name, args
             ))?;
             blocked(f, |f| {
                 f.writeln(&format!("return {}(", struct_name))?;
                 indented(f, |f| {
                     for (field, last) in st.fields.iter().with_last() {
                         let value = match con.values.iter().find(|x| x.name == field.name) {
-                            None => field.name.to_snake_case(),
+                            None => field.name.to_string(),
                             Some(iv) => get_default_value(&iv.value),
                         };
                         if last {
@@ -519,7 +493,7 @@ fn write_class_implementation(
             cpp_name,
             cpp_name,
             cpp_function_args(&constructor.function.parameters),
-            constructor.function.name.to_snake_case(),
+            constructor.function.name,
             cpp_function_arg_invocation(&constructor.function.parameters)
         ))?;
         f.writeln("{}")?;
@@ -532,10 +506,7 @@ fn write_class_implementation(
         blocked(f, |f| {
             f.writeln("if(self)")?;
             blocked(f, |f| {
-                f.writeln(&format!(
-                    "fn::{}(*this);",
-                    destructor.function.name.to_snake_case()
-                ))
+                f.writeln(&format!("fn::{}(*this);", destructor.function.name))
             })?;
             Ok(())
         })?;
@@ -572,7 +543,7 @@ fn write_class_static_method_impl(
         .return_type
         .get_cpp_function_return_type();
 
-    let native_function_name = method.native_function.name.to_snake_case();
+    let native_function_name = method.native_function.name.clone();
     let invocation = format!(
         "fn::{}({})",
         native_function_name,
@@ -583,7 +554,7 @@ fn write_class_static_method_impl(
         "{} {}::{}({})",
         return_type,
         cpp_name,
-        method.name.to_snake_case(),
+        method.name,
         cpp_function_args(&method.native_function.parameters)
     ))?;
     blocked(f, |f| match &method.native_function.return_type {
@@ -627,7 +598,7 @@ fn write_class_method_impl_generic(
 ) -> FormattingResult<()> {
     let cpp_name = handle.core_cpp_type();
     let args = &native_function.parameters[1..];
-    let native_function_name = native_function.name.to_snake_case();
+    let native_function_name = native_function.name.clone();
     let invocation = if args.is_empty() {
         format!("fn::{}(*this)", native_function_name)
     } else {
@@ -642,7 +613,7 @@ fn write_class_method_impl_generic(
         "{} {}::{}({})",
         native_function.return_type.get_cpp_function_return_type(),
         cpp_name,
-        cpp_method_name.to_snake_case(),
+        cpp_method_name,
         cpp_function_args(args)
     ))?;
     blocked(f, |f| {
@@ -685,22 +656,16 @@ fn print_friend_class(
 
 fn cpp_function_args(args: &[Arg<FunctionArgument, Validated>]) -> String {
     args.iter()
-        .map(|arg| {
-            format!(
-                "{} {}",
-                arg.arg_type.get_cpp_function_arg_type(),
-                arg.name.to_snake_case()
-            )
-        })
+        .map(|arg| format!("{} {}", arg.arg_type.get_cpp_function_arg_type(), arg.name))
         .collect::<Vec<String>>()
         .join(", ")
 }
 
 fn transform_arg(arg: &Arg<FunctionArgument, Validated>) -> String {
     if arg.arg_type.is_move_type() {
-        std_move(arg.name.to_snake_case())
+        std_move(arg.name.clone())
     } else {
-        arg.name.to_snake_case()
+        arg.name.to_string()
     }
 }
 
@@ -720,20 +685,20 @@ fn write_function_wrapper(
     fn write_error_check(f: &mut dyn Printer, err: &ErrorType<Validated>) -> FormattingResult<()> {
         let c_success_variant = &format!(
             "{}_{}_{}",
-            err.inner.settings.c_ffi_prefix.to_shouty_snake_case(),
-            err.inner.name.to_shouty_snake_case(),
+            err.inner.settings.c_ffi_prefix.capital_snake_case(),
+            err.inner.name.capital_snake_case(),
             err.inner
                 .variants
                 .first()
                 .unwrap()
                 .name
-                .to_shouty_snake_case(),
+                .capital_snake_case(),
         );
         f.writeln(&format!("if(_error != {})", c_success_variant))?;
         blocked(f, |f| {
             f.writeln(&format!(
                 "throw {}({});",
-                err.exception_name.to_camel_case(),
+                err.exception_name.camel_case(),
                 err.inner.to_cpp("_error".to_string())
             ))
         })
@@ -745,11 +710,11 @@ fn write_function_wrapper(
     ) -> FormattingResult<()> {
         for arg in &func.parameters {
             if arg.arg_type.requires_shadow_parameter() {
-                let arg_name = arg.name.to_snake_case();
                 f.writeln(&format!(
                     "auto _{} = {};",
-                    &arg_name,
-                    arg.arg_type.to_native_function_argument(arg_name.clone())
+                    arg.name,
+                    arg.arg_type
+                        .to_native_function_argument(arg.name.to_string())
                 ))?;
             }
         }
@@ -765,8 +730,8 @@ fn write_function_wrapper(
             let conversion = match arg.arg_type.shadow_parameter_mapping() {
                 None => arg
                     .arg_type
-                    .to_native_function_argument(arg.name.to_snake_case()),
-                Some(transform) => transform(format!("_{}", arg.name.to_snake_case())),
+                    .to_native_function_argument(arg.name.to_string()),
+                Some(transform) => transform(format!("_{}", arg.name)),
             };
             if last && !has_out_param {
                 f.writeln(&conversion)?;
@@ -794,7 +759,7 @@ fn write_function_wrapper(
     f.writeln(&format!(
         "{} {}({})",
         return_type,
-        func.name.to_snake_case(),
+        func.name,
         cpp_function_args(&func.parameters)
     ))?;
 
@@ -954,13 +919,7 @@ where
     let args = handle
         .fields
         .iter()
-        .map(|x| {
-            format!(
-                "{} {}",
-                x.field_type.get_cpp_function_arg_type(),
-                x.name.to_snake_case()
-            )
-        })
+        .map(|x| format!("{} {}", x.field_type.get_cpp_function_arg_type(), x.name))
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -975,9 +934,9 @@ where
             indented(f, |f| {
                 for (field, last) in handle.fields().with_last() {
                     let value = if field.field_type.is_move_type() {
-                        format!("std::move({})", field.name.to_snake_case())
+                        format!("std::move({})", field.name)
                     } else {
-                        field.name.to_snake_case()
+                        field.name.to_string()
                     };
 
                     if last {
@@ -997,12 +956,10 @@ where
                 f.writeln(&format!(
                     "static {} get_{}({} value)",
                     field.field_type.get_cpp_function_arg_type(),
-                    field.name.to_snake_case(),
+                    field.name,
                     const_ref(cpp_type.clone())
                 ))?;
-                blocked(f, |f| {
-                    f.writeln(&format!("return value.{};", field.name.to_snake_case()))
-                })?;
+                blocked(f, |f| f.writeln(&format!("return value.{};", field.name)))?;
             }
         }
         Ok(())
@@ -1076,14 +1033,14 @@ where
             for field in &handle.fields {
                 let cpp_value = match handle.visibility {
                     Visibility::Public => {
-                        format!("value.{}", field.name.to_snake_case())
+                        format!("value.{}", field.name)
                     }
                     Visibility::Private => {
                         format!(
                             "::{}::{}::get_{}(value)",
                             handle.settings().c_ffi_prefix,
                             handle.friend_class(),
-                            field.name.to_snake_case()
+                            field.name
                         )
                     }
                 };
@@ -1121,7 +1078,7 @@ where
         ))?;
         indented(f, |f| {
             for (field, last) in handle.fields.iter().with_last() {
-                let native_value = format!("value.{}", field.name.to_snake_case());
+                let native_value = format!("value.{}", field.name);
                 let conversion = field.field_type.to_cpp_struct_field(native_value);
 
                 if last {
@@ -1161,7 +1118,7 @@ fn write_enum_to_string_impl(
             }
             f.writeln(&format!(
                 "default: throw std::invalid_argument(\"Undefined value for enum '{}'\");",
-                handle.name.to_camel_case()
+                handle.name.camel_case()
             ))
         })?;
         f.writeln("}")
@@ -1193,11 +1150,11 @@ fn write_enum_to_native_conversion(
                 f.writeln(&format!(
                     "case ::{}::{}::{}: return {}_{}_{};",
                     handle.settings.c_ffi_prefix,
-                    handle.name.to_camel_case(),
-                    v.name.to_snake_case(),
-                    handle.settings.c_ffi_prefix.to_shouty_snake_case(),
-                    handle.name.to_shouty_snake_case(),
-                    v.name.to_shouty_snake_case(),
+                    handle.name.camel_case(),
+                    v.name,
+                    handle.settings.c_ffi_prefix.capital_snake_case(),
+                    handle.name.capital_snake_case(),
+                    v.name.capital_snake_case(),
                 ))?;
             }
             f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
@@ -1231,12 +1188,12 @@ fn write_enum_to_cpp_conversion(
             for v in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}_{}: return ::{}::{}::{};",
-                    handle.settings.c_ffi_prefix.to_shouty_snake_case(),
-                    handle.name.to_shouty_snake_case(),
-                    v.name.to_shouty_snake_case(),
+                    handle.settings.c_ffi_prefix.capital_snake_case(),
+                    handle.name.capital_snake_case(),
+                    v.name.capital_snake_case(),
                     handle.settings.c_ffi_prefix,
-                    handle.name.to_camel_case(),
-                    v.name.to_snake_case()
+                    handle.name.camel_case(),
+                    v.name
                 ))?;
             }
             f.writeln("default: throw std::invalid_argument(\"bad enum conversion\");")?;
@@ -1266,10 +1223,9 @@ fn write_callback_function(
     ) -> FormattingResult<()> {
         for (arg, last) in cb.arguments.iter().with_last() {
             let conversion = if arg.arg_type.requires_shadow_parameter() {
-                format!("_{}", arg.name.to_snake_case())
+                format!("_{}", arg.name)
             } else {
-                arg.arg_type
-                    .to_cpp_callback_argument(arg.name.to_snake_case())
+                arg.arg_type.to_cpp_callback_argument(arg.name.to_string())
             };
             if last {
                 f.writeln(&conversion)?;
@@ -1283,7 +1239,7 @@ fn write_callback_function(
     let args = cb
         .arguments
         .iter()
-        .map(|x| format!("{} {}", x.arg_type.to_c_type(), x.name.to_snake_case()))
+        .map(|x| format!("{} {}", x.arg_type.to_c_type(), x.name))
         .chain(std::iter::once("void* ctx".to_string()))
         .collect::<Vec<String>>()
         .join(", ");
@@ -1298,18 +1254,13 @@ fn write_callback_function(
             if arg.arg_type.requires_shadow_parameter() {
                 f.writeln(&format!(
                     "auto _{} = {};",
-                    arg.name.to_snake_case(),
-                    arg.arg_type
-                        .to_cpp_callback_argument(arg.name.to_snake_case())
+                    arg.name,
+                    arg.arg_type.to_cpp_callback_argument(arg.name.to_string())
                 ))?;
             }
         }
 
-        let function = format!(
-            "reinterpret_cast<{}*>(ctx)->{}",
-            cpp_type,
-            cb.name.to_snake_case()
-        );
+        let function = format!("reinterpret_cast<{}*>(ctx)->{}", cpp_type, cb.name);
         match &cb.return_type {
             CallbackReturnType::<Validated>::Void => {
                 f.writeln(&format!("{}(", function))?;

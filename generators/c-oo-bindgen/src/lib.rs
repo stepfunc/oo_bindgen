@@ -46,7 +46,6 @@ clippy::all
 
 use crate::doc::*;
 use crate::formatting::*;
-use heck::{ShoutySnakeCase, SnakeCase};
 use oo_bindgen::class::*;
 use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
 use oo_bindgen::doc::*;
@@ -266,9 +265,9 @@ fn write_constants_definition(
         doxygen(f, |f| doxygen_print(f, &item.doc, lib))?;
         f.writeln(&format!(
             "#define {}_{}_{} {}",
-            lib.settings.c_ffi_prefix.to_shouty_snake_case(),
-            handle.name.to_shouty_snake_case(),
-            item.name.to_shouty_snake_case(),
+            lib.settings.c_ffi_prefix.capital_snake_case(),
+            handle.name.capital_snake_case(),
+            item.name.capital_snake_case(),
             get_constant_value(item.value)
         ))?;
     }
@@ -310,7 +309,7 @@ where
             f.writeln(&format!(
                 "{} {};",
                 element.field_type.to_c_type(),
-                element.name.to_snake_case(),
+                element.name,
             ))?;
         }
         Ok(())
@@ -348,9 +347,9 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
         ValidatedDefaultValue::Enum(x, variant) => {
             format!(
                 "{}_{}_{}",
-                x.settings.c_ffi_prefix.to_shouty_snake_case(),
-                x.name.to_shouty_snake_case(),
-                variant.to_shouty_snake_case()
+                x.settings.c_ffi_prefix.capital_snake_case(),
+                x.name.capital_snake_case(),
+                variant.capital_snake_case()
             )
         }
         ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
@@ -358,8 +357,8 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
             format!(
                 "{}_{}_{}()",
                 &handle.settings().c_ffi_prefix,
-                handle.name().to_snake_case(),
-                name.to_snake_case(),
+                handle.name(),
+                name
             )
         }
     }
@@ -396,7 +395,7 @@ where
     let params = handle
         .fields()
         .filter(|f| !constructor.values.iter().any(|cf| cf.name == f.name))
-        .map(|el| format!("{} {}", el.field_type.to_c_type(), el.name.to_snake_case()))
+        .map(|el| format!("{} {}", el.field_type.to_c_type(), el.name))
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -404,20 +403,19 @@ where
         "static {} {}_{}_{}({})",
         handle.to_c_type(),
         handle.declaration.inner.settings.c_ffi_prefix,
-        handle.name().to_snake_case(),
-        constructor.name.to_snake_case(),
+        handle.name(),
+        constructor.name,
         params
     ))?;
 
     blocked(f, |f| {
         f.writeln(&format!("{} _return_value;", handle.to_c_type()))?;
         for field in &handle.fields {
-            let field_name = field.name.to_snake_case();
             let value: String = match constructor.values.iter().find(|x| x.name == field.name) {
                 Some(x) => get_default_value(&x.value),
-                None => field_name.clone(),
+                None => field.name.to_string(),
             };
-            f.writeln(&format!("_return_value.{} = {};", field_name, value))?;
+            f.writeln(&format!("_return_value.{} = {};", field.name, value))?;
         }
         f.writeln("return _return_value;")
     })?;
@@ -439,9 +437,9 @@ fn write_enum_definition(
             doxygen(f, |f| doxygen_print(f, &variant.doc, lib))?;
             f.writeln(&format!(
                 "{}_{}_{} = {},",
-                lib.settings.c_ffi_prefix.to_shouty_snake_case(),
-                handle.name.to_shouty_snake_case(),
-                variant.name.to_shouty_snake_case(),
+                lib.settings.c_ffi_prefix.capital_snake_case(),
+                handle.name.capital_snake_case(),
+                variant.name.capital_snake_case(),
                 variant.value
             ))?;
         }
@@ -460,7 +458,7 @@ fn write_enum_definition(
     f.writeln(&format!(
         "static const char* {}_{}_to_string({} value)",
         &lib.settings.c_ffi_prefix,
-        handle.name.to_snake_case(),
+        handle.name,
         handle.to_c_type()
     ))?;
     blocked(f, |f| {
@@ -469,9 +467,9 @@ fn write_enum_definition(
             for variant in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}_{}: return \"{}\";",
-                    lib.settings.c_ffi_prefix.to_shouty_snake_case(),
-                    handle.name.to_shouty_snake_case(),
-                    variant.name.to_shouty_snake_case(),
+                    lib.settings.c_ffi_prefix.capital_snake_case(),
+                    handle.name.capital_snake_case(),
+                    variant.name.capital_snake_case(),
                     variant.name
                 ))?;
             }
@@ -569,13 +567,7 @@ fn write_function(
         &handle
             .parameters
             .iter()
-            .map(|param| {
-                format!(
-                    "{} {}",
-                    param.arg_type.to_c_type(),
-                    param.name.to_snake_case()
-                )
-            })
+            .map(|param| format!("{} {}", param.arg_type.to_c_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -633,11 +625,7 @@ fn write_interface(
             f.newline()?;
 
             // Print function signature
-            f.write(&format!(
-                "{} (*{})(",
-                cb.return_type.to_c_type(),
-                cb.name.to_snake_case(),
-            ))?;
+            f.write(&format!("{} (*{})(", cb.return_type.to_c_type(), cb.name))?;
 
             f.write(&chelpers::callback_parameters(cb))?;
 
@@ -666,39 +654,30 @@ fn write_interface(
         f.writeln("@brief ")?;
         docstring_print(f, &text("Initialize an instance of the interface"), lib)?;
         for cb in &handle.callbacks {
-            f.writeln(&format!("@param {} ", cb.name.to_snake_case()))?;
+            f.writeln(&format!("@param {} ", cb.name))?;
             docstring_print(f, &cb.doc.brief, lib)?;
         }
         f.writeln(&format!(
             "@param {} Callback when the underlying owner doesn't need the interface anymore",
-            DESTROY_FUNC_NAME.to_snake_case()
+            DESTROY_FUNC_NAME
         ))?;
-        f.writeln(&format!(
-            "@param {} Context data",
-            CTX_VARIABLE_NAME.to_snake_case()
-        ))?;
+        f.writeln(&format!("@param {} Context data", CTX_VARIABLE_NAME))?;
         Ok(())
     })?;
     f.writeln(&format!(
         "static {} {}_{}_init(",
-        struct_name,
-        &lib.settings.c_ffi_prefix,
-        handle.name.to_snake_case()
+        struct_name, &lib.settings.c_ffi_prefix, handle.name
     ))?;
     indented(f, |f| {
         for cb in &handle.callbacks {
-            f.writeln(&format!(
-                "{} (*{})(",
-                cb.return_type.to_c_type(),
-                cb.name.to_snake_case(),
-            ))?;
+            f.writeln(&format!("{} (*{})(", cb.return_type.to_c_type(), cb.name,))?;
 
             f.write(&chelpers::callback_parameters(cb))?;
             f.write("),")?;
         }
 
         f.writeln(&format!("void (*{})(void* arg),", DESTROY_FUNC_NAME))?;
-        f.writeln(&format!("void* {}", CTX_VARIABLE_NAME.to_snake_case()))?;
+        f.writeln(&format!("void* {}", CTX_VARIABLE_NAME))?;
 
         Ok(())
     })?;
@@ -708,7 +687,7 @@ fn write_interface(
         f.writeln(&format!("{} value;", struct_name))?;
 
         for cb in &handle.callbacks {
-            let cb_name = cb.name.to_snake_case();
+            let cb_name = cb.name.to_string();
             f.writeln(&format!("value.{} = {};", cb_name, cb_name))?;
         }
 
@@ -798,8 +777,8 @@ fn generate_cmake_config(
 
     f.writeln(&format!(
         "set({}_CPP_FILE ${{prefix}}/src/{}.cpp CACHE STRING \"CPP implementation\" FORCE)",
-        lib.settings.name.to_shouty_snake_case(),
-        lib.settings.name.to_snake_case()
+        lib.settings.name.capital_snake_case(),
+        lib.settings.name
     ))?;
     f.newline()
 }

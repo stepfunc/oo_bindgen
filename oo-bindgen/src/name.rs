@@ -5,6 +5,8 @@ use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use thiserror::Error;
 
+use heck::{CamelCase, ShoutySnakeCase};
+
 /// Names in oo_bindgen are subset of allowed C-style identifiers. They are
 /// enforce that names are a limited snake case.
 ///
@@ -26,6 +28,12 @@ use thiserror::Error;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name {
     validated: Rc<String>,
+}
+
+impl From<Name> for String {
+    fn from(x: Name) -> Self {
+        x.to_string()
+    }
 }
 
 impl std::ops::Deref for Name {
@@ -139,6 +147,16 @@ impl AsRef<str> for Name {
 }
 
 impl Name {
+    /// convert to CamelCase
+    pub fn camel_case(&self) -> String {
+        self.validated.to_camel_case()
+    }
+
+    /// convert to CAPITAL_SNAKE_CASE
+    pub fn capital_snake_case(&self) -> String {
+        self.validated.to_shouty_snake_case()
+    }
+
     /// Create a validated Name
     pub fn create<S: AsRef<str>>(value: S) -> Result<Self, BadName> {
         Self::create_impl(value.as_ref())

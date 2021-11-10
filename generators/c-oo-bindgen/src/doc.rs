@@ -1,5 +1,4 @@
 use crate::ctype::CType;
-use heck::{ShoutySnakeCase, SnakeCase};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 use oo_bindgen::Library;
@@ -53,9 +52,7 @@ fn reference_print(
     lib: &Library,
 ) -> FormattingResult<()> {
     match reference {
-        Validated::Argument(param_name) => {
-            f.write(&format!("@p {}", param_name.to_snake_case()))?
-        }
+        Validated::Argument(param_name) => f.write(&format!("@p {}", param_name))?,
         Validated::Class(class) => {
             f.write(&format!("@ref {}", class.to_c_type()))?;
         }
@@ -81,11 +78,7 @@ fn reference_print(
             f.write(&format!("@ref {}", st.to_c_type()))?;
         }
         Validated::StructField(st, field_name) => {
-            f.write(&format!(
-                "@ref {}.{}",
-                st.to_c_type(),
-                field_name.to_snake_case()
-            ))?;
+            f.write(&format!("@ref {}.{}", st.to_c_type(), field_name))?;
         }
         Validated::Enum(handle) => {
             f.write(&format!("@ref {}", handle.to_c_type()))?;
@@ -93,20 +86,16 @@ fn reference_print(
         Validated::EnumVariant(handle, variant_name) => {
             f.write(&format!(
                 "@ref {}_{}_{}",
-                lib.settings.c_ffi_prefix.to_shouty_snake_case(),
-                handle.name.to_shouty_snake_case(),
-                variant_name.to_shouty_snake_case()
+                lib.settings.c_ffi_prefix.capital_snake_case(),
+                handle.name.capital_snake_case(),
+                variant_name.capital_snake_case()
             ))?;
         }
         Validated::Interface(interface) => {
             f.write(&format!("@ref {}", interface.to_c_type()))?;
         }
         Validated::InterfaceMethod(interface, callback_name) => {
-            f.write(&format!(
-                "@ref {}.{}",
-                interface.to_c_type(),
-                callback_name.to_snake_case()
-            ))?;
+            f.write(&format!("@ref {}.{}", interface.to_c_type(), callback_name))?;
         }
     }
 

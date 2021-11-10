@@ -1,4 +1,3 @@
-use heck::{CamelCase, SnakeCase};
 use oo_bindgen::class::{Class, ClassDeclarationHandle, StaticClass};
 use oo_bindgen::collection::Collection;
 use oo_bindgen::constants::Constant;
@@ -48,7 +47,7 @@ where
     T: StructFieldType,
 {
     fn core_cpp_type(&self) -> String {
-        self.name().to_camel_case()
+        self.name().camel_case()
     }
 }
 
@@ -57,13 +56,13 @@ where
     T: StructFieldType,
 {
     fn core_cpp_type(&self) -> String {
-        self.name().to_camel_case()
+        self.name().camel_case()
     }
 }
 
 impl CoreCppType for StructDeclaration {
     fn core_cpp_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 
@@ -81,7 +80,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 
@@ -90,7 +89,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name.to_snake_case()
+        self.name.to_string()
     }
 }
 
@@ -99,7 +98,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.exception_name.to_camel_case()
+        self.exception_name.camel_case()
     }
 }
 
@@ -108,7 +107,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 
@@ -117,7 +116,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.iter_class.name.to_camel_case()
+        self.iter_class.name.camel_case()
     }
 }
 
@@ -135,7 +134,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name.to_snake_case()
+        self.name.to_string()
     }
 }
 
@@ -144,7 +143,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name.to_snake_case()
+        self.name.to_string()
     }
 }
 
@@ -153,13 +152,13 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name.to_snake_case()
+        self.name.to_string()
     }
 }
 
 impl CoreCppType for ClassDeclarationHandle {
     fn core_cpp_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 
@@ -168,7 +167,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name().to_camel_case()
+        self.name().camel_case()
     }
 }
 
@@ -177,7 +176,7 @@ where
     D: DocReference,
 {
     fn core_cpp_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.camel_case()
     }
 }
 

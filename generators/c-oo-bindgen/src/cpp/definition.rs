@@ -1,6 +1,5 @@
 use crate::cpp::conversion::*;
 use crate::cpp::formatting::{namespace, FriendClass};
-use heck::SnakeCase;
 use oo_bindgen::class::{
     Class, ClassDeclarationHandle, ClassType, Method, StaticClass, StaticMethod,
 };
@@ -118,13 +117,11 @@ fn write_future_method_interface_helpers(
         let argument = callback.arguments.first().unwrap();
         f.writeln(&format!(
             "void {}({} {}) override",
-            callback.name.to_snake_case(),
+            callback.name,
             argument.arg_type.get_cpp_callback_arg_type(),
-            argument.name.to_snake_case()
+            argument.name
         ))?;
-        blocked(f, |f| {
-            f.writeln(&format!("lambda({});", argument.name.to_snake_case()))
-        })
+        blocked(f, |f| f.writeln(&format!("lambda({});", argument.name)))
     })?;
     f.writeln("};")?;
 
@@ -132,9 +129,8 @@ fn write_future_method_interface_helpers(
 
     f.writeln("template <class T>")?;
     f.writeln(&format!(
-        "std::unique_ptr<{}> create_{}(const T& lambda)",
-        interface_name,
-        class_name.to_snake_case()
+        "std::unique_ptr<{}> create_{}_lambda(const T& lambda)",
+        interface_name, interface.name
     ))?;
     blocked(f, |f| {
         f.writeln(&format!(
@@ -154,7 +150,7 @@ fn print_iterator_definition(
     for line in iterator.lines() {
         let substituted = line
             .replace("<name>", &iter.core_cpp_type())
-            .replace("<snake_name>", &iter.core_cpp_type().to_snake_case())
+            .replace("<snake_name>", &iter.core_cpp_type())
             .replace("<iter_type>", &iter.item_type.core_cpp_type());
         f.writeln(&substituted)?;
     }
@@ -167,7 +163,7 @@ fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> For
 }
 
 fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
-    let name = lib.settings.c_ffi_prefix.to_snake_case();
+    let name = lib.settings.c_ffi_prefix.clone();
 
     // Version number
     f.writeln(&format!(
@@ -206,7 +202,7 @@ fn print_constants(
         }
     }
 
-    f.writeln(&format!("namespace {} {{", c.name.to_snake_case()))?;
+    f.writeln(&format!("namespace {} {{", c.name))?;
     indented(f, |f| {
         for v in &c.values {
             f.writeln(&format!(
@@ -317,7 +313,7 @@ where
             f.writeln(&format!(
                 "{} {};",
                 field.field_type.struct_member_type(),
-                field.name.to_snake_case()
+                field.name
             ))?;
         }
 
@@ -373,13 +369,7 @@ where
 {
     let args = handle
         .initializer_args(constructor.clone())
-        .map(|x| {
-            format!(
-                "{} {}",
-                x.field_type.get_cpp_function_arg_type(),
-                x.name.to_snake_case()
-            )
-        })
+        .map(|x| format!("{} {}", x.field_type.get_cpp_function_arg_type(), x.name))
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -388,7 +378,7 @@ where
         InitializerType::Static => f.writeln(&format!(
             "static {} {}({});",
             handle.core_cpp_type(),
-            constructor.name.to_snake_case(),
+            constructor.name,
             args
         ))?,
     }
@@ -457,7 +447,7 @@ fn print_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingRe
             .native_function
             .return_type
             .get_cpp_function_return_type(),
-        method.name.to_snake_case(),
+        method.name,
         args
     ))
 }
@@ -474,7 +464,7 @@ fn print_static_method(
             .native_function
             .return_type
             .get_cpp_function_return_type(),
-        method.name.to_snake_case(),
+        method.name,
         args
     ))
 }
@@ -491,7 +481,7 @@ fn print_future_method(
             .native_function
             .return_type
             .get_cpp_function_return_type(),
-        method.name.to_snake_case(),
+        method.name,
         args
     ))?;
 
@@ -505,7 +495,7 @@ fn print_future_method(
             .native_function
             .return_type
             .get_cpp_function_return_type(),
-        method.name.to_snake_case(),
+        method.name,
         args
     ))?;
     blocked(f, |f| {
@@ -521,9 +511,7 @@ fn print_future_method(
 
         f.writeln(&format!(
             "{}({}, helpers::create_{}_lambda(callback));",
-            method.name.to_snake_case(),
-            arg_names,
-            method.future.interface.name
+            method.name, arg_names, method.future.interface.name
         ))
     })?;
 

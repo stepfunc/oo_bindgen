@@ -2,7 +2,6 @@ use oo_bindgen::class::{Class, ClassDeclarationHandle};
 use oo_bindgen::formatting::{FormattingResult, Printer};
 use oo_bindgen::structs::{Struct, StructDeclarationHandle, StructFieldType};
 
-use heck::CamelCase;
 use oo_bindgen::doc::DocReference;
 use oo_bindgen::Handle;
 
@@ -18,8 +17,8 @@ pub(crate) fn unique_ptr(expr: String) -> String {
 pub(crate) fn pointer(expr: String) -> String {
     format!("{}*", expr)
 }
-pub(crate) fn std_move(expr: String) -> String {
-    format!("std::move({})", expr)
+pub(crate) fn std_move<S: Into<String>>(expr: S) -> String {
+    format!("std::move({})", expr.into())
 }
 
 pub(crate) fn namespace<F>(f: &mut dyn Printer, namespace: &str, cb: F) -> FormattingResult<()>
@@ -39,13 +38,13 @@ pub(crate) trait FriendClass {
 
 impl FriendClass for ClassDeclarationHandle {
     fn friend_class(&self) -> String {
-        format!("Cpp{}Friend", self.name.to_camel_case())
+        format!("Cpp{}Friend", self.name.camel_case())
     }
 }
 
 impl FriendClass for StructDeclarationHandle {
     fn friend_class(&self) -> String {
-        format!("Cpp{}Friend", self.name.to_camel_case())
+        format!("Cpp{}Friend", self.name.camel_case())
     }
 }
 

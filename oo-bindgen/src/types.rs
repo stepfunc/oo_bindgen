@@ -195,7 +195,10 @@ impl InitializerValidator for BasicType {
             BasicType::Enum(handle) => match value {
                 InitializerDefault::Enum(value) => {
                     handle.validate_contains_variant_name(value)?;
-                    Ok(ValidatedDefaultValue::Enum(handle.clone(), value.clone()))
+                    Ok(ValidatedDefaultValue::Enum(
+                        handle.clone(),
+                        Name::create(value)?,
+                    ))
                 }
                 _ => Err(BindingError::StructInitializerBadValueForType {
                     field_type: "Enum".to_string(),

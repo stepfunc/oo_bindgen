@@ -9,7 +9,6 @@ use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::Handle;
 
-use heck::SnakeCase;
 use oo_bindgen::doc::{DocReference, Validated};
 
 pub(crate) trait CType {
@@ -89,11 +88,7 @@ impl CType for CallbackReturnValue {
 
 impl CType for StructDeclarationHandle {
     fn to_c_type(&self) -> String {
-        format!(
-            "{}_{}_t",
-            self.settings.c_ffi_prefix.to_snake_case(),
-            self.name.to_snake_case()
-        )
+        format!("{}_{}_t", self.settings.c_ffi_prefix, self.name)
     }
 }
 
@@ -115,7 +110,7 @@ where
         format!(
             "{}_{}_t",
             self.declaration.inner.settings.c_ffi_prefix,
-            self.name().to_snake_case()
+            self.name()
         )
     }
 }
@@ -125,21 +120,13 @@ where
     D: DocReference,
 {
     fn to_c_type(&self) -> String {
-        format!(
-            "{}_{}_t",
-            self.settings.c_ffi_prefix,
-            self.name.to_snake_case()
-        )
+        format!("{}_{}_t", self.settings.c_ffi_prefix, self.name)
     }
 }
 
 impl CType for ClassDeclarationHandle {
     fn to_c_type(&self) -> String {
-        format!(
-            "{}_{}_t",
-            self.settings.c_ffi_prefix,
-            self.name.to_snake_case()
-        )
+        format!("{}_{}_t", self.settings.c_ffi_prefix, self.name)
     }
 }
 
@@ -148,11 +135,7 @@ where
     D: DocReference,
 {
     fn to_c_type(&self) -> String {
-        format!(
-            "{}_{}_t",
-            self.settings.c_ffi_prefix,
-            self.name.to_snake_case()
-        )
+        format!("{}_{}_t", self.settings.c_ffi_prefix, self.name)
     }
 }
 

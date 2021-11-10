@@ -4,19 +4,6 @@
 #include "foo.hpp"
 
 
-class ValuesReceiver : public foo::ValuesReceiver {
-public:
-    std::stringstream ss;    
-
-    void on_characters(foo::StringIterator& values) override {        
-        while (values.next())
-        {
-            const auto item = values.get();
-            this->ss.put(static_cast<char>(item.value));
-        }
-    }
-};
-
 class ChunkReceiver : public foo::ChunkReceiver {
 public:
     std::vector<std::string> items;    
@@ -37,11 +24,20 @@ public:
 };
 
 void test_callback_with_iterator()
-{    
-    ValuesReceiver receiver;
-    foo::IteratorTestHelper::invoke_callback("ABCDE", receiver);
+{
+    std::stringstream ss;    
+    foo::IteratorTestHelper::invoke_callback(
+        "ABCDE",
+        foo::functional::values_receiver(
+            [&](foo::StringIterator& values) {
+                while (values.next()) {
+                    ss.put(static_cast<char>(values.get().value));
+                }
+            }
+        )
+    );
 
-    assert(receiver.ss.str() == "ABCDE");
+    assert(ss.str() == "ABCDE");
 }
 
 void test_double_iterator_with_lifetime()

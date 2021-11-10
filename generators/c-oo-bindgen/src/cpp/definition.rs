@@ -9,7 +9,7 @@ use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::function::{FunctionArgument, FutureMethod};
-use oo_bindgen::interface::{CallbackFunction, Interface};
+use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceType};
 use oo_bindgen::structs::{
     Initializer, InitializerType, Struct, StructDeclaration, StructFieldType, StructType,
     Visibility,
@@ -146,17 +146,30 @@ fn write_functional_interface_helpers(
 
     f.newline()?;
 
+    let is_synchronous = match interface.interface_type {
+        InterfaceType::Synchronous => true,
+        InterfaceType::Asynchronous => false,
+        InterfaceType::Future => false,
+    };
+
+    let return_type = if is_synchronous {
+        format!("{}<T>", class_name)
+    } else {
+        format!("std::unique_ptr<{}>", interface_name)
+    };
+
+    let return_expr = if is_synchronous {
+        format!("{}<T>(lambda)", class_name)
+    } else {
+        format!("std::make_unique<{}<T>>(lambda); ", class_name)
+    };
+
     f.writeln("template <class T>")?;
     f.writeln(&format!(
-        "std::unique_ptr<{}> {}(const T& lambda)",
-        interface_name, interface.name
+        "{} {}(const T& lambda)",
+        return_type, interface.name
     ))?;
-    blocked(f, |f| {
-        f.writeln(&format!(
-            "return std::make_unique<{}<T>>(lambda); ",
-            class_name
-        ))
-    })?;
+    blocked(f, |f| f.writeln(&format!("return {}; ", return_expr)))?;
 
     f.newline()
 }

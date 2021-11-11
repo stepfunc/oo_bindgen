@@ -3,12 +3,25 @@
 
 #include "foo.hpp"
 
+void test_callback_with_iterator()
+{
+    std::stringstream ss;
+    auto receiver = foo::functional::values_receiver(
+        [&](foo::StringIterator& values) {
+            while (values.next()) {
+                ss.put(static_cast<char>(values.get().value));
+            }
+        }
+    );
+    foo::IteratorTestHelper::invoke_callback("ABCDE", receiver);
 
-class ChunkReceiver : public foo::ChunkReceiver {
-public:
-    std::vector<std::string> items;    
+    assert(ss.str() == "ABCDE");
+}
 
-    void on_chunk(foo::ChunkIterator& chunks) override {        
+void test_double_iterator_with_lifetime()
+{    
+    std::vector<std::string> items;
+    auto receiver = foo::functional::chunk_receiver([&](foo::ChunkIterator& chunks) {
         while (chunks.next())
         {
             std::stringstream ss;
@@ -20,36 +33,15 @@ public:
             }
             items.push_back(ss.str());
         }
-    }
-};
+    });
 
-void test_callback_with_iterator()
-{
-    std::stringstream ss;    
-    foo::IteratorTestHelper::invoke_callback(
-        "ABCDE",
-        foo::functional::values_receiver(
-            [&](foo::StringIterator& values) {
-                while (values.next()) {
-                    ss.put(static_cast<char>(values.get().value));
-                }
-            }
-        )
-    );
-
-    assert(ss.str() == "ABCDE");
-}
-
-void test_double_iterator_with_lifetime()
-{    
-    ChunkReceiver receiver;
     foo::DoubleIteratorTestHelper::iterate_string_by_chunks("hello world!", 3, receiver);
 
-    assert(receiver.items.size() == 4);
-    assert(receiver.items[0] == "hel");
-    assert(receiver.items[1] == "lo ");
-    assert(receiver.items[2] == "wor");
-    assert(receiver.items[3] == "ld!");
+    assert(items.size() == 4);
+    assert(items[0] == "hel");
+    assert(items[1] == "lo ");
+    assert(items[2] == "wor");
+    assert(items[3] == "ld!");
 }
 
 void iterator_tests()

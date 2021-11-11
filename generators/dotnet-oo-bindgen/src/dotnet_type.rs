@@ -6,7 +6,7 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::*;
-use oo_bindgen::types::{BasicType, DurationType, StringType};
+use oo_bindgen::types::{Arg, BasicType, DurationType, StringType};
 use oo_bindgen::Handle;
 
 const INT_PTR_STRING: &str = "IntPtr";
@@ -163,27 +163,41 @@ impl DotnetType for StringType {
     }
 }
 
+fn functor_type<D>(cb: &CallbackFunction<D>) -> String
+where
+    D: DocReference,
+{
+    fn arg_types<D>(args: &[Arg<CallbackArgument, D>]) -> String
+    where
+        D: DocReference,
+    {
+        args.iter()
+            .map(|x| x.arg_type.as_dotnet_type())
+            .collect::<Vec<String>>()
+            .join(", ")
+    }
+
+    match (&cb.return_type, cb.arguments.as_slice()) {
+        (ReturnType::Void, []) => "Action".to_string(),
+        (ReturnType::Void, args) => {
+            format!("Action<{}>", arg_types(args))
+        }
+        (ReturnType::Type(t, _), []) => {
+            format!("Func<{}>", t.as_dotnet_type())
+        }
+        (ReturnType::Type(t, _), args) => {
+            format!("Func<{}, {}>", arg_types(args), t.as_dotnet_type())
+        }
+    }
+}
+
 impl<D> DotnetType for Handle<Interface<D>>
 where
     D: DocReference,
 {
     fn as_dotnet_type(&self) -> String {
         if let Some(cb) = self.get_functional_callback() {
-            let arg_types = cb
-                .arguments
-                .iter()
-                .map(|x| x.arg_type.as_dotnet_type())
-                .collect::<Vec<String>>()
-                .join(", ");
-
-            match &cb.return_type {
-                ReturnType::Void => {
-                    format!("Action<{}>", arg_types)
-                }
-                ReturnType::Type(t, _) => {
-                    format!("Func<{}, {}>", arg_types, t.as_dotnet_type())
-                }
-            }
+            functor_type(cb)
         } else {
             format!("I{}", self.name.camel_case())
         }

@@ -14,17 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.joou.Unsigned.uint;
 
 class ThreadTest {
-    static class Listener implements ValueChangeListener {
-        public List<UInteger> values = new ArrayList<>();
-        public void onValueChange(UInteger value) {
-            values.add(value);
-        }
-    }
 
     @Test
     void testAsynchronousCallbacks() throws Exception {
-        Listener listener = new Listener();
-        ThreadClass tc = new ThreadClass(uint(42), listener);
+        List<UInteger> values = new ArrayList<>();
+        ThreadClass tc = new ThreadClass(uint(42), v -> values.add(v));
         try {
             UInteger result = tc.add(uint(4)).toCompletableFuture().get();
             assertThat(result).isEqualTo(uint(46));
@@ -35,9 +29,9 @@ class ThreadTest {
             tc.shutdown();
         }
 
-        assertThat(listener.values.size()).isEqualTo(2);
-        assertThat(listener.values.get(0)).isEqualTo(uint(46));
-        assertThat(listener.values.get(1)).isEqualTo(uint(43));
+        assertThat(values.size()).isEqualTo(2);
+        assertThat(values.get(0)).isEqualTo(uint(46));
+        assertThat(values.get(1)).isEqualTo(uint(43));
     }
 
 }

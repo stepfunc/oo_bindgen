@@ -9,7 +9,6 @@ void callback_tests();
 void iterator_tests();
 void universal_tests();
 void collection_tests();
-void class_tests();
 void thread_tests();
 
 int main()
@@ -25,7 +24,6 @@ int main()
     callback_tests();
     universal_tests();
     collection_tests();
-    class_tests();
     thread_tests();
 
     return 0;

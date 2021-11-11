@@ -21,9 +21,9 @@ static void test_async_callbacks()
                 
         auto promise = std::make_shared<std::promise<uint32_t>>();        
         auto future = promise->get_future();        
-        tc.add(4, [promise](uint32_t result) {
+        tc.add(4, foo::functional::add_handler([promise](uint32_t result) {
             promise->set_value(result);
-        });        
+        }));
         assert(future.get() == 46);
 
         tc.update(43);

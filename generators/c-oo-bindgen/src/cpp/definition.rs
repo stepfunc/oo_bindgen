@@ -15,7 +15,6 @@ use oo_bindgen::structs::{
     Visibility,
 };
 use oo_bindgen::types::Arg;
-use oo_bindgen::util::WithLastIndication;
 use oo_bindgen::{Handle, Library, Statement};
 use std::path::Path;
 
@@ -105,8 +104,11 @@ fn write_functional_interface_helpers(
         class_name, interface_name
     ))?;
     f.writeln("{")?;
-    indented(f, |f| f.writeln("T lambda;"))?;
-    f.writeln("static_assert(std::is_copy_constructible<T>::value, \"Lambda expression must be copy constructible. Does it contain something that is move-only?\");")?;
+    indented(f, |f| {
+        f.writeln("static_assert(std::is_copy_constructible<T>::value, \"Lambda expression must be copy constructible. Does it contain something that is move-only?\");")?;
+        f.newline()?;
+        f.writeln("T lambda;")
+    })?;
     f.newline()?;
     f.writeln("public:")?;
     indented(f, |f| {
@@ -516,35 +518,6 @@ fn print_future_method(
         method.name,
         args
     ))?;
-
-    let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1).drop_last());
-    let args = format!("{}, T callback", args);
-
-    f.writeln("template<class T>")?;
-    f.writeln(&format!(
-        "{} {}({})",
-        method
-            .native_function
-            .return_type
-            .get_cpp_function_return_type(),
-        method.name,
-        args
-    ))?;
-    blocked(f, |f| {
-        let arg_names = method
-            .native_function
-            .parameters
-            .iter()
-            .skip(1)
-            .drop_last()
-            .map(|x| x.name.to_string())
-            .collect::<Vec<String>>()
-            .join(", ");
-        f.writeln(&format!(
-            "{}({}, functional::{}(callback));",
-            method.name, arg_names, method.future.interface.name
-        ))
-    })?;
 
     f.newline()
 }

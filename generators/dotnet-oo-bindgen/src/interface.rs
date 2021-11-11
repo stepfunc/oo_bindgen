@@ -77,7 +77,9 @@ pub(crate) fn generate(
 
         // Write the Action<>/Func<> based implementation if it's a functional interface
         if let Some(callback) = interface.get_functional_callback() {
-            generate_functional_callback(f, interface, callback)?;
+            namespaced(f, "functional", |f| {
+                generate_functional_helpers(f, interface, callback)
+            })?;
             f.newline()?;
         }
 
@@ -239,93 +241,34 @@ pub(crate) fn generate(
     })
 }
 
-pub(crate) fn generate_functional_callback(
+pub(crate) fn generate_interface_implementation(
     f: &mut dyn Printer,
     interface: &Handle<Interface<Validated>>,
-    function: &CallbackFunction<Validated>,
+    cb: &CallbackFunction<Validated>,
 ) -> FormattingResult<()> {
-    let interface_name = format!("I{}", interface.name.camel_case());
-    let class_name = interface.name.camel_case();
+    let functor_type = full_functor_type(cb);
 
-    // Build the Action<>/Func<> signature
-    let param_types = function
-        .arguments
-        .iter()
-        .map(|param| param.arg_type.as_dotnet_type())
-        .collect::<Vec<_>>()
-        .join(", ");
-    let action_type = match &function.return_type {
-        CallbackReturnType::Type(return_type, _) => {
-            if param_types.is_empty() {
-                format!("Func<{}>", return_type.as_dotnet_type())
-            } else {
-                format!("Func<{}, {}>", param_types, return_type.as_dotnet_type())
-            }
-        }
-        CallbackReturnType::Void => {
-            if param_types.is_empty() {
-                "Action".to_string()
-            } else {
-                format!("Action<{}>", param_types)
-            }
-        }
-    };
-
-    documentation(f, |f| {
-        f.writeln("<summary>")?;
-        f.writeln(&format!("Functional adapter for {}", interface.name))?;
-        f.write("</summary>")
-    })?;
-    f.writeln(&format!("public class {} : {}", class_name, interface_name))?;
+    f.writeln(&format!(
+        "internal class Implementation: I{}",
+        interface.name.camel_case()
+    ))?;
     blocked(f, |f| {
-        f.writeln(&format!("private readonly {} action;", action_type))?;
-
+        f.writeln(&format!("private readonly {} action;", functor_type))?;
         f.newline()?;
 
-        // Write the constructor
-        documentation(f, |f| {
-            f.writeln("<summary>")?;
-            f.write("Functional constructor")?;
-            f.write("</summary>")?;
-            f.newline()?;
-            f.writeln("<param name=\"action\">")?;
-            f.writeln("Callback to execute")?;
-            f.writeln("</param>")?;
-            Ok(())
-        })?;
-        f.writeln(&format!("internal {}({} action)", class_name, action_type))?;
+        // constructor
+        f.writeln(&format!("internal Implementation({} action)", functor_type))?;
         blocked(f, |f| f.writeln("this.action = action;"))?;
 
         f.newline()?;
 
-        // Write the required method
-        documentation(f, |f| {
-            xmldoc_print(f, &function.doc)?;
-            f.newline()?;
-
-            // Print each parameter value
-            for arg in &function.arguments {
-                f.writeln(&format!("<param name=\"{}\">", arg.name.mixed_case()))?;
-                docstring_print(f, &arg.doc)?;
-                f.write("</param>")?;
-            }
-
-            // Print return value
-            if let CallbackReturnType::Type(_, doc) = &function.return_type {
-                f.writeln("<returns>")?;
-                docstring_print(f, doc)?;
-                f.write("</returns>")?;
-            }
-            Ok(())
-        })?;
         f.writeln(&format!(
             "public {} {}(",
-            function.return_type.as_dotnet_type(),
-            function.name.camel_case()
+            cb.return_type.as_dotnet_type(),
+            cb.name.camel_case()
         ))?;
         f.write(
-            &function
-                .arguments
+            &cb.arguments
                 .iter()
                 .map(|param| {
                     format!(
@@ -341,11 +284,11 @@ pub(crate) fn generate_functional_callback(
         blocked(f, |f| {
             f.newline()?;
 
-            if !function.return_type.is_void() {
+            if !cb.return_type.is_void() {
                 f.write("return ")?;
             }
 
-            let params = function
+            let params = cb
                 .arguments
                 .iter()
                 .map(|param| param.name.mixed_case())
@@ -354,5 +297,58 @@ pub(crate) fn generate_functional_callback(
 
             f.write(&format!("this.action.Invoke({});", params))
         })
+    })
+}
+
+pub(crate) fn generate_functional_helpers(
+    f: &mut dyn Printer,
+    interface: &Handle<Interface<Validated>>,
+    cb: &CallbackFunction<Validated>,
+) -> FormattingResult<()> {
+    let interface_name = format!("I{}", interface.name.camel_case());
+    let class_name = interface.name.camel_case();
+    let functor_type = full_functor_type(cb);
+
+    documentation(f, |f| {
+        f.writeln("<summary>")?;
+        f.writeln(&format!(
+            "Provides a method to create an implementation of {} from a functor",
+            interface_name
+        ))?;
+        f.writeln("</summary>")
+    })?;
+    f.writeln(&format!("public static class {}", class_name))?;
+    blocked(f, |f| {
+        f.newline()?;
+        // write the private implementation class
+        generate_interface_implementation(f, interface, cb)?;
+        f.newline()?;
+
+        documentation(f, |f| {
+            f.writeln("<summary>")?;
+            f.write(&format!(
+                "Creates an instance of {} which invokes a {}",
+                interface_name,
+                base_functor_type(cb)
+            ))?;
+            f.write("</summary>")?;
+            f.newline()?;
+            f.writeln("<param name=\"action\">")?;
+            f.writeln("Callback to execute")?;
+            f.writeln("</param>")?;
+            f.writeln(&format!(
+                "<return>An implementation of {}</return>",
+                interface_name
+            ))?;
+            Ok(())
+        })?;
+        // write the factory function
+        f.writeln(&format!(
+            "public static {} create({} action)",
+            interface_name, functor_type
+        ))?;
+        blocked(f, |f| f.writeln("return new Implementation(action);"))?;
+
+        Ok(())
     })
 }

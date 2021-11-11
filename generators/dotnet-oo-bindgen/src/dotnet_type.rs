@@ -163,7 +163,17 @@ impl DotnetType for StringType {
     }
 }
 
-fn functor_type<D>(cb: &CallbackFunction<D>) -> String
+pub(crate) fn base_functor_type<D>(cb: &CallbackFunction<D>) -> &'static str
+where
+    D: DocReference,
+{
+    match &cb.return_type {
+        ReturnType::Void => "Action",
+        ReturnType::Type(_, _) => "Func",
+    }
+}
+
+pub(crate) fn full_functor_type<D>(cb: &CallbackFunction<D>) -> String
 where
     D: DocReference,
 {
@@ -191,16 +201,26 @@ where
     }
 }
 
+fn allow_functional_optimization(t: InterfaceType) -> bool {
+    match t {
+        InterfaceType::Synchronous => true,
+        InterfaceType::Asynchronous => false,
+        InterfaceType::Future => true,
+    }
+}
+
 impl<D> DotnetType for Handle<Interface<D>>
 where
     D: DocReference,
 {
     fn as_dotnet_type(&self) -> String {
         if let Some(cb) = self.get_functional_callback() {
-            functor_type(cb)
-        } else {
-            format!("I{}", self.name.camel_case())
+            if allow_functional_optimization(self.interface_type) {
+                return full_functor_type(cb);
+            }
         }
+
+        format!("I{}", self.name.camel_case())
     }
 
     fn as_native_type(&self) -> String {
@@ -209,11 +229,12 @@ where
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         let name = self.name.camel_case();
-        let inner_transform = if self.is_functional() {
-            format!("new {}({})", name, from)
-        } else {
-            from.to_string()
-        };
+        let inner_transform =
+            if self.is_functional() && allow_functional_optimization(self.interface_type) {
+                format!("functional.{}.create({})", name, from)
+            } else {
+                from.to_string()
+            };
         Some(format!("new I{}NativeAdapter({})", name, inner_transform))
     }
 

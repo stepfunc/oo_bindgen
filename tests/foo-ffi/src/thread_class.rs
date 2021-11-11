@@ -3,6 +3,7 @@ use std::thread::JoinHandle;
 enum Message {
     Update(u32),
     Add(u32, crate::ffi::AddHandler),
+    Operation(crate::ffi::Operation),
     Stop,
 }
 
@@ -43,6 +44,12 @@ fn run(mut data: ThreadData) {
                 data.receiver.on_value_change(data.value);
                 cb.on_complete(data.value);
             }
+            Message::Operation(op) => {
+                if let Some(x) = op.execute(data.value) {
+                    data.value = x;
+                    data.receiver.on_value_change(data.value);
+                }
+            }
             Message::Stop => return,
         }
     }
@@ -82,5 +89,14 @@ pub(crate) unsafe fn thread_class_add(
 ) {
     if let Some(x) = instance.as_ref() {
         x.tx.send(Message::Add(value, callback)).unwrap()
+    }
+}
+
+pub(crate) unsafe fn thread_class_execute(
+    instance: *mut ThreadClass,
+    operation: crate::ffi::Operation,
+) {
+    if let Some(x) = instance.as_ref() {
+        x.tx.send(Message::Operation(operation)).unwrap()
     }
 }

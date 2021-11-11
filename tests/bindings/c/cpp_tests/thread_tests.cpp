@@ -27,11 +27,14 @@ static void test_async_callbacks()
         assert(future.get() == 46);
 
         tc.update(43);
+
+        tc.execute(foo::functional::operation([](uint32_t value) { return 2 * value; }));
     }
     // destructor shuts down the Rust thread which makes it safe to check the changes
-    assert(changes->size() == 2);
+    assert(changes->size() == 3);
     assert((*changes)[0] == 46);
-    assert((*changes)[1] == 43);    
+    assert((*changes)[1] == 43);
+    assert((*changes)[2] == 86);
 }
 
 void thread_tests()

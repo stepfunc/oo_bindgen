@@ -16,6 +16,28 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .end_callback()?
         .build()?;
 
+    let operation = lib
+        .define_asynchronous_interface(
+            "operation",
+            "interface for performing an operation on a value",
+        )?
+        .begin_callback("execute", "Take a value and return a modified value")?
+        .param("value", BasicType::U32, "input value")?
+        .returns(BasicType::U32, "modified value")?
+        .end_callback()?
+        .build()?;
+
+    let execute = lib
+        .define_method("execute", thread_class.clone())?
+        .param(
+            "operation",
+            operation,
+            "operation to perform on the value owned by the thread",
+        )?
+        .doc("Execute an operation on the internal value and trigger a callback")?
+        .returns_nothing()?
+        .build()?;
+
     // Declare each native function
     let constructor = lib
         .define_constructor(thread_class.clone())?
@@ -63,6 +85,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .constructor(constructor)?
         .destructor(destructor)?
         .method(update)?
+        .method(execute)?
         .async_method(add_async)?
         .custom_destroy("shutdown")?
         .doc("A class that manipulations integers on a Rust thread")?

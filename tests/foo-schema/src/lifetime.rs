@@ -46,6 +46,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .begin_callback("on_chunk", "callback to bytes")?
         .param("values", outer_iter, "iterator over an iterator of bytes")?
         .returns_nothing()?
+        .enable_functional_transform()
         .end_callback()?
         .build()?;
 

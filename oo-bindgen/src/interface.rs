@@ -102,12 +102,34 @@ impl From<EnumHandle> for CallbackReturnValue {
 
 pub type CallbackReturnType<T> = ReturnType<CallbackReturnValue, T>;
 
+/// A flag to the backend that tells it whether or not
+/// to optimize callbacks into Functors in the public API
+/// This flag is only inspected for functional interfaces
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum FunctionalTransform {
+    /// If the interface is functional, it should be optimized into
+    /// functors if the language supports them
+    Yes,
+    /// If the interface is functional, it will NOT be transformed
+    No,
+}
+
+impl FunctionalTransform {
+    pub fn enabled(&self) -> bool {
+        match self {
+            FunctionalTransform::Yes => true,
+            FunctionalTransform::No => false,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct CallbackFunction<D>
 where
     D: DocReference,
 {
     pub name: Name,
+    pub functional_transform: FunctionalTransform,
     pub return_type: ReturnType<CallbackReturnValue, D>,
     pub arguments: Vec<Arg<CallbackArgument, D>>,
     pub doc: Doc<D>,
@@ -125,6 +147,7 @@ impl CallbackFunction<Unvalidated> {
 
         Ok(CallbackFunction {
             name: self.name.clone(),
+            functional_transform: self.functional_transform,
             return_type: self.return_type.validate(&self.name, lib)?,
             arguments: arguments?,
             doc: self
@@ -317,6 +340,7 @@ impl<'a> InterfaceBuilder<'a> {
 pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: Name,
+    functional_transform: FunctionalTransform,
     return_type: Option<CallbackReturnType<Unvalidated>>,
     arguments: Vec<Arg<CallbackArgument, Unvalidated>>,
     doc: Doc<Unvalidated>,
@@ -327,10 +351,16 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Self {
             builder,
             name,
+            functional_transform: FunctionalTransform::No,
             return_type: None,
             arguments: Vec::new(),
             doc,
         }
+    }
+
+    pub fn enable_functional_transform(mut self) -> Self {
+        self.functional_transform = FunctionalTransform::Yes;
+        self
     }
 
     pub fn param<S: IntoName, D: Into<DocString<Unvalidated>>, P: Into<CallbackArgument>>(
@@ -390,6 +420,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
 
         let cb = CallbackFunction {
             name: self.name,
+            functional_transform: self.functional_transform,
             return_type,
             arguments: self.arguments,
             doc: self.doc,

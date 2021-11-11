@@ -201,21 +201,13 @@ where
     }
 }
 
-fn allow_functional_optimization(t: InterfaceType) -> bool {
-    match t {
-        InterfaceType::Synchronous => true,
-        InterfaceType::Asynchronous => false,
-        InterfaceType::Future => true,
-    }
-}
-
 impl<D> DotnetType for Handle<Interface<D>>
 where
     D: DocReference,
 {
     fn as_dotnet_type(&self) -> String {
         if let Some(cb) = self.get_functional_callback() {
-            if allow_functional_optimization(self.interface_type) {
+            if cb.functional_transform.enabled() {
                 return full_functor_type(cb);
             }
         }
@@ -229,12 +221,15 @@ where
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
         let name = self.name.camel_case();
-        let inner_transform =
-            if self.is_functional() && allow_functional_optimization(self.interface_type) {
+        let inner_transform = if let Some(cb) = self.get_functional_callback() {
+            if cb.functional_transform.enabled() {
                 format!("functional.{}.create({})", name, from)
             } else {
                 from.to_string()
-            };
+            }
+        } else {
+            from.to_string()
+        };
         Some(format!("new I{}NativeAdapter({})", name, inner_transform))
     }
 

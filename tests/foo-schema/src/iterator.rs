@@ -27,6 +27,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .begin_callback("on_characters", "callback to receive character values")?
         .param("values", iterator, "byte value for each character")?
         .returns_nothing()?
+        .enable_functional_transform()
         .end_callback()?
         .build()?;
 

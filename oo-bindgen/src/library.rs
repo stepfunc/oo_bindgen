@@ -901,6 +901,7 @@ impl LibraryBuilder {
             )?
             .param(result_name, value_type.clone(), value_type_docs.clone())?
             .returns_nothing()?
+            .enable_functional_transform()
             .end_callback()?
             .build()?;
 

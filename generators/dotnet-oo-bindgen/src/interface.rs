@@ -16,13 +16,20 @@ pub(crate) fn generate(
     print_imports(f)?;
     f.newline()?;
 
+    let is_private = interface.get_functional_callback().map(|cb| cb.functional_transform.enabled()).unwrap_or(false);
+    let visibility = if is_private {
+        "internal"
+    } else {
+        "public"
+    };
+
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
             xmldoc_print(f, &interface.doc)
         })?;
 
-        f.writeln(&format!("public interface {}", interface_name))?;
+        f.writeln(&format!("{} interface {}", visibility, interface_name))?;
         blocked(f, |f| {
             // Write each required method
             interface.callbacks.iter().try_for_each(|func| {
@@ -309,6 +316,12 @@ pub(crate) fn generate_functional_helpers(
     let class_name = interface.name.camel_case();
     let functor_type = full_functor_type(cb);
 
+    let visibility = if cb.functional_transform.enabled() {
+      "internal"
+    } else {
+        "public"
+    };
+
     documentation(f, |f| {
         f.writeln("<summary>")?;
         f.writeln(&format!(
@@ -317,7 +330,7 @@ pub(crate) fn generate_functional_helpers(
         ))?;
         f.writeln("</summary>")
     })?;
-    f.writeln(&format!("public static class {}", class_name))?;
+    f.writeln(&format!("{} static class {}", visibility, class_name))?;
     blocked(f, |f| {
         f.newline()?;
         // write the private implementation class
@@ -344,8 +357,10 @@ pub(crate) fn generate_functional_helpers(
         })?;
         // write the factory function
         f.writeln(&format!(
-            "public static {} create({} action)",
-            interface_name, functor_type
+            "{} static {} create({} action)",
+            visibility,
+            interface_name,
+            functor_type
         ))?;
         blocked(f, |f| f.writeln("return new Implementation(action);"))?;
 

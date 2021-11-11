@@ -13,6 +13,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .begin_callback("on_value_change", "called when a value is modified")?
         .param("value", BasicType::U32, "updated value")?
         .returns_nothing()?
+        .enable_functional_transform()
         .end_callback()?
         .build()?;
 
@@ -24,6 +25,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .begin_callback("execute", "Take a value and return a modified value")?
         .param("value", BasicType::U32, "input value")?
         .returns(BasicType::U32, "modified value")?
+        .enable_functional_transform()
         .end_callback()?
         .build()?;
 

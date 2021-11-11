@@ -7,24 +7,7 @@ using System.Collections.Generic;
 namespace foo.Tests
 {
     public class IteratorTest
-    {       
-        class ChunkReceiver : IChunkReceiver
-        {
-            public readonly List<List<Char>> values = new List<List<Char>>();
-
-            public void OnChunk(ICollection<Chunk> values)
-            {
-                foreach(Chunk c in values)
-                {
-                    List<Char> bytes = new List<Char>();
-                    foreach(ByteValue bv in c.Iter) {
-                        bytes.Add(Convert.ToChar(bv.Value));
-                    }
-                    this.values.Add(bytes);
-                }
-            }
-        }
-
+    {               
         [Fact]
         public void StringIteratorTest()
         {

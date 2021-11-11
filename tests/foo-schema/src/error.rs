@@ -27,7 +27,6 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let get_struct_fn = lib
         .define_function("validate_password")?
         .param("password", StringType, "secret password")?
-        .returns_nothing()?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a struct")?
         .build_static_with_same_name()?;

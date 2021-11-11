@@ -1,10 +1,6 @@
 use thiserror::Error;
 
-use crate::class::{ClassDeclarationHandle, ClassType};
-use crate::collection::CollectionHandle;
-use crate::enum_type::EnumHandle;
-use crate::function::FunctionHandle;
-use crate::interface::InterfaceHandle;
+use crate::class::ClassDeclarationHandle;
 use crate::name::{BadName, Name};
 use crate::structs::{InitializerDefault, StructDeclarationHandle};
 use backtrace::Backtrace;
@@ -46,31 +42,23 @@ impl std::error::Error for BackTracedBindingError {}
 
 #[derive(Error, Debug)]
 pub enum BindingError {
-    // Global errors
+    // ---------------- global errors -----------------------------------
     #[error("Symbol '{}' already used in the library", name)]
     SymbolAlreadyUsed { name: Name },
-
-    // Bad name
+    #[error("Item '{}' is not part of this library", name)]
+    NotPartOfThisLibrary { name: Name },
+    // ---------------- name errors -----------------------------------
     #[error("'{}'", err)]
     BadName { err: BadName },
-
-    #[error("Method name '{}' contains the name of the owning class '{}'", class.name, method_name)]
-    BadMethodName {
-        class: ClassDeclarationHandle,
-        method_name: Name,
-    },
-
-    // Documentation error
-    #[error("Invalid documentation string")]
-    InvalidDocString,
+    // ---------------- documentation errors --------------------------
     #[error("Documentation of '{}' was already defined", symbol_name)]
     DocAlreadyDefined { symbol_name: Name },
     #[error("Documentation of '{}' was not defined", symbol_name)]
     DocNotDefined { symbol_name: Name },
     #[error(
-        "Documentation of '{}' contains an argument reference to '{}' which is not valid in this context",
-        symbol_name,
-        ref_name
+    "Documentation of '{}' contains an argument reference to '{}' which is not valid in this context",
+    symbol_name,
+    ref_name
     )]
     DocInvalidArgumentContext {
         symbol_name: String,
@@ -85,33 +73,115 @@ pub enum BindingError {
         symbol_name: String,
         ref_name: String,
     },
-    // function errors
-    #[error("Function '{}' is not part of this library", handle.name)]
-    FunctionNotPartOfThisLib { handle: FunctionHandle },
-    #[error("Return type of native function '{}' was already defined", func_name)]
-    ReturnTypeAlreadyDefined { func_name: Name },
-    #[error("Return type of native function '{}' was not defined", func_name)]
-    ReturnTypeNotDefined { func_name: Name },
-
-    // enum errors
-    #[error("Enum '{}' is not part of this library", handle.name)]
-    EnumNotPartOfThisLib { handle: EnumHandle },
+    // Documentation error
+    #[error("Invalid documentation string")]
+    InvalidDocString,
+    // ---------------- class definition errors -----------------------
+    #[error("Class '{}' was already defined", handle.name)]
+    ClassAlreadyDefined { handle: ClassDeclarationHandle },
+    #[error("Constructor for class '{}' was already defined", handle.name)]
+    ConstructorAlreadyDefined { handle: ClassDeclarationHandle },
+    #[error("Destructor for class '{}' was already defined", handle.name)]
+    DestructorAlreadyDefined { handle: ClassDeclarationHandle },
+    #[error("Member '{}' is associated with class '{}' but was added to '{}'", name, declared.name, added_to.name)]
+    ClassMemberWrongAssociatedClass {
+        name: Name,
+        declared: ClassDeclarationHandle,
+        added_to: ClassDeclarationHandle,
+    },
+    #[error("Method name '{}' contains the name of the owning class '{}'", class.name, method_name)]
+    BadMethodName {
+        class: ClassDeclarationHandle,
+        method_name: Name,
+    },
+    #[error("No destructor defined for class '{}', but asking for manual/disposable destruction", handle.name)]
+    NoDestructorForManualDestruction { handle: ClassDeclarationHandle },
+    // ----------------- constant definition errors -------------------
+    #[error(
+        "ConstantSet '{}' already contains constant name  '{}'",
+        set_name,
+        constant_name
+    )]
+    ConstantNameAlreadyUsed { set_name: Name, constant_name: Name },
+    // ----------------- enum errors -------------------
+    #[error("Enum '{}' does not contain a variant named '{}'", name, variant_name)]
+    UnknownEnumVariant { name: Name, variant_name: String },
     #[error(
         "Enum '{}' already contains a variant with name '{}'",
         name,
         variant_name
     )]
-    EnumAlreadyContainsVariantWithSameName { name: Name, variant_name: String },
+    DuplicateEnumVariantName { name: Name, variant_name: String },
     #[error(
         "Enum '{}' already contains a variant with value '{}'",
         name,
         variant_value
     )]
-    EnumAlreadyContainsVariantWithSameValue { name: Name, variant_value: i32 },
-    #[error("Enum '{}' does not contain a variant named '{}'", name, variant_name)]
-    EnumDoesNotContainVariant { name: Name, variant_name: String },
+    DuplicateEnumVariantValue { name: Name, variant_value: i32 },
+    // ----------------- function errors -------------------
+    #[error("Return type of native function '{}' was already defined", func_name)]
+    ReturnTypeAlreadyDefined { func_name: Name },
+    #[error(
+        "Function '{}' already has an error type specified: '{}'",
+        function,
+        error_type
+    )]
+    ErrorTypeAlreadyDefined { function: Name, error_type: Name },
+    // ----------------- interface errors -------------------
+    #[error(
+        "Symbol '{}' is reserved and cannot be used as an interface method name",
+        name
+    )]
+    InterfaceMethodWithReservedName { name: Name },
+    #[error(
+        "Interface '{}' already has callback with the name '{}'",
+        interface_name,
+        callback_name
+    )]
+    InterfaceDuplicateCallbackName {
+        interface_name: Name,
+        callback_name: Name,
+    },
+    #[error(
+        "Symbol '{}' is reserved and cannot be used as a callback argument name",
+        name
+    )]
+    CallbackMethodArgumentWithReservedName { name: Name },
 
-    // Structure errors
+    // ----------------- struct errors -------------------
+    #[error("Native struct '{}' was already defined", handle.name)]
+    StructAlreadyDefined { handle: StructDeclarationHandle },
+    #[error(
+        "Initializer field type '{}' doesn't match value '{:?}",
+        field_type,
+        value
+    )]
+    StructInitializerBadValueForType {
+        field_type: String,
+        value: InitializerDefault,
+    },
+    #[error("Initializer contains a default struct field but struct '{}' doesn't have a default initializer", struct_name)]
+    StructInitializerStructFieldWithoutDefaultInitializer { struct_name: String },
+    #[error("Native struct '{}' already contains field with name '{}'", handle.name, field_name)]
+    StructFieldDuplicateName {
+        handle: StructDeclarationHandle,
+        field_name: Name,
+    },
+    #[error(
+        "Struct '{}' already contains an initializer with the name '{}'",
+        struct_name,
+        initializer_name
+    )]
+    StructInitializerDuplicateName {
+        struct_name: Name,
+        initializer_name: Name,
+    },
+    #[error(
+        "Initializer field '{}' doesn't exist within struct '{}",
+        field_name,
+        struct_name
+    )]
+    StructInitializerUnknownField { struct_name: Name, field_name: Name },
     #[error(
         "Duplicate initializer field default '{}' in struct '{}",
         field_name,
@@ -129,150 +199,6 @@ pub enum BindingError {
         this_initializer: Name,
         other_initializer: Name,
     },
-    #[error(
-        "Initializer field '{}' doesn't exist within struct '{}",
-        field_name,
-        struct_name
-    )]
-    StructInitializerUnknownField { struct_name: Name, field_name: Name },
-    #[error(
-        "Initializer field type '{}' doesn't match value '{:?}",
-        field_type,
-        value
-    )]
-    StructInitializerBadValueForType {
-        field_type: String,
-        value: InitializerDefault,
-    },
-    #[error("Initializer contains a default struct field but struct '{}' doesn't have a default initializer", struct_name)]
-    StructInitializerStructFieldWithoutDefaultInitializer { struct_name: String },
-    #[error(
-        "Struct '{}' already contains an initializer with the name '{}'",
-        struct_name,
-        initializer_name
-    )]
-    StructInitializerDuplicateName {
-        struct_name: Name,
-        initializer_name: Name,
-    },
-    #[error("Native struct '{}' was already defined", handle.name)]
-    StructAlreadyDefined { handle: StructDeclarationHandle },
-    #[error("Native struct '{}' is not part of this library", handle.name)]
-    StructNotPartOfThisLib { handle: StructDeclarationHandle },
-    #[error("Native struct '{}' already contains field with name '{}'", handle.name, field_name)]
-    StructAlreadyContainsFieldWithSameName {
-        handle: StructDeclarationHandle,
-        field_name: Name,
-    },
-    // Class errors
-    #[error("Expected '{:?}' but received {:?}", expected, received)]
-    WrongClassType {
-        expected: ClassType,
-        received: ClassType,
-    },
-    #[error("Class '{}' was already defined", handle.name)]
-    ClassAlreadyDefined { handle: ClassDeclarationHandle },
-
-    #[error("Method '{}' is associated with class '{}' but was added to '{}'", name, declared.name, added_to.name)]
-    ClassMethodWrongAssociatedClass {
-        name: Name,
-        declared: ClassDeclarationHandle,
-        added_to: ClassDeclarationHandle,
-    },
-
-    #[error("Class '{}' is not part of this library", handle.name)]
-    ClassNotPartOfThisLib { handle: ClassDeclarationHandle },
-    #[error("First parameter of function '{}' is not of type '{}' as expected for a method of a class", function.name, handle.name)]
-    FirstMethodParameterIsNotClassType {
-        handle: ClassDeclarationHandle,
-        function: FunctionHandle,
-    },
-    #[error("Constructor for class '{}' was already defined", handle.name)]
-    ConstructorAlreadyDefined { handle: ClassDeclarationHandle },
-    #[error("Native function '{}' does not return '{}' as expected for a constructor", function.name, handle.name)]
-    ConstructorReturnTypeDoesNotMatch {
-        handle: ClassDeclarationHandle,
-        function: FunctionHandle,
-    },
-    #[error("Destructor for class '{}' was already defined", handle.name)]
-    DestructorAlreadyDefined { handle: ClassDeclarationHandle },
-    #[error("Function '{}' does not take a single '{}' parameter as expected for a destructor", function.name, handle.name)]
-    DestructorTakesMoreThanOneParameter {
-        handle: ClassDeclarationHandle,
-        function: FunctionHandle,
-    },
-    #[error("Destructor for class '{}' cannot fail", handle.name)]
-    DestructorCannotFail { handle: ClassDeclarationHandle },
-    #[error("No destructor defined for class '{}', but asking for manual/disposable destruction", handle.name)]
-    NoDestructorForManualDestruction { handle: ClassDeclarationHandle },
-
-    // Async errors
-    #[error("AsyncMethods can only have one (implicit) interface parameter")]
-    AsyncMethodMoreThanOneInterface,
-    #[error("Function '{}' cannot be used as an async method because it doesn't have a interface parameter", handle.name)]
-    AsyncMethodNoInterface { handle: FunctionHandle },
-    #[error("Function '{}' cannot be used as an async method because it has too many interface parameters", handle.name)]
-    AsyncMethodTooManyInterface { handle: FunctionHandle },
-    #[error("Function '{}' cannot be used as an async method because its interface parameter doesn't have a single callback", handle.name)]
-    AsyncInterfaceNotSingleCallback { handle: FunctionHandle },
-    #[error("Function '{}' cannot be used as an async method because its interface parameter single callback does not have a single parameter (other than the arg param)", handle.name)]
-    AsyncCallbackNotSingleParam { handle: FunctionHandle },
-    #[error("Function '{}' cannot be used as an async method because its interface parameter single callback does not return void", handle.name)]
-    AsyncCallbackReturnTypeNotVoid { handle: FunctionHandle },
-
-    // Interface errors
-    #[error(
-        "Interface '{}' already has element with the name '{}'",
-        interface_name,
-        element_name
-    )]
-    InterfaceHasElementWithSameName {
-        interface_name: String,
-        element_name: String,
-    },
-    #[error(
-        "Symbol '{}' is reserved and cannot be used as an interface method name",
-        name
-    )]
-    InterfaceMethodWithReservedName { name: Name },
-    #[error("Interface '{}' is not part of this library", handle.name)]
-    InterfaceNotPartOfThisLib { handle: InterfaceHandle },
-    #[error(
-        "Symbol '{}' is reserved and cannot be used as a callback argument name",
-        name
-    )]
-    CallbackMethodArgumentWithReservedName { name: Name },
-
-    // Iterator errors
-    #[error("Iterator '{}' is not part of this library", handle.name())]
-    IteratorNotPartOfThisLib {
-        handle: crate::iterator::IteratorHandle,
-    },
-    // Collection errors
-    #[error("Invalid native function '{}' signature for create_func of collection", handle.name)]
-    CollectionCreateFuncInvalidSignature { handle: FunctionHandle },
-    #[error("Invalid native function '{}' signature for delete_func of collection", handle.name)]
-    CollectionDeleteFuncInvalidSignature { handle: FunctionHandle },
-    #[error("Invalid native function '{}' signature for add_func of collection", handle.name)]
-    CollectionAddFuncInvalidSignature { handle: FunctionHandle },
-    #[error("Collection native functions '{}' cannot fail", handle.name)]
-    CollectionFunctionsCannotFail { handle: FunctionHandle },
-    #[error("Collection has already been defined for class '{}'", handle.name)]
-    CollectionAlreadyDefinedForClass { handle: ClassDeclarationHandle },
-    #[error("Collection '{}' is not part of this library", handle.name())]
-    CollectionNotPartOfThisLib { handle: CollectionHandle },
-    #[error(
-        "ConstantSet '{}' already contains constant name  '{}'",
-        set_name,
-        constant_name
-    )]
-    ConstantNameAlreadyUsed { set_name: Name, constant_name: Name },
-    #[error(
-        "Function '{}' already has an error type specified: '{}'",
-        function,
-        error_type
-    )]
-    ErrorTypeAlreadyDefined { function: Name, error_type: Name },
 }
 
 impl From<BadName> for BindingError {

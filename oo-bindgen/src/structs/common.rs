@@ -510,7 +510,7 @@ where
             });
             Ok(self)
         } else {
-            Err(BindingError::StructAlreadyContainsFieldWithSameName {
+            Err(BindingError::StructFieldDuplicateName {
                 handle: self.declaration.inner.clone(),
                 field_name: name,
             })

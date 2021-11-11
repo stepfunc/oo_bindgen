@@ -324,7 +324,7 @@ impl<'a> ClassBuilder<'a> {
 
     fn check_class(&self, name: &Name, other: ClassDeclarationHandle) -> BindResult<()> {
         if self.declaration != other {
-            return Err(BindingError::ClassMethodWrongAssociatedClass {
+            return Err(BindingError::ClassMemberWrongAssociatedClass {
                 name: name.clone(),
                 declared: other,
                 added_to: self.declaration.clone(),

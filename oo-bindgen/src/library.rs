@@ -835,19 +835,13 @@ impl LibraryBuilder {
         &mut self,
         declaration: &ClassDeclarationHandle,
     ) -> BindResult<ClassBuilder> {
-        if declaration.class_type != ClassType::Normal {
-            return Err(BindingError::WrongClassType {
-                expected: ClassType::Normal,
-                received: declaration.class_type,
-            });
-        }
         self.check_class_declaration(declaration)?;
-        if !self.fields.classes.contains_key(declaration) {
-            Ok(ClassBuilder::new(self, declaration.clone()))
-        } else {
+        if self.fields.classes.contains_key(declaration) {
             Err(BindingError::ClassAlreadyDefined {
                 handle: declaration.clone(),
             })
+        } else {
+            Ok(ClassBuilder::new(self, declaration.clone()))
         }
     }
 
@@ -1017,7 +1011,6 @@ impl LibraryBuilder {
             )?
             .doc("Destroys an instance of the collection")?
             .param("instance", class_decl.clone(), "instance to destroy")?
-            .returns_nothing()?
             .build()?;
 
         let add_func = self
@@ -1032,7 +1025,6 @@ impl LibraryBuilder {
                 "instance to which to add the value",
             )?
             .param("value", value_type.clone(), "value to add to the instance")?
-            .returns_nothing()?
             .build()?;
 
         let collection = Handle::new(crate::collection::Collection::new(
@@ -1139,8 +1131,8 @@ impl LibraryBuilder {
         if self.fields.structs_declarations.contains(native_struct) {
             Ok(())
         } else {
-            Err(BindingError::StructNotPartOfThisLib {
-                handle: native_struct.clone(),
+            Err(BindingError::NotPartOfThisLibrary {
+                name: native_struct.name.clone(),
             })
         }
     }
@@ -1149,8 +1141,8 @@ impl LibraryBuilder {
         if self.fields.functions.contains(native_function) {
             Ok(())
         } else {
-            Err(BindingError::FunctionNotPartOfThisLib {
-                handle: native_function.clone(),
+            Err(BindingError::NotPartOfThisLibrary {
+                name: native_function.name.clone(),
             })
         }
     }
@@ -1159,8 +1151,8 @@ impl LibraryBuilder {
         if self.fields.enums.contains(native_enum) {
             Ok(())
         } else {
-            Err(BindingError::EnumNotPartOfThisLib {
-                handle: native_enum.clone(),
+            Err(BindingError::NotPartOfThisLibrary {
+                name: native_enum.name.clone(),
             })
         }
     }
@@ -1169,8 +1161,8 @@ impl LibraryBuilder {
         if self.fields.interfaces.contains(interface) {
             Ok(())
         } else {
-            Err(BindingError::InterfaceNotPartOfThisLib {
-                handle: interface.clone(),
+            Err(BindingError::NotPartOfThisLibrary {
+                name: interface.name.clone(),
             })
         }
     }
@@ -1182,8 +1174,8 @@ impl LibraryBuilder {
         if self.fields.class_declarations.contains(class_declaration) {
             Ok(())
         } else {
-            Err(BindingError::ClassNotPartOfThisLib {
-                handle: class_declaration.clone(),
+            Err(BindingError::NotPartOfThisLibrary {
+                name: class_declaration.name.clone(),
             })
         }
     }
@@ -1249,8 +1241,8 @@ impl LibraryBuilder {
         if self.fields.iterators.contains(iter) {
             Ok(())
         } else {
-            Err(BindingError::IteratorNotPartOfThisLib {
-                handle: iter.clone(),
+            Err(BindingError::NotPartOfThisLibrary {
+                name: iter.iter_class.name.clone(),
             })
         }
     }
@@ -1259,8 +1251,8 @@ impl LibraryBuilder {
         if self.fields.collections.contains(collection) {
             Ok(())
         } else {
-            Err(BindingError::CollectionNotPartOfThisLib {
-                handle: collection.clone(),
+            Err(BindingError::NotPartOfThisLibrary {
+                name: collection.collection_class.name.clone(),
             })
         }
     }

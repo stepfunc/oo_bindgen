@@ -59,7 +59,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         )?
         .param("chunk_size", BasicType::U32, "size of each iteration")?
         .param("callback", interface, "callback interface to invoke")?
-        .returns_nothing()?
         .build_static_with_same_name()?;
 
     lib.define_static_class("double_iterator_test_helper")?

@@ -308,9 +308,9 @@ impl<'a> InterfaceBuilder<'a> {
         if self.callback_names.insert(name.to_string()) {
             Ok(())
         } else {
-            Err(BindingError::InterfaceHasElementWithSameName {
-                interface_name: self.name.to_string(),
-                element_name: name.to_string(),
+            Err(BindingError::InterfaceDuplicateCallbackName {
+                interface_name: self.name.clone(),
+                callback_name: name.clone(),
             })
         }
     }
@@ -385,9 +385,10 @@ impl<'a> CallbackFunctionBuilder<'a> {
     }
 
     pub fn end_callback(mut self) -> BindResult<InterfaceBuilder<'a>> {
-        let return_type = self.return_type.ok_or(BindingError::ReturnTypeNotDefined {
-            func_name: self.name.clone(),
-        })?;
+        let return_type = match self.return_type {
+            None => ReturnType::Void,
+            Some(x) => x,
+        };
 
         let cb = CallbackFunction {
             name: self.name,

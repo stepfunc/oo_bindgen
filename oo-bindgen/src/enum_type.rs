@@ -62,7 +62,7 @@ where
 
     pub fn validate_contains_variant_name(&self, variant_name: &str) -> BindResult<()> {
         if self.find_variant_by_name(variant_name).is_none() {
-            Err(BindingError::EnumDoesNotContainVariant {
+            Err(BindingError::UnknownEnumVariant {
                 name: self.name.clone(),
                 variant_name: variant_name.to_string(),
             })
@@ -119,12 +119,12 @@ impl<'a> EnumBuilder<'a> {
             self.next_value = value + 1;
             Ok(self)
         } else if !unique_name {
-            Err(BindingError::EnumAlreadyContainsVariantWithSameName {
+            Err(BindingError::DuplicateEnumVariantName {
                 name: self.name,
                 variant_name: name.to_string(),
             })
         } else {
-            Err(BindingError::EnumAlreadyContainsVariantWithSameValue {
+            Err(BindingError::DuplicateEnumVariantValue {
                 name: self.name,
                 variant_value: value,
             })

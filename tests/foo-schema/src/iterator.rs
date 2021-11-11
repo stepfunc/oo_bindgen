@@ -39,7 +39,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "String to pass to the callback interface",
         )?
         .param("callback", interface, "callback interface to invoke")?
-        .returns_nothing()?
         .build_static_with_same_name()?;
 
     lib.define_static_class("iterator_test_helper")?

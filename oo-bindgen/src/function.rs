@@ -303,10 +303,6 @@ impl<'a> FunctionBuilder<'a> {
         Ok(self)
     }
 
-    pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(ReturnType::Void)
-    }
-
     pub fn returns<D: Into<DocString<Unvalidated>>, T: Into<FunctionReturnValue>>(
         self,
         return_type: T,
@@ -347,11 +343,7 @@ impl<'a> FunctionBuilder<'a> {
     pub fn build(self) -> BindResult<FunctionHandle> {
         let return_type = match self.return_type {
             Some(return_type) => return_type,
-            None => {
-                return Err(BindingError::ReturnTypeNotDefined {
-                    func_name: self.name,
-                })
-            }
+            None => ReturnType::Void,
         };
 
         let handle = FunctionHandle::new(Function {
@@ -529,9 +521,6 @@ impl<'a> FutureMethodBuilder<'a> {
     ) -> BindResult<Self> {
         let name = name.into_name()?;
         let param_type = param_type.into();
-        if let FunctionArgument::Interface(_) = &param_type {
-            return Err(BindingError::AsyncMethodMoreThanOneInterface);
-        }
         let builder = self.inner.param(name, param_type, doc)?;
         Ok(Self {
             future: self.future,
@@ -609,7 +598,6 @@ impl ClassDestructor<Unvalidated> {
                 format!("Instance of {{class:{}}} to destroy", class.name),
             )?
             .doc(doc)?
-            .returns_nothing()?
             .build()?;
 
         Ok(Self { class, function })

@@ -7,20 +7,7 @@ using System.Collections.Generic;
 namespace foo.Tests
 {
     public class IteratorTest
-    {
-        class ValuesReceiver : IValuesReceiver
-        {
-            public readonly List<Byte> values = new List<Byte>();
-
-            public void OnCharacters(ICollection<StringIteratorItem> values)
-            {
-                foreach(StringIteratorItem v in values)
-                {
-                    this.values.Add(v.Value);
-                }
-            }
-        }
-
+    {       
         class ChunkReceiver : IChunkReceiver
         {
             public readonly List<List<Char>> values = new List<List<Char>>();
@@ -41,22 +28,37 @@ namespace foo.Tests
         [Fact]
         public void StringIteratorTest()
         {
-            var receiver = new ValuesReceiver();
-            
-            IteratorTestHelper.InvokeCallback("ABCDE", receiver);
-            Assert.Equal(new byte[] { 65, 66, 67, 68, 69 }, receiver.values);
+            List<Byte> values = new List<Byte>();
+
+
+            IteratorTestHelper.InvokeCallback("ABCDE", strings => { 
+                foreach(StringIteratorItem item in strings) {
+                    values.Add(item.Value);
+                }
+            });
+            Assert.Equal(new byte[] { 65, 66, 67, 68, 69 }, values);
         }
 
         [Fact]
         public void ChunkIteratorTest()
         {
-            var receiver = new ChunkReceiver();
-            DoubleIteratorTestHelper.IterateStringByChunks("Hello World!", 3, receiver);
-            Assert.Equal(4, receiver.values.Count);
-            Assert.Equal(receiver.values[0], new char[] { 'H', 'e', 'l' });
-            Assert.Equal(receiver.values[1], new char[] { 'l', 'o', ' ' });
-            Assert.Equal(receiver.values[2], new char[] { 'W', 'o', 'r' });
-            Assert.Equal(receiver.values[3], new char[] { 'l', 'd', '!' });
+            List<List<Char>> values = new List<List<Char>>();
+            DoubleIteratorTestHelper.IterateStringByChunks("Hello World!", 3, chunks => {
+                foreach (Chunk c in chunks)
+                {
+                    List<Char> bytes = new List<Char>();
+                    foreach (ByteValue bv in c.Iter)
+                    {
+                        bytes.Add(Convert.ToChar(bv.Value));
+                    }
+                    values.Add(bytes);
+                }
+            });
+            Assert.Equal(4, values.Count);
+            Assert.Equal(values[0], new char[] { 'H', 'e', 'l' });
+            Assert.Equal(values[1], new char[] { 'l', 'o', ' ' });
+            Assert.Equal(values[2], new char[] { 'W', 'o', 'r' });
+            Assert.Equal(values[3], new char[] { 'l', 'd', '!' });
         }
 
     }

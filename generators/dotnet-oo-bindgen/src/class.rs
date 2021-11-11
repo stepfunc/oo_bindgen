@@ -348,43 +348,7 @@ fn generate_async_method(
     f: &mut dyn Printer,
     method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
-    let settings = method.future.interface.settings.clone();
-    let method_name = method.name.camel_case();
-    let async_handler_name = format!("{}Handler", method_name);
-    let return_type = method.future.value_type.as_dotnet_type();
-    let one_time_callback_name = format!("I{}", method.future.interface.name.camel_case());
-    let callback_name = settings.future.success_callback_method_name.camel_case();
-    let callback_param_name = settings
-        .future
-        .async_method_callback_parameter_name
-        .mixed_case();
-
-    // Write the task completion handler
-    f.writeln(&format!(
-        "internal class {} : {}",
-        async_handler_name, one_time_callback_name
-    ))?;
-    blocked(f, |f| {
-        f.writeln(&format!(
-            "internal TaskCompletionSource<{}> tcs = new TaskCompletionSource<{}>();",
-            return_type, return_type
-        ))?;
-
-        f.newline()?;
-
-        f.writeln(&format!(
-            "public void {}({} {})",
-            callback_name, return_type, callback_param_name
-        ))?;
-        blocked(f, |f| {
-            f.writeln(&format!(
-                "Task.Run(() => tcs.SetResult({}));",
-                callback_param_name
-            ))
-        })
-    })?;
-
-    f.newline()?;
+    let callback_success_type = method.future.value_type.as_dotnet_type();
 
     // Documentation
     documentation(f, |f| {
@@ -423,7 +387,7 @@ fn generate_async_method(
 
     f.writeln(&format!(
         "public Task<{}> {}(",
-        return_type,
+        callback_success_type,
         method.name.camel_case()
     ))?;
     f.write(
@@ -445,10 +409,17 @@ fn generate_async_method(
     )?;
     f.write(")")?;
 
+    let tcs_var_name = "_oo_bindgen_tcs";
+    let result_name = "_oo_bindgen_result";
+
     blocked(f, |f| {
         f.writeln(&format!(
-            "var {} = new {}();",
-            callback_param_name, async_handler_name
+            "var {} = new TaskCompletionSource<{}>();",
+            tcs_var_name, callback_success_type
+        ))?;
+        f.writeln(&format!(
+            "Action<{}> callback = ({}) => Task.Run(() => {}.SetResult({}));",
+            callback_success_type, result_name, tcs_var_name, result_name
         ))?;
         call_native_function(
             f,
@@ -457,6 +428,6 @@ fn generate_async_method(
             Some("this".to_string()),
             false,
         )?;
-        f.writeln(&format!("return {}.tcs.Task;", callback_param_name))
+        f.writeln(&format!("return {}.Task;", tcs_var_name))
     })
 }

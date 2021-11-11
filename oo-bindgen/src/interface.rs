@@ -160,22 +160,6 @@ where
     pub settings: Rc<LibrarySettings>,
 }
 
-impl Interface<Validated> {
-    /// Return a reference to a CallbackFunction if and only if the interface has a single callback.
-    ///
-    /// This type of interface can be converted to a Functor-type in many backend languages
-    pub fn get_functional_callback(&self) -> Option<&CallbackFunction<Validated>> {
-        match self.callbacks.len() {
-            1 => self.callbacks.get(0),
-            _ => None,
-        }
-    }
-
-    pub fn is_functional(&self) -> bool {
-        self.get_functional_callback().is_some()
-    }
-}
-
 impl Interface<Unvalidated> {
     pub(crate) fn validate(
         &self,
@@ -198,6 +182,20 @@ impl<D> Interface<D>
 where
     D: DocReference,
 {
+    /// Return a reference to a CallbackFunction if and only if the interface has a single callback.
+    ///
+    /// This type of interface can be converted to a Functor-type in many backend languages
+    pub fn get_functional_callback(&self) -> Option<&CallbackFunction<D>> {
+        match self.callbacks.len() {
+            1 => self.callbacks.get(0),
+            _ => None,
+        }
+    }
+
+    pub fn is_functional(&self) -> bool {
+        self.get_functional_callback().is_some()
+    }
+
     pub fn find_callback<S: AsRef<str>>(&self, name: S) -> Option<&CallbackFunction<D>> {
         self.callbacks
             .iter()

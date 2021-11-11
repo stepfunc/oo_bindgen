@@ -76,8 +76,8 @@ pub(crate) fn generate(
         f.newline()?;
 
         // Write the Action<>/Func<> based implementation if it's a functional interface
-        if interface.is_functional() {
-            generate_functional_callback(f, interface, interface.callbacks.first().unwrap())?;
+        if let Some(callback) = interface.get_functional_callback() {
+            generate_functional_callback(f, interface, callback)?;
             f.newline()?;
         }
 
@@ -293,7 +293,7 @@ pub(crate) fn generate_functional_callback(
             f.writeln("</param>")?;
             Ok(())
         })?;
-        f.writeln(&format!("public {}({} action)", class_name, action_type))?;
+        f.writeln(&format!("internal {}({} action)", class_name, action_type))?;
         blocked(f, |f| f.writeln("this.action = action;"))?;
 
         f.newline()?;

@@ -168,7 +168,25 @@ where
     D: DocReference,
 {
     fn as_dotnet_type(&self) -> String {
-        format!("I{}", self.name.camel_case())
+        if let Some(cb) = self.get_functional_callback() {
+            let arg_types = cb
+                .arguments
+                .iter()
+                .map(|x| x.arg_type.as_dotnet_type())
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            match &cb.return_type {
+                ReturnType::Void => {
+                    format!("Action<{}>", arg_types)
+                }
+                ReturnType::Type(t, _) => {
+                    format!("Func<{}, {}>", arg_types, t.as_dotnet_type())
+                }
+            }
+        } else {
+            format!("I{}", self.name.camel_case())
+        }
     }
 
     fn as_native_type(&self) -> String {
@@ -176,11 +194,13 @@ where
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
-        Some(format!(
-            "new I{}NativeAdapter({})",
-            self.name.camel_case(),
-            from
-        ))
+        let name = self.name.camel_case();
+        let inner_transform = if self.is_functional() {
+            format!("new {}({})", name, from)
+        } else {
+            from.to_string()
+        };
+        Some(format!("new I{}NativeAdapter({})", name, inner_transform))
     }
 
     fn cleanup(&self, _from: &str) -> Option<String> {

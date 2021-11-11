@@ -11,11 +11,11 @@ namespace foo.Tests
         public async void AsyncCallbacksWork()
         {
             var values = new List<uint>();
-            var tc = new foo.ThreadClass(42, new ValueChangeListener(item => values.Add(item)));
+            var tc = new foo.ThreadClass(42, item => values.Add(item));
             var result = await tc.Add(4);
             Assert.Equal(46u, result);
             tc.Update(43);
-            tc.Execute(new Operation(x => 2 * x));
+            tc.Execute(x => 2 * x);
 
             // shutdown the thread explicitly instead of waiting for GC
             tc.Shutdown();

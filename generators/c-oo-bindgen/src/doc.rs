@@ -2,9 +2,27 @@ use crate::ctype::CType;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
 
+pub(crate) type ReferencePrinter =
+    fn(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()>;
+
 pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
+    doxygen_print_generic(f, print_c_reference, doc)
+}
+
+pub(crate) fn docstring_print(
+    f: &mut dyn Printer,
+    docstring: &DocString<Validated>,
+) -> FormattingResult<()> {
+    docstring_print_generic(f, print_c_reference, docstring)
+}
+
+pub(crate) fn doxygen_print_generic(
+    f: &mut dyn Printer,
+    print_reference: ReferencePrinter,
+    doc: &Doc<Validated>,
+) -> FormattingResult<()> {
     f.writeln("@brief ")?;
-    docstring_print(f, &doc.brief)?;
+    docstring_print_generic(f, print_reference, &doc.brief)?;
 
     for detail in &doc.details {
         f.newline()?;
@@ -12,11 +30,11 @@ pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc<Validated>) -> Format
         match detail {
             DocParagraph::Details(docstring) => {
                 f.newline()?;
-                docstring_print(f, docstring)?;
+                docstring_print_generic(f, print_reference, docstring)?;
             }
             DocParagraph::Warning(docstring) => {
                 f.writeln("@warning ")?;
-                docstring_print(f, docstring)?;
+                docstring_print_generic(f, print_reference, docstring)?;
             }
         }
     }
@@ -24,8 +42,9 @@ pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc<Validated>) -> Format
     Ok(())
 }
 
-pub(crate) fn docstring_print(
+pub(crate) fn docstring_print_generic(
     f: &mut dyn Printer,
+    print_reference: ReferencePrinter,
     docstring: &DocString<Validated>,
 ) -> FormattingResult<()> {
     for el in docstring.elements() {
@@ -33,14 +52,14 @@ pub(crate) fn docstring_print(
             DocStringElement::Text(text) => f.write(text)?,
             DocStringElement::Null => f.write("@p NULL")?,
             DocStringElement::Iterator => f.write("iterator")?,
-            DocStringElement::Reference(reference) => reference_print(f, reference)?,
+            DocStringElement::Reference(reference) => print_reference(f, reference)?,
         }
     }
 
     Ok(())
 }
 
-fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
+fn print_c_reference(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
         Validated::Argument(param_name) => f.write(&format!("@p {}", param_name))?,
         Validated::Class(class) => {

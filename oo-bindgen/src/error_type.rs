@@ -11,7 +11,9 @@ pub enum ExceptionType {
     UncheckedException,
 }
 
-// error types are just special kinds of enums
+/// error types are just special kinds of enums
+///
+/// TODO - add docs for the exception?
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ErrorType<D>
 where

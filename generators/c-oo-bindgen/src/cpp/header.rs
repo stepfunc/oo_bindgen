@@ -1,4 +1,5 @@
 use crate::cpp::conversion::*;
+use crate::cpp::doc::{print_commented_cpp_doc, print_cpp_doc, print_cpp_doc_string};
 use crate::cpp::formatting::{namespace, FriendClass};
 use oo_bindgen::class::{
     Class, ClassDeclarationHandle, ClassType, Method, StaticClass, StaticMethod,
@@ -7,9 +8,10 @@ use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
 use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
+use oo_bindgen::formatting::{blocked, doxygen, indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::function::{FunctionArgument, FutureMethod};
 use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceType};
+use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::{
     Initializer, InitializerType, Struct, StructDeclaration, StructFieldType, StructType,
     Visibility,
@@ -222,7 +224,7 @@ fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
 
 fn print_constants(
     f: &mut dyn Printer,
-    c: &Handle<ConstantSet<Validated>>,
+    set: &Handle<ConstantSet<Validated>>,
 ) -> FormattingResult<()> {
     fn get_value(v: ConstantValue) -> String {
         match v {
@@ -236,14 +238,16 @@ fn print_constants(
         }
     }
 
-    f.writeln(&format!("namespace {} {{", c.name))?;
+    print_commented_cpp_doc(f, &set.doc)?;
+    f.writeln(&format!("namespace {} {{", set.name))?;
     indented(f, |f| {
-        for v in &c.values {
+        for value in &set.values {
+            print_commented_cpp_doc(f, &value.doc)?;
             f.writeln(&format!(
                 "constexpr {} {} = {};",
-                get_type(v.value),
-                v.core_cpp_type(),
-                get_value(v.value)
+                get_type(value.value),
+                value.core_cpp_type(),
+                get_value(value.value)
             ))?;
         }
         Ok(())
@@ -253,9 +257,11 @@ fn print_constants(
 }
 
 fn print_enum(f: &mut dyn Printer, e: &Handle<Enum<Validated>>) -> FormattingResult<()> {
+    print_commented_cpp_doc(f, &e.doc)?;
     f.writeln(&format!("enum class {} {{", e.core_cpp_type()))?;
     indented(f, |f| {
         for v in &e.variants {
+            print_commented_cpp_doc(f, &v.doc)?;
             f.writeln(&format!("{} = {},", v.core_cpp_type(), v.value))?;
         }
         Ok(())
@@ -301,6 +307,7 @@ fn print_struct_definition<T>(
 where
     T: StructFieldType + CppStructType + CppFunctionArgType,
 {
+    print_commented_cpp_doc(f, &handle.doc)?;
     f.writeln(&format!("struct {} {{", handle.core_cpp_type()))?;
 
     indented(f, |f| {
@@ -321,7 +328,7 @@ where
             // write a default constructor
             let constructor = Handle::new(Initializer::full(
                 InitializerType::Normal,
-                brief("Fully initialize"),
+                brief("Fully initialize the struct"),
             ));
             print_initializer_definition(f, handle, &constructor)
         })?;
@@ -344,6 +351,7 @@ where
 
         f.newline()?;
         for field in &handle.fields {
+            print_commented_cpp_doc(f, &field.doc)?;
             f.writeln(&format!(
                 "{} {};",
                 field.field_type.struct_member_type(),
@@ -362,6 +370,7 @@ fn print_interface(
     f: &mut dyn Printer,
     handle: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
+    print_commented_cpp_doc(f, &handle.doc)?;
     f.writeln(&format!("class {} {{", handle.core_cpp_type()))?;
     f.writeln("public:")?;
     indented(f, |f| {
@@ -381,6 +390,22 @@ fn print_interface(
                 .collect::<Vec<String>>()
                 .join(", ");
 
+            doxygen(f, |f| {
+                print_cpp_doc(f, &cb.doc)?;
+                f.newline()?;
+                for arg in cb.arguments.iter() {
+                    f.write("@param ")?;
+                    f.write(arg.name.as_ref())?;
+                    f.write(" ")?;
+                    print_cpp_doc_string(f, &arg.doc)?;
+                }
+                if let ReturnType::Type(_, d) = &cb.return_type {
+                    f.newline()?;
+                    f.write("@return ")?;
+                    print_cpp_doc_string(f, d)?;
+                }
+                Ok(())
+            })?;
             f.writeln(&format!(
                 "virtual {} {}({}) = 0;",
                 cb.return_type.get_cpp_callback_return_type(),
@@ -396,23 +421,24 @@ fn print_interface(
 fn print_initializer_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T, Validated>>,
-    constructor: &Handle<Initializer<Validated>>,
+    initializer: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + CppFunctionArgType,
 {
     let args = handle
-        .initializer_args(constructor.clone())
+        .initializer_args(initializer.clone())
         .map(|x| format!("{} {}", x.field_type.get_cpp_function_arg_type(), x.name))
         .collect::<Vec<String>>()
         .join(", ");
 
-    match constructor.initializer_type {
+    print_commented_cpp_doc(f, &initializer.doc)?;
+    match initializer.initializer_type {
         InitializerType::Normal => f.writeln(&format!("{}({});", handle.core_cpp_type(), args))?,
         InitializerType::Static => f.writeln(&format!(
             "static {} {}({});",
             handle.core_cpp_type(),
-            constructor.name,
+            initializer.name,
             args
         ))?,
     }

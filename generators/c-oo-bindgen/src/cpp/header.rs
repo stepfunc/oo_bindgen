@@ -101,6 +101,18 @@ fn write_functional_interface_helpers(
     callback: &CallbackFunction<Validated>,
 ) -> FormattingResult<()> {
     let interface_name = interface.core_cpp_type();
+
+    doxygen(f, |f| {
+        f.writeln(&format!(
+            "@brief class that implements @ref {} in terms of a lambda expression",
+            interface_name
+        ))?;
+        f.writeln(&format!(
+            "@note this class can only be constructed using @ref {} helper function",
+            interface.name
+        ))?;
+        Ok(())
+    })?;
     let class_name = format!("{}Lambda", interface_name);
     f.writeln("template <class T>")?;
     f.writeln(&format!(
@@ -116,6 +128,11 @@ fn write_functional_interface_helpers(
     f.newline()?;
     f.writeln("public:")?;
     indented(f, |f| {
+        doxygen(f, |f| {
+            f.writeln("@brief constructor")?;
+            f.writeln("@param lambda functor value on which to base the interface implementation")?;
+            Ok(())
+        })?;
         f.writeln(&format!(
             "{}(const T& lambda) : lambda(lambda) {{}}",
             class_name
@@ -130,6 +147,7 @@ fn write_functional_interface_helpers(
             .collect::<Vec<String>>()
             .join(", ");
 
+        f.writeln("/// @brief implement virtual method from base class")?;
         f.writeln(&format!(
             "{} {}({}) override",
             return_type, callback.name, args
@@ -170,6 +188,19 @@ fn write_functional_interface_helpers(
         format!("std::make_unique<{}<T>>(lambda); ", class_name)
     };
 
+    doxygen(f, |f| {
+        f.writeln(&format!(
+            "@brief construct an implementation of @ref {} based on a lambda expression",
+            interface_name
+        ))?;
+        f.writeln("@param lambda functor value on which to base the interface implementation")?;
+        if is_synchronous {
+            f.writeln("@return concrete implementation of the interface")?;
+        } else {
+            f.writeln("@return abstract implementation of the interface in a unique_ptr")?;
+        }
+        Ok(())
+    })?;
     f.writeln("template <class T>")?;
     f.writeln(&format!(
         "{} {}(const T& lambda)",
@@ -209,19 +240,25 @@ fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> For
 fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     let name = lib.settings.c_ffi_prefix.clone();
 
-    // Version number
+    f.writeln("/// major version number")?;
     f.writeln(&format!(
         "constexpr uint64_t {}_version_major = {};",
         name, lib.version.major
     ))?;
+
+    f.writeln("/// minor version number")?;
     f.writeln(&format!(
         "constexpr uint64_t {}_version_minor = {};",
         name, lib.version.minor
     ))?;
+
+    f.writeln("/// patch version number")?;
     f.writeln(&format!(
         "constexpr uint64_t {}_version_patch = {};",
         name, lib.version.patch
     ))?;
+
+    f.writeln("/// version number as the string <major>.<minor>.<patch>")?;
     f.writeln(&format!(
         "constexpr char const* {}_version_string = \"{}\";",
         name,
@@ -447,7 +484,18 @@ where
         .collect::<Vec<String>>()
         .join(", ");
 
-    print_commented_cpp_doc(f, &initializer.doc)?;
+    doxygen(f, |f| {
+        print_cpp_doc(f, &initializer.doc)?;
+        f.newline()?;
+        for x in initializer.values.iter() {
+            f.writeln(&format!(
+                "@note {} is initialized to {}",
+                x.name,
+                x.value.to_string()
+            ))?;
+        }
+        Ok(())
+    })?;
     match initializer.initializer_type {
         InitializerType::Normal => f.writeln(&format!("{}({});", handle.core_cpp_type(), args))?,
         InitializerType::Static => f.writeln(&format!(

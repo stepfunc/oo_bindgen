@@ -1,12 +1,65 @@
 use crate::cpp::conversion::CoreCppType;
 use crate::doc::{docstring_print_generic, doxygen_print_generic};
+use oo_bindgen::class::{Method, StaticMethod};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::function::{Function, FutureMethod};
 use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::types::Arg;
 
 pub(crate) fn print_cpp_doc(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
     doxygen_print_generic(f, print_cpp_reference, doc)
+}
+
+pub(crate) fn print_cpp_method_docs(
+    f: &mut dyn Printer,
+    method: &Method<Validated>,
+) -> FormattingResult<()> {
+    print_cpp_function_docs(f, &method.native_function, false, true)
+}
+
+pub(crate) fn print_cpp_static_method_docs(
+    f: &mut dyn Printer,
+    method: &StaticMethod<Validated>,
+) -> FormattingResult<()> {
+    print_cpp_function_docs(f, &method.native_function, true, true)
+}
+
+pub(crate) fn print_cpp_future_method_docs(
+    f: &mut dyn Printer,
+    method: &FutureMethod<Validated>,
+) -> FormattingResult<()> {
+    print_cpp_function_docs(f, &method.native_function, true, true)
+}
+
+fn print_cpp_function_docs(
+    f: &mut dyn Printer,
+    function: &Function<Validated>,
+    is_instance_method: bool,
+    print_return: bool,
+) -> FormattingResult<()> {
+    doxygen(f, |f| {
+        print_cpp_doc(f, &function.doc)?;
+        f.newline()?;
+        if is_instance_method {
+            for arg in function.arguments.iter().skip(1) {
+                f.newline()?;
+                print_cpp_argument_doc(f, arg)?;
+            }
+        } else {
+            for arg in function.arguments.iter() {
+                f.newline()?;
+                print_cpp_argument_doc(f, arg)?;
+            }
+        }
+        if print_return {
+            print_cpp_return_type_doc(f, &function.return_type)?;
+        }
+        if let Some(err) = &function.error_type {
+            f.writeln(&format!("@throws {}", err.exception_name.camel_case()))?;
+        }
+        Ok(())
+    })
 }
 
 pub(crate) fn print_cpp_argument_doc<T>(

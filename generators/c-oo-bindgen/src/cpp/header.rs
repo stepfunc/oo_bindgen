@@ -1,6 +1,7 @@
 use crate::cpp::conversion::*;
 use crate::cpp::doc::{
-    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_doc, print_cpp_return_type_doc,
+    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_doc, print_cpp_future_method_docs,
+    print_cpp_method_docs, print_cpp_return_type_doc, print_cpp_static_method_docs,
 };
 use crate::cpp::formatting::{namespace, FriendClass};
 use oo_bindgen::class::{
@@ -538,15 +539,7 @@ fn print_class_definition(
 fn print_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.arguments.iter().skip(1));
 
-    doxygen(f, |f| {
-        print_cpp_doc(f, &method.native_function.doc)?;
-        for arg in method.arguments() {
-            f.newline()?;
-            print_cpp_argument_doc(f, arg)?;
-        }
-        print_cpp_return_type_doc(f, &method.native_function.return_type)?;
-        Ok(())
-    })?;
+    print_cpp_method_docs(f, method)?;
     f.writeln(&format!(
         "{} {}({});",
         method
@@ -564,16 +557,7 @@ fn print_static_method(
 ) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.arguments.iter());
 
-    doxygen(f, |f| {
-        print_cpp_doc(f, &method.native_function.doc)?;
-        for arg in &method.native_function.arguments {
-            f.newline()?;
-            print_cpp_argument_doc(f, arg)?;
-        }
-        print_cpp_return_type_doc(f, &method.native_function.return_type)?;
-        Ok(())
-    })?;
-
+    print_cpp_static_method_docs(f, method)?;
     f.writeln(&format!(
         "static {} {}({});",
         method
@@ -591,15 +575,7 @@ fn print_future_method(
 ) -> FormattingResult<()> {
     let args: String = cpp_arguments(method.native_function.arguments.iter().skip(1));
 
-    doxygen(f, |f| {
-        print_cpp_doc(f, &method.native_function.doc)?;
-        for arg in method.arguments() {
-            f.newline()?;
-            print_cpp_argument_doc(f, arg)?;
-        }
-        print_cpp_return_type_doc(f, &method.native_function.return_type)?;
-        Ok(())
-    })?;
+    print_cpp_future_method_docs(f, method)?;
     f.writeln(&format!(
         "{} {}({});",
         method

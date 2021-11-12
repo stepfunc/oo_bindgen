@@ -1,13 +1,14 @@
-/**
- * @brief Iterator over @ref <iter_type> instances
- *
- * @example
- *
- * // always use this pattern to extract values from the iterator
- * while(iter.next()) {
- *     <iter_type> value = iter.get();
- * }
- */
+/// @brief Iterator over @ref <iter_type> instances
+///
+/// @warning
+///
+/// Always use this pattern to extract values from the iterator:
+///
+/// while(iter.next()) {
+///   <iter_type> value = iter.get();
+/// }
+///
+/// Calling get() when no value is available will throw std::logic_error
 class <name> final {
 
     friend class Cpp<name>Friend;
@@ -27,7 +28,7 @@ class <name> final {
 
 public:
 
-    /// @brief
+    /// @brief move constructor for the iterator
     <name>(<name>&&) = default;
 
     /// @brief move the iterator to the next value

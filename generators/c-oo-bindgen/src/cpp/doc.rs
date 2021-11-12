@@ -3,7 +3,7 @@ use crate::doc::{docstring_print_generic, doxygen_print_generic};
 use oo_bindgen::class::{Method, StaticMethod};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::function::{Function, FutureMethod};
+use oo_bindgen::function::{ClassConstructor, Function, FutureMethod};
 use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::types::Arg;
 
@@ -15,14 +15,14 @@ pub(crate) fn print_cpp_method_docs(
     f: &mut dyn Printer,
     method: &Method<Validated>,
 ) -> FormattingResult<()> {
-    print_cpp_function_docs(f, &method.native_function, false, true)
+    print_cpp_function_docs(f, &method.native_function, true, true)
 }
 
 pub(crate) fn print_cpp_static_method_docs(
     f: &mut dyn Printer,
     method: &StaticMethod<Validated>,
 ) -> FormattingResult<()> {
-    print_cpp_function_docs(f, &method.native_function, true, true)
+    print_cpp_function_docs(f, &method.native_function, false, true)
 }
 
 pub(crate) fn print_cpp_future_method_docs(
@@ -30,6 +30,13 @@ pub(crate) fn print_cpp_future_method_docs(
     method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
     print_cpp_function_docs(f, &method.native_function, true, true)
+}
+
+pub(crate) fn print_cpp_constructor_docs(
+    f: &mut dyn Printer,
+    constructor: &ClassConstructor<Validated>,
+) -> FormattingResult<()> {
+    print_cpp_function_docs(f, &constructor.function, false, false)
 }
 
 fn print_cpp_function_docs(

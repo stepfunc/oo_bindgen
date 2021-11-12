@@ -1,7 +1,8 @@
 use crate::cpp::conversion::*;
 use crate::cpp::doc::{
-    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_doc, print_cpp_future_method_docs,
-    print_cpp_method_docs, print_cpp_return_type_doc, print_cpp_static_method_docs,
+    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_constructor_docs, print_cpp_doc,
+    print_cpp_future_method_docs, print_cpp_method_docs, print_cpp_return_type_doc,
+    print_cpp_static_method_docs,
 };
 use crate::cpp::formatting::{namespace, FriendClass};
 use oo_bindgen::class::{
@@ -38,6 +39,7 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
     f.writeln("#include <vector>")?;
     f.newline()?;
 
+    f.writeln("/// main namespace for the library")?;
     namespace(&mut f, &lib.settings.c_ffi_prefix, |f| {
         print_header_namespace_contents(lib, f)
     })?;
@@ -48,6 +50,8 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
 fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     print_version(lib, f)?;
     f.newline()?;
+
+    let mut documented_functional_ns = false;
 
     for statement in lib.statements() {
         match &statement {
@@ -65,6 +69,10 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
                 print_interface(f, x)?;
 
                 if let Some(callback) = x.get_functional_callback() {
+                    if !documented_functional_ns {
+                        documented_functional_ns = true;
+                        f.writeln("/// helpers functions to create interface implementations using lambdas")?;
+                    }
                     namespace(f, "functional", |f| {
                         write_functional_interface_helpers(f, x, callback)
                     })?;
@@ -108,7 +116,7 @@ fn write_functional_interface_helpers(
             interface_name
         ))?;
         f.writeln(&format!(
-            "@note this class can only be constructed using @ref {} helper function",
+            "@note this class can only be constructed using @ref {}() helper function",
             interface.name
         ))?;
         Ok(())
@@ -193,6 +201,7 @@ fn write_functional_interface_helpers(
             "@brief construct an implementation of @ref {} based on a lambda expression",
             interface_name
         ))?;
+        f.writeln("@note T must be copy-constructible to use this function")?;
         f.writeln("@param lambda functor value on which to base the interface implementation")?;
         if is_synchronous {
             f.writeln("@return concrete implementation of the interface")?;
@@ -227,12 +236,6 @@ fn print_iterator_definition(
 }
 
 fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> FormattingResult<()> {
-    doxygen(f, |f| {
-        f.writeln(&format!(
-            "@brief forward declaration to class @ref {}",
-            handle.core_cpp_type()
-        ))
-    })?;
     f.writeln(&format!("class {};", handle.core_cpp_type()))?;
     f.newline()
 }
@@ -258,7 +261,7 @@ fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
         name, lib.version.patch
     ))?;
 
-    f.writeln("/// version number as the string <major>.<minor>.<patch>")?;
+    f.writeln("/// version number as the string major.minor.patch")?;
     f.writeln(&format!(
         "constexpr char const* {}_version_string = \"{}\";",
         name,
@@ -330,7 +333,7 @@ fn print_enum(f: &mut dyn Printer, e: &Handle<Enum<Validated>>) -> FormattingRes
 
 fn print_exception(f: &mut dyn Printer, e: &ErrorType<Validated>) -> FormattingResult<()> {
     f.writeln(&format!(
-        "/// @brief Exception type corresponding to the underlying error num @ref {}",
+        "/// @brief Exception type corresponding to the underlying error enum #{}",
         e.inner.core_cpp_type()
     ))?;
     f.writeln(&format!(
@@ -428,7 +431,10 @@ fn print_interface(
     f: &mut dyn Printer,
     handle: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
-    print_commented_cpp_doc(f, &handle.doc)?;
+    doxygen(f, |f| {
+        print_cpp_doc(f, &handle.doc)?;
+        f.writeln("@note this class is an \"interface\" and only has pure virtual methods")
+    })?;
     f.writeln(&format!("class {} {{", handle.core_cpp_type()))?;
     f.writeln("public:")?;
     indented(f, |f| {
@@ -545,16 +551,7 @@ fn print_class_definition(
             let args = cpp_arguments(x.function.arguments.iter());
 
             f.newline()?;
-            doxygen(f, |f| {
-                print_cpp_doc(f, &x.function.doc)?;
-                f.newline()?;
-                for arg in &x.function.arguments {
-                    f.newline()?;
-                    print_cpp_argument_doc(f, arg)?;
-                }
-                Ok(())
-            })?;
-
+            print_cpp_constructor_docs(f, x)?;
             f.writeln(&format!("{}({});", class_name, args))?;
         };
         if let Some(x) = &handle.destructor {
@@ -641,6 +638,7 @@ fn print_static_class(
     f: &mut dyn Printer,
     handle: &Handle<StaticClass<Validated>>,
 ) -> FormattingResult<()> {
+    print_commented_cpp_doc(f, &handle.doc)?;
     f.writeln(&format!("class {} {{", handle.core_cpp_type()))?;
     indented(f, |f| {
         f.writeln(&format!("{}() = delete;", handle.core_cpp_type()))

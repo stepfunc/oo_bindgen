@@ -65,7 +65,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-mod chelpers;
 mod cpp;
 mod ctype;
 mod doc;
@@ -585,6 +584,15 @@ fn write_function(
     f.write(");")
 }
 
+pub(crate) fn callback_parameters(func: &CallbackFunction<Validated>) -> String {
+    func.arguments
+        .iter()
+        .map(|arg| arg.arg_type.to_c_type())
+        .chain(std::iter::once("void*".to_string()))
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
 fn write_interface(
     f: &mut dyn Printer,
     handle: &Handle<Interface<Validated>>,
@@ -630,7 +638,7 @@ fn write_interface(
             // Print function signature
             f.write(&format!("{} (*{})(", cb.return_type.to_c_type(), cb.name))?;
 
-            f.write(&chelpers::callback_parameters(cb))?;
+            f.write(&callback_parameters(cb))?;
 
             f.write(");")?;
         }
@@ -675,7 +683,7 @@ fn write_interface(
         for cb in &handle.callbacks {
             f.writeln(&format!("{} (*{})(", cb.return_type.to_c_type(), cb.name,))?;
 
-            f.write(&chelpers::callback_parameters(cb))?;
+            f.write(&callback_parameters(cb))?;
             f.write("),")?;
         }
 

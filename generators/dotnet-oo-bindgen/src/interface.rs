@@ -16,12 +16,11 @@ pub(crate) fn generate(
     print_imports(f)?;
     f.newline()?;
 
-    let is_private = interface.get_functional_callback().map(|cb| cb.functional_transform.enabled()).unwrap_or(false);
-    let visibility = if is_private {
-        "internal"
-    } else {
-        "public"
-    };
+    let is_private = interface
+        .get_functional_callback()
+        .map(|cb| cb.functional_transform.enabled())
+        .unwrap_or(false);
+    let visibility = if is_private { "internal" } else { "public" };
 
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
@@ -317,7 +316,7 @@ pub(crate) fn generate_functional_helpers(
     let functor_type = full_functor_type(cb);
 
     let visibility = if cb.functional_transform.enabled() {
-      "internal"
+        "internal"
     } else {
         "public"
     };
@@ -358,9 +357,7 @@ pub(crate) fn generate_functional_helpers(
         // write the factory function
         f.writeln(&format!(
             "{} static {} create({} action)",
-            visibility,
-            interface_name,
-            functor_type
+            visibility, interface_name, functor_type
         ))?;
         blocked(f, |f| f.writeln("return new Implementation(action);"))?;
 

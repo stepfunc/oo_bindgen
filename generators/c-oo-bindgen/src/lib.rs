@@ -90,7 +90,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     let source_path = output_dir.join("src");
 
     generate_c_header(lib, &include_path)?;
-    crate::cpp::definition::generate_header(lib, &include_path)?;
+    crate::cpp::header::generate_header(lib, &include_path)?;
     crate::cpp::implementation::generate_cpp_file(lib, &source_path)?;
 
     // Generate CMake config file
@@ -227,21 +227,21 @@ fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
         // Iterate through each statement and print them
         for statement in lib.statements() {
             match statement {
-                Statement::Constants(handle) => write_constants_definition(f, handle, lib)?,
+                Statement::Constants(handle) => write_constants_definition(f, handle)?,
                 Statement::StructDeclaration(handle) => {
                     let c_type = handle.to_c_type();
                     f.writeln(&format!("typedef struct {} {};", c_type, c_type))?;
                 }
                 Statement::StructDefinition(st) => match st {
-                    StructType::FunctionArg(x) => write_struct_definition(f, x, lib)?,
-                    StructType::FunctionReturn(x) => write_struct_definition(f, x, lib)?,
-                    StructType::CallbackArg(x) => write_struct_definition(f, x, lib)?,
-                    StructType::Universal(x) => write_struct_definition(f, x, lib)?,
+                    StructType::FunctionArg(x) => write_struct_definition(f, x)?,
+                    StructType::FunctionReturn(x) => write_struct_definition(f, x)?,
+                    StructType::CallbackArg(x) => write_struct_definition(f, x)?,
+                    StructType::Universal(x) => write_struct_definition(f, x)?,
                 },
-                Statement::EnumDefinition(handle) => write_enum_definition(f, handle, lib)?,
+                Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
                 Statement::ClassDeclaration(handle) => write_class_declaration(f, handle)?,
-                Statement::FunctionDefinition(handle) => write_function(f, handle, lib)?,
-                Statement::InterfaceDefinition(handle) => write_interface(f, handle, lib)?,
+                Statement::FunctionDefinition(handle) => write_function(f, handle)?,
+                Statement::InterfaceDefinition(handle) => write_interface(f, handle)?,
                 _ => (),
             }
             f.newline()?;
@@ -254,7 +254,6 @@ fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
 fn write_constants_definition(
     f: &mut dyn Printer,
     handle: &Handle<ConstantSet<Validated>>,
-    lib: &Library,
 ) -> FormattingResult<()> {
     fn get_constant_value(value: ConstantValue) -> String {
         match value {
@@ -263,10 +262,10 @@ fn write_constants_definition(
     }
 
     for item in &handle.values {
-        doxygen(f, |f| doxygen_print(f, &item.doc, lib))?;
+        doxygen(f, |f| doxygen_print(f, &item.doc))?;
         f.writeln(&format!(
             "#define {}_{}_{} {}",
-            lib.settings.c_ffi_prefix.capital_snake_case(),
+            handle.settings.c_ffi_prefix.capital_snake_case(),
             handle.name.capital_snake_case(),
             item.name.capital_snake_case(),
             get_constant_value(item.value)
@@ -278,7 +277,6 @@ fn write_constants_definition(
 fn write_struct_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T, Validated>>,
-    lib: &Library,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + TypeExtractor + CType,
@@ -291,7 +289,7 @@ where
             .warning("This struct should never be initialized or modified by user code"),
     };
 
-    doxygen(f, |f| doxygen_print(f, &doc, lib))?;
+    doxygen(f, |f| doxygen_print(f, &doc))?;
 
     // Write the struct definition
     f.writeln(&format!("typedef struct {}", handle.to_c_type()))?;
@@ -299,7 +297,7 @@ where
     indented(f, |f| {
         for element in &handle.fields {
             doxygen(f, |f| {
-                doxygen_print(f, &element.doc, lib)?;
+                doxygen_print(f, &element.doc)?;
 
                 if let Some(t) = &element.field_type.get_duration_type() {
                     f.writeln(&format!("@note The unit is {}", t.unit()))?;
@@ -321,7 +319,7 @@ where
     if handle.visibility != Visibility::Private {
         f.newline()?;
         for c in &handle.initializers {
-            write_struct_initializer(f, lib, c, handle)?;
+            write_struct_initializer(f, c, handle)?;
             f.newline()?;
         }
     }
@@ -367,7 +365,6 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
 
 fn write_struct_initializer<T>(
     f: &mut dyn Printer,
-    lib: &Library,
     initializer: &Initializer<Validated>,
     handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
@@ -376,7 +373,7 @@ where
 {
     doxygen(f, |f| {
         f.writeln("@brief ")?;
-        docstring_print(f, &initializer.doc.brief, lib)?;
+        docstring_print(f, &initializer.doc.brief)?;
 
         if !initializer.values.is_empty() {
             f.newline()?;
@@ -388,7 +385,7 @@ where
         }
 
         f.writeln("@returns ")?;
-        docstring_print(f, &text(&format!("New instance of {}", handle.name())), lib)?;
+        docstring_print(f, &text(&format!("New instance of {}", handle.name())))?;
 
         Ok(())
     })?;
@@ -433,18 +430,17 @@ where
 fn write_enum_definition(
     f: &mut dyn Printer,
     handle: &Handle<Enum<Validated>>,
-    lib: &Library,
 ) -> FormattingResult<()> {
-    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
+    doxygen(f, |f| doxygen_print(f, &handle.doc))?;
 
     f.writeln(&format!("typedef enum {}", handle.to_c_type()))?;
     f.writeln("{")?;
     indented(f, |f| {
         for variant in &handle.variants {
-            doxygen(f, |f| doxygen_print(f, &variant.doc, lib))?;
+            doxygen(f, |f| doxygen_print(f, &variant.doc))?;
             f.writeln(&format!(
                 "{}_{}_{} = {},",
-                lib.settings.c_ffi_prefix.capital_snake_case(),
+                handle.settings.c_ffi_prefix.capital_snake_case(),
                 handle.name.capital_snake_case(),
                 variant.name.capital_snake_case(),
                 variant.value
@@ -458,13 +454,13 @@ fn write_enum_definition(
 
     doxygen(f, |f| {
         f.writeln("@brief ")?;
-        docstring_print(f, &text("Converts the enum to a string"), lib)?;
+        docstring_print(f, &text("Converts the enum to a string"))?;
         f.writeln("@param value Enum to convert")?;
         f.writeln("@returns String representation")
     })?;
     f.writeln(&format!(
         "static const char* {}_{}_to_string({} value)",
-        &lib.settings.c_ffi_prefix,
+        handle.settings.c_ffi_prefix,
         handle.name,
         handle.to_c_type()
     ))?;
@@ -474,7 +470,7 @@ fn write_enum_definition(
             for variant in &handle.variants {
                 f.writeln(&format!(
                     "case {}_{}_{}: return \"{}\";",
-                    lib.settings.c_ffi_prefix.capital_snake_case(),
+                    handle.settings.c_ffi_prefix.capital_snake_case(),
                     handle.name.capital_snake_case(),
                     variant.name.capital_snake_case(),
                     variant.name
@@ -502,16 +498,15 @@ fn write_class_declaration(
 fn write_function_docs(
     f: &mut dyn Printer,
     handle: &Handle<Function<Validated>>,
-    lib: &Library,
 ) -> FormattingResult<()> {
     doxygen(f, |f| {
         // Print top-level documentation
-        doxygen_print(f, &handle.doc, lib)?;
+        doxygen_print(f, &handle.doc)?;
 
         // Print each parameter value
         for param in &handle.parameters {
             f.writeln(&format!("@param {} ", param.name))?;
-            docstring_print(f, &param.doc, lib)?;
+            docstring_print(f, &param.doc)?;
             if let FunctionArgument::Basic(BasicType::Duration(mapping)) = param.arg_type {
                 f.write(&format!(" ({})", mapping.unit()))?;
             }
@@ -525,7 +520,7 @@ fn write_function_docs(
             SignatureType::NoErrorNoReturn => {}
             SignatureType::NoErrorWithReturn(ret, doc) => {
                 f.writeln("@return ")?;
-                docstring_print(f, &doc, lib)?;
+                docstring_print(f, &doc)?;
                 if let FunctionReturnValue::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
@@ -535,7 +530,7 @@ fn write_function_docs(
             }
             SignatureType::ErrorWithReturn(_, ret, doc) => {
                 f.writeln("@param out ")?;
-                docstring_print(f, &doc, lib)?;
+                docstring_print(f, &doc)?;
                 if let FunctionReturnValue::Basic(BasicType::Duration(mapping)) = ret {
                     f.write(&format!(" ({})", mapping.unit()))?;
                 }
@@ -550,22 +545,21 @@ fn write_function_docs(
 fn write_function(
     f: &mut dyn Printer,
     handle: &Handle<Function<Validated>>,
-    lib: &Library,
 ) -> FormattingResult<()> {
-    write_function_docs(f, handle, lib)?;
+    write_function_docs(f, handle)?;
 
     if let Some(error_type) = &handle.error_type {
         f.writeln(&format!(
             "{} {}_{}(",
             error_type.inner.to_c_type(),
-            &lib.settings.c_ffi_prefix,
+            &handle.settings.c_ffi_prefix,
             handle.name
         ))?;
     } else {
         f.writeln(&format!(
             "{} {}_{}(",
             handle.return_type.to_c_type(),
-            &lib.settings.c_ffi_prefix,
+            &handle.settings.c_ffi_prefix,
             handle.name
         ))?;
     }
@@ -594,14 +588,13 @@ fn write_function(
 fn write_interface(
     f: &mut dyn Printer,
     handle: &Handle<Interface<Validated>>,
-    lib: &Library,
 ) -> FormattingResult<()> {
-    doxygen(f, |f| doxygen_print(f, &handle.doc, lib))?;
+    doxygen(f, |f| doxygen_print(f, &handle.doc))?;
 
     let struct_name = handle.to_c_type();
 
-    let ctx_variable_name = lib.settings.interface.context_variable_name.clone();
-    let destroy_func_name = lib.settings.interface.destroy_func_name.clone();
+    let ctx_variable_name = handle.settings.interface.context_variable_name.clone();
+    let destroy_func_name = handle.settings.interface.destroy_func_name.clone();
 
     f.writeln(&format!("typedef struct {}", struct_name))?;
     f.writeln("{")?;
@@ -612,21 +605,21 @@ fn write_interface(
             // Print the documentation
             doxygen(f, |f| {
                 // Print top-level documentation
-                doxygen_print(f, &cb.doc, lib)?;
+                doxygen_print(f, &cb.doc)?;
 
                 // Print each argument value
                 for arg in &cb.arguments {
                     f.writeln(&format!("@param {} ", arg.name))?;
-                    docstring_print(f, &arg.doc, lib)?;
+                    docstring_print(f, &arg.doc)?;
                 }
 
                 f.writeln(&format!("@param {} ", ctx_variable_name))?;
-                docstring_print(f, &text("Context data"), lib)?;
+                docstring_print(f, &text("Context data"))?;
 
                 // Print return documentation
                 if let CallbackReturnType::Type(_, doc) = &cb.return_type {
                     f.writeln("@return ")?;
-                    docstring_print(f, doc, lib)?;
+                    docstring_print(f, doc)?;
                 }
 
                 Ok(())
@@ -662,10 +655,10 @@ fn write_interface(
     // Write init helper
     doxygen(f, |f| {
         f.writeln("@brief ")?;
-        docstring_print(f, &text("Initialize an instance of the interface"), lib)?;
+        docstring_print(f, &text("Initialize an instance of the interface"))?;
         for cb in &handle.callbacks {
             f.writeln(&format!("@param {} ", cb.name))?;
-            docstring_print(f, &cb.doc.brief, lib)?;
+            docstring_print(f, &cb.doc.brief)?;
         }
         f.writeln(&format!(
             "@param {} Callback when the underlying owner doesn't need the interface anymore",
@@ -676,7 +669,7 @@ fn write_interface(
     })?;
     f.writeln(&format!(
         "static {} {}_{}_init(",
-        struct_name, &lib.settings.c_ffi_prefix, handle.name
+        struct_name, &handle.settings.c_ffi_prefix, handle.name
     ))?;
     indented(f, |f| {
         for cb in &handle.callbacks {

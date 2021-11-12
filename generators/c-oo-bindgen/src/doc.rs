@@ -1,15 +1,10 @@
 use crate::ctype::CType;
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
-use oo_bindgen::Library;
 
-pub(crate) fn doxygen_print(
-    f: &mut dyn Printer,
-    doc: &Doc<Validated>,
-    lib: &Library,
-) -> FormattingResult<()> {
+pub(crate) fn doxygen_print(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
     f.writeln("@brief ")?;
-    docstring_print(f, &doc.brief, lib)?;
+    docstring_print(f, &doc.brief)?;
 
     for detail in &doc.details {
         f.newline()?;
@@ -17,11 +12,11 @@ pub(crate) fn doxygen_print(
         match detail {
             DocParagraph::Details(docstring) => {
                 f.newline()?;
-                docstring_print(f, docstring, lib)?;
+                docstring_print(f, docstring)?;
             }
             DocParagraph::Warning(docstring) => {
                 f.writeln("@warning ")?;
-                docstring_print(f, docstring, lib)?;
+                docstring_print(f, docstring)?;
             }
         }
     }
@@ -32,46 +27,41 @@ pub(crate) fn doxygen_print(
 pub(crate) fn docstring_print(
     f: &mut dyn Printer,
     docstring: &DocString<Validated>,
-    lib: &Library,
 ) -> FormattingResult<()> {
     for el in docstring.elements() {
         match el {
             DocStringElement::Text(text) => f.write(text)?,
             DocStringElement::Null => f.write("@p NULL")?,
             DocStringElement::Iterator => f.write("iterator")?,
-            DocStringElement::Reference(reference) => reference_print(f, reference, lib)?,
+            DocStringElement::Reference(reference) => reference_print(f, reference)?,
         }
     }
 
     Ok(())
 }
 
-fn reference_print(
-    f: &mut dyn Printer,
-    reference: &Validated,
-    lib: &Library,
-) -> FormattingResult<()> {
+fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
         Validated::Argument(param_name) => f.write(&format!("@p {}", param_name))?,
         Validated::Class(class) => {
             f.write(&format!("@ref {}", class.to_c_type()))?;
         }
-        Validated::ClassMethod(_, method_name, _) => {
+        Validated::ClassMethod(class, method_name, _) => {
             f.write(&format!(
                 "@ref {}_{}",
-                lib.settings.c_ffi_prefix, method_name
+                class.settings.c_ffi_prefix, method_name
             ))?;
         }
-        Validated::ClassConstructor(_, constructor) => {
+        Validated::ClassConstructor(class, constructor) => {
             f.write(&format!(
                 "@ref {}_{}",
-                lib.settings.c_ffi_prefix, constructor.function.name
+                class.settings.c_ffi_prefix, constructor.function.name
             ))?;
         }
-        Validated::ClassDestructor(_, destructor) => {
+        Validated::ClassDestructor(class, destructor) => {
             f.write(&format!(
                 "@ref {}_{}",
-                lib.settings.c_ffi_prefix, destructor.function.name
+                class.settings.c_ffi_prefix, destructor.function.name
             ))?;
         }
         Validated::Struct(st) => {
@@ -86,7 +76,7 @@ fn reference_print(
         Validated::EnumVariant(handle, variant_name) => {
             f.write(&format!(
                 "@ref {}_{}_{}",
-                lib.settings.c_ffi_prefix.capital_snake_case(),
+                handle.settings.c_ffi_prefix.capital_snake_case(),
                 handle.name.capital_snake_case(),
                 variant_name.capital_snake_case()
             ))?;

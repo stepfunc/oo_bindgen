@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use crate::doc::{Doc, DocCell, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
 use crate::*;
+use std::rc::Rc;
 
 /// How to render a numeric constant
 #[derive(Copy, Clone, Debug)]
@@ -43,8 +44,10 @@ pub struct ConstantSet<T>
 where
     T: DocReference,
 {
-    /// Name of the set
+    /// name of the set
     pub name: Name,
+    /// common library settings
+    pub settings: Rc<LibrarySettings>,
     /// values
     pub values: Vec<Constant<T>>,
     /// documentation
@@ -61,6 +64,7 @@ impl ConstantSet<Unvalidated> {
 
         Ok(Handle::new(ConstantSet {
             name: self.name.clone(),
+            settings: self.settings.clone(),
             values: values?,
             doc: self.doc.validate(&self.name, lib)?,
         }))
@@ -117,6 +121,7 @@ impl<'a> ConstantSetBuilder<'a> {
     pub fn build(self) -> BindResult<()> {
         let handle = ConstantSetHandle::new(ConstantSet {
             name: self.name,
+            settings: self.lib.settings.clone(),
             values: self.values,
             doc: self.doc.extract()?,
         });

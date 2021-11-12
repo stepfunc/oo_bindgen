@@ -113,9 +113,15 @@ impl From<ClassDeclarationHandle> for FunctionArgument {
     }
 }
 
-impl From<InterfaceHandle> for FunctionArgument {
-    fn from(x: InterfaceHandle) -> Self {
-        FunctionArgument::Interface(x)
+impl From<SynchronousInterface> for FunctionArgument {
+    fn from(x: SynchronousInterface) -> Self {
+        FunctionArgument::Interface(x.inner)
+    }
+}
+
+impl From<AsynchronousInterface> for FunctionArgument {
+    fn from(x: AsynchronousInterface) -> Self {
+        FunctionArgument::Interface(x.inner)
     }
 }
 
@@ -541,7 +547,7 @@ impl<'a> FutureMethodBuilder<'a> {
             .inner
             .param(
                 callback_parameter_name,
-                self.future.interface,
+                FunctionArgument::Interface(self.future.interface),
                 "callback invoked when the operation completes",
             )?
             .build()?;

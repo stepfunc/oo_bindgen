@@ -228,6 +228,22 @@ where
 
 pub type InterfaceHandle = Handle<Interface<Unvalidated>>;
 
+/// Declares that the contained interface is asynchronous
+///
+/// Acts as a "New Type" around an interface handle to restrict where it can be used in the API model
+#[derive(Debug, Clone)]
+pub struct AsynchronousInterface {
+    pub inner: InterfaceHandle,
+}
+
+/// Declares that the contained interface is synchronous only
+///
+/// Acts as a "New Type" around an interface handle to restrict where it can be used in the API model
+#[derive(Debug, Clone)]
+pub struct SynchronousInterface {
+    pub(crate) inner: InterfaceHandle,
+}
+
 #[derive(Debug, Clone)]
 pub struct FutureInterface<D>
 where
@@ -297,8 +313,10 @@ impl<'a> InterfaceBuilder<'a> {
     /// A synchronous interface is one that is invoked only during a function call which
     /// takes it as an argument. The Rust backend will NOT generate `Send` and `Sync`
     /// implementations so that it be cannot be transferred across thread boundaries.
-    pub fn build_sync(self) -> BindResult<InterfaceHandle> {
-        self.build(InterfaceType::Synchronous)
+    pub fn build_sync(self) -> BindResult<SynchronousInterface> {
+        Ok(SynchronousInterface {
+            inner: self.build(InterfaceType::Synchronous)?,
+        })
     }
 
     /// Build the interface and mark it as used in an asynchronous context.
@@ -307,8 +325,10 @@ impl<'a> InterfaceBuilder<'a> {
     /// passed as a function argument. The Rust backend will mark the C representation
     /// of this interface as `Send` and `Sync` so that it be transferred across thread
     /// boundaries.
-    pub fn build_async(self) -> BindResult<InterfaceHandle> {
-        self.build(InterfaceType::Asynchronous)
+    pub fn build_async(self) -> BindResult<AsynchronousInterface> {
+        Ok(AsynchronousInterface {
+            inner: self.build(InterfaceType::Asynchronous)?,
+        })
     }
 
     pub(crate) fn build(self, interface_type: InterfaceType) -> BindResult<InterfaceHandle> {

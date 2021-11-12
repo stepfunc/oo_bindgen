@@ -91,7 +91,7 @@ impl ToNativeStructField for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.to_native_struct_field(expr),
             FunctionArgStructField::String(x) => x.to_native_struct_field(expr),
-            FunctionArgStructField::Interface(x) => x.to_native_struct_field(expr),
+            FunctionArgStructField::Interface(x) => x.inner.to_native_struct_field(expr),
             FunctionArgStructField::Struct(x) => match x {
                 UniversalOr::Specific(x) => x.to_native_struct_field(expr),
                 UniversalOr::Universal(x) => x.to_native_struct_field(expr),
@@ -103,7 +103,7 @@ impl ToNativeStructField for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.requires_move(),
             FunctionArgStructField::String(x) => x.requires_move(),
-            FunctionArgStructField::Interface(x) => x.requires_move(),
+            FunctionArgStructField::Interface(x) => x.inner.requires_move(),
             FunctionArgStructField::Struct(x) => match x {
                 UniversalOr::Specific(x) => x.requires_move(),
                 UniversalOr::Universal(x) => x.requires_move(),

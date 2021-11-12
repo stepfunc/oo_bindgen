@@ -26,7 +26,7 @@ impl CppStructType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.struct_member_type(),
             FunctionArgStructField::String(x) => x.struct_member_type(),
-            FunctionArgStructField::Interface(x) => unique_ptr(x.core_cpp_type()),
+            FunctionArgStructField::Interface(x) => unique_ptr(x.inner.core_cpp_type()),
             FunctionArgStructField::Struct(x) => x.core_cpp_type(),
         }
     }

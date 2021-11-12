@@ -386,7 +386,7 @@ impl DotnetType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.as_dotnet_type(),
             FunctionArgStructField::String(x) => x.as_dotnet_type(),
-            FunctionArgStructField::Interface(x) => x.as_dotnet_type(),
+            FunctionArgStructField::Interface(x) => x.inner.as_dotnet_type(),
             FunctionArgStructField::Struct(x) => x.as_dotnet_type(),
         }
     }
@@ -395,7 +395,7 @@ impl DotnetType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.as_native_type(),
             FunctionArgStructField::String(x) => x.as_native_type(),
-            FunctionArgStructField::Interface(x) => x.as_native_type(),
+            FunctionArgStructField::Interface(x) => x.inner.as_native_type(),
             FunctionArgStructField::Struct(x) => x.as_native_type(),
         }
     }
@@ -404,7 +404,7 @@ impl DotnetType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.convert_to_native(from),
             FunctionArgStructField::String(x) => x.convert_to_native(from),
-            FunctionArgStructField::Interface(x) => x.convert_to_native(from),
+            FunctionArgStructField::Interface(x) => x.inner.convert_to_native(from),
             FunctionArgStructField::Struct(x) => x.convert_to_native(from),
         }
     }
@@ -413,7 +413,7 @@ impl DotnetType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.cleanup(from),
             FunctionArgStructField::String(x) => x.cleanup(from),
-            FunctionArgStructField::Interface(x) => x.cleanup(from),
+            FunctionArgStructField::Interface(x) => x.inner.cleanup(from),
             FunctionArgStructField::Struct(x) => x.cleanup(from),
         }
     }
@@ -422,7 +422,7 @@ impl DotnetType for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.convert_from_native(from),
             FunctionArgStructField::String(x) => x.convert_from_native(from),
-            FunctionArgStructField::Interface(x) => x.convert_from_native(from),
+            FunctionArgStructField::Interface(x) => x.inner.convert_from_native(from),
             FunctionArgStructField::Struct(x) => x.convert_from_native(from),
         }
     }

@@ -9,7 +9,7 @@ use crate::*;
 pub enum FunctionArgStructField {
     Basic(BasicType),
     String(StringType),
-    Interface(InterfaceHandle),
+    Interface(AsynchronousInterface),
     Struct(UniversalOr<FunctionArgStructField>),
 }
 
@@ -32,7 +32,7 @@ impl InitializerValidator for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.validate_default_value(value),
             FunctionArgStructField::String(x) => x.validate_default_value(value),
-            FunctionArgStructField::Interface(x) => x.validate_default_value(value),
+            FunctionArgStructField::Interface(x) => x.inner.validate_default_value(value),
             FunctionArgStructField::Struct(x) => x.validate_default_value(value),
         }
     }
@@ -62,8 +62,8 @@ impl From<UniversalStructHandle> for FunctionArgStructField {
     }
 }
 
-impl From<InterfaceHandle> for FunctionArgStructField {
-    fn from(x: InterfaceHandle) -> Self {
+impl From<AsynchronousInterface> for FunctionArgStructField {
+    fn from(x: AsynchronousInterface) -> Self {
         FunctionArgStructField::Interface(x)
     }
 }

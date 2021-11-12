@@ -142,7 +142,7 @@ impl TypeInfo for FunctionArgStructField {
         match self {
             FunctionArgStructField::Basic(x) => x.pass_by(),
             FunctionArgStructField::String(x) => x.pass_by(),
-            FunctionArgStructField::Interface(x) => x.pass_by(),
+            FunctionArgStructField::Interface(x) => x.inner.pass_by(),
             FunctionArgStructField::Struct(x) => x.pass_by(),
         }
     }

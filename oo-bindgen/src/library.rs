@@ -849,29 +849,6 @@ impl LibraryBuilder {
         Ok(StaticClassBuilder::new(self, name.into_name()?))
     }
 
-    /// A synchronous interface is one that is invoked only during a function call which
-    /// takes it as an argument. The Rust backend will NOT generate `Send` and `Sync`
-    /// implementations so that it be cannot be transferred across thread boundaries.
-    pub fn define_synchronous_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
-        &mut self,
-        name: T,
-        doc: D,
-    ) -> BindResult<InterfaceBuilder> {
-        self.define_interface(name, InterfaceType::Synchronous, doc)
-    }
-
-    /// An asynchronous interface is one that is invoked some time after it is
-    /// passed as a function argument. The Rust backend will mark the C representation
-    /// of this interface as `Send` and `Sync` so that it be transferred across thread
-    /// boundaries.
-    pub fn define_asynchronous_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
-        &mut self,
-        name: T,
-        doc: D,
-    ) -> BindResult<InterfaceBuilder> {
-        self.define_interface(name, InterfaceType::Asynchronous, doc)
-    }
-
     /// A future interface is a specialized asynchronous which consists of
     /// a single callback method providing a single value. The callback
     /// represents the completion of a "future" and is mapped appropriately
@@ -894,7 +871,7 @@ impl LibraryBuilder {
         let value_type_docs = value_type_docs.into();
 
         let interface = self
-            .define_interface(name, InterfaceType::Future, interface_docs)?
+            .define_interface(name, interface_docs)?
             .begin_callback(
                 on_complete_name,
                 "Invoked when the asynchronous operation completes",
@@ -902,23 +879,17 @@ impl LibraryBuilder {
             .param(result_name, value_type.clone(), value_type_docs.clone())?
             .enable_functional_transform()
             .end_callback()?
-            .build()?;
+            .build(InterfaceType::Future)?;
 
         Ok(FutureInterface::new(value_type, interface, value_type_docs))
     }
 
-    fn define_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
+    pub fn define_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
         &mut self,
         name: T,
-        interface_type: InterfaceType,
         doc: D,
     ) -> BindResult<InterfaceBuilder> {
-        Ok(InterfaceBuilder::new(
-            self,
-            name.into_name()?,
-            interface_type,
-            doc.into(),
-        ))
+        Ok(InterfaceBuilder::new(self, name.into_name()?, doc.into()))
     }
 
     pub fn define_iterator<N: IntoName, T: Into<IteratorItemType>>(

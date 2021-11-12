@@ -39,7 +39,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let outer_iter = define_outer_iter(lib)?;
 
     let interface = lib
-        .define_synchronous_interface(
+        .define_interface(
             "chunk_receiver",
             "Callback interface for chunks of a byte array",
         )?
@@ -47,7 +47,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .param("values", outer_iter, "iterator over an iterator of bytes")?
         .enable_functional_transform()
         .end_callback()?
-        .build()?;
+        .build_sync()?;
 
     let invoke_fn = lib
         .define_function("iterate_string_by_chunks")?

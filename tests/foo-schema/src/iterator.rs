@@ -23,12 +23,12 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let iterator = define_iterator(lib)?;
 
     let interface = lib
-        .define_synchronous_interface("values_receiver", "Callback interface for receiving values")?
+        .define_interface("values_receiver", "Callback interface for receiving values")?
         .begin_callback("on_characters", "callback to receive character values")?
         .param("values", iterator, "byte value for each character")?
         .enable_functional_transform()
         .end_callback()?
-        .build()?;
+        .build_sync()?;
 
     let invoke_fn = lib
         .define_function("invoke_callback")?

@@ -6,7 +6,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let thread_class = lib.declare_class("thread_class")?;
 
     let value_change_listener = lib
-        .define_asynchronous_interface(
+        .define_interface(
             "value_change_listener",
             "modifies a value on a remote thread",
         )?
@@ -14,10 +14,10 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .param("value", BasicType::U32, "updated value")?
         .enable_functional_transform()
         .end_callback()?
-        .build()?;
+        .build_async()?;
 
     let operation = lib
-        .define_asynchronous_interface(
+        .define_interface(
             "operation",
             "interface for performing an operation on a value",
         )?
@@ -26,7 +26,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .returns(BasicType::U32, "modified value")?
         .enable_functional_transform()
         .end_callback()?
-        .build()?;
+        .build_async()?;
 
     let execute = lib
         .define_method("execute", thread_class.clone())?

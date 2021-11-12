@@ -266,23 +266,16 @@ impl FutureInterface<Unvalidated> {
 pub struct InterfaceBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
-    interface_type: InterfaceType,
     callbacks: Vec<CallbackFunction<Unvalidated>>,
     callback_names: HashSet<String>,
     doc: Doc<Unvalidated>,
 }
 
 impl<'a> InterfaceBuilder<'a> {
-    pub(crate) fn new(
-        lib: &'a mut LibraryBuilder,
-        name: Name,
-        interface_type: InterfaceType,
-        doc: Doc<Unvalidated>,
-    ) -> Self {
+    pub(crate) fn new(lib: &'a mut LibraryBuilder, name: Name, doc: Doc<Unvalidated>) -> Self {
         Self {
             lib,
             name,
-            interface_type,
             callbacks: Vec::new(),
             callback_names: Default::default(),
             doc,
@@ -299,10 +292,29 @@ impl<'a> InterfaceBuilder<'a> {
         Ok(CallbackFunctionBuilder::new(self, name, doc.into()))
     }
 
-    pub fn build(self) -> BindResult<InterfaceHandle> {
+    /// Build the interface and mark it as only used in a synchronous context.
+    ///
+    /// A synchronous interface is one that is invoked only during a function call which
+    /// takes it as an argument. The Rust backend will NOT generate `Send` and `Sync`
+    /// implementations so that it be cannot be transferred across thread boundaries.
+    pub fn build_sync(self) -> BindResult<InterfaceHandle> {
+        self.build(InterfaceType::Synchronous)
+    }
+
+    /// Build the interface and mark it as used in an asynchronous context.
+    ///
+    /// An asynchronous interface is one that is invoked some time after it is
+    /// passed as a function argument. The Rust backend will mark the C representation
+    /// of this interface as `Send` and `Sync` so that it be transferred across thread
+    /// boundaries.
+    pub fn build_async(self) -> BindResult<InterfaceHandle> {
+        self.build(InterfaceType::Asynchronous)
+    }
+
+    pub(crate) fn build(self, interface_type: InterfaceType) -> BindResult<InterfaceHandle> {
         let handle = InterfaceHandle::new(Interface {
             name: self.name,
-            interface_type: self.interface_type,
+            interface_type,
             callbacks: self.callbacks,
             doc: self.doc,
             settings: self.lib.settings.clone(),

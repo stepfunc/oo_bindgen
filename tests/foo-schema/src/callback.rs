@@ -4,7 +4,7 @@ use oo_bindgen::*;
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare interface
     let interface = lib
-        .define_asynchronous_interface("callback_interface", "Test interface")?
+        .define_interface("callback_interface", "Test interface")?
         .begin_callback(
             "on_value",
             "On value callback which takes parameter {param:value}",
@@ -16,7 +16,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .param("value", DurationType::Milliseconds, "Value")?
         .returns(DurationType::Milliseconds, "Some value")?
         .end_callback()?
-        .build()?;
+        .build_async()?;
 
     // Declare the class
     let callback_source = lib.declare_class("callback_source")?;

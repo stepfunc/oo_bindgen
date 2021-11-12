@@ -93,7 +93,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let handle = define_outer_struct(lib)?;
 
     let interface = lib
-        .define_synchronous_interface("universal_interface", "Interface that uses universal types")?
+        .define_interface("universal_interface", "Interface that uses universal types")?
         .begin_callback(
             "on_value",
             "callback that receives and returns a universal struct",
@@ -101,7 +101,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .param("value", handle.clone(), "Universal struct to modify")?
         .returns(handle.clone(), "Universal struct to return")?
         .end_callback()?
-        .build()?;
+        .build_sync()?;
 
     let invoke = lib
         .define_function("invoke_universal_interface")?

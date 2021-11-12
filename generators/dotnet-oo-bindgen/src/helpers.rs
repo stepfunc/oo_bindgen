@@ -1,7 +1,7 @@
 use crate::dotnet_type::DotnetType;
 use crate::*;
 use oo_bindgen::collection::Collection;
-use oo_bindgen::interface::{CallbackFunction, CallbackReturnType};
+use oo_bindgen::interface::CallbackFunction;
 
 pub(crate) fn generate_collection_helpers(
     f: &mut dyn Printer,
@@ -132,7 +132,7 @@ pub(crate) fn call_native_function(
     is_constructor: bool,
 ) -> FormattingResult<()> {
     // Write the type conversions
-    for (idx, param) in method.parameters.iter().enumerate() {
+    for (idx, param) in method.arguments.iter().enumerate() {
         let mut param_name = param.name.mixed_case();
         if idx == 0 {
             if let Some(first_param) = first_param_is_self.clone() {
@@ -154,7 +154,7 @@ pub(crate) fn call_native_function(
     let call_native_function = move |f: &mut dyn Printer| -> FormattingResult<()> {
         // Call the native function
         f.newline()?;
-        if !method.return_type.is_void() {
+        if !method.return_type.is_none() {
             f.write(&format!(
                 "var _result = {}.{}(",
                 NATIVE_FUNCTIONS_CLASSNAME, method.name
@@ -165,7 +165,7 @@ pub(crate) fn call_native_function(
 
         f.write(
             &method
-                .parameters
+                .arguments
                 .iter()
                 .map(|param| format!("_{}", param.name.mixed_case()))
                 .collect::<Vec<String>>()
@@ -174,7 +174,7 @@ pub(crate) fn call_native_function(
         f.write(");")?;
 
         // Convert the result (if required)
-        let return_name = if let FunctionReturnType::Type(return_type, _) = &method.return_type {
+        let return_name = if let Some(return_type) = &method.return_type.get_value() {
             let mut return_name = "_result";
             if let Some(conversion) = return_type.convert_from_native("_result") {
                 if !is_constructor {
@@ -189,7 +189,7 @@ pub(crate) fn call_native_function(
         };
 
         // Return (if required)
-        if !method.return_type.is_void() {
+        if !method.return_type.is_none() {
             f.writeln(&format!("{}{};", return_destination, return_name))?;
         }
 
@@ -197,7 +197,7 @@ pub(crate) fn call_native_function(
     };
 
     let has_cleanup = method
-        .parameters
+        .arguments
         .iter()
         .any(|param| param.arg_type.cleanup("temp").is_some());
 
@@ -207,7 +207,7 @@ pub(crate) fn call_native_function(
         f.writeln("finally")?;
         blocked(f, |f| {
             // Cleanup type conversions
-            for param in method.parameters.iter() {
+            for param in method.arguments.iter() {
                 if let Some(cleanup) = param
                     .arg_type
                     .cleanup(&format!("_{}", param.name.mixed_case()))
@@ -241,7 +241,7 @@ pub(crate) fn call_dotnet_function(
     // Call the .NET function
     f.newline()?;
     let method_name = method.name.camel_case();
-    if let CallbackReturnType::Type(return_type, _) = &method.return_type {
+    if let Some(return_type) = &method.return_type.get_value() {
         if return_type.convert_to_native("_result").is_some() {
             f.write(&format!("var _result = _impl.{}(", method_name))?;
         } else {
@@ -262,7 +262,7 @@ pub(crate) fn call_dotnet_function(
     f.write(");")?;
 
     // Convert the result (if required)
-    if let CallbackReturnType::Type(return_type, _) = &method.return_type {
+    if let Some(return_type) = &method.return_type.get_value() {
         if let Some(conversion) = return_type.convert_to_native("_result") {
             f.writeln(&format!("{}{};", return_destination, conversion))?;
         }

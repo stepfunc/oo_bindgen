@@ -1,15 +1,15 @@
 use crate::doc::{DocReference, DocString, Unvalidated, Validated};
 use crate::name::Name;
-use crate::{BindResult, UnvalidatedFields};
+use crate::{BindResult, BindingError, UnvalidatedFields};
 
 #[derive(Clone, Debug)]
-pub enum ReturnType<T, D>
+pub struct ReturnType<T, D>
 where
     T: Clone,
     D: DocReference,
 {
-    Void,
-    Type(T, DocString<D>),
+    pub value: T,
+    pub doc: DocString<D>,
 }
 
 impl<T> ReturnType<T, Unvalidated>
@@ -18,20 +18,13 @@ where
 {
     pub(crate) fn validate(
         &self,
-        name: &Name,
+        parent: &Name,
         lib: &UnvalidatedFields,
     ) -> BindResult<ReturnType<T, Validated>> {
-        match self {
-            ReturnType::Void => Ok(ReturnType::Void),
-            ReturnType::Type(t, d) => Ok(ReturnType::Type(t.clone(), d.validate(name, lib)?)),
-        }
-    }
-
-    pub fn get(&self) -> Option<&T> {
-        match self {
-            ReturnType::Void => None,
-            ReturnType::Type(t, _) => Some(t),
-        }
+        Ok(ReturnType::new(
+            self.value.clone(),
+            self.doc.validate(parent, lib)?,
+        ))
     }
 }
 
@@ -40,18 +33,90 @@ where
     T: Clone,
     D: DocReference,
 {
-    pub fn void() -> Self {
-        ReturnType::Void
+    pub(crate) fn new(value: T, doc: DocString<D>) -> Self {
+        Self { value, doc }
     }
+}
 
-    pub fn new<C: Into<DocString<D>>, U: Into<T>>(return_type: U, doc: C) -> Self {
-        ReturnType::Type(return_type.into(), doc.into())
-    }
+#[derive(Clone, Debug)]
+pub struct OptionalReturnType<T, D>
+where
+    T: Clone,
+    D: DocReference,
+{
+    value: Option<ReturnType<T, D>>,
+}
 
-    pub fn is_void(&self) -> bool {
-        if let Self::Void = self {
-            return true;
+impl<T, D> OptionalReturnType<T, D>
+where
+    T: Clone,
+    D: DocReference,
+{
+    pub fn get(&self) -> Option<&ReturnType<T, D>> {
+        match &self.value {
+            None => None,
+            Some(x) => Some(x),
         }
-        false
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.value.is_none()
+    }
+
+    pub fn is_some(&self) -> bool {
+        self.value.is_some()
+    }
+
+    pub fn get_value(&self) -> Option<&T> {
+        match &self.value {
+            None => None,
+            Some(x) => Some(&x.value),
+        }
+    }
+
+    pub fn get_doc(&self) -> Option<&DocString<D>> {
+        match &self.value {
+            None => None,
+            Some(x) => Some(&x.doc),
+        }
+    }
+}
+
+impl<T> OptionalReturnType<T, Unvalidated>
+where
+    T: Clone,
+{
+    pub(crate) fn new() -> Self {
+        Self { value: None }
+    }
+
+    pub(crate) fn set(
+        &mut self,
+        parent: &Name,
+        value: T,
+        doc: DocString<Unvalidated>,
+    ) -> BindResult<()> {
+        match self.value {
+            None => {
+                self.value = Some(ReturnType::new(value, doc));
+                Ok(())
+            }
+            Some(_) => Err(BindingError::ReturnTypeAlreadyDefined {
+                func_name: parent.clone(),
+            }),
+        }
+    }
+
+    pub(crate) fn validate(
+        &self,
+        parent: &Name,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<OptionalReturnType<T, Validated>> {
+        match &self.value {
+            None => Ok(OptionalReturnType { value: None }),
+            Some(x) => Ok(OptionalReturnType {
+                value: Some(x.validate(parent, lib)?),
+            }),
+        }
     }
 }

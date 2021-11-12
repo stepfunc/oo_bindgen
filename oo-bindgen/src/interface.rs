@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
 use crate::iterator::IteratorHandle;
 use crate::name::{IntoName, Name};
-use crate::return_type::ReturnType;
+use crate::return_type::{OptionalReturnType, ReturnType};
 use crate::structs::{
     CallbackArgStructField, CallbackArgStructHandle, UniversalOr, UniversalStructHandle,
 };
@@ -130,7 +130,7 @@ where
 {
     pub name: Name,
     pub functional_transform: FunctionalTransform,
-    pub return_type: ReturnType<CallbackReturnValue, D>,
+    pub return_type: OptionalReturnType<CallbackReturnValue, D>,
     pub arguments: Vec<Arg<CallbackArgument, D>>,
     pub doc: Doc<D>,
 }
@@ -341,7 +341,7 @@ pub struct CallbackFunctionBuilder<'a> {
     builder: InterfaceBuilder<'a>,
     name: Name,
     functional_transform: FunctionalTransform,
-    return_type: Option<CallbackReturnType<Unvalidated>>,
+    return_type: OptionalReturnType<CallbackReturnValue, Unvalidated>,
     arguments: Vec<Arg<CallbackArgument, Unvalidated>>,
     doc: Doc<Unvalidated>,
 }
@@ -352,7 +352,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
             builder,
             name,
             functional_transform: FunctionalTransform::No,
-            return_type: None,
+            return_type: OptionalReturnType::new(),
             arguments: Vec::new(),
             doc,
         }
@@ -389,39 +389,19 @@ impl<'a> CallbackFunctionBuilder<'a> {
     }
 
     pub fn returns<T: Into<CallbackReturnValue>, D: Into<DocString<Unvalidated>>>(
-        self,
+        mut self,
         t: T,
         d: D,
     ) -> BindResult<Self> {
-        self.return_type(CallbackReturnType::new(t, d))
-    }
-
-    pub fn returns_nothing(self) -> BindResult<Self> {
-        self.return_type(CallbackReturnType::Void)
-    }
-
-    fn return_type(mut self, return_type: CallbackReturnType<Unvalidated>) -> BindResult<Self> {
-        match self.return_type {
-            None => {
-                self.return_type = Some(return_type);
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::ReturnTypeAlreadyDefined {
-                func_name: self.name,
-            }),
-        }
+        self.return_type.set(&self.name, t.into(), d.into())?;
+        Ok(self)
     }
 
     pub fn end_callback(mut self) -> BindResult<InterfaceBuilder<'a>> {
-        let return_type = match self.return_type {
-            None => ReturnType::Void,
-            Some(x) => x,
-        };
-
         let cb = CallbackFunction {
             name: self.name,
             functional_transform: self.functional_transform,
-            return_type,
+            return_type: self.return_type,
             arguments: self.arguments,
             doc: self.doc,
         };

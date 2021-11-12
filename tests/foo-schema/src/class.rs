@@ -30,7 +30,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let increment_value = lib
         .define_method("increment_value", test_class.clone())?
-        .returns_nothing()?
         .doc("Increment value")?
         .build()?;
 

@@ -12,7 +12,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         )?
         .begin_callback("on_value_change", "called when a value is modified")?
         .param("value", BasicType::U32, "updated value")?
-        .returns_nothing()?
         .enable_functional_transform()
         .end_callback()?
         .build()?;
@@ -37,7 +36,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "operation to perform on the value owned by the thread",
         )?
         .doc("Execute an operation on the internal value and trigger a callback")?
-        .returns_nothing()?
         .build()?;
 
     // Declare each native function
@@ -62,7 +60,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let update = lib
         .define_method("update", thread_class.clone())?
         .param("value", BasicType::U32, "value to update")?
-        .returns_nothing()?
         .doc("Update the internal value and trigger callbacks to the {interface:value_change_listener}")?
         .build()?;
 

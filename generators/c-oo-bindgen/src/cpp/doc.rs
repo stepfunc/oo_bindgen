@@ -2,9 +2,21 @@ use crate::cpp::conversion::CoreCppType;
 use crate::doc::{docstring_print_generic, doxygen_print_generic};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::types::Arg;
 
 pub(crate) fn print_cpp_doc(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
     doxygen_print_generic(f, print_cpp_reference, doc)
+}
+
+pub(crate) fn print_cpp_argument_doc<T>(
+    f: &mut dyn Printer,
+    arg: &Arg<T, Validated>,
+) -> FormattingResult<()>
+where
+    T: Clone,
+{
+    f.write(&format!("@param {} ", arg.name))?;
+    print_cpp_doc_string(f, &arg.doc)
 }
 
 pub(crate) fn print_commented_cpp_doc(
@@ -25,7 +37,7 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
     match reference {
         Validated::Argument(param_name) => f.write(&format!("@p {}", param_name))?,
         Validated::Class(class) => {
-            f.write(&format!("@ ref{}", class.core_cpp_type()))?;
+            f.write(&format!("@ref {}", class.core_cpp_type()))?;
         }
         Validated::ClassMethod(class, method_name, _) => {
             f.write(&format!(

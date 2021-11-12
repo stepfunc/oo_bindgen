@@ -1,7 +1,8 @@
 use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::*;
 use oo_bindgen::doc::DocReference;
-use oo_bindgen::interface::{CallbackArgument, CallbackReturnType, CallbackReturnValue};
+use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue};
+use oo_bindgen::return_type::OptionalReturnType;
 
 pub(crate) trait CppCallbackArgType {
     fn get_cpp_callback_arg_type(&self) -> String;
@@ -23,14 +24,14 @@ pub(crate) trait CppCallbackReturnType {
     fn get_cpp_callback_return_type(&self) -> String;
 }
 
-impl<D> CppCallbackReturnType for CallbackReturnType<D>
+impl<D> CppCallbackReturnType for OptionalReturnType<CallbackReturnValue, D>
 where
     D: DocReference,
 {
     fn get_cpp_callback_return_type(&self) -> String {
-        match self {
-            CallbackReturnType::Void => "void".to_string(),
-            CallbackReturnType::Type(x, _) => match x {
+        match self.get_value() {
+            None => "void".to_string(),
+            Some(x) => match x {
                 CallbackReturnValue::Basic(x) => x.core_cpp_type(),
                 CallbackReturnValue::Struct(x) => x.core_cpp_type(),
             },

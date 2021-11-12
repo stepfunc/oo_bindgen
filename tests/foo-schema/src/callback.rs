@@ -32,7 +32,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let set_interface = lib
         .define_method("set_interface", callback_source.clone())?
         .param("cb", interface, "Callback to add")?
-        .returns_nothing()?
         .doc("Add a callback")?
         .build()?;
 

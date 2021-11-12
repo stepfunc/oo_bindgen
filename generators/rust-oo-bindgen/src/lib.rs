@@ -64,7 +64,6 @@ use crate::rust_struct::*;
 use crate::rust_type::*;
 use crate::type_converter::*;
 use oo_bindgen::doc::Validated;
-use oo_bindgen::return_type::ReturnType;
 use std::rc::Rc;
 
 pub struct RustCodegen<'a> {
@@ -362,7 +361,7 @@ impl<'a> RustCodegen<'a> {
 
         f.write(
             &handle
-                .parameters
+                .arguments
                 .iter()
                 .map(|param| format!("{}: {}", param.name, param.arg_type.as_c_type()))
                 .collect::<Vec<String>>()
@@ -389,7 +388,7 @@ impl<'a> RustCodegen<'a> {
                 write_error_return(f, &err)?;
             }
             SignatureType::ErrorWithReturn(err, ret, _) => {
-                if !handle.parameters.is_empty() {
+                if !handle.arguments.is_empty() {
                     f.write(", ")?;
                 }
                 f.write(&format!("out: *mut {}", ret.as_c_type()))?;
@@ -398,7 +397,7 @@ impl<'a> RustCodegen<'a> {
         }
 
         blocked(f, |f| {
-            for param in &handle.parameters {
+            for param in &handle.arguments {
                 if let Some(converter) = param.arg_type.conversion() {
                     converter.convert_from_c(f, &param.name, &format!("let {} = ", param.name))?;
                     f.write(";")?;
@@ -428,7 +427,7 @@ impl<'a> RustCodegen<'a> {
 
             f.write(
                 &handle
-                    .parameters
+                    .arguments
                     .iter()
                     .map(|param| param.name.to_string())
                     .collect::<Vec<String>>()
@@ -617,10 +616,8 @@ impl<'a> RustCodegen<'a> {
                 )?;
                 f.write(")")?;
 
-                if let ReturnType::<CallbackReturnValue, Validated>::Type(return_type, _) =
-                    &callback.return_type
-                {
-                    f.write(&format!(" -> Option<{}>", return_type.as_rust_type()))?;
+                if let Some(value) = &callback.return_type.get_value() {
+                    f.write(&format!(" -> Option<{}>", value.as_rust_type()))?;
                 }
 
                 // Function body
@@ -648,12 +645,10 @@ impl<'a> RustCodegen<'a> {
                         .join(", ");
                     let call = format!("cb({})", params);
 
-                    if let ReturnType::<CallbackReturnValue, Validated>::Type(return_type, _) =
-                        &callback.return_type
-                    {
+                    if let Some(v) = &callback.return_type.get_value() {
                         f.writeln(&format!("self.{}.map(|cb| ", callback.name))?;
                         blocked(f, |f| {
-                            if let Some(conversion) = return_type.conversion() {
+                            if let Some(conversion) = v.conversion() {
                                 f.writeln(&format!("let _result = {};", call))?;
                                 conversion.convert_from_c(f, "_result", "")
                             } else {
@@ -666,7 +661,7 @@ impl<'a> RustCodegen<'a> {
                         blocked(f, |f| f.writeln(&call))?;
                     }
 
-                    if callback.return_type.is_void() {
+                    if callback.return_type.is_none() {
                         f.write(";")?;
                     }
 

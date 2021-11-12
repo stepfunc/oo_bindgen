@@ -4,7 +4,7 @@ use oo_bindgen::enum_type::Enum;
 use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnValue};
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, Interface};
 use oo_bindgen::iterator::IteratorItemType;
-use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::Handle;
@@ -249,14 +249,14 @@ impl CType for FunctionArgument {
     }
 }
 
-impl<T> CType for ReturnType<T, Validated>
+impl<T> CType for OptionalReturnType<T, Validated>
 where
     T: Clone + CType,
 {
     fn to_c_type(&self) -> String {
-        match self {
-            Self::Void => "void".to_string(),
-            Self::Type(return_type, _) => return_type.to_c_type(),
+        match self.get_value() {
+            None => "void".to_string(),
+            Some(t) => t.to_c_type(),
         }
     }
 }

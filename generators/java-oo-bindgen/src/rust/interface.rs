@@ -4,6 +4,7 @@ use crate::*;
 use oo_bindgen::doc::Validated;
 use oo_bindgen::interface::*;
 use oo_bindgen::name::Name;
+use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::types::Arg;
 
 pub(crate) fn generate_interfaces_cache(
@@ -156,7 +157,7 @@ pub(crate) fn generate_interfaces_cache(
                 )?;
 
                 // Convert return value
-                if let CallbackReturnType::Type(return_type, _) = &cb.return_type {
+                if let Some(return_type) = &cb.return_type.get_value() {
                     if let Some(conversion) = return_type.conversion() {
                         conversion.convert_to_rust(
                             f,
@@ -232,7 +233,7 @@ fn call_java_callback(
     lib_path: &str,
     arg_name: &str,
     args: &[Arg<CallbackArgument, Validated>],
-    return_type: &CallbackReturnType<Validated>,
+    return_type: &OptionalReturnType<CallbackReturnValue, Validated>,
 ) -> FormattingResult<()> {
     // Extract the global ref
     f.writeln(&format!(
@@ -258,7 +259,7 @@ fn call_java_callback(
     }
 
     // Call the Java callback
-    if !return_type.is_void() {
+    if return_type.is_some() {
         f.writeln("let _result = ")?;
     } else {
         f.newline()?;

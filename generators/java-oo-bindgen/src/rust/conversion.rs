@@ -7,7 +7,7 @@ use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
 use oo_bindgen::iterator::*;
 use oo_bindgen::name::Name;
-use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, DurationType, StringType};
 use oo_bindgen::{Handle, LibrarySettings};
@@ -1399,36 +1399,36 @@ impl JniType for CallbackReturnValue {
     }
 }
 
-impl<T, D> JniType for ReturnType<T, D>
+impl<T, D> JniType for OptionalReturnType<T, D>
 where
     D: DocReference,
     T: Clone + JniType,
 {
     fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Void => "()",
-            Self::Type(return_type, _) => return_type.as_raw_jni_type(),
+        match self.get_value() {
+            None => "()",
+            Some(return_type) => return_type.as_raw_jni_type(),
         }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Void => "V".to_string(),
-            Self::Type(return_type, _) => return_type.as_jni_sig(lib_path),
+        match self.get_value() {
+            None => "V".to_string(),
+            Some(return_type) => return_type.as_jni_sig(lib_path),
         }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Void => "()".to_string(),
-            Self::Type(return_type, _) => return_type.as_rust_type(ffi_name),
+        match self.get_value() {
+            None => "()".to_string(),
+            Some(return_type) => return_type.as_rust_type(ffi_name),
         }
     }
 
     fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Void => "v().unwrap()",
-            Self::Type(return_type, _) => return_type.convert_jvalue(),
+        match self.get_value() {
+            None => "v().unwrap()",
+            Some(return_type) => return_type.convert_jvalue(),
         }
     }
 
@@ -1438,37 +1438,37 @@ where
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        match self {
-            Self::Void => Ok(()),
-            Self::Type(return_type, _) => return_type.convert_to_rust_from_object(f, from, to),
+        match self.get_value() {
+            None => Ok(()),
+            Some(return_type) => return_type.convert_to_rust_from_object(f, from, to),
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
-        match self {
-            Self::Void => None,
-            Self::Type(return_type, _) => return_type.conversion(),
+        match self.get_value() {
+            None => None,
+            Some(return_type) => return_type.conversion(),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Void => false,
-            Self::Type(return_type, _) => return_type.requires_local_ref_cleanup(),
+        match self.get_value() {
+            None => false,
+            Some(return_type) => return_type.requires_local_ref_cleanup(),
         }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Void => Ok(()),
-            Self::Type(return_type, _) => return_type.check_null(f, param_name),
+        match self.get_value() {
+            None => Ok(()),
+            Some(return_type) => return_type.check_null(f, param_name),
         }
     }
 
     fn default_value(&self) -> &str {
-        match self {
-            Self::Void => "",
-            Self::Type(return_type, _) => return_type.default_value(),
+        match self.get_value() {
+            None => "",
+            Some(return_type) => return_type.default_value(),
         }
     }
 }

@@ -1,5 +1,7 @@
 use crate::cpp::conversion::*;
-use crate::cpp::doc::{print_commented_cpp_doc, print_cpp_doc, print_cpp_doc_string};
+use crate::cpp::doc::{
+    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_doc, print_cpp_doc_string,
+};
 use crate::cpp::formatting::{namespace, FriendClass};
 use oo_bindgen::class::{
     Class, ClassDeclarationHandle, ClassType, Method, StaticClass, StaticMethod,
@@ -11,7 +13,6 @@ use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, doxygen, indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::function::{FunctionArgument, FutureMethod};
 use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceType};
-use oo_bindgen::return_type::ReturnType;
 use oo_bindgen::structs::{
     Initializer, InitializerType, Struct, StructDeclaration, StructFieldType, StructType,
     Visibility,
@@ -139,7 +140,7 @@ fn write_functional_interface_helpers(
             .collect::<Vec<String>>()
             .join(", ");
         let invocation = &format!("lambda({});", args);
-        if callback.return_type.is_void() {
+        if callback.return_type.is_none() {
             blocked(f, |f| f.writeln(invocation))?;
         } else {
             blocked(f, |f| f.writeln(&format!("return {}", invocation)))?;
@@ -194,6 +195,12 @@ fn print_iterator_definition(
 }
 
 fn print_class_decl(f: &mut dyn Printer, handle: &ClassDeclarationHandle) -> FormattingResult<()> {
+    doxygen(f, |f| {
+        f.writeln(&format!(
+            "@brief forward declaration to class @ref {}",
+            handle.core_cpp_type()
+        ))
+    })?;
     f.writeln(&format!("class {};", handle.core_cpp_type()))?;
     f.newline()
 }
@@ -268,6 +275,14 @@ fn print_enum(f: &mut dyn Printer, e: &Handle<Enum<Validated>>) -> FormattingRes
     })?;
     f.writeln("};")?;
     f.newline()?;
+    doxygen(f, |f| {
+        f.writeln(&format!(
+            "@brief convert an instance of enum {} into a C-style string",
+            e.core_cpp_type()
+        ))?;
+        f.writeln("@param value enum value")?;
+        f.writeln("@return C-style string constant")
+    })?;
     f.writeln(&format!(
         "const char* to_string({} value);",
         e.core_cpp_type()
@@ -277,13 +292,18 @@ fn print_enum(f: &mut dyn Printer, e: &Handle<Enum<Validated>>) -> FormattingRes
 
 fn print_exception(f: &mut dyn Printer, e: &ErrorType<Validated>) -> FormattingResult<()> {
     f.writeln(&format!(
+        "/// @brief Exception type corresponding to the underlying error num @ref {}",
+        e.inner.core_cpp_type()
+    ))?;
+    f.writeln(&format!(
         "class {} : public std::logic_error {{",
         e.core_cpp_type()
     ))?;
     f.writeln("public:")?;
     indented(f, |f| {
-        f.writeln("// underlying error enum")?;
+        f.writeln("/// @brief underlying error enum")?;
         f.writeln(&format!("{} error;", e.inner.core_cpp_type()))?;
+        f.writeln("/// @brief construct the exception with an instance of the enum")?;
         f.writeln(&format!(
             "{}({} error) : std::logic_error(to_string(error)), error(error) {{}}",
             e.core_cpp_type(),
@@ -394,12 +414,10 @@ fn print_interface(
                 print_cpp_doc(f, &cb.doc)?;
                 f.newline()?;
                 for arg in cb.arguments.iter() {
-                    f.write("@param ")?;
-                    f.write(arg.name.as_ref())?;
-                    f.write(" ")?;
-                    print_cpp_doc_string(f, &arg.doc)?;
+                    f.newline()?;
+                    print_cpp_argument_doc(f, arg)?;
                 }
-                if let ReturnType::Type(_, d) = &cb.return_type {
+                if let Some(d) = &cb.return_type.get_doc() {
                     f.newline()?;
                     f.write("@return ")?;
                     print_cpp_doc_string(f, d)?;
@@ -451,6 +469,8 @@ fn print_class_definition(
     handle: &Handle<Class<Validated>>,
 ) -> FormattingResult<()> {
     let class_name = handle.core_cpp_type();
+
+    print_commented_cpp_doc(f, &handle.doc)?;
     f.writeln(&format!("class {} {{", class_name))?;
     indented(f, |f| {
         f.writeln(&format!("friend class {};", handle.friend_class()))?;
@@ -466,16 +486,33 @@ fn print_class_definition(
     f.newline()?;
     f.writeln("public:")?;
     indented(f, |f| {
+        doxygen(f, |f| {
+            f.writeln("@brief transfer ownership of the underlying C-type and invalidate")?;
+            f.writeln("@note the moved class will throw an exception if any method is called")?;
+            f.writeln("@param other class from which ownership will be transfer to this instance")
+        })?;
         f.writeln(&format!(
             "{}({}&& other) noexcept : self(other.self) {{ other.self = nullptr; }}",
             class_name, class_name
         ))?;
 
         if let Some(x) = &handle.constructor {
-            let args = cpp_arguments(x.function.parameters.iter());
+            let args = cpp_arguments(x.function.arguments.iter());
+
+            f.newline()?;
+            doxygen(f, |f| {
+                print_cpp_doc(f, &x.function.doc)?;
+                for arg in &x.function.arguments {
+                    print_cpp_argument_doc(f, arg)?;
+                }
+                Ok(())
+            })?;
+
             f.writeln(&format!("{}({});", class_name, args))?;
         };
-        if handle.destructor.is_some() {
+        if let Some(x) = &handle.destructor {
+            f.newline()?;
+            print_commented_cpp_doc(f, &x.function.doc)?;
             f.writeln(&format!("~{}();", class_name))?;
         };
 
@@ -485,10 +522,12 @@ fn print_class_definition(
         }
 
         for method in &handle.static_methods {
+            f.newline()?;
             print_static_method(f, method)?;
         }
 
         for method in &handle.future_methods {
+            f.newline()?;
             print_future_method(f, method)?;
         }
 
@@ -499,8 +538,19 @@ fn print_class_definition(
 }
 
 fn print_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
-    let args = cpp_arguments(method.native_function.parameters.iter().skip(1));
+    let args = cpp_arguments(method.native_function.arguments.iter().skip(1));
 
+    doxygen(f, |f| {
+        print_cpp_doc(f, &method.native_function.doc)?;
+        f.newline()?;
+        for arg in method.arguments() {
+            print_cpp_argument_doc(f, arg)?;
+        }
+        if let Some(_x) = method.native_function.return_type.get_doc() {
+            // TODO
+        }
+        Ok(())
+    })?;
     f.writeln(&format!(
         "{} {}({});",
         method
@@ -516,7 +566,7 @@ fn print_static_method(
     f: &mut dyn Printer,
     method: &StaticMethod<Validated>,
 ) -> FormattingResult<()> {
-    let args = cpp_arguments(method.native_function.parameters.iter());
+    let args = cpp_arguments(method.native_function.arguments.iter());
 
     f.writeln(&format!(
         "static {} {}({});",
@@ -533,7 +583,7 @@ fn print_future_method(
     f: &mut dyn Printer,
     method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
-    let args: String = cpp_arguments(method.native_function.parameters.iter().skip(1));
+    let args: String = cpp_arguments(method.native_function.arguments.iter().skip(1));
 
     f.writeln(&format!(
         "{} {}({});",

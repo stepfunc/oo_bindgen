@@ -120,14 +120,14 @@ fn generate_constructor(
         f.newline()?;
 
         // Print each parameter value
-        for param in &constructor.function.parameters {
+        for param in &constructor.function.arguments {
             f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
-        if let FunctionReturnType::Type(_, doc) = &constructor.function.return_type {
+        if let Some(doc) = &constructor.function.return_type.get_doc() {
             f.writeln("<returns>")?;
             docstring_print(f, doc)?;
             f.write("</returns>")?;
@@ -148,7 +148,7 @@ fn generate_constructor(
     f.write(
         &constructor
             .function
-            .parameters
+            .arguments
             .iter()
             .map(|param| {
                 format!(
@@ -225,14 +225,14 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
         f.newline()?;
 
         // Print each parameter value
-        for param in method.native_function.parameters.iter().skip(1) {
+        for param in method.native_function.arguments.iter().skip(1) {
             f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
-        if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let Some(doc) = &method.native_function.return_type.get_doc() {
             f.writeln("<returns>")?;
             docstring_print(f, doc)?;
             f.write("</returns>")?;
@@ -257,7 +257,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
     f.write(
         &method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .skip(1)
             .map(|param| {
@@ -293,14 +293,14 @@ fn generate_static_method(
         f.newline()?;
 
         // Print each parameter value
-        for param in &method.native_function.parameters {
+        for param in &method.native_function.arguments {
             f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
-        if let FunctionReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let Some(doc) = &method.native_function.return_type.get_doc() {
             f.writeln("<returns>")?;
             docstring_print(f, doc)?;
             f.write("</returns>")?;
@@ -325,7 +325,7 @@ fn generate_static_method(
     f.write(
         &method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .map(|param| {
                 format!(
@@ -359,7 +359,7 @@ fn generate_async_method(
         // Print each parameter value
         for param in method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .skip(1)
             .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
@@ -393,7 +393,7 @@ fn generate_async_method(
     f.write(
         &method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .skip(1)
             .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))

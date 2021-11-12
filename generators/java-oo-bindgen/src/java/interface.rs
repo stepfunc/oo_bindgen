@@ -34,7 +34,7 @@ pub(crate) fn generate(
                 }
 
                 // Print return value
-                if let CallbackReturnType::Type(_, doc) = &func.return_type {
+                if let Some(doc) = &func.return_type.get_doc() {
                     f.writeln("@return ")?;
                     docstring_print(f, doc)?;
                 }

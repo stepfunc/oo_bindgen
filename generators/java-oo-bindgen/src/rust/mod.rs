@@ -202,7 +202,7 @@ fn generate_functions(
         f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.settings.name, handle.name.replace("_", "_1")))?;
         f.write(
             &handle
-                .parameters
+                .arguments
                 .iter()
                 .map(|param| format!("{}: {}", param.name, param.arg_type.as_raw_jni_type()))
                 .collect::<Vec<String>>()
@@ -210,7 +210,7 @@ fn generate_functions(
         )?;
         f.write(")")?;
 
-        if let FunctionReturnType::Type(return_type, _) = &handle.return_type {
+        if let Some(return_type) = &handle.return_type.get_value() {
             f.write(&format!(" -> {}", return_type.as_raw_jni_type()))?;
         }
 
@@ -230,7 +230,7 @@ fn generate_functions(
             // Illégale!"
             f.writeln("if let Err(msg) = (|| -> Result<(), String>")?;
             blocked(f, |f| {
-                for param in &handle.parameters {
+                for param in &handle.arguments {
                     param.arg_type.check_null(f, &param.name)?;
                 }
                 f.writeln("Ok(())")
@@ -238,7 +238,7 @@ fn generate_functions(
             f.write(")()")?;
             blocked(f, |f| {
                 f.writeln("_env.throw_new(\"java/lang/IllegalArgumentException\", msg).unwrap();")?;
-                if let FunctionReturnType::Type(return_type, _) = &handle.return_type {
+                if let Some(return_type) = &handle.return_type.get_value() {
                     f.writeln(&format!("return {}", return_type.default_value()))?;
                 } else {
                     f.writeln("return;")?;
@@ -249,7 +249,7 @@ fn generate_functions(
             f.newline()?;
 
             // Perform the conversion of the parameters
-            for param in &handle.parameters {
+            for param in &handle.arguments {
                 if let Some(conversion) = param.arg_type.conversion() {
                     conversion.convert_to_rust(
                         f,
@@ -289,7 +289,7 @@ fn generate_functions(
             ))?;
             f.write(
                 &handle
-                    .parameters
+                    .arguments
                     .iter()
                     .map(|param| {
                         if matches!(param.arg_type, FunctionArgument::Struct(_)) {
@@ -360,7 +360,7 @@ fn generate_functions(
             f.newline()?;
 
             // Conversion cleanup
-            for param in &handle.parameters {
+            for param in &handle.arguments {
                 if let Some(conversion) = param.arg_type.conversion() {
                     conversion.convert_to_rust_cleanup(f, &param.name)?;
                 }
@@ -374,7 +374,7 @@ fn generate_functions(
             f.newline()?;
 
             // Return value
-            if !handle.return_type.is_void() {
+            if !handle.return_type.is_none() {
                 f.writeln("return _result.into();")?;
             }
 

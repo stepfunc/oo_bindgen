@@ -6,7 +6,7 @@ use oo_bindgen::formatting::*;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, Interface};
 use oo_bindgen::iterator::IteratorItemType;
-use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{BasicType, StringType};
 use oo_bindgen::Handle;
@@ -330,21 +330,23 @@ impl JavaType for FunctionReturnValue {
     }
 }
 
-impl<T> JavaType for ReturnType<T, Validated>
+const VOID: &str = "void";
+
+impl<T> JavaType for OptionalReturnType<T, Validated>
 where
     T: Clone + JavaType,
 {
     fn as_java_primitive(&self) -> String {
-        match self {
-            Self::Void => "void".to_string(),
-            Self::Type(return_type, _) => return_type.as_java_primitive(),
+        match self.get_value() {
+            None => VOID.to_string(),
+            Some(v) => v.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
-        match self {
-            Self::Void => "Void".to_string(),
-            Self::Type(return_type, _) => return_type.as_java_object(),
+        match self.get_value() {
+            None => VOID.to_string(),
+            Some(v) => v.as_java_object(),
         }
     }
 }
@@ -356,7 +358,7 @@ pub(crate) fn call_native_function(
     first_param_is_this: bool,
 ) -> FormattingResult<()> {
     let params = method
-        .parameters
+        .arguments
         .iter()
         .enumerate()
         .map(|(idx, param)| {
@@ -370,7 +372,7 @@ pub(crate) fn call_native_function(
         .join(", ");
 
     f.newline()?;
-    if !method.return_type.is_void() {
+    if !method.return_type.is_none() {
         f.write(return_destination)?;
     }
 

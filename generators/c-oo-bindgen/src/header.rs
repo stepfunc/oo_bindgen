@@ -5,10 +5,8 @@ use oo_bindgen::enum_type::Enum;
 use oo_bindgen::formatting::{
     blocked, commented, doxygen, indented, FilePrinter, FormattingResult, Printer,
 };
-use oo_bindgen::function::{
-    Function, FunctionArgument, FunctionReturnType, FunctionReturnValue, SignatureType,
-};
-use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, Interface};
+use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnValue, SignatureType};
+use oo_bindgen::interface::{CallbackFunction, Interface};
 use oo_bindgen::structs::{
     Initializer, Number, Struct, StructFieldType, StructType, ValidatedDefaultValue, Visibility,
 };
@@ -355,7 +353,7 @@ fn write_function_docs(
         doxygen_print(f, &handle.doc)?;
 
         // Print each parameter value
-        for param in &handle.parameters {
+        for param in &handle.arguments {
             f.writeln(&format!("@param {} ", param.name))?;
             docstring_print(f, &param.doc)?;
             if let FunctionArgument::Basic(BasicType::Duration(mapping)) = param.arg_type {
@@ -417,7 +415,7 @@ fn write_function(
 
     f.write(
         &handle
-            .parameters
+            .arguments
             .iter()
             .map(|param| format!("{} {}", param.arg_type.to_c_type(), param.name))
             .collect::<Vec<String>>()
@@ -425,8 +423,8 @@ fn write_function(
     )?;
 
     if handle.error_type.is_some() {
-        if let FunctionReturnType::Type(x, _) = &handle.return_type {
-            if !handle.parameters.is_empty() {
+        if let Some(x) = &handle.return_type.get_value() {
+            if !handle.arguments.is_empty() {
                 f.write(", ")?;
                 f.write(&format!("{}* out", x.to_c_type()))?;
             }
@@ -477,7 +475,7 @@ fn write_interface(
                 docstring_print(f, &text("Context data"))?;
 
                 // Print return documentation
-                if let CallbackReturnType::Type(_, doc) = &cb.return_type {
+                if let Some(doc) = &cb.return_type.get_doc() {
                     f.writeln("@return ")?;
                     docstring_print(f, doc)?;
                 }

@@ -6,7 +6,7 @@ use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::{DocReference, Validated};
 use oo_bindgen::function::{FunctionArgument, FunctionReturnValue};
 use oo_bindgen::interface::*;
-use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::*;
 use oo_bindgen::Handle;
@@ -757,60 +757,60 @@ impl RustType for CallbackReturnValue {
     }
 }
 
-impl<T, D> LifetimeInfo for ReturnType<T, D>
+impl<T, D> LifetimeInfo for OptionalReturnType<T, D>
 where
     D: DocReference,
     T: Clone + LifetimeInfo,
 {
     fn rust_requires_lifetime(&self) -> bool {
-        if let Self::Type(t, _) = self {
-            t.rust_requires_lifetime()
+        if let Some(v) = self.get_value() {
+            v.rust_requires_lifetime()
         } else {
             false
         }
     }
 
     fn c_requires_lifetime(&self) -> bool {
-        if let Self::Type(t, _) = self {
-            t.c_requires_lifetime()
+        if let Some(v) = self.get_value() {
+            v.c_requires_lifetime()
         } else {
             false
         }
     }
 }
 
-impl<T, D> RustType for ReturnType<T, D>
+impl<T, D> RustType for OptionalReturnType<T, D>
 where
     D: DocReference,
     T: Clone + RustType,
 {
     fn as_rust_type(&self) -> String {
-        if let Self::Type(t, _) = self {
-            t.as_rust_type()
+        if let Some(v) = self.get_value() {
+            v.as_rust_type()
         } else {
             "()".to_string()
         }
     }
 
     fn as_c_type(&self) -> String {
-        if let Self::Type(t, _) = self {
-            t.as_c_type()
+        if let Some(v) = self.get_value() {
+            v.as_c_type()
         } else {
             "()".to_string()
         }
     }
 
     fn is_copyable(&self) -> bool {
-        if let Self::Type(t, _) = self {
-            t.is_copyable()
+        if let Some(v) = self.get_value() {
+            v.is_copyable()
         } else {
             true
         }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
-        if let Self::Type(t, _) = self {
-            t.conversion()
+        if let Some(v) = self.get_value() {
+            v.conversion()
         } else {
             None
         }

@@ -1,7 +1,7 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocCell, DocReference, DocString, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
-use crate::return_type::ReturnType;
+use crate::return_type::{OptionalReturnType, ReturnType};
 use crate::structs::{
     FunctionArgStructDeclaration, FunctionArgStructField, FunctionArgStructHandle,
     FunctionReturnStructDeclaration, FunctionReturnStructField, FunctionReturnStructHandle,
@@ -190,8 +190,8 @@ where
 {
     pub name: Name,
     pub category: FunctionCategory,
-    pub return_type: ReturnType<FunctionReturnValue, T>,
-    pub parameters: Vec<Arg<FunctionArgument, T>>,
+    pub return_type: OptionalReturnType<FunctionReturnValue, T>,
+    pub arguments: Vec<Arg<FunctionArgument, T>>,
     pub error_type: Option<ErrorType<T>>,
     pub settings: Rc<LibrarySettings>,
     pub doc: Doc<T>,
@@ -203,19 +203,19 @@ impl Function<Unvalidated> {
         lib: &UnvalidatedFields,
     ) -> BindResult<Handle<Function<Validated>>> {
         let parameters: BindResult<Vec<Arg<FunctionArgument, Validated>>> =
-            self.parameters.iter().map(|x| x.validate(lib)).collect();
+            self.arguments.iter().map(|x| x.validate(lib)).collect();
         let error_type = match &self.error_type {
             Some(x) => Some(x.validate(lib)?),
             None => None,
         };
 
-        let arguments: Vec<Name> = self.parameters.iter().map(|x| x.name.clone()).collect();
+        let arguments: Vec<Name> = self.arguments.iter().map(|x| x.name.clone()).collect();
 
         Ok(Handle::new(Function {
             name: self.name.clone(),
             category: self.category,
             return_type: self.return_type.validate(&self.name, lib)?,
-            parameters: parameters?,
+            arguments: parameters?,
             error_type,
             settings: self.settings.clone(),
             doc: self
@@ -244,15 +244,15 @@ pub enum SignatureType {
 impl Function<Validated> {
     pub fn get_signature_type(&self) -> SignatureType {
         match &self.error_type {
-            Some(e) => match &self.return_type {
-                ReturnType::Void => SignatureType::ErrorNoReturn(e.clone()),
-                ReturnType::Type(t, d) => {
-                    SignatureType::ErrorWithReturn(e.clone(), t.clone(), d.clone())
+            Some(e) => match self.return_type.get() {
+                None => SignatureType::ErrorNoReturn(e.clone()),
+                Some(rt) => {
+                    SignatureType::ErrorWithReturn(e.clone(), rt.value.clone(), rt.doc.clone())
                 }
             },
-            None => match &self.return_type {
-                ReturnType::Void => SignatureType::NoErrorNoReturn,
-                ReturnType::Type(t, d) => SignatureType::NoErrorWithReturn(t.clone(), d.clone()),
+            None => match self.return_type.get() {
+                None => SignatureType::NoErrorNoReturn,
+                Some(rt) => SignatureType::NoErrorWithReturn(rt.value.clone(), rt.doc.clone()),
             },
         }
     }
@@ -264,7 +264,7 @@ pub struct FunctionBuilder<'a> {
     lib: &'a mut LibraryBuilder,
     name: Name,
     function_type: FunctionCategory,
-    return_type: Option<ReturnType<FunctionReturnValue, Unvalidated>>,
+    return_type: OptionalReturnType<FunctionReturnValue, Unvalidated>,
     params: Vec<Arg<FunctionArgument, Unvalidated>>,
     doc: DocCell,
     error_type: Option<ErrorType<Unvalidated>>,
@@ -280,7 +280,7 @@ impl<'a> FunctionBuilder<'a> {
             lib,
             name: name.clone(),
             function_type,
-            return_type: None,
+            return_type: OptionalReturnType::new(),
             params: Vec::new(),
             doc: DocCell::new(name),
             error_type: None,
@@ -304,23 +304,13 @@ impl<'a> FunctionBuilder<'a> {
     }
 
     pub fn returns<D: Into<DocString<Unvalidated>>, T: Into<FunctionReturnValue>>(
-        self,
+        mut self,
         return_type: T,
         doc: D,
     ) -> BindResult<Self> {
-        self.return_type(ReturnType::new(return_type, doc))
-    }
-
-    fn return_type(mut self, return_type: FunctionReturnType<Unvalidated>) -> BindResult<Self> {
-        match self.return_type {
-            None => {
-                self.return_type = Some(return_type);
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::ReturnTypeAlreadyDefined {
-                func_name: self.name,
-            }),
-        }
+        self.return_type
+            .set(&self.name, return_type.into(), doc.into())?;
+        Ok(self)
     }
 
     pub fn fails_with(mut self, err: ErrorType<Unvalidated>) -> BindResult<Self> {
@@ -341,16 +331,11 @@ impl<'a> FunctionBuilder<'a> {
     }
 
     pub fn build(self) -> BindResult<FunctionHandle> {
-        let return_type = match self.return_type {
-            Some(return_type) => return_type,
-            None => ReturnType::Void,
-        };
-
         let handle = FunctionHandle::new(Function {
             name: self.name,
             category: self.function_type,
-            return_type,
-            parameters: self.params,
+            return_type: self.return_type,
+            arguments: self.params,
             error_type: self.error_type,
             settings: self.lib.settings.clone(),
             doc: self.doc.extract()?,
@@ -427,23 +412,17 @@ impl<'a> ClassMethodBuilder<'a> {
         })
     }
 
-    pub fn returns_nothing(self) -> BindResult<Self> {
-        Ok(Self {
-            method_name: self.method_name,
-            class: self.class,
-            inner: self.inner.return_type(ReturnType::Void)?,
-        })
-    }
-
     pub fn returns<D: Into<DocString<Unvalidated>>, T: Into<FunctionReturnValue>>(
         self,
         return_type: T,
         doc: D,
     ) -> BindResult<Self> {
+        let return_type = return_type.into();
+        let doc = doc.into();
         Ok(Self {
             method_name: self.method_name,
             class: self.class,
-            inner: self.inner.return_type(ReturnType::new(return_type, doc))?,
+            inner: self.inner.returns(return_type, doc)?,
         })
     }
 
@@ -505,7 +484,7 @@ impl<'a> FutureMethodBuilder<'a> {
         class: ClassDeclarationHandle,
         future: FutureInterface<Unvalidated>,
     ) -> BindResult<Self> {
-        let builder = lib.define_method(method_name, class)?.returns_nothing()?;
+        let builder = lib.define_method(method_name, class)?;
 
         Ok(Self {
             future,

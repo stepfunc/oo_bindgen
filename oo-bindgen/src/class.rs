@@ -1,5 +1,6 @@
 use crate::doc::{DocCell, DocReference, Unvalidated, Validated};
 use crate::name::{IntoName, Name};
+use crate::types::Arg;
 use crate::*;
 use std::rc::Rc;
 
@@ -65,6 +66,13 @@ where
     pub name: Name,
     pub associated_class: Handle<ClassDeclaration>,
     pub native_function: Handle<Function<T>>,
+}
+
+impl Method<Validated> {
+    /// retrieve a list of arguments skipping the first class parameter
+    pub fn arguments(&self) -> impl Iterator<Item = &Arg<FunctionArgument, Validated>> {
+        self.native_function.arguments.iter().skip(1)
+    }
 }
 
 impl Method<Unvalidated> {

@@ -900,7 +900,6 @@ impl LibraryBuilder {
                 "Invoked when the asynchronous operation completes",
             )?
             .param(result_name, value_type.clone(), value_type_docs.clone())?
-            .returns_nothing()?
             .enable_functional_transform()
             .end_callback()?
             .build()?;
@@ -1090,7 +1089,7 @@ impl LibraryBuilder {
                         self.check_callback_argument(&arg.arg_type)?;
                     }
                     if let Some(ret) = cb.return_type.get() {
-                        self.check_callback_return_value(ret)?;
+                        self.check_callback_return_value(&ret.value)?;
                     }
                 }
                 Ok(())
@@ -1114,11 +1113,11 @@ impl LibraryBuilder {
                 Ok(())
             }
             Statement::FunctionDefinition(x) => {
-                for p in x.parameters.iter() {
+                for p in x.arguments.iter() {
                     self.check_function_argument(&p.arg_type)?;
                 }
                 if let Some(r) = x.return_type.get() {
-                    self.check_function_return_type(r)?;
+                    self.check_function_return_type(&r.value)?;
                 }
                 for err in x.error_type.iter() {
                     self.check_enum(&err.inner)?;

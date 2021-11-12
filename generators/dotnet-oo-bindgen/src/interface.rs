@@ -46,7 +46,7 @@ pub(crate) fn generate(
                     }
 
                     // Print return value
-                    if let CallbackReturnType::Type(_, doc) = &func.return_type {
+                    if let Some(doc) = &func.return_type.get_doc() {
                         f.writeln("<returns>")?;
                         docstring_print(f, doc)?;
                         f.write("</returns>")?;
@@ -290,7 +290,7 @@ pub(crate) fn generate_interface_implementation(
         blocked(f, |f| {
             f.newline()?;
 
-            if !cb.return_type.is_void() {
+            if !cb.return_type.is_none() {
                 f.write("return ")?;
             }
 

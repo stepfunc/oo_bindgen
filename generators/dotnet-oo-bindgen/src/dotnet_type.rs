@@ -4,7 +4,7 @@ use oo_bindgen::doc::DocReference;
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::function::*;
 use oo_bindgen::interface::*;
-use oo_bindgen::return_type::ReturnType;
+use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::structs::*;
 use oo_bindgen::types::{Arg, BasicType, DurationType, StringType};
 use oo_bindgen::Handle;
@@ -167,9 +167,10 @@ pub(crate) fn base_functor_type<D>(cb: &CallbackFunction<D>) -> &'static str
 where
     D: DocReference,
 {
-    match &cb.return_type {
-        ReturnType::Void => "Action",
-        ReturnType::Type(_, _) => "Func",
+    if cb.return_type.is_none() {
+        "Action"
+    } else {
+        "Func"
     }
 }
 
@@ -187,15 +188,15 @@ where
             .join(", ")
     }
 
-    match (&cb.return_type, cb.arguments.as_slice()) {
-        (ReturnType::Void, []) => "Action".to_string(),
-        (ReturnType::Void, args) => {
+    match (&cb.return_type.get_value(), cb.arguments.as_slice()) {
+        (None, []) => "Action".to_string(),
+        (None, args) => {
             format!("Action<{}>", arg_types(args))
         }
-        (ReturnType::Type(t, _), []) => {
+        (Some(t), []) => {
             format!("Func<{}>", t.as_dotnet_type())
         }
-        (ReturnType::Type(t, _), args) => {
+        (Some(t), args) => {
             format!("Func<{}, {}>", arg_types(args), t.as_dotnet_type())
         }
     }
@@ -849,43 +850,36 @@ where
     }
 }
 
-impl<T, D> DotnetType for ReturnType<T, D>
+const VOID: &str = "void";
+
+impl<T, D> DotnetType for OptionalReturnType<T, D>
 where
     D: DocReference,
     T: Clone + DotnetType,
 {
     fn as_dotnet_type(&self) -> String {
-        match self {
-            Self::Void => "void".to_string(),
-            Self::Type(return_type, _) => return_type.as_dotnet_type(),
+        match self.get_value() {
+            None => VOID.to_string(),
+            Some(x) => x.as_dotnet_type(),
         }
     }
 
     fn as_native_type(&self) -> String {
-        match self {
-            Self::Void => "void".to_string(),
-            Self::Type(return_type, _) => return_type.as_native_type(),
+        match self.get_value() {
+            None => VOID.to_string(),
+            Some(x) => x.as_native_type(),
         }
     }
 
     fn convert_to_native(&self, from: &str) -> Option<String> {
-        match self {
-            Self::Void => None,
-            Self::Type(return_type, _) => return_type.convert_to_native(from),
-        }
+        self.get_value().and_then(|x| x.convert_to_native(from))
     }
 
     fn cleanup(&self, from: &str) -> Option<String> {
-        match self {
-            Self::Void => None,
-            Self::Type(return_type, _) => return_type.cleanup(from),
-        }
+        self.get_value().and_then(|x| x.cleanup(from))
     }
 
     fn convert_from_native(&self, from: &str) -> Option<String> {
-        match self {
-            Self::Void => None,
-            Self::Type(return_type, _) => return_type.convert_from_native(from),
-        }
+        self.get_value().and_then(|x| x.convert_from_native(from))
     }
 }

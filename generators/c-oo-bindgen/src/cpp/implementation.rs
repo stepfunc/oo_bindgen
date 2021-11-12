@@ -7,8 +7,8 @@ use oo_bindgen::doc::{brief, Validated};
 use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnType, FutureMethod};
-use oo_bindgen::interface::{CallbackFunction, CallbackReturnType, Interface, InterfaceType};
+use oo_bindgen::function::{Function, FunctionArgument, FutureMethod};
+use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceType};
 use oo_bindgen::structs::{
     Initializer, InitializerType, Number, Struct, StructFieldType, StructType,
     ValidatedDefaultValue, Visibility,
@@ -308,7 +308,7 @@ fn write_static_class_method(
 
     let args: String = method
         .native_function
-        .parameters
+        .arguments
         .iter()
         .map(|arg| format!("{} {}", arg.arg_type.get_cpp_function_arg_type(), arg.name))
         .collect::<Vec<String>>()
@@ -328,12 +328,12 @@ fn write_static_class_method(
         let invocation = format!(
             "fn::{}({})",
             method.native_function.name,
-            get_invocation_args(&method.native_function.parameters)
+            get_invocation_args(&method.native_function.arguments)
         );
 
-        match &method.native_function.return_type {
-            FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
-            FunctionReturnType::Type(t, _) => {
+        match &method.native_function.return_type.get_value() {
+            None => f.writeln(&format!("{};", invocation)),
+            Some(t) => {
                 let transformed_return_value = if t.transform_in_wrapper() {
                     f.writeln("// return type already transformed in the wrapper")?;
                     invocation
@@ -492,9 +492,9 @@ fn write_class_implementation(
             "{}::{}({}) : self(fn::{}({}))",
             cpp_name,
             cpp_name,
-            cpp_function_args(&constructor.function.parameters),
+            cpp_function_args(&constructor.function.arguments),
             constructor.function.name,
-            cpp_function_arg_invocation(&constructor.function.parameters)
+            cpp_function_arg_invocation(&constructor.function.arguments)
         ))?;
         f.writeln("{}")?;
         f.newline()?;
@@ -547,7 +547,7 @@ fn write_class_static_method_impl(
     let invocation = format!(
         "fn::{}({})",
         native_function_name,
-        cpp_function_arg_invocation(&method.native_function.parameters)
+        cpp_function_arg_invocation(&method.native_function.arguments)
     );
 
     f.writeln(&format!(
@@ -555,20 +555,22 @@ fn write_class_static_method_impl(
         return_type,
         cpp_name,
         method.name,
-        cpp_function_args(&method.native_function.parameters)
+        cpp_function_args(&method.native_function.arguments)
     ))?;
-    blocked(f, |f| match &method.native_function.return_type {
-        FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
-        FunctionReturnType::Type(t, _) => {
-            let transformed_return_value = if t.transform_in_wrapper() {
-                f.writeln("// return type already transformed in the wrapper")?;
-                invocation
-            } else {
-                // perform the transform here
-                f.writeln("// transform the return value")?;
-                t.to_cpp_return_value(invocation)
-            };
-            f.writeln(&format!("return {};", transformed_return_value))
+    blocked(f, |f| {
+        match &method.native_function.return_type.get_value() {
+            None => f.writeln(&format!("{};", invocation)),
+            Some(t) => {
+                let transformed_return_value = if t.transform_in_wrapper() {
+                    f.writeln("// return type already transformed in the wrapper")?;
+                    invocation
+                } else {
+                    // perform the transform here
+                    f.writeln("// transform the return value")?;
+                    t.to_cpp_return_value(invocation)
+                };
+                f.writeln(&format!("return {};", transformed_return_value))
+            }
         }
     })?;
     f.newline()
@@ -597,7 +599,7 @@ fn write_class_method_impl_generic(
     native_function: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_name = handle.core_cpp_type();
-    let args = &native_function.parameters[1..];
+    let args = &native_function.arguments[1..];
     let native_function_name = native_function.name.clone();
     let invocation = if args.is_empty() {
         format!("fn::{}(*this)", native_function_name)
@@ -620,9 +622,9 @@ fn write_class_method_impl_generic(
         write_move_self_guard(f)?;
         f.newline()?;
 
-        match &native_function.return_type {
-            FunctionReturnType::Void => f.writeln(&format!("{};", invocation)),
-            FunctionReturnType::Type(t, _) => {
+        match &native_function.return_type.get_value() {
+            None => f.writeln(&format!("{};", invocation)),
+            Some(t) => {
                 let transformed_return_value = if t.transform_in_wrapper() {
                     f.writeln("// return type already transformed in the wrapper")?;
                     invocation
@@ -708,7 +710,7 @@ fn write_function_wrapper(
         f: &mut dyn Printer,
         func: &Handle<Function<Validated>>,
     ) -> FormattingResult<()> {
-        for arg in &func.parameters {
+        for arg in &func.arguments {
             if arg.arg_type.requires_shadow_parameter() {
                 f.writeln(&format!(
                     "auto _{} = {};",
@@ -726,7 +728,7 @@ fn write_function_wrapper(
         func: &Handle<Function<Validated>>,
         has_out_param: bool,
     ) -> FormattingResult<()> {
-        for (arg, last) in func.parameters.iter().with_last() {
+        for (arg, last) in func.arguments.iter().with_last() {
             let conversion = match arg.arg_type.shadow_parameter_mapping() {
                 None => arg
                     .arg_type
@@ -745,9 +747,9 @@ fn write_function_wrapper(
         Ok(())
     }
 
-    let return_type = match &func.return_type {
-        FunctionReturnType::Void => func.return_type.get_cpp_function_return_type(),
-        FunctionReturnType::Type(t, _) => {
+    let return_type = match &func.return_type.get_value() {
+        None => func.return_type.get_cpp_function_return_type(),
+        Some(t) => {
             if t.transform_in_wrapper() {
                 func.return_type.get_cpp_function_return_type()
             } else {
@@ -760,20 +762,20 @@ fn write_function_wrapper(
         "{} {}({})",
         return_type,
         func.name,
-        cpp_function_args(&func.parameters)
+        cpp_function_args(&func.arguments)
     ))?;
 
     blocked(f, |f| {
         let c_func_name = func.to_c_type();
         write_shadowed_conversions(f, func)?;
         match &func.error_type {
-            None => match &func.return_type {
-                FunctionReturnType::Void => {
+            None => match &func.return_type.get_value() {
+                None => {
                     f.writeln(&format!("{}(", c_func_name))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")
                 }
-                FunctionReturnType::Type(t, _) => {
+                Some(t) => {
                     f.writeln(&format!("const auto {} = {}(", RETURN_VALUE, c_func_name))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")?;
@@ -785,14 +787,14 @@ fn write_function_wrapper(
                     f.writeln(&format!("return {};", return_value))
                 }
             },
-            Some(err) => match &func.return_type {
-                FunctionReturnType::Void => {
+            Some(err) => match &func.return_type.get_value() {
+                None => {
                     f.writeln(&format!("const auto _error = {}(", c_func_name))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")?;
                     write_error_check(f, err)
                 }
-                FunctionReturnType::Type(t, _) => {
+                Some(t) => {
                     f.writeln(&format!("{} {};", t.to_c_type(), RETURN_VALUE))?;
                     f.writeln(&format!("const auto _error =  {}(", c_func_name))?;
                     indented(f, |f| write_args(f, func, true))?;
@@ -1261,13 +1263,13 @@ fn write_callback_function(
         }
 
         let function = format!("reinterpret_cast<{}*>(ctx)->{}", cpp_type, cb.name);
-        match &cb.return_type {
-            CallbackReturnType::<Validated>::Void => {
+        match &cb.return_type.get_value() {
+            None => {
                 f.writeln(&format!("{}(", function))?;
                 indented(f, |f| write_invocation_lines(f, cb))?;
                 f.writeln(");")
             }
-            CallbackReturnType::Type(t, _) => {
+            Some(t) => {
                 f.writeln(&format!("auto _cpp_return = {}(", function))?;
                 indented(f, |f| write_invocation_lines(f, cb))?;
                 f.writeln(");")?;

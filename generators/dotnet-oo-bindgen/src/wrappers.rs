@@ -109,7 +109,7 @@ fn write_conversion_wrapper(
 
     f.write(
         &func
-            .parameters
+            .arguments
             .iter()
             .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
             .collect::<Vec<String>>()
@@ -119,7 +119,7 @@ fn write_conversion_wrapper(
     f.write(")")?;
 
     let params = func
-        .parameters
+        .arguments
         .iter()
         .map(|p| p.name.to_string())
         .collect::<Vec<String>>()
@@ -133,7 +133,7 @@ fn write_conversion_wrapper(
 
     blocked(f, |f| {
         f.newline()?;
-        if !func.return_type.is_void() {
+        if func.return_type.is_some() {
             f.write("return ")?;
         }
         f.write(&format!("{}.{}_{}({});", target, prefix, func.name, params))
@@ -154,7 +154,7 @@ fn write_exception_wrapper(
 
     f.write(
         &func
-            .parameters
+            .arguments
             .iter()
             .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
             .collect::<Vec<String>>()
@@ -164,7 +164,7 @@ fn write_exception_wrapper(
     f.write(")")?;
 
     let params = func
-        .parameters
+        .arguments
         .iter()
         .map(|p| p.name.to_string())
         .collect::<Vec<String>>()
@@ -205,7 +205,7 @@ fn write_pinvoke_signature(
 
     f.write(
         &handle
-            .parameters
+            .arguments
             .iter()
             .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
             .collect::<Vec<String>>()
@@ -213,7 +213,7 @@ fn write_pinvoke_signature(
     )?;
 
     if let SignatureType::ErrorWithReturn(_, ret, _) = handle.get_signature_type() {
-        if !handle.parameters.is_empty() {
+        if !handle.arguments.is_empty() {
             f.write(", ")?;
         }
         f.write(&format!("out {} @out", ret.as_native_type()))?

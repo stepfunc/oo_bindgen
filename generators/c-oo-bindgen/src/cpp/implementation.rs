@@ -831,11 +831,7 @@ fn write_conversions(
             write_enum_to_native_conversion(f, x)?;
             write_enum_to_cpp_conversion(f, x)
         }
-        Statement::InterfaceDefinition(x) => {
-            // write synchronous and asynchronous conversions
-            write_cpp_interface_to_native_conversion(f, x, InterfaceType::Asynchronous)?;
-            write_cpp_interface_to_native_conversion(f, x, InterfaceType::Synchronous)
-        }
+        Statement::InterfaceDefinition(x) => write_cpp_interface_to_native_conversion(f, x),
         Statement::ClassDefinition(x) => write_class_construct_helper(f, x),
         Statement::IteratorDeclaration(x) => {
             write_iterator_construct_helper(f, x)?;
@@ -1286,7 +1282,6 @@ fn write_callback_function(
 fn write_cpp_interface_to_native_conversion(
     f: &mut dyn Printer,
     handle: &Handle<Interface<Validated>>,
-    interface_type: InterfaceType,
 ) -> FormattingResult<()> {
     let c_type = handle.to_c_type();
     let cpp_type = format!(
@@ -1294,7 +1289,7 @@ fn write_cpp_interface_to_native_conversion(
         handle.settings.c_ffi_prefix,
         handle.core_cpp_type()
     );
-    let argument_type = match interface_type {
+    let argument_type = match handle.interface_type {
         InterfaceType::Synchronous => mut_ref(cpp_type.clone()),
         InterfaceType::Asynchronous => unique_ptr(cpp_type.clone()),
         InterfaceType::Future => unique_ptr(cpp_type.clone()),
@@ -1306,7 +1301,7 @@ fn write_cpp_interface_to_native_conversion(
             for cb in &handle.callbacks {
                 write_callback_function(f, handle, cb)?;
             }
-            match interface_type {
+            match handle.interface_type {
                 InterfaceType::Synchronous => {
                     f.writeln("[](void*){}, // nothing to free")?;
                 }
@@ -1317,7 +1312,7 @@ fn write_cpp_interface_to_native_conversion(
                     ))?;
                 }
             }
-            match interface_type {
+            match handle.interface_type {
                 InterfaceType::Synchronous => {
                     f.writeln("&value // the pointer will outlive the callbacks")?;
                 }

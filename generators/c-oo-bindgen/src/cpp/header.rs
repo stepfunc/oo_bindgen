@@ -1,6 +1,6 @@
 use crate::cpp::conversion::*;
 use crate::cpp::doc::{
-    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_doc, print_cpp_doc_string,
+    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_doc, print_cpp_return_type_doc,
 };
 use crate::cpp::formatting::{namespace, FriendClass};
 use oo_bindgen::class::{
@@ -417,11 +417,7 @@ fn print_interface(
                     f.newline()?;
                     print_cpp_argument_doc(f, arg)?;
                 }
-                if let Some(d) = &cb.return_type.get_doc() {
-                    f.newline()?;
-                    f.write("@return ")?;
-                    print_cpp_doc_string(f, d)?;
-                }
+                print_cpp_return_type_doc(f, &cb.return_type)?;
                 Ok(())
             })?;
             f.writeln(&format!(
@@ -502,7 +498,9 @@ fn print_class_definition(
             f.newline()?;
             doxygen(f, |f| {
                 print_cpp_doc(f, &x.function.doc)?;
+                f.newline()?;
                 for arg in &x.function.arguments {
+                    f.newline()?;
                     print_cpp_argument_doc(f, arg)?;
                 }
                 Ok(())
@@ -542,13 +540,11 @@ fn print_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingRe
 
     doxygen(f, |f| {
         print_cpp_doc(f, &method.native_function.doc)?;
-        f.newline()?;
         for arg in method.arguments() {
+            f.newline()?;
             print_cpp_argument_doc(f, arg)?;
         }
-        if let Some(_x) = method.native_function.return_type.get_doc() {
-            // TODO
-        }
+        print_cpp_return_type_doc(f, &method.native_function.return_type)?;
         Ok(())
     })?;
     f.writeln(&format!(
@@ -568,6 +564,16 @@ fn print_static_method(
 ) -> FormattingResult<()> {
     let args = cpp_arguments(method.native_function.arguments.iter());
 
+    doxygen(f, |f| {
+        print_cpp_doc(f, &method.native_function.doc)?;
+        for arg in &method.native_function.arguments {
+            f.newline()?;
+            print_cpp_argument_doc(f, arg)?;
+        }
+        print_cpp_return_type_doc(f, &method.native_function.return_type)?;
+        Ok(())
+    })?;
+
     f.writeln(&format!(
         "static {} {}({});",
         method
@@ -585,6 +591,15 @@ fn print_future_method(
 ) -> FormattingResult<()> {
     let args: String = cpp_arguments(method.native_function.arguments.iter().skip(1));
 
+    doxygen(f, |f| {
+        print_cpp_doc(f, &method.native_function.doc)?;
+        for arg in method.arguments() {
+            f.newline()?;
+            print_cpp_argument_doc(f, arg)?;
+        }
+        print_cpp_return_type_doc(f, &method.native_function.return_type)?;
+        Ok(())
+    })?;
     f.writeln(&format!(
         "{} {}({});",
         method

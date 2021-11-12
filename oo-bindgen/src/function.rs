@@ -461,6 +461,12 @@ where
     pub native_function: Handle<Function<T>>,
 }
 
+impl FutureMethod<Validated> {
+    pub fn arguments(&self) -> impl Iterator<Item = &Arg<FunctionArgument, Validated>> {
+        self.native_function.arguments.iter().skip(1)
+    }
+}
+
 impl FutureMethod<Unvalidated> {
     pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<FutureMethod<Validated>> {
         Ok(FutureMethod {

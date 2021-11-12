@@ -2,6 +2,7 @@ use crate::cpp::conversion::CoreCppType;
 use crate::doc::{docstring_print_generic, doxygen_print_generic};
 use oo_bindgen::doc::*;
 use oo_bindgen::formatting::*;
+use oo_bindgen::return_type::OptionalReturnType;
 use oo_bindgen::types::Arg;
 
 pub(crate) fn print_cpp_doc(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
@@ -17,6 +18,21 @@ where
 {
     f.write(&format!("@param {} ", arg.name))?;
     print_cpp_doc_string(f, &arg.doc)
+}
+
+pub(crate) fn print_cpp_return_type_doc<T>(
+    f: &mut dyn Printer,
+    rt: &OptionalReturnType<T, Validated>,
+) -> FormattingResult<()>
+where
+    T: Clone,
+{
+    if let Some(d) = &rt.get_doc() {
+        f.newline()?;
+        f.write("@return ")?;
+        print_cpp_doc_string(f, d)?;
+    }
+    Ok(())
 }
 
 pub(crate) fn print_commented_cpp_doc(

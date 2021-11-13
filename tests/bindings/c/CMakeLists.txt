@@ -26,7 +26,6 @@ set(c_test_files
 )
 
 set(cpp_test_files
-        ${FOO_CPP_FILE}
         cpp_tests/main.cpp
         cpp_tests/callback_tests.cpp
         cpp_tests/collection_tests.cpp
@@ -51,7 +50,7 @@ add_custom_command(TARGET foo_c_tests POST_BUILD
 )
 
 add_executable(foo_cpp_tests ${cpp_test_files})
-target_link_libraries(foo_cpp_tests PRIVATE foo)
+target_link_libraries(foo_cpp_tests PRIVATE foo_cpp)
 
 enable_testing()
 add_test(NAME foo_c_tests COMMAND foo_c_tests)

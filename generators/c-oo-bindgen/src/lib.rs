@@ -228,12 +228,15 @@ fn generate_cmake_config(
     })?;
     f.writeln(")")?;
 
+    f.newline()?;
     f.writeln(&format!(
-        "set({}_CPP_FILE ${{prefix}}/src/{}.cpp CACHE STRING \"CPP implementation\" FORCE)",
-        lib.settings.name.capital_snake_case(),
-        lib.settings.name
+        "add_library({}_cpp OBJECT ${{prefix}}/src/{}.cpp)", lib.settings.name, lib.settings.name
     ))?;
-    f.newline()
+    f.writeln(&format!(
+        "target_link_libraries({}_cpp {})", lib.settings.name, lib.settings.name
+    ))?;
+
+    Ok(())
 }
 
 fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {

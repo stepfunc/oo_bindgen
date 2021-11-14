@@ -397,7 +397,7 @@ fn write_function(
 ) -> FormattingResult<()> {
     write_function_docs(f, handle)?;
 
-    if let Some(error_type) = &handle.error_type {
+    if let Some(error_type) = &handle.error_type.get() {
         f.writeln(&format!(
             "{} {}_{}(",
             error_type.inner.to_c_type(),

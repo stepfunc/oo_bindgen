@@ -62,7 +62,7 @@ fn print_cpp_function_docs(
         if print_return {
             print_cpp_return_type_doc(f, &function.return_type)?;
         }
-        if let Some(err) = &function.error_type {
+        if let Some(err) = &function.error_type.get() {
             f.writeln(&format!("@throws {}", err.exception_name.camel_case()))?;
         }
         Ok(())

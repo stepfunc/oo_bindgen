@@ -230,10 +230,12 @@ fn generate_cmake_config(
 
     f.newline()?;
     f.writeln(&format!(
-        "add_library({}_cpp OBJECT ${{prefix}}/src/{}.cpp)", lib.settings.name, lib.settings.name
+        "add_library({}_cpp OBJECT ${{prefix}}/src/{}.cpp)",
+        lib.settings.name, lib.settings.name
     ))?;
     f.writeln(&format!(
-        "target_link_libraries({}_cpp {})", lib.settings.name, lib.settings.name
+        "target_link_libraries({}_cpp {})",
+        lib.settings.name, lib.settings.name
     ))?;
 
     Ok(())

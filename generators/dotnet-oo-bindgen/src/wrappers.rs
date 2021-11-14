@@ -187,7 +187,7 @@ fn write_pinvoke_signature(
     ))?;
     f.newline()?;
 
-    if let Some(err) = &handle.error_type {
+    if let Some(err) = handle.error_type.get() {
         f.write(&format!(
             "internal static extern {} {}_{}(",
             err.inner.as_native_type(),

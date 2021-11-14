@@ -768,7 +768,7 @@ fn write_function_wrapper(
     blocked(f, |f| {
         let c_func_name = func.to_c_type();
         write_shadowed_conversions(f, func)?;
-        match &func.error_type {
+        match func.error_type.get() {
             None => match &func.return_type.get_value() {
                 None => {
                     f.writeln(&format!("{}(", c_func_name))?;

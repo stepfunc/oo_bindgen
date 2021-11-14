@@ -1,5 +1,6 @@
 use crate::collection::CollectionHandle;
 use crate::doc::{Doc, DocCell, DocReference, DocString, Unvalidated, Validated};
+use crate::error_type::OptionalErrorType;
 use crate::name::{IntoName, Name};
 use crate::return_type::{OptionalReturnType, ReturnType};
 use crate::structs::{
@@ -198,7 +199,7 @@ where
     pub category: FunctionCategory,
     pub return_type: OptionalReturnType<FunctionReturnValue, T>,
     pub arguments: Vec<Arg<FunctionArgument, T>>,
-    pub error_type: Option<ErrorType<T>>,
+    pub error_type: OptionalErrorType<T>,
     pub settings: Rc<LibrarySettings>,
     pub doc: Doc<T>,
 }
@@ -210,10 +211,6 @@ impl Function<Unvalidated> {
     ) -> BindResult<Handle<Function<Validated>>> {
         let parameters: BindResult<Vec<Arg<FunctionArgument, Validated>>> =
             self.arguments.iter().map(|x| x.validate(lib)).collect();
-        let error_type = match &self.error_type {
-            Some(x) => Some(x.validate(lib)?),
-            None => None,
-        };
 
         let arguments: Vec<Name> = self.arguments.iter().map(|x| x.name.clone()).collect();
 
@@ -222,7 +219,7 @@ impl Function<Unvalidated> {
             category: self.category,
             return_type: self.return_type.validate(&self.name, lib)?,
             arguments: parameters?,
-            error_type,
+            error_type: self.error_type.validate(lib)?,
             settings: self.settings.clone(),
             doc: self
                 .doc
@@ -249,7 +246,7 @@ pub enum SignatureType {
 
 impl Function<Validated> {
     pub fn get_signature_type(&self) -> SignatureType {
-        match &self.error_type {
+        match self.error_type.get() {
             Some(e) => match self.return_type.get() {
                 None => SignatureType::ErrorNoReturn(e.clone()),
                 Some(rt) => {
@@ -273,7 +270,7 @@ pub struct FunctionBuilder<'a> {
     return_type: OptionalReturnType<FunctionReturnValue, Unvalidated>,
     params: Vec<Arg<FunctionArgument, Unvalidated>>,
     doc: DocCell,
-    error_type: Option<ErrorType<Unvalidated>>,
+    error_type: OptionalErrorType<Unvalidated>,
 }
 
 impl<'a> FunctionBuilder<'a> {
@@ -289,7 +286,7 @@ impl<'a> FunctionBuilder<'a> {
             return_type: OptionalReturnType::new(),
             params: Vec::new(),
             doc: DocCell::new(name),
-            error_type: None,
+            error_type: OptionalErrorType::new(),
         }
     }
 
@@ -320,14 +317,7 @@ impl<'a> FunctionBuilder<'a> {
     }
 
     pub fn fails_with(mut self, err: ErrorType<Unvalidated>) -> BindResult<Self> {
-        if let Some(x) = self.error_type {
-            return Err(BindingError::ErrorTypeAlreadyDefined {
-                function: self.name,
-                error_type: x.inner.name.clone(),
-            });
-        }
-
-        self.error_type = Some(err);
+        self.error_type.set(&self.name, &err)?;
         Ok(self)
     }
 

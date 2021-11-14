@@ -34,6 +34,60 @@ impl ErrorType<Unvalidated> {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct OptionalErrorType<D>
+where
+    D: DocReference,
+{
+    inner: Option<ErrorType<D>>,
+}
+
+impl<D> OptionalErrorType<D>
+where
+    D: DocReference,
+{
+    pub(crate) fn new() -> Self {
+        Self { inner: None }
+    }
+
+    pub fn get(&self) -> Option<&ErrorType<D>> {
+        match &self.inner {
+            None => None,
+            Some(x) => Some(x),
+        }
+    }
+
+    pub fn is_some(&self) -> bool {
+        self.inner.is_some()
+    }
+}
+
+impl OptionalErrorType<Unvalidated> {
+    pub(crate) fn set(&mut self, parent: &Name, err: &ErrorType<Unvalidated>) -> BindResult<()> {
+        if self.inner.is_some() {
+            return Err(BindingError::ErrorTypeAlreadyDefined {
+                function: parent.clone(),
+                error_type: err.inner.name.clone(),
+            });
+        }
+
+        self.inner = Some(err.clone());
+        Ok(())
+    }
+
+    pub(crate) fn validate(
+        &self,
+        lib: &UnvalidatedFields,
+    ) -> BindResult<OptionalErrorType<Validated>> {
+        match &self.inner {
+            None => Ok(OptionalErrorType::new()),
+            Some(x) => Ok(OptionalErrorType {
+                inner: Some(x.validate(lib)?),
+            }),
+        }
+    }
+}
+
 pub struct ErrorTypeBuilder<'a> {
     exception_name: Name,
     exception_type: ExceptionType,

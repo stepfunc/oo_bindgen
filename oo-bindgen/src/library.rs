@@ -1090,7 +1090,7 @@ impl LibraryBuilder {
                 if let Some(r) = x.return_type.get() {
                     self.check_function_return_type(&r.value)?;
                 }
-                for err in x.error_type.iter() {
+                for err in x.error_type.get().iter() {
                     self.check_enum(&err.inner)?;
                 }
                 Ok(())

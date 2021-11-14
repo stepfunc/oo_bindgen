@@ -68,6 +68,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         "receives a single value from an add operation",
         BasicType::U32,
         "result of the add operation",
+        None,
     )?;
     let add_async = lib
         .define_future_method("add", thread_class.clone(), add_handler)?

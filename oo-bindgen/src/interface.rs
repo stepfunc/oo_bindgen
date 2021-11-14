@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
+use crate::error_type::OptionalErrorType;
 use crate::iterator::IteratorHandle;
 use crate::name::{IntoName, Name};
 use crate::return_type::{OptionalReturnType, ReturnType};
@@ -251,17 +252,20 @@ where
 {
     pub value_type: CallbackArgument,
     pub value_type_doc: DocString<D>,
+    pub error_type: OptionalErrorType<D>,
     pub interface: Handle<Interface<D>>,
 }
 
 impl FutureInterface<Unvalidated> {
     pub(crate) fn new(
         value_type: CallbackArgument,
+        error_type: OptionalErrorType<Unvalidated>,
         interface: Handle<Interface<Unvalidated>>,
         value_type_doc: DocString<Unvalidated>,
     ) -> Self {
         Self {
             value_type,
+            error_type,
             value_type_doc,
             interface,
         }
@@ -273,6 +277,7 @@ impl FutureInterface<Unvalidated> {
     ) -> BindResult<FutureInterface<Validated>> {
         Ok(FutureInterface {
             value_type: self.value_type.clone(),
+            error_type: self.error_type.validate(lib)?,
             value_type_doc: self.value_type_doc.validate(&self.interface.name, lib)?,
             interface: self.interface.validate(lib)?,
         })

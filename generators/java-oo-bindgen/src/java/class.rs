@@ -259,7 +259,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
     )?;
     f.write(")")?;
 
-    if let Some(error) = &method.native_function.error_type.get() {
+    if let Some(error) = method.native_function.error_type.get() {
         if error.exception_type == ExceptionType::CheckedException {
             f.write(&format!(" throws {}", error.exception_name.camel_case()))?;
         }
@@ -325,7 +325,7 @@ fn generate_static_method(
     )?;
     f.write(")")?;
 
-    if let Some(error) = &method.native_function.error_type.get() {
+    if let Some(error) = method.native_function.error_type.get() {
         if error.exception_type == ExceptionType::CheckedException {
             f.write(&format!(" throws {}", error.exception_name.camel_case()))?;
         }
@@ -409,7 +409,7 @@ fn generate_async_method(
     )?;
     f.write(")")?;
 
-    if let Some(error) = &method.native_function.error_type.get() {
+    if let Some(error) = method.native_function.error_type.get() {
         if error.exception_type == ExceptionType::CheckedException {
             f.write(&format!(" throws {}", error.exception_name.camel_case()))?;
         }

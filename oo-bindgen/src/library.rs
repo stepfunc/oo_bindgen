@@ -6,7 +6,7 @@ use crate::collection::{Collection, CollectionHandle};
 use crate::constants::{ConstantSet, ConstantSetBuilder};
 use crate::doc::{Doc, DocReference, DocString, Unvalidated, Validated};
 use crate::enum_type::{EnumBuilder, EnumHandle};
-use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType};
+use crate::error_type::{ErrorType, ErrorTypeBuilder, ExceptionType, OptionalErrorType};
 use crate::function::{FunctionBuilder, FunctionHandle};
 use crate::interface::{InterfaceBuilder, InterfaceHandle};
 use crate::iterator::{IteratorHandle, IteratorItemType};
@@ -193,10 +193,14 @@ impl Default for ClassSettings {
 /// Settings that affect how things are named in future-style callback interfaces
 #[derive(Debug)]
 pub struct FutureSettings {
-    /// The name given to the completion method on interface
+    /// The name given to the success completion method on interface
     pub success_callback_method_name: Name,
-    /// The name given to the result parameter of the completion method
+    /// The name given to the result parameter of the success completion method
     pub success_single_parameter_name: Name,
+    /// The name given to the failure completion method on interface
+    pub failure_callback_method_name: Name,
+    /// The name given to the error parameter of the failure completion method
+    pub failure_single_parameter_name: Name,
     /// The name given to the final callback parameter of the async methods
     pub async_method_callback_parameter_name: Name,
 }
@@ -205,11 +209,15 @@ impl FutureSettings {
     pub fn new(
         success_callback_method_name: Name,
         success_single_parameter_name: Name,
+        failure_callback_method_name: Name,
+        failure_single_parameter_name: Name,
         async_method_callback_parameter_name: Name,
     ) -> Self {
         Self {
             success_callback_method_name,
             success_single_parameter_name,
+            failure_callback_method_name,
+            failure_single_parameter_name,
             async_method_callback_parameter_name,
         }
     }
@@ -220,6 +228,8 @@ impl Default for FutureSettings {
         Self {
             success_callback_method_name: Name::create("on_complete").unwrap(),
             success_single_parameter_name: Name::create("result").unwrap(),
+            failure_callback_method_name: Name::create("on_failure").unwrap(),
+            failure_single_parameter_name: Name::create("error").unwrap(),
             async_method_callback_parameter_name: Name::create("callback").unwrap(),
         }
     }
@@ -864,24 +874,57 @@ impl LibraryBuilder {
         interface_docs: D,
         value_type: V,
         value_type_docs: E,
+        error_type: Option<ErrorType<Unvalidated>>,
     ) -> BindResult<FutureInterface<Unvalidated>> {
-        let on_complete_name = self.settings.future.success_callback_method_name.clone();
-        let result_name = self.settings.future.success_single_parameter_name.clone();
         let value_type = value_type.into();
         let value_type_docs = value_type_docs.into();
+        let name = name.into_name()?;
+        let success_callback_name = self.settings.future.success_callback_method_name.clone();
+        let success_parameter_name = self.settings.future.success_single_parameter_name.clone();
+        let failure_callback_name = self.settings.future.failure_callback_method_name.clone();
+        let failure_parameter_name = self.settings.future.failure_single_parameter_name.clone();
 
-        let interface = self
-            .define_interface(name, interface_docs)?
+        let builder = self
+            .define_interface(name.clone(), interface_docs)?
             .begin_callback(
-                on_complete_name,
-                "Invoked when the asynchronous operation completes",
+                success_callback_name,
+                "Invoked when the asynchronous operation completes successfully",
             )?
-            .param(result_name, value_type.clone(), value_type_docs.clone())?
+            .param(
+                success_parameter_name,
+                value_type.clone(),
+                value_type_docs.clone(),
+            )?
             .enable_functional_transform()
-            .end_callback()?
-            .build(InterfaceType::Future)?;
+            .end_callback()?;
 
-        Ok(FutureInterface::new(value_type, interface, value_type_docs))
+        let mut error = OptionalErrorType::new();
+        let builder = if let Some(err) = error_type {
+            error.set(&name, &err)?;
+            builder
+                .begin_callback(
+                    failure_callback_name,
+                    "Invoked when the asynchronous operation fails",
+                )?
+                .param(
+                    failure_parameter_name,
+                    err.inner,
+                    "Enumeration indicating which error occurred",
+                )?
+                .enable_functional_transform()
+                .end_callback()?
+        } else {
+            builder
+        };
+
+        let interface = builder.build(InterfaceType::Future)?;
+
+        Ok(FutureInterface::new(
+            value_type,
+            error,
+            interface,
+            value_type_docs,
+        ))
     }
 
     pub fn define_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(

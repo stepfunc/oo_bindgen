@@ -38,6 +38,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         "GetValue callback handler",
         BasicType::U32,
         "Result of the operation",
+        None,
     )?;
 
     let get_value_async = lib

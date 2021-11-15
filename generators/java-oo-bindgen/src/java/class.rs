@@ -415,18 +415,7 @@ fn generate_async_method(
     }
 
     blocked(f, |f| {
-        f.writeln(&format!("{} future = new {}();", future_type, future_type))?;
-
-        /*
-        AddHandler callback = new AddHandler {
-            void onComplete(UInteger result) {
-            future.complete(result);
-            }
-            void onFailure(MathIsBroken error) {
-            future.completeExceptionally(new BrokenMathException(error));
-            }
-        };
-        */
+        f.writeln(&format!("{} _future = new {}();", future_type, future_type))?;
 
         f.writeln(&format!(
             "{} {} = new {}() {{",
@@ -438,7 +427,7 @@ fn generate_async_method(
                 settings.future.success_callback_method_name.mixed_case(),
                 value_type
             ))?;
-            blocked(f, |f| f.writeln("future.complete(value);"))?;
+            blocked(f, |f| f.writeln("_future.complete(value);"))?;
 
             if let Some(err) = method.future.error_type.get() {
                 f.newline()?;
@@ -449,7 +438,7 @@ fn generate_async_method(
                 ))?;
                 blocked(f, |f| {
                     f.writeln(&format!(
-                        "future.completeExceptionally(new {}(error));",
+                        "_future.completeExceptionally(new {}(error));",
                         err.exception_name.camel_case()
                     ))
                 })?;
@@ -460,6 +449,6 @@ fn generate_async_method(
         f.writeln("};")?;
 
         call_native_function(f, &method.native_function, "return ", true)?;
-        f.writeln("return future;")
+        f.writeln("return _future;")
     })
 }

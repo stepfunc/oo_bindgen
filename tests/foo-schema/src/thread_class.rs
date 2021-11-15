@@ -1,9 +1,16 @@
 use oo_bindgen::types::BasicType;
 use oo_bindgen::*;
+use oo_bindgen::error_type::ExceptionType;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare the class
     let thread_class = lib.declare_class("thread_class")?;
+
+    let error_type =
+        lib.define_error_type("math_is_broken", "broken_math_exception", ExceptionType::CheckedException)?
+            .add_error("math_is_broke", "hey, sometime is happens")?
+            .doc("sometime math just doesn't work")?
+            .build()?;
 
     let value_change_listener = lib
         .define_interface(
@@ -63,12 +70,18 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Update the internal value and trigger callbacks to the {interface:value_change_listener}")?
         .build()?;
 
+    let set_error = lib
+        .define_method("set_error", thread_class.clone())?
+        .param("next_error", error_type.inner.clone(), "error to return next time {class:thread_class.add()} is called")?
+        .doc("Next time {class:thread_class.add()} is called, fail it with this error")?
+        .build()?;
+
     let add_handler = lib.define_future_interface(
         "add_handler",
         "receives a single value from an add operation",
         BasicType::U32,
         "result of the add operation",
-        None,
+        Some(error_type),
     )?;
     let add_async = lib
         .define_future_method("add", thread_class.clone(), add_handler)?
@@ -86,6 +99,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .destructor(destructor)?
         .method(update)?
         .method(execute)?
+        .method(set_error)?
         .async_method(add_async)?
         .custom_destroy("shutdown")?
         .doc("A class that manipulations integers on a Rust thread")?

@@ -57,7 +57,7 @@ pub(crate) fn generate_exceptions_cache(
                         "exception_{snake_name}_class: env.new_global_ref(exception_{snake_name}_class).unwrap(),",
                         snake_name=snake_name
                     ))?;
-                    f.writeln(&format!("exception_{}_constructor", snake_name))?;
+                    f.writeln(&format!("exception_{}_constructor,", snake_name))?;
                 }
                 Ok(())
             })

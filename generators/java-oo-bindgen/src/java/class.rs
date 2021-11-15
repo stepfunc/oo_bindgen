@@ -340,16 +340,15 @@ fn generate_async_method(
     f: &mut dyn Printer,
     method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
-    let return_type = method.future.value_type.as_java_object();
+    let value_type = method.future.value_type.as_java_object();
     let settings = method.future.interface.settings.clone();
-    let one_time_callback_name = method.future.interface.name.camel_case();
-    let one_time_callback_param_name = settings.future.success_single_parameter_name.mixed_case();
+    let interface_name = method.future.interface.name.camel_case();
     let callback_param_name = settings
         .future
         .async_method_callback_parameter_name
         .mixed_case();
 
-    let future_type = format!("java.util.concurrent.CompletableFuture<{}>", return_type);
+    let future_type = format!("java.util.concurrent.CompletableFuture<{}>", value_type);
 
     // Documentation
     documentation(f, |f| {
@@ -387,7 +386,7 @@ fn generate_async_method(
 
     f.writeln(&format!(
         "public java.util.concurrent.CompletionStage<{}> {}(",
-        return_type,
+        value_type,
         method.name.mixed_case()
     ))?;
     f.write(
@@ -418,15 +417,45 @@ fn generate_async_method(
     blocked(f, |f| {
         f.writeln(&format!("{} future = new {}();", future_type, future_type))?;
 
+        /*
+        AddHandler callback = new AddHandler {
+            void onComplete(UInteger result) {
+            future.complete(result);
+            }
+            void onFailure(MathIsBroken error) {
+            future.completeExceptionally(new BrokenMathException(error));
+            }
+        };
+        */
+
         f.writeln(&format!(
-            "{} {} = {} -> {{",
-            one_time_callback_name, callback_param_name, one_time_callback_param_name
+            "{} {} = new {}() {{",
+            interface_name, callback_param_name, interface_name
         ))?;
         indented(f, |f| {
             f.writeln(&format!(
-                "future.complete({});",
-                one_time_callback_param_name
-            ))
+                "public void {}({} value)",
+                settings.future.success_callback_method_name.mixed_case(),
+                value_type
+            ))?;
+            blocked(f, |f| f.writeln("future.complete(value);"))?;
+
+            if let Some(err) = method.future.error_type.get() {
+                f.newline()?;
+                f.writeln(&format!(
+                    "public void {}({} error)",
+                    settings.future.failure_callback_method_name.mixed_case(),
+                    err.inner.name.camel_case()
+                ))?;
+                blocked(f, |f| {
+                    f.writeln(&format!(
+                        "future.completeExceptionally(new {}(error));",
+                        err.exception_name.camel_case()
+                    ))
+                })?;
+            }
+
+            Ok(())
         })?;
         f.writeln("};")?;
 

@@ -57,9 +57,7 @@ fn run(mut data: ThreadData) {
                 }
             }
             Message::Stop => return,
-            Message::QueueAddError(err) => {
-                data.error_queue.push(err)
-            }
+            Message::QueueAddError(err) => data.error_queue.push(err),
         }
     }
 }
@@ -111,7 +109,10 @@ pub(crate) unsafe fn thread_class_execute(
     }
 }
 
-pub(crate) unsafe fn thread_class_set_error(instance: *mut ThreadClass, err: crate::ffi::MathIsBroken) {
+pub(crate) unsafe fn thread_class_set_error(
+    instance: *mut ThreadClass,
+    err: crate::ffi::MathIsBroken,
+) {
     if let Some(x) = instance.as_ref() {
         x.tx.send(Message::QueueAddError(err)).unwrap()
     }

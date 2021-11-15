@@ -94,7 +94,9 @@ impl<'a> RustCodegen<'a> {
                 Statement::FunctionDefinition(handle) => {
                     Self::write_function(&mut f, handle, &self.library.settings.c_ffi_prefix)?
                 }
-                Statement::InterfaceDefinition(handle) => self.write_interface(&mut f, handle)?,
+                Statement::InterfaceDefinition(t) => {
+                    self.write_interface(&mut f, t.inner(), t.mode())?
+                }
                 _ => (),
             }
             f.newline()?;
@@ -488,6 +490,7 @@ impl<'a> RustCodegen<'a> {
         &self,
         f: &mut dyn Printer,
         handle: &Interface<Validated>,
+        mode: InterfaceMode,
     ) -> FormattingResult<()> {
         let interface_name = handle.name.to_camel_case();
         // C structure
@@ -540,7 +543,7 @@ impl<'a> RustCodegen<'a> {
 
         self.write_callback_helpers(
             f,
-            handle.interface_type,
+            mode,
             &interface_name,
             handle.settings.clone(),
             handle.callbacks.iter(),
@@ -570,15 +573,15 @@ impl<'a> RustCodegen<'a> {
     fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction<Validated>>>(
         &self,
         f: &mut dyn Printer,
-        interface_type: InterfaceType,
+        mode: InterfaceMode,
         name: &str,
         settings: Rc<LibrarySettings>,
         callbacks: I,
     ) -> FormattingResult<()> {
-        let generate_send_and_sync = match interface_type {
-            InterfaceType::Synchronous => false,
-            InterfaceType::Asynchronous => true,
-            InterfaceType::Future => true,
+        let generate_send_and_sync = match mode {
+            InterfaceMode::Synchronous => false,
+            InterfaceMode::Asynchronous => true,
+            InterfaceMode::Future => true,
         };
 
         // Send/Sync trait

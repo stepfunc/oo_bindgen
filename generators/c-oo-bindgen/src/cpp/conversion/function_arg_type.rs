@@ -1,8 +1,8 @@
 use crate::cpp::conversion::{CoreCppType, PassBy, TypeInfo};
 use crate::cpp::formatting::*;
-use oo_bindgen::doc::DocReference;
+use oo_bindgen::doc::{DocReference, Unvalidated};
 use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::{InterfaceHandle, InterfaceType};
+use oo_bindgen::interface::{Interface, InterfaceMode};
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
     StructFieldType, UniversalOr, UniversalStructField,
@@ -41,12 +41,12 @@ impl CppFunctionArgType for BasicType {
     }
 }
 
-impl CppFunctionArgType for InterfaceHandle {
+impl CppFunctionArgType for Handle<Interface<Unvalidated>> {
     fn get_cpp_function_arg_type(&self) -> String {
-        match self.interface_type {
-            InterfaceType::Synchronous => mut_ref(self.core_cpp_type()),
-            InterfaceType::Asynchronous => unique_ptr(self.core_cpp_type()),
-            InterfaceType::Future => unique_ptr(self.core_cpp_type()),
+        match self.mode {
+            InterfaceMode::Synchronous => mut_ref(self.core_cpp_type()),
+            InterfaceMode::Asynchronous => unique_ptr(self.core_cpp_type()),
+            InterfaceMode::Future => unique_ptr(self.core_cpp_type()),
         }
     }
 }

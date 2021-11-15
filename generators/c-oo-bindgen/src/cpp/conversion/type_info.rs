@@ -2,7 +2,7 @@ use oo_bindgen::class::ClassDeclarationHandle;
 use oo_bindgen::collection::Collection;
 use oo_bindgen::doc::DocReference;
 use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::{Interface, InterfaceType};
+use oo_bindgen::interface::{Interface, InterfaceMode};
 use oo_bindgen::structs::{
     CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
     StructFieldType, TypedStructDeclaration, UniversalOr, UniversalStructField,
@@ -31,10 +31,10 @@ where
     D: DocReference,
 {
     fn pass_by(&self) -> PassBy {
-        match self.interface_type {
-            InterfaceType::Synchronous => PassBy::MutRef,
-            InterfaceType::Asynchronous => PassBy::Move,
-            InterfaceType::Future => PassBy::Move,
+        match self.mode {
+            InterfaceMode::Synchronous => PassBy::MutRef,
+            InterfaceMode::Asynchronous => PassBy::Move,
+            InterfaceMode::Future => PassBy::Move,
         }
     }
 }

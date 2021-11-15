@@ -14,7 +14,7 @@ use oo_bindgen::enum_type::Enum;
 use oo_bindgen::error_type::ErrorType;
 use oo_bindgen::formatting::{blocked, doxygen, indented, FilePrinter, FormattingResult, Printer};
 use oo_bindgen::function::{FunctionArgument, FutureMethod};
-use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceType};
+use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceMode};
 use oo_bindgen::structs::{
     Initializer, InitializerType, Struct, StructDeclaration, StructFieldType, StructType,
     Visibility,
@@ -66,15 +66,15 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
                 StructType::Universal(x) => print_struct_definition(f, x)?,
             },
             Statement::InterfaceDefinition(x) => {
-                print_interface(f, x)?;
+                print_interface(f, x.inner())?;
 
-                if let Some(callback) = x.get_functional_callback() {
+                if let Some(callback) = x.inner().get_functional_callback() {
                     if !documented_functional_ns {
                         documented_functional_ns = true;
                         f.writeln("/// helpers functions to create interface implementations using lambdas")?;
                     }
                     namespace(f, "functional", |f| {
-                        write_functional_interface_helpers(f, x, callback)
+                        write_functional_interface_helpers(f, x.inner(), callback)
                     })?;
                     f.newline()?;
                 }
@@ -178,10 +178,10 @@ fn write_functional_interface_helpers(
 
     f.newline()?;
 
-    let is_synchronous = match interface.interface_type {
-        InterfaceType::Synchronous => true,
-        InterfaceType::Asynchronous => false,
-        InterfaceType::Future => false,
+    let is_synchronous = match interface.mode {
+        InterfaceMode::Synchronous => true,
+        InterfaceMode::Asynchronous => false,
+        InterfaceMode::Future => false,
     };
 
     let return_type = if is_synchronous {

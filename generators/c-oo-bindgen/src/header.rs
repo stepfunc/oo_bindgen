@@ -90,7 +90,7 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
                 Statement::ClassDeclaration(handle) => write_class_declaration(f, handle)?,
                 Statement::FunctionDefinition(handle) => write_function(f, handle)?,
-                Statement::InterfaceDefinition(handle) => write_interface(f, handle)?,
+                Statement::InterfaceDefinition(handle) => write_interface(f, handle.inner())?,
                 _ => (),
             }
             f.newline()?;

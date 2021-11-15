@@ -159,7 +159,7 @@ impl CallbackFunction<Unvalidated> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum InterfaceType {
+pub enum InterfaceMode {
     /// The interface will only be used in a synchronous context and the Rust
     /// backend will not generate Sync / Send implementations so it cannot be sent
     /// to other threads.
@@ -172,13 +172,54 @@ pub enum InterfaceType {
     Future,
 }
 
+#[derive(Debug, Clone)]
+pub enum InterfaceType<D>
+where
+    D: DocReference,
+{
+    Synchronous(Handle<Interface<D>>),
+    Asynchronous(Handle<Interface<D>>),
+    Future(FutureInterface<D>),
+}
+
+impl InterfaceType<Unvalidated> {
+    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<InterfaceType<Validated>> {
+        match self {
+            InterfaceType::Synchronous(x) => Ok(InterfaceType::Synchronous(x.validate(lib)?)),
+            InterfaceType::Asynchronous(x) => Ok(InterfaceType::Asynchronous(x.validate(lib)?)),
+            InterfaceType::Future(x) => Ok(InterfaceType::Future(x.validate(lib)?)),
+        }
+    }
+}
+
+impl<D> InterfaceType<D>
+where
+    D: DocReference,
+{
+    pub fn mode(&self) -> InterfaceMode {
+        match self {
+            InterfaceType::Synchronous(_) => InterfaceMode::Synchronous,
+            InterfaceType::Asynchronous(_) => InterfaceMode::Asynchronous,
+            InterfaceType::Future(_) => InterfaceMode::Future,
+        }
+    }
+
+    pub fn inner(&self) -> &Handle<Interface<D>> {
+        match self {
+            InterfaceType::Synchronous(x) => x,
+            InterfaceType::Asynchronous(x) => x,
+            InterfaceType::Future(x) => &x.interface,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Interface<D>
 where
     D: DocReference,
 {
     pub name: Name,
-    pub interface_type: InterfaceType,
+    pub mode: InterfaceMode,
     pub callbacks: Vec<CallbackFunction<D>>,
     pub doc: Doc<D>,
     pub settings: Rc<LibrarySettings>,
@@ -194,7 +235,7 @@ impl Interface<Unvalidated> {
 
         Ok(Handle::new(Interface {
             name: self.name.clone(),
-            interface_type: self.interface_type,
+            mode: self.mode,
             callbacks: callbacks?,
             doc: self.doc.validate(&self.name, lib)?,
             settings: self.settings.clone(),
@@ -319,9 +360,11 @@ impl<'a> InterfaceBuilder<'a> {
     /// takes it as an argument. The Rust backend will NOT generate `Send` and `Sync`
     /// implementations so that it be cannot be transferred across thread boundaries.
     pub fn build_sync(self) -> BindResult<SynchronousInterface> {
-        Ok(SynchronousInterface {
-            inner: self.build(InterfaceType::Synchronous)?,
-        })
+        let (handle, lib) = self.build(InterfaceMode::Synchronous);
+        lib.add_statement(Statement::InterfaceDefinition(InterfaceType::Synchronous(
+            handle.clone(),
+        )))?;
+        Ok(SynchronousInterface { inner: handle })
     }
 
     /// Build the interface and mark it as used in an asynchronous context.
@@ -331,23 +374,23 @@ impl<'a> InterfaceBuilder<'a> {
     /// of this interface as `Send` and `Sync` so that it be transferred across thread
     /// boundaries.
     pub fn build_async(self) -> BindResult<AsynchronousInterface> {
-        Ok(AsynchronousInterface {
-            inner: self.build(InterfaceType::Asynchronous)?,
-        })
+        let (handle, lib) = self.build(InterfaceMode::Asynchronous);
+        lib.add_statement(Statement::InterfaceDefinition(InterfaceType::Asynchronous(
+            handle.clone(),
+        )))?;
+        Ok(AsynchronousInterface { inner: handle })
     }
 
-    pub(crate) fn build(self, interface_type: InterfaceType) -> BindResult<InterfaceHandle> {
+    pub(crate) fn build(self, mode: InterfaceMode) -> (InterfaceHandle, &'a mut LibraryBuilder) {
         let handle = InterfaceHandle::new(Interface {
             name: self.name,
-            interface_type,
+            mode,
             callbacks: self.callbacks,
             doc: self.doc,
             settings: self.lib.settings.clone(),
         });
 
-        self.lib
-            .add_statement(Statement::InterfaceDefinition(handle.clone()))?;
-        Ok(handle)
+        (handle, self.lib)
     }
 
     fn check_unique_callback_name(&mut self, name: &Name) -> BindResult<()> {

@@ -29,7 +29,7 @@ where
     ClassDeclaration(ClassDeclarationHandle),
     ClassDefinition(Handle<Class<D>>),
     StaticClassDefinition(Handle<StaticClass<D>>),
-    InterfaceDefinition(Handle<Interface<D>>),
+    InterfaceDefinition(InterfaceType<D>),
     IteratorDeclaration(Handle<crate::iterator::Iterator<D>>),
     CollectionDeclaration(Handle<Collection<D>>),
     FunctionDefinition(Handle<Function<D>>),
@@ -52,7 +52,7 @@ impl Statement<Unvalidated> {
                 None
             }
             Statement::StaticClassDefinition(x) => Some(&x.name),
-            Statement::InterfaceDefinition(x) => Some(&x.name),
+            Statement::InterfaceDefinition(x) => Some(&x.inner().name),
             Statement::IteratorDeclaration(_) => {
                 // the name is derived in a language specific way
                 None
@@ -335,9 +335,11 @@ impl Library {
         })
     }
 
-    pub fn future_interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
-        self.interfaces()
-            .filter(|x| x.interface_type == InterfaceType::Future)
+    pub fn future_interfaces(&self) -> impl Iterator<Item = &FutureInterface<Validated>> {
+        self.statements.iter().filter_map(|x| match x {
+            Statement::InterfaceDefinition(InterfaceType::Future(x)) => Some(x),
+            _ => None,
+        })
     }
 
     pub fn structs(&self) -> impl Iterator<Item = &StructType<Validated>> {
@@ -385,10 +387,12 @@ impl Library {
     }
 
     pub fn interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
-        self.statements().filter_map(|statement| match statement {
-            Statement::InterfaceDefinition(handle) => Some(handle),
-            _ => None,
-        })
+        self.statements
+            .iter()
+            .filter_map(|statement| match statement {
+                Statement::InterfaceDefinition(t) => Some(t.inner()),
+                _ => None,
+            })
     }
 
     pub fn iterators(&self) -> impl Iterator<Item = &Handle<crate::iterator::Iterator<Validated>>> {
@@ -533,7 +537,7 @@ impl LibraryBuilder {
                 self.fields.static_classes.insert(x);
             }
             Statement::InterfaceDefinition(x) => {
-                self.fields.interfaces.insert(x);
+                self.fields.interfaces.insert(x.inner().clone());
             }
             Statement::IteratorDeclaration(x) => {
                 self.fields.iterators.insert(x);
@@ -917,14 +921,13 @@ impl LibraryBuilder {
             builder
         };
 
-        let interface = builder.build(InterfaceType::Future)?;
+        let (interface, lib) = builder.build(InterfaceMode::Future);
+        let ret = FutureInterface::new(value_type, error, interface, value_type_docs);
+        lib.add_statement(Statement::InterfaceDefinition(InterfaceType::Future(
+            ret.clone(),
+        )))?;
 
-        Ok(FutureInterface::new(
-            value_type,
-            error,
-            interface,
-            value_type_docs,
-        ))
+        Ok(ret)
     }
 
     pub fn define_interface<T: IntoName, D: Into<Doc<Unvalidated>>>(
@@ -1098,7 +1101,7 @@ impl LibraryBuilder {
                 Ok(())
             }
             Statement::InterfaceDefinition(x) => {
-                for cb in x.callbacks.iter() {
+                for cb in x.inner().callbacks.iter() {
                     for arg in cb.arguments.iter() {
                         self.check_callback_argument(&arg.arg_type)?;
                     }

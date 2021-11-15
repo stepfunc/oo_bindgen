@@ -26,7 +26,7 @@ pub(crate) fn generate_interfaces_cache(
     // Top-level enums struct
     f.writeln("pub struct Interfaces")?;
     blocked(&mut f, |f| {
-        for interface in lib.interfaces() {
+        for interface in lib.untyped_interfaces() {
             f.writeln(&format!(
                 "pub interface_{}: Interface{},",
                 interface.name,
@@ -45,7 +45,7 @@ pub(crate) fn generate_interfaces_cache(
         blocked(f, |f| {
             f.writeln("Self")?;
             blocked(f, |f| {
-                for interface in lib.interfaces() {
+                for interface in lib.untyped_interfaces() {
                     f.writeln(&format!(
                         "interface_{}: Interface{}::init(env),",
                         interface.name,
@@ -62,7 +62,7 @@ pub(crate) fn generate_interfaces_cache(
     let destroy_func_name = lib.settings.interface.destroy_func_name.clone();
 
     // Each interface implementation
-    for interface in lib.interfaces() {
+    for interface in lib.untyped_interfaces() {
         let interface_name = interface.name.camel_case();
 
         f.writeln(&format!("pub struct Interface{}", interface_name))?;

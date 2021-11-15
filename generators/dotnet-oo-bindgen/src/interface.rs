@@ -4,10 +4,10 @@ use oo_bindgen::interface::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    interface: &Handle<Interface<Validated>>,
+    interface: &InterfaceType<Validated>,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let interface_name = format!("I{}", interface.name.camel_case());
+    let interface_name = format!("I{}", interface.name().camel_case());
 
     let destroy_func_name = lib.settings.interface.destroy_func_name.clone();
     let ctx_variable_name = lib.settings.interface.context_variable_name.clone();
@@ -17,6 +17,7 @@ pub(crate) fn generate(
     f.newline()?;
 
     let is_private = interface
+        .untyped()
         .get_functional_callback()
         .map(|cb| cb.functional_transform.enabled())
         .unwrap_or(false);
@@ -25,13 +26,13 @@ pub(crate) fn generate(
     namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &interface.doc)
+            xmldoc_print(f, interface.doc())
         })?;
 
         f.writeln(&format!("{} interface {}", visibility, interface_name))?;
         blocked(f, |f| {
             // Write each required method
-            interface.callbacks.iter().try_for_each(|func| {
+            interface.untyped().callbacks.iter().try_for_each(|func| {
                 // Documentation
                 documentation(f, |f| {
                     // Print top-level documentation
@@ -82,9 +83,9 @@ pub(crate) fn generate(
         f.newline()?;
 
         // Write the Action<>/Func<> based implementation if it's a functional interface
-        if let Some(callback) = interface.get_functional_callback() {
+        if let Some(callback) = interface.untyped().get_functional_callback() {
             namespaced(f, "functional", |f| {
-                generate_functional_helpers(f, interface, callback)
+                generate_functional_helpers(f, interface.untyped(), callback)
             })?;
             f.newline()?;
         }
@@ -94,7 +95,7 @@ pub(crate) fn generate(
         f.writeln(&format!("internal struct {}NativeAdapter", interface_name))?;
         blocked(f, |f| {
             // Define each delegate type
-            for cb in &interface.callbacks {
+            for cb in &interface.untyped().callbacks {
                 f.writeln(&format!(
                     "private delegate {} {}_delegate(",
                     cb.return_type.as_native_type(),
@@ -137,7 +138,7 @@ pub(crate) fn generate(
             f.newline()?;
 
             // Define each structure element that will be marshalled
-            for cb in &interface.callbacks {
+            for cb in &interface.untyped().callbacks {
                 f.writeln(&format!("private {}_delegate {};", cb.name, cb.name))?;
             }
 
@@ -158,7 +159,7 @@ pub(crate) fn generate(
                 f.writeln("var _handle = GCHandle.Alloc(impl);")?;
                 f.newline()?;
 
-                for cb in &interface.callbacks {
+                for cb in &interface.untyped().callbacks {
                     f.writeln(&format!(
                         "this.{} = {}NativeAdapter.{}_static_delegate;",
                         cb.name, interface_name, cb.name
@@ -180,7 +181,7 @@ pub(crate) fn generate(
             })?;
 
             // Define each delegate function
-            for cb in &interface.callbacks {
+            for cb in &interface.untyped().callbacks {
                 f.writeln(&format!(
                     "internal static {} {}_cb(",
                     cb.return_type.as_native_type(),

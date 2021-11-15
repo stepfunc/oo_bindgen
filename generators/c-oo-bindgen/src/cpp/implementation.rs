@@ -831,7 +831,9 @@ fn write_conversions(
             write_enum_to_native_conversion(f, x)?;
             write_enum_to_cpp_conversion(f, x)
         }
-        Statement::InterfaceDefinition(x) => write_cpp_interface_to_native_conversion(f, x.inner()),
+        Statement::InterfaceDefinition(x) => {
+            write_cpp_interface_to_native_conversion(f, x.untyped())
+        }
         Statement::ClassDefinition(x) => write_class_construct_helper(f, x),
         Statement::IteratorDeclaration(x) => {
             write_iterator_construct_helper(f, x)?;

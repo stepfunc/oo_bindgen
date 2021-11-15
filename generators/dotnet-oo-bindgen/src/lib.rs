@@ -398,7 +398,7 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for interface in lib.interfaces() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("I{}", interface.name.camel_case()));
+        filename.push(&format!("I{}", interface.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 

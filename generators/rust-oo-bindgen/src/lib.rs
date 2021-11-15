@@ -95,7 +95,7 @@ impl<'a> RustCodegen<'a> {
                     Self::write_function(&mut f, handle, &self.library.settings.c_ffi_prefix)?
                 }
                 Statement::InterfaceDefinition(t) => {
-                    self.write_interface(&mut f, t.inner(), t.mode())?
+                    self.write_interface(&mut f, t.untyped(), t.mode())?
                 }
                 _ => (),
             }

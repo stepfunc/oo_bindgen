@@ -196,6 +196,14 @@ impl<D> InterfaceType<D>
 where
     D: DocReference,
 {
+    pub fn name(&self) -> &Name {
+        match self {
+            InterfaceType::Synchronous(x) => &x.name,
+            InterfaceType::Asynchronous(x) => &x.name,
+            InterfaceType::Future(x) => &x.interface.name,
+        }
+    }
+
     pub fn mode(&self) -> InterfaceMode {
         match self {
             InterfaceType::Synchronous(_) => InterfaceMode::Synchronous,
@@ -204,7 +212,15 @@ where
         }
     }
 
-    pub fn inner(&self) -> &Handle<Interface<D>> {
+    pub fn doc(&self) -> &Doc<D> {
+        match self {
+            InterfaceType::Synchronous(x) => &x.doc,
+            InterfaceType::Asynchronous(x) => &x.doc,
+            InterfaceType::Future(x) => &x.interface.doc,
+        }
+    }
+
+    pub fn untyped(&self) -> &Handle<Interface<D>> {
         match self {
             InterfaceType::Synchronous(x) => x,
             InterfaceType::Asynchronous(x) => x,

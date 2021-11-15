@@ -52,7 +52,7 @@ impl Statement<Unvalidated> {
                 None
             }
             Statement::StaticClassDefinition(x) => Some(&x.name),
-            Statement::InterfaceDefinition(x) => Some(&x.inner().name),
+            Statement::InterfaceDefinition(x) => Some(&x.untyped().name),
             Statement::IteratorDeclaration(_) => {
                 // the name is derived in a language specific way
                 None
@@ -386,11 +386,15 @@ impl Library {
         })
     }
 
-    pub fn interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
+    pub fn untyped_interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
+        self.interfaces().map(|x| x.untyped())
+    }
+
+    pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceType<Validated>> {
         self.statements
             .iter()
             .filter_map(|statement| match statement {
-                Statement::InterfaceDefinition(t) => Some(t.inner()),
+                Statement::InterfaceDefinition(t) => Some(t),
                 _ => None,
             })
     }
@@ -537,7 +541,7 @@ impl LibraryBuilder {
                 self.fields.static_classes.insert(x);
             }
             Statement::InterfaceDefinition(x) => {
-                self.fields.interfaces.insert(x.inner().clone());
+                self.fields.interfaces.insert(x.untyped().clone());
             }
             Statement::IteratorDeclaration(x) => {
                 self.fields.iterators.insert(x);
@@ -1101,7 +1105,7 @@ impl LibraryBuilder {
                 Ok(())
             }
             Statement::InterfaceDefinition(x) => {
-                for cb in x.inner().callbacks.iter() {
+                for cb in x.untyped().callbacks.iter() {
                     for arg in cb.arguments.iter() {
                         self.check_callback_argument(&arg.arg_type)?;
                     }

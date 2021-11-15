@@ -66,15 +66,15 @@ fn print_header_namespace_contents(lib: &Library, f: &mut dyn Printer) -> Format
                 StructType::Universal(x) => print_struct_definition(f, x)?,
             },
             Statement::InterfaceDefinition(x) => {
-                print_interface(f, x.inner())?;
+                print_interface(f, x.untyped())?;
 
-                if let Some(callback) = x.inner().get_functional_callback() {
+                if let Some(callback) = x.untyped().get_functional_callback() {
                     if !documented_functional_ns {
                         documented_functional_ns = true;
                         f.writeln("/// helpers functions to create interface implementations using lambdas")?;
                     }
                     namespace(f, "functional", |f| {
-                        write_functional_interface_helpers(f, x.inner(), callback)
+                        write_functional_interface_helpers(f, x.untyped(), callback)
                     })?;
                     f.newline()?;
                 }

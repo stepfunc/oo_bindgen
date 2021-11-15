@@ -399,7 +399,7 @@ fn generate_classes(lib: &Library, config: &JavaBindgenConfig) -> FormattingResu
 }
 
 fn generate_interfaces(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for interface in lib.interfaces() {
+    for interface in lib.untyped_interfaces() {
         let mut f = create_file(&interface.name.camel_case(), config, lib)?;
         interface::generate(&mut f, interface)?;
     }

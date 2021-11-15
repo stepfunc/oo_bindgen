@@ -66,7 +66,7 @@ static void test_async_callbacks()
         }
 
         {
-            tc.set_error(foo::MathIsBroken::math_is_broke);
+            tc.queue_error(foo::MathIsBroken::math_is_broke);
             auto promise = std::make_shared<std::promise<AddResult>>();
             auto future = promise->get_future();
             tc.add(3, std::make_unique<AddHandler>(promise));   

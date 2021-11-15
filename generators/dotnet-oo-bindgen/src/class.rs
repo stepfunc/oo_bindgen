@@ -410,7 +410,6 @@ fn generate_async_method(
     f.write(")")?;
 
     let tcs_var_name = "_oo_bindgen_tcs";
-    let result_name = "_oo_bindgen_result";
 
     blocked(f, |f| {
         f.writeln(&format!(
@@ -418,8 +417,9 @@ fn generate_async_method(
             tcs_var_name, callback_success_type
         ))?;
         f.writeln(&format!(
-            "Action<{}> callback = ({}) => Task.Run(() => {}.SetResult({}));",
-            callback_success_type, result_name, tcs_var_name, result_name
+            "var callback = new {}({});",
+            method.future.interface.name.camel_case(),
+            tcs_var_name
         ))?;
         call_native_function(
             f,

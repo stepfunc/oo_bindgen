@@ -74,8 +74,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Update the internal value and trigger callbacks to the {interface:value_change_listener}")?
         .build()?;
 
-    let set_error = lib
-        .define_method("set_error", thread_class.clone())?
+    let queue_error = lib
+        .define_method("queue_error", thread_class.clone())?
         .param(
             "next_error",
             error_type.inner.clone(),
@@ -107,7 +107,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .destructor(destructor)?
         .method(update)?
         .method(execute)?
-        .method(set_error)?
+        .method(queue_error)?
         .async_method(add_async)?
         .custom_destroy("shutdown")?
         .doc("A class that manipulations integers on a Rust thread")?

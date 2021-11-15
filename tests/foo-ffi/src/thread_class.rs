@@ -109,7 +109,7 @@ pub(crate) unsafe fn thread_class_execute(
     }
 }
 
-pub(crate) unsafe fn thread_class_set_error(
+pub(crate) unsafe fn thread_class_queue_error(
     instance: *mut ThreadClass,
     err: crate::ffi::MathIsBroken,
 ) {

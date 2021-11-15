@@ -223,10 +223,18 @@ where
     fn convert_to_native(&self, from: &str) -> Option<String> {
         let name = self.name.camel_case();
         let inner_transform = if let Some(cb) = self.get_functional_callback() {
-            if cb.functional_transform.enabled() {
-                format!("functional.{}.create({})", name, from)
-            } else {
-                from.to_string()
+            match self.mode {
+                InterfaceMode::Synchronous | InterfaceMode::Asynchronous => {
+                    if cb.functional_transform.enabled() {
+                        format!("functional.{}.create({})", name, from)
+                    } else {
+                        from.to_string()
+                    }
+                }
+                InterfaceMode::Future => {
+                    // we don't perform functional transforms on future interfaces
+                    from.to_string()
+                }
             }
         } else {
             from.to_string()

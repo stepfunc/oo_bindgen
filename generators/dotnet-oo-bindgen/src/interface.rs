@@ -90,6 +90,66 @@ pub(crate) fn generate(
             f.newline()?;
         }
 
+        // write a Task-based implementation if it's a future interface
+        if let InterfaceType::Future(fi) = interface {
+            let class_name = fi.interface.name.camel_case();
+            let value_type = fi.value_type.as_dotnet_type();
+            let success_method_name = fi
+                .interface
+                .settings
+                .future
+                .success_callback_method_name
+                .camel_case();
+
+            f.writeln(&format!(
+                "internal class {}: {}",
+                class_name, interface_name
+            ))?;
+            blocked(f, |f| {
+                f.writeln(&format!(
+                    "private TaskCompletionSource<{}> tcs = new TaskCompletionSource<{}>();",
+                    value_type, value_type
+                ))?;
+                f.newline()?;
+                f.writeln(&format!(
+                    "internal {}(TaskCompletionSource<{}> tcs)",
+                    class_name, value_type
+                ))?;
+                blocked(f, |f| f.writeln("this.tcs = tcs;"))?;
+                f.newline()?;
+                f.writeln(&format!(
+                    "void {}.{}({} value)",
+                    interface_name, success_method_name, value_type
+                ))?;
+                blocked(f, |f| f.writeln("Task.Run(() => tcs.SetResult(value));"))?;
+                f.newline()?;
+
+                if let Some(err) = fi.error_type.get() {
+                    let error_method_name = fi
+                        .interface
+                        .settings
+                        .future
+                        .failure_callback_method_name
+                        .camel_case();
+                    f.writeln(&format!(
+                        "void {}.{}({} err)",
+                        interface_name,
+                        error_method_name,
+                        err.inner.as_dotnet_type()
+                    ))?;
+                    blocked(f, |f| {
+                        f.writeln(&format!(
+                            "Task.Run(() => tcs.SetException(new {}(err)));",
+                            err.exception_name.camel_case()
+                        ))
+                    })?;
+                }
+
+                Ok(())
+            })?;
+            f.newline()?;
+        }
+
         // Create the native adapter
         f.writeln("[StructLayout(LayoutKind.Sequential)]")?;
         f.writeln(&format!("internal struct {}NativeAdapter", interface_name))?;

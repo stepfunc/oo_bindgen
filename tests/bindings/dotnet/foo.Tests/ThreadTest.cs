@@ -24,6 +24,30 @@ namespace foo.Tests
             Assert.Equal(46u, values[0]);
             Assert.Equal(43u, values[1]);
             Assert.Equal(86u, values[2]);
-        }       
+        }
+
+        [Fact]
+        public async void TaskFailuresWorkAsExpected()
+        {
+            var values = new List<uint>();
+            var tc = new foo.ThreadClass(42, item => values.Add(item));
+            tc.QueueError(MathIsBroken.MathIsBroke);
+
+            try
+            {
+                var result = await tc.Add(43);
+                Assert.True(false);
+            }
+            catch (BrokenMathException ex)
+            {
+                Assert.Equal(MathIsBroken.MathIsBroke, ex.error);
+            }
+            finally
+            {
+                tc.Shutdown();
+            }
+
+            Assert.Empty(values);
+        }
     }
 }

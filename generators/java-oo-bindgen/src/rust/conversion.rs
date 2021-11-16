@@ -15,7 +15,6 @@ use std::rc::Rc;
 
 const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
-// TODO - better name for this?
 const OBJECT_UNWRAP: &str = "l().unwrap().into_inner()";
 
 fn perform_null_check(f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
@@ -647,25 +646,36 @@ where
     }
 }
 
-// TODO this is duplicated with Handle<Struct<T>>
 impl<T> JniType for UniversalOr<T>
 where
     T: StructFieldType,
 {
     fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
+        match self {
+            UniversalOr::Specific(x) => x.as_raw_jni_type(),
+            UniversalOr::Universal(x) => x.as_raw_jni_type(),
+        }
     }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, self.name())
+        match self {
+            UniversalOr::Specific(x) => x.as_jni_sig(lib_path),
+            UniversalOr::Universal(x) => x.as_jni_sig(lib_path),
+        }
     }
 
     fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("{}::ffi::{}", ffi_name, self.name().camel_case())
+        match self {
+            UniversalOr::Specific(x) => x.as_rust_type(ffi_name),
+            UniversalOr::Universal(x) => x.as_rust_type(ffi_name),
+        }
     }
 
     fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
+        match self {
+            UniversalOr::Specific(x) => x.convert_jvalue(),
+            UniversalOr::Universal(x) => x.convert_jvalue(),
+        }
     }
 
     fn convert_to_rust_from_object(
@@ -674,24 +684,38 @@ where
         from: &str,
         to: &str,
     ) -> FormattingResult<()> {
-        StructConverter::wrap(self.declaration()).convert_to_rust(f, from, to)
+        match self {
+            UniversalOr::Specific(x) => x.convert_to_rust_from_object(f, from, to),
+            UniversalOr::Universal(x) => x.convert_to_rust_from_object(f, from, to),
+        }
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
-        Some(StructConverter::wrap(self.declaration()))
+        match self {
+            UniversalOr::Specific(x) => x.conversion(),
+            UniversalOr::Universal(x) => x.conversion(),
+        }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
-        true
+        match self {
+            UniversalOr::Specific(x) => x.requires_local_ref_cleanup(),
+            UniversalOr::Universal(x) => x.requires_local_ref_cleanup(),
+        }
     }
 
     fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)?;
-        f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name(), param_name, param_name))
+        match self {
+            UniversalOr::Specific(x) => x.check_null(f, param_name),
+            UniversalOr::Universal(x) => x.check_null(f, param_name),
+        }
     }
 
     fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
+        match self {
+            UniversalOr::Specific(x) => x.default_value(),
+            UniversalOr::Universal(x) => x.default_value(),
+        }
     }
 }
 

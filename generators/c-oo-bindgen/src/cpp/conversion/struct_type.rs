@@ -1,9 +1,7 @@
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::*;
-use oo_bindgen::structs::{
-    CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, UniversalStructField,
-};
-use oo_bindgen::types::{BasicType, StringType};
 
 pub(crate) trait CppStructType {
     fn struct_member_type(&self) -> String;

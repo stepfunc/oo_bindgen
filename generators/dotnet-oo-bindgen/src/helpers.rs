@@ -1,7 +1,7 @@
+use oo_bindgen::model::*;
+
 use crate::dotnet_type::DotnetType;
 use crate::*;
-use oo_bindgen::collection::Collection;
-use oo_bindgen::interface::CallbackFunction;
 
 pub(crate) fn generate_collection_helpers(
     f: &mut dyn Printer,
@@ -75,7 +75,7 @@ pub(crate) fn generate_collection_helpers(
 
 pub(crate) fn generate_iterator_helpers(
     f: &mut dyn Printer,
-    iter: &Handle<iterator::Iterator<Validated>>,
+    iter: &Handle<AbstractIterator<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;

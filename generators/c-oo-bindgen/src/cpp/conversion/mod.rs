@@ -1,18 +1,3 @@
-mod callback_arg_type;
-mod core_type;
-mod function_arg_type;
-mod function_return_type;
-mod struct_type;
-mod to_cpp;
-mod to_cpp_callback_argument;
-mod to_cpp_return_value;
-mod to_cpp_struct_field;
-mod to_native;
-mod to_native_callback_return_value;
-mod to_native_function_argument;
-mod to_native_struct_field;
-mod type_info;
-
 pub(crate) use callback_arg_type::*;
 pub(crate) use core_type::*;
 pub(crate) use function_arg_type::*;
@@ -27,3 +12,18 @@ pub(crate) use to_native_callback_return_value::*;
 pub(crate) use to_native_function_argument::*;
 pub(crate) use to_native_struct_field::*;
 pub(crate) use type_info::*;
+
+mod callback_arg_type;
+mod core_type;
+mod function_arg_type;
+mod function_return_type;
+mod struct_type;
+mod to_cpp;
+mod to_cpp_callback_argument;
+mod to_cpp_return_value;
+mod to_cpp_struct_field;
+mod to_native;
+mod to_native_callback_return_value;
+mod to_native_function_argument;
+mod to_native_struct_field;
+mod type_info;

@@ -1,13 +1,9 @@
-use oo_bindgen::formatting::{blocked, FormattingResult, Printer};
-use oo_bindgen::function::{Function, SignatureType};
-use oo_bindgen::{Handle, Library};
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
 use crate::dotnet_type::DotnetType;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
-
-use oo_bindgen::doc::Validated;
-use oo_bindgen::error_type::ErrorType;
 
 fn filter_has_error(
     x: &Handle<Function<Validated>>,

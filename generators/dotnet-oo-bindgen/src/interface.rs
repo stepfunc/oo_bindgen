@@ -1,6 +1,11 @@
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
+use crate::doc::{docstring_print, xmldoc_print};
+use crate::dotnet_type::{base_functor_type, full_functor_type, DotnetType};
+use crate::formatting::{documentation, namespaced};
 use crate::helpers::call_dotnet_function;
-use crate::*;
-use oo_bindgen::interface::*;
+use crate::{print_imports, print_license};
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

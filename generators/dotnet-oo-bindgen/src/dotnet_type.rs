@@ -1,13 +1,4 @@
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::Collection;
-use oo_bindgen::doc::DocReference;
-use oo_bindgen::enum_type::Enum;
-use oo_bindgen::function::*;
-use oo_bindgen::interface::*;
-use oo_bindgen::return_type::OptionalReturnType;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::{Arg, BasicType, DurationType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::model::*;
 
 const INT_PTR_STRING: &str = "IntPtr";
 
@@ -224,14 +215,14 @@ where
         let name = self.name.camel_case();
         let inner_transform = if let Some(cb) = self.get_functional_callback() {
             match self.mode {
-                InterfaceMode::Synchronous | InterfaceMode::Asynchronous => {
+                InterfaceCategory::Synchronous | InterfaceCategory::Asynchronous => {
                     if cb.functional_transform.enabled() {
                         format!("functional.{}.create({})", name, from)
                     } else {
                         from.to_string()
                     }
                 }
-                InterfaceMode::Future => {
+                InterfaceCategory::Future => {
                     // we don't perform functional transforms on future interfaces
                     from.to_string()
                 }
@@ -317,7 +308,7 @@ where
     }
 }
 
-impl<D> DotnetType for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> DotnetType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

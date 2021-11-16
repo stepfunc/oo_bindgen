@@ -1,11 +1,8 @@
-use super::conversion::*;
-use super::formatting::*;
+use oo_bindgen::model::*;
+
 use crate::*;
-use oo_bindgen::doc::Validated;
-use oo_bindgen::interface::*;
-use oo_bindgen::name::Name;
-use oo_bindgen::return_type::OptionalReturnType;
-use oo_bindgen::types::Arg;
+
+use super::conversion::*;
 
 pub(crate) fn generate_interfaces_cache(
     lib: &Library,

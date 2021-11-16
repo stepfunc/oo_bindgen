@@ -1,15 +1,4 @@
-use oo_bindgen::class::{Class, ClassDeclarationHandle, StaticClass};
-use oo_bindgen::collection::Collection;
-use oo_bindgen::constants::Constant;
-use oo_bindgen::doc::DocReference;
-use oo_bindgen::enum_type::{Enum, EnumVariant};
-use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::{CallbackFunction, Interface};
-use oo_bindgen::iterator::IteratorItemType;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::{Arg, BasicType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::model::*;
 
 pub(crate) trait CoreCppType {
     fn core_cpp_type(&self) -> String;
@@ -111,7 +100,7 @@ where
     }
 }
 
-impl<D> CoreCppType for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> CoreCppType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

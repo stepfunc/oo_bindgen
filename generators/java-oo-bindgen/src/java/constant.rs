@@ -1,7 +1,5 @@
 use super::doc::*;
 use super::*;
-use oo_bindgen::constants::*;
-use oo_bindgen::doc::Validated;
 
 pub(crate) fn generate(
     f: &mut impl Printer,

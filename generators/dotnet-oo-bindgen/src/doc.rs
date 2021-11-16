@@ -1,7 +1,7 @@
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::dotnet_type::*;
-use oo_bindgen::class::DestructionMode;
-use oo_bindgen::doc::*;
-use oo_bindgen::formatting::*;
 
 pub(crate) fn xmldoc_print(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
     f.writeln("<summary>")?;

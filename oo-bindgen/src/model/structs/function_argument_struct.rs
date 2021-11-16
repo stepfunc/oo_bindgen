@@ -1,8 +1,4 @@
-use crate::doc::Unvalidated;
-use crate::structs::common::*;
-use crate::structs::UniversalStructHandle;
-use crate::types::{DurationType, StringType};
-use crate::*;
+use crate::model::*;
 
 /// Types that can be used in a function struct, some of which might have a default value
 #[derive(Clone, Debug)]
@@ -14,7 +10,6 @@ pub enum FunctionArgStructField {
 }
 
 pub type FunctionArgStructHandle = Handle<Struct<FunctionArgStructField, Unvalidated>>;
-pub type FunctionArgStructBuilder<'a> = StructFieldBuilder<'a, FunctionArgStructField>;
 
 impl StructFieldType for FunctionArgStructField {
     fn create_struct_type(
@@ -74,8 +69,8 @@ impl From<DurationType> for FunctionArgStructField {
     }
 }
 
-impl From<EnumHandle> for FunctionArgStructField {
-    fn from(x: EnumHandle) -> Self {
+impl From<Handle<Enum<Unvalidated>>> for FunctionArgStructField {
+    fn from(x: Handle<Enum<Unvalidated>>) -> Self {
         BasicType::Enum(x).into()
     }
 }

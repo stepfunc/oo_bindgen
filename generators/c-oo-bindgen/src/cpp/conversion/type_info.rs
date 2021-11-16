@@ -1,14 +1,4 @@
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::Collection;
-use oo_bindgen::doc::DocReference;
-use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::{Interface, InterfaceMode};
-use oo_bindgen::structs::{
-    CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
-    StructFieldType, TypedStructDeclaration, UniversalOr, UniversalStructField,
-};
-use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::model::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum PassBy {
@@ -32,9 +22,9 @@ where
 {
     fn pass_by(&self) -> PassBy {
         match self.mode {
-            InterfaceMode::Synchronous => PassBy::MutRef,
-            InterfaceMode::Asynchronous => PassBy::Move,
-            InterfaceMode::Future => PassBy::Move,
+            InterfaceCategory::Synchronous => PassBy::MutRef,
+            InterfaceCategory::Asynchronous => PassBy::Move,
+            InterfaceCategory::Future => PassBy::Move,
         }
     }
 }
@@ -101,7 +91,7 @@ impl TypeInfo for ClassDeclarationHandle {
     }
 }
 
-impl<D> TypeInfo for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> TypeInfo for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

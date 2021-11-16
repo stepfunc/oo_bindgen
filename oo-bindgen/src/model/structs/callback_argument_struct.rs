@@ -1,19 +1,14 @@
-use crate::doc::Unvalidated;
-use crate::iterator::IteratorHandle;
-use crate::structs::common::*;
-use crate::types::DurationType;
-use crate::*;
+use crate::model::*;
 
 /// Types that can be used as a callback argument
 #[derive(Clone, Debug)]
 pub enum CallbackArgStructField {
     Basic(BasicType),
-    Iterator(IteratorHandle),
+    Iterator(AbstractIteratorHandle),
     Struct(UniversalOr<CallbackArgStructField>),
 }
 
 pub type CallbackArgStructHandle = Handle<Struct<CallbackArgStructField, Unvalidated>>;
-pub type CallbackArgStructBuilder<'a> = StructFieldBuilder<'a, CallbackArgStructField>;
 
 impl StructFieldType for CallbackArgStructField {
     fn create_struct_type(
@@ -45,8 +40,8 @@ impl From<BasicType> for CallbackArgStructField {
     }
 }
 
-impl From<EnumHandle> for CallbackArgStructField {
-    fn from(x: EnumHandle) -> Self {
+impl From<Handle<Enum<Unvalidated>>> for CallbackArgStructField {
+    fn from(x: Handle<Enum<Unvalidated>>) -> Self {
         CallbackArgStructField::Basic(BasicType::Enum(x))
     }
 }
@@ -57,8 +52,8 @@ impl From<DurationType> for CallbackArgStructField {
     }
 }
 
-impl From<IteratorHandle> for CallbackArgStructField {
-    fn from(x: IteratorHandle) -> Self {
+impl From<AbstractIteratorHandle> for CallbackArgStructField {
+    fn from(x: AbstractIteratorHandle) -> Self {
         CallbackArgStructField::Iterator(x)
     }
 }

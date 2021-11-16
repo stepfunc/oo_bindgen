@@ -1,3 +1,8 @@
+use std::path::Path;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::*;
 use crate::cpp::doc::{
     print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_constructor_docs, print_cpp_doc,
@@ -5,23 +10,6 @@ use crate::cpp::doc::{
     print_cpp_static_method_docs,
 };
 use crate::cpp::formatting::{namespace, FriendClass};
-use oo_bindgen::class::{
-    Class, ClassDeclarationHandle, ClassType, Method, StaticClass, StaticMethod,
-};
-use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
-use oo_bindgen::doc::{brief, Validated};
-use oo_bindgen::enum_type::Enum;
-use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::{blocked, doxygen, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::{FunctionArgument, FutureMethod};
-use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceMode};
-use oo_bindgen::structs::{
-    Initializer, InitializerType, Struct, StructDeclaration, StructFieldType, StructType,
-    Visibility,
-};
-use oo_bindgen::types::Arg;
-use oo_bindgen::{Handle, Library, Statement};
-use std::path::Path;
 
 pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
@@ -179,9 +167,9 @@ fn write_functional_interface_helpers(
     f.newline()?;
 
     let is_synchronous = match interface.mode {
-        InterfaceMode::Synchronous => true,
-        InterfaceMode::Asynchronous => false,
-        InterfaceMode::Future => false,
+        InterfaceCategory::Synchronous => true,
+        InterfaceCategory::Asynchronous => false,
+        InterfaceCategory::Future => false,
     };
 
     let return_type = if is_synchronous {
@@ -222,7 +210,7 @@ fn write_functional_interface_helpers(
 
 fn print_iterator_definition(
     f: &mut dyn Printer,
-    iter: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
+    iter: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
     let iterator = include_str!("./snippet/iterator.hpp");
     for line in iterator.lines() {

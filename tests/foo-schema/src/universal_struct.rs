@@ -1,8 +1,6 @@
-use oo_bindgen::name::Name;
-use oo_bindgen::structs::{InitializerDefault, InitializerType, Number, UniversalStructHandle};
-use oo_bindgen::types::{BasicType, DurationType};
-use oo_bindgen::{BackTraced, LibraryBuilder};
 use std::time::Duration;
+
+use oo_bindgen::model::*;
 
 fn define_inner_struct(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHandle> {
     let inner = lib.declare_universal_struct("universal_inner_struct")?;

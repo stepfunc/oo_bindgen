@@ -1,4 +1,5 @@
-use super::formatting::*;
+use oo_bindgen::model::Library;
+
 use crate::*;
 
 pub(crate) fn generate_classes_cache(

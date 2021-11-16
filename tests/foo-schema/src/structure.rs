@@ -1,8 +1,6 @@
-use oo_bindgen::name::Name;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::*;
 use std::time::Duration;
+
+use oo_bindgen::model::*;
 
 pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHandle> {
     let uint8_value = Name::create("uint8_value")?;

@@ -1,8 +1,5 @@
 use super::doc::*;
 use super::*;
-use oo_bindgen::class::*;
-use oo_bindgen::doc::Validated;
-use oo_bindgen::error_type::ExceptionType;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

@@ -1,6 +1,4 @@
 use crate::*;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::DurationType;
 
 trait DotNetVisibility {
     fn to_str(&self) -> &str;

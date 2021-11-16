@@ -1,7 +1,4 @@
-use crate::doc::Unvalidated;
-use crate::structs::common::*;
-use crate::types::DurationType;
-use crate::*;
+use crate::model::*;
 
 /// Types that can be used in a universal struct, some of which might have a default value
 #[derive(Clone, Debug)]
@@ -11,7 +8,6 @@ pub enum UniversalStructField {
 }
 
 pub type UniversalStructHandle = Handle<Struct<UniversalStructField, Unvalidated>>;
-pub type UniversalStructBuilder<'a> = StructFieldBuilder<'a, UniversalStructField>;
 
 impl StructFieldType for UniversalStructField {
     fn create_struct_type(
@@ -45,8 +41,8 @@ impl From<DurationType> for UniversalStructField {
     }
 }
 
-impl From<EnumHandle> for UniversalStructField {
-    fn from(x: EnumHandle) -> Self {
+impl From<Handle<Enum<Unvalidated>>> for UniversalStructField {
+    fn from(x: Handle<Enum<Unvalidated>>) -> Self {
         Self::Basic(BasicType::Enum(x))
     }
 }

@@ -44,15 +44,15 @@ clippy::all
     bare_trait_objects
 )]
 
-use oo_bindgen::platforms::*;
-use oo_bindgen::*;
 use std::path::PathBuf;
+
+pub use java::generate_java_bindings;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::Library;
+pub use rust::generate_java_ffi;
 
 mod java;
 mod rust;
-
-pub use java::generate_java_bindings;
-pub use rust::generate_java_ffi;
 
 pub struct JavaBindgenConfig {
     /// Path to output the generated Java code

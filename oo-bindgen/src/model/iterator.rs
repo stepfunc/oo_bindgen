@@ -1,11 +1,6 @@
-use crate::doc::{DocReference, Unvalidated, Validated};
-use crate::name::Name;
-use crate::structs::{
-    FunctionReturnStructField, FunctionReturnStructHandle, StructDeclarationHandle, UniversalOr,
-    UniversalStructHandle,
-};
-use crate::*;
 use std::rc::Rc;
+
+use crate::model::*;
 
 #[derive(Debug, Clone)]
 pub enum IteratorItemType {
@@ -51,7 +46,7 @@ impl IteratorItemType {
 }
 
 #[derive(Debug)]
-pub struct Iterator<D>
+pub struct AbstractIterator<D>
 where
     D: DocReference,
 {
@@ -68,12 +63,12 @@ where
     pub settings: Rc<LibrarySettings>,
 }
 
-impl Iterator<Unvalidated> {
+impl AbstractIterator<Unvalidated> {
     pub(crate) fn validate(
         &self,
-        lib: &UnvalidatedFields,
-    ) -> BindResult<Handle<Iterator<Validated>>> {
-        Ok(Handle::new(Iterator {
+        lib: &LibraryFields,
+    ) -> BindResult<Handle<AbstractIterator<Validated>>> {
+        Ok(Handle::new(AbstractIterator {
             has_lifetime_annotation: self.has_lifetime_annotation,
             next_function: self.next_function.validate(lib)?,
             iter_class: self.iter_class.clone(),
@@ -83,7 +78,7 @@ impl Iterator<Unvalidated> {
     }
 }
 
-impl<D> Iterator<D>
+impl<D> AbstractIterator<D>
 where
     D: DocReference,
 {
@@ -93,8 +88,8 @@ where
         next_function: Handle<Function<D>>,
         item_type: IteratorItemType,
         settings: Rc<LibrarySettings>,
-    ) -> Iterator<D> {
-        Iterator {
+    ) -> AbstractIterator<D> {
+        AbstractIterator {
             has_lifetime_annotation,
             next_function,
             iter_class,
@@ -108,4 +103,4 @@ where
     }
 }
 
-pub type IteratorHandle = Handle<Iterator<Unvalidated>>;
+pub type AbstractIteratorHandle = Handle<AbstractIterator<Unvalidated>>;

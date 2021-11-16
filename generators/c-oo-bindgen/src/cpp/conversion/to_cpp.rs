@@ -1,8 +1,4 @@
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::doc::DocReference;
-use oo_bindgen::enum_type::Enum;
-use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::model::*;
 
 /// Some types have a C -> C++ conversion that is context independent
 pub(crate) trait ToCpp {

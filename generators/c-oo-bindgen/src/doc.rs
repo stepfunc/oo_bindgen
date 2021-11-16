@@ -1,6 +1,7 @@
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::ctype::CType;
-use oo_bindgen::doc::*;
-use oo_bindgen::formatting::*;
 
 pub(crate) type ReferencePrinter =
     fn(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()>;

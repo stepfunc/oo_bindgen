@@ -1,6 +1,4 @@
-use crate::doc::{DocReference, Unvalidated, Validated};
-use crate::name::Name;
-use crate::*;
+use crate::model::*;
 
 #[derive(Debug)]
 pub struct Collection<D>
@@ -45,7 +43,7 @@ where
 impl Collection<Unvalidated> {
     pub(crate) fn validate(
         &self,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
     ) -> BindResult<Handle<Collection<Validated>>> {
         Ok(Handle::new(Collection {
             collection_class: self.collection_class.clone(),

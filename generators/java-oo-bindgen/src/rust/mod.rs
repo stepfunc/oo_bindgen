@@ -1,8 +1,9 @@
-use crate::*;
-use conversion::*;
-use oo_bindgen::formatting::*;
-use oo_bindgen::function::*;
 use std::fs;
+
+use conversion::*;
+use oo_bindgen::model::*;
+
+use crate::*;
 
 mod classes;
 mod conversion;

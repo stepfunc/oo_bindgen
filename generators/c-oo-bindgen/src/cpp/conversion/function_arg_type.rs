@@ -1,14 +1,7 @@
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::{CoreCppType, PassBy, TypeInfo};
 use crate::cpp::formatting::*;
-use oo_bindgen::doc::{DocReference, Unvalidated};
-use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::{Interface, InterfaceMode};
-use oo_bindgen::structs::{
-    CallbackArgStructField, FunctionArgStructField, FunctionReturnStructField, Struct,
-    StructFieldType, UniversalOr, UniversalStructField,
-};
-use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::Handle;
 
 pub(crate) trait CppFunctionArgType {
     fn get_cpp_function_arg_type(&self) -> String;
@@ -44,9 +37,9 @@ impl CppFunctionArgType for BasicType {
 impl CppFunctionArgType for Handle<Interface<Unvalidated>> {
     fn get_cpp_function_arg_type(&self) -> String {
         match self.mode {
-            InterfaceMode::Synchronous => mut_ref(self.core_cpp_type()),
-            InterfaceMode::Asynchronous => unique_ptr(self.core_cpp_type()),
-            InterfaceMode::Future => unique_ptr(self.core_cpp_type()),
+            InterfaceCategory::Synchronous => mut_ref(self.core_cpp_type()),
+            InterfaceCategory::Asynchronous => unique_ptr(self.core_cpp_type()),
+            InterfaceCategory::Future => unique_ptr(self.core_cpp_type()),
         }
     }
 }

@@ -1,5 +1,4 @@
-use oo_bindgen::enum_type::EnumHandle;
-use oo_bindgen::types::{BasicType, DurationType, StringType};
+use oo_bindgen::model::*;
 
 /// Some types have a C++ -> C conversion that is context independent
 pub(crate) trait ToNative {
@@ -15,7 +14,7 @@ impl ToNative for DurationType {
     }
 }
 
-impl ToNative for EnumHandle {
+impl ToNative for Handle<Enum<Unvalidated>> {
     fn to_native(&self, expr: String) -> String {
         format!("::convert::to_native({})", expr)
     }

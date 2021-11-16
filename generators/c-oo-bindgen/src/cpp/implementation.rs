@@ -1,22 +1,11 @@
+use std::path::Path;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::*;
 use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
 use crate::ctype::CType;
-use oo_bindgen::class::{Class, Method, StaticClass, StaticMethod};
-use oo_bindgen::collection::Collection;
-use oo_bindgen::doc::{brief, Validated};
-use oo_bindgen::enum_type::Enum;
-use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::{blocked, indented, FilePrinter, FormattingResult, Printer};
-use oo_bindgen::function::{Function, FunctionArgument, FutureMethod};
-use oo_bindgen::interface::{CallbackFunction, Interface, InterfaceMode};
-use oo_bindgen::structs::{
-    Initializer, InitializerType, Number, Struct, StructFieldType, StructType,
-    ValidatedDefaultValue, Visibility,
-};
-use oo_bindgen::types::Arg;
-use oo_bindgen::util::WithLastIndication;
-use oo_bindgen::{Handle, Library, Statement};
-use std::path::Path;
 
 pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
@@ -246,7 +235,7 @@ fn write_api_implementation(lib: &Library, f: &mut dyn Printer) -> FormattingRes
 
 fn write_iterator_methods(
     f: &mut dyn Printer,
-    it: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
+    it: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
     let c_class_type = it.iter_class.to_c_type();
     let cpp_class_type = it.iter_class.core_cpp_type();
@@ -845,7 +834,7 @@ fn write_conversions(
 
 fn write_iterator_construct_helper(
     f: &mut dyn Printer,
-    handle: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
+    handle: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
@@ -867,7 +856,7 @@ fn write_iterator_construct_helper(
 
 fn write_iterator_to_native_helper(
     f: &mut dyn Printer,
-    handle: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
+    handle: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
     let cpp_type = handle.core_cpp_type();
     let signature = format!(
@@ -970,7 +959,7 @@ where
 
 fn write_iterator_friend_class(
     f: &mut dyn Printer,
-    handle: &Handle<oo_bindgen::iterator::Iterator<Validated>>,
+    handle: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
     let c_type = handle.iter_class.to_c_type();
 
@@ -1292,9 +1281,9 @@ fn write_cpp_interface_to_native_conversion(
         handle.core_cpp_type()
     );
     let argument_type = match handle.mode {
-        InterfaceMode::Synchronous => mut_ref(cpp_type.clone()),
-        InterfaceMode::Asynchronous => unique_ptr(cpp_type.clone()),
-        InterfaceMode::Future => unique_ptr(cpp_type.clone()),
+        InterfaceCategory::Synchronous => mut_ref(cpp_type.clone()),
+        InterfaceCategory::Asynchronous => unique_ptr(cpp_type.clone()),
+        InterfaceCategory::Future => unique_ptr(cpp_type.clone()),
     };
     f.writeln(&format!("{} to_native({} value)", c_type, argument_type,))?;
     blocked(f, |f| {
@@ -1304,10 +1293,10 @@ fn write_cpp_interface_to_native_conversion(
                 write_callback_function(f, handle, cb)?;
             }
             match handle.mode {
-                InterfaceMode::Synchronous => {
+                InterfaceCategory::Synchronous => {
                     f.writeln("[](void*){}, // nothing to free")?;
                 }
-                InterfaceMode::Asynchronous | InterfaceMode::Future => {
+                InterfaceCategory::Asynchronous | InterfaceCategory::Future => {
                     f.writeln(&format!(
                         "[](void* ctx) {{ delete reinterpret_cast<{}*>(ctx); }},",
                         cpp_type
@@ -1315,10 +1304,10 @@ fn write_cpp_interface_to_native_conversion(
                 }
             }
             match handle.mode {
-                InterfaceMode::Synchronous => {
+                InterfaceCategory::Synchronous => {
                     f.writeln("&value // the pointer will outlive the callbacks")?;
                 }
-                InterfaceMode::Asynchronous | InterfaceMode::Future => {
+                InterfaceCategory::Asynchronous | InterfaceCategory::Future => {
                     f.writeln("value.release()")?;
                 }
             }

@@ -1,25 +1,10 @@
 use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
-
-use crate::class::ClassDeclarationHandle;
-use crate::collection::CollectionHandle;
-use crate::doc::{Doc, DocReference, Unvalidated, Validated};
-use crate::enum_type::EnumHandle;
-use crate::interface::InterfaceHandle;
-use crate::iterator::IteratorHandle;
-use crate::name::{IntoName, Name};
-use crate::structs::{
-    CallbackArgStructField, CallbackArgStructHandle, FunctionArgStructField,
-    FunctionArgStructHandle, FunctionReturnStructField, FunctionReturnStructHandle,
-    UniversalStructField, UniversalStructHandle,
-};
-use crate::types::{DurationType, StringType};
-use crate::{
-    BindResult, BindingError, Handle, LibraryBuilder, LibrarySettings, Statement, UnvalidatedFields,
-};
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::time::Duration;
+
+use crate::model::*;
 
 /// Value used to define initializer default
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -92,7 +77,7 @@ pub enum ValidatedDefaultValue {
     Bool(bool),
     Numeric(Number),
     Duration(DurationType, Duration),
-    Enum(EnumHandle, Name),
+    Enum(Handle<Enum<Unvalidated>>, Name),
     String(String),
     /// requires that the struct have a default initializer
     DefaultStruct(StructType<Unvalidated>, InitializerType, Name),
@@ -244,7 +229,7 @@ pub trait InitializerValidator {
     ) -> BindResult<ValidatedDefaultValue>;
 }
 
-impl InitializerValidator for IteratorHandle {
+impl InitializerValidator for AbstractIteratorHandle {
     fn validate_default_value(
         &self,
         value: &InitializerDefault,
@@ -312,10 +297,7 @@ impl<F> StructField<F, Unvalidated>
 where
     F: StructFieldType,
 {
-    pub(crate) fn validate(
-        &self,
-        lib: &UnvalidatedFields,
-    ) -> BindResult<StructField<F, Validated>> {
+    pub(crate) fn validate(&self, lib: &LibraryFields) -> BindResult<StructField<F, Validated>> {
         Ok(StructField {
             name: self.name.clone(),
             field_type: self.field_type.clone(),
@@ -342,10 +324,7 @@ impl<F> Struct<F, Unvalidated>
 where
     F: StructFieldType,
 {
-    pub(crate) fn validate(
-        &self,
-        lib: &UnvalidatedFields,
-    ) -> BindResult<Handle<Struct<F, Validated>>> {
+    pub(crate) fn validate(&self, lib: &LibraryFields) -> BindResult<Handle<Struct<F, Validated>>> {
         let fields: BindResult<Vec<StructField<F, Validated>>> =
             self.fields.iter().map(|x| x.validate(lib)).collect();
         let initializers: BindResult<Vec<Initializer<Validated>>> =
@@ -451,105 +430,6 @@ where
     }
 }
 
-pub struct StructFieldBuilder<'a, F>
-where
-    F: StructFieldType,
-{
-    lib: &'a mut LibraryBuilder,
-    visibility: Visibility,
-    declaration: TypedStructDeclaration<F>,
-    fields: Vec<StructField<F, Unvalidated>>,
-    field_names: HashSet<String>,
-    doc: Option<Doc<Unvalidated>>,
-}
-
-impl<'a, F> StructFieldBuilder<'a, F>
-where
-    F: StructFieldType,
-{
-    pub(crate) fn new(lib: &'a mut LibraryBuilder, declaration: TypedStructDeclaration<F>) -> Self {
-        Self::new_impl(lib, declaration, Visibility::Public)
-    }
-
-    pub(crate) fn opaque(
-        lib: &'a mut LibraryBuilder,
-        declaration: TypedStructDeclaration<F>,
-    ) -> Self {
-        Self::new_impl(lib, declaration, Visibility::Private)
-    }
-
-    fn new_impl(
-        lib: &'a mut LibraryBuilder,
-        declaration: TypedStructDeclaration<F>,
-        visibility: Visibility,
-    ) -> Self {
-        Self {
-            lib,
-            visibility,
-            declaration,
-            fields: Vec::new(),
-            field_names: HashSet::new(),
-            doc: None,
-        }
-    }
-
-    pub fn add<S: IntoName, V: Into<F>, D: Into<Doc<Unvalidated>>>(
-        mut self,
-        name: S,
-        field_type: V,
-        doc: D,
-    ) -> BindResult<Self> {
-        let name = name.into_name()?;
-        let field_type = field_type.into();
-
-        if self.field_names.insert(name.to_string()) {
-            self.fields.push(StructField {
-                name,
-                field_type,
-                doc: doc.into(),
-            });
-            Ok(self)
-        } else {
-            Err(BindingError::StructFieldDuplicateName {
-                handle: self.declaration.inner.clone(),
-                field_name: name,
-            })
-        }
-    }
-
-    pub fn doc<D: Into<Doc<Unvalidated>>>(mut self, doc: D) -> BindResult<Self> {
-        match self.doc {
-            None => {
-                self.doc = Some(doc.into());
-                Ok(self)
-            }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
-                symbol_name: self.declaration.name().clone(),
-            }),
-        }
-    }
-
-    pub fn end_fields(self) -> BindResult<StructMethodBuilder<'a, F>> {
-        let doc = match self.doc {
-            Some(doc) => doc,
-            None => {
-                return Err(BindingError::DocNotDefined {
-                    symbol_name: self.declaration.name().clone(),
-                })
-            }
-        };
-
-        Ok(StructMethodBuilder {
-            lib: self.lib,
-            visibility: self.visibility,
-            declaration: self.declaration,
-            fields: self.fields,
-            initializers: Vec::new(),
-            doc,
-        })
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct InitializedValue {
     pub name: Name,
@@ -585,7 +465,7 @@ where
 }
 
 impl Initializer<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Initializer<Validated>> {
+    pub(crate) fn validate(&self, lib: &LibraryFields) -> BindResult<Initializer<Validated>> {
         Ok(Initializer {
             name: self.name.clone(),
             initializer_type: self.initializer_type,
@@ -624,166 +504,6 @@ where
     }
 }
 
-pub struct StructInitializerBuilder<'a, F>
-where
-    F: StructFieldType,
-{
-    name: Name,
-    initializer_type: InitializerType,
-    builder: StructMethodBuilder<'a, F>,
-    fields: Vec<InitializedValue>,
-    doc: Doc<Unvalidated>,
-}
-
-pub struct StructMethodBuilder<'a, F>
-where
-    F: StructFieldType,
-{
-    lib: &'a mut LibraryBuilder,
-    visibility: Visibility,
-    declaration: TypedStructDeclaration<F>,
-    fields: Vec<StructField<F, Unvalidated>>,
-    initializers: Vec<Handle<Initializer<Unvalidated>>>,
-    doc: Doc<Unvalidated>,
-}
-
-impl<'a, F> StructMethodBuilder<'a, F>
-where
-    F: StructFieldType,
-{
-    pub fn begin_initializer<D: Into<Doc<Unvalidated>>, S: IntoName>(
-        self,
-        name: S,
-        initializer_type: InitializerType,
-        doc: D,
-    ) -> BindResult<StructInitializerBuilder<'a, F>> {
-        let name = name.into_name()?;
-
-        // check that we don't have any other initializers with this name
-        if self.initializers.iter().any(|c| name == c.name) {
-            return Err(BindingError::StructInitializerDuplicateName {
-                struct_name: self.declaration.name().clone(),
-                initializer_name: name,
-            });
-        }
-
-        Ok(StructInitializerBuilder {
-            name,
-            initializer_type,
-            builder: self,
-            fields: Vec::new(),
-            doc: doc.into(),
-        })
-    }
-
-    pub fn add_full_initializer<S: IntoName>(self, name: S) -> BindResult<Self> {
-        let name = name.into_name()?;
-        let struct_name = self.declaration.name().clone();
-        self.begin_initializer(
-            name,
-            InitializerType::Normal,
-            format!(
-                "Fully construct {{struct:{}}} specifying the value of each field",
-                struct_name
-            ),
-        )?
-        .end_initializer()
-    }
-
-    pub fn build(self) -> BindResult<Handle<Struct<F, Unvalidated>>> {
-        let handle = Handle::new(Struct {
-            visibility: self.visibility,
-            declaration: self.declaration.clone(),
-            fields: self.fields,
-            initializers: self.initializers,
-            doc: self.doc,
-        });
-
-        self.lib
-            .add_statement(Statement::StructDefinition(F::create_struct_type(
-                handle.clone(),
-            )))?;
-
-        Ok(handle)
-    }
-}
-
-impl<'a, F> StructInitializerBuilder<'a, F>
-where
-    F: StructFieldType,
-{
-    pub fn default<D: Into<InitializerDefault>>(
-        mut self,
-        name: &Name,
-        value: D,
-    ) -> BindResult<Self> {
-        let value = value.into();
-
-        // check that we haven't already defined this field
-        if self.fields.iter().any(|f| f.name == *name) {
-            return Err(BindingError::StructInitializerDuplicateField {
-                struct_name: self.builder.declaration.name().clone(),
-                field_name: name.clone(),
-            });
-        }
-
-        // find the field and validate it
-        let value = match self.builder.fields.iter().find(|f| f.name == *name) {
-            Some(x) => x.field_type.validate_default_value(&value)?,
-            None => {
-                return Err(BindingError::StructInitializerUnknownField {
-                    struct_name: self.builder.declaration.name().clone(),
-                    field_name: name.clone(),
-                });
-            }
-        };
-
-        self.fields.push(InitializedValue {
-            name: name.clone(),
-            value,
-        });
-
-        Ok(self)
-    }
-
-    pub fn default_struct(self, name: &Name) -> BindResult<Self> {
-        self.default(name, InitializerDefault::DefaultStruct)
-    }
-
-    pub fn default_variant<S: Into<String>>(self, name: &Name, variant: S) -> BindResult<Self> {
-        self.default(name, InitializerDefault::Enum(variant.into()))
-    }
-
-    pub fn default_string<S: Into<String>>(self, name: &Name, value: S) -> BindResult<Self> {
-        self.default(name, InitializerDefault::String(value.into()))
-    }
-
-    pub fn end_initializer(mut self) -> BindResult<StructMethodBuilder<'a, F>> {
-        let initializer = Handle::new(Initializer {
-            name: self.name,
-            initializer_type: self.initializer_type,
-            values: Rc::new(self.fields),
-            doc: self.doc,
-        });
-
-        if let Some(x) = self
-            .builder
-            .initializers
-            .iter()
-            .find(|other| initializer.collides_with(other))
-        {
-            return Err(BindingError::StructDuplicateInitializerArgs {
-                struct_name: self.builder.declaration.name().clone(),
-                this_initializer: initializer.name.clone(),
-                other_initializer: x.name.clone(),
-            });
-        }
-
-        self.builder.initializers.push(initializer);
-        Ok(self.builder)
-    }
-}
-
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum StructType<D>
 where
@@ -800,7 +520,7 @@ where
 }
 
 impl StructType<Unvalidated> {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<StructType<Validated>> {
+    pub(crate) fn validate(&self, lib: &LibraryFields) -> BindResult<StructType<Validated>> {
         match self {
             StructType::FunctionArg(x) => Ok(StructType::FunctionArg(x.validate(lib)?)),
             StructType::FunctionReturn(x) => Ok(StructType::FunctionReturn(x.validate(lib)?)),

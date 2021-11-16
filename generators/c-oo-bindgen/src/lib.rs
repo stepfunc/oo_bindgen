@@ -44,14 +44,13 @@ clippy::all
     bare_trait_objects
 )]
 
-use oo_bindgen::formatting::*;
-use oo_bindgen::platforms::*;
-use oo_bindgen::*;
-
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
 mod cpp;
 mod ctype;

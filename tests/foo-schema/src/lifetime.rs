@@ -1,8 +1,6 @@
-use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-fn define_inner_iterator(lib: &mut LibraryBuilder) -> BackTraced<IteratorHandle> {
+fn define_inner_iterator(lib: &mut LibraryBuilder) -> BackTraced<AbstractIteratorHandle> {
     let byte_value = lib.declare_function_return_struct("byte_value")?;
     let byte_value = lib
         .define_function_return_struct(byte_value)?
@@ -16,7 +14,7 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> BackTraced<IteratorHandle>
     Ok(iterator)
 }
 
-fn define_outer_iter(lib: &mut LibraryBuilder) -> BackTraced<IteratorHandle> {
+fn define_outer_iter(lib: &mut LibraryBuilder) -> BackTraced<AbstractIteratorHandle> {
     let inner_iter = define_inner_iterator(lib)?;
     let chunk = lib.declare_function_return_struct("chunk")?;
     let chunk = lib

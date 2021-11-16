@@ -1,7 +1,4 @@
-use crate::doc::Unvalidated;
-use crate::iterator::IteratorHandle;
-use crate::structs::common::*;
-use crate::*;
+use crate::model::*;
 
 /// Types that can be used in a function return value
 #[derive(Clone, Debug)]
@@ -9,12 +6,11 @@ pub enum FunctionReturnStructField {
     Basic(BasicType),
     ClassRef(ClassDeclarationHandle),
     // iterators must be allowed in return position so that you can have nested iterators
-    Iterator(IteratorHandle),
+    Iterator(AbstractIteratorHandle),
     Struct(UniversalOr<FunctionReturnStructField>),
 }
 
 pub type FunctionReturnStructHandle = Handle<Struct<FunctionReturnStructField, Unvalidated>>;
-pub type FunctionReturnStructBuilder<'a> = StructFieldBuilder<'a, FunctionReturnStructField>;
 
 impl StructFieldType for FunctionReturnStructField {
     fn create_struct_type(v: Handle<Struct<Self, Unvalidated>>) -> StructType<Unvalidated> {
@@ -54,8 +50,8 @@ impl From<FunctionReturnStructHandle> for FunctionReturnStructField {
     }
 }
 
-impl From<IteratorHandle> for FunctionReturnStructField {
-    fn from(x: IteratorHandle) -> Self {
+impl From<AbstractIteratorHandle> for FunctionReturnStructField {
+    fn from(x: AbstractIteratorHandle) -> Self {
         Self::Iterator(x)
     }
 }

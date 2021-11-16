@@ -1,11 +1,6 @@
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::ToCpp;
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::doc::DocReference;
-use oo_bindgen::structs::{
-    CallbackArgStructField, FunctionReturnStructField, Struct, StructFieldType, UniversalOr,
-    UniversalStructField,
-};
-use oo_bindgen::Handle;
 
 pub(crate) trait ToCppStructField {
     /// takes a native type and converts it to a C++ type
@@ -40,7 +35,7 @@ impl ToCppStructField for ClassDeclarationHandle {
     }
 }
 
-impl<D> ToCppStructField for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> ToCppStructField for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

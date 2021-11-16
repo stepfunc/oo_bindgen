@@ -1,6 +1,4 @@
-use crate::doc::{DocReference, DocString, Unvalidated, Validated};
-use crate::name::Name;
-use crate::{BindResult, BindingError, UnvalidatedFields};
+use crate::model::*;
 
 #[derive(Clone, Debug)]
 pub struct ReturnType<T, D>
@@ -19,7 +17,7 @@ where
     pub(crate) fn validate(
         &self,
         parent: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
     ) -> BindResult<ReturnType<T, Validated>> {
         Ok(ReturnType::new(
             self.value.clone(),
@@ -110,7 +108,7 @@ where
     pub(crate) fn validate(
         &self,
         parent: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
     ) -> BindResult<OptionalReturnType<T, Validated>> {
         match &self.value {
             None => Ok(OptionalReturnType { value: None }),

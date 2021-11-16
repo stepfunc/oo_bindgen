@@ -1,8 +1,7 @@
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::pointer;
-use oo_bindgen::doc::Validated;
-use oo_bindgen::function::FunctionReturnValue;
-use oo_bindgen::return_type::OptionalReturnType;
 
 pub(crate) trait CppFunctionReturnType {
     fn get_cpp_function_return_type(&self) -> String;

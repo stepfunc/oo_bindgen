@@ -1,9 +1,5 @@
-use oo_bindgen::doc::{DocReference, Unvalidated, Validated};
-use oo_bindgen::enum_type::Enum;
-use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::structs::StructDeclarationHandle;
-use oo_bindgen::types::{DurationType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
 trait TypeConversion {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;

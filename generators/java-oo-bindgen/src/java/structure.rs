@@ -1,11 +1,5 @@
 use super::doc::*;
 use super::*;
-use oo_bindgen::doc::{brief, Validated};
-use oo_bindgen::structs::{
-    Initializer, InitializerType, Number, Struct, StructField, StructFieldType,
-    ValidatedDefaultValue, Visibility,
-};
-use oo_bindgen::types::DurationType;
 
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {

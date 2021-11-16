@@ -1,7 +1,5 @@
 use super::doc::*;
 use super::*;
-use oo_bindgen::doc::Validated;
-use oo_bindgen::error_type::{ErrorType, ExceptionType};
 
 pub(crate) fn generate(f: &mut impl Printer, error: &ErrorType<Validated>) -> FormattingResult<()> {
     // Documentation

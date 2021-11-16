@@ -1,6 +1,6 @@
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::{ToCpp, ToCppStructField};
-use oo_bindgen::interface::CallbackArgument;
-use oo_bindgen::types::{BasicType, StringType};
 
 pub(crate) trait ToNativeCallbackArgument {
     fn to_cpp_callback_argument(&self, expr: String) -> String;

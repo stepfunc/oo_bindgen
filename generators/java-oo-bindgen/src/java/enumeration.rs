@@ -1,7 +1,5 @@
 use super::doc::*;
 use super::*;
-use oo_bindgen::doc::Validated;
-use oo_bindgen::enum_type::*;
 
 pub(crate) fn generate(
     f: &mut impl Printer,

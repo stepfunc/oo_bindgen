@@ -1,9 +1,5 @@
-use oo_bindgen::class::{Class, ClassDeclarationHandle};
-use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::structs::{Struct, StructDeclarationHandle, StructFieldType};
-
-use oo_bindgen::doc::DocReference;
-use oo_bindgen::Handle;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
 pub(crate) fn mut_ref(expr: String) -> String {
     format!("{}&", expr)
@@ -48,7 +44,7 @@ impl FriendClass for StructDeclarationHandle {
     }
 }
 
-impl<D> FriendClass for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> FriendClass for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

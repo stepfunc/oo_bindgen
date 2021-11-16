@@ -1,12 +1,12 @@
+use std::fs;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
+use crate::JavaBindgenConfig;
+
 use self::conversion::*;
 use self::formatting::*;
-use crate::JavaBindgenConfig;
-use oo_bindgen::formatting::*;
-use oo_bindgen::function::*;
-use oo_bindgen::platforms::Platform;
-use oo_bindgen::structs::StructType;
-use oo_bindgen::*;
-use std::fs;
 
 mod class;
 mod constant;

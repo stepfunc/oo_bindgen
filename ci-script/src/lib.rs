@@ -1,9 +1,11 @@
-use clap::{App, Arg};
-use oo_bindgen::platforms::*;
-use oo_bindgen::Library;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+use clap::{App, Arg};
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::Library;
 
 pub fn run(settings: BindingBuilderSettings) {
     let matches = App::new("oo-bindgen")

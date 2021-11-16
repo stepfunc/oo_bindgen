@@ -44,20 +44,15 @@ clippy::all
     bare_trait_objects
 )]
 
+use std::fs;
+use std::path::PathBuf;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::doc::*;
 use crate::dotnet_type::*;
 use crate::formatting::*;
-use oo_bindgen::constants::*;
-use oo_bindgen::doc::Validated;
-use oo_bindgen::enum_type::*;
-use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::*;
-use oo_bindgen::function::*;
-use oo_bindgen::platforms::*;
-use oo_bindgen::structs::StructType;
-use oo_bindgen::*;
-use std::fs;
-use std::path::PathBuf;
 
 mod class;
 mod doc;

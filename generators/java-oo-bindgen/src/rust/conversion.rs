@@ -1,17 +1,7 @@
-use super::formatting::*;
-use oo_bindgen::class::*;
-use oo_bindgen::collection::*;
-use oo_bindgen::doc::{DocReference, Unvalidated};
-use oo_bindgen::enum_type::*;
-use oo_bindgen::function::*;
-use oo_bindgen::interface::*;
-use oo_bindgen::iterator::*;
-use oo_bindgen::name::Name;
-use oo_bindgen::return_type::OptionalReturnType;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::{BasicType, DurationType, StringType};
-use oo_bindgen::{Handle, LibrarySettings};
 use std::rc::Rc;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
 const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
@@ -552,7 +542,7 @@ where
     }
 }
 
-impl<D> JniType for Handle<Iterator<D>>
+impl<D> JniType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
@@ -1851,7 +1841,7 @@ pub(crate) struct IteratorConverter {
 }
 
 impl IteratorConverter {
-    pub(crate) fn wrap<D: DocReference>(handle: Handle<Iterator<D>>) -> TypeConverter {
+    pub(crate) fn wrap<D: DocReference>(handle: Handle<AbstractIterator<D>>) -> TypeConverter {
         TypeConverter::Iterator(Self {
             next_func: handle.next_function.name.clone(),
             item_type: handle.item_type.clone(),

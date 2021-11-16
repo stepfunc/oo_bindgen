@@ -1,15 +1,4 @@
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::Collection;
-use oo_bindgen::enum_type::Enum;
-use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnValue};
-use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, Interface};
-use oo_bindgen::iterator::IteratorItemType;
-use oo_bindgen::return_type::OptionalReturnType;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::Handle;
-
-use oo_bindgen::doc::{DocReference, Validated};
+use oo_bindgen::model::*;
 
 pub(crate) trait CType {
     fn to_c_type(&self) -> String;
@@ -44,7 +33,7 @@ impl CType for StringType {
     }
 }
 
-impl<D> CType for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> CType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

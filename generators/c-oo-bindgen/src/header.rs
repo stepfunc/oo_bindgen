@@ -1,24 +1,11 @@
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::constants::{ConstantSet, ConstantValue, Representation};
-use oo_bindgen::doc::{text, Validated};
-use oo_bindgen::enum_type::Enum;
-use oo_bindgen::formatting::{
-    blocked, commented, doxygen, indented, FilePrinter, FormattingResult, Printer,
-};
-use oo_bindgen::function::{Function, FunctionArgument, FunctionReturnValue, SignatureType};
-use oo_bindgen::interface::{CallbackFunction, Interface};
-use oo_bindgen::structs::{
-    Initializer, Number, Struct, StructFieldType, StructType, ValidatedDefaultValue, Visibility,
-};
-use oo_bindgen::types::{BasicType, TypeExtractor};
-use oo_bindgen::util::WithLastIndication;
-use oo_bindgen::{Handle, Library, Statement};
+use std::path::Path;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
 use crate::ctype::CType;
 use crate::doc::{docstring_print, doxygen_print};
 use crate::formatting::cpp_guard;
-
-use std::path::Path;
 
 pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     let uppercase_name = lib.settings.c_ffi_prefix.to_uppercase();

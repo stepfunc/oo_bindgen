@@ -1,8 +1,6 @@
-use oo_bindgen::iterator::IteratorHandle;
-use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-fn define_iterator(lib: &mut LibraryBuilder) -> BackTraced<IteratorHandle> {
+fn define_iterator(lib: &mut LibraryBuilder) -> BackTraced<AbstractIteratorHandle> {
     // Define the iterator item structure
     let iterator_item = lib.declare_function_return_struct("string_iterator_item")?;
     let iterator_item = lib

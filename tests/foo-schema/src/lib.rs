@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
 mod callback;
 mod class;
@@ -54,11 +54,7 @@ pub fn build_lib() -> BackTraced<Library> {
         InterfaceSettings::default(),
     )?;
 
-    let mut builder = LibraryBuilder::new(
-        oo_bindgen::Version::parse("1.2.3").unwrap(),
-        lib_info,
-        settings,
-    );
+    let mut builder = LibraryBuilder::new(Version::parse("1.2.3").unwrap(), lib_info, settings);
 
     structure::define(&mut builder)?;
     constants::define(&mut builder)?;

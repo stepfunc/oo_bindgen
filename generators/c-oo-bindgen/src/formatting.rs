@@ -1,4 +1,4 @@
-use oo_bindgen::formatting::*;
+use oo_bindgen::backend::*;
 
 pub(crate) fn cpp_guard<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where

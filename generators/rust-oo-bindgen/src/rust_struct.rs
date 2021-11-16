@@ -1,7 +1,6 @@
+use oo_bindgen::model::*;
+
 use crate::rust_type::RustType;
-use oo_bindgen::doc::Validated;
-use oo_bindgen::structs::{Struct, StructFieldType};
-use oo_bindgen::Handle;
 
 pub(crate) trait RustStruct {
     fn annotate_rust_with_lifetime(&self) -> bool;

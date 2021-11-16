@@ -1,5 +1,6 @@
-use crate::ffi;
 use std::time::Duration;
+
+use crate::ffi;
 
 pub struct CallbackSource {
     callback: Option<ffi::CallbackInterface>,

@@ -1,6 +1,5 @@
 use crate::helpers::call_native_function;
 use crate::*;
-use oo_bindgen::class::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

@@ -1,4 +1,4 @@
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Define each enum

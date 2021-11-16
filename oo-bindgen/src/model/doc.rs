@@ -40,18 +40,12 @@
 //! - `{iterator}`: prints `iterator` in C, or `collection` in C# and Java.
 
 use std::convert::TryFrom;
+use std::fmt::Debug;
 
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::class::{Class, ClassDeclarationHandle};
-use crate::enum_type::Enum;
-use crate::function::{ClassConstructor, ClassDestructor, Function};
-use crate::interface::Interface;
-use crate::name::Name;
-use crate::structs::StructType;
-use crate::{BindResult, BindingError, Handle, UnvalidatedFields};
-use std::fmt::Debug;
+use crate::model::*;
 
 pub trait DocReference: Debug + Clone {}
 
@@ -97,7 +91,7 @@ impl Doc<Unvalidated> {
     pub(crate) fn validate(
         &self,
         symbol_name: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
     ) -> BindResult<Doc<Validated>> {
         self.validate_with_args(symbol_name, lib, None)
     }
@@ -105,7 +99,7 @@ impl Doc<Unvalidated> {
     pub(crate) fn validate_with_args(
         &self,
         symbol_name: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
         args: Option<&[Name]>,
     ) -> BindResult<Doc<Validated>> {
         let details: BindResult<Vec<DocParagraph<Validated>>> = self
@@ -137,12 +131,12 @@ impl<T: AsRef<str>> From<T> for Doc<Unvalidated> {
 }
 
 /// Used in builders
-pub(crate) struct DocCell {
+pub(crate) struct OptionalDoc {
     parent_name: Name,
     inner: Option<Doc<Unvalidated>>,
 }
 
-impl DocCell {
+impl OptionalDoc {
     pub(crate) fn new(parent_name: Name) -> Self {
         Self {
             parent_name,
@@ -185,7 +179,7 @@ impl DocParagraph<Unvalidated> {
     fn validate_with_args(
         &self,
         symbol_name: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
         args: Option<&[Name]>,
     ) -> BindResult<DocParagraph<Validated>> {
         Ok(match self {
@@ -211,7 +205,7 @@ impl DocString<Unvalidated> {
     pub(crate) fn validate(
         &self,
         symbol_name: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
     ) -> BindResult<DocString<Validated>> {
         self.validate_with_args(symbol_name, lib, None)
     }
@@ -219,7 +213,7 @@ impl DocString<Unvalidated> {
     pub(crate) fn validate_with_args(
         &self,
         symbol_name: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
         args: Option<&[Name]>,
     ) -> BindResult<DocString<Validated>> {
         let elements: BindResult<Vec<DocStringElement<Validated>>> = self
@@ -306,7 +300,7 @@ impl DocStringElement<Unvalidated> {
     pub(crate) fn validate(
         &self,
         symbol_name: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
         args: Option<&[Name]>,
     ) -> BindResult<DocStringElement<Validated>> {
         Ok(match self {
@@ -361,7 +355,7 @@ impl Unvalidated {
     pub(crate) fn validate(
         &self,
         symbol_name: &Name,
-        lib: &UnvalidatedFields,
+        lib: &LibraryFields,
         args: Option<&[Name]>,
     ) -> BindResult<Validated> {
         match self {

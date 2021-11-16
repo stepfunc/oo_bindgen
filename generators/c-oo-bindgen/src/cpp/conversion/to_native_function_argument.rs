@@ -1,7 +1,7 @@
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::{CoreCppType, ToNative};
 use crate::cpp::formatting::FriendClass;
-use oo_bindgen::function::FunctionArgument;
-use oo_bindgen::interface::InterfaceMode;
 
 pub(crate) trait ToNativeFunctionArgument {
     fn to_native_function_argument(&self, expr: String) -> String;
@@ -34,13 +34,13 @@ impl ToNativeFunctionArgument for FunctionArgument {
                 format!("{}::get({})", x.friend_class(), expr)
             }
             FunctionArgument::Interface(x) => match x.mode {
-                InterfaceMode::Synchronous => {
+                InterfaceCategory::Synchronous => {
                     format!("::convert::to_native({})", expr)
                 }
-                InterfaceMode::Asynchronous => {
+                InterfaceCategory::Asynchronous => {
                     format!("::convert::to_native(std::move({}))", expr)
                 }
-                InterfaceMode::Future => {
+                InterfaceCategory::Future => {
                     format!("::convert::to_native(std::move({}))", expr)
                 }
             },

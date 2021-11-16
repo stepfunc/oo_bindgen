@@ -1,15 +1,7 @@
-use super::NATIVE_FUNCTIONS_CLASSNAME;
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::Collection;
-use oo_bindgen::doc::{DocReference, Validated};
-use oo_bindgen::formatting::*;
-use oo_bindgen::function::*;
-use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue, Interface};
-use oo_bindgen::iterator::IteratorItemType;
-use oo_bindgen::return_type::OptionalReturnType;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::{BasicType, StringType};
-use oo_bindgen::Handle;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
+use crate::java::NATIVE_FUNCTIONS_CLASSNAME;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;
@@ -124,7 +116,7 @@ impl JavaType for IteratorItemType {
     }
 }
 
-impl<D> JavaType for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> JavaType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

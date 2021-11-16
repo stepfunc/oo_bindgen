@@ -1,15 +1,8 @@
 use heck::CamelCase;
 
+use oo_bindgen::model::*;
+
 use crate::type_converter::*;
-use oo_bindgen::class::ClassDeclarationHandle;
-use oo_bindgen::collection::Collection;
-use oo_bindgen::doc::{DocReference, Validated};
-use oo_bindgen::function::{FunctionArgument, FunctionReturnValue};
-use oo_bindgen::interface::*;
-use oo_bindgen::return_type::OptionalReturnType;
-use oo_bindgen::structs::*;
-use oo_bindgen::types::*;
-use oo_bindgen::Handle;
 
 pub(crate) trait LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool;
@@ -174,7 +167,7 @@ where
     }
 }
 
-impl<D> LifetimeInfo for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> LifetimeInfo for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
@@ -366,7 +359,7 @@ where
     }
 }
 
-impl<D> RustType for Handle<oo_bindgen::iterator::Iterator<D>>
+impl<D> RustType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {

@@ -1,10 +1,9 @@
-use oo_bindgen::formatting::*;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
-use super::conversion::*;
 use crate::*;
 
-use oo_bindgen::doc::Validated;
-use oo_bindgen::structs::{Struct, StructFieldType, StructType};
+use super::conversion::*;
 
 pub(crate) fn generate_structs_cache(
     lib: &Library,

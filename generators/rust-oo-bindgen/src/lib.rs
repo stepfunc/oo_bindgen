@@ -44,27 +44,22 @@ clippy::all
     bare_trait_objects
 )]
 
-use heck::CamelCase;
-use oo_bindgen::enum_type::*;
-use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::*;
-use oo_bindgen::function::*;
-use oo_bindgen::interface::*;
-use oo_bindgen::structs::{Struct, StructFieldType, StructType};
-use oo_bindgen::*;
-
 use std::env;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
-mod rust_struct;
-mod rust_type;
-mod type_converter;
+use heck::CamelCase;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
 use crate::rust_struct::*;
 use crate::rust_type::*;
 use crate::type_converter::*;
-use oo_bindgen::doc::Validated;
-use std::rc::Rc;
+
+mod rust_struct;
+mod rust_type;
+mod type_converter;
 
 pub struct RustCodegen<'a> {
     library: &'a Library,
@@ -490,7 +485,7 @@ impl<'a> RustCodegen<'a> {
         &self,
         f: &mut dyn Printer,
         handle: &Interface<Validated>,
-        mode: InterfaceMode,
+        mode: InterfaceCategory,
     ) -> FormattingResult<()> {
         let interface_name = handle.name.to_camel_case();
         // C structure
@@ -573,15 +568,15 @@ impl<'a> RustCodegen<'a> {
     fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction<Validated>>>(
         &self,
         f: &mut dyn Printer,
-        mode: InterfaceMode,
+        mode: InterfaceCategory,
         name: &str,
         settings: Rc<LibrarySettings>,
         callbacks: I,
     ) -> FormattingResult<()> {
         let generate_send_and_sync = match mode {
-            InterfaceMode::Synchronous => false,
-            InterfaceMode::Asynchronous => true,
-            InterfaceMode::Future => true,
+            InterfaceCategory::Synchronous => false,
+            InterfaceCategory::Asynchronous => true,
+            InterfaceCategory::Future => true,
         };
 
         // Send/Sync trait

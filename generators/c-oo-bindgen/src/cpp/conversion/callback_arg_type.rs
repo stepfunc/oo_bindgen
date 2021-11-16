@@ -1,8 +1,7 @@
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::CoreCppType;
 use crate::cpp::formatting::*;
-use oo_bindgen::doc::DocReference;
-use oo_bindgen::interface::{CallbackArgument, CallbackReturnValue};
-use oo_bindgen::return_type::OptionalReturnType;
 
 pub(crate) trait CppCallbackArgType {
     fn get_cpp_callback_arg_type(&self) -> String;

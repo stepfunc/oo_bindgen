@@ -1,10 +1,6 @@
 use std::time::Duration;
 
-use crate::doc::{DocReference, DocString, Unvalidated, Validated};
-use crate::enum_type::EnumHandle;
-use crate::name::Name;
-use crate::structs::*;
-use crate::{BindResult, BindingError, UnvalidatedFields};
+use crate::model::*;
 
 /// Marker class used to denote the String type with conversions to more specialized types
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -60,7 +56,7 @@ impl<T> Arg<T, Unvalidated>
 where
     T: Clone,
 {
-    pub(crate) fn validate(&self, lib: &UnvalidatedFields) -> BindResult<Arg<T, Validated>> {
+    pub(crate) fn validate(&self, lib: &LibraryFields) -> BindResult<Arg<T, Validated>> {
         Ok(Arg {
             arg_type: self.arg_type.clone(),
             name: self.name.clone(),
@@ -99,7 +95,7 @@ pub enum BasicType {
     Float32,
     Double64,
     Duration(DurationType),
-    Enum(EnumHandle),
+    Enum(Handle<Enum<Unvalidated>>),
 }
 
 impl InitializerValidator for BasicType {
@@ -240,7 +236,7 @@ pub trait TypeExtractor {
         }
     }
 
-    fn get_enum_type(&self) -> Option<EnumHandle> {
+    fn get_enum_type(&self) -> Option<Handle<Enum<Unvalidated>>> {
         match self.get_basic_type() {
             Some(BasicType::Enum(x)) => Some(x.clone()),
             _ => None,

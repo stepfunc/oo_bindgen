@@ -1,5 +1,6 @@
-use crate::ffi;
 use std::ffi::CStr;
+
+use crate::ffi;
 
 pub struct StringIterator {
     iter: std::vec::IntoIter<u8>,

@@ -1,11 +1,10 @@
-use lazy_static::lazy_static;
-
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
-use thiserror::Error;
 
 use heck::{CamelCase, KebabCase, MixedCase, ShoutySnakeCase};
+use lazy_static::lazy_static;
+use thiserror::Error;
 
 /// Names in oo_bindgen are subset of allowed C-style identifiers. They are
 /// enforce that names are a limited snake case.

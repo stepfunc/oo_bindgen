@@ -1,5 +1,4 @@
-use oo_bindgen::types::BasicType;
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare the class

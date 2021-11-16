@@ -1,11 +1,8 @@
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::cpp::conversion::CoreCppType;
 use crate::doc::{docstring_print_generic, doxygen_print_generic};
-use oo_bindgen::class::{Method, StaticMethod};
-use oo_bindgen::doc::*;
-use oo_bindgen::formatting::*;
-use oo_bindgen::function::{ClassConstructor, Function, FutureMethod};
-use oo_bindgen::return_type::OptionalReturnType;
-use oo_bindgen::types::Arg;
 
 pub(crate) fn print_cpp_doc(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
     doxygen_print_generic(f, print_cpp_reference, doc)

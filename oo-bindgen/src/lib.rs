@@ -1,8 +1,8 @@
 #![deny(
-// dead_code,
+dead_code,
 arithmetic_overflow,
 invalid_type_param_default,
-//missing_fragment_specifier,
+missing_fragment_specifier,
 mutable_transmutes,
 no_mangle_const_items,
 overflowing_literals,
@@ -44,36 +44,7 @@ clippy::all
     bare_trait_objects
 )]
 
-pub use semver::Version;
-
-use crate::class::*;
-pub use crate::doc::doc;
-use crate::doc::Doc;
-use crate::enum_type::*;
-use crate::error_type::ErrorType;
-pub use crate::errors::*;
-use crate::function::*;
-pub use crate::handle::*;
-use crate::interface::*;
-pub use crate::library::*;
-use crate::types::BasicType;
-
-pub mod class;
-pub mod collection;
-pub mod constants;
-pub mod doc;
-pub mod enum_type;
-pub mod error_type;
-mod errors;
-pub mod formatting;
-pub mod function;
-mod handle;
-pub mod interface;
-pub mod iterator;
-mod library;
-pub mod name;
-pub mod platforms;
-pub mod return_type;
-pub mod structs;
-pub mod types;
-pub mod util;
+/// API specific to backend binding generators
+pub mod backend;
+/// API used to create a model of a library
+pub mod model;

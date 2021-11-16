@@ -7,6 +7,13 @@ use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
 
 use oo_bindgen::doc::Validated;
+use oo_bindgen::error_type::ErrorType;
+
+fn filter_has_error(
+    x: &Handle<Function<Validated>>,
+) -> Option<(Handle<Function<Validated>>, ErrorType<Validated>)> {
+    x.error_type.get().map(|err| (x.clone(), err.clone()))
+}
 
 pub(crate) fn generate_native_functions_class(
     f: &mut dyn Printer,
@@ -30,9 +37,9 @@ pub(crate) fn generate_native_functions_class(
         f.newline()?;
         f.writeln("internal class ExceptionWrappers")?;
         blocked(f, |f| {
-            for func in lib.functions().filter(|x| x.error_type.is_some()) {
+            for (func, err) in lib.functions().filter_map(|x| filter_has_error(x)) {
                 f.newline()?;
-                write_exception_wrapper(f, func, &lib.settings.c_ffi_prefix)?;
+                write_exception_wrapper(f, &func, &err, &lib.settings.c_ffi_prefix)?;
             }
             Ok(())
         })?;
@@ -49,34 +56,16 @@ pub(crate) fn generate_native_functions_class(
     })
 }
 
-fn write_exception_and_return_block(
+fn write_exception_and_return_blocks(
     f: &mut dyn Printer,
+    err: &ErrorType<Validated>,
     func: &Handle<Function<Validated>>,
     params: &str,
     prefix: &str,
 ) -> FormattingResult<()> {
-    match func.get_signature_type() {
-        SignatureType::NoErrorNoReturn => {
-            unreachable!()
-        }
-        SignatureType::NoErrorWithReturn(_, _) => {
-            unreachable!()
-        }
-        SignatureType::ErrorNoReturn(err) => {
-            f.writeln(&format!(
-                "var error = PInvoke.{}_{}({});",
-                prefix, func.name, params
-            ))?;
-            f.writeln(&format!("if(error != {}.Ok)", err.inner.name.camel_case()))?;
-            blocked(f, |f| {
-                f.writeln(&format!(
-                    "throw new {}(error);",
-                    err.exception_name.camel_case()
-                ))
-            })
-        }
-        SignatureType::ErrorWithReturn(err, ret, _) => {
-            f.writeln(&format!("{} _return_value;", ret.as_native_type()))?;
+    match func.return_type.get() {
+        Some(ret) => {
+            f.writeln(&format!("{} _return_value;", ret.value.as_native_type()))?;
             f.writeln(&format!(
                 "var _error_result = PInvoke.{}_{}({}, out _return_value);",
                 prefix, func.name, params
@@ -92,6 +81,19 @@ fn write_exception_and_return_block(
                 ))
             })?;
             f.writeln("return _return_value;")
+        }
+        None => {
+            f.writeln(&format!(
+                "var error = PInvoke.{}_{}({});",
+                prefix, func.name, params
+            ))?;
+            f.writeln(&format!("if(error != {}.Ok)", err.inner.name.camel_case()))?;
+            blocked(f, |f| {
+                f.writeln(&format!(
+                    "throw new {}(error);",
+                    err.exception_name.camel_case()
+                ))
+            })
         }
     }
 }
@@ -143,6 +145,7 @@ fn write_conversion_wrapper(
 fn write_exception_wrapper(
     f: &mut dyn Printer,
     func: &Handle<Function<Validated>>,
+    err: &ErrorType<Validated>,
     prefix: &str,
 ) -> FormattingResult<()> {
     f.write(&format!(
@@ -171,7 +174,7 @@ fn write_exception_wrapper(
         .join(", ");
 
     blocked(f, |f| {
-        write_exception_and_return_block(f, func, &params, prefix)
+        write_exception_and_return_blocks(f, err, func, &params, prefix)
     })
 }
 

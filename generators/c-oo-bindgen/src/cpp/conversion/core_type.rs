@@ -190,9 +190,9 @@ where
             FunctionArgument::String(x) => x.core_cpp_type(),
             FunctionArgument::Collection(x) => x.core_cpp_type(),
             FunctionArgument::Struct(x) => x.core_cpp_type(),
-            FunctionArgument::StructRef(_) => unimplemented!(),
-            FunctionArgument::ClassRef(_) => unimplemented!(),
-            FunctionArgument::Interface(_) => unimplemented!(),
+            FunctionArgument::StructRef(x) => x.inner.core_cpp_type(),
+            FunctionArgument::ClassRef(x) => x.core_cpp_type(),
+            FunctionArgument::Interface(x) => x.core_cpp_type(),
         };
         format!("std::vector<{}>", inner)
     }

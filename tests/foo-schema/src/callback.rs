@@ -8,8 +8,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "on_value",
             "On value callback which takes parameter {param:value}",
         )?
-        .param("value", BasicType::U32, "Value")?
-        .returns(BasicType::U32, "Some value")?
+        .param("value", Primitive::U32, "Value")?
+        .returns(Primitive::U32, "Some value")?
         .end_callback()?
         .begin_callback("on_duration", "On duration callback")?
         .param("value", DurationType::Milliseconds, "Value")?
@@ -36,8 +36,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let set_value = lib
         .define_method("set_value", callback_source.clone())?
-        .param("value", BasicType::U32, "New value")?
-        .returns(BasicType::U32, "Value returned by the callback")?
+        .param("value", Primitive::U32, "New value")?
+        .returns(Primitive::U32, "Value returned by the callback")?
         .doc("Set the value and call all the callbacks")?
         .build()?;
 

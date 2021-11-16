@@ -12,6 +12,12 @@ pub enum FunctionReturnValue {
     StructRef(UniversalDeclarationOr<FunctionReturnStructField>),
 }
 
+impl From<Primitive> for FunctionReturnValue {
+    fn from(x: Primitive) -> Self {
+        FunctionReturnValue::Basic(x.into())
+    }
+}
+
 impl From<BasicType> for FunctionReturnValue {
     fn from(x: BasicType) -> Self {
         FunctionReturnValue::Basic(x)
@@ -116,9 +122,9 @@ impl From<AsynchronousInterface> for FunctionArgument {
     }
 }
 
-impl From<BasicType> for FunctionArgument {
-    fn from(x: BasicType) -> Self {
-        FunctionArgument::Basic(x)
+impl From<Primitive> for FunctionArgument {
+    fn from(x: Primitive) -> Self {
+        FunctionArgument::Basic(BasicType::Primitive(x))
     }
 }
 
@@ -143,6 +149,12 @@ impl From<FunctionArgStructDeclaration> for FunctionArgument {
 impl From<UniversalStructDeclaration> for FunctionArgument {
     fn from(x: UniversalStructDeclaration) -> Self {
         FunctionArgument::StructRef(FunctionArgStructDeclaration::new(x.inner))
+    }
+}
+
+impl From<BasicType> for FunctionArgument {
+    fn from(x: BasicType) -> Self {
+        FunctionArgument::Basic(x)
     }
 }
 

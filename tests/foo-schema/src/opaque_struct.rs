@@ -6,13 +6,13 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let get_id_fn = lib
         .define_function("opaque_struct_get_id")?
         .param("value", opaque_struct.clone(), "struct value")?
-        .returns(BasicType::U64, "value of id field")?
+        .returns(Primitive::U64, "value of id field")?
         .doc("Get the id field of the struct")?
         .build_static("get_id")?;
 
     let opaque_struct = lib
         .define_opaque_struct(opaque_struct)?
-        .add("id", BasicType::U64, "64-bit id")?
+        .add("id", Primitive::U64, "64-bit id")?
         .doc("Opaque structure")?
         .end_fields()?
         .build()?;

@@ -20,7 +20,7 @@ impl ToNative for Handle<Enum<Unvalidated>> {
     }
 }
 
-impl ToNative for BasicType {
+impl ToNative for Primitive {
     fn to_native(&self, expr: String) -> String {
         match self {
             Self::Bool => expr,
@@ -32,8 +32,16 @@ impl ToNative for BasicType {
             Self::S32 => expr,
             Self::U64 => expr,
             Self::S64 => expr,
-            Self::Float32 => expr,
-            Self::Double64 => expr,
+            Self::Float => expr,
+            Self::Double => expr,
+        }
+    }
+}
+
+impl ToNative for BasicType {
+    fn to_native(&self, expr: String) -> String {
+        match self {
+            Self::Primitive(x) => x.to_native(expr),
             Self::Duration(t) => t.to_native(expr),
             Self::Enum(t) => t.to_native(expr),
         }

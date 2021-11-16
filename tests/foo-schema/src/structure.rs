@@ -18,32 +18,32 @@ pub fn define_numbers_structure(lib: &mut LibraryBuilder) -> BackTraced<Universa
     let numbers = lib
         .define_universal_struct(numbers)?
         .doc("structure containing all the numeric types")?
-        .add(uint8_value.clone(), BasicType::U8, "uint8 value")?
-        .add(int8_value.clone(), BasicType::S8, "int8 value")?
-        .add(uint16_value.clone(), BasicType::U16, "uint16 value")?
-        .add(int16_value.clone(), BasicType::S16, "int16 value")?
-        .add(uint32_value.clone(), BasicType::U32, "uint32 value")?
-        .add(int32_value.clone(), BasicType::S32, "int32 value")?
-        .add(uint64_value.clone(), BasicType::U64, "uint64 value")?
-        .add(int64_value.clone(), BasicType::S64, "int64 value")?
-        .add(float_value.clone(), BasicType::Float32, "float value")?
-        .add(double_value.clone(), BasicType::Double64, "double value")?
+        .add(uint8_value.clone(), Primitive::U8, "uint8 value")?
+        .add(int8_value.clone(), Primitive::S8, "int8 value")?
+        .add(uint16_value.clone(), Primitive::U16, "uint16 value")?
+        .add(int16_value.clone(), Primitive::S16, "int16 value")?
+        .add(uint32_value.clone(), Primitive::U32, "uint32 value")?
+        .add(int32_value.clone(), Primitive::S32, "int32 value")?
+        .add(uint64_value.clone(), Primitive::U64, "uint64 value")?
+        .add(int64_value.clone(), Primitive::S64, "int64 value")?
+        .add(float_value.clone(), Primitive::Float, "float value")?
+        .add(double_value.clone(), Primitive::Double, "double value")?
         .end_fields()?
         .begin_initializer(
             "init",
             InitializerType::Normal,
             "Initialize {struct:numbers} to default values",
         )?
-        .default(&uint8_value, Number::U8(1))?
-        .default(&int8_value, Number::S8(-1))?
-        .default(&uint16_value, Number::U16(2))?
-        .default(&int16_value, Number::S16(-2))?
-        .default(&uint32_value, Number::U32(3))?
-        .default(&int32_value, Number::S32(-3))?
-        .default(&uint64_value, Number::U64(4))?
-        .default(&int64_value, Number::S64(-4))?
-        .default(&float_value, Number::Float(12.34))?
-        .default(&double_value, Number::Double(-56.78))?
+        .default(&uint8_value, NumberValue::U8(1))?
+        .default(&int8_value, NumberValue::S8(-1))?
+        .default(&uint16_value, NumberValue::U16(2))?
+        .default(&int16_value, NumberValue::S16(-2))?
+        .default(&uint32_value, NumberValue::U32(3))?
+        .default(&int32_value, NumberValue::S32(-3))?
+        .default(&uint64_value, NumberValue::U64(4))?
+        .default(&int64_value, NumberValue::S64(-4))?
+        .default(&float_value, NumberValue::Float(12.34))?
+        .default(&double_value, NumberValue::Double(-56.78))?
         .end_initializer()?
         .build()?;
 
@@ -116,12 +116,12 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         )?
         .add(
             boolean_true_field.clone(),
-            BasicType::Bool,
+            Primitive::Bool,
             "boolean value defaulting to true",
         )?
         .add(
             boolean_false_field.clone(),
-            BasicType::Bool,
+            Primitive::Bool,
             "boolean value defaulting to false",
         )?
         .add(

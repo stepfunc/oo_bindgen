@@ -183,7 +183,7 @@ impl JniType for StringType {
     }
 }
 
-impl JniType for BasicType {
+impl JniType for Primitive {
     fn as_raw_jni_type(&self) -> &str {
         match self {
             Self::Bool => "jni::sys::jboolean",
@@ -195,14 +195,12 @@ impl JniType for BasicType {
             Self::S32 => "jni::sys::jint",
             Self::U64 => JNI_SYS_JOBJECT,
             Self::S64 => "jni::sys::jlong",
-            Self::Float32 => "jni::sys::jfloat",
-            Self::Double64 => "jni::sys::jdouble",
-            Self::Duration(x) => x.as_raw_jni_type(),
-            Self::Enum(x) => x.as_raw_jni_type(),
+            Self::Float => "jni::sys::jfloat",
+            Self::Double => "jni::sys::jdouble",
         }
     }
 
-    fn as_jni_sig(&self, lib_path: &str) -> String {
+    fn as_jni_sig(&self, _lib_path: &str) -> String {
         match self {
             Self::Bool => "Z".to_string(),
             Self::U8 => "Lorg/joou/UByte;".to_string(),
@@ -213,10 +211,8 @@ impl JniType for BasicType {
             Self::S32 => "I".to_string(),
             Self::U64 => "Lorg/joou/ULong;".to_string(),
             Self::S64 => "J".to_string(),
-            Self::Float32 => "F".to_string(),
-            Self::Double64 => "D".to_string(),
-            Self::Duration(x) => x.as_jni_sig(lib_path),
-            Self::Enum(x) => x.as_jni_sig(lib_path),
+            Self::Float => "F".to_string(),
+            Self::Double => "D".to_string(),
         }
     }
 
@@ -235,10 +231,8 @@ impl JniType for BasicType {
             Self::S32 => "i().unwrap()",
             Self::U64 => "l().unwrap().into_inner()",
             Self::S64 => "j().unwrap()",
-            Self::Float32 => "f().unwrap()",
-            Self::Double64 => "d().unwrap()",
-            Self::Duration(x) => x.convert_jvalue(),
-            Self::Enum(x) => x.convert_jvalue(),
+            Self::Float => "f().unwrap()",
+            Self::Double => "d().unwrap()",
         }
     }
 
@@ -273,16 +267,14 @@ impl JniType for BasicType {
                 "{}_cache.primitives.long_value(&_env, {})",
                 to, from
             )),
-            Self::Float32 => f.writeln(&format!(
+            Self::Float => f.writeln(&format!(
                 "{}_cache.primitives.float_value(&_env, {})",
                 to, from
             )),
-            Self::Double64 => f.writeln(&format!(
+            Self::Double => f.writeln(&format!(
                 "{}_cache.primitives.double_value(&_env, {})",
                 to, from
             )),
-            Self::Duration(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Enum(x) => x.convert_to_rust_from_object(f, from, to),
         }
     }
 
@@ -297,10 +289,8 @@ impl JniType for BasicType {
             Self::S32 => None,
             Self::U64 => Some(UnsignedConverter::U64),
             Self::S64 => None,
-            Self::Float32 => None,
-            Self::Double64 => None,
-            Self::Duration(x) => x.conversion(),
-            Self::Enum(x) => x.conversion(),
+            Self::Float => None,
+            Self::Double => None,
         }
     }
 
@@ -316,10 +306,8 @@ impl JniType for BasicType {
             Self::S32 => false,
             Self::U64 => true,
             Self::S64 => false,
-            Self::Float32 => false,
-            Self::Double64 => false,
-            Self::Duration(x) => x.requires_local_ref_cleanup(),
-            Self::Enum(x) => x.requires_local_ref_cleanup(),
+            Self::Float => false,
+            Self::Double => false,
         }
     }
 
@@ -334,10 +322,8 @@ impl JniType for BasicType {
             Self::S32 => Ok(()),
             Self::U64 => perform_null_check(f, param_name),
             Self::S64 => Ok(()),
-            Self::Float32 => Ok(()),
-            Self::Double64 => Ok(()),
-            Self::Duration(x) => x.check_null(f, param_name),
-            Self::Enum(x) => x.check_null(f, param_name),
+            Self::Float => Ok(()),
+            Self::Double => Ok(()),
         }
     }
 
@@ -352,8 +338,81 @@ impl JniType for BasicType {
             Self::S32 => "0",
             Self::U64 => NULL_DEFAULT_VALUE,
             Self::S64 => "0",
-            Self::Float32 => "0.0",
-            Self::Double64 => "0.0",
+            Self::Float => "0.0",
+            Self::Double => "0.0",
+        }
+    }
+}
+
+impl JniType for BasicType {
+    fn as_raw_jni_type(&self) -> &str {
+        match self {
+            Self::Primitive(x) => x.as_raw_jni_type(),
+            Self::Duration(x) => x.as_raw_jni_type(),
+            Self::Enum(x) => x.as_raw_jni_type(),
+        }
+    }
+
+    fn as_jni_sig(&self, lib_path: &str) -> String {
+        match self {
+            Self::Primitive(x) => x.as_jni_sig(lib_path),
+            Self::Duration(x) => x.as_jni_sig(lib_path),
+            Self::Enum(x) => x.as_jni_sig(lib_path),
+        }
+    }
+
+    fn as_rust_type(&self, _ffi_name: &str) -> String {
+        self.get_c_rust_type().to_string()
+    }
+
+    fn convert_jvalue(&self) -> &str {
+        match self {
+            Self::Primitive(x) => x.convert_jvalue(),
+            Self::Duration(x) => x.convert_jvalue(),
+            Self::Enum(x) => x.convert_jvalue(),
+        }
+    }
+
+    fn convert_to_rust_from_object(
+        &self,
+        f: &mut dyn Printer,
+        from: &str,
+        to: &str,
+    ) -> FormattingResult<()> {
+        match self {
+            Self::Primitive(x) => x.convert_to_rust_from_object(f, from, to),
+            Self::Duration(x) => x.convert_to_rust_from_object(f, from, to),
+            Self::Enum(x) => x.convert_to_rust_from_object(f, from, to),
+        }
+    }
+
+    fn conversion(&self) -> Option<TypeConverter> {
+        match self {
+            Self::Primitive(x) => x.conversion(),
+            Self::Duration(x) => x.conversion(),
+            Self::Enum(x) => x.conversion(),
+        }
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        match self {
+            Self::Primitive(x) => x.requires_local_ref_cleanup(),
+            Self::Duration(x) => x.requires_local_ref_cleanup(),
+            Self::Enum(x) => x.requires_local_ref_cleanup(),
+        }
+    }
+
+    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
+        match self {
+            Self::Primitive(x) => x.check_null(f, param_name),
+            Self::Duration(x) => x.check_null(f, param_name),
+            Self::Enum(x) => x.check_null(f, param_name),
+        }
+    }
+
+    fn default_value(&self) -> &str {
+        match self {
+            Self::Primitive(x) => x.default_value(),
             Self::Duration(x) => x.default_value(),
             Self::Enum(x) => x.default_value(),
         }

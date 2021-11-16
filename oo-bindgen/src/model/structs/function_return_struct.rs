@@ -32,6 +32,12 @@ impl InitializerValidator for FunctionReturnStructField {
     }
 }
 
+impl From<Primitive> for FunctionReturnStructField {
+    fn from(x: Primitive) -> Self {
+        Self::Basic(x.into())
+    }
+}
+
 impl From<BasicType> for FunctionReturnStructField {
     fn from(x: BasicType) -> Self {
         Self::Basic(x)

@@ -22,7 +22,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let string_length = lib
         .define_function("string_length")?
         .param("value", StringType, "String")?
-        .returns(BasicType::U32, "String length")?
+        .returns(Primitive::U32, "String length")?
         .doc("Get the length of a string")?
         .build_static("get_length")?;
 

@@ -17,7 +17,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let get_special_number_fb = lib
         .define_function("get_special_value")?
         .param("password", StringType, "secret password")?
-        .returns(BasicType::U32, "unlocked value")?
+        .returns(Primitive::U32, "unlocked value")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
         .build_static_with_same_name()?;
@@ -46,7 +46,7 @@ pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let get_special_value = lib
         .define_method("get_special_value", my_class.clone())?
-        .returns(BasicType::U32, "special value")?
+        .returns(Primitive::U32, "special value")?
         .fails_with(error_type)?
         .doc("extract a special value from the class instance")?
         .build()?;

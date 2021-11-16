@@ -29,20 +29,28 @@ where
     }
 }
 
+impl TypeInfo for Primitive {
+    fn pass_by(&self) -> PassBy {
+        match self {
+            Primitive::Bool => PassBy::Copy,
+            Primitive::U8 => PassBy::Copy,
+            Primitive::S8 => PassBy::Copy,
+            Primitive::U16 => PassBy::Copy,
+            Primitive::S16 => PassBy::Copy,
+            Primitive::U32 => PassBy::Copy,
+            Primitive::S32 => PassBy::Copy,
+            Primitive::U64 => PassBy::Copy,
+            Primitive::S64 => PassBy::Copy,
+            Primitive::Float => PassBy::Copy,
+            Primitive::Double => PassBy::Copy,
+        }
+    }
+}
+
 impl TypeInfo for BasicType {
     fn pass_by(&self) -> PassBy {
         match self {
-            BasicType::Bool => PassBy::Copy,
-            BasicType::U8 => PassBy::Copy,
-            BasicType::S8 => PassBy::Copy,
-            BasicType::U16 => PassBy::Copy,
-            BasicType::S16 => PassBy::Copy,
-            BasicType::U32 => PassBy::Copy,
-            BasicType::S32 => PassBy::Copy,
-            BasicType::U64 => PassBy::Copy,
-            BasicType::S64 => PassBy::Copy,
-            BasicType::Float32 => PassBy::Copy,
-            BasicType::Double64 => PassBy::Copy,
+            BasicType::Primitive(x) => x.pass_by(),
             BasicType::Duration(_) => PassBy::Copy,
             BasicType::Enum(_) => PassBy::Copy,
         }

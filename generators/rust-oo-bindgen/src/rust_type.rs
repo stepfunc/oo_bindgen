@@ -28,7 +28,17 @@ impl LifetimeInfo for BasicType {
     }
 }
 
-impl RustType for BasicType {
+impl LifetimeInfo for Primitive {
+    fn rust_requires_lifetime(&self) -> bool {
+        false
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        false
+    }
+}
+
+impl RustType for Primitive {
     fn as_rust_type(&self) -> String {
         match self {
             Self::Bool => "bool".to_string(),
@@ -40,8 +50,28 @@ impl RustType for BasicType {
             Self::S32 => "i32".to_string(),
             Self::U64 => "u64".to_string(),
             Self::S64 => "i64".to_string(),
-            Self::Float32 => "f32".to_string(),
-            Self::Double64 => "f64".to_string(),
+            Self::Float => "f32".to_string(),
+            Self::Double => "f64".to_string(),
+        }
+    }
+
+    fn as_c_type(&self) -> String {
+        self.get_c_rust_type().to_string()
+    }
+
+    fn is_copyable(&self) -> bool {
+        true
+    }
+
+    fn conversion(&self) -> Option<TypeConverter> {
+        None
+    }
+}
+
+impl RustType for BasicType {
+    fn as_rust_type(&self) -> String {
+        match self {
+            Self::Primitive(x) => x.as_rust_type(),
             Self::Duration(_) => "std::time::Duration".to_string(),
             Self::Enum(handle) => handle.name.to_camel_case(),
         }
@@ -57,17 +87,7 @@ impl RustType for BasicType {
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            Self::Bool => None,
-            Self::U8 => None,
-            Self::S8 => None,
-            Self::U16 => None,
-            Self::S16 => None,
-            Self::U32 => None,
-            Self::S32 => None,
-            Self::U64 => None,
-            Self::S64 => None,
-            Self::Float32 => None,
-            Self::Double64 => None,
+            Self::Primitive(x) => x.conversion(),
             Self::Duration(x) => Some(TypeConverter::Duration(*x)),
             Self::Enum(x) => Some(TypeConverter::UnvalidatedEnum(x.clone())),
         }

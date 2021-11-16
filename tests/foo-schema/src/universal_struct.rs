@@ -9,14 +9,14 @@ fn define_inner_struct(lib: &mut LibraryBuilder) -> BackTraced<UniversalStructHa
     let inner = lib
         .define_universal_struct(inner)?
         .doc("Simple universal struct")?
-        .add(value_field.clone(), BasicType::S32, "integer value")?
+        .add(value_field.clone(), Primitive::S32, "integer value")?
         .end_fields()?
         .begin_initializer(
             "init",
             InitializerType::Normal,
             "initializes {struct:universal_inner_struct} to default values",
         )?
-        .default(&value_field, Number::S32(-42))?
+        .default(&value_field, NumberValue::S32(-42))?
         .end_initializer()?
         .build()?;
 

@@ -4,20 +4,28 @@ pub(crate) trait CoreCppType {
     fn core_cpp_type(&self) -> String;
 }
 
+impl CoreCppType for Primitive {
+    fn core_cpp_type(&self) -> String {
+        match self {
+            Primitive::Bool => "bool".to_string(),
+            Primitive::U8 => "uint8_t".to_string(),
+            Primitive::S8 => "int8_t".to_string(),
+            Primitive::U16 => "uint16_t".to_string(),
+            Primitive::S16 => "int16_t".to_string(),
+            Primitive::U32 => "uint32_t".to_string(),
+            Primitive::S32 => "int32_t".to_string(),
+            Primitive::U64 => "uint64_t".to_string(),
+            Primitive::S64 => "int64_t".to_string(),
+            Primitive::Float => "float".to_string(),
+            Primitive::Double => "double".to_string(),
+        }
+    }
+}
+
 impl CoreCppType for BasicType {
     fn core_cpp_type(&self) -> String {
         match self {
-            BasicType::Bool => "bool".to_string(),
-            BasicType::U8 => "uint8_t".to_string(),
-            BasicType::S8 => "int8_t".to_string(),
-            BasicType::U16 => "uint16_t".to_string(),
-            BasicType::S16 => "int16_t".to_string(),
-            BasicType::U32 => "uint32_t".to_string(),
-            BasicType::S32 => "int32_t".to_string(),
-            BasicType::U64 => "uint64_t".to_string(),
-            BasicType::S64 => "int64_t".to_string(),
-            BasicType::Float32 => "float".to_string(),
-            BasicType::Double64 => "double".to_string(),
+            BasicType::Primitive(x) => x.core_cpp_type(),
             BasicType::Duration(_) => "std::chrono::steady_clock::duration".to_string(),
             BasicType::Enum(x) => x.core_cpp_type(),
         }

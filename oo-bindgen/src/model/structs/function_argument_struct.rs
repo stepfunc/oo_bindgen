@@ -33,6 +33,12 @@ impl InitializerValidator for FunctionArgStructField {
     }
 }
 
+impl From<Primitive> for FunctionArgStructField {
+    fn from(x: Primitive) -> Self {
+        Self::Basic(x.into())
+    }
+}
+
 impl From<BasicType> for FunctionArgStructField {
     fn from(x: BasicType) -> Self {
         FunctionArgStructField::Basic(x)

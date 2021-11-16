@@ -20,7 +20,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "modifies a value on a remote thread",
         )?
         .begin_callback("on_value_change", "called when a value is modified")?
-        .param("value", BasicType::U32, "updated value")?
+        .param("value", Primitive::U32, "updated value")?
         .enable_functional_transform()
         .end_callback()?
         .build_async()?;
@@ -31,8 +31,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "interface for performing an operation on a value",
         )?
         .begin_callback("execute", "Take a value and return a modified value")?
-        .param("value", BasicType::U32, "input value")?
-        .returns(BasicType::U32, "modified value")?
+        .param("value", Primitive::U32, "input value")?
+        .returns(Primitive::U32, "modified value")?
         .enable_functional_transform()
         .end_callback()?
         .build_async()?;
@@ -52,7 +52,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_constructor(thread_class.clone())?
         .param(
             "value",
-            BasicType::U32,
+            Primitive::U32,
             "Initial value that will be manipulated",
         )?
         .param(
@@ -68,7 +68,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let update = lib
         .define_method("update", thread_class.clone())?
-        .param("value", BasicType::U32, "value to update")?
+        .param("value", Primitive::U32, "value to update")?
         .doc("Update the internal value and trigger callbacks to the {interface:value_change_listener}")?
         .build()?;
 
@@ -85,7 +85,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let add_handler = lib.define_future_interface(
         "add_handler",
         "receives a single value from an add operation",
-        BasicType::U32,
+        Primitive::U32,
         "result of the add operation",
         Some(error_type),
     )?;
@@ -93,7 +93,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_future_method("add", thread_class.clone(), add_handler)?
         .param(
             "value",
-            BasicType::U32,
+            Primitive::U32,
             "Value to add to the internal value",
         )?
         .doc("adds a supplied value to an internal value")?

@@ -154,7 +154,7 @@ where
     }
 }
 
-impl CType for BasicType {
+impl CType for Primitive {
     fn to_c_type(&self) -> String {
         match self {
             Self::Bool => "bool".to_string(),
@@ -166,8 +166,16 @@ impl CType for BasicType {
             Self::S32 => "int32_t".to_string(),
             Self::U64 => "uint64_t".to_string(),
             Self::S64 => "int64_t".to_string(),
-            Self::Float32 => "float".to_string(),
-            Self::Double64 => "double".to_string(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
+        }
+    }
+}
+
+impl CType for BasicType {
+    fn to_c_type(&self) -> String {
+        match self {
+            Self::Primitive(x) => x.to_c_type(),
             Self::Duration(_) => "uint64_t".to_string(),
             Self::Enum(handle) => handle.to_c_type(),
         }

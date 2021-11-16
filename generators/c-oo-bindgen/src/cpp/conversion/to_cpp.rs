@@ -23,7 +23,7 @@ where
     }
 }
 
-impl ToCpp for BasicType {
+impl ToCpp for Primitive {
     fn to_cpp(&self, expr: String) -> String {
         match self {
             Self::Bool => expr,
@@ -35,8 +35,16 @@ impl ToCpp for BasicType {
             Self::S32 => expr,
             Self::U64 => expr,
             Self::S64 => expr,
-            Self::Float32 => expr,
-            Self::Double64 => expr,
+            Self::Float => expr,
+            Self::Double => expr,
+        }
+    }
+}
+
+impl ToCpp for BasicType {
+    fn to_cpp(&self, expr: String) -> String {
+        match self {
+            Self::Primitive(x) => x.to_cpp(expr),
             Self::Duration(x) => x.to_cpp(expr),
             Self::Enum(x) => x.to_cpp(expr),
         }

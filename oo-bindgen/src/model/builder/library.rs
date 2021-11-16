@@ -600,7 +600,7 @@ impl LibraryBuilder {
         let builder = if has_reserve {
             builder.param(
                 "reserve_size",
-                BasicType::U32,
+                Primitive::U32,
                 "preallocate a particular size",
             )?
         } else {
@@ -818,17 +818,7 @@ impl LibraryBuilder {
 
     fn check_basic_type(&self, arg: &BasicType) -> BindResult<()> {
         match arg {
-            BasicType::Bool => Ok(()),
-            BasicType::U8 => Ok(()),
-            BasicType::S8 => Ok(()),
-            BasicType::U16 => Ok(()),
-            BasicType::S16 => Ok(()),
-            BasicType::U32 => Ok(()),
-            BasicType::S32 => Ok(()),
-            BasicType::U64 => Ok(()),
-            BasicType::S64 => Ok(()),
-            BasicType::Float32 => Ok(()),
-            BasicType::Double64 => Ok(()),
+            BasicType::Primitive(_) => Ok(()),
             BasicType::Duration(_) => Ok(()),
             BasicType::Enum(x) => self.check_enum(x),
         }

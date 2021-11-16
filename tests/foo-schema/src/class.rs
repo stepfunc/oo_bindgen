@@ -7,7 +7,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare each native function
     let constructor = lib
         .define_constructor(test_class.clone())?
-        .param("value", BasicType::U32, "Value")?
+        .param("value", Primitive::U32, "Value")?
         .doc(doc("Create a new {class:test_class}")
             .details("Here are some details about {class:test_class}. You can call {class:test_class.get_value()} method.")
             .details("Here is a reference to a constructor {class:test_class.[constructor]} and to a destructor {class:test_class.[destructor]}.")
@@ -23,7 +23,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let get_value = lib
         .define_method("get_value", test_class.clone())?
-        .returns(BasicType::U32, "Current value")?
+        .returns(Primitive::U32, "Current value")?
         .doc("Get the value")?
         .build()?;
 
@@ -35,7 +35,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let get_value_callback = lib.define_future_interface(
         "get_value_callback",
         "GetValue callback handler",
-        BasicType::U32,
+        Primitive::U32,
         "Result of the operation",
         None,
     )?;
@@ -44,7 +44,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_future_method("add_async", test_class.clone(), get_value_callback)?
         .param(
             "value",
-            BasicType::U32,
+            Primitive::U32,
             "value to add to the internal value",
         )?
         .doc("add a number to the class's internal value asynchronously")?
@@ -52,7 +52,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let construction_counter = lib
         .define_function("construction_counter")?
-        .returns(BasicType::U32, "Number of calls to the constructor")?
+        .returns(Primitive::U32, "Number of calls to the constructor")?
         .doc("Get number of calls to the constructor")?
         .build_static("construction_counter")?;
 

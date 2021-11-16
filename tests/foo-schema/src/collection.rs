@@ -11,14 +11,14 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let collection_size_method = lib
         .define_function("collection_size")?
         .param("col", collection_without_reserve.clone(), "Collection")?
-        .returns(BasicType::U32, "Size of the collection")?
+        .returns(Primitive::U32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build_static("get_size")?;
 
     let collection_get_method = lib
         .define_function("collection_get")?
         .param("col", collection_without_reserve, "Collection")?
-        .param("idx", BasicType::U32, "Index")?
+        .param("idx", Primitive::U32, "Index")?
         .returns(StringType, "Value")?
         .doc("Get an item from the collection")?
         .build_static("get_value")?;
@@ -26,14 +26,14 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let collection_with_reserve_size_method = lib
         .define_function("collection_with_reserve_size")?
         .param("col", collection_with_reserve.clone(), "Collection")?
-        .returns(BasicType::U32, "Size of the collection")?
+        .returns(Primitive::U32, "Size of the collection")?
         .doc("Get the size of a collection")?
         .build_static("get_size_with_reserve")?;
 
     let collection_with_reserve_get_method = lib
         .define_function("collection_with_reserve_get")?
         .param("col", collection_with_reserve, "Collection")?
-        .param("idx", BasicType::U32, "Index")?
+        .param("idx", Primitive::U32, "Index")?
         .returns(StringType, "Value")?
         .doc("Get an item from the collection")?
         .build_static("get_value_with_reserve")?;

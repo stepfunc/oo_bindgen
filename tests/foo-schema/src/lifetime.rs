@@ -4,7 +4,7 @@ fn define_inner_iterator(lib: &mut LibraryBuilder) -> BackTraced<AbstractIterato
     let byte_value = lib.declare_function_return_struct("byte_value")?;
     let byte_value = lib
         .define_function_return_struct(byte_value)?
-        .add("value", BasicType::U8, "byte")?
+        .add("value", Primitive::U8, "byte")?
         .doc("item type for inner iterator")?
         .end_fields()?
         .build()?;
@@ -55,7 +55,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             StringType,
             "String to pass to the callback interface",
         )?
-        .param("chunk_size", BasicType::U32, "size of each iteration")?
+        .param("chunk_size", Primitive::U32, "size of each iteration")?
         .param("callback", interface, "callback interface to invoke")?
         .build_static_with_same_name()?;
 

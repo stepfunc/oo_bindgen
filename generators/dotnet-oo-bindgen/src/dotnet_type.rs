@@ -40,7 +40,7 @@ impl DotnetType for DurationType {
     }
 }
 
-impl DotnetType for BasicType {
+impl DotnetType for Primitive {
     fn as_dotnet_type(&self) -> String {
         match self {
             Self::Bool => "bool".to_string(),
@@ -52,10 +52,8 @@ impl DotnetType for BasicType {
             Self::S32 => "int".to_string(),
             Self::U64 => "ulong".to_string(),
             Self::S64 => "long".to_string(),
-            Self::Float32 => "float".to_string(),
-            Self::Double64 => "double".to_string(),
-            Self::Duration(x) => x.as_dotnet_type(),
-            Self::Enum(x) => x.as_dotnet_type(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
         }
     }
 
@@ -70,10 +68,8 @@ impl DotnetType for BasicType {
             Self::S32 => "int".to_string(),
             Self::U64 => "ulong".to_string(),
             Self::S64 => "long".to_string(),
-            Self::Float32 => "float".to_string(),
-            Self::Double64 => "double".to_string(),
-            Self::Duration(x) => x.as_native_type(),
-            Self::Enum(x) => x.as_native_type(),
+            Self::Float => "float".to_string(),
+            Self::Double => "double".to_string(),
         }
     }
 
@@ -88,14 +84,12 @@ impl DotnetType for BasicType {
             Self::S32 => None,
             Self::U64 => None,
             Self::S64 => None,
-            Self::Float32 => None,
-            Self::Double64 => None,
-            Self::Duration(x) => x.convert_to_native(from),
-            Self::Enum(x) => x.convert_to_native(from),
+            Self::Float => None,
+            Self::Double => None,
         }
     }
 
-    fn cleanup(&self, from: &str) -> Option<String> {
+    fn cleanup(&self, _from: &str) -> Option<String> {
         match self {
             Self::Bool => None,
             Self::U8 => None,
@@ -106,10 +100,8 @@ impl DotnetType for BasicType {
             Self::S32 => None,
             Self::U64 => None,
             Self::S64 => None,
-            Self::Float32 => None,
-            Self::Double64 => None,
-            Self::Duration(x) => x.cleanup(from),
-            Self::Enum(x) => x.cleanup(from),
+            Self::Float => None,
+            Self::Double => None,
         }
     }
 
@@ -124,8 +116,48 @@ impl DotnetType for BasicType {
             Self::S32 => None,
             Self::U64 => None,
             Self::S64 => None,
-            Self::Float32 => None,
-            Self::Double64 => None,
+            Self::Float => None,
+            Self::Double => None,
+        }
+    }
+}
+
+impl DotnetType for BasicType {
+    fn as_dotnet_type(&self) -> String {
+        match self {
+            Self::Primitive(x) => x.as_dotnet_type(),
+            Self::Duration(x) => x.as_dotnet_type(),
+            Self::Enum(x) => x.as_dotnet_type(),
+        }
+    }
+
+    fn as_native_type(&self) -> String {
+        match self {
+            Self::Primitive(x) => x.as_native_type(),
+            Self::Duration(x) => x.as_native_type(),
+            Self::Enum(x) => x.as_native_type(),
+        }
+    }
+
+    fn convert_to_native(&self, from: &str) -> Option<String> {
+        match self {
+            Self::Primitive(x) => x.convert_to_native(from),
+            Self::Duration(x) => x.convert_to_native(from),
+            Self::Enum(x) => x.convert_to_native(from),
+        }
+    }
+
+    fn cleanup(&self, from: &str) -> Option<String> {
+        match self {
+            Self::Primitive(x) => x.cleanup(from),
+            Self::Duration(x) => x.cleanup(from),
+            Self::Enum(x) => x.cleanup(from),
+        }
+    }
+
+    fn convert_from_native(&self, from: &str) -> Option<String> {
+        match self {
+            Self::Primitive(x) => x.convert_from_native(from),
             Self::Duration(x) => x.convert_from_native(from),
             Self::Enum(x) => x.convert_from_native(from),
         }

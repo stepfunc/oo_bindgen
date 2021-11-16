@@ -34,6 +34,12 @@ impl InitializerValidator for CallbackArgStructField {
     }
 }
 
+impl From<Primitive> for CallbackArgStructField {
+    fn from(x: Primitive) -> Self {
+        Self::Basic(x.into())
+    }
+}
+
 impl From<BasicType> for CallbackArgStructField {
     fn from(x: BasicType) -> Self {
         CallbackArgStructField::Basic(x)

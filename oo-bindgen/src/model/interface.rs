@@ -18,6 +18,12 @@ impl From<BasicType> for CallbackArgument {
     }
 }
 
+impl From<Primitive> for CallbackArgument {
+    fn from(x: Primitive) -> Self {
+        Self::Basic(x.into())
+    }
+}
+
 impl From<Handle<Enum<Unvalidated>>> for CallbackArgument {
     fn from(x: Handle<Enum<Unvalidated>>) -> Self {
         Self::Basic(BasicType::Enum(x))
@@ -65,6 +71,12 @@ impl From<ClassDeclarationHandle> for CallbackArgument {
 pub enum CallbackReturnValue {
     Basic(BasicType),
     Struct(UniversalStructHandle),
+}
+
+impl From<Primitive> for CallbackReturnValue {
+    fn from(x: Primitive) -> Self {
+        Self::Basic(x.into())
+    }
 }
 
 impl From<BasicType> for CallbackReturnValue {

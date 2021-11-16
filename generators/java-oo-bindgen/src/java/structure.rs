@@ -25,17 +25,17 @@ where
     match constructor.values.iter().find(|x| x.name == field.name) {
         Some(x) => match &x.value {
             ValidatedDefaultValue::Bool(x) => x.to_string(),
-            ValidatedDefaultValue::Numeric(x) => match x {
-                Number::U8(x) => format!("UByte.valueOf({})", x),
-                Number::S8(x) => format!("(byte) {}", x),
-                Number::U16(x) => format!("UShort.valueOf({})", x),
-                Number::S16(x) => format!("(short) {}", x),
-                Number::U32(x) => format!("UInteger.valueOf({}L)", x),
-                Number::S32(x) => x.to_string(),
-                Number::U64(x) => format!("ULong.valueOf({}L)", x),
-                Number::S64(x) => x.to_string(),
-                Number::Float(x) => format!("{}F", x),
-                Number::Double(x) => x.to_string(),
+            ValidatedDefaultValue::Number(x) => match x {
+                NumberValue::U8(x) => format!("UByte.valueOf({})", x),
+                NumberValue::S8(x) => format!("(byte) {}", x),
+                NumberValue::U16(x) => format!("UShort.valueOf({})", x),
+                NumberValue::S16(x) => format!("(short) {}", x),
+                NumberValue::U32(x) => format!("UInteger.valueOf({}L)", x),
+                NumberValue::S32(x) => x.to_string(),
+                NumberValue::U64(x) => format!("ULong.valueOf({}L)", x),
+                NumberValue::S64(x) => x.to_string(),
+                NumberValue::Float(x) => format!("{}F", x),
+                NumberValue::Double(x) => x.to_string(),
             },
             ValidatedDefaultValue::Duration(t, x) => match t {
                 DurationType::Milliseconds => {

@@ -6,9 +6,9 @@ use std::time::Duration;
 
 use crate::model::*;
 
-/// Value used to define initializer default
+/// A numeric value
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum Number {
+pub enum NumberValue {
     U8(u8),
     S8(i8),
     U16(u16),
@@ -25,7 +25,7 @@ pub enum Number {
 #[derive(Debug, Clone, PartialEq)]
 pub enum InitializerDefault {
     Bool(bool),
-    Numeric(Number),
+    Numeric(NumberValue),
     Duration(Duration),
     Enum(String),
     String(String),
@@ -53,8 +53,8 @@ impl ToDefaultString for &str {
     }
 }
 
-impl From<Number> for InitializerDefault {
-    fn from(x: Number) -> Self {
+impl From<NumberValue> for InitializerDefault {
+    fn from(x: NumberValue) -> Self {
         Self::Numeric(x)
     }
 }
@@ -75,7 +75,7 @@ impl From<Duration> for InitializerDefault {
 #[derive(Debug, Clone)]
 pub enum ValidatedDefaultValue {
     Bool(bool),
-    Numeric(Number),
+    Number(NumberValue),
     Duration(DurationType, Duration),
     Enum(Handle<Enum<Unvalidated>>, Name),
     String(String),
@@ -83,13 +83,13 @@ pub enum ValidatedDefaultValue {
     DefaultStruct(StructType<Unvalidated>, InitializerType, Name),
 }
 
-impl From<Number> for ValidatedDefaultValue {
-    fn from(x: Number) -> Self {
-        Self::Numeric(x)
+impl From<NumberValue> for ValidatedDefaultValue {
+    fn from(x: NumberValue) -> Self {
+        Self::Number(x)
     }
 }
 
-impl std::fmt::Display for Number {
+impl std::fmt::Display for NumberValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::U8(x) => {
@@ -132,7 +132,7 @@ impl std::fmt::Display for ValidatedDefaultValue {
             Self::Bool(x) => {
                 write!(f, "{}", x)
             }
-            Self::Numeric(x) => write!(f, "{}", x),
+            Self::Number(x) => write!(f, "{}", x),
             Self::Duration(t, x) => match t {
                 DurationType::Milliseconds => write!(f, "{} milliseconds", x.as_millis()),
                 DurationType::Seconds => write!(f, "{} seconds", x.as_secs()),

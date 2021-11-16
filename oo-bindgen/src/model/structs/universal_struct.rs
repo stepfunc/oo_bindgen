@@ -29,6 +29,12 @@ impl InitializerValidator for UniversalStructField {
     }
 }
 
+impl From<Primitive> for UniversalStructField {
+    fn from(x: Primitive) -> Self {
+        Self::Basic(x.into())
+    }
+}
+
 impl From<BasicType> for UniversalStructField {
     fn from(x: BasicType) -> Self {
         UniversalStructField::Basic(x)

@@ -23,17 +23,17 @@ where
     match constructor.values.iter().find(|x| x.name == field.name) {
         Some(x) => match &x.value {
             ValidatedDefaultValue::Bool(x) => x.to_string(),
-            ValidatedDefaultValue::Numeric(x) => match x {
-                Number::U8(x) => x.to_string(),
-                Number::S8(x) => x.to_string(),
-                Number::U16(x) => x.to_string(),
-                Number::S16(x) => x.to_string(),
-                Number::U32(x) => x.to_string(),
-                Number::S32(x) => x.to_string(),
-                Number::U64(x) => x.to_string(),
-                Number::S64(x) => x.to_string(),
-                Number::Float(x) => format!("{}F", x),
-                Number::Double(x) => x.to_string(),
+            ValidatedDefaultValue::Number(x) => match x {
+                NumberValue::U8(x) => x.to_string(),
+                NumberValue::S8(x) => x.to_string(),
+                NumberValue::U16(x) => x.to_string(),
+                NumberValue::S16(x) => x.to_string(),
+                NumberValue::U32(x) => x.to_string(),
+                NumberValue::S32(x) => x.to_string(),
+                NumberValue::U64(x) => x.to_string(),
+                NumberValue::S64(x) => x.to_string(),
+                NumberValue::Float(x) => format!("{}F", x),
+                NumberValue::Double(x) => x.to_string(),
             },
             ValidatedDefaultValue::Duration(t, x) => match t {
                 DurationType::Milliseconds => {

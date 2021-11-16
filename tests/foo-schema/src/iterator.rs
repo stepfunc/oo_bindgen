@@ -5,7 +5,7 @@ fn define_iterator(lib: &mut LibraryBuilder) -> BackTraced<AbstractIteratorHandl
     let iterator_item = lib.declare_function_return_struct("string_iterator_item")?;
     let iterator_item = lib
         .define_function_return_struct(iterator_item)?
-        .add("value", BasicType::U8, "Character value")?
+        .add("value", Primitive::U8, "Character value")?
         .doc("Single iterator item")?
         .end_fields()?
         .build()?;

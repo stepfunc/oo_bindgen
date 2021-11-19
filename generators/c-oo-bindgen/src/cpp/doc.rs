@@ -117,11 +117,9 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
             f.write(&format!("@ref {}", class.core_cpp_type()))?;
         }
         Validated::ClassMethod(class, method_name, _) => {
-            f.write(&format!(
-                "@ref {}::{}()",
-                class.core_cpp_type(),
-                method_name
-            ))?;
+            // explicit links to class methods are broken when they take parameters, but implicit links always work
+            // since we don't allow overloading in the model, we don't need to reference parameters
+            f.write(&format!("{}::{}()", class.core_cpp_type(), method_name))?;
         }
         Validated::ClassConstructor(class, constructor) => {
             let cpp_type = class.core_cpp_type();
@@ -145,7 +143,8 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
             f.write(&format!("{}::~{}()", cpp_type, cpp_type))?;
         }
         Validated::Struct(st) => {
-            f.write(&format!("@ref {}", st.core_cpp_type()))?;
+            // explicit links to structs don't always work :(
+            f.write(&st.core_cpp_type())?;
         }
         Validated::StructField(st, field_name) => {
             f.write(&format!("@ref {}.{}", st.core_cpp_type(), field_name))?;

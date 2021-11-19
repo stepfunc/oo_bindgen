@@ -120,6 +120,7 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
             ))?;
         }
         Validated::ClassConstructor(class, constructor) => {
+            let cpp_type = class.core_cpp_type();
             let args = constructor
                 .function
                 .arguments
@@ -130,16 +131,22 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
 
             f.write(&format!(
                 "@ref {}::{}({})",
-                class.core_cpp_type(),
-                class.core_cpp_type(),
+                cpp_type,
+                cpp_type,
                 args
             ))?;
         }
         Validated::ClassDestructor(class, _) => {
+            let cpp_type = class.core_cpp_type();
+
+            /*
+               Explicit links to destructors are just plain broken in doxygen v1.9.2
+               It generates correct links however without an explicit @ref or #
+            */
             f.write(&format!(
-                "@ref {}::~{}",
-                class.core_cpp_type(),
-                class.core_cpp_type()
+                "{}::~{}()",
+                cpp_type,
+                cpp_type
             ))?;
         }
         Validated::Struct(st) => {

@@ -534,9 +534,9 @@ fn print_class_definition(
     f.writeln("public:")?;
     indented(f, |f| {
         doxygen(f, |f| {
-            f.writeln("@brief transfer ownership of the underlying C-type and invalidate")?;
-            f.writeln("@note the moved class will throw an exception if any method is called")?;
-            f.writeln("@param other class from which ownership will be transfer to this instance")
+            f.writeln("@brief Transfer ownership of the underlying C-type to this instance and invalidate the other instance.")?;
+            f.writeln("@note the moved class will now throw an exception if any method is called")?;
+            f.writeln("@param other Class from which ownership will be transfer to this instance")
         })?;
         f.writeln(&format!(
             "{}({}&& other) noexcept : self(other.self) {{ other.self = nullptr; }}",

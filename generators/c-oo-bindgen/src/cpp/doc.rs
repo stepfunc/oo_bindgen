@@ -173,8 +173,10 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
             f.write(&format!("@ref {}", interface.core_cpp_type()))?;
         }
         Validated::InterfaceMethod(interface, callback_name) => {
+            // explicit links to class methods are broken when they take parameters, but implicit links always work
+            // since we don't allow overloading in the model, we don't need to reference parameters
             f.write(&format!(
-                "@ref {}::{}()",
+                "{}::{}()",
                 interface.core_cpp_type(),
                 callback_name
             ))?;

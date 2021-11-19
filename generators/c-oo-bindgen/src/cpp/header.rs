@@ -10,12 +10,15 @@ use crate::cpp::doc::{
     print_cpp_static_method_docs,
 };
 use crate::cpp::formatting::{namespace, FriendClass};
+use crate::formatting::print_license;
 
 pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
     std::fs::create_dir_all(&path)?;
     let filename = path.join(format!("{}.hpp", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
+
+    print_license(&mut f, lib)?;
 
     // include guard
     f.writeln("#pragma once")?;
@@ -27,7 +30,17 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
     f.writeln("#include <vector>")?;
     f.newline()?;
 
-    f.writeln("/// main namespace for the library")?;
+    // Doxygen needs the @file tag
+    f.writeln(&format!(
+        "/// @file C++ API for the {} library",
+        lib.settings.name
+    ))?;
+    f.newline()?;
+
+    f.writeln(&format!(
+        "/// main namespace for the {} library",
+        lib.settings.name
+    ))?;
     namespace(&mut f, &lib.settings.c_ffi_prefix, |f| {
         print_header_namespace_contents(lib, f)
     })?;

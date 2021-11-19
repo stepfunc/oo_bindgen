@@ -5,7 +5,7 @@ use oo_bindgen::model::*;
 
 use crate::ctype::CType;
 use crate::doc::{docstring_print, doxygen_print};
-use crate::formatting::cpp_guard;
+use crate::formatting::{cpp_guard, print_license};
 
 pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     let uppercase_name = lib.settings.c_ffi_prefix.to_uppercase();
@@ -16,12 +16,7 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
     let mut f = FilePrinter::new(filename)?;
 
     // Print license
-    commented(&mut f, |f| {
-        for line in lib.info.license_description.iter() {
-            f.writeln(line)?;
-        }
-        Ok(())
-    })?;
+    print_license(&mut f, lib)?;
 
     // Header guard
     f.writeln("#pragma once")?;
@@ -55,8 +50,11 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
         f.writeln("#include <stdint.h>")?;
         f.newline()?;
 
-        // Doxygen needs this
-        f.writeln("/// @file")?;
+        // Doxygen needs the @file tag
+        f.writeln(&format!(
+            "/// @file C API for the {} library",
+            lib.settings.name
+        ))?;
         f.newline()?;
 
         // Iterate through each statement and print them

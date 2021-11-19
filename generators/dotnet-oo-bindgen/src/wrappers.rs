@@ -33,7 +33,7 @@ pub(crate) fn generate_native_functions_class(
         f.newline()?;
         f.writeln("internal class ExceptionWrappers")?;
         blocked(f, |f| {
-            for (func, err) in lib.functions().filter_map(|x| filter_has_error(x)) {
+            for (func, err) in lib.functions().filter_map(filter_has_error) {
                 f.newline()?;
                 write_exception_wrapper(f, &func, &err, &lib.settings.c_ffi_prefix)?;
             }

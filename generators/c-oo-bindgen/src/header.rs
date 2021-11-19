@@ -46,8 +46,7 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
         ))?;
         f.writeln(&format!(
             "#define {}_VERSION_STRING \"{}\"",
-            uppercase_name,
-            lib.version.to_string()
+            uppercase_name, lib.version
         ))?;
         f.newline()?;
 

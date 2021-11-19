@@ -252,8 +252,7 @@ fn print_version(lib: &Library, f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("/// version number as the string major.minor.patch")?;
     f.writeln(&format!(
         "constexpr char const* {}_version_string = \"{}\";",
-        name,
-        lib.version.to_string()
+        name, lib.version
     ))?;
     f.newline()
 }
@@ -482,11 +481,7 @@ where
         print_cpp_doc(f, &initializer.doc)?;
         f.newline()?;
         for x in initializer.values.iter() {
-            f.writeln(&format!(
-                "@note {} is initialized to {}",
-                x.name,
-                x.value.to_string()
-            ))?;
+            f.writeln(&format!("@note {} is initialized to {}", x.name, x.value))?;
         }
         Ok(())
     })?;

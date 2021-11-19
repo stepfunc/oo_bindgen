@@ -99,7 +99,7 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
             "<artifactId>{}</artifactId>",
             lib.settings.name.kebab_case()
         ))?;
-        f.writeln(&format!("<version>{}</version>", lib.version.to_string()))?;
+        f.writeln(&format!("<version>{}</version>", lib.version))?;
 
         f.newline()?;
 

@@ -290,7 +290,7 @@ fn write_static_class_method(
 ) -> FormattingResult<()> {
     fn get_invocation_args(args: &[Arg<FunctionArgument, Validated>]) -> String {
         args.iter()
-            .map(|x| transform_arg(x))
+            .map(transform_arg)
             .collect::<Vec<String>>()
             .join(", ")
     }
@@ -662,7 +662,7 @@ fn transform_arg(arg: &Arg<FunctionArgument, Validated>) -> String {
 
 fn cpp_function_arg_invocation(args: &[Arg<FunctionArgument, Validated>]) -> String {
     args.iter()
-        .map(|arg| transform_arg(arg))
+        .map(transform_arg)
         .collect::<Vec<String>>()
         .join(", ")
 }

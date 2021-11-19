@@ -124,13 +124,10 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
     f.writeln("    <IncludeSymbols>true</IncludeSymbols>")?; // Include symbols
     f.writeln("    <SymbolPackageFormat>snupkg</SymbolPackageFormat>")?; // Use new file format
-    f.writeln(&format!(
-        "    <PackageId>{}</PackageId>",
-        lib.settings.name.to_string()
-    ))?;
+    f.writeln(&format!("    <PackageId>{}</PackageId>", lib.settings.name))?;
     f.writeln(&format!(
         "    <PackageVersion>{}</PackageVersion>",
-        lib.version.to_string()
+        lib.version
     ))?;
     f.writeln(&format!(
         "    <Description>{}</Description>",

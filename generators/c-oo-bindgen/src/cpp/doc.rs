@@ -1,7 +1,7 @@
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-use crate::cpp::conversion::CoreCppType;
+use crate::cpp::conversion::{CoreCppType, CppFunctionArgType};
 use crate::doc::{docstring_print_generic, doxygen_print_generic};
 
 pub(crate) fn print_cpp_doc(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
@@ -119,11 +119,20 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
                 method_name
             ))?;
         }
-        Validated::ClassConstructor(class, _) => {
+        Validated::ClassConstructor(class, constructor) => {
+            let args = constructor
+                .function
+                .arguments
+                .iter()
+                .map(|x| x.arg_type.get_cpp_function_arg_type())
+                .collect::<Vec<String>>()
+                .join(",");
+
             f.write(&format!(
-                "@ref {}::{}()",
+                "@ref {}::{}({})",
                 class.core_cpp_type(),
-                class.core_cpp_type()
+                class.core_cpp_type(),
+                args
             ))?;
         }
         Validated::ClassDestructor(class, _) => {

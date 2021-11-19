@@ -137,7 +137,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
             .write_all(&format!("PROJECT_NAME = {}\n", lib.settings.name).into_bytes())
             .unwrap();
         stdin
-            .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
+            .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version).into_bytes())
             .unwrap();
         stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
         stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();

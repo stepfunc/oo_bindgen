@@ -103,7 +103,11 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let inner_structure_field = Name::create("inner_structure")?;
 
     lib.define_function_argument_struct(structure)?
-        .doc("Test structure")?
+        .doc(
+            doc("Test structure")
+                .details("Here's a link to an enum: {enum:structure_enum}")
+                .details("Here' a link to an enum variant: {enum:structure_enum.var1}"),
+        )?
         .add(
             enum_var1_field.clone(),
             structure_enum.clone(),

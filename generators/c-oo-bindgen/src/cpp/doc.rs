@@ -106,6 +106,10 @@ pub(crate) fn print_cpp_doc_string(
     docstring_print_generic(f, print_cpp_reference, docstring)
 }
 
+fn highlight(expr: String) -> String {
+    format!("<em>{}</em>", expr)
+}
+
 fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
         Validated::Argument(param_name) => f.write(&format!("@p {}", param_name))?,
@@ -129,25 +133,16 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
                 .collect::<Vec<String>>()
                 .join(",");
 
-            f.write(&format!(
-                "@ref {}::{}({})",
-                cpp_type,
-                cpp_type,
-                args
-            ))?;
+            f.write(&format!("@ref {}::{}({})", cpp_type, cpp_type, args))?;
         }
         Validated::ClassDestructor(class, _) => {
             let cpp_type = class.core_cpp_type();
 
             /*
                Explicit links to destructors are just plain broken in doxygen v1.9.2
-               It generates correct links however without an explicit @ref or #
+               It generates correct links however without an explicit @ref or #!
             */
-            f.write(&format!(
-                "{}::~{}()",
-                cpp_type,
-                cpp_type
-            ))?;
+            f.write(&format!("{}::~{}()", cpp_type, cpp_type))?;
         }
         Validated::Struct(st) => {
             f.write(&format!("@ref {}", st.core_cpp_type()))?;
@@ -156,11 +151,24 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
             f.write(&format!("@ref {}.{}", st.core_cpp_type(), field_name))?;
         }
         Validated::Enum(handle) => {
-            f.write(&format!("@ref {}", handle.core_cpp_type()))?;
+            /*
+                Links to enum classes (explicit and implicit) are hopelessly broken in doxygen v1.9.2
+
+                Just use italic text for now
+            */
+            f.write(&highlight(handle.core_cpp_type()))?;
         }
         Validated::EnumVariant(handle, variant_name) => {
-            let variant = format!("{}::{}", handle.core_cpp_type(), variant_name);
-            f.write(&format!("@ref {}", variant))?;
+            /*
+                Links to enum variants (explicit and implicit) are hopelessly broken in doxygen v1.9.2
+
+                Just use italic text for now
+            */
+            f.write(&highlight(format!(
+                "{}::{}",
+                handle.core_cpp_type(),
+                variant_name
+            )))?;
         }
         Validated::Interface(interface) => {
             f.write(&format!("@ref {}", interface.core_cpp_type()))?;

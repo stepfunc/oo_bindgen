@@ -221,34 +221,6 @@ fn generate_functions(
 
             f.newline()?;
 
-            // Check for illegal null
-            //
-            // "Illégale!
-            // Tu m'fais faire des bêtises,
-            // Dans les rues d'Montréal.
-            // Quand y faut que j'me maîtrise,
-            // Tu m'fais piquer des crises.
-            // Illégale!"
-            f.writeln("if let Err(msg) = (|| -> Result<(), String>")?;
-            blocked(f, |f| {
-                for param in &handle.arguments {
-                    param.arg_type.check_null(f, &param.name)?;
-                }
-                f.writeln("Ok(())")
-            })?;
-            f.write(")()")?;
-            blocked(f, |f| {
-                f.writeln("_env.throw_new(\"java/lang/IllegalArgumentException\", msg).unwrap();")?;
-                if let Some(return_type) = &handle.return_type.get_value() {
-                    f.writeln(&format!("return {}", return_type.default_value()))?;
-                } else {
-                    f.writeln("return;")?;
-                }
-                Ok(())
-            })?;
-
-            f.newline()?;
-
             // Perform the conversion of the parameters
             for param in &handle.arguments {
                 if let Some(conversion) = param.arg_type.conversion() {

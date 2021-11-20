@@ -183,17 +183,7 @@ where
             f.writeln("obj.into_inner()")
         })?;
 
-        f.newline()?;
-
-        // Check for null elements helper function
-        f.writeln("pub(crate) fn check_null(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> Result<(), String>")?;
-        blocked(f, |f| {
-            for field in structure.fields() {
-                f.writeln(&format!("let temp = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.field_type.as_jni_sig(&lib_path), field.field_type.convert_jvalue()))?;
-                field.field_type.check_null(f, "temp")?;
-            }
-            f.writeln("Ok(())")
-        })
+        Ok(())
     })?;
 
     f.newline()

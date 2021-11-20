@@ -364,6 +364,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             f.newline()?;
         }
 
+        f.writeln("// wrappers around the native functions that do null checking")?;
         f.writeln("static class Wrapped")?;
         blocked(f, |f| {
             for handle in lib.functions().filter(|func| !skip(func.category)) {

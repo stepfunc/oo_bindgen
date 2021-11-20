@@ -8,6 +8,16 @@ pub(crate) trait JavaType {
     fn as_java_object(&self) -> String;
 }
 
+/// Describes if the type is a primitive in Java
+pub(crate) trait IsPrimitive {
+    fn is_primitive(&self) -> bool;
+
+    /// Anything that isn't a primitive can be a null reference
+    fn is_nullable(&self) -> bool {
+        !self.is_primitive()
+    }
+}
+
 impl JavaType for Primitive {
     fn as_java_primitive(&self) -> String {
         match self {

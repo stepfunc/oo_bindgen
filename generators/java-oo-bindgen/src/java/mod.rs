@@ -7,6 +7,7 @@ use crate::JavaBindgenConfig;
 
 use self::conversion::*;
 use self::formatting::*;
+use crate::java::nullable::{IsStruct, Nullable};
 
 mod class;
 mod constant;
@@ -16,6 +17,7 @@ mod enumeration;
 mod exception;
 mod formatting;
 mod interface;
+mod nullable;
 mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
@@ -213,6 +215,23 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         Ok(())
     })?;
     f.writeln("</project>")
+}
+
+fn write_null_checks(
+    f: &mut dyn Printer,
+    args: &[Arg<FunctionArgument, Validated>],
+) -> FormattingResult<()> {
+    for arg in args.iter().filter(|a| a.arg_type.is_nullable()) {
+        let arg_name = arg.name.mixed_case();
+        f.writeln(&format!(
+            "java.util.Objects.requireNonNull({}, \"{} cannot be null\");",
+            arg_name, arg_name
+        ))?;
+        if arg.arg_type.is_struct() {
+            f.writeln(&format!("{}._assertFieldsNotNull();", arg_name))?;
+        }
+    }
+    Ok(())
 }
 
 fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {

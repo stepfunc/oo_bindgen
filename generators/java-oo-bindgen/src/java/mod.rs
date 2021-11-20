@@ -322,7 +322,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
         for handle in lib.functions().filter(|func| !skip(func.category)) {
             f.writeln(&format!(
-                "static native {} {}(",
+                "private static native {} {}(",
                 handle.return_type.as_java_primitive(),
                 handle.name
             ))?;
@@ -330,7 +330,13 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             let args = handle
                 .arguments
                 .iter()
-                .map(|param| format!("{} {}", param.arg_type.as_java_primitive(), param.name))
+                .map(|param| {
+                    format!(
+                        "{} {}",
+                        param.arg_type.as_java_primitive(),
+                        param.name.mixed_case()
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(", ");
 
@@ -338,6 +344,49 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             f.write(");")?;
             f.newline()?;
         }
+
+        f.writeln("static class Wrapped")?;
+        blocked(f, |f| {
+            for handle in lib.functions().filter(|func| !skip(func.category)) {
+                f.writeln(&format!(
+                    "static {} {}(",
+                    handle.return_type.as_java_primitive(),
+                    handle.name
+                ))?;
+
+                let args = handle
+                    .arguments
+                    .iter()
+                    .map(|param| {
+                        format!(
+                            "{} {}",
+                            param.arg_type.as_java_primitive(),
+                            param.name.mixed_case()
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                f.write(&args)?;
+                f.write(")")?;
+                blocked(f, |f| {
+                    write_null_checks(f, &handle.arguments)?;
+                    let arg_names = handle
+                        .arguments
+                        .iter()
+                        .map(|x| x.name.mixed_case())
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    let invocation = format!("NativeFunctions.{}({});", handle.name, arg_names);
+                    if handle.return_type.is_some() {
+                        f.writeln(&format!("return {}", invocation))
+                    } else {
+                        f.writeln(&invocation)
+                    }
+                })?;
+            }
+            Ok(())
+        })?;
 
         Ok(())
     })

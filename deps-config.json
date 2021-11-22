@@ -1,6 +1,6 @@
 {
     "ignore": ["oo-bindgen"],
-    "allowed_licenses": ["Apache-2.0 OR MIT", "MIT OR Unlicense", "0BSD OR Apache-2.0 OR MIT", "MIT"],
+    "allowed_licenses": ["MIT"],
     "crates": {
         "adler": {
             "license_name": "0BSD",

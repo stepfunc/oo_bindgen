@@ -383,7 +383,7 @@ pub(crate) fn call_native_function(
     }
 
     f.write(&format!(
-        "{}.{}({});",
+        "{}.Wrapped.{}({});",
         NATIVE_FUNCTIONS_CLASSNAME, method.name, params
     ))?;
 

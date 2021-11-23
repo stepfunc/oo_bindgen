@@ -7,6 +7,7 @@ use crate::JavaBindgenConfig;
 
 use self::conversion::*;
 use self::formatting::*;
+use crate::java::nullable::{IsStruct, Nullable};
 
 mod class;
 mod constant;
@@ -16,6 +17,7 @@ mod enumeration;
 mod exception;
 mod formatting;
 mod interface;
+mod nullable;
 mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
@@ -215,6 +217,23 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
     f.writeln("</project>")
 }
 
+fn write_null_checks(
+    f: &mut dyn Printer,
+    args: &[Arg<FunctionArgument, Validated>],
+) -> FormattingResult<()> {
+    for arg in args.iter().filter(|a| a.arg_type.is_nullable()) {
+        let arg_name = arg.name.mixed_case();
+        f.writeln(&format!(
+            "java.util.Objects.requireNonNull({}, \"{} cannot be null\");",
+            arg_name, arg_name
+        ))?;
+        if arg.arg_type.is_struct() {
+            f.writeln(&format!("{}._assertFieldsNotNull();", arg_name))?;
+        }
+    }
+    Ok(())
+}
+
 fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     let mut f = create_file(NATIVE_FUNCTIONS_CLASSNAME, config, lib)?;
 
@@ -322,7 +341,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
         for handle in lib.functions().filter(|func| !skip(func.category)) {
             f.writeln(&format!(
-                "static native {} {}(",
+                "private static native {} {}(",
                 handle.return_type.as_java_primitive(),
                 handle.name
             ))?;
@@ -330,7 +349,13 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             let args = handle
                 .arguments
                 .iter()
-                .map(|param| format!("{} {}", param.arg_type.as_java_primitive(), param.name))
+                .map(|param| {
+                    format!(
+                        "{} {}",
+                        param.arg_type.as_java_primitive(),
+                        param.name.mixed_case()
+                    )
+                })
                 .collect::<Vec<String>>()
                 .join(", ");
 
@@ -338,6 +363,50 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             f.write(");")?;
             f.newline()?;
         }
+
+        f.writeln("// wrappers around the native functions that do null checking")?;
+        f.writeln("static class Wrapped")?;
+        blocked(f, |f| {
+            for handle in lib.functions().filter(|func| !skip(func.category)) {
+                f.writeln(&format!(
+                    "static {} {}(",
+                    handle.return_type.as_java_primitive(),
+                    handle.name
+                ))?;
+
+                let args = handle
+                    .arguments
+                    .iter()
+                    .map(|param| {
+                        format!(
+                            "{} {}",
+                            param.arg_type.as_java_primitive(),
+                            param.name.mixed_case()
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                f.write(&args)?;
+                f.write(")")?;
+                blocked(f, |f| {
+                    write_null_checks(f, &handle.arguments)?;
+                    let arg_names = handle
+                        .arguments
+                        .iter()
+                        .map(|x| x.name.mixed_case())
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    let invocation = format!("NativeFunctions.{}({});", handle.name, arg_names);
+                    if handle.return_type.is_some() {
+                        f.writeln(&format!("return {}", invocation))
+                    } else {
+                        f.writeln(&invocation)
+                    }
+                })?;
+            }
+            Ok(())
+        })?;
 
         Ok(())
     })

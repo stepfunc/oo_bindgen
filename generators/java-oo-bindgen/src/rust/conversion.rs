@@ -7,10 +7,6 @@ const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
 const OBJECT_UNWRAP: &str = "l().unwrap().into_inner()";
 
-fn perform_null_check(f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-    f.writeln(&format!("if _env.is_same_object({}, jni::objects::JObject::null()).unwrap() {{ return Err(\"{}\".to_string()); }}", param_name, param_name))
-}
-
 fn jni_object_sig(lib_path: &str, object_name: &Name) -> String {
     format!("L{}/{};", lib_path, object_name.camel_case())
 }
@@ -39,8 +35,6 @@ pub(crate) trait JniType {
     fn conversion(&self) -> Option<TypeConverter>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
     fn requires_local_ref_cleanup(&self) -> bool;
-    /// Check the parameter for null value. Must return an `Err(String)` if it's the case.
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()>;
     /// Returns the default raw JNI type value (used when throwing exceptions). Almost always `JObject::null` except for native types.
     fn default_value(&self) -> &str;
 }
@@ -79,10 +73,6 @@ impl JniType for DurationType {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)
     }
 
     fn default_value(&self) -> &str {
@@ -131,10 +121,6 @@ where
         false
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)
-    }
-
     fn default_value(&self) -> &str {
         NULL_DEFAULT_VALUE
     }
@@ -172,10 +158,6 @@ impl JniType for StringType {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)
     }
 
     fn default_value(&self) -> &str {
@@ -311,22 +293,6 @@ impl JniType for Primitive {
         }
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Bool => Ok(()),
-            Self::U8 => perform_null_check(f, param_name),
-            Self::S8 => Ok(()),
-            Self::U16 => perform_null_check(f, param_name),
-            Self::S16 => Ok(()),
-            Self::U32 => perform_null_check(f, param_name),
-            Self::S32 => Ok(()),
-            Self::U64 => perform_null_check(f, param_name),
-            Self::S64 => Ok(()),
-            Self::Float => Ok(()),
-            Self::Double => Ok(()),
-        }
-    }
-
     fn default_value(&self) -> &str {
         match self {
             Self::Bool => "0",
@@ -402,14 +368,6 @@ impl JniType for BasicType {
         }
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Primitive(x) => x.check_null(f, param_name),
-            Self::Duration(x) => x.check_null(f, param_name),
-            Self::Enum(x) => x.check_null(f, param_name),
-        }
-    }
-
     fn default_value(&self) -> &str {
         match self {
             Self::Primitive(x) => x.default_value(),
@@ -453,13 +411,6 @@ impl JniType for StructDeclarationHandle {
         true
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)?;
-        blocked(f, |f| {
-            f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name, param_name, param_name))
-        })
-    }
-
     fn default_value(&self) -> &str {
         NULL_DEFAULT_VALUE
     }
@@ -497,10 +448,6 @@ impl JniType for ClassDeclarationHandle {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)
     }
 
     fn default_value(&self) -> &str {
@@ -546,10 +493,6 @@ impl JniType for Handle<Interface<Unvalidated>> {
         false
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)
-    }
-
     fn default_value(&self) -> &str {
         NULL_DEFAULT_VALUE
     }
@@ -590,10 +533,6 @@ where
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)
     }
 
     fn default_value(&self) -> &str {
@@ -638,10 +577,6 @@ where
         true
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)
-    }
-
     fn default_value(&self) -> &str {
         NULL_DEFAULT_VALUE
     }
@@ -683,11 +618,6 @@ where
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        perform_null_check(f, param_name)?;
-        f.writeln(&format!("_cache.structs.struct_{}.check_null(_cache, &_env, {}).map_err(|_| \"{}\".to_string())?;", self.name(), param_name, param_name))
     }
 
     fn default_value(&self) -> &str {
@@ -750,13 +680,6 @@ where
         match self {
             UniversalOr::Specific(x) => x.requires_local_ref_cleanup(),
             UniversalOr::Universal(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            UniversalOr::Specific(x) => x.check_null(f, param_name),
-            UniversalOr::Universal(x) => x.check_null(f, param_name),
         }
     }
 
@@ -834,15 +757,6 @@ impl JniType for FunctionArgStructField {
             Self::String(x) => x.requires_local_ref_cleanup(),
             Self::Interface(x) => x.inner.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::String(x) => x.check_null(f, param_name),
-            Self::Interface(x) => x.inner.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
         }
     }
 
@@ -925,15 +839,6 @@ impl JniType for FunctionReturnStructField {
         }
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::ClassRef(x) => x.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
-            Self::Iterator(x) => x.check_null(f, param_name),
-        }
-    }
-
     fn default_value(&self) -> &str {
         match self {
             Self::Basic(x) => x.default_value(),
@@ -1006,14 +911,6 @@ impl JniType for CallbackArgStructField {
         }
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::Iterator(x) => x.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
-        }
-    }
-
     fn default_value(&self) -> &str {
         match self {
             Self::Basic(x) => x.default_value(),
@@ -1075,13 +972,6 @@ impl JniType for UniversalStructField {
         match self {
             Self::Basic(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
         }
     }
 
@@ -1183,18 +1073,6 @@ impl JniType for FunctionArgument {
         }
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::String(x) => x.check_null(f, param_name),
-            Self::Collection(x) => x.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
-            Self::StructRef(x) => x.inner.check_null(f, param_name),
-            Self::ClassRef(x) => x.check_null(f, param_name),
-            Self::Interface(x) => x.check_null(f, param_name),
-        }
-    }
-
     fn default_value(&self) -> &str {
         match self {
             Self::Basic(x) => x.default_value(),
@@ -1281,16 +1159,6 @@ impl JniType for CallbackArgument {
             Self::Iterator(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
             Self::Class(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::String(x) => x.check_null(f, param_name),
-            Self::Iterator(x) => x.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
-            Self::Class(x) => x.check_null(f, param_name),
         }
     }
 
@@ -1381,16 +1249,6 @@ impl JniType for FunctionReturnValue {
         }
     }
 
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::String(x) => x.check_null(f, param_name),
-            Self::ClassRef(x) => x.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
-            Self::StructRef(x) => x.untyped().check_null(f, param_name),
-        }
-    }
-
     fn default_value(&self) -> &str {
         match self {
             Self::Basic(x) => x.default_value(),
@@ -1454,13 +1312,6 @@ impl JniType for CallbackReturnValue {
         match self {
             Self::Basic(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.check_null(f, param_name),
-            Self::Struct(x) => x.check_null(f, param_name),
         }
     }
 
@@ -1528,13 +1379,6 @@ where
         match self.get_value() {
             None => false,
             Some(return_type) => return_type.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn check_null(&self, f: &mut dyn Printer, param_name: &str) -> FormattingResult<()> {
-        match self.get_value() {
-            None => Ok(()),
-            Some(return_type) => return_type.check_null(f, param_name),
         }
     }
 

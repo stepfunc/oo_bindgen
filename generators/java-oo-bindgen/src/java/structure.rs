@@ -1,5 +1,6 @@
 use super::doc::*;
 use super::*;
+use crate::java::nullable::IsStruct;
 
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {
@@ -181,9 +182,31 @@ where
     Ok(())
 }
 
+fn write_null_checker<T>(f: &mut dyn Printer, handle: &Struct<T, Validated>) -> FormattingResult<()>
+where
+    T: StructFieldType + Nullable + IsStruct,
+{
+    f.writeln("void _assertFieldsNotNull()")?;
+    blocked(f, |f| {
+        for field in handle.fields.iter() {
+            if field.field_type.is_nullable() {
+                let field_name = field.name.mixed_case();
+                f.writeln(&format!(
+                    "java.util.Objects.requireNonNull({}, \"{} cannot be null\");",
+                    field_name, field_name
+                ))?;
+                if field.field_type.is_struct() {
+                    f.writeln(&format!("{}._assertFieldsNotNull();", field_name))?;
+                }
+            }
+        }
+        Ok(())
+    })
+}
+
 pub(crate) fn generate<T>(f: &mut dyn Printer, st: &Struct<T, Validated>) -> FormattingResult<()>
 where
-    T: StructFieldType + JavaType,
+    T: StructFieldType + JavaType + Nullable + IsStruct,
 {
     let struct_name = st.name().camel_case();
 
@@ -238,6 +261,7 @@ where
             write_constructor(f, Visibility::Private, st, &constructor)?;
         }
 
-        Ok(())
+        f.newline()?;
+        write_null_checker(f, st)
     })
 }

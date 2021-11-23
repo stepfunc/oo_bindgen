@@ -184,7 +184,7 @@ fn generate_destructor(
         f.newline()?;
 
         f.writeln(&format!(
-            "{}.{}(this);",
+            "{}.Wrapped.{}(this);",
             NATIVE_FUNCTIONS_CLASSNAME, destructor.function.name
         ))
     })?;

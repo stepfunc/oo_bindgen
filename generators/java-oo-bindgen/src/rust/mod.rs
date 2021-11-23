@@ -191,6 +191,8 @@ fn generate_functions(
     fn skip(c: FunctionCategory) -> bool {
         match c {
             FunctionCategory::Native => false,
+            // these all get used internally to the JNI and
+            // don't need external wrappers accessed from Java
             FunctionCategory::CollectionCreate => true,
             FunctionCategory::CollectionDestroy => true,
             FunctionCategory::CollectionAdd => true,
@@ -199,162 +201,166 @@ fn generate_functions(
     }
 
     for handle in lib.functions().filter(|f| !skip(f.category)) {
-        f.writeln("#[no_mangle]")?;
-        f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.settings.name, handle.name.replace("_", "_1")))?;
+        generate_function(f, lib, config, handle)?;
+        f.newline()?;
+    }
+    Ok(())
+}
+
+fn generate_function(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+    handle: &Handle<Function<Validated>>,
+) -> FormattingResult<()> {
+    f.writeln("#[no_mangle]")?;
+    f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.settings.name, handle.name.replace("_", "_1")))?;
+    f.write(
+        &handle
+            .arguments
+            .iter()
+            .map(|param| format!("{}: {}", param.name, param.arg_type.as_raw_jni_type()))
+            .collect::<Vec<String>>()
+            .join(", "),
+    )?;
+    f.write(")")?;
+
+    if let Some(return_type) = &handle.return_type.get_value() {
+        f.write(&format!(" -> {}", return_type.as_raw_jni_type()))?;
+    }
+
+    blocked(f, |f| {
+        // Get the JCache
+        f.writeln("let _cache = unsafe { JCACHE.as_ref().unwrap() };")?;
+
+        f.newline()?;
+
+        // Perform the conversion of the parameters
+        for param in &handle.arguments {
+            if let Some(conversion) = param.arg_type.conversion() {
+                conversion.convert_to_rust(f, &param.name, &format!("let {} = ", param.name))?;
+                f.write(";")?;
+            }
+        }
+
+        f.newline()?;
+
+        // Call the C FFI
+        let extra_param = match handle.get_signature_type() {
+            SignatureType::NoErrorNoReturn => {
+                f.newline()?;
+                None
+            }
+            SignatureType::NoErrorWithReturn(_, _) => {
+                f.writeln("let _result = ")?;
+                None
+            }
+            SignatureType::ErrorNoReturn(_) => {
+                f.writeln("let _result = ")?;
+                None
+            }
+            SignatureType::ErrorWithReturn(_, _, _) => {
+                f.writeln("let mut _out = std::mem::MaybeUninit::uninit();")?;
+                f.writeln("let _result = ")?;
+                Some("_out.as_mut_ptr()".to_string())
+            }
+        };
+
+        f.write(&format!(
+            "unsafe {{ {}::ffi::{}_{}(",
+            config.ffi_name, lib.settings.c_ffi_prefix, handle.name
+        ))?;
         f.write(
             &handle
                 .arguments
                 .iter()
-                .map(|param| format!("{}: {}", param.name, param.arg_type.as_raw_jni_type()))
+                .map(|param| {
+                    if matches!(param.arg_type, FunctionArgument::Struct(_)) {
+                        format!("{}.clone()", &param.name)
+                    } else {
+                        param.name.to_string()
+                    }
+                })
+                .chain(extra_param.into_iter())
                 .collect::<Vec<String>>()
                 .join(", "),
         )?;
-        f.write(")")?;
-
-        if let Some(return_type) = &handle.return_type.get_value() {
-            f.write(&format!(" -> {}", return_type.as_raw_jni_type()))?;
-        }
-
-        blocked(f, |f| {
-            // Get the JCache
-            f.writeln("let _cache = unsafe { JCACHE.as_ref().unwrap() };")?;
-
-            f.newline()?;
-
-            // Perform the conversion of the parameters
-            for param in &handle.arguments {
-                if let Some(conversion) = param.arg_type.conversion() {
-                    conversion.convert_to_rust(
-                        f,
-                        &param.name,
-                        &format!("let {} = ", param.name),
-                    )?;
-                    f.write(";")?;
-                }
-            }
-
-            f.newline()?;
-
-            // Call the C FFI
-            let extra_param = match handle.get_signature_type() {
-                SignatureType::NoErrorNoReturn => {
-                    f.newline()?;
-                    None
-                }
-                SignatureType::NoErrorWithReturn(_, _) => {
-                    f.writeln("let _result = ")?;
-                    None
-                }
-                SignatureType::ErrorNoReturn(_) => {
-                    f.writeln("let _result = ")?;
-                    None
-                }
-                SignatureType::ErrorWithReturn(_, _, _) => {
-                    f.writeln("let mut _out = std::mem::MaybeUninit::uninit();")?;
-                    f.writeln("let _result = ")?;
-                    Some("_out.as_mut_ptr()".to_string())
-                }
-            };
-
-            f.write(&format!(
-                "unsafe {{ {}::ffi::{}_{}(",
-                config.ffi_name, lib.settings.c_ffi_prefix, handle.name
-            ))?;
-            f.write(
-                &handle
-                    .arguments
-                    .iter()
-                    .map(|param| {
-                        if matches!(param.arg_type, FunctionArgument::Struct(_)) {
-                            format!("{}.clone()", &param.name)
-                        } else {
-                            param.name.to_string()
-                        }
-                    })
-                    .chain(extra_param.into_iter())
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            )?;
-            f.write(") };")?;
-
-            f.newline()?;
-
-            // Convert return value
-            match handle.get_signature_type() {
-                SignatureType::NoErrorNoReturn => (),
-                SignatureType::NoErrorWithReturn(return_type, _) => {
-                    if let Some(conversion) = return_type.conversion() {
-                        conversion.convert_from_rust(f, "_result", "let _result = ")?;
-                        f.write(";")?;
-                    }
-                }
-                SignatureType::ErrorNoReturn(error_type) => {
-                    f.writeln("if _result != 0")?;
-                    blocked(f, |f| {
-                        EnumConverter::wrap(error_type.inner).convert_from_rust(
-                            f,
-                            "_result",
-                            "let _error = ",
-                        )?;
-                        f.write(";")?;
-                        f.writeln(&format!(
-                            "let error = _cache.exceptions.throw_{}(&_env, _error);",
-                            error_type.exception_name
-                        ))
-                    })?;
-                }
-                SignatureType::ErrorWithReturn(error_type, return_type, _) => {
-                    f.writeln("let _result = if _result == 0")?;
-                    blocked(f, |f| {
-                        f.writeln("let _result = unsafe { _out.assume_init() };")?;
-                        if let Some(conversion) = return_type.conversion() {
-                            conversion.convert_from_rust(f, "_result", "")?;
-                        }
-                        Ok(())
-                    })?;
-                    f.writeln("else")?;
-                    blocked(f, |f| {
-                        EnumConverter::wrap(error_type.inner).convert_from_rust(
-                            f,
-                            "_result",
-                            "let _error = ",
-                        )?;
-                        f.write(";")?;
-                        f.writeln(&format!(
-                            "let error = _cache.exceptions.throw_{}(&_env, _error);",
-                            error_type.exception_name
-                        ))?;
-                        f.writeln(return_type.default_value())
-                    })?;
-                    f.write(";")?;
-                }
-            }
-
-            f.newline()?;
-
-            // Conversion cleanup
-            for param in &handle.arguments {
-                if let Some(conversion) = param.arg_type.conversion() {
-                    conversion.convert_to_rust_cleanup(f, &param.name)?;
-                }
-
-                // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
-                if matches!(param.arg_type, FunctionArgument::Struct(_)) {
-                    f.writeln(&format!("std::mem::forget({});", param.name))?;
-                }
-            }
-
-            f.newline()?;
-
-            // Return value
-            if !handle.return_type.is_none() {
-                f.writeln("return _result.into();")?;
-            }
-
-            Ok(())
-        })?;
+        f.write(") };")?;
 
         f.newline()?;
-    }
-    Ok(())
+
+        // Convert return value
+        match handle.get_signature_type() {
+            SignatureType::NoErrorNoReturn => (),
+            SignatureType::NoErrorWithReturn(return_type, _) => {
+                if let Some(conversion) = return_type.conversion() {
+                    conversion.convert_from_rust(f, "_result", "let _result = ")?;
+                    f.write(";")?;
+                }
+            }
+            SignatureType::ErrorNoReturn(error_type) => {
+                f.writeln("if _result != 0")?;
+                blocked(f, |f| {
+                    EnumConverter::wrap(error_type.inner).convert_from_rust(
+                        f,
+                        "_result",
+                        "let _error = ",
+                    )?;
+                    f.write(";")?;
+                    f.writeln(&format!(
+                        "let error = _cache.exceptions.throw_{}(&_env, _error);",
+                        error_type.exception_name
+                    ))
+                })?;
+            }
+            SignatureType::ErrorWithReturn(error_type, return_type, _) => {
+                f.writeln("let _result = if _result == 0")?;
+                blocked(f, |f| {
+                    f.writeln("let _result = unsafe { _out.assume_init() };")?;
+                    if let Some(conversion) = return_type.conversion() {
+                        conversion.convert_from_rust(f, "_result", "")?;
+                    }
+                    Ok(())
+                })?;
+                f.writeln("else")?;
+                blocked(f, |f| {
+                    EnumConverter::wrap(error_type.inner).convert_from_rust(
+                        f,
+                        "_result",
+                        "let _error = ",
+                    )?;
+                    f.write(";")?;
+                    f.writeln(&format!(
+                        "let error = _cache.exceptions.throw_{}(&_env, _error);",
+                        error_type.exception_name
+                    ))?;
+                    f.writeln(return_type.default_value())
+                })?;
+                f.write(";")?;
+            }
+        }
+
+        f.newline()?;
+
+        // Conversion cleanup
+        for param in &handle.arguments {
+            if let Some(conversion) = param.arg_type.conversion() {
+                conversion.convert_to_rust_cleanup(f, &param.name)?;
+            }
+
+            // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
+            if matches!(param.arg_type, FunctionArgument::Struct(_)) {
+                f.writeln(&format!("std::mem::forget({});", param.name))?;
+            }
+        }
+
+        f.newline()?;
+
+        // Return value
+        if !handle.return_type.is_none() {
+            f.writeln("return _result.into();")?;
+        }
+
+        Ok(())
+    })
 }

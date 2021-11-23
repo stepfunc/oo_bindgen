@@ -29,7 +29,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
 
     generate_cache(&mut f)?;
     f.newline()?;
-    generate_functions(&mut f, lib, config)?;
+    write_functions(&mut f, lib, config)?;
 
     // Create the cache modules
     classes::generate_classes_cache(lib, config)?;
@@ -183,7 +183,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     })
 }
 
-fn generate_functions(
+fn write_functions(
     f: &mut dyn Printer,
     lib: &Library,
     config: &JavaBindgenConfig,
@@ -201,13 +201,13 @@ fn generate_functions(
     }
 
     for handle in lib.functions().filter(|f| !skip(f.category)) {
-        generate_function(f, lib, config, handle)?;
+        write_function(f, lib, config, handle)?;
         f.newline()?;
     }
     Ok(())
 }
 
-fn generate_function(
+fn write_function_signature(
     f: &mut dyn Printer,
     lib: &Library,
     config: &JavaBindgenConfig,
@@ -237,8 +237,16 @@ fn generate_function(
             args,
             returns
         )
-    )?;
+    )
+}
 
+fn write_function(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+    handle: &Handle<Function<Validated>>,
+) -> FormattingResult<()> {
+    write_function_signature(f, lib, config, handle)?;
     blocked(f, |f| {
         // Get the JCache
         f.writeln("let _cache = unsafe { JCACHE.as_ref().unwrap() };")?;

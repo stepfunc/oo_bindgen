@@ -12,7 +12,7 @@ fn jni_object_sig(lib_path: &str, object_name: &Name) -> String {
 }
 
 pub(crate) trait JniType {
-    /// Returns raw JNI type (from jni::sys::* module)
+    /// Raw JNI type (from jni::sys::* module) that is used in the Rust JNI function signatures
     fn as_raw_jni_type(&self) -> &str;
     /// Returns the JNI signature of the type
     fn as_jni_sig(&self, lib_path: &str) -> String;

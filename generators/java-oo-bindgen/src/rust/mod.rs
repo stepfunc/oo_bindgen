@@ -213,21 +213,31 @@ fn generate_function(
     config: &JavaBindgenConfig,
     handle: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
-    f.writeln("#[no_mangle]")?;
-    f.writeln(&format!("pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, ", config.group_id.replace(".", "_"), lib.settings.name, handle.name.replace("_", "_1")))?;
-    f.write(
-        &handle
-            .arguments
-            .iter()
-            .map(|param| format!("{}: {}", param.name, param.arg_type.as_raw_jni_type()))
-            .collect::<Vec<String>>()
-            .join(", "),
-    )?;
-    f.write(")")?;
+    let args = handle
+        .arguments
+        .iter()
+        .map(|param| format!("{}: {}", param.name, param.arg_type.as_raw_jni_type()))
+        .collect::<Vec<String>>()
+        .join(", ");
 
-    if let Some(return_type) = &handle.return_type.get_value() {
-        f.write(&format!(" -> {}", return_type.as_raw_jni_type()))?;
-    }
+    let returns = match handle.return_type.get_value() {
+        None => "".to_string(),
+        Some(x) => {
+            format!(" -> {}", x.as_raw_jni_type())
+        }
+    };
+
+    f.writeln("#[no_mangle]")?;
+    f.writeln(
+        &format!(
+            "pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, {}){}",
+            config.group_id.replace(".", "_"),
+            lib.settings.name,
+            handle.name.replace("_", "_1"),
+            args,
+            returns
+        )
+    )?;
 
     blocked(f, |f| {
         // Get the JCache

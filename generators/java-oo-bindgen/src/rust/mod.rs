@@ -253,10 +253,10 @@ fn write_function(
 
         f.newline()?;
 
-        // Perform the conversion of the parameters
+        // Perform the primary conversion of the parameters if required
         for param in &handle.arguments {
-            if let Some(conversion) = param.arg_type.conversion() {
-                conversion.convert_to_rust(f, &param.name, &format!("let {} = ", param.name))?;
+            if let Some(converter) = param.arg_type.conversion() {
+                converter.convert_to_rust(f, &param.name, &format!("let {} = ", param.name))?;
                 f.write(";")?;
             }
         }
@@ -284,6 +284,7 @@ fn write_function(
             }
         };
 
+        // invoke the native function
         f.write(&format!(
             "unsafe {{ {}::ffi::{}_{}(",
             config.ffi_name, lib.settings.c_ffi_prefix, handle.name
@@ -293,10 +294,17 @@ fn write_function(
                 .arguments
                 .iter()
                 .map(|param| {
+                    let call_site_transform = param
+                        .arg_type
+                        .conversion()
+                        .and_then(|c| c.convert_parameter_at_call_site(&param.name))
+                        .unwrap_or_else(|| param.name.to_string());
+
+                    // TODO - this shouldn't be necessary
                     if matches!(param.arg_type, FunctionArgument::Struct(_)) {
-                        format!("{}.clone()", &param.name)
+                        format!("{}.clone()", call_site_transform)
                     } else {
-                        param.name.to_string()
+                        call_site_transform
                     }
                 })
                 .chain(extra_param.into_iter())

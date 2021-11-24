@@ -120,16 +120,32 @@ where
 
         f.writeln(&format!("pub(crate) fn struct_to_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}", ffi_struct_name))?;
         blocked(f, |f| {
+            // retrieve the fields from the jobject
             for field in structure.fields() {
                 f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.as_jni_sig(&lib_path), field.field_type.convert_jvalue()))?;
             }
 
+            f.newline()?;
+
+            // transform the fields and shadow the variables
+            for field in structure.fields() {
+                if let Some(converter) = field.field_type.conversion() {
+                    let to = format!("let {} = ", field.name);
+                    converter.convert_to_rust(f, field.name.as_ref(), &to)?;
+                    f.write(";")?;
+                }
+            }
+
+            f.newline()?;
             f.writeln(&ffi_struct_name)?;
             blocked(f, |f| {
                 for field in structure.fields() {
-                    if let Some(conversion) = field.field_type.conversion() {
-                        conversion.convert_to_rust(f, &field.name, &format!("{}: ", field.name))?;
-                        f.write(",")?;
+                    if let Some(conversion) = field
+                        .field_type
+                        .conversion()
+                        .and_then(|c| c.convert_parameter_at_call_site(&field.name))
+                    {
+                        f.writeln(&format!("{}: {},", field.name, conversion))?;
                     } else {
                         f.writeln(&format!("{},", field.name))?;
                     }

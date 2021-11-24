@@ -239,7 +239,7 @@ impl LibraryBuilder {
         ))
     }
 
-    pub fn declare_function_arg_struct<T: IntoName>(
+    pub fn declare_function_argument_struct<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<FunctionArgStructDeclaration> {
@@ -257,7 +257,7 @@ impl LibraryBuilder {
         ))
     }
 
-    pub fn declare_callback_arg_struct<T: IntoName>(
+    pub fn declare_callback_argument_struct<T: IntoName>(
         &mut self,
         name: T,
     ) -> BindResult<CallbackArgStructDeclaration> {

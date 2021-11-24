@@ -95,6 +95,8 @@ impl Method<Unvalidated> {
     }
 }
 
+pub type MethodHandle = Method<Unvalidated>;
+
 /// represents a static method associated with a class
 ///
 /// name given to the class method may differ from the name of the native function

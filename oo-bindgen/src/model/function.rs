@@ -292,6 +292,8 @@ impl FutureMethod<Unvalidated> {
     }
 }
 
+pub type FutureMethodHandle = FutureMethod<Unvalidated>;
+
 #[derive(Debug, Clone)]
 pub struct ClassDestructor<T>
 where

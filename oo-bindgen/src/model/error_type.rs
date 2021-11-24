@@ -32,6 +32,8 @@ impl ErrorType<Unvalidated> {
     }
 }
 
+pub type ErrorTypeHandle = ErrorType<Unvalidated>;
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct OptionalErrorType<D>
 where

@@ -333,3 +333,5 @@ impl FutureInterface<Unvalidated> {
         })
     }
 }
+
+pub type FutureInterfaceHandle = FutureInterface<Unvalidated>;

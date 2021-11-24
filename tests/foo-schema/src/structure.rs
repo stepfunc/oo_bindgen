@@ -59,7 +59,7 @@ pub fn define_inner_structure(lib: &mut LibraryBuilder) -> BackTraced<FunctionAr
 
     let interface_field = Name::create("interface_field")?;
     let numbers_field = Name::create("numbers_field")?;
-    let inner_structure = lib.declare_function_arg_struct("inner_structure")?;
+    let inner_structure = lib.declare_function_argument_struct("inner_structure")?;
 
     let inner_structure = lib
         .define_function_argument_struct(inner_structure)?
@@ -91,7 +91,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let inner_structure = define_inner_structure(lib)?;
 
-    let structure = lib.declare_function_arg_struct("structure")?;
+    let structure = lib.declare_function_argument_struct("structure")?;
 
     let enum_var1_field = Name::create("enum_var1")?;
     let enum_var2_field = Name::create("enum_var2")?;

@@ -73,3 +73,9 @@ where
         }
     }
 }
+
+impl From<EnumHandle> for BasicType {
+    fn from(x: EnumHandle) -> Self {
+        BasicType::Enum(x)
+    }
+}

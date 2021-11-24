@@ -228,14 +228,23 @@ fn generate_cmake_config(
     f.writeln(")")?;
 
     f.newline()?;
-    f.writeln(&format!(
-        "add_library({}_cpp OBJECT ${{prefix}}/src/{}.cpp)",
-        lib.settings.name, lib.settings.name
-    ))?;
-    f.writeln(&format!(
-        "target_link_libraries({}_cpp {})",
-        lib.settings.name, lib.settings.name
-    ))?;
+
+    // C++ target
+    f.writeln("get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)")?;
+    f.writeln("if(\"CXX\" IN_LIST languages)")?;
+    indented(&mut f, |f| {
+        f.writeln(&format!(
+            "add_library({}_cpp OBJECT EXCLUDE_FROM_ALL ${{prefix}}/src/{}.cpp)",
+            lib.settings.name, lib.settings.name
+        ))?;
+        f.writeln(&format!(
+            "target_link_libraries({}_cpp {})",
+            lib.settings.name, lib.settings.name
+        ))?;
+
+        Ok(())
+    })?;
+    f.writeln("endif()")?;
 
     Ok(())
 }

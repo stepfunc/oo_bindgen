@@ -31,7 +31,7 @@ pub(crate) trait JniType {
         to: &str,
     ) -> FormattingResult<()>;
 
-    /// Returns converter is required by the type
+    /// Optional conversion from JNI argument type to Rust type
     fn conversion(&self) -> Option<TypeConverter>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
     fn requires_local_ref_cleanup(&self) -> bool;
@@ -1391,6 +1391,9 @@ where
 }
 
 trait TypeConverterTrait {
+    /// convert the parameter at the call-site of the native function
+    fn convert_parameter_at_call_site(&self, param: &str) -> Option<String>;
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
 
@@ -1414,6 +1417,23 @@ pub(crate) enum TypeConverter {
 }
 
 impl TypeConverter {
+    /// possible conversion at the call-site of the native function
+    pub(crate) fn convert_parameter_at_call_site(&self, param: &str) -> Option<String> {
+        match self {
+            TypeConverter::Bool(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Unsigned(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::String(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Struct(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::StructRef(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Enum(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Class(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Duration(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Interface(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Collection(x) => x.convert_parameter_at_call_site(param),
+            TypeConverter::Iterator(x) => x.convert_parameter_at_call_site(param),
+        }
+    }
+
     pub(crate) fn convert_to_rust(
         &self,
         f: &mut dyn Printer,
@@ -1485,6 +1505,10 @@ impl BooleanConverter {
 }
 
 impl TypeConverterTrait for BooleanConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}{} != 0", to, from))
     }
@@ -1510,6 +1534,10 @@ impl UnsignedConverter {
 }
 
 impl TypeConverterTrait for UnsignedConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.joou.{}_to_rust(&_env, {})",
@@ -1533,15 +1561,14 @@ impl StringConverter {
 }
 
 impl TypeConverterTrait for StringConverter {
+    fn convert_parameter_at_call_site(&self, param: &str) -> Option<String> {
+        // get a c-style string from a JavaString
+        Some(format!("(**{}).as_ptr()", param))
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(to)?;
-        blocked(f, |f| {
-            f.writeln(&format!(
-                "let value = _env.get_string({}.into()).unwrap();",
-                from
-            ))?;
-            f.writeln("(**value).to_owned().into_raw()")
-        })
+        // convert to JavaString
+        f.writeln(&format!("{} _env.get_string({}.into()).unwrap()", to, from))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
@@ -1555,11 +1582,8 @@ impl TypeConverterTrait for StringConverter {
         })
     }
 
-    fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "unsafe {{ std::ffi::CString::from_raw({} as *mut _) }};",
-            name
-        ))
+    fn convert_to_rust_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
+        Ok(())
     }
 }
 
@@ -1574,6 +1598,10 @@ impl StructConverter {
 }
 
 impl TypeConverterTrait for StructConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
@@ -1606,6 +1634,10 @@ impl StructRefConverter {
 }
 
 impl TypeConverterTrait for StructRefConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{} if !_env.is_same_object({}, jni::objects::JObject::null()).unwrap()",
@@ -1660,6 +1692,10 @@ impl EnumConverter {
     }
 }
 impl TypeConverterTrait for EnumConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.enums.enum_{}.enum_to_rust(&_env, {})",
@@ -1686,6 +1722,10 @@ impl ClassConverter {
 }
 
 impl TypeConverterTrait for ClassConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.classes.{}_to_rust(&_env, {})",
@@ -1719,6 +1759,10 @@ impl InterfaceConverter {
 }
 
 impl TypeConverterTrait for InterfaceConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.interfaces.interface_{}.interface_to_rust(&_env, {})",
@@ -1754,6 +1798,10 @@ impl IteratorConverter {
 }
 
 impl TypeConverterTrait for IteratorConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}std::ptr::null_mut()", to))
     }
@@ -1816,6 +1864,10 @@ impl CollectionConverter {
 }
 
 impl TypeConverterTrait for CollectionConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(to)?;
         blocked(f, |f| {
@@ -1850,9 +1902,18 @@ impl TypeConverterTrait for CollectionConverter {
                     )?;
                     f.write(";")?;
 
+                    let transformed = self
+                        .item_type
+                        .conversion()
+                        .and_then(|c| c.convert_parameter_at_call_site("_next"))
+                        .unwrap_or_else(|| "_next".to_string());
+
                     f.writeln(&format!(
-                        "unsafe {{ {}_ffi::ffi::{}_{}(result, _next) }};",
-                        self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.add_func
+                        "unsafe {{ {}_ffi::ffi::{}_{}(result, {}) }};",
+                        self.settings.c_ffi_prefix,
+                        self.settings.c_ffi_prefix,
+                        self.add_func,
+                        transformed
                     ))?;
 
                     if let Some(converter) = self.item_type.conversion() {
@@ -1893,6 +1954,10 @@ impl DurationConverter {
 }
 
 impl TypeConverterTrait for DurationConverter {
+    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
+        None
+    }
+
     fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let method = match self.duration_type {
             DurationType::Milliseconds => "duration_to_millis",

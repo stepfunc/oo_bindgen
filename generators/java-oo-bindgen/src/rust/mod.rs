@@ -490,8 +490,6 @@ fn write_function(
             }
         }
 
-        f.newline()?;
-
         // Return value
         if !handle.return_type.is_none() {
             f.writeln("return _result.into();")?;

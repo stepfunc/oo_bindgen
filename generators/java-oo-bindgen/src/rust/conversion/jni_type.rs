@@ -37,7 +37,6 @@ pub(crate) trait JniType {
 }
 
 impl JniType for DurationType {
-
     fn as_jni_sig(&self, _: &str) -> String {
         "Ljava/time/Duration;".to_string()
     }
@@ -117,7 +116,6 @@ where
 }
 
 impl JniType for StringType {
-
     fn as_jni_sig(&self, _lib_path: &str) -> String {
         "Ljava/lang/String;".to_string()
     }
@@ -153,7 +151,6 @@ impl JniType for StringType {
 }
 
 impl JniType for Primitive {
-
     fn as_jni_sig(&self, _lib_path: &str) -> String {
         match self {
             Self::Bool => "Z".to_string(),
@@ -283,7 +280,6 @@ impl JniType for Primitive {
 }
 
 impl JniType for BasicType {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Primitive(x) => x.as_jni_sig(lib_path),
@@ -343,7 +339,6 @@ impl JniType for BasicType {
 }
 
 impl JniType for StructDeclarationHandle {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, &self.name)
     }
@@ -379,7 +374,6 @@ impl JniType for StructDeclarationHandle {
 }
 
 impl JniType for ClassDeclarationHandle {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, &self.name)
     }
@@ -415,7 +409,6 @@ impl JniType for ClassDeclarationHandle {
 }
 
 impl JniType for Handle<Interface<Unvalidated>> {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, &self.name)
     }
@@ -629,7 +622,6 @@ where
 }
 
 impl JniType for FunctionArgStructField {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),
@@ -700,7 +692,6 @@ impl JniType for FunctionArgStructField {
 }
 
 impl JniType for FunctionReturnStructField {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),
@@ -771,7 +762,6 @@ impl JniType for FunctionReturnStructField {
 }
 
 impl JniType for CallbackArgStructField {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),
@@ -835,7 +825,6 @@ impl JniType for CallbackArgStructField {
 }
 
 impl JniType for UniversalStructField {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),
@@ -892,7 +881,6 @@ impl JniType for UniversalStructField {
 }
 
 impl JniType for FunctionArgument {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),
@@ -984,7 +972,6 @@ impl JniType for FunctionArgument {
 }
 
 impl JniType for CallbackArgument {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),
@@ -1062,7 +1049,6 @@ impl JniType for CallbackArgument {
 }
 
 impl JniType for FunctionReturnValue {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),
@@ -1140,7 +1126,6 @@ impl JniType for FunctionReturnValue {
 }
 
 impl JniType for CallbackReturnValue {
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             Self::Basic(x) => x.as_jni_sig(lib_path),

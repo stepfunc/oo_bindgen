@@ -3,8 +3,6 @@ use std::fs;
 use conversion::*;
 use oo_bindgen::model::*;
 
-use crate::rust::signature::JniSignatureType;
-use crate::rust::to_rust::ToRust;
 use crate::*;
 
 mod classes;
@@ -12,9 +10,7 @@ mod conversion;
 mod enums;
 mod exceptions;
 mod interface;
-mod signature;
 mod structs;
-mod to_rust;
 
 pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.rust_output_dir)?;

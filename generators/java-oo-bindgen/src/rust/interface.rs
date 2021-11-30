@@ -2,7 +2,7 @@ use oo_bindgen::model::*;
 
 use crate::*;
 
-use super::conversion::*;
+use crate::rust::conversion::*;
 
 pub(crate) fn generate_interfaces_cache(
     lib: &Library,

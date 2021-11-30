@@ -398,27 +398,14 @@ fn write_function(
 
         f.newline()?;
 
-        // Call the C FFI
         let extra_param = match handle.get_signature_type() {
-            SignatureType::NoErrorNoReturn => {
-                f.newline()?;
-                None
-            }
-            SignatureType::NoErrorWithReturn(_, _) => {
-                f.writeln("let _result = ")?;
-                None
-            }
-            SignatureType::ErrorNoReturn(_) => {
-                f.writeln("let _result = ")?;
-                None
-            }
-            SignatureType::ErrorWithReturn(_, _, _) => {
-                f.writeln("let mut _out = std::mem::MaybeUninit::uninit();")?;
-                f.writeln("let _result = ")?;
-                Some("_out.as_mut_ptr()".to_string())
-            }
+            SignatureType::NoErrorNoReturn => None,
+            SignatureType::NoErrorWithReturn(_, _) => None,
+            SignatureType::ErrorNoReturn(_) => None,
+            SignatureType::ErrorWithReturn(_, _, _) => Some("_out.as_mut_ptr()".to_string()),
         };
 
+        // list of arguments in the invocation
         let args = handle
             .arguments
             .iter()
@@ -432,11 +419,25 @@ fn write_function(
             .collect::<Vec<String>>()
             .join(", ");
 
-        // invoke the native function
-        f.writeln(&format!(
-            "unsafe {{ {}::ffi::{}_{}({}) }};",
+        // the invocation of the native function
+        let invocation = format!(
+            "unsafe {{ {}::ffi::{}_{}({}) }}",
             config.ffi_name, lib.settings.c_ffi_prefix, handle.name, args
-        ))?;
+        );
+
+        // Call the C FFI
+        match handle.get_signature_type() {
+            SignatureType::NoErrorNoReturn => {
+                f.writeln(&format!("{};", invocation))?;
+            }
+            SignatureType::NoErrorWithReturn(_, _) | SignatureType::ErrorNoReturn(_) => {
+                f.writeln(&format!("let _result = {};", invocation))?;
+            }
+            SignatureType::ErrorWithReturn(_, _, _) => {
+                f.writeln("let mut _out = std::mem::MaybeUninit::uninit();")?;
+                f.writeln(&format!("let _result = {};", invocation))?;
+            }
+        };
 
         // Convert return value
         match handle.get_signature_type() {

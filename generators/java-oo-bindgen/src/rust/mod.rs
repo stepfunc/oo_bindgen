@@ -3,6 +3,7 @@ use std::fs;
 use conversion::*;
 use oo_bindgen::model::*;
 
+use crate::rust::signature::JniSignatureType;
 use crate::rust::to_rust::ToRust;
 use crate::*;
 
@@ -11,6 +12,7 @@ mod conversion;
 mod enums;
 mod exceptions;
 mod interface;
+mod signature;
 mod structs;
 mod to_rust;
 
@@ -199,16 +201,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     })
 }
 
-/*
-impl Deref for StringCollection {
-        type Target = *mut foo_ffi::StringCollection;
-
-        fn deref(&self) -> &Self::Target {
-            &self.inner
-        }
-    }
- */
-
 fn write_collection_guard(
     f: &mut dyn Printer,
     config: &JavaBindgenConfig,
@@ -351,14 +343,14 @@ fn write_function_signature(
     let args = handle
         .arguments
         .iter()
-        .map(|param| format!("{}: {}", param.name, param.arg_type.as_raw_jni_type()))
+        .map(|param| format!("{}: {}", param.name, param.arg_type.jni_signature_type()))
         .collect::<Vec<String>>()
         .join(", ");
 
     let returns = match handle.return_type.get_value() {
         None => "".to_string(),
         Some(x) => {
-            format!(" -> {}", x.as_raw_jni_type())
+            format!(" -> {}", x.jni_signature_type())
         }
     };
 

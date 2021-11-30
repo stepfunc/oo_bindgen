@@ -3,7 +3,6 @@ use std::rc::Rc;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
 const OBJECT_UNWRAP: &str = "l().unwrap().into_inner()";
 
@@ -12,8 +11,6 @@ fn jni_object_sig(lib_path: &str, object_name: &Name) -> String {
 }
 
 pub(crate) trait JniType {
-    /// Raw JNI type (from jni::sys::* module) that is used in the Rust JNI function signatures
-    fn as_raw_jni_type(&self) -> &str;
     /// Returns the JNI signature of the type
     fn as_jni_sig(&self, lib_path: &str) -> String;
     /// Return the Rust FFI type
@@ -40,9 +37,6 @@ pub(crate) trait JniType {
 }
 
 impl JniType for DurationType {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
 
     fn as_jni_sig(&self, _: &str) -> String {
         "Ljava/time/Duration;".to_string()
@@ -84,10 +78,6 @@ impl<D> JniType for Handle<Enum<D>>
 where
     D: DocReference,
 {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         format!("L{}/{};", lib_path, self.name.camel_case())
     }
@@ -127,9 +117,6 @@ where
 }
 
 impl JniType for StringType {
-    fn as_raw_jni_type(&self) -> &str {
-        "jni::sys::jstring"
-    }
 
     fn as_jni_sig(&self, _lib_path: &str) -> String {
         "Ljava/lang/String;".to_string()
@@ -166,21 +153,6 @@ impl JniType for StringType {
 }
 
 impl JniType for Primitive {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Bool => "jni::sys::jboolean",
-            Self::U8 => JNI_SYS_JOBJECT,
-            Self::S8 => "jni::sys::jbyte",
-            Self::U16 => JNI_SYS_JOBJECT,
-            Self::S16 => "jni::sys::jshort",
-            Self::U32 => JNI_SYS_JOBJECT,
-            Self::S32 => "jni::sys::jint",
-            Self::U64 => JNI_SYS_JOBJECT,
-            Self::S64 => "jni::sys::jlong",
-            Self::Float => "jni::sys::jfloat",
-            Self::Double => "jni::sys::jdouble",
-        }
-    }
 
     fn as_jni_sig(&self, _lib_path: &str) -> String {
         match self {
@@ -311,13 +283,6 @@ impl JniType for Primitive {
 }
 
 impl JniType for BasicType {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Primitive(x) => x.as_raw_jni_type(),
-            Self::Duration(x) => x.as_raw_jni_type(),
-            Self::Enum(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -378,9 +343,6 @@ impl JniType for BasicType {
 }
 
 impl JniType for StructDeclarationHandle {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, &self.name)
@@ -417,9 +379,6 @@ impl JniType for StructDeclarationHandle {
 }
 
 impl JniType for ClassDeclarationHandle {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, &self.name)
@@ -456,9 +415,6 @@ impl JniType for ClassDeclarationHandle {
 }
 
 impl JniType for Handle<Interface<Unvalidated>> {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, &self.name)
@@ -502,10 +458,6 @@ impl<D> JniType for Handle<Collection<D>>
 where
     D: DocReference,
 {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, self.name())
     }
@@ -544,10 +496,6 @@ impl<D> JniType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
-
     fn as_jni_sig(&self, _lib_path: &str) -> String {
         "Ljava/util/List;".to_string()
     }
@@ -587,10 +535,6 @@ where
     D: DocReference,
     T: StructFieldType,
 {
-    fn as_raw_jni_type(&self) -> &str {
-        JNI_SYS_JOBJECT
-    }
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         jni_object_sig(lib_path, self.name())
     }
@@ -629,13 +573,6 @@ impl<T> JniType for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            UniversalOr::Specific(x) => x.as_raw_jni_type(),
-            UniversalOr::Universal(x) => x.as_raw_jni_type(),
-        }
-    }
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
             UniversalOr::Specific(x) => x.as_jni_sig(lib_path),
@@ -692,14 +629,6 @@ where
 }
 
 impl JniType for FunctionArgStructField {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::String(x) => x.as_raw_jni_type(),
-            Self::Interface(x) => x.inner.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -771,14 +700,6 @@ impl JniType for FunctionArgStructField {
 }
 
 impl JniType for FunctionReturnStructField {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::ClassRef(x) => x.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-            Self::Iterator(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -850,13 +771,6 @@ impl JniType for FunctionReturnStructField {
 }
 
 impl JniType for CallbackArgStructField {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::Iterator(x) => x.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -921,12 +835,6 @@ impl JniType for CallbackArgStructField {
 }
 
 impl JniType for UniversalStructField {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -984,17 +892,6 @@ impl JniType for UniversalStructField {
 }
 
 impl JniType for FunctionArgument {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::String(x) => x.as_raw_jni_type(),
-            Self::Collection(x) => x.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-            Self::StructRef(x) => x.inner.as_raw_jni_type(),
-            Self::ClassRef(x) => x.as_raw_jni_type(),
-            Self::Interface(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -1087,15 +984,6 @@ impl JniType for FunctionArgument {
 }
 
 impl JniType for CallbackArgument {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::String(x) => x.as_raw_jni_type(),
-            Self::Iterator(x) => x.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-            Self::Class(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -1174,15 +1062,6 @@ impl JniType for CallbackArgument {
 }
 
 impl JniType for FunctionReturnValue {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::String(x) => x.as_raw_jni_type(),
-            Self::ClassRef(x) => x.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-            Self::StructRef(x) => x.untyped().as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -1261,12 +1140,6 @@ impl JniType for FunctionReturnValue {
 }
 
 impl JniType for CallbackReturnValue {
-    fn as_raw_jni_type(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.as_raw_jni_type(),
-            Self::Struct(x) => x.as_raw_jni_type(),
-        }
-    }
 
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self {
@@ -1328,13 +1201,6 @@ where
     D: DocReference,
     T: Clone + JniType,
 {
-    fn as_raw_jni_type(&self) -> &str {
-        match self.get_value() {
-            None => "()",
-            Some(return_type) => return_type.as_raw_jni_type(),
-        }
-    }
-
     fn as_jni_sig(&self, lib_path: &str) -> String {
         match self.get_value() {
             None => "V".to_string(),

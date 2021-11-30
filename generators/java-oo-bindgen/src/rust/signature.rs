@@ -1,11 +1,12 @@
 use oo_bindgen::model::*;
 
-/// the raw JNI type for non-primitives
+/// the raw JNI type for non-primitives (except strings which have their own special type)
 const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";
 
 /// Trait for types used in JNI function signatures
 pub(crate) trait JniSignatureType {
-    /// get the raw JNI type (from jni::sys::* module) used in the Rust JNI function signatures
+    /// get the raw JNI type (from jni::sys::* module) used in
+    /// the Rust JNI function signatures
     fn jni_signature_type(&self) -> &str;
 }
 

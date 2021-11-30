@@ -3,6 +3,7 @@ use std::fs;
 use conversion::*;
 use oo_bindgen::model::*;
 
+use crate::rust::to_rust::ToRust;
 use crate::*;
 
 mod classes;
@@ -11,6 +12,7 @@ mod enums;
 mod exceptions;
 mod interface;
 mod structs;
+mod to_rust;
 
 pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     fs::create_dir_all(&config.rust_output_dir)?;
@@ -30,6 +32,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     generate_cache(&mut f)?;
     f.newline()?;
     write_functions(&mut f, lib, config)?;
+    write_helpers_module(&mut f, lib, config)?;
 
     // Create the cache modules
     classes::generate_classes_cache(lib, config)?;
@@ -38,7 +41,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     interface::generate_interfaces_cache(lib, config)?;
     exceptions::generate_exceptions_cache(lib, config)?;
 
-    // Copy the modules that never changes
+    // Copy the modules that never change
     filename.set_file_name("primitives.rs");
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("./copy/primitives.rs"))?;
@@ -54,6 +57,10 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     filename.set_file_name("collection.rs");
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("./copy/collection.rs"))?;
+
+    filename.set_file_name("util.rs");
+    let mut f = FilePrinter::new(&filename)?;
+    f.write(include_str!("copy/util.rs"))?;
 
     Ok(())
 }
@@ -106,7 +113,8 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod structs;")?;
     f.writeln("mod interfaces;")?;
     f.writeln("mod exceptions;")?;
-
+    f.writeln("mod util;")?;
+    f.newline()?;
     // Create cache
     f.writeln("struct JCache")?;
     blocked(f, |f| {
@@ -162,6 +170,14 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
 
     f.newline()?;
 
+    f.writeln("fn get_cache<'a>() -> &'a JCache {")?;
+    indented(f, |f| {
+        f.writeln("unsafe { crate::JCACHE.as_ref().unwrap() }")
+    })?;
+    f.writeln("}")?;
+
+    f.newline()?;
+
     // OnLoad function
     f.writeln("#[no_mangle]")?;
     f.writeln("pub extern \"C\" fn JNI_OnLoad(vm: *mut jni::sys::JavaVM, _: *mut std::ffi::c_void) -> jni::sys::jint")?;
@@ -181,6 +197,125 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("unsafe { JCACHE.take().unwrap(); }")?;
         f.writeln("return 0;")
     })
+}
+
+/*
+impl Deref for StringCollection {
+        type Target = *mut foo_ffi::StringCollection;
+
+        fn deref(&self) -> &Self::Target {
+            &self.inner
+        }
+    }
+ */
+
+fn write_collection_guard(
+    f: &mut dyn Printer,
+    config: &JavaBindgenConfig,
+    col: &Handle<Collection<Validated>>,
+) -> FormattingResult<()> {
+    let collection_name = col.collection_class.name.camel_case();
+    let c_ffi_prefix = col.collection_class.settings.c_ffi_prefix.clone();
+
+    f.writeln("/// Guard that builds the C collection type from a Java list")?;
+    f.writeln(&format!("pub(crate) struct {} {{", collection_name))?;
+    indented(f, |f| {
+        f.writeln(&format!(
+            "inner: *mut {}::{}",
+            config.ffi_name, collection_name
+        ))
+    })?;
+    f.writeln("}")?;
+
+    f.newline()?;
+
+    f.writeln(&format!("impl std::ops::Deref for {} {{", collection_name))?;
+    indented(f, |f| {
+        f.writeln(&format!(
+            "type Target = *mut {}::{};",
+            config.ffi_name, collection_name
+        ))?;
+        f.newline()?;
+        f.writeln("fn deref(&self) -> &Self::Target {")?;
+        indented(f, |f| f.writeln("&self.inner"))?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
+
+    f.newline()?;
+
+    f.writeln(&format!("impl {} {{", collection_name))?;
+    indented(f, |f| {
+        f.writeln("pub(crate) fn new(_env: jni::JNIEnv, list: jni::sys::jobject) -> Result<Self, jni::errors::Error> {")?;
+        indented(f, |f| {
+            f.writeln("let cache = crate::get_cache();")?;
+            let size = if col.has_reserve {
+                f.writeln("let size = cache.collection.get_size(&_env, list.into());")?;
+                "size"
+            } else {
+                ""
+            };
+            f.writeln(&format!(
+                "let col = Self {{ inner: unsafe {{ {}::ffi::{}_{}({}) }} }};",
+                config.ffi_name, c_ffi_prefix, col.create_func.name, size
+            ))?;
+            f.writeln("let it = jni::objects::AutoLocal::new(&_env, cache.collection.get_iterator(&_env, list.into()));")?;
+            f.writeln("while cache.collection.has_next(&_env, it.as_obj()) {")?;
+            indented(f, |f| {
+                f.writeln("let next = jni::objects::AutoLocal::new(&_env, cache.collection.next(&_env, it.as_obj()));")?;
+                if let Some(converted) = col.item_type.to_rust("next.as_obj()") {
+                    // perform  primary conversion that shadows the variable
+                    f.writeln(&format!("let next = {};", converted))?;
+                }
+                let arg = col
+                    .item_type
+                    .call_site("next")
+                    .unwrap_or_else(|| "next".to_string());
+                f.writeln(&format!(
+                    "unsafe {{ {}::ffi::{}_{}(col.inner, {}) }};",
+                    config.ffi_name, c_ffi_prefix, col.add_func.name, arg
+                ))?;
+                Ok(())
+            })?;
+            f.writeln("}")?;
+            f.writeln("Ok(col)")?;
+            Ok(())
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")?;
+
+    f.newline()?;
+
+    f.writeln("/// Destroy the C collection on drop")?;
+    f.writeln(&format!("impl Drop for {} {{", collection_name))?;
+    indented(f, |f| {
+        f.writeln("fn drop(&mut self) {")?;
+        indented(f, |f| {
+            f.writeln(&format!(
+                "unsafe {{ {}::ffi::{}_{}(self.inner) }}",
+                config.ffi_name, c_ffi_prefix, col.delete_func.name
+            ))
+        })?;
+        f.writeln("}")
+    })?;
+    f.writeln("}")
+}
+
+fn write_helpers_module(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
+    f.writeln("mod helpers {")?;
+    indented(f, |f| {
+        for col in lib.collections() {
+            f.newline()?;
+            write_collection_guard(f, config, col)?;
+        }
+        Ok(())
+    })?;
+    f.writeln("}")
 }
 
 fn write_functions(
@@ -249,15 +384,15 @@ fn write_function(
     write_function_signature(f, lib, config, handle)?;
     blocked(f, |f| {
         // Get the JCache
-        f.writeln("let _cache = unsafe { JCACHE.as_ref().unwrap() };")?;
+        f.writeln("let _cache = get_cache();")?;
 
         f.newline()?;
 
         // Perform the primary conversion of the parameters if required
         for param in &handle.arguments {
-            if let Some(converter) = param.arg_type.conversion() {
-                converter.convert_to_rust(f, &param.name, &format!("let {} = ", param.name))?;
-                f.write(";")?;
+            if let Some(converted) = param.arg_type.to_rust(&param.name) {
+                let conversion = format!("let {} = {};", param.name, converted);
+                f.writeln(&conversion)?;
             }
         }
 
@@ -284,36 +419,24 @@ fn write_function(
             }
         };
 
+        let args = handle
+            .arguments
+            .iter()
+            .map(|param| {
+                param
+                    .arg_type
+                    .call_site(&param.name)
+                    .unwrap_or_else(|| param.name.to_string())
+            })
+            .chain(extra_param.into_iter())
+            .collect::<Vec<String>>()
+            .join(", ");
+
         // invoke the native function
-        f.write(&format!(
-            "unsafe {{ {}::ffi::{}_{}(",
-            config.ffi_name, lib.settings.c_ffi_prefix, handle.name
+        f.writeln(&format!(
+            "unsafe {{ {}::ffi::{}_{}({}) }};",
+            config.ffi_name, lib.settings.c_ffi_prefix, handle.name, args
         ))?;
-        f.write(
-            &handle
-                .arguments
-                .iter()
-                .map(|param| {
-                    let call_site_transform = param
-                        .arg_type
-                        .conversion()
-                        .and_then(|c| c.convert_parameter_at_call_site(&param.name))
-                        .unwrap_or_else(|| param.name.to_string());
-
-                    // TODO - this shouldn't be necessary
-                    if matches!(param.arg_type, FunctionArgument::Struct(_)) {
-                        format!("{}.clone()", call_site_transform)
-                    } else {
-                        call_site_transform
-                    }
-                })
-                .chain(extra_param.into_iter())
-                .collect::<Vec<String>>()
-                .join(", "),
-        )?;
-        f.write(") };")?;
-
-        f.newline()?;
 
         // Convert return value
         match handle.get_signature_type() {
@@ -363,20 +486,6 @@ fn write_function(
                     f.writeln(return_type.default_value())
                 })?;
                 f.write(";")?;
-            }
-        }
-
-        f.newline()?;
-
-        // Conversion cleanup
-        for param in &handle.arguments {
-            if let Some(conversion) = param.arg_type.conversion() {
-                conversion.convert_to_rust_cleanup(f, &param.name)?;
-            }
-
-            // Because we clone structs that are passed by value, we don't want the drop of interfaces to be called twice
-            if matches!(param.arg_type, FunctionArgument::Struct(_)) {
-                f.writeln(&format!("std::mem::forget({});", param.name))?;
             }
         }
 

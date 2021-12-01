@@ -155,13 +155,10 @@ pub(crate) fn generate_interfaces_cache(
 
                 // Convert return value
                 if let Some(return_type) = &cb.return_type.get_value() {
-                    if let Some(conversion) = return_type.conversion() {
-                        conversion.convert_to_rust(
-                            f,
-                            &format!("_result.{}", return_type.unwrap_value()),
-                            "return ",
-                        )?;
-                        f.write(";")?;
+                    if let Some(converted) =
+                        return_type.to_rust(&format!("_result.{}", return_type.unwrap_value()))
+                    {
+                        f.writeln(&format!("return {};", converted))?;
                     } else {
                         f.writeln("return _result;")?;
                     }

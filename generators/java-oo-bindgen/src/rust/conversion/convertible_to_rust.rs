@@ -172,6 +172,23 @@ impl ConvertibleToRust for FunctionArgStructDeclaration {
     }
 }
 
+impl<T> ConvertibleToRust for Handle<Struct<T, Unvalidated>>
+where
+    T: StructFieldType,
+{
+    fn to_rust(&self, expr: &str) -> Option<String> {
+        Some(format!(
+            "_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
+            self.name(),
+            expr
+        ))
+    }
+
+    fn call_site(&self, _expr: &str) -> Option<String> {
+        None
+    }
+}
+
 impl ConvertibleToRust for UniversalOr<FunctionArgStructField> {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
@@ -221,6 +238,22 @@ impl ConvertibleToRust for FunctionArgument {
             FunctionArgument::StructRef(x) => x.call_site(expr),
             FunctionArgument::ClassRef(x) => x.call_site(expr),
             FunctionArgument::Interface(x) => x.call_site(expr),
+        }
+    }
+}
+
+impl ConvertibleToRust for CallbackReturnValue {
+    fn to_rust(&self, expr: &str) -> Option<String> {
+        match self {
+            CallbackReturnValue::Basic(x) => x.to_rust(expr),
+            CallbackReturnValue::Struct(x) => x.to_rust(expr),
+        }
+    }
+
+    fn call_site(&self, expr: &str) -> Option<String> {
+        match self {
+            CallbackReturnValue::Basic(x) => x.call_site(expr),
+            CallbackReturnValue::Struct(x) => x.call_site(expr),
         }
     }
 }

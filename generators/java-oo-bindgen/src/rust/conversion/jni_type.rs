@@ -6,13 +6,7 @@ use oo_bindgen::model::*;
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
 const OBJECT_UNWRAP: &str = "l().unwrap().into_inner()";
 
-fn jni_object_sig(lib_path: &str, object_name: &Name) -> String {
-    format!("L{}/{};", lib_path, object_name.camel_case())
-}
-
 pub(crate) trait JniType {
-    /// Returns the JNI signature of the type
-    fn as_jni_sig(&self, lib_path: &str) -> String;
     /// Return the Rust FFI type
     fn as_rust_type(&self, ffi_name: &str) -> String;
     /// Convert from jni::objects::JValue to raw JNI type (by calling one of the unwrappers)
@@ -37,10 +31,6 @@ pub(crate) trait JniType {
 }
 
 impl JniType for DurationType {
-    fn as_jni_sig(&self, _: &str) -> String {
-        "Ljava/time/Duration;".to_string()
-    }
-
     fn as_rust_type(&self, _: &str) -> String {
         match self {
             DurationType::Milliseconds | DurationType::Seconds => "u64".to_string(),
@@ -77,10 +67,6 @@ impl<D> JniType for Handle<Enum<D>>
 where
     D: DocReference,
 {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        format!("L{}/{};", lib_path, self.name.camel_case())
-    }
-
     fn as_rust_type(&self, _ffi_name: &str) -> String {
         "std::os::raw::c_int".to_string()
     }
@@ -116,10 +102,6 @@ where
 }
 
 impl JniType for StringType {
-    fn as_jni_sig(&self, _lib_path: &str) -> String {
-        "Ljava/lang/String;".to_string()
-    }
-
     fn as_rust_type(&self, _ffi_name: &str) -> String {
         "*const std::os::raw::c_char".to_string()
     }
@@ -151,22 +133,6 @@ impl JniType for StringType {
 }
 
 impl JniType for Primitive {
-    fn as_jni_sig(&self, _lib_path: &str) -> String {
-        match self {
-            Self::Bool => "Z".to_string(),
-            Self::U8 => "Lorg/joou/UByte;".to_string(),
-            Self::S8 => "B".to_string(),
-            Self::U16 => "Lorg/joou/UShort;".to_string(),
-            Self::S16 => "S".to_string(),
-            Self::U32 => "Lorg/joou/UInteger;".to_string(),
-            Self::S32 => "I".to_string(),
-            Self::U64 => "Lorg/joou/ULong;".to_string(),
-            Self::S64 => "J".to_string(),
-            Self::Float => "F".to_string(),
-            Self::Double => "D".to_string(),
-        }
-    }
-
     fn as_rust_type(&self, _ffi_name: &str) -> String {
         self.get_c_rust_type().to_string()
     }
@@ -280,14 +246,6 @@ impl JniType for Primitive {
 }
 
 impl JniType for BasicType {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Primitive(x) => x.as_jni_sig(lib_path),
-            Self::Duration(x) => x.as_jni_sig(lib_path),
-            Self::Enum(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, _ffi_name: &str) -> String {
         self.get_c_rust_type().to_string()
     }
@@ -339,10 +297,6 @@ impl JniType for BasicType {
 }
 
 impl JniType for StructDeclarationHandle {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, &self.name)
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         format!("*const {}::ffi::{}", ffi_name, self.name.camel_case())
     }
@@ -374,10 +328,6 @@ impl JniType for StructDeclarationHandle {
 }
 
 impl JniType for ClassDeclarationHandle {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, &self.name)
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         format!("*mut {}::{}", ffi_name, self.name.camel_case())
     }
@@ -409,10 +359,6 @@ impl JniType for ClassDeclarationHandle {
 }
 
 impl JniType for Handle<Interface<Unvalidated>> {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, &self.name)
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         format!("{}::ffi::{}", ffi_name, self.name.camel_case())
     }
@@ -451,10 +397,6 @@ impl<D> JniType for Handle<Collection<D>>
 where
     D: DocReference,
 {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, self.name())
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         format!("*mut {}::{}", ffi_name, self.name().camel_case())
     }
@@ -489,10 +431,6 @@ impl<D> JniType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
-    fn as_jni_sig(&self, _lib_path: &str) -> String {
-        "Ljava/util/List;".to_string()
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         format!("*mut {}::{}", ffi_name, self.name().camel_case())
     }
@@ -528,10 +466,6 @@ where
     D: DocReference,
     T: StructFieldType,
 {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, self.name())
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         format!("{}::ffi::{}", ffi_name, self.name().camel_case())
     }
@@ -566,13 +500,6 @@ impl<T> JniType for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            UniversalOr::Specific(x) => x.as_jni_sig(lib_path),
-            UniversalOr::Universal(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             UniversalOr::Specific(x) => x.as_rust_type(ffi_name),
@@ -622,15 +549,6 @@ where
 }
 
 impl JniType for FunctionArgStructField {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::String(x) => x.as_jni_sig(lib_path),
-            Self::Interface(x) => x.inner.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -692,15 +610,6 @@ impl JniType for FunctionArgStructField {
 }
 
 impl JniType for FunctionReturnStructField {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::ClassRef(x) => x.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-            Self::Iterator(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -762,14 +671,6 @@ impl JniType for FunctionReturnStructField {
 }
 
 impl JniType for CallbackArgStructField {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::Iterator(x) => x.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -825,13 +726,6 @@ impl JniType for CallbackArgStructField {
 }
 
 impl JniType for UniversalStructField {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -881,18 +775,6 @@ impl JniType for UniversalStructField {
 }
 
 impl JniType for FunctionArgument {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::String(x) => x.as_jni_sig(lib_path),
-            Self::Collection(x) => x.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-            Self::StructRef(x) => x.inner.as_jni_sig(lib_path),
-            Self::ClassRef(x) => x.as_jni_sig(lib_path),
-            Self::Interface(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -972,16 +854,6 @@ impl JniType for FunctionArgument {
 }
 
 impl JniType for CallbackArgument {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::String(x) => x.as_jni_sig(lib_path),
-            Self::Iterator(x) => x.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-            Self::Class(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -1049,16 +921,6 @@ impl JniType for CallbackArgument {
 }
 
 impl JniType for FunctionReturnValue {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::String(x) => x.as_jni_sig(lib_path),
-            Self::ClassRef(x) => x.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-            Self::StructRef(x) => x.untyped().as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -1126,13 +988,6 @@ impl JniType for FunctionReturnValue {
 }
 
 impl JniType for CallbackReturnValue {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_jni_sig(lib_path),
-            Self::Struct(x) => x.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self {
             Self::Basic(x) => x.as_rust_type(ffi_name),
@@ -1186,13 +1041,6 @@ where
     D: DocReference,
     T: Clone + JniType,
 {
-    fn as_jni_sig(&self, lib_path: &str) -> String {
-        match self.get_value() {
-            None => "V".to_string(),
-            Some(return_type) => return_type.as_jni_sig(lib_path),
-        }
-    }
-
     fn as_rust_type(&self, ffi_name: &str) -> String {
         match self.get_value() {
             None => "()".to_string(),

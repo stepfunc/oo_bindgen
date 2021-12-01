@@ -102,7 +102,7 @@ where
                 struct_sig, struct_name
             ))?;
             for field in structure.fields() {
-                f.writeln(&format!("let field_{field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name, field_mixed=field.name.mixed_case(), field_sig=field.field_type.jni_type_id(&lib_path)))?;
+                f.writeln(&format!("let field_{field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name, field_mixed=field.name.mixed_case(), field_sig=field.field_type.jni_type_id().as_string(&lib_path)))?;
             }
             f.writeln("Self")?;
             blocked(f, |f| {
@@ -122,7 +122,7 @@ where
         blocked(f, |f| {
             // retrieve the fields from the jobject
             for field in structure.fields() {
-                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.jni_type_id(&lib_path), field.field_type.convert_jvalue()))?;
+                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.jni_type_id().as_string(&lib_path), field.field_type.convert_jvalue()))?;
             }
 
             f.newline()?;

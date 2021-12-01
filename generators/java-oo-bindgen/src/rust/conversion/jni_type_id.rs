@@ -1,70 +1,82 @@
-use crate::rust::conversion::JniType;
 use oo_bindgen::model::*;
 
-fn jni_object_sig(lib_path: &str, object_name: &Name) -> String {
-    format!("L{}/{};", lib_path, object_name.camel_case())
+pub(crate) trait JniTypeId {
+    /// get the JNI identifier of the type used to find methods and fields
+    fn jni_type_id(&self) -> TypeId;
 }
 
-pub(crate) trait JniTypeId {
-    /// get the JNI identifier of the type used to disambiguate methods
-    fn jni_type_id(&self, lib_path: &str) -> String;
+/// Identifier which may be a fixed value or generated from type name in the library
+pub(crate) enum TypeId {
+    Fixed(&'static str),
+    LibraryType(Name),
+}
+
+impl TypeId {
+    pub(crate) fn as_string(&self, lib_path: &str) -> String {
+        match self {
+            TypeId::Fixed(x) => x.to_string(),
+            TypeId::LibraryType(name) => {
+                format!("L{}/{};", lib_path, name.camel_case())
+            }
+        }
+    }
 }
 
 impl JniTypeId for Primitive {
-    fn jni_type_id(&self, _lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            Self::Bool => "Z".to_string(),
-            Self::U8 => "Lorg/joou/UByte;".to_string(),
-            Self::S8 => "B".to_string(),
-            Self::U16 => "Lorg/joou/UShort;".to_string(),
-            Self::S16 => "S".to_string(),
-            Self::U32 => "Lorg/joou/UInteger;".to_string(),
-            Self::S32 => "I".to_string(),
-            Self::U64 => "Lorg/joou/ULong;".to_string(),
-            Self::S64 => "J".to_string(),
-            Self::Float => "F".to_string(),
-            Self::Double => "D".to_string(),
+            Self::Bool => TypeId::Fixed("Z"),
+            Self::U8 => TypeId::Fixed("Lorg/joou/UByte;"),
+            Self::S8 => TypeId::Fixed("B"),
+            Self::U16 => TypeId::Fixed("Lorg/joou/UShort;"),
+            Self::S16 => TypeId::Fixed("S"),
+            Self::U32 => TypeId::Fixed("Lorg/joou/UInteger;"),
+            Self::S32 => TypeId::Fixed("I"),
+            Self::U64 => TypeId::Fixed("Lorg/joou/ULong;"),
+            Self::S64 => TypeId::Fixed("J"),
+            Self::Float => TypeId::Fixed("F"),
+            Self::Double => TypeId::Fixed("D"),
         }
     }
 }
 
 impl JniTypeId for StringType {
-    fn jni_type_id(&self, _lib_path: &str) -> String {
-        "Ljava/lang/String;".to_string()
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::Fixed("Ljava/lang/String;")
     }
 }
 
 impl JniTypeId for DurationType {
-    fn jni_type_id(&self, _lib_path: &str) -> String {
-        "Ljava/time/Duration;".to_string()
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::Fixed("Ljava/time/Duration;")
     }
 }
 
 impl JniTypeId for EnumHandle {
-    fn jni_type_id(&self, lib_path: &str) -> String {
-        format!("L{}/{};", lib_path, self.name.camel_case())
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::LibraryType(self.name.clone())
     }
 }
 
 impl JniTypeId for BasicType {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            BasicType::Primitive(x) => x.jni_type_id(lib_path),
-            BasicType::Duration(x) => x.jni_type_id(lib_path),
-            BasicType::Enum(x) => x.jni_type_id(lib_path),
+            BasicType::Primitive(x) => x.jni_type_id(),
+            BasicType::Duration(x) => x.jni_type_id(),
+            BasicType::Enum(x) => x.jni_type_id(),
         }
     }
 }
 
 impl JniTypeId for AbstractIteratorHandle {
-    fn jni_type_id(&self, _lib_path: &str) -> String {
-        "Ljava/util/List;".to_string()
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::Fixed("Ljava/util/List;")
     }
 }
 
 impl JniTypeId for ClassDeclarationHandle {
-    fn jni_type_id(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, &self.name)
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::LibraryType(self.name.clone())
     }
 }
 
@@ -72,90 +84,90 @@ impl<T> JniTypeId for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn jni_type_id(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, self.name())
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::LibraryType(self.name().clone())
     }
 }
 
 impl JniTypeId for UniversalStructHandle {
-    fn jni_type_id(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, &self.name())
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::LibraryType(self.name().clone())
     }
 }
 
 impl JniTypeId for CallbackArgument {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            CallbackArgument::Basic(x) => x.jni_type_id(lib_path),
-            CallbackArgument::String(x) => x.jni_type_id(lib_path),
-            CallbackArgument::Iterator(x) => x.jni_type_id(lib_path),
-            CallbackArgument::Class(x) => x.jni_type_id(lib_path),
-            CallbackArgument::Struct(x) => x.as_jni_sig(lib_path),
+            CallbackArgument::Basic(x) => x.jni_type_id(),
+            CallbackArgument::String(x) => x.jni_type_id(),
+            CallbackArgument::Iterator(x) => x.jni_type_id(),
+            CallbackArgument::Class(x) => x.jni_type_id(),
+            CallbackArgument::Struct(x) => x.jni_type_id(),
         }
     }
 }
 
 impl JniTypeId for CallbackReturnValue {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            CallbackReturnValue::Basic(x) => x.jni_type_id(lib_path),
-            CallbackReturnValue::Struct(x) => x.jni_type_id(lib_path),
+            CallbackReturnValue::Basic(x) => x.jni_type_id(),
+            CallbackReturnValue::Struct(x) => x.jni_type_id(),
         }
     }
 }
 
 impl JniTypeId for OptionalReturnType<CallbackReturnValue, Validated> {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self.get_value() {
-            None => "V".to_string(),
-            Some(x) => x.jni_type_id(lib_path),
+            None => TypeId::Fixed("V"),
+            Some(x) => x.jni_type_id(),
         }
     }
 }
 
 impl JniTypeId for InterfaceHandle {
-    fn jni_type_id(&self, lib_path: &str) -> String {
-        jni_object_sig(lib_path, &self.name)
+    fn jni_type_id(&self) -> TypeId {
+        TypeId::LibraryType(self.name.clone())
     }
 }
 
 impl JniTypeId for FunctionArgStructField {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            FunctionArgStructField::Basic(x) => x.jni_type_id(lib_path),
-            FunctionArgStructField::String(x) => x.jni_type_id(lib_path),
-            FunctionArgStructField::Interface(x) => x.inner.jni_type_id(lib_path),
-            FunctionArgStructField::Struct(x) => x.jni_type_id(lib_path),
+            FunctionArgStructField::Basic(x) => x.jni_type_id(),
+            FunctionArgStructField::String(x) => x.jni_type_id(),
+            FunctionArgStructField::Interface(x) => x.inner.jni_type_id(),
+            FunctionArgStructField::Struct(x) => x.jni_type_id(),
         }
     }
 }
 
 impl JniTypeId for FunctionReturnStructField {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            FunctionReturnStructField::Basic(x) => x.jni_type_id(lib_path),
-            FunctionReturnStructField::ClassRef(x) => x.jni_type_id(lib_path),
-            FunctionReturnStructField::Iterator(x) => x.jni_type_id(lib_path),
-            FunctionReturnStructField::Struct(x) => x.jni_type_id(lib_path),
+            FunctionReturnStructField::Basic(x) => x.jni_type_id(),
+            FunctionReturnStructField::ClassRef(x) => x.jni_type_id(),
+            FunctionReturnStructField::Iterator(x) => x.jni_type_id(),
+            FunctionReturnStructField::Struct(x) => x.jni_type_id(),
         }
     }
 }
 
 impl JniTypeId for CallbackArgStructField {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            CallbackArgStructField::Basic(x) => x.jni_type_id(lib_path),
-            CallbackArgStructField::Iterator(x) => x.jni_type_id(lib_path),
-            CallbackArgStructField::Struct(x) => x.jni_type_id(lib_path),
+            CallbackArgStructField::Basic(x) => x.jni_type_id(),
+            CallbackArgStructField::Iterator(x) => x.jni_type_id(),
+            CallbackArgStructField::Struct(x) => x.jni_type_id(),
         }
     }
 }
 
 impl JniTypeId for UniversalStructField {
-    fn jni_type_id(&self, lib_path: &str) -> String {
+    fn jni_type_id(&self) -> TypeId {
         match self {
-            UniversalStructField::Basic(x) => x.jni_type_id(lib_path),
-            UniversalStructField::Struct(x) => x.jni_type_id(lib_path),
+            UniversalStructField::Basic(x) => x.jni_type_id(),
+            UniversalStructField::Struct(x) => x.jni_type_id(),
         }
     }
 }

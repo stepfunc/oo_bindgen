@@ -16,7 +16,7 @@ use oo_bindgen::model::*;
 /// * _env - JNIEnv
 /// * _cache - Pre-allocated JniCache
 ///
-pub(crate) trait ToRust {
+pub(crate) trait ConvertibleToRust {
     /// Optionally, convert an expression (variable) to a primary type
     /// This usually takes the form of a shadowed variable
     fn to_rust(&self, expr: &str) -> Option<String>;
@@ -25,7 +25,7 @@ pub(crate) trait ToRust {
     fn call_site(&self, expr: &str) -> Option<String>;
 }
 
-impl ToRust for StringType {
+impl ConvertibleToRust for StringType {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!("_env.get_string({}.into()).unwrap()", expr))
     }
@@ -35,7 +35,7 @@ impl ToRust for StringType {
     }
 }
 
-impl ToRust for Primitive {
+impl ConvertibleToRust for Primitive {
     fn to_rust(&self, expr: &str) -> Option<String> {
         match self {
             Primitive::Bool => Some(format!("_cache.primitives.boolean_value(&_env, {})", expr)),
@@ -81,7 +81,7 @@ impl ToRust for Primitive {
     }
 }
 
-impl ToRust for DurationType {
+impl ConvertibleToRust for DurationType {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(match self {
             DurationType::Milliseconds => {
@@ -98,7 +98,7 @@ impl ToRust for DurationType {
     }
 }
 
-impl ToRust for Handle<Enum<Unvalidated>> {
+impl ConvertibleToRust for Handle<Enum<Unvalidated>> {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
             "_cache.enums.enum_{}.enum_to_rust(&_env, {})",
@@ -111,7 +111,7 @@ impl ToRust for Handle<Enum<Unvalidated>> {
     }
 }
 
-impl ToRust for BasicType {
+impl ConvertibleToRust for BasicType {
     fn to_rust(&self, expr: &str) -> Option<String> {
         match self {
             BasicType::Primitive(x) => x.to_rust(expr),
@@ -129,7 +129,7 @@ impl ToRust for BasicType {
     }
 }
 
-impl ToRust for CollectionHandle {
+impl ConvertibleToRust for CollectionHandle {
     fn to_rust(&self, expr: &str) -> Option<String> {
         // create the helper guard object that allocates and fills the native collection from the list
         Some(format!(
@@ -145,7 +145,7 @@ impl ToRust for CollectionHandle {
     }
 }
 
-impl ToRust for InterfaceHandle {
+impl ConvertibleToRust for InterfaceHandle {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
             "_cache.interfaces.interface_{}.interface_to_rust(&_env, {})",
@@ -158,7 +158,7 @@ impl ToRust for InterfaceHandle {
     }
 }
 
-impl ToRust for FunctionArgStructDeclaration {
+impl ConvertibleToRust for FunctionArgStructDeclaration {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
             "_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
@@ -172,7 +172,7 @@ impl ToRust for FunctionArgStructDeclaration {
     }
 }
 
-impl ToRust for UniversalOr<FunctionArgStructField> {
+impl ConvertibleToRust for UniversalOr<FunctionArgStructField> {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
             "_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
@@ -186,7 +186,7 @@ impl ToRust for UniversalOr<FunctionArgStructField> {
     }
 }
 
-impl ToRust for ClassDeclarationHandle {
+impl ConvertibleToRust for ClassDeclarationHandle {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
             "_cache.classes.{}_to_rust(&_env, {})",
@@ -199,7 +199,7 @@ impl ToRust for ClassDeclarationHandle {
     }
 }
 
-impl ToRust for FunctionArgument {
+impl ConvertibleToRust for FunctionArgument {
     fn to_rust(&self, expr: &str) -> Option<String> {
         match self {
             FunctionArgument::Basic(x) => x.to_rust(expr),

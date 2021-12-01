@@ -1,9 +1,11 @@
+mod convertible_to_rust;
 mod jni_signature;
 mod jni_type;
 mod jni_type_id;
-mod to_rust;
+mod rust_type;
 
+pub(crate) use convertible_to_rust::ConvertibleToRust;
 pub(crate) use jni_signature::JniSignatureType;
 pub(crate) use jni_type::*;
 pub(crate) use jni_type_id::JniTypeId;
-pub(crate) use to_rust::ToRust;
+pub(crate) use rust_type::RustType;

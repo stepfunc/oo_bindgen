@@ -125,7 +125,7 @@ pub(crate) fn generate_interfaces_cache(
                     format!(
                         "{}: {}",
                         arg.name,
-                        arg.arg_type.as_rust_type(&config.ffi_name)
+                        arg.arg_type.get_rust_type(&config.ffi_name)
                     )
                 })
                 .chain(std::iter::once(format!(
@@ -140,7 +140,7 @@ pub(crate) fn generate_interfaces_cache(
                 interface.name.camel_case(),
                 cb.name,
                 params,
-                cb.return_type.as_rust_type(&config.ffi_name)
+                cb.return_type.get_rust_type(&config.ffi_name)
             ))?;
             blocked(&mut f, |f| {
                 call_java_callback(

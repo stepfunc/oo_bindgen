@@ -158,7 +158,7 @@ pub(crate) fn generate_interfaces_cache(
                     if let Some(conversion) = return_type.conversion() {
                         conversion.convert_to_rust(
                             f,
-                            &format!("_result.{}", return_type.convert_jvalue()),
+                            &format!("_result.{}", return_type.unwrap_value()),
                             "return ",
                         )?;
                         f.write(";")?;

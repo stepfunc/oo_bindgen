@@ -1,8 +1,4 @@
-use oo_bindgen::model::{
-    AbstractIteratorHandle, BasicType, CallbackArgStructField, CallbackArgument,
-    CallbackReturnValue, ClassDeclarationHandle, DurationType, EnumHandle, OptionalReturnType,
-    Primitive, StringType, UniversalOr, UniversalStructHandle, Validated,
-};
+use oo_bindgen::model::*;
 
 /// Used to generate the interface conversions routines
 pub(crate) trait RustType {

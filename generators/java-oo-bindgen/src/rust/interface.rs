@@ -205,10 +205,10 @@ fn write_interface_init(
                 callback
                     .arguments
                     .iter()
-                    .map(|arg| { arg.arg_type.jni_type_id(lib_path) })
+                    .map(|arg| { arg.arg_type.jni_type_id().as_string(lib_path) })
                     .collect::<Vec<_>>()
                     .join(""),
-                callback.return_type.jni_type_id(lib_path)
+                callback.return_type.jni_type_id().as_string(lib_path)
             );
             f.writeln(&format!("let cb_{method_snake} = env.get_method_id(class, \"{method_mixed}\", \"{method_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find method {method_mixed}\");", method_snake=callback.name, method_mixed=callback.name.mixed_case(), method_sig=method_sig))?;
         }
@@ -265,7 +265,7 @@ fn call_java_callback(
         "_env.call_method_unchecked(_obj.as_obj(), _cache.interfaces.interface_{}.cb_{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap();",
         interface_name,
         callback_name,
-        return_type.jni_type_id(lib_path),
+        return_type.jni_type_id().as_string(lib_path),
         args.iter().map(|param| format!("{}.into()", param.name)).collect::<Vec<_>>().join(", ")
     ))?;
 

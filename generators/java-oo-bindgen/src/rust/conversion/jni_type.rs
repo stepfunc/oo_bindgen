@@ -7,8 +7,6 @@ const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
 const OBJECT_UNWRAP: &str = "l().unwrap().into_inner()";
 
 pub(crate) trait JniType {
-    /// Return the Rust FFI type
-    fn as_rust_type(&self, ffi_name: &str) -> String;
     /// Convert from jni::objects::JValue to raw JNI type (by calling one of the unwrappers)
     fn convert_jvalue(&self) -> &str;
     /// Convert to Rust from a JNI JObject (even for primitives).
@@ -31,12 +29,6 @@ pub(crate) trait JniType {
 }
 
 impl JniType for DurationType {
-    fn as_rust_type(&self, _: &str) -> String {
-        match self {
-            DurationType::Milliseconds | DurationType::Seconds => "u64".to_string(),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -67,10 +59,6 @@ impl<D> JniType for Handle<Enum<D>>
 where
     D: DocReference,
 {
-    fn as_rust_type(&self, _ffi_name: &str) -> String {
-        "std::os::raw::c_int".to_string()
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -102,10 +90,6 @@ where
 }
 
 impl JniType for StringType {
-    fn as_rust_type(&self, _ffi_name: &str) -> String {
-        "*const std::os::raw::c_char".to_string()
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -133,10 +117,6 @@ impl JniType for StringType {
 }
 
 impl JniType for Primitive {
-    fn as_rust_type(&self, _ffi_name: &str) -> String {
-        self.get_c_rust_type().to_string()
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Bool => "z().unwrap() as u8",
@@ -246,10 +226,6 @@ impl JniType for Primitive {
 }
 
 impl JniType for BasicType {
-    fn as_rust_type(&self, _ffi_name: &str) -> String {
-        self.get_c_rust_type().to_string()
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Primitive(x) => x.convert_jvalue(),
@@ -297,10 +273,6 @@ impl JniType for BasicType {
 }
 
 impl JniType for StructDeclarationHandle {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*const {}::ffi::{}", ffi_name, self.name.camel_case())
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -328,10 +300,6 @@ impl JniType for StructDeclarationHandle {
 }
 
 impl JniType for ClassDeclarationHandle {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*mut {}::{}", ffi_name, self.name.camel_case())
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -359,10 +327,6 @@ impl JniType for ClassDeclarationHandle {
 }
 
 impl JniType for Handle<Interface<Unvalidated>> {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("{}::ffi::{}", ffi_name, self.name.camel_case())
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -397,10 +361,6 @@ impl<D> JniType for Handle<Collection<D>>
 where
     D: DocReference,
 {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*mut {}::{}", ffi_name, self.name().camel_case())
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -431,10 +391,6 @@ impl<D> JniType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("*mut {}::{}", ffi_name, self.name().camel_case())
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -466,10 +422,6 @@ where
     D: DocReference,
     T: StructFieldType,
 {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        format!("{}::ffi::{}", ffi_name, self.name().camel_case())
-    }
-
     fn convert_jvalue(&self) -> &str {
         OBJECT_UNWRAP
     }
@@ -500,13 +452,6 @@ impl<T> JniType for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            UniversalOr::Specific(x) => x.as_rust_type(ffi_name),
-            UniversalOr::Universal(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             UniversalOr::Specific(x) => x.convert_jvalue(),
@@ -549,15 +494,6 @@ where
 }
 
 impl JniType for FunctionArgStructField {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::String(x) => x.as_rust_type(ffi_name),
-            Self::Interface(x) => x.inner.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -610,15 +546,6 @@ impl JniType for FunctionArgStructField {
 }
 
 impl JniType for FunctionReturnStructField {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::ClassRef(x) => x.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-            Self::Iterator(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -671,14 +598,6 @@ impl JniType for FunctionReturnStructField {
 }
 
 impl JniType for CallbackArgStructField {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::Iterator(x) => x.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -726,13 +645,6 @@ impl JniType for CallbackArgStructField {
 }
 
 impl JniType for UniversalStructField {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -775,18 +687,6 @@ impl JniType for UniversalStructField {
 }
 
 impl JniType for FunctionArgument {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::String(x) => x.as_rust_type(ffi_name),
-            Self::Collection(x) => x.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-            Self::StructRef(x) => x.inner.as_rust_type(ffi_name),
-            Self::ClassRef(x) => x.as_rust_type(ffi_name),
-            Self::Interface(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -854,16 +754,6 @@ impl JniType for FunctionArgument {
 }
 
 impl JniType for CallbackArgument {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::String(x) => x.as_rust_type(ffi_name),
-            Self::Iterator(x) => x.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-            Self::Class(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -921,16 +811,6 @@ impl JniType for CallbackArgument {
 }
 
 impl JniType for FunctionReturnValue {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::String(x) => x.as_rust_type(ffi_name),
-            Self::ClassRef(x) => x.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-            Self::StructRef(x) => x.untyped().as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -988,13 +868,6 @@ impl JniType for FunctionReturnValue {
 }
 
 impl JniType for CallbackReturnValue {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self {
-            Self::Basic(x) => x.as_rust_type(ffi_name),
-            Self::Struct(x) => x.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self {
             Self::Basic(x) => x.convert_jvalue(),
@@ -1041,13 +914,6 @@ where
     D: DocReference,
     T: Clone + JniType,
 {
-    fn as_rust_type(&self, ffi_name: &str) -> String {
-        match self.get_value() {
-            None => "()".to_string(),
-            Some(return_type) => return_type.as_rust_type(ffi_name),
-        }
-    }
-
     fn convert_jvalue(&self) -> &str {
         match self.get_value() {
             None => "v().unwrap()",

@@ -3,8 +3,6 @@ use std::rc::Rc;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
-
 pub(crate) trait JniType {
     /// Convert to Rust from a JNI JObject (even for primitives).
     ///
@@ -21,8 +19,6 @@ pub(crate) trait JniType {
     fn conversion(&self) -> Option<TypeConverter>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
     fn requires_local_ref_cleanup(&self) -> bool;
-    /// Returns the default raw JNI type value (used when throwing exceptions). Almost always `JObject::null` except for native types.
-    fn default_value(&self) -> &str;
 }
 
 impl JniType for DurationType {
@@ -41,10 +37,6 @@ impl JniType for DurationType {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
     }
 }
 
@@ -72,10 +64,6 @@ where
         // We re-use a global ref here
         false
     }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
-    }
 }
 
 impl JniType for StringType {
@@ -94,10 +82,6 @@ impl JniType for StringType {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
     }
 }
 
@@ -176,22 +160,6 @@ impl JniType for Primitive {
             Self::Double => false,
         }
     }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Bool => "0",
-            Self::U8 => NULL_DEFAULT_VALUE,
-            Self::S8 => "0",
-            Self::U16 => NULL_DEFAULT_VALUE,
-            Self::S16 => "0",
-            Self::U32 => NULL_DEFAULT_VALUE,
-            Self::S32 => "0",
-            Self::U64 => NULL_DEFAULT_VALUE,
-            Self::S64 => "0",
-            Self::Float => "0.0",
-            Self::Double => "0.0",
-        }
-    }
 }
 
 impl JniType for BasicType {
@@ -223,14 +191,6 @@ impl JniType for BasicType {
             Self::Enum(x) => x.requires_local_ref_cleanup(),
         }
     }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Primitive(x) => x.default_value(),
-            Self::Duration(x) => x.default_value(),
-            Self::Enum(x) => x.default_value(),
-        }
-    }
 }
 
 impl JniType for StructDeclarationHandle {
@@ -250,10 +210,6 @@ impl JniType for StructDeclarationHandle {
     fn requires_local_ref_cleanup(&self) -> bool {
         true
     }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
-    }
 }
 
 impl JniType for ClassDeclarationHandle {
@@ -272,10 +228,6 @@ impl JniType for ClassDeclarationHandle {
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
     }
 }
 
@@ -300,10 +252,6 @@ impl JniType for Handle<Interface<Unvalidated>> {
         // This is freed by Rust
         false
     }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
-    }
 }
 
 impl<D> JniType for Handle<Collection<D>>
@@ -325,10 +273,6 @@ where
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
     }
 }
 
@@ -352,10 +296,6 @@ where
     fn requires_local_ref_cleanup(&self) -> bool {
         true
     }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
-    }
 }
 
 impl<T, D> JniType for Handle<Struct<T, D>>
@@ -378,10 +318,6 @@ where
 
     fn requires_local_ref_cleanup(&self) -> bool {
         true
-    }
-
-    fn default_value(&self) -> &str {
-        NULL_DEFAULT_VALUE
     }
 }
 
@@ -412,13 +348,6 @@ where
         match self {
             UniversalOr::Specific(x) => x.requires_local_ref_cleanup(),
             UniversalOr::Universal(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn default_value(&self) -> &str {
-        match self {
-            UniversalOr::Specific(x) => x.default_value(),
-            UniversalOr::Universal(x) => x.default_value(),
         }
     }
 }
@@ -455,15 +384,6 @@ impl JniType for FunctionArgStructField {
             Self::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::String(x) => x.default_value(),
-            Self::Interface(x) => x.inner.default_value(),
-            Self::Struct(x) => x.default_value(),
-        }
-    }
 }
 
 impl JniType for FunctionReturnStructField {
@@ -498,15 +418,6 @@ impl JniType for FunctionReturnStructField {
             Self::Iterator(x) => x.requires_local_ref_cleanup(),
         }
     }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::ClassRef(x) => x.default_value(),
-            Self::Struct(x) => x.default_value(),
-            Self::Iterator(x) => x.default_value(),
-        }
-    }
 }
 
 impl JniType for CallbackArgStructField {
@@ -538,14 +449,6 @@ impl JniType for CallbackArgStructField {
             Self::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::Iterator(x) => x.default_value(),
-            Self::Struct(x) => x.default_value(),
-        }
-    }
 }
 
 impl JniType for UniversalStructField {
@@ -572,13 +475,6 @@ impl JniType for UniversalStructField {
         match self {
             Self::Basic(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::Struct(x) => x.default_value(),
         }
     }
 }
@@ -624,18 +520,6 @@ impl JniType for FunctionArgument {
             Self::Interface(x) => x.requires_local_ref_cleanup(),
         }
     }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::String(x) => x.default_value(),
-            Self::Collection(x) => x.default_value(),
-            Self::Struct(x) => x.default_value(),
-            Self::StructRef(x) => x.inner.default_value(),
-            Self::ClassRef(x) => x.default_value(),
-            Self::Interface(x) => x.default_value(),
-        }
-    }
 }
 
 impl JniType for CallbackArgument {
@@ -671,16 +555,6 @@ impl JniType for CallbackArgument {
             Self::Iterator(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
             Self::Class(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::String(x) => x.default_value(),
-            Self::Iterator(x) => x.default_value(),
-            Self::Struct(x) => x.default_value(),
-            Self::Class(x) => x.default_value(),
         }
     }
 }
@@ -720,16 +594,6 @@ impl JniType for FunctionReturnValue {
             Self::StructRef(x) => x.untyped().requires_local_ref_cleanup(),
         }
     }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::String(x) => x.default_value(),
-            Self::ClassRef(x) => x.default_value(),
-            Self::Struct(x) => x.default_value(),
-            Self::StructRef(x) => x.untyped().default_value(),
-        }
-    }
 }
 
 impl JniType for CallbackReturnValue {
@@ -756,13 +620,6 @@ impl JniType for CallbackReturnValue {
         match self {
             Self::Basic(x) => x.requires_local_ref_cleanup(),
             Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn default_value(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.default_value(),
-            Self::Struct(x) => x.default_value(),
         }
     }
 }
@@ -795,13 +652,6 @@ where
         match self.get_value() {
             None => false,
             Some(return_type) => return_type.requires_local_ref_cleanup(),
-        }
-    }
-
-    fn default_value(&self) -> &str {
-        match self.get_value() {
-            None => "",
-            Some(return_type) => return_type.default_value(),
         }
     }
 }

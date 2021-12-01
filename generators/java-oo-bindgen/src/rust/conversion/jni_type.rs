@@ -4,11 +4,8 @@ use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
-const OBJECT_UNWRAP: &str = "l().unwrap().into_inner()";
 
 pub(crate) trait JniType {
-    /// Convert from jni::objects::JValue to raw JNI type (by calling one of the unwrappers)
-    fn convert_jvalue(&self) -> &str;
     /// Convert to Rust from a JNI JObject (even for primitives).
     ///
     /// This should call the conversion routine for objects, but implement
@@ -29,10 +26,6 @@ pub(crate) trait JniType {
 }
 
 impl JniType for DurationType {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -59,10 +52,6 @@ impl<D> JniType for Handle<Enum<D>>
 where
     D: DocReference,
 {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -90,10 +79,6 @@ where
 }
 
 impl JniType for StringType {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -117,22 +102,6 @@ impl JniType for StringType {
 }
 
 impl JniType for Primitive {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Bool => "z().unwrap() as u8",
-            Self::U8 => "l().unwrap().into_inner()",
-            Self::S8 => "b().unwrap()",
-            Self::U16 => "l().unwrap().into_inner()",
-            Self::S16 => "s().unwrap()",
-            Self::U32 => "l().unwrap().into_inner()",
-            Self::S32 => "i().unwrap()",
-            Self::U64 => "l().unwrap().into_inner()",
-            Self::S64 => "j().unwrap()",
-            Self::Float => "f().unwrap()",
-            Self::Double => "d().unwrap()",
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -226,14 +195,6 @@ impl JniType for Primitive {
 }
 
 impl JniType for BasicType {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Primitive(x) => x.convert_jvalue(),
-            Self::Duration(x) => x.convert_jvalue(),
-            Self::Enum(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -273,10 +234,6 @@ impl JniType for BasicType {
 }
 
 impl JniType for StructDeclarationHandle {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -300,10 +257,6 @@ impl JniType for StructDeclarationHandle {
 }
 
 impl JniType for ClassDeclarationHandle {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -327,10 +280,6 @@ impl JniType for ClassDeclarationHandle {
 }
 
 impl JniType for Handle<Interface<Unvalidated>> {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -361,10 +310,6 @@ impl<D> JniType for Handle<Collection<D>>
 where
     D: DocReference,
 {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -391,10 +336,6 @@ impl<D> JniType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -422,10 +363,6 @@ where
     D: DocReference,
     T: StructFieldType,
 {
-    fn convert_jvalue(&self) -> &str {
-        OBJECT_UNWRAP
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -452,13 +389,6 @@ impl<T> JniType for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            UniversalOr::Specific(x) => x.convert_jvalue(),
-            UniversalOr::Universal(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -494,15 +424,6 @@ where
 }
 
 impl JniType for FunctionArgStructField {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::String(x) => x.convert_jvalue(),
-            Self::Interface(x) => x.inner.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -546,15 +467,6 @@ impl JniType for FunctionArgStructField {
 }
 
 impl JniType for FunctionReturnStructField {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::ClassRef(x) => x.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-            Self::Iterator(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -598,14 +510,6 @@ impl JniType for FunctionReturnStructField {
 }
 
 impl JniType for CallbackArgStructField {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::Iterator(x) => x.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -645,13 +549,6 @@ impl JniType for CallbackArgStructField {
 }
 
 impl JniType for UniversalStructField {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -687,18 +584,6 @@ impl JniType for UniversalStructField {
 }
 
 impl JniType for FunctionArgument {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::String(x) => x.convert_jvalue(),
-            Self::Collection(x) => x.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-            Self::StructRef(x) => x.inner.convert_jvalue(),
-            Self::ClassRef(x) => x.convert_jvalue(),
-            Self::Interface(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -754,16 +639,6 @@ impl JniType for FunctionArgument {
 }
 
 impl JniType for CallbackArgument {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::String(x) => x.convert_jvalue(),
-            Self::Iterator(x) => x.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-            Self::Class(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -811,16 +686,6 @@ impl JniType for CallbackArgument {
 }
 
 impl JniType for FunctionReturnValue {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::String(x) => x.convert_jvalue(),
-            Self::ClassRef(x) => x.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-            Self::StructRef(x) => x.untyped().convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -868,13 +733,6 @@ impl JniType for FunctionReturnValue {
 }
 
 impl JniType for CallbackReturnValue {
-    fn convert_jvalue(&self) -> &str {
-        match self {
-            Self::Basic(x) => x.convert_jvalue(),
-            Self::Struct(x) => x.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,
@@ -914,13 +772,6 @@ where
     D: DocReference,
     T: Clone + JniType,
 {
-    fn convert_jvalue(&self) -> &str {
-        match self.get_value() {
-            None => "v().unwrap()",
-            Some(return_type) => return_type.convert_jvalue(),
-        }
-    }
-
     fn convert_to_rust_from_object(
         &self,
         f: &mut dyn Printer,

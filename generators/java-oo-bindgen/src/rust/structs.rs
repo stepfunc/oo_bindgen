@@ -73,7 +73,7 @@ fn generate_struct<T>(
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + JniType + JniTypeId,
+    T: StructFieldType + JniType + JniTypeId + UnwrapValue,
 {
     let lib_path = config.java_signature_path(&lib.settings.name);
     let struct_name = structure.name().camel_case();
@@ -122,7 +122,7 @@ where
         blocked(f, |f| {
             // retrieve the fields from the jobject
             for field in structure.fields() {
-                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.jni_type_id().as_string(&lib_path), field.field_type.convert_jvalue()))?;
+                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.jni_type_id().as_string(&lib_path), field.field_type.unwrap_value()))?;
             }
 
             f.newline()?;

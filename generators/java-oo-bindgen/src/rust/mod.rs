@@ -472,7 +472,7 @@ fn write_function(
                         "let error = _cache.exceptions.throw_{}(&_env, _error);",
                         error_type.exception_name
                     ))?;
-                    f.writeln(return_type.default_value())
+                    f.writeln(return_type.get_default_value())
                 })?;
                 f.write(";")?;
             }

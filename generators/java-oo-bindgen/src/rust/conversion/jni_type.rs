@@ -4,17 +4,6 @@ use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
 pub(crate) trait JniType {
-    /// Convert to Rust from a JNI JObject (even for primitives).
-    ///
-    /// This should call the conversion routine for objects, but implement
-    /// custom conversions for primitives.
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()>;
-
     /// Optional conversion from JNI argument type to Rust type
     fn conversion(&self) -> Option<TypeConverter>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
@@ -22,14 +11,6 @@ pub(crate) trait JniType {
 }
 
 impl JniType for DurationType {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        DurationConverter::wrap(*self).convert_to_rust(f, from, to)
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         Some(DurationConverter::wrap(*self))
@@ -44,18 +25,6 @@ impl<D> JniType for Handle<Enum<D>>
 where
     D: DocReference,
 {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        EnumConverter {
-            name: self.name.clone(),
-        }
-        .convert_to_rust(f, from, to)
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(EnumConverter::wrap(self.clone()))
     }
@@ -67,15 +36,6 @@ where
 }
 
 impl JniType for StringType {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        StringConverter.convert_to_rust(f, from, to)
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(StringConverter::wrap())
     }
@@ -86,47 +46,6 @@ impl JniType for StringType {
 }
 
 impl JniType for Primitive {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Bool => f.writeln(&format!(
-                "{}_cache.primitives.boolean_value(&_env, {})",
-                to, from
-            )),
-            Self::U8 => UnsignedConverter::U8.convert_to_rust(f, from, to),
-            Self::S8 => f.writeln(&format!(
-                "{}_cache.primitives.byte_value(&_env, {})",
-                to, from
-            )),
-            Self::U16 => UnsignedConverter::U16.convert_to_rust(f, from, to),
-            Self::S16 => f.writeln(&format!(
-                "{}_cache.primitives.short_value(&_env, {})",
-                to, from
-            )),
-            Self::U32 => UnsignedConverter::U32.convert_to_rust(f, from, to),
-            Self::S32 => f.writeln(&format!(
-                "{}_cache.primitives.integer_value(&_env, {})",
-                to, from
-            )),
-            Self::U64 => UnsignedConverter::U64.convert_to_rust(f, from, to),
-            Self::S64 => f.writeln(&format!(
-                "{}_cache.primitives.long_value(&_env, {})",
-                to, from
-            )),
-            Self::Float => f.writeln(&format!(
-                "{}_cache.primitives.float_value(&_env, {})",
-                to, from
-            )),
-            Self::Double => f.writeln(&format!(
-                "{}_cache.primitives.double_value(&_env, {})",
-                to, from
-            )),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -163,19 +82,6 @@ impl JniType for Primitive {
 }
 
 impl JniType for BasicType {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Primitive(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Duration(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Enum(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Primitive(x) => x.conversion(),
@@ -194,14 +100,6 @@ impl JniType for BasicType {
 }
 
 impl JniType for StructDeclarationHandle {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        StructRefConverter::wrap(self.clone()).convert_to_rust(f, from, to)
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         Some(StructRefConverter::wrap(self.clone()))
@@ -213,14 +111,6 @@ impl JniType for StructDeclarationHandle {
 }
 
 impl JniType for ClassDeclarationHandle {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        ClassConverter::wrap(self.clone()).convert_to_rust(f, from, to)
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         Some(ClassConverter::wrap(self.clone()))
@@ -232,14 +122,6 @@ impl JniType for ClassDeclarationHandle {
 }
 
 impl JniType for Handle<Interface<Unvalidated>> {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        InterfaceConverter::wrap(self.clone(), self.settings.clone()).convert_to_rust(f, from, to)
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         Some(InterfaceConverter::wrap(
@@ -258,15 +140,6 @@ impl<D> JniType for Handle<Collection<D>>
 where
     D: DocReference,
 {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        CollectionConverter::wrap(self.clone()).convert_to_rust(f, from, to)
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(CollectionConverter::wrap(self.clone()))
     }
@@ -280,15 +153,6 @@ impl<D> JniType for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        IteratorConverter::wrap(self.clone()).convert_to_rust(f, from, to)
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(IteratorConverter::wrap(self.clone()))
     }
@@ -303,15 +167,6 @@ where
     D: DocReference,
     T: StructFieldType,
 {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        StructConverter::wrap(self.declaration.inner.clone()).convert_to_rust(f, from, to)
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(StructConverter::wrap(self.declaration.inner.clone()))
     }
@@ -325,18 +180,6 @@ impl<T> JniType for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            UniversalOr::Specific(x) => x.convert_to_rust_from_object(f, from, to),
-            UniversalOr::Universal(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             UniversalOr::Specific(x) => x.conversion(),
@@ -353,19 +196,6 @@ where
 }
 
 impl JniType for FunctionArgStructField {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::String(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Interface(x) => x.inner.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -387,20 +217,6 @@ impl JniType for FunctionArgStructField {
 }
 
 impl JniType for FunctionReturnStructField {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::ClassRef(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Iterator(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -421,18 +237,6 @@ impl JniType for FunctionReturnStructField {
 }
 
 impl JniType for CallbackArgStructField {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Iterator(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -452,17 +256,6 @@ impl JniType for CallbackArgStructField {
 }
 
 impl JniType for UniversalStructField {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -480,22 +273,6 @@ impl JniType for UniversalStructField {
 }
 
 impl JniType for FunctionArgument {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::String(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Collection(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::StructRef(x) => x.inner.convert_to_rust_from_object(f, from, to),
-            Self::ClassRef(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Interface(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -523,20 +300,6 @@ impl JniType for FunctionArgument {
 }
 
 impl JniType for CallbackArgument {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::String(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Iterator(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Class(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -560,20 +323,6 @@ impl JniType for CallbackArgument {
 }
 
 impl JniType for FunctionReturnValue {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::String(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::ClassRef(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::StructRef(x) => x.untyped().convert_to_rust_from_object(f, from, to),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -597,17 +346,6 @@ impl JniType for FunctionReturnValue {
 }
 
 impl JniType for CallbackReturnValue {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            Self::Basic(x) => x.convert_to_rust_from_object(f, from, to),
-            Self::Struct(x) => x.convert_to_rust_from_object(f, from, to),
-        }
-    }
 
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -629,18 +367,6 @@ where
     D: DocReference,
     T: Clone + JniType,
 {
-    fn convert_to_rust_from_object(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self.get_value() {
-            None => Ok(()),
-            Some(return_type) => return_type.convert_to_rust_from_object(f, from, to),
-        }
-    }
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self.get_value() {
             None => None,
@@ -1134,66 +860,8 @@ impl TypeConverterTrait for CollectionConverter {
         None
     }
 
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(to)?;
-        blocked(f, |f| {
-            if self.has_reserve {
-                f.writeln(&format!(
-                    "let _size = _cache.collection.get_size(&_env, {}.into());",
-                    from
-                ))?;
-                f.writeln(&format!(
-                    "let result = unsafe {{ {}_ffi::ffi::{}_{}(_size) }};",
-                    self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.create_func
-                ))?;
-            } else {
-                f.writeln(&format!(
-                    "let result = unsafe {{ {}_ffi::ffi::{}_{}() }};",
-                    self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.create_func
-                ))?;
-            }
-            f.writeln(&format!(
-                "let _it = _cache.collection.get_iterator(&_env, {}.into());",
-                from
-            ))?;
-            f.writeln("while _cache.collection.has_next(&_env, _it)")?;
-            blocked(f, |f| {
-                f.writeln("let next = _cache.collection.next(&_env, _it);")?;
-                f.writeln("if !_env.is_same_object(next, jni::objects::JObject::null()).unwrap()")?;
-                blocked(f, |f| {
-                    self.item_type.convert_to_rust_from_object(
-                        f,
-                        "next.into_inner()",
-                        "let _next = ",
-                    )?;
-                    f.write(";")?;
-
-                    let transformed = self
-                        .item_type
-                        .conversion()
-                        .and_then(|c| c.convert_parameter_at_call_site("_next"))
-                        .unwrap_or_else(|| "_next".to_string());
-
-                    f.writeln(&format!(
-                        "unsafe {{ {}_ffi::ffi::{}_{}(result, {}) }};",
-                        self.settings.c_ffi_prefix,
-                        self.settings.c_ffi_prefix,
-                        self.add_func,
-                        transformed
-                    ))?;
-
-                    if let Some(converter) = self.item_type.conversion() {
-                        converter.convert_to_rust_cleanup(f, "_next")?;
-                    }
-
-                    f.writeln("_env.delete_local_ref(next.into()).unwrap();")?;
-
-                    Ok(())
-                })
-            })?;
-            f.writeln("_env.delete_local_ref(_it).unwrap();")?;
-            f.writeln("result")
-        })
+    fn convert_to_rust(&self, _f: &mut dyn Printer, _from: &str, _to: &str) -> FormattingResult<()> {
+       unimplemented!()
     }
 
     fn convert_from_rust(

@@ -19,7 +19,15 @@ use oo_bindgen::model::*;
 pub(crate) trait ConvertibleToRust {
     /// Optionally, convert an expression (variable) to a primary type
     /// This usually takes the form of a shadowed variable
+    ///
+    /// **note:** This should only be used in contexts where primitives are unboxed.
     fn to_rust(&self, expr: &str) -> Option<String>;
+
+    /// Same as `to_rust` but used in contexts where primitives are always boxed, e.g.
+    /// when converting values in a Java list to a native collection type
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        self.to_rust(expr)
+    }
 
     /// Optional, convert an expression to another type at the function call site
     fn call_site(&self, expr: &str) -> Option<String>;
@@ -61,6 +69,22 @@ impl ConvertibleToRust for Primitive {
             }
             Primitive::Float => Some(format!("_cache.primitives.float_value(&_env, {})", expr)),
             Primitive::Double => Some(format!("_cache.primitives.double_value(&_env, {})", expr)),
+        }
+    }
+
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        match self {
+            Primitive::Bool => self.to_rust(expr),
+            Primitive::U8 => self.to_rust(expr),
+            Primitive::S8 => Some(format!("_cache.primitives.byte_value(&_env, {})", expr)),
+            Primitive::U16 => self.to_rust(expr),
+            Primitive::S16 => Some(format!("_cache.primitives.short_value(&_env, {})", expr)),
+            Primitive::U32 => self.to_rust(expr),
+            Primitive::S32 => Some(format!("_cache.primitives.integer_value(&_env, {})", expr)),
+            Primitive::U64 => self.to_rust(expr),
+            Primitive::S64 => Some(format!("_cache.primitives.long_value(&_env, {})", expr)),
+            Primitive::Float => self.to_rust(expr),
+            Primitive::Double => self.to_rust(expr),
         }
     }
 

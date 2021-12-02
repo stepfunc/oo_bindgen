@@ -251,7 +251,7 @@ fn write_collection_guard(
             f.writeln("while cache.collection.has_next(&_env, it.as_obj()) {")?;
             indented(f, |f| {
                 f.writeln("let next = jni::objects::AutoLocal::new(&_env, cache.collection.next(&_env, it.as_obj()));")?;
-                if let Some(converted) = col.item_type.to_rust("next.as_obj()") {
+                if let Some(converted) = col.item_type.to_rust_from_object("next.as_obj()") {
                     // perform  primary conversion that shadows the variable
                     f.writeln(&format!("let next = {};", converted))?;
                 }

@@ -832,26 +832,14 @@ impl TypeConverterTrait for IteratorConverter {
     }
 }
 
-pub(crate) struct CollectionConverter {
-    has_reserve: bool,
-    create_func: Name,
-    add_func: Name,
-    item_type: FunctionArgument,
-    settings: Rc<LibrarySettings>,
-}
+pub(crate) struct CollectionConverter;
 
 impl CollectionConverter {
-    pub(crate) fn wrap<D>(handle: Handle<Collection<D>>) -> TypeConverter
+    pub(crate) fn wrap<D>(_handle: Handle<Collection<D>>) -> TypeConverter
     where
         D: DocReference,
     {
-        TypeConverter::Collection(Self {
-            has_reserve: handle.has_reserve,
-            create_func: handle.create_func.name.clone(),
-            add_func: handle.add_func.name.clone(),
-            item_type: handle.item_type.clone(),
-            settings: handle.create_func.settings.clone(),
-        })
+        TypeConverter::Collection(Self)
     }
 }
 

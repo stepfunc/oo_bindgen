@@ -5,11 +5,7 @@ use crate::*;
 
 use crate::rust::conversion::*;
 
-pub(crate) fn generate(
-    lib: &Library,
-    config: &JavaBindgenConfig,
-) -> FormattingResult<()> {
-
+pub(crate) fn generate(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     let mut filename = config.rust_source_dir();
     filename.push("structs");
     filename.set_extension("rs");
@@ -30,11 +26,7 @@ pub(crate) fn generate(
     f.writeln("}")
 }
 
-fn generate_top_level_cache(
-    f: &mut dyn Printer,
-    lib: &Library,
-) -> FormattingResult<()> {
-
+fn generate_top_level_cache(f: &mut dyn Printer, lib: &Library) -> FormattingResult<()> {
     // Top-level enums struct
     f.writeln("pub struct Structs")?;
     blocked(f, |f| {
@@ -82,23 +74,23 @@ fn generate_structs(
                 generate_struct_fields(f, x)?;
                 generate_struct_init(f, x, config)?;
                 generate_conversion_to_rust(f, x, config)?;
-            },
+            }
             StructType::FunctionReturn(x) => {
                 generate_struct_fields(f, x)?;
                 generate_struct_init(f, x, config)?;
                 generate_conversion_from_rust(f, x, config)?;
-            },
+            }
             StructType::CallbackArg(x) => {
                 generate_struct_fields(f, x)?;
                 generate_struct_init(f, x, config)?;
                 generate_conversion_from_rust(f, x, config)?;
-            },
+            }
             StructType::Universal(x) => {
                 generate_struct_fields(f, x)?;
                 generate_struct_init(f, x, config)?;
                 generate_conversion_to_rust(f, x, config)?;
                 generate_conversion_from_rust(f, x, config)?;
-            },
+            }
         }
     }
 
@@ -110,8 +102,8 @@ fn generate_conversion_to_rust<T>(
     structure: &Handle<Struct<T, Validated>>,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
-    where
-        T: StructFieldType + JniTypeId + UnwrapValue + JniType + ConvertibleToRust,
+where
+    T: StructFieldType + JniTypeId + UnwrapValue + JniType + ConvertibleToRust,
 {
     let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
     let struct_name = structure.name().camel_case();
@@ -164,8 +156,8 @@ fn generate_conversion_from_rust<T>(
     structure: &Handle<Struct<T, Validated>>,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
-    where
-        T: StructFieldType + JniType
+where
+    T: StructFieldType + JniType,
 {
     let struct_name = structure.name().camel_case();
     let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
@@ -204,10 +196,10 @@ fn generate_conversion_from_rust<T>(
 
 fn generate_struct_fields<T>(
     f: &mut dyn Printer,
-    structure: &Handle<Struct<T, Validated>>
+    structure: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
-    where
-        T: StructFieldType
+where
+    T: StructFieldType,
 {
     let struct_name = structure.name().camel_case();
 
@@ -230,8 +222,8 @@ fn generate_struct_init<T>(
     structure: &Handle<Struct<T, Validated>>,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
-    where
-        T: StructFieldType + JniTypeId
+where
+    T: StructFieldType + JniTypeId,
 {
     let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
     let struct_name = structure.name().camel_case();

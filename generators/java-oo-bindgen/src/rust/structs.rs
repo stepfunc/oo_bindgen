@@ -132,12 +132,8 @@ where
             f.writeln(&ffi_struct_name)?;
             blocked(f, |f| {
                 for field in structure.fields() {
-                    if let Some(conversion) = field
-                        .field_type
-                        .conversion()
-                        .and_then(|c| c.convert_parameter_at_call_site(&field.name))
-                    {
-                        f.writeln(&format!("{}: {},", field.name, conversion))?;
+                    if let Some(converted) = field.field_type.call_site(&field.name) {
+                        f.writeln(&format!("{}: {},", field.name, converted))?;
                     } else {
                         f.writeln(&format!("{},", field.name))?;
                     }

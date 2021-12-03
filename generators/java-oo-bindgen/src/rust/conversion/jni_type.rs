@@ -391,23 +391,6 @@ pub(crate) enum TypeConverter {
 }
 
 impl TypeConverter {
-    /// possible conversion at the call-site of the native function
-    pub(crate) fn convert_parameter_at_call_site(&self, param: &str) -> Option<String> {
-        match self {
-            TypeConverter::Bool(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Unsigned(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::String(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Struct(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::StructRef(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Enum(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Class(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Duration(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Interface(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Collection(x) => x.convert_parameter_at_call_site(param),
-            TypeConverter::Iterator(x) => x.convert_parameter_at_call_site(param),
-        }
-    }
-
     pub(crate) fn convert_from_rust(
         &self,
         f: &mut dyn Printer,

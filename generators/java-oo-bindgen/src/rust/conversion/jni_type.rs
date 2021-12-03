@@ -11,7 +11,6 @@ pub(crate) trait JniType {
 }
 
 impl JniType for DurationType {
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(DurationConverter::wrap(*self))
     }
@@ -46,7 +45,6 @@ impl JniType for StringType {
 }
 
 impl JniType for Primitive {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Bool => Some(BooleanConverter::wrap()),
@@ -100,7 +98,6 @@ impl JniType for BasicType {
 }
 
 impl JniType for StructDeclarationHandle {
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(StructRefConverter::wrap(self.clone()))
     }
@@ -111,7 +108,6 @@ impl JniType for StructDeclarationHandle {
 }
 
 impl JniType for ClassDeclarationHandle {
-
     fn conversion(&self) -> Option<TypeConverter> {
         Some(ClassConverter::wrap(self.clone()))
     }
@@ -122,10 +118,8 @@ impl JniType for ClassDeclarationHandle {
 }
 
 impl JniType for Handle<Interface<Unvalidated>> {
-
     fn conversion(&self) -> Option<TypeConverter> {
-        Some(InterfaceConverter::wrap(
-            self.clone(),
+        Some(InterfaceConverter::wrap::<Unvalidated>(
             self.settings.clone(),
         ))
     }
@@ -196,7 +190,6 @@ where
 }
 
 impl JniType for FunctionArgStructField {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -237,7 +230,6 @@ impl JniType for FunctionReturnStructField {
 }
 
 impl JniType for CallbackArgStructField {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -256,7 +248,6 @@ impl JniType for CallbackArgStructField {
 }
 
 impl JniType for UniversalStructField {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -273,7 +264,6 @@ impl JniType for UniversalStructField {
 }
 
 impl JniType for FunctionArgument {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -300,7 +290,6 @@ impl JniType for FunctionArgument {
 }
 
 impl JniType for CallbackArgument {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -323,7 +312,6 @@ impl JniType for CallbackArgument {
 }
 
 impl JniType for FunctionReturnValue {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -346,7 +334,6 @@ impl JniType for FunctionReturnValue {
 }
 
 impl JniType for CallbackReturnValue {
-
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -386,12 +373,7 @@ trait TypeConverterTrait {
     /// convert the parameter at the call-site of the native function
     fn convert_parameter_at_call_site(&self, param: &str) -> Option<String>;
 
-    //fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
-
-    fn convert_to_rust_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
-        Ok(())
-    }
 }
 
 pub(crate) enum TypeConverter {
@@ -444,26 +426,6 @@ impl TypeConverter {
             TypeConverter::Interface(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Collection(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Iterator(x) => x.convert_from_rust(f, from, to),
-        }
-    }
-
-    pub(crate) fn convert_to_rust_cleanup(
-        &self,
-        f: &mut dyn Printer,
-        name: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            TypeConverter::Bool(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Unsigned(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::String(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Struct(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::StructRef(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Enum(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Class(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Duration(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Interface(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Collection(x) => x.convert_to_rust_cleanup(f, name),
-            TypeConverter::Iterator(x) => x.convert_to_rust_cleanup(f, name),
         }
     }
 }
@@ -536,10 +498,6 @@ impl TypeConverterTrait for StringConverter {
             f.writeln("_env.new_string(string).unwrap().into_inner()")
         })
     }
-
-    fn convert_to_rust_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
-        Ok(())
-    }
 }
 
 pub(crate) struct StructConverter {
@@ -561,13 +519,6 @@ impl TypeConverterTrait for StructConverter {
         f.writeln(&format!(
             "{}_cache.structs.{}.struct_from_rust(_cache, &_env, &{})",
             to, self.inner.name, from
-        ))
-    }
-
-    fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "_cache.structs.{}.struct_to_rust_cleanup(_cache, &_env, &{});",
-            self.inner.name, name
         ))
     }
 }
@@ -592,20 +543,6 @@ impl TypeConverterTrait for StructRefConverter {
             f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
             f.writeln(&format!(
                 "Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),",
-                self.handle.name
-            ))
-        })
-    }
-
-    fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-        f.writeln(&format!("if {}.is_null()", name))?;
-        blocked(f, |f| {
-            f.writeln(&format!(
-                "let temp = unsafe {{ Box::from_raw({} as *mut _) }};",
-                name
-            ))?;
-            f.writeln(&format!(
-                "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &temp)",
                 self.handle.name
             ))
         })
@@ -660,19 +597,12 @@ impl TypeConverterTrait for ClassConverter {
 }
 
 pub(crate) struct InterfaceConverter {
-    name: Name,
     settings: Rc<LibrarySettings>,
 }
 
 impl InterfaceConverter {
-    pub(crate) fn wrap<D: DocReference>(
-        handle: Handle<Interface<D>>,
-        settings: Rc<LibrarySettings>,
-    ) -> TypeConverter {
-        TypeConverter::Interface(Self {
-            name: handle.name.clone(),
-            settings,
-        })
+    pub(crate) fn wrap<D: DocReference>(settings: Rc<LibrarySettings>) -> TypeConverter {
+        TypeConverter::Interface(Self { settings })
     }
 }
 

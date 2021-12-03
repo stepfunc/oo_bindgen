@@ -14,7 +14,7 @@ pub(crate) trait UnwrapValue {
 impl UnwrapValue for Primitive {
     fn unwrap_value(&self) -> &str {
         match self {
-            Self::Bool => "z().unwrap() as u8",
+            Self::Bool => "z().unwrap()",
             Self::U8 => "l().unwrap().into_inner()",
             Self::S8 => "b().unwrap()",
             Self::U16 => "l().unwrap().into_inner()",

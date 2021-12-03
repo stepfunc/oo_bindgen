@@ -386,7 +386,7 @@ trait TypeConverterTrait {
     /// convert the parameter at the call-site of the native function
     fn convert_parameter_at_call_site(&self, param: &str) -> Option<String>;
 
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
+    //fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
 
     fn convert_to_rust_cleanup(&self, _f: &mut dyn Printer, _name: &str) -> FormattingResult<()> {
@@ -423,27 +423,6 @@ impl TypeConverter {
             TypeConverter::Interface(x) => x.convert_parameter_at_call_site(param),
             TypeConverter::Collection(x) => x.convert_parameter_at_call_site(param),
             TypeConverter::Iterator(x) => x.convert_parameter_at_call_site(param),
-        }
-    }
-
-    pub(crate) fn convert_to_rust(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        match self {
-            TypeConverter::Bool(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Unsigned(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::String(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Struct(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::StructRef(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Enum(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Class(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Duration(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Interface(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Collection(x) => x.convert_to_rust(f, from, to),
-            TypeConverter::Iterator(x) => x.convert_to_rust(f, from, to),
         }
     }
 
@@ -501,10 +480,6 @@ impl TypeConverterTrait for BooleanConverter {
         None
     }
 
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{} != 0", to, from))
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}{} as u8", to, from))
     }
@@ -530,13 +505,6 @@ impl TypeConverterTrait for UnsignedConverter {
         None
     }
 
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.joou.{}_to_rust(&_env, {})",
-            to, self.java_type, from
-        ))
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.joou.{}_from_rust(&_env, {})",
@@ -556,11 +524,6 @@ impl TypeConverterTrait for StringConverter {
     fn convert_parameter_at_call_site(&self, param: &str) -> Option<String> {
         // get a c-style string from a JavaString
         Some(format!("(**{}).as_ptr()", param))
-    }
-
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        // convert to JavaString
-        f.writeln(&format!("{} _env.get_string({}.into()).unwrap()", to, from))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
@@ -594,23 +557,16 @@ impl TypeConverterTrait for StructConverter {
         None
     }
 
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
-            to, self.inner.name, from
-        ))
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
-            "{}_cache.structs.struct_{}.struct_from_rust(_cache, &_env, &{})",
+            "{}_cache.structs.{}.struct_from_rust(_cache, &_env, &{})",
             to, self.inner.name, from
         ))
     }
 
     fn convert_to_rust_cleanup(&self, f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
         f.writeln(&format!(
-            "_cache.structs.struct_{}.struct_to_rust_cleanup(_cache, &_env, &{});",
+            "_cache.structs.{}.struct_to_rust_cleanup(_cache, &_env, &{});",
             self.inner.name, name
         ))
     }
@@ -628,22 +584,6 @@ impl StructRefConverter {
 impl TypeConverterTrait for StructRefConverter {
     fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
         None
-    }
-
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{} if !_env.is_same_object({}, jni::objects::JObject::null()).unwrap()",
-            to, from
-        ))?;
-        blocked(f, |f| {
-            f.writeln(&format!(
-                "let temp = Box::new(_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {}));",
-                self.handle.name, from
-            ))?;
-            f.writeln("Box::into_raw(temp)")
-        })?;
-        f.writeln("else")?;
-        blocked(f, |f| f.writeln("std::ptr::null()"))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
@@ -688,13 +628,6 @@ impl TypeConverterTrait for EnumConverter {
         None
     }
 
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.enums.enum_{}.enum_to_rust(&_env, {})",
-            to, self.name, from
-        ))
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.enums.enum_{}.enum_from_rust(&_env, {})",
@@ -716,13 +649,6 @@ impl ClassConverter {
 impl TypeConverterTrait for ClassConverter {
     fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
         None
-    }
-
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.classes.{}_to_rust(&_env, {})",
-            to, self.handle.name, from
-        ))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
@@ -755,13 +681,6 @@ impl TypeConverterTrait for InterfaceConverter {
         None
     }
 
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.interfaces.interface_{}.interface_to_rust(&_env, {})",
-            to, self.name, from
-        ))
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
@@ -792,10 +711,6 @@ impl IteratorConverter {
 impl TypeConverterTrait for IteratorConverter {
     fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
         None
-    }
-
-    fn convert_to_rust(&self, f: &mut dyn Printer, _from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}std::ptr::null_mut()", to))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
@@ -848,10 +763,6 @@ impl TypeConverterTrait for CollectionConverter {
         None
     }
 
-    fn convert_to_rust(&self, _f: &mut dyn Printer, _from: &str, _to: &str) -> FormattingResult<()> {
-       unimplemented!()
-    }
-
     fn convert_from_rust(
         &self,
         f: &mut dyn Printer,
@@ -878,18 +789,6 @@ impl DurationConverter {
 impl TypeConverterTrait for DurationConverter {
     fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
         None
-    }
-
-    fn convert_to_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        let method = match self.duration_type {
-            DurationType::Milliseconds => "duration_to_millis",
-            DurationType::Seconds => "duration_to_seconds",
-        };
-
-        f.writeln(&format!(
-            "{}_cache.duration.{}(&_env, {})",
-            to, method, from
-        ))
     }
 
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {

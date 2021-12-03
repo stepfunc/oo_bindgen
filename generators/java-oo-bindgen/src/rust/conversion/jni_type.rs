@@ -370,9 +370,6 @@ where
 }
 
 trait TypeConverterTrait {
-    /// convert the parameter at the call-site of the native function
-    fn convert_parameter_at_call_site(&self, param: &str) -> Option<String>;
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
 }
 
@@ -421,10 +418,6 @@ impl BooleanConverter {
 }
 
 impl TypeConverterTrait for BooleanConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}{} as u8", to, from))
     }
@@ -446,10 +439,6 @@ impl UnsignedConverter {
 }
 
 impl TypeConverterTrait for UnsignedConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.joou.{}_from_rust(&_env, {})",
@@ -466,11 +455,6 @@ impl StringConverter {
 }
 
 impl TypeConverterTrait for StringConverter {
-    fn convert_parameter_at_call_site(&self, param: &str) -> Option<String> {
-        // get a c-style string from a JavaString
-        Some(format!("(**{}).as_ptr()", param))
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(to)?;
         blocked(f, |f| {
@@ -494,10 +478,6 @@ impl StructConverter {
 }
 
 impl TypeConverterTrait for StructConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.structs.{}.struct_from_rust(_cache, &_env, &{})",
@@ -516,10 +496,6 @@ impl StructRefConverter {
 }
 
 impl TypeConverterTrait for StructRefConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!("{}match unsafe {{ {}.as_ref() }}", to, from))?;
         blocked(f, |f| {
@@ -544,10 +520,6 @@ impl EnumConverter {
     }
 }
 impl TypeConverterTrait for EnumConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.enums.enum_{}.enum_from_rust(&_env, {})",
@@ -567,10 +539,6 @@ impl ClassConverter {
 }
 
 impl TypeConverterTrait for ClassConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}_cache.classes.{}_from_rust(&_env, {})",
@@ -590,10 +558,6 @@ impl InterfaceConverter {
 }
 
 impl TypeConverterTrait for InterfaceConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
             "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
@@ -622,10 +586,6 @@ impl IteratorConverter {
 }
 
 impl TypeConverterTrait for IteratorConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(to)?;
         blocked(f, |f| {
@@ -672,10 +632,6 @@ impl CollectionConverter {
 }
 
 impl TypeConverterTrait for CollectionConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(
         &self,
         f: &mut dyn Printer,
@@ -700,10 +656,6 @@ impl DurationConverter {
 }
 
 impl TypeConverterTrait for DurationConverter {
-    fn convert_parameter_at_call_site(&self, _param: &str) -> Option<String> {
-        None
-    }
-
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         let method = match self.duration_type {
             DurationType::Milliseconds => "duration_from_millis",

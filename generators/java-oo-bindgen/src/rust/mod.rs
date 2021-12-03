@@ -35,7 +35,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     // Create the cache modules
     classes::generate_classes_cache(lib, config)?;
     enums::generate_enums_cache(lib, config)?;
-    structs::generate_structs_cache(lib, config)?;
+    structs::generate(lib, config)?;
     interface::generate_interfaces_cache(lib, config)?;
     exceptions::generate_exceptions_cache(lib, config)?;
 

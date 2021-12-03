@@ -46,35 +46,23 @@ impl ConvertibleToRust for StringType {
 impl ConvertibleToRust for Primitive {
     fn to_rust(&self, expr: &str) -> Option<String> {
         match self {
-            Primitive::Bool => Some(format!("_cache.primitives.boolean_value(&_env, {})", expr)),
+            Primitive::Bool => None,
             Primitive::U8 => Some(format!("_cache.joou.ubyte_to_rust(&_env, {})", expr)),
-            Primitive::S8 => {
-                None
-                //Some(format!("_cache.primitives.byte_value(&_env, {})", expr))
-            }
+            Primitive::S8 => None,
             Primitive::U16 => Some(format!("_cache.joou.ushort_to_rust(&_env, {})", expr)),
-            Primitive::S16 => {
-                None
-                //Some(format!("_cache.primitives.short_value(&_env, {})", expr))
-            }
+            Primitive::S16 => None,
             Primitive::U32 => Some(format!("_cache.joou.uinteger_to_rust(&_env, {})", expr)),
-            Primitive::S32 => {
-                None
-                //Some(format!("_cache.primitives.integer_value(&_env, {})", expr))
-            }
+            Primitive::S32 => None,
             Primitive::U64 => Some(format!("_cache.joou.ulong_to_rust(&_env, {})", expr)),
-            Primitive::S64 => {
-                None
-                //Some(format!("_cache.primitives.long_value(&_env, {})", expr))
-            }
-            Primitive::Float => Some(format!("_cache.primitives.float_value(&_env, {})", expr)),
-            Primitive::Double => Some(format!("_cache.primitives.double_value(&_env, {})", expr)),
+            Primitive::S64 => None,
+            Primitive::Float => None,
+            Primitive::Double => None,
         }
     }
 
     fn to_rust_from_object(&self, expr: &str) -> Option<String> {
         match self {
-            Primitive::Bool => self.to_rust(expr),
+            Primitive::Bool => Some(format!("_cache.primitives.boolean_value(&_env, {})", expr)),
             Primitive::U8 => self.to_rust(expr),
             Primitive::S8 => Some(format!("_cache.primitives.byte_value(&_env, {})", expr)),
             Primitive::U16 => self.to_rust(expr),
@@ -83,8 +71,8 @@ impl ConvertibleToRust for Primitive {
             Primitive::S32 => Some(format!("_cache.primitives.integer_value(&_env, {})", expr)),
             Primitive::U64 => self.to_rust(expr),
             Primitive::S64 => Some(format!("_cache.primitives.long_value(&_env, {})", expr)),
-            Primitive::Float => self.to_rust(expr),
-            Primitive::Double => self.to_rust(expr),
+            Primitive::Float => Some(format!("_cache.primitives.float_value(&_env, {})", expr)),
+            Primitive::Double => Some(format!("_cache.primitives.double_value(&_env, {})", expr)),
         }
     }
 
@@ -169,6 +157,16 @@ impl ConvertibleToRust for CollectionHandle {
     }
 }
 
+impl ConvertibleToRust for AsynchronousInterface {
+    fn to_rust(&self, expr: &str) -> Option<String> {
+        self.inner.to_rust(expr)
+    }
+
+    fn call_site(&self, expr: &str) -> Option<String> {
+        self.inner.call_site(expr)
+    }
+}
+
 impl ConvertibleToRust for InterfaceHandle {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
@@ -185,7 +183,7 @@ impl ConvertibleToRust for InterfaceHandle {
 impl ConvertibleToRust for FunctionArgStructDeclaration {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
-            "_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
+            "_cache.structs.{}.to_rust(_cache, &_env, {})",
             self.inner.name, expr
         ))
     }
@@ -202,7 +200,7 @@ where
 {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
-            "_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
+            "_cache.structs.{}.to_rust(_cache, &_env, {})",
             self.name(),
             expr
         ))
@@ -216,7 +214,7 @@ where
 impl ConvertibleToRust for UniversalOr<FunctionArgStructField> {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
-            "_cache.structs.struct_{}.struct_to_rust(_cache, &_env, {})",
+            "_cache.structs.{}.to_rust(_cache, &_env, {})",
             self.name(),
             expr
         ))
@@ -278,6 +276,42 @@ impl ConvertibleToRust for CallbackReturnValue {
         match self {
             CallbackReturnValue::Basic(x) => x.call_site(expr),
             CallbackReturnValue::Struct(x) => x.call_site(expr),
+        }
+    }
+}
+
+impl ConvertibleToRust for FunctionArgStructField {
+    fn to_rust(&self, expr: &str) -> Option<String> {
+        match self {
+            FunctionArgStructField::Basic(x) => x.to_rust(expr),
+            FunctionArgStructField::String(x) => x.to_rust(expr),
+            FunctionArgStructField::Interface(x) => x.to_rust(expr),
+            FunctionArgStructField::Struct(x) => x.to_rust(expr),
+        }
+    }
+
+    fn call_site(&self, expr: &str) -> Option<String> {
+        match self {
+            FunctionArgStructField::Basic(x) => x.call_site(expr),
+            FunctionArgStructField::String(x) => x.call_site(expr),
+            FunctionArgStructField::Interface(x) => x.call_site(expr),
+            FunctionArgStructField::Struct(x) => x.call_site(expr),
+        }
+    }
+}
+
+impl ConvertibleToRust for UniversalStructField {
+    fn to_rust(&self, expr: &str) -> Option<String> {
+        match self {
+            UniversalStructField::Basic(x) => x.to_rust(expr),
+            UniversalStructField::Struct(x) => x.to_rust(expr),
+        }
+    }
+
+    fn call_site(&self, expr: &str) -> Option<String> {
+        match self {
+            UniversalStructField::Basic(x) => x.call_site(expr),
+            UniversalStructField::Struct(x) => x.call_site(expr),
         }
     }
 }

@@ -432,14 +432,14 @@ fn write_function(
             SignatureType::NoErrorNoReturn => (),
             SignatureType::NoErrorWithReturn(return_type, _) => {
                 if let Some(conversion) = return_type.conversion() {
-                    conversion.convert_from_rust(f, "_result", "let _result = ")?;
+                    conversion.to_jni(f, "_result", "let _result = ")?;
                     f.write(";")?;
                 }
             }
             SignatureType::ErrorNoReturn(error_type) => {
                 f.writeln("if _result != 0")?;
                 blocked(f, |f| {
-                    EnumConverter::wrap(error_type.inner).convert_from_rust(
+                    EnumConverter::wrap(error_type.inner).to_jni(
                         f,
                         "_result",
                         "let _error = ",
@@ -456,13 +456,13 @@ fn write_function(
                 blocked(f, |f| {
                     f.writeln("let _result = unsafe { _out.assume_init() };")?;
                     if let Some(conversion) = return_type.conversion() {
-                        conversion.convert_from_rust(f, "_result", "")?;
+                        conversion.to_jni(f, "_result", "")?;
                     }
                     Ok(())
                 })?;
                 f.writeln("else")?;
                 blocked(f, |f| {
-                    EnumConverter::wrap(error_type.inner).convert_from_rust(
+                    EnumConverter::wrap(error_type.inner).to_jni(
                         f,
                         "_result",
                         "let _error = ",

@@ -3,14 +3,14 @@ use std::rc::Rc;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-pub(crate) trait JniType {
+pub(crate) trait ConvertibleToJni {
     /// Optional conversion from JNI argument type to Rust type
     fn conversion(&self) -> Option<TypeConverter>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
     fn requires_local_ref_cleanup(&self) -> bool;
 }
 
-impl JniType for DurationType {
+impl ConvertibleToJni for DurationType {
     fn conversion(&self) -> Option<TypeConverter> {
         Some(DurationConverter::wrap(*self))
     }
@@ -20,7 +20,7 @@ impl JniType for DurationType {
     }
 }
 
-impl<D> JniType for Handle<Enum<D>>
+impl<D> ConvertibleToJni for Handle<Enum<D>>
 where
     D: DocReference,
 {
@@ -34,7 +34,7 @@ where
     }
 }
 
-impl JniType for StringType {
+impl ConvertibleToJni for StringType {
     fn conversion(&self) -> Option<TypeConverter> {
         Some(StringConverter::wrap())
     }
@@ -44,7 +44,7 @@ impl JniType for StringType {
     }
 }
 
-impl JniType for Primitive {
+impl ConvertibleToJni for Primitive {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Bool => Some(BooleanConverter::wrap()),
@@ -79,7 +79,7 @@ impl JniType for Primitive {
     }
 }
 
-impl JniType for BasicType {
+impl ConvertibleToJni for BasicType {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Primitive(x) => x.conversion(),
@@ -97,7 +97,7 @@ impl JniType for BasicType {
     }
 }
 
-impl JniType for StructDeclarationHandle {
+impl ConvertibleToJni for StructDeclarationHandle {
     fn conversion(&self) -> Option<TypeConverter> {
         Some(StructRefConverter::wrap(self.clone()))
     }
@@ -107,7 +107,7 @@ impl JniType for StructDeclarationHandle {
     }
 }
 
-impl JniType for ClassDeclarationHandle {
+impl ConvertibleToJni for ClassDeclarationHandle {
     fn conversion(&self) -> Option<TypeConverter> {
         Some(ClassConverter::wrap(self.clone()))
     }
@@ -117,7 +117,7 @@ impl JniType for ClassDeclarationHandle {
     }
 }
 
-impl JniType for Handle<Interface<Unvalidated>> {
+impl ConvertibleToJni for Handle<Interface<Unvalidated>> {
     fn conversion(&self) -> Option<TypeConverter> {
         Some(InterfaceConverter::wrap::<Unvalidated>(
             self.settings.clone(),
@@ -130,7 +130,7 @@ impl JniType for Handle<Interface<Unvalidated>> {
     }
 }
 
-impl<D> JniType for Handle<Collection<D>>
+impl<D> ConvertibleToJni for Handle<Collection<D>>
 where
     D: DocReference,
 {
@@ -143,7 +143,7 @@ where
     }
 }
 
-impl<D> JniType for Handle<AbstractIterator<D>>
+impl<D> ConvertibleToJni for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
@@ -156,7 +156,7 @@ where
     }
 }
 
-impl<T, D> JniType for Handle<Struct<T, D>>
+impl<T, D> ConvertibleToJni for Handle<Struct<T, D>>
 where
     D: DocReference,
     T: StructFieldType,
@@ -170,7 +170,7 @@ where
     }
 }
 
-impl<T> JniType for UniversalOr<T>
+impl<T> ConvertibleToJni for UniversalOr<T>
 where
     T: StructFieldType,
 {
@@ -189,7 +189,7 @@ where
     }
 }
 
-impl JniType for FunctionArgStructField {
+impl ConvertibleToJni for FunctionArgStructField {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -209,7 +209,7 @@ impl JniType for FunctionArgStructField {
     }
 }
 
-impl JniType for FunctionReturnStructField {
+impl ConvertibleToJni for FunctionReturnStructField {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -229,7 +229,7 @@ impl JniType for FunctionReturnStructField {
     }
 }
 
-impl JniType for CallbackArgStructField {
+impl ConvertibleToJni for CallbackArgStructField {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -247,7 +247,7 @@ impl JniType for CallbackArgStructField {
     }
 }
 
-impl JniType for UniversalStructField {
+impl ConvertibleToJni for UniversalStructField {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -263,7 +263,7 @@ impl JniType for UniversalStructField {
     }
 }
 
-impl JniType for FunctionArgument {
+impl ConvertibleToJni for FunctionArgument {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -289,7 +289,7 @@ impl JniType for FunctionArgument {
     }
 }
 
-impl JniType for CallbackArgument {
+impl ConvertibleToJni for CallbackArgument {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -311,7 +311,7 @@ impl JniType for CallbackArgument {
     }
 }
 
-impl JniType for FunctionReturnValue {
+impl ConvertibleToJni for FunctionReturnValue {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -333,7 +333,7 @@ impl JniType for FunctionReturnValue {
     }
 }
 
-impl JniType for CallbackReturnValue {
+impl ConvertibleToJni for CallbackReturnValue {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
             Self::Basic(x) => x.conversion(),
@@ -349,10 +349,10 @@ impl JniType for CallbackReturnValue {
     }
 }
 
-impl<T, D> JniType for OptionalReturnType<T, D>
+impl<T, D> ConvertibleToJni for OptionalReturnType<T, D>
 where
     D: DocReference,
-    T: Clone + JniType,
+    T: Clone + ConvertibleToJni,
 {
     fn conversion(&self) -> Option<TypeConverter> {
         match self.get_value() {
@@ -388,7 +388,7 @@ pub(crate) enum TypeConverter {
 }
 
 impl TypeConverter {
-    pub(crate) fn convert_from_rust(
+    pub(crate) fn to_jni(
         &self,
         f: &mut dyn Printer,
         from: &str,
@@ -480,7 +480,7 @@ impl StructConverter {
 impl TypeConverterTrait for StructConverter {
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
-            "{}_cache.structs.{}.struct_from_rust(_cache, &_env, &{})",
+            "{}_cache.structs.{}.to_jni(_cache, &_env, &{})",
             to, self.inner.name, from
         ))
     }
@@ -501,7 +501,7 @@ impl TypeConverterTrait for StructRefConverter {
         blocked(f, |f| {
             f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
             f.writeln(&format!(
-                "Some(value) => _cache.structs.struct_{}.struct_from_rust(_cache, &_env, &value),",
+                "Some(value) => _cache.structs.struct_{}.to_jni(_cache, &_env, &value),",
                 self.handle.name
             ))
         })
@@ -600,7 +600,7 @@ impl TypeConverterTrait for IteratorConverter {
                     f.writeln("None => { break; }")?;
                     f.writeln("Some(it) => ")?;
                     blocked(f, |f| {
-                        StructConverter::wrap(self.item_type.declaration()).convert_from_rust(
+                        StructConverter::wrap(self.item_type.declaration()).to_jni(
                             f,
                             "it",
                             "let item = ",

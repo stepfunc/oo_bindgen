@@ -247,7 +247,7 @@ fn call_java_callback(
     // Perform the conversion of the parameters
     for param in args {
         if let Some(conversion) = param.arg_type.conversion() {
-            conversion.convert_from_rust(f, &param.name, &format!("let {} = ", param.name))?;
+            conversion.to_jni(f, &param.name, &format!("let {} = ", param.name))?;
             f.write(";")?;
         }
     }

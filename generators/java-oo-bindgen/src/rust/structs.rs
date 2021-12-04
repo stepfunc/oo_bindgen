@@ -78,18 +78,18 @@ fn generate_structs(
             StructType::FunctionReturn(x) => {
                 generate_struct_fields(f, x)?;
                 generate_struct_init(f, x, config)?;
-                generate_conversion_from_rust(f, x, config)?;
+                generate_conversion_to_jni(f, x, config)?;
             }
             StructType::CallbackArg(x) => {
                 generate_struct_fields(f, x)?;
                 generate_struct_init(f, x, config)?;
-                generate_conversion_from_rust(f, x, config)?;
+                generate_conversion_to_jni(f, x, config)?;
             }
             StructType::Universal(x) => {
                 generate_struct_fields(f, x)?;
                 generate_struct_init(f, x, config)?;
                 generate_conversion_to_rust(f, x, config)?;
-                generate_conversion_from_rust(f, x, config)?;
+                generate_conversion_to_jni(f, x, config)?;
             }
         }
     }
@@ -103,7 +103,7 @@ fn generate_conversion_to_rust<T>(
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + JniTypeId + UnwrapValue + JniType + ConvertibleToRust,
+    T: StructFieldType + JniTypeId + UnwrapValue + ConvertibleToRust
 {
     let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
     let struct_name = structure.name().camel_case();
@@ -147,13 +147,13 @@ where
     })
 }
 
-fn generate_conversion_from_rust<T>(
+fn generate_conversion_to_jni<T>(
     f: &mut dyn Printer,
     structure: &Handle<Struct<T, Validated>>,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + JniType,
+    T: StructFieldType + ConvertibleToJni,
 {
     let struct_name = structure.name().camel_case();
     let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
@@ -161,12 +161,12 @@ where
     f.newline()?;
     f.writeln(&format!("impl {}", struct_name))?;
     blocked(f, |f| {
-        f.writeln(&format!("pub(crate) fn struct_from_rust(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
+        f.writeln(&format!("pub(crate) fn to_jni(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
         blocked(f, |f| {
             f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
             for field in structure.fields() {
                 if let Some(conversion) = field.field_type.conversion() {
-                    conversion.convert_from_rust(
+                    conversion.to_jni(
                         f,
                         &format!("value.{}", field.name),
                         "let temp = ",

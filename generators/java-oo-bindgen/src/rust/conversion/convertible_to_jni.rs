@@ -130,19 +130,6 @@ impl ConvertibleToJni for Handle<Interface<Unvalidated>> {
     }
 }
 
-impl<D> ConvertibleToJni for Handle<Collection<D>>
-where
-    D: DocReference,
-{
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(CollectionConverter::wrap(self.clone()))
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        true
-    }
-}
-
 impl<D> ConvertibleToJni for Handle<AbstractIterator<D>>
 where
     D: DocReference,
@@ -263,32 +250,6 @@ impl ConvertibleToJni for UniversalStructField {
     }
 }
 
-impl ConvertibleToJni for FunctionArgument {
-    fn conversion(&self) -> Option<TypeConverter> {
-        match self {
-            Self::Basic(x) => x.conversion(),
-            Self::String(x) => x.conversion(),
-            Self::Collection(x) => x.conversion(),
-            Self::Struct(x) => x.conversion(),
-            Self::StructRef(x) => x.inner.conversion(),
-            Self::ClassRef(x) => x.conversion(),
-            Self::Interface(x) => x.conversion(),
-        }
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::String(x) => x.requires_local_ref_cleanup(),
-            Self::Collection(x) => x.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
-            Self::StructRef(x) => x.inner.requires_local_ref_cleanup(),
-            Self::ClassRef(x) => x.requires_local_ref_cleanup(),
-            Self::Interface(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-}
-
 impl ConvertibleToJni for CallbackArgument {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
@@ -383,7 +344,6 @@ pub(crate) enum TypeConverter {
     Class(ClassConverter),
     Duration(DurationConverter),
     Interface(InterfaceConverter),
-    Collection(CollectionConverter),
     Iterator(IteratorConverter),
 }
 
@@ -404,7 +364,6 @@ impl TypeConverter {
             TypeConverter::Class(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Duration(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Interface(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Collection(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Iterator(x) => x.convert_from_rust(f, from, to),
         }
     }
@@ -617,31 +576,6 @@ impl TypeConverterTrait for IteratorConverter {
             })?;
             f.writeln("array_list.into_inner()")
         })
-    }
-}
-
-pub(crate) struct CollectionConverter;
-
-impl CollectionConverter {
-    pub(crate) fn wrap<D>(_handle: Handle<Collection<D>>) -> TypeConverter
-    where
-        D: DocReference,
-    {
-        TypeConverter::Collection(Self)
-    }
-}
-
-impl TypeConverterTrait for CollectionConverter {
-    fn convert_from_rust(
-        &self,
-        f: &mut dyn Printer,
-        _from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}jni::objects::JObject::null()::into_inner()",
-            to
-        ))
     }
 }
 

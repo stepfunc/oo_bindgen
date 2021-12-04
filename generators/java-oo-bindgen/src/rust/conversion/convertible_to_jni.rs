@@ -117,19 +117,6 @@ impl ConvertibleToJni for ClassDeclarationHandle {
     }
 }
 
-impl ConvertibleToJni for Handle<Interface<Unvalidated>> {
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(InterfaceConverter::wrap::<Unvalidated>(
-            self.settings.clone(),
-        ))
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        // This is freed by Rust
-        false
-    }
-}
-
 impl<D> ConvertibleToJni for Handle<AbstractIterator<D>>
 where
     D: DocReference,
@@ -172,26 +159,6 @@ where
         match self {
             UniversalOr::Specific(x) => x.requires_local_ref_cleanup(),
             UniversalOr::Universal(x) => x.requires_local_ref_cleanup(),
-        }
-    }
-}
-
-impl ConvertibleToJni for FunctionArgStructField {
-    fn conversion(&self) -> Option<TypeConverter> {
-        match self {
-            Self::Basic(x) => x.conversion(),
-            Self::String(x) => x.conversion(),
-            Self::Interface(x) => x.inner.conversion(),
-            Self::Struct(x) => x.conversion(),
-        }
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::String(x) => x.requires_local_ref_cleanup(),
-            Self::Interface(x) => x.inner.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
         }
     }
 }
@@ -343,17 +310,11 @@ pub(crate) enum TypeConverter {
     Enum(EnumConverter),
     Class(ClassConverter),
     Duration(DurationConverter),
-    Interface(InterfaceConverter),
     Iterator(IteratorConverter),
 }
 
 impl TypeConverter {
-    pub(crate) fn to_jni(
-        &self,
-        f: &mut dyn Printer,
-        from: &str,
-        to: &str,
-    ) -> FormattingResult<()> {
+    pub(crate) fn to_jni(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self {
             TypeConverter::Bool(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Unsigned(x) => x.convert_from_rust(f, from, to),
@@ -363,7 +324,6 @@ impl TypeConverter {
             TypeConverter::Enum(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Class(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Duration(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Interface(x) => x.convert_from_rust(f, from, to),
             TypeConverter::Iterator(x) => x.convert_from_rust(f, from, to),
         }
     }
@@ -503,28 +463,6 @@ impl TypeConverterTrait for ClassConverter {
             "{}_cache.classes.{}_from_rust(&_env, {})",
             to, self.handle.name, from
         ))
-    }
-}
-
-pub(crate) struct InterfaceConverter {
-    settings: Rc<LibrarySettings>,
-}
-
-impl InterfaceConverter {
-    pub(crate) fn wrap<D: DocReference>(settings: Rc<LibrarySettings>) -> TypeConverter {
-        TypeConverter::Interface(Self { settings })
-    }
-}
-
-impl TypeConverterTrait for InterfaceConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}if let Some(obj) = unsafe {{ ({}.{} as *mut jni::objects::GlobalRef).as_ref() }}",
-            to, from, self.settings.interface.context_variable_name
-        ))?;
-        blocked(f, |f| f.writeln("obj.as_obj()"))?;
-        f.writeln("else")?;
-        blocked(f, |f| f.writeln("jni::objects::JObject::null()"))
     }
 }
 

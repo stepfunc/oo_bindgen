@@ -439,11 +439,7 @@ fn write_function(
             SignatureType::ErrorNoReturn(error_type) => {
                 f.writeln("if _result != 0")?;
                 blocked(f, |f| {
-                    EnumConverter::wrap(error_type.inner).to_jni(
-                        f,
-                        "_result",
-                        "let _error = ",
-                    )?;
+                    EnumConverter::wrap(error_type.inner).to_jni(f, "_result", "let _error = ")?;
                     f.write(";")?;
                     f.writeln(&format!(
                         "let error = _cache.exceptions.throw_{}(&_env, _error);",
@@ -462,11 +458,7 @@ fn write_function(
                 })?;
                 f.writeln("else")?;
                 blocked(f, |f| {
-                    EnumConverter::wrap(error_type.inner).to_jni(
-                        f,
-                        "_result",
-                        "let _error = ",
-                    )?;
+                    EnumConverter::wrap(error_type.inner).to_jni(f, "_result", "let _error = ")?;
                     f.write(";")?;
                     f.writeln(&format!(
                         "let error = _cache.exceptions.throw_{}(&_env, _error);",

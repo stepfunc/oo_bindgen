@@ -103,7 +103,7 @@ fn generate_conversion_to_rust<T>(
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + JniTypeId + UnwrapValue + ConvertibleToRust
+    T: StructFieldType + JniTypeId + UnwrapValue + ConvertibleToRust,
 {
     let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
     let struct_name = structure.name().camel_case();
@@ -166,11 +166,7 @@ where
             f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
             for field in structure.fields() {
                 if let Some(conversion) = field.field_type.conversion() {
-                    conversion.to_jni(
-                        f,
-                        &format!("value.{}", field.name),
-                        "let temp = ",
-                    )?;
+                    conversion.to_jni(f, &format!("value.{}", field.name), "let temp = ")?;
                     f.write(";")?;
                 } else {
                     f.writeln(&format!("let temp = value.{};", field.name))?;

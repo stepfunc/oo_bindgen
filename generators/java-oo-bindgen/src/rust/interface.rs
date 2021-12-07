@@ -246,9 +246,8 @@ fn call_java_callback(
 
     // Perform the conversion of the parameters
     for param in args {
-        if let Some(conversion) = param.arg_type.conversion() {
-            conversion.to_jni(f, &param.name, &format!("let {} = ", param.name))?;
-            f.write(";")?;
+        if let Some(conversion) = param.arg_type.maybe_convert(&param.name) {
+            f.write(&format!("let {} = {};", param.name, conversion))?;
         }
     }
 

@@ -246,9 +246,8 @@ fn write_iterator_conversion(
             config.ffi_name, iter.iter_class.settings.c_ffi_prefix, iter.next_function.name
         ))?;
         indented(f, |f| {
-            if let Some(c) = iter.item_type.conversion() {
-                c.to_jni(f, "next", "let next = ")?;
-                f.write(";")?;
+            if let Some(conversion) = iter.item_type.maybe_convert("next") {
+                f.writeln(&format!("let next = {};", conversion))?;
             }
             f.writeln("_cache.collection.add_to_array_list(&_env, list, next.into());")?;
             if iter.item_type.requires_local_ref_cleanup() {
@@ -480,16 +479,18 @@ fn write_function(
         match handle.get_signature_type() {
             SignatureType::NoErrorNoReturn => (),
             SignatureType::NoErrorWithReturn(return_type, _) => {
-                if let Some(conversion) = return_type.conversion() {
-                    conversion.to_jni(f, "_result", "let _result = ")?;
-                    f.write(";")?;
+                if let Some(conversion) = return_type.maybe_convert("_result") {
+                    f.write(&format!("let _result = {};", conversion))?;
                 }
             }
             SignatureType::ErrorNoReturn(error_type) => {
                 f.writeln("if _result != 0")?;
                 blocked(f, |f| {
-                    EnumConverter::wrap(error_type.inner).to_jni(f, "_result", "let _error = ")?;
-                    f.write(";")?;
+                    error_type.inner.convert("_result");
+                    f.writeln(&format!(
+                        "let _error = {};",
+                        error_type.inner.convert("_result")
+                    ))?;
                     f.writeln(&format!(
                         "let error = _cache.exceptions.throw_{}(&_env, _error);",
                         error_type.exception_name
@@ -500,15 +501,17 @@ fn write_function(
                 f.writeln("let _result = if _result == 0")?;
                 blocked(f, |f| {
                     f.writeln("let _result = unsafe { _out.assume_init() };")?;
-                    if let Some(conversion) = return_type.conversion() {
-                        conversion.to_jni(f, "_result", "")?;
+                    if let Some(conversion) = return_type.maybe_convert("_result") {
+                        f.writeln(&conversion)?;
                     }
                     Ok(())
                 })?;
                 f.writeln("else")?;
                 blocked(f, |f| {
-                    EnumConverter::wrap(error_type.inner).to_jni(f, "_result", "let _error = ")?;
-                    f.write(";")?;
+                    f.writeln(&format!(
+                        "let _error = {};",
+                        error_type.inner.convert("_result")
+                    ))?;
                     f.writeln(&format!(
                         "let error = _cache.exceptions.throw_{}(&_env, _error);",
                         error_type.exception_name

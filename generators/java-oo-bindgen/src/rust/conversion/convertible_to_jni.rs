@@ -1,173 +1,149 @@
-use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
 pub(crate) trait ConvertibleToJni {
-    /// Optional conversion from JNI argument type to Rust type
-    fn conversion(&self) -> Option<TypeConverter>;
+    /// Possible conversion from JNI argument type to Rust type
+    fn maybe_convert(&self, expr: &str) -> Option<String>;
     /// Indicates whether a local reference cleanup is required once we are done with the type
-    fn requires_local_ref_cleanup(&self) -> bool;
-}
-
-impl ConvertibleToJni for DurationType {
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(DurationConverter::wrap(*self))
-    }
-
     fn requires_local_ref_cleanup(&self) -> bool {
-        true
-    }
-}
-
-impl<D> ConvertibleToJni for Handle<Enum<D>>
-where
-    D: DocReference,
-{
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(EnumConverter::wrap(self.clone()))
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        // We re-use a global ref here
+        // TODO - this will get removed
         false
     }
 }
 
-impl ConvertibleToJni for StringType {
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(StringConverter::wrap())
-    }
+/// trait to implement when the type always has a conversion
+pub(crate) trait DefiniteConversionToJni {
+    /// Possible conversion from JNI argument type to Rust type
+    fn convert(&self, expr: &str) -> String;
+}
 
-    fn requires_local_ref_cleanup(&self) -> bool {
-        true
+/// Blanket implementation for all types that have definite conversions
+impl<T> ConvertibleToJni for T
+where
+    T: DefiniteConversionToJni,
+{
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
+        Some(self.convert(expr))
+    }
+}
+
+impl DefiniteConversionToJni for DurationType {
+    fn convert(&self, expr: &str) -> String {
+        let method = match self {
+            DurationType::Milliseconds => "duration_from_millis",
+            DurationType::Seconds => "duration_from_seconds",
+        };
+
+        format!("_cache.duration.{}(&_env, {})", method, expr)
+    }
+}
+
+impl<D> DefiniteConversionToJni for Handle<Enum<D>>
+where
+    D: DocReference,
+{
+    fn convert(&self, expr: &str) -> String {
+        format!(
+            "_cache.enums.enum_{}.enum_from_rust(&_env, {})",
+            self.name, expr
+        )
+    }
+}
+
+impl DefiniteConversionToJni for StringType {
+    fn convert(&self, expr: &str) -> String {
+        format!("_env.new_string(unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy()).unwrap().into_inner()", expr)
     }
 }
 
 impl ConvertibleToJni for Primitive {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Bool => Some(BooleanConverter::wrap()),
-            Self::U8 => Some(UnsignedConverter::U8),
+            Self::Bool => Some(format!("{} as u8", expr)),
+            Self::U8 => Some(UnsignedConverter::U8.apply(expr)),
             Self::S8 => None,
-            Self::U16 => Some(UnsignedConverter::U16),
+            Self::U16 => Some(UnsignedConverter::U16.apply(expr)),
             Self::S16 => None,
-            Self::U32 => Some(UnsignedConverter::U32),
+            Self::U32 => Some(UnsignedConverter::U32.apply(expr)),
             Self::S32 => None,
-            Self::U64 => Some(UnsignedConverter::U64),
+            Self::U64 => Some(UnsignedConverter::U64.apply(expr)),
             Self::S64 => None,
             Self::Float => None,
             Self::Double => None,
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        // unsigned integers require cleanup since they're wrapped
-        match self {
-            Self::Bool => false,
-            Self::U8 => true,
-            Self::S8 => false,
-            Self::U16 => true,
-            Self::S16 => false,
-            Self::U32 => true,
-            Self::S32 => false,
-            Self::U64 => true,
-            Self::S64 => false,
-            Self::Float => false,
-            Self::Double => false,
-        }
-    }
 }
 
 impl ConvertibleToJni for BasicType {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Primitive(x) => x.conversion(),
-            Self::Duration(x) => x.conversion(),
-            Self::Enum(x) => x.conversion(),
-        }
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Primitive(x) => x.requires_local_ref_cleanup(),
-            Self::Duration(x) => x.requires_local_ref_cleanup(),
-            Self::Enum(x) => x.requires_local_ref_cleanup(),
+            Self::Primitive(x) => x.maybe_convert(expr),
+            Self::Duration(x) => x.maybe_convert(expr),
+            Self::Enum(x) => x.maybe_convert(expr),
         }
     }
 }
 
-impl ConvertibleToJni for StructDeclarationHandle {
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(StructRefConverter::wrap(self.clone()))
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        true
-    }
-}
-
-impl ConvertibleToJni for ClassDeclarationHandle {
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(ClassConverter::wrap(self.clone()))
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        true
+impl DefiniteConversionToJni for StructDeclarationHandle {
+    fn convert(&self, expr: &str) -> String {
+        format!(
+            "{}.as_ref().map(|x| _cache.structs.struct_{}.to_jni(_cache, &_env, &value)).or_else(|| jni::objects::JObject::null().into_inner())",
+            expr,
+            self.name
+        )
     }
 }
 
-impl<D> ConvertibleToJni for Handle<AbstractIterator<D>>
+impl DefiniteConversionToJni for ClassDeclarationHandle {
+    fn convert(&self, expr: &str) -> String {
+        format!("_cache.classes.{}_from_rust(&_env, {})", self.name, expr)
+    }
+}
+
+impl<D> DefiniteConversionToJni for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(IteratorConverter::wrap(self.clone()))
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        true
+    fn convert(&self, expr: &str) -> String {
+        format!(
+            "crate::iterators::{}(&_env, _cache, {})",
+            self.iter_class.name, expr
+        )
     }
 }
 
-impl<T, D> ConvertibleToJni for Handle<Struct<T, D>>
+impl<T, D> DefiniteConversionToJni for Handle<Struct<T, D>>
 where
     D: DocReference,
     T: StructFieldType,
 {
-    fn conversion(&self) -> Option<TypeConverter> {
-        Some(StructConverter::wrap(self.declaration.inner.clone()))
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        true
+    fn convert(&self, expr: &str) -> String {
+        format!(
+            "_cache.structs.{}.to_jni(_cache, &_env, &{})",
+            self.declaration.name(),
+            expr
+        )
     }
 }
 
-impl<T> ConvertibleToJni for UniversalOr<T>
+impl<T> DefiniteConversionToJni for UniversalOr<T>
 where
     T: StructFieldType,
 {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn convert(&self, expr: &str) -> String {
         match self {
-            UniversalOr::Specific(x) => x.conversion(),
-            UniversalOr::Universal(x) => x.conversion(),
-        }
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            UniversalOr::Specific(x) => x.requires_local_ref_cleanup(),
-            UniversalOr::Universal(x) => x.requires_local_ref_cleanup(),
+            UniversalOr::Specific(x) => x.convert(expr),
+            UniversalOr::Universal(x) => x.convert(expr),
         }
     }
 }
 
 impl ConvertibleToJni for FunctionReturnStructField {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Basic(x) => x.conversion(),
-            Self::ClassRef(x) => x.conversion(),
-            Self::Struct(x) => x.conversion(),
-            Self::Iterator(x) => x.conversion(),
+            Self::Basic(x) => x.maybe_convert(expr),
+            Self::ClassRef(x) => x.maybe_convert(expr),
+            Self::Struct(x) => x.maybe_convert(expr),
+            Self::Iterator(x) => x.maybe_convert(expr),
         }
     }
 
@@ -182,11 +158,11 @@ impl ConvertibleToJni for FunctionReturnStructField {
 }
 
 impl ConvertibleToJni for CallbackArgStructField {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Basic(x) => x.conversion(),
-            Self::Iterator(x) => x.conversion(),
-            Self::Struct(x) => x.conversion(),
+            Self::Basic(x) => x.maybe_convert(expr),
+            Self::Iterator(x) => x.maybe_convert(expr),
+            Self::Struct(x) => x.maybe_convert(expr),
         }
     }
 
@@ -200,10 +176,10 @@ impl ConvertibleToJni for CallbackArgStructField {
 }
 
 impl ConvertibleToJni for UniversalStructField {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Basic(x) => x.conversion(),
-            Self::Struct(x) => x.conversion(),
+            Self::Basic(x) => x.maybe_convert(expr),
+            Self::Struct(x) => x.maybe_convert(expr),
         }
     }
 
@@ -216,13 +192,13 @@ impl ConvertibleToJni for UniversalStructField {
 }
 
 impl ConvertibleToJni for CallbackArgument {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Basic(x) => x.conversion(),
-            Self::String(x) => x.conversion(),
-            Self::Iterator(x) => x.conversion(),
-            Self::Struct(x) => x.conversion(),
-            Self::Class(x) => x.conversion(),
+            Self::Basic(x) => x.maybe_convert(expr),
+            Self::String(x) => x.maybe_convert(expr),
+            Self::Iterator(x) => x.maybe_convert(expr),
+            Self::Struct(x) => x.maybe_convert(expr),
+            Self::Class(x) => x.maybe_convert(expr),
         }
     }
 
@@ -238,13 +214,13 @@ impl ConvertibleToJni for CallbackArgument {
 }
 
 impl ConvertibleToJni for FunctionReturnValue {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Basic(x) => x.conversion(),
-            Self::String(x) => x.conversion(),
-            Self::ClassRef(x) => x.conversion(),
-            Self::Struct(x) => x.conversion(),
-            Self::StructRef(x) => x.untyped().conversion(),
+            Self::Basic(x) => x.maybe_convert(expr),
+            Self::String(x) => x.maybe_convert(expr),
+            Self::ClassRef(x) => x.maybe_convert(expr),
+            Self::Struct(x) => x.maybe_convert(expr),
+            Self::StructRef(x) => x.untyped().maybe_convert(expr),
         }
     }
 
@@ -260,9 +236,9 @@ impl ConvertibleToJni for FunctionReturnValue {
 }
 
 impl ConvertibleToJni for IteratorItemType {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            IteratorItemType::StructRef(x) => x.conversion(),
+            IteratorItemType::StructRef(x) => x.maybe_convert(expr),
         }
     }
 
@@ -274,10 +250,10 @@ impl ConvertibleToJni for IteratorItemType {
 }
 
 impl ConvertibleToJni for CallbackReturnValue {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Basic(x) => x.conversion(),
-            Self::Struct(x) => x.conversion(),
+            Self::Basic(x) => x.maybe_convert(expr),
+            Self::Struct(x) => x.maybe_convert(expr),
         }
     }
 
@@ -294,10 +270,10 @@ where
     D: DocReference,
     T: Clone + ConvertibleToJni,
 {
-    fn conversion(&self) -> Option<TypeConverter> {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self.get_value() {
             None => None,
-            Some(return_type) => return_type.conversion(),
+            Some(return_type) => return_type.maybe_convert(expr),
         }
     }
 
@@ -306,51 +282,6 @@ where
             None => false,
             Some(return_type) => return_type.requires_local_ref_cleanup(),
         }
-    }
-}
-
-trait TypeConverterTrait {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()>;
-}
-
-pub(crate) enum TypeConverter {
-    Bool(BooleanConverter),
-    Unsigned(UnsignedConverter),
-    String(StringConverter),
-    Struct(StructConverter),
-    StructRef(StructRefConverter),
-    Enum(EnumConverter),
-    Class(ClassConverter),
-    Duration(DurationConverter),
-    Iterator(IteratorConverter),
-}
-
-impl TypeConverter {
-    pub(crate) fn to_jni(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        match self {
-            TypeConverter::Bool(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Unsigned(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::String(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Struct(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::StructRef(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Enum(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Class(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Duration(x) => x.convert_from_rust(f, from, to),
-            TypeConverter::Iterator(x) => x.convert_from_rust(f, from, to),
-        }
-    }
-}
-
-pub(crate) struct BooleanConverter;
-impl BooleanConverter {
-    pub(crate) fn wrap() -> TypeConverter {
-        TypeConverter::Bool(BooleanConverter {})
-    }
-}
-
-impl TypeConverterTrait for BooleanConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{} as u8", to, from))
     }
 }
 
@@ -363,161 +294,12 @@ impl UnsignedConverter {
         Self { java_type }
     }
 
-    const U8: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("ubyte"));
-    const U16: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("ushort"));
-    const U32: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("uinteger"));
-    const U64: TypeConverter = TypeConverter::Unsigned(UnsignedConverter::new("ulong"));
-}
+    const U8: UnsignedConverter = UnsignedConverter::new("ubyte");
+    const U16: UnsignedConverter = UnsignedConverter::new("ushort");
+    const U32: UnsignedConverter = UnsignedConverter::new("uinteger");
+    const U64: UnsignedConverter = UnsignedConverter::new("ulong");
 
-impl TypeConverterTrait for UnsignedConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.joou.{}_from_rust(&_env, {})",
-            to, self.java_type, from
-        ))
-    }
-}
-
-pub(crate) struct StringConverter;
-impl StringConverter {
-    fn wrap() -> TypeConverter {
-        TypeConverter::String(StringConverter)
-    }
-}
-
-impl TypeConverterTrait for StringConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(to)?;
-        blocked(f, |f| {
-            f.writeln(&format!(
-                "_env.new_string(unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy()).unwrap().into_inner()",
-                from
-            ))
-        })
-    }
-}
-
-pub(crate) struct StructConverter {
-    inner: StructDeclarationHandle,
-}
-
-impl StructConverter {
-    fn wrap(inner: StructDeclarationHandle) -> TypeConverter {
-        TypeConverter::Struct(Self { inner })
-    }
-}
-
-impl TypeConverterTrait for StructConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.structs.{}.to_jni(_cache, &_env, &{})",
-            to, self.inner.name, from
-        ))
-    }
-}
-
-pub(crate) struct StructRefConverter {
-    handle: StructDeclarationHandle,
-}
-impl StructRefConverter {
-    fn wrap(handle: StructDeclarationHandle) -> TypeConverter {
-        TypeConverter::StructRef(StructRefConverter { handle })
-    }
-}
-
-impl TypeConverterTrait for StructRefConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(
-            &format!(
-                "{}{}.as_ref().map(|x| _cache.structs.struct_{}.to_jni(_cache, &_env, &value)).or_else(|| jni::objects::JObject::null().into_inner())",
-                to,
-                from,
-                self.handle.name
-              )
-        )
-    }
-}
-
-pub(crate) struct EnumConverter {
-    name: Name,
-}
-
-impl EnumConverter {
-    pub(crate) fn wrap<D: DocReference>(handle: Handle<Enum<D>>) -> TypeConverter {
-        TypeConverter::Enum(EnumConverter {
-            name: handle.name.clone(),
-        })
-    }
-}
-impl TypeConverterTrait for EnumConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.enums.enum_{}.enum_from_rust(&_env, {})",
-            to, self.name, from
-        ))
-    }
-}
-
-pub(crate) struct ClassConverter {
-    handle: ClassDeclarationHandle,
-}
-
-impl ClassConverter {
-    fn wrap(handle: ClassDeclarationHandle) -> TypeConverter {
-        TypeConverter::Class(ClassConverter { handle })
-    }
-}
-
-impl TypeConverterTrait for ClassConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{}_cache.classes.{}_from_rust(&_env, {})",
-            to, self.handle.name, from
-        ))
-    }
-}
-
-pub(crate) struct IteratorConverter {
-    iter_class: ClassDeclarationHandle,
-}
-
-impl IteratorConverter {
-    pub(crate) fn wrap<D: DocReference>(handle: Handle<AbstractIterator<D>>) -> TypeConverter {
-        TypeConverter::Iterator(Self {
-            iter_class: handle.iter_class.clone(),
-        })
-    }
-}
-
-impl TypeConverterTrait for IteratorConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!(
-            "{} crate::iterators::{}(&_env, _cache, {})",
-            to, self.iter_class.name, from,
-        ))
-    }
-}
-
-pub(crate) struct DurationConverter {
-    duration_type: DurationType,
-}
-
-impl DurationConverter {
-    fn wrap(duration_type: DurationType) -> TypeConverter {
-        TypeConverter::Duration(DurationConverter { duration_type })
-    }
-}
-
-impl TypeConverterTrait for DurationConverter {
-    fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        let method = match self.duration_type {
-            DurationType::Milliseconds => "duration_from_millis",
-            DurationType::Seconds => "duration_from_seconds",
-        };
-
-        f.writeln(&format!(
-            "{}_cache.duration.{}(&_env, {})",
-            to, method, from
-        ))
+    fn apply(&self, expr: &str) -> String {
+        format!("_cache.joou.{}_from_rust(&_env, {})", self.java_type, expr)
     }
 }

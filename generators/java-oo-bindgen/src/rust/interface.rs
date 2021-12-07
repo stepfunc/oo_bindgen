@@ -229,18 +229,15 @@ fn call_java_callback(
     args: &[Arg<CallbackArgument, Validated>],
     return_type: &OptionalReturnType<CallbackReturnValue, Validated>,
 ) -> FormattingResult<()> {
-    // Extract the global ref
+    f.writeln("// setup")?;
+    f.writeln("let _cache = crate::get_cache();")?;
+    f.writeln("let _env = _cache.vm.attach_current_thread_permanently().unwrap();")?;
     f.writeln(&format!(
         "let _ctx = unsafe {{ &mut *({} as *mut jni::objects::GlobalRef) }};",
         arg_name
     ))?;
 
-    // Get the JCache
-    f.writeln("let _cache = crate::get_cache();")?;
-
-    // Attach the current thread and get the env
-    f.writeln("let _env = _cache.vm.attach_current_thread_permanently().unwrap();")?;
-
+    f.writeln("// convert the arguments")?;
     // Perform the conversion of the parameters
     for param in args {
         if let Some(conversion) = param.arg_type.maybe_convert(&param.name) {
@@ -248,7 +245,7 @@ fn call_java_callback(
         }
     }
 
-    // Call the Java callback
+    f.writeln("// invoke the callback")?;
     if return_type.is_some() {
         f.writeln("let _result = ")?;
     } else {
@@ -260,17 +257,5 @@ fn call_java_callback(
         callback_name,
         return_type.jni_type_id().as_string(lib_path),
         args.iter().map(|param| format!("{}.into()", param.name)).collect::<Vec<_>>().join(", ")
-    ))?;
-
-    // Release the local refs
-    for param in args {
-        if param.arg_type.requires_local_ref_cleanup() {
-            f.writeln(&format!(
-                "_env.delete_local_ref({}.into()).unwrap();",
-                param.name
-            ))?;
-        }
-    }
-
-    Ok(())
+    ))
 }

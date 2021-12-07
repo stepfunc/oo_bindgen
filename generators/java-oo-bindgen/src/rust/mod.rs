@@ -249,11 +249,7 @@ fn write_iterator_conversion(
             if let Some(conversion) = iter.item_type.maybe_convert("next") {
                 f.writeln(&format!("let next = {};", conversion))?;
             }
-            f.writeln("_cache.collection.add_to_array_list(&_env, list, next.into());")?;
-            if iter.item_type.requires_local_ref_cleanup() {
-                f.writeln("_env.delete_local_ref(next.into()).unwrap();")?;
-            }
-            Ok(())
+            f.writeln("_cache.collection.add_to_array_list(&_env, list, next.into());")
         })?;
         f.writeln("}")?;
         f.writeln("list.into_inner()")

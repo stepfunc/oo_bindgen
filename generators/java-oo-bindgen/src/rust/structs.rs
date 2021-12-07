@@ -153,7 +153,7 @@ fn generate_conversion_to_jni<T>(
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + ConvertibleToJni,
+    T: StructFieldType + MaybeConvertibleToJni,
 {
     let struct_name = structure.name().camel_case();
     let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
@@ -177,10 +177,6 @@ where
                     "_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();",
                     field.name
                 ))?;
-
-                if field.field_type.requires_local_ref_cleanup() {
-                    f.writeln("_env.delete_local_ref(temp.into()).unwrap();")?;
-                }
             }
 
             f.writeln("obj.into_inner()")

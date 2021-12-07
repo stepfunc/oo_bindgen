@@ -238,7 +238,7 @@ fn write_iterator_conversion(
     config: &JavaBindgenConfig,
     iter: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
-    f.writeln(&format!("pub(crate) fn {}(_env: jni::JNIEnv, _cache: &crate::JCache, iter: {}) -> jni::sys::jobject {{", iter.name(), iter.iter_class.get_rust_type(&config.ffi_name)))?;
+    f.writeln(&format!("pub(crate) fn {}(_env: &jni::JNIEnv, _cache: &crate::JCache, iter: {}) -> jni::sys::jobject {{", iter.name(), iter.iter_class.get_rust_type(&config.ffi_name)))?;
     indented(f, |f| {
         f.writeln("let list = _cache.collection.new_array_list(&_env);")?;
         f.writeln(&format!(

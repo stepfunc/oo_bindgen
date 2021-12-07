@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
@@ -481,53 +479,23 @@ impl TypeConverterTrait for ClassConverter {
 }
 
 pub(crate) struct IteratorConverter {
-    next_func: Name,
-    item_type: IteratorItemType,
-    settings: Rc<LibrarySettings>,
+    iter_class: ClassDeclarationHandle,
 }
 
 impl IteratorConverter {
     pub(crate) fn wrap<D: DocReference>(handle: Handle<AbstractIterator<D>>) -> TypeConverter {
         TypeConverter::Iterator(Self {
-            next_func: handle.next_function.name.clone(),
-            item_type: handle.item_type.clone(),
-            settings: handle.settings.clone(),
+            iter_class: handle.iter_class.clone(),
         })
     }
 }
 
 impl TypeConverterTrait for IteratorConverter {
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(to)?;
-        blocked(f, |f| {
-            f.writeln("let array_list = _cache.collection.new_array_list(&_env);")?;
-            f.writeln(&format!(
-                "while let it = unsafe {{ {}_ffi::ffi::{}_{}({}) }}",
-                self.settings.c_ffi_prefix, self.settings.c_ffi_prefix, self.next_func, from
-            ))?;
-            blocked(f, |f| {
-                f.writeln("match unsafe { it.as_ref() }")?;
-                blocked(f, |f| {
-                    f.writeln("None => { break; }")?;
-                    f.writeln("Some(it) => ")?;
-                    blocked(f, |f| {
-                        StructConverter::wrap(self.item_type.declaration()).to_jni(
-                            f,
-                            "it",
-                            "let item = ",
-                        )?;
-                        f.write(";")?;
-
-                        f.writeln(
-                            "_cache.collection.add_to_array_list(&_env, array_list, item.into());",
-                        )?;
-                        f.writeln("_env.delete_local_ref(item.into()).unwrap();")
-                    })?;
-                    f.write(",")
-                })
-            })?;
-            f.writeln("array_list.into_inner()")
-        })
+        f.writeln(&format!(
+            "{} crate::iterators::{}(&_env, _cache, {})",
+            to, self.iter_class.name, from,
+        ))
     }
 }
 

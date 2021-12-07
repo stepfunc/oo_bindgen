@@ -28,9 +28,9 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     let mut f = FilePrinter::new(&filename)?;
 
     generate_cache(&mut f)?;
-    f.newline()?;
     write_functions(&mut f, lib, config)?;
-    write_helpers_module(&mut f, lib, config)?;
+    write_collection_conversions(&mut f, lib, config)?;
+    write_iterator_conversions(&mut f, lib, config)?;
 
     // Create the cache modules
     classes::generate_classes_cache(lib, config)?;
@@ -197,6 +197,71 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     })
 }
 
+fn write_collection_conversions(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
+    f.newline()?;
+    f.writeln("/// convert Java lists into native API collections")?;
+    f.writeln("mod collections {")?;
+    indented(f, |f| {
+        for col in lib.collections() {
+            f.newline()?;
+            write_collection_guard(f, config, col)?;
+        }
+        Ok(())
+    })?;
+    f.writeln("}")
+}
+
+fn write_iterator_conversions(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
+    f.newline()?;
+    f.writeln("/// functions that convert native API iterators into Java lists")?;
+    f.writeln("mod iterators {")?;
+    indented(f, |f| {
+        for iter in lib.iterators() {
+            f.newline()?;
+            write_iterator_conversion(f, config, iter)?;
+        }
+        Ok(())
+    })?;
+    f.writeln("}")
+}
+
+fn write_iterator_conversion(
+    f: &mut dyn Printer,
+    config: &JavaBindgenConfig,
+    iter: &Handle<AbstractIterator<Validated>>,
+) -> FormattingResult<()> {
+    f.writeln(&format!("pub(crate) fn {}(_env: jni::JNIEnv, _cache: &crate::JCache, iter: {}) -> jni::sys::jobject {{", iter.name(), iter.iter_class.get_rust_type(&config.ffi_name)))?;
+    indented(f, |f| {
+        f.writeln("let list = _cache.collection.new_array_list(&_env);")?;
+        f.writeln(&format!(
+            "while let Some(next) = unsafe {{ {}::ffi::{}_{}(iter).as_ref() }} {{",
+            config.ffi_name, iter.iter_class.settings.c_ffi_prefix, iter.next_function.name
+        ))?;
+        indented(f, |f| {
+            if let Some(c) = iter.item_type.conversion() {
+                c.to_jni(f, "next", "let next = ")?;
+                f.write(";")?;
+            }
+            f.writeln("_cache.collection.add_to_array_list(&_env, list, next.into());")?;
+            if iter.item_type.requires_local_ref_cleanup() {
+                f.writeln("_env.delete_local_ref(next.into()).unwrap();")?;
+            }
+            Ok(())
+        })?;
+        f.writeln("}")?;
+        f.writeln("list.into_inner()")
+    })?;
+    f.writeln("}")
+}
+
 fn write_collection_guard(
     f: &mut dyn Printer,
     config: &JavaBindgenConfig,
@@ -290,22 +355,6 @@ fn write_collection_guard(
     f.writeln("}")
 }
 
-fn write_helpers_module(
-    f: &mut dyn Printer,
-    lib: &Library,
-    config: &JavaBindgenConfig,
-) -> FormattingResult<()> {
-    f.writeln("mod helpers {")?;
-    indented(f, |f| {
-        for col in lib.collections() {
-            f.newline()?;
-            write_collection_guard(f, config, col)?;
-        }
-        Ok(())
-    })?;
-    f.writeln("}")
-}
-
 fn write_functions(
     f: &mut dyn Printer,
     lib: &Library,
@@ -324,8 +373,8 @@ fn write_functions(
     }
 
     for handle in lib.functions().filter(|f| !skip(f.category)) {
-        write_function(f, lib, config, handle)?;
         f.newline()?;
+        write_function(f, lib, config, handle)?;
     }
     Ok(())
 }

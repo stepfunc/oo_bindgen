@@ -145,7 +145,7 @@ impl ConvertibleToRust for CollectionHandle {
     fn to_rust(&self, expr: &str) -> Option<String> {
         // create the helper guard object that allocates and fills the native collection from the list
         Some(format!(
-            "helpers::{}::new(_env, {}).unwrap()",
+            "collections::{}::new(_env, {}).unwrap()",
             self.collection_class.name.camel_case(),
             expr
         ))

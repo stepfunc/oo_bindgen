@@ -97,10 +97,10 @@ impl ConvertibleToRust for DurationType {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(match self {
             DurationType::Milliseconds => {
-                format!("_cache.duration.duration_to_millis(&_env, {})", expr)
+                format!("_cache.duration.to_millis(&_env, {})", expr)
             }
             DurationType::Seconds => {
-                format!("_cache.duration.duration_to_seconds(&_env, {})", expr)
+                format!("_cache.duration.to_seconds(&_env, {})", expr)
             }
         })
     }

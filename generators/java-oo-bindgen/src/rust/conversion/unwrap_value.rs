@@ -15,13 +15,13 @@ impl UnwrapValue for Primitive {
     fn unwrap_value(&self) -> &str {
         match self {
             Self::Bool => "z().unwrap()",
-            Self::U8 => "l().unwrap().into_inner()",
+            Self::U8 => UNWRAP_OBJECT,
             Self::S8 => "b().unwrap()",
-            Self::U16 => "l().unwrap().into_inner()",
+            Self::U16 => UNWRAP_OBJECT,
             Self::S16 => "s().unwrap()",
-            Self::U32 => "l().unwrap().into_inner()",
+            Self::U32 => UNWRAP_OBJECT,
             Self::S32 => "i().unwrap()",
-            Self::U64 => "l().unwrap().into_inner()",
+            Self::U64 => UNWRAP_OBJECT,
             Self::S64 => "j().unwrap()",
             Self::Float => "f().unwrap()",
             Self::Double => "d().unwrap()",

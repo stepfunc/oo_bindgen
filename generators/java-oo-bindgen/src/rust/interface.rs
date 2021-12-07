@@ -231,23 +231,20 @@ fn call_java_callback(
 ) -> FormattingResult<()> {
     // Extract the global ref
     f.writeln(&format!(
-        "let _obj = unsafe {{ &mut *({} as *mut jni::objects::GlobalRef) }};",
+        "let _ctx = unsafe {{ &mut *({} as *mut jni::objects::GlobalRef) }};",
         arg_name
     ))?;
 
     // Get the JCache
-    f.writeln("let _cache = unsafe { crate::JCACHE.as_ref().unwrap() };")?;
+    f.writeln("let _cache = crate::get_cache();")?;
 
-    // Attach the current thread
-    f.writeln("_cache.vm.attach_current_thread_permanently().unwrap();")?;
-
-    // Get the env
-    f.writeln("let _env = _cache.vm.get_env().unwrap();")?;
+    // Attach the current thread and get the env
+    f.writeln("let _env = _cache.vm.attach_current_thread_permanently().unwrap();")?;
 
     // Perform the conversion of the parameters
     for param in args {
         if let Some(conversion) = param.arg_type.maybe_convert(&param.name) {
-            f.write(&format!("let {} = {};", param.name, conversion))?;
+            f.writeln(&format!("let {} = {};", param.name, conversion))?;
         }
     }
 
@@ -258,7 +255,7 @@ fn call_java_callback(
         f.newline()?;
     }
     f.write(&format!(
-        "_env.call_method_unchecked(_obj.as_obj(), _cache.interfaces.interface_{}.cb_{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap();",
+        "_env.call_method_unchecked(_ctx.as_obj(), _cache.interfaces.interface_{}.cb_{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap();",
         interface_name,
         callback_name,
         return_type.jni_type_id().as_string(lib_path),

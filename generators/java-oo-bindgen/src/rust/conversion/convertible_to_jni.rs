@@ -261,6 +261,20 @@ impl ConvertibleToJni for FunctionReturnValue {
     }
 }
 
+impl ConvertibleToJni for IteratorItemType {
+    fn conversion(&self) -> Option<TypeConverter> {
+        match self {
+            IteratorItemType::Struct(x) => x.conversion(),
+        }
+    }
+
+    fn requires_local_ref_cleanup(&self) -> bool {
+        match self {
+            IteratorItemType::Struct(x) => x.requires_local_ref_cleanup(),
+        }
+    }
+}
+
 impl ConvertibleToJni for CallbackReturnValue {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {

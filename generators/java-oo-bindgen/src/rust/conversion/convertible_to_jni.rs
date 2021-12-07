@@ -1,32 +1,27 @@
 use oo_bindgen::model::*;
 
-pub(crate) trait ConvertibleToJni {
+pub(crate) trait MaybeConvertibleToJni {
     /// Possible conversion from JNI argument type to Rust type
     fn maybe_convert(&self, expr: &str) -> Option<String>;
-    /// Indicates whether a local reference cleanup is required once we are done with the type
-    fn requires_local_ref_cleanup(&self) -> bool {
-        // TODO - this will get removed
-        false
-    }
 }
 
 /// trait to implement when the type always has a conversion
-pub(crate) trait DefiniteConversionToJni {
-    /// Possible conversion from JNI argument type to Rust type
+pub(crate) trait ConvertibleToJni {
+    /// definite conversion from JNI argument type to Rust type
     fn convert(&self, expr: &str) -> String;
 }
 
 /// Blanket implementation for all types that have definite conversions
-impl<T> ConvertibleToJni for T
+impl<T> MaybeConvertibleToJni for T
 where
-    T: DefiniteConversionToJni,
+    T: ConvertibleToJni,
 {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         Some(self.convert(expr))
     }
 }
 
-impl DefiniteConversionToJni for DurationType {
+impl ConvertibleToJni for DurationType {
     fn convert(&self, expr: &str) -> String {
         let method = match self {
             DurationType::Milliseconds => "duration_from_millis",
@@ -37,7 +32,7 @@ impl DefiniteConversionToJni for DurationType {
     }
 }
 
-impl<D> DefiniteConversionToJni for Handle<Enum<D>>
+impl<D> ConvertibleToJni for Handle<Enum<D>>
 where
     D: DocReference,
 {
@@ -49,13 +44,13 @@ where
     }
 }
 
-impl DefiniteConversionToJni for StringType {
+impl ConvertibleToJni for StringType {
     fn convert(&self, expr: &str) -> String {
         format!("_env.new_string(unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy()).unwrap().into_inner()", expr)
     }
 }
 
-impl ConvertibleToJni for Primitive {
+impl MaybeConvertibleToJni for Primitive {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Bool => Some(format!("{} as u8", expr)),
@@ -73,7 +68,7 @@ impl ConvertibleToJni for Primitive {
     }
 }
 
-impl ConvertibleToJni for BasicType {
+impl MaybeConvertibleToJni for BasicType {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Primitive(x) => x.maybe_convert(expr),
@@ -83,7 +78,7 @@ impl ConvertibleToJni for BasicType {
     }
 }
 
-impl DefiniteConversionToJni for StructDeclarationHandle {
+impl ConvertibleToJni for StructDeclarationHandle {
     fn convert(&self, expr: &str) -> String {
         format!(
             "{}.as_ref().map(|x| _cache.structs.struct_{}.to_jni(_cache, &_env, &value)).or_else(|| jni::objects::JObject::null().into_inner())",
@@ -93,13 +88,13 @@ impl DefiniteConversionToJni for StructDeclarationHandle {
     }
 }
 
-impl DefiniteConversionToJni for ClassDeclarationHandle {
+impl ConvertibleToJni for ClassDeclarationHandle {
     fn convert(&self, expr: &str) -> String {
         format!("_cache.classes.{}_from_rust(&_env, {})", self.name, expr)
     }
 }
 
-impl<D> DefiniteConversionToJni for Handle<AbstractIterator<D>>
+impl<D> ConvertibleToJni for Handle<AbstractIterator<D>>
 where
     D: DocReference,
 {
@@ -111,7 +106,7 @@ where
     }
 }
 
-impl<T, D> DefiniteConversionToJni for Handle<Struct<T, D>>
+impl<T, D> ConvertibleToJni for Handle<Struct<T, D>>
 where
     D: DocReference,
     T: StructFieldType,
@@ -125,7 +120,7 @@ where
     }
 }
 
-impl<T> DefiniteConversionToJni for UniversalOr<T>
+impl<T> ConvertibleToJni for UniversalOr<T>
 where
     T: StructFieldType,
 {
@@ -137,7 +132,7 @@ where
     }
 }
 
-impl ConvertibleToJni for FunctionReturnStructField {
+impl MaybeConvertibleToJni for FunctionReturnStructField {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Basic(x) => x.maybe_convert(expr),
@@ -146,18 +141,9 @@ impl ConvertibleToJni for FunctionReturnStructField {
             Self::Iterator(x) => x.maybe_convert(expr),
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::ClassRef(x) => x.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
-            Self::Iterator(x) => x.requires_local_ref_cleanup(),
-        }
-    }
 }
 
-impl ConvertibleToJni for CallbackArgStructField {
+impl MaybeConvertibleToJni for CallbackArgStructField {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Basic(x) => x.maybe_convert(expr),
@@ -165,33 +151,18 @@ impl ConvertibleToJni for CallbackArgStructField {
             Self::Struct(x) => x.maybe_convert(expr),
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::Iterator(x) => x.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
 }
 
-impl ConvertibleToJni for UniversalStructField {
+impl MaybeConvertibleToJni for UniversalStructField {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Basic(x) => x.maybe_convert(expr),
             Self::Struct(x) => x.maybe_convert(expr),
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
 }
 
-impl ConvertibleToJni for CallbackArgument {
+impl MaybeConvertibleToJni for CallbackArgument {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Basic(x) => x.maybe_convert(expr),
@@ -201,19 +172,9 @@ impl ConvertibleToJni for CallbackArgument {
             Self::Class(x) => x.maybe_convert(expr),
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::String(x) => x.requires_local_ref_cleanup(),
-            Self::Iterator(x) => x.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
-            Self::Class(x) => x.requires_local_ref_cleanup(),
-        }
-    }
 }
 
-impl ConvertibleToJni for FunctionReturnValue {
+impl MaybeConvertibleToJni for FunctionReturnValue {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Basic(x) => x.maybe_convert(expr),
@@ -223,64 +184,34 @@ impl ConvertibleToJni for FunctionReturnValue {
             Self::StructRef(x) => x.untyped().maybe_convert(expr),
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::String(x) => x.requires_local_ref_cleanup(),
-            Self::ClassRef(x) => x.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
-            Self::StructRef(x) => x.untyped().requires_local_ref_cleanup(),
-        }
-    }
 }
 
-impl ConvertibleToJni for IteratorItemType {
+impl MaybeConvertibleToJni for IteratorItemType {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             IteratorItemType::StructRef(x) => x.maybe_convert(expr),
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            IteratorItemType::StructRef(x) => x.requires_local_ref_cleanup(),
-        }
-    }
 }
 
-impl ConvertibleToJni for CallbackReturnValue {
+impl MaybeConvertibleToJni for CallbackReturnValue {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             Self::Basic(x) => x.maybe_convert(expr),
             Self::Struct(x) => x.maybe_convert(expr),
         }
     }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self {
-            Self::Basic(x) => x.requires_local_ref_cleanup(),
-            Self::Struct(x) => x.requires_local_ref_cleanup(),
-        }
-    }
 }
 
-impl<T, D> ConvertibleToJni for OptionalReturnType<T, D>
+impl<T, D> MaybeConvertibleToJni for OptionalReturnType<T, D>
 where
     D: DocReference,
-    T: Clone + ConvertibleToJni,
+    T: Clone + MaybeConvertibleToJni,
 {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self.get_value() {
             None => None,
             Some(return_type) => return_type.maybe_convert(expr),
-        }
-    }
-
-    fn requires_local_ref_cleanup(&self) -> bool {
-        match self.get_value() {
-            None => false,
-            Some(return_type) => return_type.requires_local_ref_cleanup(),
         }
     }
 }

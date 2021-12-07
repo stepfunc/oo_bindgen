@@ -262,13 +262,13 @@ impl ConvertibleToJni for FunctionReturnValue {
 impl ConvertibleToJni for IteratorItemType {
     fn conversion(&self) -> Option<TypeConverter> {
         match self {
-            IteratorItemType::Struct(x) => x.conversion(),
+            IteratorItemType::StructRef(x) => x.conversion(),
         }
     }
 
     fn requires_local_ref_cleanup(&self) -> bool {
         match self {
-            IteratorItemType::Struct(x) => x.requires_local_ref_cleanup(),
+            IteratorItemType::StructRef(x) => x.requires_local_ref_cleanup(),
         }
     }
 }
@@ -427,14 +427,14 @@ impl StructRefConverter {
 
 impl TypeConverterTrait for StructRefConverter {
     fn convert_from_rust(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}match unsafe {{ {}.as_ref() }}", to, from))?;
-        blocked(f, |f| {
-            f.writeln("None => jni::objects::JObject::null().into_inner(),")?;
-            f.writeln(&format!(
-                "Some(value) => _cache.structs.struct_{}.to_jni(_cache, &_env, &value),",
+        f.writeln(
+            &format!(
+                "{}{}.as_ref().map(|x| _cache.structs.struct_{}.to_jni(_cache, &_env, &value)).or_else(|| jni::objects::JObject::null().into_inner())",
+                to,
+                from,
                 self.handle.name
-            ))
-        })
+              )
+        )
     }
 }
 

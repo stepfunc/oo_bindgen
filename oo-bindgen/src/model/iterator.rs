@@ -4,43 +4,43 @@ use crate::model::*;
 
 #[derive(Debug, Clone)]
 pub enum IteratorItemType {
-    Struct(UniversalOr<FunctionReturnStructField>),
+    StructRef(UniversalOr<FunctionReturnStructField>),
 }
 
 impl From<UniversalOr<FunctionReturnStructField>> for IteratorItemType {
     fn from(x: UniversalOr<FunctionReturnStructField>) -> Self {
-        IteratorItemType::Struct(x)
+        IteratorItemType::StructRef(x)
     }
 }
 
 impl From<UniversalStructHandle> for IteratorItemType {
     fn from(x: UniversalStructHandle) -> Self {
-        Self::Struct(UniversalOr::Universal(x))
+        Self::StructRef(UniversalOr::Universal(x))
     }
 }
 
 impl From<FunctionReturnStructHandle> for IteratorItemType {
     fn from(x: FunctionReturnStructHandle) -> Self {
-        Self::Struct(UniversalOr::Specific(x))
+        Self::StructRef(UniversalOr::Specific(x))
     }
 }
 
 impl IteratorItemType {
     pub fn name(&self) -> &Name {
         match self {
-            IteratorItemType::Struct(x) => x.name(),
+            IteratorItemType::StructRef(x) => x.name(),
         }
     }
 
     pub fn declaration(&self) -> StructDeclarationHandle {
         match self {
-            IteratorItemType::Struct(x) => x.declaration(),
+            IteratorItemType::StructRef(x) => x.declaration(),
         }
     }
 
     pub(crate) fn get_function_return_value(&self) -> FunctionReturnValue {
         match self {
-            IteratorItemType::Struct(x) => FunctionReturnValue::StructRef(x.typed_declaration()),
+            IteratorItemType::StructRef(x) => FunctionReturnValue::StructRef(x.typed_declaration()),
         }
     }
 }

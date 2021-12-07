@@ -390,10 +390,9 @@ impl TypeConverterTrait for StringConverter {
         f.writeln(to)?;
         blocked(f, |f| {
             f.writeln(&format!(
-                "let string = unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy();",
+                "_env.new_string(unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy()).unwrap().into_inner()",
                 from
-            ))?;
-            f.writeln("_env.new_string(string).unwrap().into_inner()")
+            ))
         })
     }
 }

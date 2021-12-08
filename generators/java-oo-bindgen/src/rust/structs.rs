@@ -173,6 +173,7 @@ where
                 } else {
                     f.writeln(&format!("let temp = value.{};", field.name))?;
                 }
+
                 f.writeln(&format!(
                     "_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();",
                     field.name

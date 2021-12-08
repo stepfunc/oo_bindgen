@@ -476,7 +476,7 @@ fn write_function(
             SignatureType::NoErrorNoReturn => (),
             SignatureType::NoErrorWithReturn(return_type, _) => {
                 if let Some(conversion) = return_type.maybe_convert("_result") {
-                    f.write(&format!("let _result = {};", conversion))?;
+                    f.writeln(&format!("let _result = {};", conversion))?;
                 }
             }
             SignatureType::ErrorNoReturn(error_type) => {

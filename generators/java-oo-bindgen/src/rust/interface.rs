@@ -237,6 +237,7 @@ fn call_java_callback(
         arg_name
     ))?;
 
+    f.writeln("let _frame = crate::util::local_frame(_env, 0).unwrap();")?;
     f.writeln("// convert the arguments")?;
     // Perform the conversion of the parameters
     for param in args {

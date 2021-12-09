@@ -37,10 +37,7 @@ where
     D: DocReference,
 {
     fn convert(&self, expr: &str) -> String {
-        format!(
-            "_cache.enums.enum_{}.enum_from_rust(&_env, {})",
-            self.name, expr
-        )
+        format!("_cache.enums.{}.to_jni(&_env, {})", self.name, expr)
     }
 }
 

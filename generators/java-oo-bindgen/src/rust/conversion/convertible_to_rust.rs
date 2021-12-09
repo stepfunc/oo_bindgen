@@ -113,7 +113,7 @@ impl ConvertibleToRust for DurationType {
 impl ConvertibleToRust for Handle<Enum<Unvalidated>> {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
-            "_cache.enums.enum_{}.enum_to_rust(&_env, {})",
+            "_cache.enums.{}.to_rust(&_env, {})",
             self.name, expr
         ))
     }

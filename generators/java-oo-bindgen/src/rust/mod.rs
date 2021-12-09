@@ -247,9 +247,9 @@ fn write_iterator_conversion(
         ))?;
         indented(f, |f| {
             if let Some(conversion) = iter.item_type.maybe_convert("next") {
-                f.writeln(&format!("let next = {};", conversion))?;
+                f.writeln(&format!("let next = _env.auto_local({});", conversion))?;
             }
-            f.writeln("_cache.collection.add_to_array_list(&_env, list, next.into());")
+            f.writeln("_cache.collection.add_to_array_list(&_env, list, next.as_obj().into());")
         })?;
         f.writeln("}")?;
         f.writeln("list.into_inner()")
@@ -307,10 +307,14 @@ fn write_collection_guard(
                 "let col = Self {{ inner: unsafe {{ {}::ffi::{}_{}({}) }} }};",
                 config.ffi_name, c_ffi_prefix, col.create_func.name, size
             ))?;
-            f.writeln("let it = jni::objects::AutoLocal::new(&_env, cache.collection.get_iterator(&_env, list.into()));")?;
+            f.writeln(
+                "let it = _env.auto_local(cache.collection.get_iterator(&_env, list.into()));",
+            )?;
             f.writeln("while cache.collection.has_next(&_env, it.as_obj()) {")?;
             indented(f, |f| {
-                f.writeln("let next = jni::objects::AutoLocal::new(&_env, cache.collection.next(&_env, it.as_obj()));")?;
+                f.writeln(
+                    "let next = _env.auto_local(cache.collection.next(&_env, it.as_obj()));",
+                )?;
                 if let Some(converted) = col.item_type.to_rust_from_object("next.as_obj()") {
                     // perform  primary conversion that shadows the variable
                     f.writeln(&format!("let next = {};", converted))?;

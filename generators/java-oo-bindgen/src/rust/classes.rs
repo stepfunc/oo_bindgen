@@ -13,7 +13,7 @@ pub(crate) fn generate_classes_cache(
     filename.set_extension("rs");
     let mut f = FilePrinter::new(&filename)?;
 
-    f.writeln("pub struct Classes")?;
+    f.writeln("pub(crate) struct Classes")?;
     blocked(&mut f, |f| {
         for class in lib.classes() {
             f.writeln(&format!("class_{}: jni::objects::GlobalRef,", class.name()))?;
@@ -34,7 +34,7 @@ pub(crate) fn generate_classes_cache(
 
     f.writeln("impl Classes")?;
     blocked(&mut f, |f| {
-        f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
+        f.writeln("pub(crate) fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
             for class in lib.classes() {
                 let class_name = class.name().camel_case();
@@ -65,14 +65,14 @@ pub(crate) fn generate_classes_cache(
             let class_name = class.name().camel_case();
             let snake_name = class.name();
 
-            f.writeln(&format!("pub fn {snake_name}_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> *mut {ffi_name}::{class_name}", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class_name))?;
+            f.writeln(&format!("pub(crate) fn {snake_name}_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> *mut {ffi_name}::{class_name}", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class_name))?;
             blocked(f, |f| {
                 f.writeln(&format!("env.get_field_unchecked(obj, self.{snake_name}_self_field, jni::signature::JavaType::Primitive(jni::signature::Primitive::Long)).unwrap().j().unwrap() as *mut _", snake_name=snake_name))
             })?;
 
             f.newline()?;
 
-            f.writeln(&format!("pub fn {snake_name}_from_rust(&self, env: &jni::JNIEnv, value: *mut {ffi_name}::{class_name}) -> jni::sys::jobject", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class_name))?;
+            f.writeln(&format!("pub(crate) fn {snake_name}_from_rust(&self, env: &jni::JNIEnv, value: *mut {ffi_name}::{class_name}) -> jni::sys::jobject", snake_name=snake_name, ffi_name=config.ffi_name, class_name=class_name))?;
             blocked(f, |f| {
                 f.writeln(&format!("env.new_object_unchecked(&self.class_{snake_name}, self.{snake_name}_constructor, &[jni::objects::JValue::Long(value as i64)]).unwrap().into_inner()", snake_name=snake_name))
             })?;

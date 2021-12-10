@@ -170,7 +170,7 @@ impl ConvertibleToRust for AsynchronousInterface {
 impl ConvertibleToRust for InterfaceHandle {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
-            "_cache.interfaces.interface_{}.interface_to_rust(&_env, {})",
+            "_cache.interfaces.{}.to_rust(&_env, {})",
             self.name, expr
         ))
     }

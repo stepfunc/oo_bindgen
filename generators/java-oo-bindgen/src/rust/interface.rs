@@ -25,7 +25,7 @@ pub(crate) fn generate_interfaces_cache(
     blocked(&mut f, |f| {
         for interface in lib.untyped_interfaces() {
             f.writeln(&format!(
-                "pub interface_{}: Interface{},",
+                "pub {}: {},",
                 interface.name,
                 interface.name.camel_case()
             ))?;
@@ -44,7 +44,7 @@ pub(crate) fn generate_interfaces_cache(
             blocked(f, |f| {
                 for interface in lib.untyped_interfaces() {
                     f.writeln(&format!(
-                        "interface_{}: Interface{}::init(env),",
+                        "{}: {}::init(env),",
                         interface.name,
                         interface.name.camel_case()
                     ))?;
@@ -62,12 +62,12 @@ pub(crate) fn generate_interfaces_cache(
     for interface in lib.untyped_interfaces() {
         let interface_name = interface.name.camel_case();
 
-        f.writeln(&format!("pub struct Interface{}", interface_name))?;
+        f.writeln(&format!("pub struct {}", interface_name))?;
         blocked(&mut f, |f| {
             f.writeln("_class: jni::objects::GlobalRef,")?;
             for callback in &interface.callbacks {
                 f.writeln(&format!(
-                    "cb_{}: jni::objects::JMethodID<'static>,",
+                    "{}: jni::objects::JMethodID<'static>,",
                     callback.name
                 ))?;
             }
@@ -77,7 +77,7 @@ pub(crate) fn generate_interfaces_cache(
 
         f.newline()?;
 
-        f.writeln(&format!("impl Interface{}", interface_name))?;
+        f.writeln(&format!("impl {}", interface_name))?;
         blocked(&mut f, |f| {
             write_interface_init(f, &interface_name, &lib_path, &interface.callbacks)?;
 
@@ -85,24 +85,23 @@ pub(crate) fn generate_interfaces_cache(
 
             let rust_struct_name =
                 format!("{}::ffi::{}", config.ffi_name, interface.name.camel_case());
-            f.writeln(&format!("pub(crate) fn interface_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}", rust_struct_name))?;
+            f.writeln(&format!(
+                "pub(crate) fn to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}",
+                rust_struct_name
+            ))?;
             blocked(f, |f| {
                 f.writeln(&rust_struct_name)?;
                 blocked(f, |f| {
                     for cb in &interface.callbacks {
                         f.writeln(&format!(
                             "{}: Some({}_{}),",
-                            cb.name,
-                            interface.name.camel_case(),
-                            cb.name
+                            cb.name, interface.name, cb.name
                         ))?;
                     }
 
                     f.writeln(&format!(
                         "{}: Some({}_{}),",
-                        destroy_func_name,
-                        interface.name.camel_case(),
-                        destroy_func_name
+                        destroy_func_name, interface.name, destroy_func_name
                     ))?;
 
                     f.writeln(&format!(
@@ -137,7 +136,7 @@ pub(crate) fn generate_interfaces_cache(
 
             f.writeln(&format!(
                 "extern \"C\" fn {}_{}({}) -> {}",
-                interface.name.camel_case(),
+                interface.name,
                 cb.name,
                 params,
                 cb.return_type.get_rust_type(&config.ffi_name)
@@ -173,8 +172,7 @@ pub(crate) fn generate_interfaces_cache(
         // write the destroy stub
         f.writeln(&format!(
             "extern \"C\" fn {}_{}(ctx: *mut std::ffi::c_void)",
-            interface.name.camel_case(),
-            destroy_func_name
+            interface.name, destroy_func_name
         ))?;
         blocked(&mut f, |f| {
             f.writeln("unsafe { Box::from_raw(ctx as *mut jni::objects::GlobalRef) };")
@@ -207,13 +205,13 @@ fn write_interface_init(
                     .join(""),
                 callback.return_type.jni_type_id().as_string(lib_path)
             );
-            f.writeln(&format!("let cb_{method_snake} = env.get_method_id(class, \"{method_mixed}\", \"{method_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find method {method_mixed}\");", method_snake=callback.name, method_mixed=callback.name.mixed_case(), method_sig=method_sig))?;
+            f.writeln(&format!("let {} = env.get_method_id(class, \"{method_mixed}\", \"{method_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find method {method_mixed}\");", callback.name, method_mixed=callback.name.mixed_case(), method_sig=method_sig))?;
         }
         f.writeln("Self")?;
         blocked(f, |f| {
             f.writeln("_class: env.new_global_ref(class).unwrap(),")?;
             for callback in callbacks {
-                f.writeln(&format!("cb_{},", callback.name))?;
+                f.writeln(&format!("{},", callback.name))?;
             }
             Ok(())
         })
@@ -253,7 +251,7 @@ fn call_java_callback(
         f.newline()?;
     }
     f.write(&format!(
-        "_env.call_method_unchecked(_ctx.as_obj(), _cache.interfaces.interface_{}.cb_{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap();",
+        "_env.call_method_unchecked(_ctx.as_obj(), _cache.interfaces.{}.{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap();",
         interface_name,
         callback_name,
         return_type.jni_type_id().as_string(lib_path),

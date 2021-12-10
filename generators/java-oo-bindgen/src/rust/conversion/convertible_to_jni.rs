@@ -87,7 +87,7 @@ impl ConvertibleToJni for StructDeclarationHandle {
 
 impl ConvertibleToJni for ClassDeclarationHandle {
     fn convert(&self, expr: &str) -> String {
-        format!("_cache.classes.{}_from_rust(&_env, {})", self.name, expr)
+        format!("_cache.classes.{}.to_jni(&_env, {})", self.name, expr)
     }
 }
 

@@ -228,7 +228,7 @@ impl ConvertibleToRust for UniversalOr<FunctionArgStructField> {
 impl ConvertibleToRust for ClassDeclarationHandle {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(format!(
-            "_cache.classes.{}_to_rust(&_env, {})",
+            "_cache.classes.{}.to_rust(&_env, {})",
             self.name, expr
         ))
     }

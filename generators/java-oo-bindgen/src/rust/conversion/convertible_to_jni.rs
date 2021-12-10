@@ -24,8 +24,8 @@ where
 impl ConvertibleToJni for DurationType {
     fn convert(&self, expr: &str) -> String {
         let method = match self {
-            DurationType::Milliseconds => "from_millis",
-            DurationType::Seconds => "from_seconds",
+            DurationType::Milliseconds => "to_jni_millis",
+            DurationType::Seconds => "to_jni_seconds",
         };
 
         format!("_cache.duration.{}(&_env, {})", method, expr)

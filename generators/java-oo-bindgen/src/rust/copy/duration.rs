@@ -27,21 +27,21 @@ impl Duration {
         }
     }
 
-    pub fn to_millis(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u64 {
+    pub fn to_rust_millis(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u64 {
         env.call_method_unchecked(obj, self.to_millis_method, JavaType::Primitive(Primitive::Long), &[]).unwrap().j().unwrap() as u64
     }
 
-    pub fn to_seconds(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u64 {
+    pub fn to_rust_seconds(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u64 {
         env.call_method_unchecked(obj, self.get_seconds_method, JavaType::Primitive(Primitive::Long), &[]).unwrap().j().unwrap() as u64
     }
 
-    pub fn from_millis(&self, env: &jni::JNIEnv, millis: u64) -> jni::sys::jobject {
+    pub fn to_jni_millis(&self, env: &jni::JNIEnv, millis: u64) -> jni::sys::jobject {
         env.call_static_method_unchecked(&self.class, self.of_millis_method, JavaType::Object("java/time/Duration".to_string()), &[JValue::Long(millis as i64)])
             .unwrap()
             .l().unwrap().into_inner()
     }
 
-    pub fn from_seconds(&self, env: &jni::JNIEnv, seconds: u64) -> jni::sys::jobject {
+    pub fn to_jni_seconds(&self, env: &jni::JNIEnv, seconds: u64) -> jni::sys::jobject {
         env.call_static_method_unchecked(&self.class, self.of_seconds_method, JavaType::Object("java/time/Duration".to_string()), &[JValue::Long(seconds as i64)])
             .unwrap()
             .l().unwrap().into_inner()

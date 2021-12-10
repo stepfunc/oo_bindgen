@@ -492,7 +492,7 @@ fn write_function(
                         error_type.inner.convert("_result")
                     ))?;
                     f.writeln(&format!(
-                        "let error = _cache.exceptions.throw_{}(&_env, _error);",
+                        "let error = _cache.exceptions.{}.throw(&_env, _error);",
                         error_type.exception_name
                     ))
                 })?;
@@ -513,7 +513,7 @@ fn write_function(
                         error_type.inner.convert("_result")
                     ))?;
                     f.writeln(&format!(
-                        "let error = _cache.exceptions.throw_{}(&_env, _error);",
+                        "let error = _cache.exceptions.{}.throw(&_env, _error);",
                         error_type.exception_name
                     ))?;
                     f.writeln(return_type.get_default_value())

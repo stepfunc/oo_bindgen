@@ -54,12 +54,9 @@ pub(crate) fn generate_enums_cache(
 
         f.writeln(&format!("pub struct {}", enum_name))?;
         blocked(&mut f, |f| {
-            f.writeln("value_field: jni::objects::JFieldID<'static>,")?;
+            f.writeln("_value_field: jni::objects::JFieldID<'static>,")?;
             for variant in &enumeration.variants {
-                f.writeln(&format!(
-                    "variant_{}: jni::objects::GlobalRef,",
-                    variant.name
-                ))?;
+                f.writeln(&format!("{}: jni::objects::GlobalRef,", variant.name))?;
             }
 
             Ok(())
@@ -77,9 +74,9 @@ pub(crate) fn generate_enums_cache(
                 ))?;
                 f.writeln("Self")?;
                 blocked(f, |f| {
-                    f.writeln(&format!("value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {}\"),", enum_name))?;
+                    f.writeln(&format!("_value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {}\"),", enum_name))?;
                     for variant in &enumeration.variants {
-                        f.writeln(&format!("variant_{}: env.new_global_ref(env.get_static_field(class, \"{}\", {}).expect(\"Unable to find variant {}\").l().unwrap()).unwrap(),", variant.name, variant.name.capital_snake_case(), enum_sig, variant.name.capital_snake_case()))?;
+                        f.writeln(&format!("{}: env.new_global_ref(env.get_static_field(class, \"{}\", {}).expect(\"Unable to find variant {}\").l().unwrap()).unwrap(),", variant.name, variant.name.capital_snake_case(), enum_sig, variant.name.capital_snake_case()))?;
                     }
                     Ok(())
                 })
@@ -89,7 +86,7 @@ pub(crate) fn generate_enums_cache(
 
             f.writeln("pub fn to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> std::os::raw::c_int")?;
             blocked(f, |f| {
-                f.writeln("env.get_field_unchecked(obj, self.value_field, jni::signature::JavaType::Primitive(jni::signature::Primitive::Int)).unwrap().i().unwrap()")
+                f.writeln("env.get_field_unchecked(obj, self._value_field, jni::signature::JavaType::Primitive(jni::signature::Primitive::Int)).unwrap().i().unwrap()")
             })?;
 
             f.newline()?;
@@ -100,7 +97,7 @@ pub(crate) fn generate_enums_cache(
                 blocked(f, |f| {
                     for variant in &enumeration.variants {
                         f.writeln(&format!(
-                            "{} => self.variant_{}.as_obj().into_inner(),",
+                            "{} => self.{}.as_obj().into_inner(),",
                             variant.value, variant.name
                         ))?;
                     }

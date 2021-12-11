@@ -62,17 +62,17 @@ impl ConvertibleToRust for Primitive {
 
     fn to_rust_from_object(&self, expr: &str) -> Option<String> {
         match self {
-            Primitive::Bool => Some(format!("_cache.primitives.boolean_value(&_env, {})", expr)),
+            Primitive::Bool => Some(format!("_cache.primitives.boolean.value(&_env, {})", expr)),
             Primitive::U8 => self.to_rust(expr),
-            Primitive::S8 => Some(format!("_cache.primitives.byte_value(&_env, {})", expr)),
+            Primitive::S8 => Some(format!("_cache.primitives.byte.value(&_env, {})", expr)),
             Primitive::U16 => self.to_rust(expr),
-            Primitive::S16 => Some(format!("_cache.primitives.short_value(&_env, {})", expr)),
+            Primitive::S16 => Some(format!("_cache.primitives.short.value(&_env, {})", expr)),
             Primitive::U32 => self.to_rust(expr),
-            Primitive::S32 => Some(format!("_cache.primitives.integer_value(&_env, {})", expr)),
+            Primitive::S32 => Some(format!("_cache.primitives.integer.value(&_env, {})", expr)),
             Primitive::U64 => self.to_rust(expr),
-            Primitive::S64 => Some(format!("_cache.primitives.long_value(&_env, {})", expr)),
-            Primitive::Float => Some(format!("_cache.primitives.float_value(&_env, {})", expr)),
-            Primitive::Double => Some(format!("_cache.primitives.double_value(&_env, {})", expr)),
+            Primitive::S64 => Some(format!("_cache.primitives.long.value(&_env, {})", expr)),
+            Primitive::Float => Some(format!("_cache.primitives.float.value(&_env, {})", expr)),
+            Primitive::Double => Some(format!("_cache.primitives.double.value(&_env, {})", expr)),
         }
     }
 

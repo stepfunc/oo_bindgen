@@ -1,7 +1,7 @@
 use jni::objects::JValue;
 use jni::signature::*;
 
-pub struct Joou {
+pub(crate) struct Joou {
     class_ubyte: jni::objects::GlobalRef,
     class_ushort: jni::objects::GlobalRef,
     class_uinteger: jni::objects::GlobalRef,
@@ -17,7 +17,7 @@ pub struct Joou {
 }
 
 impl Joou {
-    pub fn init(env: &jni::JNIEnv) -> Self {
+    pub(crate) fn init(env: &jni::JNIEnv) -> Self {
         let class_ubyte = env.find_class("Lorg/joou/UByte;").expect("Unable to find org/joou/UByte class");
         let ubyte_to_long = env.get_method_id(class_ubyte, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find UByte::longValue");
         let ubyte_from_long = env.get_static_method_id(class_ubyte, "valueOf", "(J)Lorg/joou/UByte;").map(|mid| mid.into_inner().into()).expect("Unable to find UByte::valueOf");
@@ -50,42 +50,42 @@ impl Joou {
         }
     }
 
-    pub fn ubyte_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u8 {
+    pub(crate) fn ubyte_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u8 {
         env.call_method_unchecked(obj, self.ubyte_to_long, JavaType::Primitive(Primitive::Long), &[]).unwrap()
             .j().unwrap() as u8
     }
 
-    pub fn ubyte_from_rust(&self, env: &jni::JNIEnv, value: u8) -> jni::sys::jobject {
+    pub(crate) fn ubyte_from_rust(&self, env: &jni::JNIEnv, value: u8) -> jni::sys::jobject {
         env.call_static_method_unchecked(&self.class_ubyte, self.ubyte_from_long, JavaType::Object("org/joou/UByte".to_string()), &[JValue::Long(value as i64)]).unwrap()
             .l().unwrap().into_inner()
     }
 
-    pub fn ushort_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u16 {
+    pub(crate) fn ushort_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u16 {
         env.call_method_unchecked(obj, self.ushort_to_long, JavaType::Primitive(Primitive::Long), &[]).unwrap()
             .j().unwrap() as u16
     }
 
-    pub fn ushort_from_rust(&self, env: &jni::JNIEnv, value: u16) -> jni::sys::jobject {
+    pub(crate) fn ushort_from_rust(&self, env: &jni::JNIEnv, value: u16) -> jni::sys::jobject {
         env.call_static_method_unchecked(&self.class_ubyte, self.ushort_from_long, JavaType::Object("org/joou/UShort".to_string()), &[JValue::Int(value as i32)]).unwrap()
             .l().unwrap().into_inner()
     }
 
-    pub fn uinteger_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u32 {
+    pub(crate) fn uinteger_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u32 {
         env.call_method_unchecked(obj, self.uinteger_to_long, JavaType::Primitive(Primitive::Long), &[]).unwrap()
             .j().unwrap() as u32
     }
 
-    pub fn uinteger_from_rust(&self, env: &jni::JNIEnv, value: u32) -> jni::sys::jobject {
+    pub(crate) fn uinteger_from_rust(&self, env: &jni::JNIEnv, value: u32) -> jni::sys::jobject {
         env.call_static_method_unchecked(&self.class_ubyte, self.uinteger_from_long, JavaType::Object("org/joou/UInteger".to_string()), &[JValue::Long(value as i64)]).unwrap()
             .l().unwrap().into_inner()
     }
 
-    pub fn ulong_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u64 {
+    pub(crate) fn ulong_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> u64 {
         env.call_method_unchecked(obj, self.ulong_to_long, JavaType::Primitive(Primitive::Long), &[]).unwrap()
             .j().unwrap() as u64
     }
 
-    pub fn ulong_from_rust(&self, env: &jni::JNIEnv, value: u64) -> jni::sys::jobject {
+    pub(crate) fn ulong_from_rust(&self, env: &jni::JNIEnv, value: u64) -> jni::sys::jobject {
         env.call_static_method_unchecked(&self.class_ubyte, self.ulong_from_long, JavaType::Object("org/joou/ULong".to_string()), &[JValue::Long(value as i64)]).unwrap()
             .l().unwrap().into_inner()
     }

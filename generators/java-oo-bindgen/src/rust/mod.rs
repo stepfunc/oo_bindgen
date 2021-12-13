@@ -44,9 +44,9 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("./copy/primitives.rs"))?;
 
-    filename.set_file_name("joou.rs");
+    filename.set_file_name("unsigned.rs");
     let mut f = FilePrinter::new(&filename)?;
-    f.write(include_str!("./copy/joou.rs"))?;
+    f.write(include_str!("./copy/unsigned.rs"))?;
 
     filename.set_file_name("duration.rs");
     let mut f = FilePrinter::new(&filename)?;
@@ -103,7 +103,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
 
     // Import modules
     f.writeln("mod primitives;")?;
-    f.writeln("mod joou;")?;
     f.writeln("mod duration;")?;
     f.writeln("mod classes;")?;
     f.writeln("mod enums;")?;
@@ -111,6 +110,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod structs;")?;
     f.writeln("mod interfaces;")?;
     f.writeln("mod exceptions;")?;
+    f.writeln("mod unsigned;")?;
     f.writeln("mod util;")?;
     f.newline()?;
     // Create cache
@@ -118,7 +118,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     blocked(f, |f| {
         f.writeln("vm: jni::JavaVM,")?;
         f.writeln("primitives: primitives::Primitives,")?;
-        f.writeln("joou: joou::Joou,")?;
+        f.writeln("unsigned: unsigned::Unsigned,")?;
         f.writeln("duration: duration::Duration,")?;
         f.writeln("collection: collection::Collection,")?;
         f.writeln("classes: classes::Classes,")?;
@@ -137,7 +137,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         blocked(f, |f| {
             f.writeln("let env = vm.get_env().unwrap();")?;
             f.writeln("let primitives = primitives::Primitives::init(&env);")?;
-            f.writeln("let joou = joou::Joou::init(&env);")?;
+            f.writeln("let unsigned = unsigned::Unsigned::init(&env);")?;
             f.writeln("let duration = duration::Duration::init(&env);")?;
             f.writeln("let collection = collection::Collection::init(&env);")?;
             f.writeln("let classes = classes::Classes::init(&env);")?;
@@ -149,7 +149,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
             blocked(f, |f| {
                 f.writeln("vm,")?;
                 f.writeln("primitives,")?;
-                f.writeln("joou,")?;
+                f.writeln("unsigned,")?;
                 f.writeln("duration,")?;
                 f.writeln("collection,")?;
                 f.writeln("classes,")?;

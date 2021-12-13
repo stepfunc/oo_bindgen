@@ -222,12 +222,12 @@ impl UnsignedConverter {
         Self { java_type }
     }
 
-    const U8: UnsignedConverter = UnsignedConverter::new("ubyte");
-    const U16: UnsignedConverter = UnsignedConverter::new("ushort");
-    const U32: UnsignedConverter = UnsignedConverter::new("uinteger");
-    const U64: UnsignedConverter = UnsignedConverter::new("ulong");
+    const U8: UnsignedConverter = UnsignedConverter::new("byte");
+    const U16: UnsignedConverter = UnsignedConverter::new("short");
+    const U32: UnsignedConverter = UnsignedConverter::new("integer");
+    const U64: UnsignedConverter = UnsignedConverter::new("long");
 
     fn apply(&self, expr: &str) -> String {
-        format!("_cache.joou.{}_from_rust(&_env, {})", self.java_type, expr)
+        format!("_cache.unsigned.{}.to_jni(&_env, {})", self.java_type, expr)
     }
 }

@@ -47,13 +47,13 @@ impl ConvertibleToRust for Primitive {
     fn to_rust(&self, expr: &str) -> Option<String> {
         match self {
             Primitive::Bool => None,
-            Primitive::U8 => Some(format!("_cache.joou.ubyte_to_rust(&_env, {})", expr)),
+            Primitive::U8 => Some(format!("_cache.unsigned.byte.to_rust(&_env, {})", expr)),
             Primitive::S8 => None,
-            Primitive::U16 => Some(format!("_cache.joou.ushort_to_rust(&_env, {})", expr)),
+            Primitive::U16 => Some(format!("_cache.unsigned.short.to_rust(&_env, {})", expr)),
             Primitive::S16 => None,
-            Primitive::U32 => Some(format!("_cache.joou.uinteger_to_rust(&_env, {})", expr)),
+            Primitive::U32 => Some(format!("_cache.unsigned.integer.to_rust(&_env, {})", expr)),
             Primitive::S32 => None,
-            Primitive::U64 => Some(format!("_cache.joou.ulong_to_rust(&_env, {})", expr)),
+            Primitive::U64 => Some(format!("_cache.unsigned.long.to_rust(&_env, {})", expr)),
             Primitive::S64 => None,
             Primitive::Float => None,
             Primitive::Double => None,

@@ -116,7 +116,7 @@ where
         blocked(f, |f| {
             // retrieve the fields from the jobject
             for field in structure.fields() {
-                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.jni_type_id().as_string(&lib_path), field.field_type.unwrap_value()))?;
+                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.jni_type_id().as_string(&lib_path), field.field_type.unwrap_value()))?;
             }
 
             f.newline()?;
@@ -163,20 +163,16 @@ where
     blocked(f, |f| {
         f.writeln(&format!("pub(crate) fn to_jni(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
         blocked(f, |f| {
-            f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
+            f.writeln("let obj = _env.alloc_object(&self._class).unwrap();")?;
             for field in structure.fields() {
-                if let Some(conversion) = field
+                let field_name = format!("value.{}", field.name);
+                let conversion = field
                     .field_type
-                    .maybe_convert(&format!("value.{}", field.name))
-                {
-                    f.writeln(&format!("let temp = {};", conversion))?;
-                } else {
-                    f.writeln(&format!("let temp = value.{};", field.name))?;
-                }
-
+                    .maybe_convert(&field_name)
+                    .unwrap_or(field_name);
                 f.writeln(&format!(
-                    "_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();",
-                    field.name
+                    "_env.set_field_unchecked(obj, self.{}, {}.into()).unwrap();",
+                    field.name, conversion,
                 ))?;
             }
 
@@ -197,12 +193,9 @@ where
     f.newline()?;
     f.writeln(&format!("pub struct {}", struct_name))?;
     blocked(f, |f| {
-        f.writeln("class: jni::objects::GlobalRef,")?;
+        f.writeln("_class: jni::objects::GlobalRef,")?;
         for field in structure.fields() {
-            f.writeln(&format!(
-                "field_{}: jni::objects::JFieldID<'static>,",
-                field.name
-            ))?;
+            f.writeln(&format!("{}: jni::objects::JFieldID<'static>,", field.name))?;
         }
         Ok(())
     })
@@ -230,13 +223,13 @@ where
                 struct_sig, struct_name
             ))?;
             for field in structure.fields() {
-                f.writeln(&format!("let field_{field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name, field_mixed=field.name.mixed_case(), field_sig=field.field_type.jni_type_id().as_string(&lib_path)))?;
+                f.writeln(&format!("let {field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name, field_mixed=field.name.mixed_case(), field_sig=field.field_type.jni_type_id().as_string(&lib_path)))?;
             }
             f.writeln("Self")?;
             blocked(f, |f| {
-                f.writeln("class: env.new_global_ref(class).unwrap(),")?;
+                f.writeln("_class: env.new_global_ref(class).unwrap(),")?;
                 for field in structure.fields() {
-                    f.writeln(&format!("field_{},", field.name))?;
+                    f.writeln(&format!("{},", field.name))?;
                 }
                 Ok(())
             })

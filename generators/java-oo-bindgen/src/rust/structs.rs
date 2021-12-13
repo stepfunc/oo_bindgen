@@ -19,10 +19,7 @@ pub(crate) fn generate(lib: &Library, config: &JavaBindgenConfig) -> FormattingR
 
     f.writeln("mod instances {")?;
 
-    indented(&mut f, |f| {
-        f.writeln("use std::str::FromStr;")?;
-        generate_structs(f, lib, config)
-    })?;
+    indented(&mut f, |f| generate_structs(f, lib, config))?;
     f.writeln("}")
 }
 
@@ -103,11 +100,39 @@ fn generate_conversion_to_rust<T>(
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + JniTypeId + UnwrapValue + ConvertibleToRust,
+    T: StructFieldType + UnwrapValue + ConvertibleToRust + GuardType + JniJavaType,
 {
-    let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
     let struct_name = structure.name().camel_case();
     let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
+    let guard_struct_name = format!("{}Guard", struct_name);
+
+    f.newline()?;
+
+    f.writeln(&format!(
+        "/// Guard object ensures a {} struct is valid",
+        ffi_struct_name
+    ))?;
+    f.writeln(&format!("pub(crate) struct {}<'a> {{", guard_struct_name))?;
+    indented(f, |f| {
+        if !structure
+            .fields
+            .iter()
+            .any(|x| x.field_type.guard_type().is_some())
+        {
+            f.writeln("/// empty guard objects require this field to make use of the lifetime")?;
+            f.writeln("_phantom: std::marker::PhantomData<&'a usize>,")?;
+        }
+
+        for x in structure.fields.iter() {
+            if let Some(guard_type) = x.field_type.guard_type() {
+                f.writeln(&format!("/// guard for the {} field", x.name))?;
+                f.writeln(&format!("{}: {},", x.name, guard_type))?;
+            }
+        }
+
+        Ok(())
+    })?;
+    f.writeln("}")?;
 
     f.newline()?;
     f.writeln(&format!("impl {}", struct_name))?;
@@ -116,7 +141,13 @@ where
         blocked(f, |f| {
             // retrieve the fields from the jobject
             for field in structure.fields() {
-                f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name, field.name, field.field_type.jni_type_id().as_string(&lib_path), field.field_type.unwrap_value()))?;
+                f.writeln(&format!(
+                    "let {} = _env.get_field_unchecked(obj, self.{}, {}).unwrap().{};",
+                    field.name,
+                    field.name,
+                    field.field_type.jni_java_type(),
+                    field.field_type.unwrap_value()
+                ))?;
             }
 
             f.newline()?;

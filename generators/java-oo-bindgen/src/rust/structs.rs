@@ -163,20 +163,24 @@ where
     blocked(f, |f| {
         f.writeln(&format!("pub(crate) fn to_jni(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
         blocked(f, |f| {
-            f.writeln("let obj = _env.alloc_object(&self._class).unwrap();")?;
-            for field in structure.fields() {
-                let field_name = format!("value.{}", field.name);
-                let conversion = field
-                    .field_type
-                    .maybe_convert(&field_name)
-                    .unwrap_or(field_name);
-                f.writeln(&format!(
-                    "_env.set_field_unchecked(obj, self.{}, {}.into()).unwrap();",
-                    field.name, conversion,
-                ))?;
-            }
+            f.writeln("_env.with_local_frame(0, || {")?;
+            indented(f, |f| {
+                f.writeln("let obj = _env.alloc_object(&self._class).unwrap();")?;
+                for field in structure.fields() {
+                    let field_name = format!("value.{}", field.name);
+                    let conversion = field
+                        .field_type
+                        .maybe_convert(&field_name)
+                        .unwrap_or(field_name);
+                    f.writeln(&format!(
+                        "_env.set_field_unchecked(obj, self.{}, {}.into()).unwrap();",
+                        field.name, conversion,
+                    ))?;
+                }
 
-            f.writeln("obj.into_inner()")
+                f.writeln("Ok(obj)")
+            })?;
+            f.writeln("}).unwrap().into_inner()")
         })
     })
 }

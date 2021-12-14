@@ -137,7 +137,7 @@ where
     f.newline()?;
     f.writeln(&format!("impl {}", struct_name))?;
     blocked(f, |f| {
-        f.writeln(&format!("pub(crate) fn to_rust(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}", ffi_struct_name))?;
+        f.writeln(&format!("pub(crate) fn to_rust<'a>(&self, _cache: &'a crate::JCache, _env: &'a jni::JNIEnv, obj: jni::sys::jobject) -> ({}<'a>, {})", guard_struct_name, ffi_struct_name))?;
         blocked(f, |f| {
             // retrieve the fields from the jobject
             for field in structure.fields() {
@@ -160,8 +160,8 @@ where
             }
 
             f.newline()?;
-            f.writeln(&ffi_struct_name)?;
-            blocked(f, |f| {
+            f.writeln(&format!("let _ffi_struct = {} {{", ffi_struct_name))?;
+            indented(f, |f| {
                 for field in structure.fields() {
                     if let Some(converted) = field.field_type.call_site(&field.name) {
                         f.writeln(&format!("{}: {},", field.name, converted))?;
@@ -172,8 +172,38 @@ where
 
                 Ok(())
             })?;
+            f.writeln("};")?;
 
-            Ok(())
+            f.newline()?;
+
+            f.writeln(&format!("let _guard = {} {{", guard_struct_name))?;
+            indented(f, |f| {
+                if structure
+                    .fields
+                    .iter()
+                    .any(|f| f.field_type.guard_type().is_some())
+                {
+                    for field in structure
+                        .fields
+                        .iter()
+                        .filter(|x| x.field_type.guard_type().is_some())
+                    {
+                        if let Some(transform) = field.field_type.guard_transform(&field.name) {
+                            f.writeln(&format!("{} : {},", field.name, transform))?;
+                        } else {
+                            f.writeln(&format!("{},", field.name))?;
+                        }
+                    }
+                } else {
+                    f.writeln("_phantom: std::marker::PhantomData::default(),")?;
+                }
+                Ok(())
+            })?;
+            f.writeln("};")?;
+
+            f.newline()?;
+
+            f.writeln("(_guard, _ffi_struct)")
         })
     })
 }

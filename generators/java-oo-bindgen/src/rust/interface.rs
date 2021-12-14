@@ -157,7 +157,8 @@ pub(crate) fn generate_interfaces_cache(
                     if let Some(converted) =
                         return_type.to_rust(&format!("_result.{}", return_type.unwrap_value()))
                     {
-                        f.writeln(&format!("return {};", converted))?;
+                        let ret = return_type.call_site(&converted).unwrap_or(converted);
+                        f.writeln(&format!("return {};", ret))?;
                     } else {
                         f.writeln("return _result;")?;
                     }
@@ -244,17 +245,19 @@ fn call_java_callback(
         }
     }
 
-    f.writeln("// invoke the callback")?;
-    if return_type.is_some() {
-        f.writeln("let _result = ")?;
-    } else {
-        f.newline()?;
-    }
-    f.write(&format!(
-        "_env.call_method_unchecked(_ctx.as_obj(), _cache.interfaces.{}.{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap();",
+    let invocation = format!(
+        "_env.call_method_unchecked(_ctx.as_obj(), _cache.interfaces.{}.{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap()",
         interface_name,
         callback_name,
         return_type.jni_type_id().as_string(lib_path),
         args.iter().map(|param| format!("{}.into()", param.name)).collect::<Vec<_>>().join(", ")
-    ))
+    );
+
+    f.writeln("// invoke the callback")?;
+    if return_type.is_some() {
+        f.writeln(&format!("let _result = {};", invocation))?;
+    } else {
+        f.writeln(&format!("{};", invocation))?;
+    }
+    Ok(())
 }

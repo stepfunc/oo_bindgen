@@ -189,8 +189,8 @@ impl ConvertibleToRust for FunctionArgStructDeclaration {
     }
 
     fn call_site(&self, expr: &str) -> Option<String> {
-        // mutably borrow the converted struct, there is an implicit conversion to *mut
-        Some(format!("&{}", expr))
+        // borrow the converted struct, there is an implicit conversion to *mut
+        Some(format!("&{}.1", expr))
     }
 }
 
@@ -206,22 +206,24 @@ where
         ))
     }
 
-    fn call_site(&self, _expr: &str) -> Option<String> {
-        None
+    fn call_site(&self, expr: &str) -> Option<String> {
+        Some(format!("{}.1", expr))
     }
 }
 
 impl ConvertibleToRust for UniversalOr<FunctionArgStructField> {
     fn to_rust(&self, expr: &str) -> Option<String> {
-        Some(format!(
-            "_cache.structs.{}.to_rust(_cache, &_env, {})",
-            self.name(),
-            expr
-        ))
+        match self {
+            UniversalOr::Specific(x) => x.to_rust(expr),
+            UniversalOr::Universal(x) => x.to_rust(expr),
+        }
     }
 
-    fn call_site(&self, _expr: &str) -> Option<String> {
-        None
+    fn call_site(&self, expr: &str) -> Option<String> {
+        match self {
+            UniversalOr::Specific(x) => x.call_site(expr),
+            UniversalOr::Universal(x) => x.call_site(expr),
+        }
     }
 }
 

@@ -1,9 +1,6 @@
-use oo_bindgen::model::{
-    AsynchronousInterface, BasicType, CallbackReturnValue, DurationType, EnumHandle,
-    FunctionArgStructField, OptionalReturnType, Primitive, StringType, UniversalOr,
-    UniversalStructField, UniversalStructHandle, Validated,
-};
+use oo_bindgen::model::*;
 
+/// The string argument is not used in `call_method_unchecked` in the jni crate
 const OBJECT_TYPE: &str = "jni::signature::JavaType::Object(String::new())";
 
 pub(crate) trait JniJavaType {

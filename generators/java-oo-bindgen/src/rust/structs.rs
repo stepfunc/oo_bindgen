@@ -225,10 +225,10 @@ where
         f.writeln(&format!("pub(crate) fn to_jni(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
         blocked(f, |f| {
             f.writeln("// automatically free all local references except for the struct itself which is returned")?;
-            f.writeln("// upper bound on the number of references in the local frame is the number of fields")?;
+            f.writeln("// upper bound on the number of references in the local frame is the number of fields + 1 for struct itself")?;
             f.writeln(&format!(
                 "_env.with_local_frame({}, || {{",
-                structure.fields.len()
+                structure.fields.len() + 1
             ))?;
             indented(f, |f| {
                 f.writeln("let obj = _env.alloc_object(&self._class).unwrap();")?;

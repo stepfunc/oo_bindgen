@@ -1,7 +1,4 @@
-use oo_bindgen::model::{
-    BasicType, CallbackArgStructField, FunctionArgStructField, FunctionArgument,
-    FunctionReturnStructField, Primitive, UniversalStructField,
-};
+use oo_bindgen::model::*;
 
 pub(crate) trait Nullable {
     fn is_nullable(&self) -> bool;

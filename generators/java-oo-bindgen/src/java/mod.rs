@@ -230,6 +230,16 @@ fn write_null_checks(
         if arg.arg_type.is_struct() {
             f.writeln(&format!("{}._assertFieldsNotNull();", arg_name))?;
         }
+        if let FunctionArgument::Collection(x) = &arg.arg_type {
+            f.writeln(&format!(
+                "for({} _item: {})",
+                x.item_type.as_java_object(),
+                arg_name
+            ))?;
+            blocked(f, |f| {
+                f.writeln(&format!("java.util.Objects.requireNonNull(_item, \"List {} may not contain a null member\");", arg_name))
+            })?;
+        }
     }
     Ok(())
 }

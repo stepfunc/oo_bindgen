@@ -1,6 +1,7 @@
 use oo_bindgen::model::{
-    AsynchronousInterface, BasicType, DurationType, EnumHandle, FunctionArgStructField, Primitive,
-    StringType, UniversalOr, UniversalStructField, UniversalStructHandle,
+    AsynchronousInterface, BasicType, CallbackReturnValue, DurationType, EnumHandle,
+    FunctionArgStructField, OptionalReturnType, Primitive, StringType, UniversalOr,
+    UniversalStructField, UniversalStructHandle, Validated,
 };
 
 const OBJECT_TYPE: &str = "jni::signature::JavaType::Object(String::new())";
@@ -99,6 +100,24 @@ impl JniJavaType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.jni_java_type(),
             UniversalStructField::Struct(x) => x.jni_java_type(),
+        }
+    }
+}
+
+impl JniJavaType for CallbackReturnValue {
+    fn jni_java_type(&self) -> &'static str {
+        match self {
+            CallbackReturnValue::Basic(x) => x.jni_java_type(),
+            CallbackReturnValue::Struct(x) => x.jni_java_type(),
+        }
+    }
+}
+
+impl JniJavaType for OptionalReturnType<CallbackReturnValue, Validated> {
+    fn jni_java_type(&self) -> &'static str {
+        match self.get_value() {
+            None => "jni::signature::JavaType::Primitive(jni::signature::Primitive::Void)",
+            Some(x) => x.jni_java_type(),
         }
     }
 }

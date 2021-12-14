@@ -15,9 +15,6 @@ pub(crate) fn generate_interfaces_cache(
     filename.set_extension("rs");
     let mut f = FilePrinter::new(&filename)?;
 
-    // Imports
-    f.writeln("use std::str::FromStr;")?;
-
     f.newline()?;
 
     // Top-level enums struct
@@ -146,7 +143,6 @@ pub(crate) fn generate_interfaces_cache(
                     f,
                     &interface.name,
                     &cb.name,
-                    &lib_path,
                     &ctx_variable_name,
                     &cb.arguments,
                     &cb.return_type,
@@ -223,7 +219,6 @@ fn call_java_callback(
     f: &mut dyn Printer,
     interface_name: &Name,
     callback_name: &str,
-    lib_path: &str,
     arg_name: &str,
     args: &[Arg<CallbackArgument, Validated>],
     return_type: &OptionalReturnType<CallbackReturnValue, Validated>,
@@ -245,11 +240,12 @@ fn call_java_callback(
         }
     }
 
-    let invocation = format!(
-        "_env.call_method_unchecked(_ctx.as_obj(), _cache.interfaces.{}.{}, jni::signature::JavaType::from_str(\"{}\").unwrap(), &[{}]).unwrap()",
+    let invocation =
+        format!(
+        "_env.call_method_unchecked(_ctx.as_obj(), _cache.interfaces.{}.{}, {}, &[{}]).unwrap()",
         interface_name,
         callback_name,
-        return_type.jni_type_id().as_string(lib_path),
+        return_type.jni_java_type(),
         args.iter().map(|param| format!("{}.into()", param.name)).collect::<Vec<_>>().join(", ")
     );
 

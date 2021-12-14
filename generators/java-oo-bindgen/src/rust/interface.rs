@@ -230,8 +230,12 @@ fn call_java_callback(
         "let _ctx = unsafe {{ &mut *({} as *mut jni::objects::GlobalRef) }};",
         arg_name
     ))?;
-
-    f.writeln("let _frame = crate::util::local_frame(_env, 0).unwrap();")?;
+    f.writeln("// automatically free any local references that are created")?;
+    f.writeln("// the upper bound on the number of references required is the number of arguments to the callback")?;
+    f.writeln(&format!(
+        "let _frame = crate::util::local_frame(_env, {}).unwrap();",
+        args.len()
+    ))?;
     f.writeln("// convert the arguments")?;
     // Perform the conversion of the parameters
     for param in args {

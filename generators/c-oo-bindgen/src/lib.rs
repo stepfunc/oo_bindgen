@@ -232,7 +232,7 @@ pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingRes
             .write_all(&format!("PROJECT_NAME = {}\n", lib.name).into_bytes())
             .unwrap();
         stdin
-            .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version.to_string()).into_bytes())
+            .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version).into_bytes())
             .unwrap();
         stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
         stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
@@ -292,8 +292,7 @@ fn generate_c_header<P: AsRef<Path>>(lib: &Library, path: P) -> FormattingResult
         ))?;
         f.writeln(&format!(
             "#define {}_VERSION_STRING \"{}\"",
-            uppercase_name,
-            lib.version.to_string()
+            uppercase_name, lib.version
         ))?;
         f.newline()?;
 

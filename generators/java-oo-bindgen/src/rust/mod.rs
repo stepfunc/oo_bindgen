@@ -72,7 +72,7 @@ fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<
 
     f.writeln("[package]")?;
     f.writeln(&format!("name = \"{}\"", config.java_ffi_name()))?;
-    f.writeln(&format!("version = \"{}\"", lib.version.to_string()))?;
+    f.writeln(&format!("version = \"{}\"", lib.version))?;
     f.writeln("edition = \"2018\"")?;
     f.newline()?;
     f.writeln("[lib]")?;

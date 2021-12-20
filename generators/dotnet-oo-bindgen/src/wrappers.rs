@@ -18,10 +18,25 @@ pub(crate) fn generate_native_functions_class(
     namespaced(f, &lib.name, |f| {
         f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
         blocked(f, |f| {
+            f.writeln(&format!("const string VERSION = \"{}\";", lib.version))?;
+
+            // Static constructor used to verify the version
+            f.writeln(&format!("static {}()", NATIVE_FUNCTIONS_CLASSNAME))?;
+            blocked(f, |f| {
+                f.writeln("var loadedVersion = Helpers.RustString.FromNative(version());")?;
+                f.writeln("if (loadedVersion != VERSION)")?;
+                blocked(f, |f| {
+                    f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.name))
+                })
+            })?;
+
+            f.newline()?;
+
             for func in lib.native_functions() {
                 f.newline()?;
                 write_conversion_wrapper(f, func, &lib.c_ffi_prefix)?;
             }
+
             Ok(())
         })?;
 

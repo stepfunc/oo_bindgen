@@ -440,17 +440,13 @@ fn validate_reference_with_params(
                 if handle.find_method(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}()",
-                            class_name.to_string(),
-                            method_name.to_string()
-                        ),
+                        ref_name: format!("{}.{}()", class_name, method_name),
                     });
                 }
             } else {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}()", class_name.to_string(), method_name.to_string()),
+                    ref_name: format!("{}.{}()", class_name, method_name),
                 });
             }
         }
@@ -459,7 +455,7 @@ fn validate_reference_with_params(
                 if handle.constructor.is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.[constructor]", class_name.to_string(),),
+                        ref_name: format!("{}.[constructor]", class_name),
                     });
                 }
             }
@@ -469,7 +465,7 @@ fn validate_reference_with_params(
                 if handle.destructor.is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.[destructor]", class_name.to_string(),),
+                        ref_name: format!("{}.[destructor]", class_name),
                     });
                 }
             }
@@ -487,17 +483,13 @@ fn validate_reference_with_params(
                 if handle.find_element(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}",
-                            struct_name.to_string(),
-                            method_name.to_string()
-                        ),
+                        ref_name: format!("{}.{}", struct_name, method_name),
                     });
                 }
             } else {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}", struct_name.to_string(), method_name.to_string()),
+                    ref_name: format!("{}.{}", struct_name, method_name),
                 });
             }
         }
@@ -506,17 +498,13 @@ fn validate_reference_with_params(
                 if handle.find_method(element_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}()",
-                            struct_name.to_string(),
-                            element_name.to_string()
-                        ),
+                        ref_name: format!("{}.{}()", struct_name, element_name),
                     });
                 }
             } else {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}()", struct_name.to_string(), element_name.to_string()),
+                    ref_name: format!("{}.{}()", struct_name, element_name),
                 });
             }
         }
@@ -533,13 +521,13 @@ fn validate_reference_with_params(
                 if handle.find_variant_by_name(variant_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
+                        ref_name: format!("{}.{}", enum_name, variant_name),
                     });
                 }
             } else {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
-                    ref_name: format!("{}.{}", enum_name.to_string(), variant_name.to_string()),
+                    ref_name: format!("{}.{}", enum_name, variant_name),
                 });
             }
         }
@@ -556,21 +544,13 @@ fn validate_reference_with_params(
                 if handle.find_callback(method_name).is_none() {
                     return Err(BindingError::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!(
-                            "{}.{}()",
-                            interface_name.to_string(),
-                            method_name.to_string()
-                        ),
+                        ref_name: format!("{}.{}()", interface_name, method_name),
                     });
                 }
             } else {
                 return Err(BindingError::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
-                    ref_name: format!(
-                        "{}.{}()",
-                        interface_name.to_string(),
-                        method_name.to_string()
-                    ),
+                    ref_name: format!("{}.{}()", interface_name, method_name),
                 });
             }
         }

@@ -143,8 +143,9 @@ where
         let name = name.into_name()?;
 
         // check that we don't have any other field or initializer with this name
-        if self.fields.iter().any(|field| name == field.name) ||
-            self.initializers.iter().any(|c| name == c.name) {
+        if self.fields.iter().any(|field| name == field.name)
+            || self.initializers.iter().any(|c| name == c.name)
+        {
             return Err(BindingError::StructInitializerDuplicateName {
                 struct_name: self.declaration.name().clone(),
                 initializer_name: name,

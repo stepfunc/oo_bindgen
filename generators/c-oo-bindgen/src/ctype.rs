@@ -140,7 +140,7 @@ where
 impl CType for IteratorItemType {
     fn to_c_type(&self) -> String {
         match self {
-            IteratorItemType::Struct(x) => x.to_c_type(),
+            IteratorItemType::StructRef(x) => x.to_c_type(),
         }
     }
 }

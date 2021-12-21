@@ -1,95 +1,169 @@
 use jni::signature::*;
 
-pub struct Primitives {
-    _class_boolean: jni::objects::GlobalRef,
-    _class_byte: jni::objects::GlobalRef,
-    _class_short: jni::objects::GlobalRef,
-    _class_integer: jni::objects::GlobalRef,
-    _class_long: jni::objects::GlobalRef,
-    _class_float: jni::objects::GlobalRef,
-    _class_double: jni::objects::GlobalRef,
-    boolean_value: jni::objects::JMethodID<'static>,
-    byte_value: jni::objects::JMethodID<'static>,
-    short_value: jni::objects::JMethodID<'static>,
-    integer_value: jni::objects::JMethodID<'static>,
-    long_value: jni::objects::JMethodID<'static>,
-    float_value: jni::objects::JMethodID<'static>,
-    double_value: jni::objects::JMethodID<'static>,
+pub(crate) struct Boolean {
+    _class: jni::objects::GlobalRef,
+    value_method: jni::objects::JMethodID<'static>,
 }
 
-impl Primitives {
-    pub fn init(env: &jni::JNIEnv) -> Self {
-        let class_boolean = env.find_class("Ljava/lang/Boolean;").expect("Unable to find java/lang/Boolean class");
-        let boolean_value = env.get_method_id(class_boolean, "booleanValue", "()Z").map(|mid| mid.into_inner().into()).expect("Unable to find Boolean::booleanValue");
-
-        let class_byte = env.find_class("Ljava/lang/Byte;").expect("Unable to find java/lang/Byte class");
-        let byte_value = env.get_method_id(class_byte, "byteValue", "()B").map(|mid| mid.into_inner().into()).expect("Unable to find Byte::byteValue");
-
-        let class_short = env.find_class("Ljava/lang/Short;").expect("Unable to find java/lang/Short class");
-        let short_value = env.get_method_id(class_short, "shortValue", "()S").map(|mid| mid.into_inner().into()).expect("Unable to find Short::shortValue");
-
-        let class_integer = env.find_class("Ljava/lang/Integer;").expect("Unable to find java/lang/Integer class");
-        let integer_value = env.get_method_id(class_integer, "intValue", "()I").map(|mid| mid.into_inner().into()).expect("Unable to find Integer::intValue");
-
-        let class_long = env.find_class("Ljava/lang/Long;").expect("Unable to find java/lang/Long class");
-        let long_value = env.get_method_id(class_long, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find Long::longValue");
-
-        let class_float = env.find_class("Ljava/lang/Float;").expect("Unable to find java/lang/Float class");
-        let float_value = env.get_method_id(class_float, "floatValue", "()F").map(|mid| mid.into_inner().into()).expect("Unable to find Float::floatValue");
-
-        let class_double = env.find_class("Ljava/lang/Double;").expect("Unable to find java/lang/Double class");
-        let double_value = env.get_method_id(class_double, "doubleValue", "()D").map(|mid| mid.into_inner().into()).expect("Unable to find Double::doubleValue");
-
+impl Boolean {
+    fn init(env: &jni::JNIEnv) -> Self {
+        let class = env.find_class("Ljava/lang/Boolean;").expect("Unable to find java/lang/Boolean class");
         Self {
-            _class_boolean: env.new_global_ref(class_boolean).unwrap(),
-            _class_byte: env.new_global_ref(class_byte).unwrap(),
-            _class_short: env.new_global_ref(class_short).unwrap(),
-            _class_integer: env.new_global_ref(class_integer).unwrap(),
-            _class_long: env.new_global_ref(class_long).unwrap(),
-            _class_float: env.new_global_ref(class_float).unwrap(),
-            _class_double: env.new_global_ref(class_double).unwrap(),
-            boolean_value,
-            byte_value,
-            short_value,
-            integer_value,
-            long_value,
-            float_value,
-            double_value,
+            _class: env.new_global_ref(class).unwrap(),
+            value_method: env.get_method_id(class, "booleanValue", "()Z").map(|mid| mid.into_inner().into()).expect("Unable to find Boolean::booleanValue"),
         }
     }
 
-    pub fn boolean_value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> bool {
-        env.call_method_unchecked(obj, self.boolean_value, JavaType::Primitive(Primitive::Boolean), &[]).unwrap()
+    pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> bool {
+        env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Boolean), &[]).unwrap()
             .z().unwrap()
     }
+}
 
-    pub fn byte_value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i8 {
-        env.call_method_unchecked(obj, self.byte_value, JavaType::Primitive(Primitive::Byte), &[]).unwrap()
+pub(crate) struct Byte {
+    _class: jni::objects::GlobalRef,
+    value_method: jni::objects::JMethodID<'static>,
+}
+
+impl Byte {
+    fn init(env: &jni::JNIEnv) -> Self {
+        let class = env.find_class("Ljava/lang/Byte;").expect("Unable to find java/lang/Byte class");
+        Self {
+            _class: env.new_global_ref(class).unwrap(),
+            value_method:env.get_method_id(class, "byteValue", "()B").map(|mid| mid.into_inner().into()).expect("Unable to find Byte::byteValue"),
+        }
+    }
+
+    pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i8 {
+        env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Byte), &[]).unwrap()
             .b().unwrap()
     }
+}
 
-    pub fn short_value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i16 {
-        env.call_method_unchecked(obj, self.short_value, JavaType::Primitive(Primitive::Short), &[]).unwrap()
+pub(crate) struct Short {
+    _class: jni::objects::GlobalRef,
+    value_method: jni::objects::JMethodID<'static>,
+}
+
+impl Short {
+    fn init(env: &jni::JNIEnv) -> Self {
+        let class = env.find_class("Ljava/lang/Short;").expect("Unable to find java/lang/Short class");
+        Self {
+            _class: env.new_global_ref(class).unwrap(),
+            value_method: env.get_method_id(class, "shortValue", "()S").map(|mid| mid.into_inner().into()).expect("Unable to find Short::shortValue"),
+        }
+    }
+
+    pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i16 {
+        env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Short), &[]).unwrap()
             .s().unwrap()
     }
+}
 
-    pub fn integer_value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i32 {
-        env.call_method_unchecked(obj, self.integer_value, JavaType::Primitive(Primitive::Int), &[]).unwrap()
+pub(crate) struct Integer {
+    _class: jni::objects::GlobalRef,
+    value_method: jni::objects::JMethodID<'static>,
+}
+
+impl Integer {
+    fn init(env: &jni::JNIEnv) -> Self {
+        let class = env.find_class("Ljava/lang/Integer;").expect("Unable to find java/lang/Integer class");
+        Self {
+            _class: env.new_global_ref(class).unwrap(),
+            value_method: env.get_method_id(class, "intValue", "()I").map(|mid| mid.into_inner().into()).expect("Unable to find Integer::intValue"),
+        }
+    }
+
+    pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i32 {
+        env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Int), &[]).unwrap()
             .i().unwrap()
     }
+}
 
-    pub fn long_value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i64 {
-        env.call_method_unchecked(obj, self.long_value, JavaType::Primitive(Primitive::Long), &[]).unwrap()
+pub(crate) struct Long {
+    _class: jni::objects::GlobalRef,
+    value_method: jni::objects::JMethodID<'static>,
+}
+
+
+impl Long {
+    fn init(env: &jni::JNIEnv) -> Self {
+        let class = env.find_class("Ljava/lang/Long;").expect("Unable to find java/lang/Long class");
+        Self {
+            _class: env.new_global_ref(class).unwrap(),
+            value_method: env.get_method_id(class, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find Long::longValue"),
+        }
+    }
+
+    pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i64 {
+        env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Long), &[]).unwrap()
             .j().unwrap()
     }
+}
 
-    pub fn float_value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f32 {
-        env.call_method_unchecked(obj, self.float_value, JavaType::Primitive(Primitive::Float), &[]).unwrap()
-            .f().unwrap()
+pub(crate) struct Float {
+    _class: jni::objects::GlobalRef,
+    value_method: jni::objects::JMethodID<'static>,
+}
+
+
+impl Float {
+    fn init(env: &jni::JNIEnv) -> Self {
+        let class = env.find_class("Ljava/lang/Float;").expect("Unable to find java/lang/Float class");
+        Self {
+            _class: env.new_global_ref(class).unwrap(),
+            value_method: env.get_method_id(class, "floatValue", "()F").map(|mid| mid.into_inner().into()).expect("Unable to find Float::floatValue"),
+        }
     }
 
-    pub fn double_value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f64 {
-        env.call_method_unchecked(obj, self.double_value, JavaType::Primitive(Primitive::Double), &[]).unwrap()
+    pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f32 {
+        env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Float), &[]).unwrap()
+            .f().unwrap()
+    }
+}
+
+pub(crate) struct Double {
+    _class: jni::objects::GlobalRef,
+    value_method: jni::objects::JMethodID<'static>,
+}
+
+
+impl Double {
+    fn init(env: &jni::JNIEnv) -> Self {
+        let class = env.find_class("Ljava/lang/Double;").expect("Unable to find java/lang/Double class");
+        Self {
+            _class: env.new_global_ref(class).unwrap(),
+            value_method: env.get_method_id(class, "doubleValue", "()D").map(|mid| mid.into_inner().into()).expect("Unable to find Double::doubleValue"),
+        }
+    }
+
+    pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f64 {
+        env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Double), &[]).unwrap()
             .d().unwrap()
+    }
+}
+
+
+pub(crate) struct Primitives {
+    boolean: Boolean,
+    byte: Byte,
+    short: Short,
+    integer: Integer,
+    long: Long,
+    float: Float,
+    double: Double,
+}
+
+impl Primitives {
+    pub(crate) fn init(env: &jni::JNIEnv) -> Self {
+        Self {
+            boolean: Boolean::init(env),
+            byte: Byte::init(env),
+            short: Short::init(env),
+            integer: Integer::init(env),
+            long: Long::init(env),
+            float: Float::init(env),
+            double: Double::init(env),
+        }
     }
 }

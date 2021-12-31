@@ -50,13 +50,13 @@ use std::path::PathBuf;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
+use crate::conversion::*;
 use crate::doc::*;
-use crate::dotnet_type::*;
 use crate::formatting::*;
 
 mod class;
+mod conversion;
 mod doc;
-mod dotnet_type;
 mod formatting;
 mod helpers;
 mod interface;

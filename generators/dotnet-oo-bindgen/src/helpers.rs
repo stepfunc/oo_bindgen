@@ -1,6 +1,6 @@
 use oo_bindgen::model::*;
 
-use crate::dotnet_type::DotnetType;
+use crate::conversion::DotnetType;
 use crate::*;
 
 pub(crate) fn generate_collection_helpers(

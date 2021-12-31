@@ -8,7 +8,9 @@ pub(crate) trait DotnetType {
     /// Return the .NET representation of the native C type
     fn as_native_type(&self) -> String;
     fn convert_to_native(&self, from: &str) -> Option<String>;
+    /// Cleanup the native type
     fn cleanup(&self, from: &str) -> Option<String>;
+
     fn convert_from_native(&self, from: &str) -> Option<String>;
 }
 

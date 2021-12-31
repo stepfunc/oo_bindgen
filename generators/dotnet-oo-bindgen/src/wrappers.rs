@@ -1,7 +1,7 @@
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-use crate::dotnet_type::DotnetType;
+use crate::conversion::DotnetType;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
 

@@ -100,7 +100,7 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
             "<artifactId>{}</artifactId>",
             lib.name.to_kebab_case()
         ))?;
-        f.writeln(&format!("<version>{}</version>", lib.version.to_string()))?;
+        f.writeln(&format!("<version>{}</version>", lib.version))?;
 
         f.newline()?;
 
@@ -219,8 +219,17 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
 fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     let mut f = create_file(NATIVE_FUNCTIONS_CLASSNAME, config, lib)?;
 
+    f.newline()?;
+
     f.writeln(&format!("class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
     blocked(&mut f, |f| {
+        f.writeln(&format!(
+            "static final String VERSION = \"{}\";",
+            lib.version
+        ))?;
+
+        f.newline()?;
+
         // Load the library
         f.writeln("static")?;
         blocked(f, |f| {
@@ -278,6 +287,15 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     f.writeln("if(!loaded)")?;
                     blocked(f, |f| {
                         f.writeln("throw new Exception(\"Unable to load any of the included native library\");")
+                    })?;
+
+                    f.newline()?;
+
+                    // Check the loaded binary version
+                    f.writeln("String loadedVersion = version();")?;
+                    f.writeln("if (!loadedVersion.equals(VERSION))")?;
+                    blocked(f, |f| {
+                        f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.name))
                     })
                 })
             })?;

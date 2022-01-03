@@ -648,7 +648,13 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn build(self) -> Result<Library> {
+    pub fn build(mut self) -> Result<Library> {
+        // Add the version function
+        self.declare_native_function("version")?
+            .return_type(ReturnType::new(Type::String, "Version number"))?
+            .doc("Get the version of the library as a string")?
+            .build()?;
+
         // Update all native structs to full structs
         let mut structs = HashMap::with_capacity(self.defined_structs.len());
         for structure in self.defined_structs.values() {

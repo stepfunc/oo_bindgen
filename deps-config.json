@@ -1,5 +1,5 @@
 {
     "ignore": ["oo-bindgen"],
-    "allowed_licenses": ["Apache-2.0 OR MIT", "MIT OR Unlicense"],
+    "allowed_licenses": ["MIT"],
     "crates": {}
 }

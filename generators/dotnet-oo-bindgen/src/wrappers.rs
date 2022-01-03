@@ -1,7 +1,7 @@
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-use crate::conversion::DotnetType;
+use crate::conversion::TypeInfo;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
 
@@ -61,7 +61,7 @@ fn write_exception_and_return_blocks(
 ) -> FormattingResult<()> {
     match func.return_type.get() {
         Some(ret) => {
-            f.writeln(&format!("{} _return_value;", ret.value.as_native_type()))?;
+            f.writeln(&format!("{} _return_value;", ret.value.get_native_type()))?;
             f.writeln(&format!(
                 "var _error_result = PInvoke.{}_{}({}, out _return_value);",
                 prefix, func.name, params
@@ -101,7 +101,7 @@ fn write_conversion_wrapper(
 ) -> FormattingResult<()> {
     f.write(&format!(
         "internal static {} {}(",
-        func.return_type.as_native_type(),
+        func.return_type.get_native_type(),
         func.name
     ))?;
 
@@ -109,7 +109,7 @@ fn write_conversion_wrapper(
         &func
             .arguments
             .iter()
-            .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
+            .map(|param| format!("{} {}", param.arg_type.get_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -146,7 +146,7 @@ fn write_exception_wrapper(
 ) -> FormattingResult<()> {
     f.write(&format!(
         "internal static {} {}_{}(",
-        func.return_type.as_native_type(),
+        func.return_type.get_native_type(),
         prefix,
         func.name,
     ))?;
@@ -155,7 +155,7 @@ fn write_exception_wrapper(
         &func
             .arguments
             .iter()
-            .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
+            .map(|param| format!("{} {}", param.arg_type.get_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -189,14 +189,14 @@ fn write_pinvoke_signature(
     if let Some(err) = handle.error_type.get() {
         f.write(&format!(
             "internal static extern {} {}_{}(",
-            err.inner.as_native_type(),
+            err.inner.get_native_type(),
             prefix,
             handle.name,
         ))?;
     } else {
         f.write(&format!(
             "internal static extern {} {}_{}(",
-            handle.return_type.as_native_type(),
+            handle.return_type.get_native_type(),
             prefix,
             handle.name
         ))?;
@@ -206,7 +206,7 @@ fn write_pinvoke_signature(
         &handle
             .arguments
             .iter()
-            .map(|param| format!("{} {}", param.arg_type.as_native_type(), param.name))
+            .map(|param| format!("{} {}", param.arg_type.get_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -215,7 +215,7 @@ fn write_pinvoke_signature(
         if !handle.arguments.is_empty() {
             f.write(", ")?;
         }
-        f.write(&format!("out {} @out", ret.as_native_type()))?
+        f.write(&format!("out {} @out", ret.get_native_type()))?
     }
 
     f.write(");")

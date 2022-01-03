@@ -215,10 +215,19 @@ fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
         let mut f = FilePrinter::new(filename)?;
 
         match st {
-            StructType::FunctionArg(x) => structure::generate(&mut f, x, lib)?,
-            StructType::FunctionReturn(x) => structure::generate(&mut f, x, lib)?,
-            StructType::CallbackArg(x) => structure::generate(&mut f, x, lib)?,
-            StructType::Universal(x) => structure::generate(&mut f, x, lib)?,
+            StructType::FunctionArg(x) => structure::generate(&mut f, x, lib, &|f| {
+                structure::generate_to_native_conversions(f, x)
+            })?,
+            StructType::FunctionReturn(x) => structure::generate(&mut f, x, lib, &|f| {
+                structure::generate_to_dotnet_conversions(f, x)
+            })?,
+            StructType::CallbackArg(x) => structure::generate(&mut f, x, lib, &|f| {
+                structure::generate_to_dotnet_conversions(f, x)
+            })?,
+            StructType::Universal(x) => structure::generate(&mut f, x, lib, &|f| {
+                structure::generate_to_native_conversions(f, x)?;
+                structure::generate_to_dotnet_conversions(f, x)
+            })?,
         }
     }
 

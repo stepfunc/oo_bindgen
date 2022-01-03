@@ -152,7 +152,7 @@ fn generate_constructor(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.as_dotnet_type(),
+                    param.arg_type.get_dotnet_type(),
                     param.name.mixed_case()
                 )
             })
@@ -250,7 +250,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
 
     f.writeln(&format!(
         "public {} {}(",
-        method.native_function.return_type.as_dotnet_type(),
+        method.native_function.return_type.get_dotnet_type(),
         method.name.camel_case()
     ))?;
     f.write(
@@ -262,7 +262,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.as_dotnet_type(),
+                    param.arg_type.get_dotnet_type(),
                     param.name.mixed_case()
                 )
             })
@@ -318,7 +318,7 @@ fn generate_static_method(
 
     f.writeln(&format!(
         "public static {} {}(",
-        method.native_function.return_type.as_dotnet_type(),
+        method.native_function.return_type.get_dotnet_type(),
         method.name.camel_case()
     ))?;
     f.write(
@@ -329,7 +329,7 @@ fn generate_static_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.as_dotnet_type(),
+                    param.arg_type.get_dotnet_type(),
                     param.name.mixed_case()
                 )
             })
@@ -347,7 +347,7 @@ fn generate_async_method(
     f: &mut dyn Printer,
     method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
-    let callback_success_type = method.future.value_type.as_dotnet_type();
+    let callback_success_type = method.future.value_type.get_dotnet_type();
 
     // Documentation
     documentation(f, |f| {
@@ -399,7 +399,7 @@ fn generate_async_method(
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.arg_type.as_dotnet_type(),
+                    param.arg_type.get_dotnet_type(),
                     param.name.mixed_case()
                 )
             })

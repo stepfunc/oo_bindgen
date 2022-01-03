@@ -1,5 +1,27 @@
 use crate::*;
 
+pub(crate) fn generate(
+    f: &mut dyn Printer,
+    lib: &Library,
+    st: &StructType<Validated>,
+) -> FormattingResult<()> {
+    match st {
+        StructType::FunctionArg(x) => {
+            generate_skeleton(f, x, lib, &|f| generate_to_native_conversions(f, x))
+        }
+        StructType::FunctionReturn(x) => {
+            generate_skeleton(f, x, lib, &|f| generate_to_dotnet_conversions(f, x))
+        }
+        StructType::CallbackArg(x) => {
+            generate_skeleton(f, x, lib, &|f| generate_to_dotnet_conversions(f, x))
+        }
+        StructType::Universal(x) => generate_skeleton(f, x, lib, &|f| {
+            generate_to_native_conversions(f, x)?;
+            generate_to_dotnet_conversions(f, x)
+        }),
+    }
+}
+
 trait DotNetVisibility {
     fn to_str(&self) -> &str;
 }
@@ -175,7 +197,7 @@ where
     Ok(())
 }
 
-pub(crate) fn generate_to_native_conversions<T>(
+fn generate_to_native_conversions<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
 ) -> FormattingResult<()>
@@ -241,7 +263,7 @@ where
     })
 }
 
-pub(crate) fn generate_to_dotnet_conversions<T>(
+fn generate_to_dotnet_conversions<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
 ) -> FormattingResult<()>
@@ -293,7 +315,7 @@ where
     })
 }
 
-pub(crate) fn generate<T>(
+fn generate_skeleton<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
     lib: &Library,

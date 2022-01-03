@@ -388,6 +388,8 @@ where
 
             conversions(f)?;
 
+            f.newline()?;
+
             // Ref cleanup
             f.writeln("internal static void NativeRefCleanup(IntPtr native)")?;
             blocked(f, |f| {

@@ -24,7 +24,7 @@ namespace foo.Tests
 
     class CallbackFinalizerCounterImpl : ICallbackInterface
     {
-        private Counters counters;
+        private readonly Counters counters;
 
         public uint OnValue(uint value)
         {
@@ -59,30 +59,28 @@ namespace foo.Tests
         [Fact]
         public void CallbackTest()
         {
-            using(var cbSource = new CallbackSource())
-            {
-                var cb = new CallbackImpl();
-                cbSource.SetInterface(cb);
+            using var cbSource = new CallbackSource();
+            
+            var cb = new CallbackImpl();
+            cbSource.SetInterface(cb);
 
-                Assert.Equal(0u, cb.lastValue);
-                var result = cbSource.SetValue(76);
-                Assert.Equal(76u, result);
-                Assert.Equal(76u, cb.lastValue);
+            Assert.Equal(0u, cb.lastValue);
+            var result = cbSource.SetValue(76);
+            Assert.Equal(76u, result);
+            Assert.Equal(76u, cb.lastValue);
 
-                Assert.Equal(TimeSpan.MinValue, cb.lastDuration);
-                var timeResult = cbSource.SetDuration(TimeSpan.FromSeconds(76));
-                Assert.Equal(TimeSpan.FromSeconds(76), timeResult);
-                Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
-            }
+            Assert.Equal(TimeSpan.MinValue, cb.lastDuration);
+            var timeResult = cbSource.SetDuration(TimeSpan.FromSeconds(76));
+            Assert.Equal(TimeSpan.FromSeconds(76), timeResult);
+            Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
+            
         }
 
         private void SingleRun(Counters counters)
         {
-            using(var cbSource = new CallbackSource())
-            {
-                cbSource.SetInterface(new CallbackFinalizerCounterImpl(counters));
-                cbSource.SetValue(76);
-            }
+            using var cbSource = new CallbackSource();
+            cbSource.SetInterface(new CallbackFinalizerCounterImpl(counters));
+            cbSource.SetValue(76);            
         }
 
         [Fact]

@@ -281,17 +281,21 @@ where
         struct_name, struct_native_name
     ))?;
     blocked(f, |f| {
-        f.writeln(&format!("{} result = new {}();", struct_name, struct_name))?;
-        for el in handle.fields() {
-            let el_name = el.name.camel_case();
+        f.writeln(&format!("return new {}", struct_name))?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for el in handle.fields() {
+                let el_name = el.name.camel_case();
 
-            let conversion = el
-                .field_type
-                .convert_to_dotnet(&format!("native.{}", el_name))
-                .unwrap_or(format!("native.{}", el_name));
-            f.writeln(&format!("result.{} = {};", el_name, conversion))?;
-        }
-        f.writeln("return result;")
+                let conversion = el
+                    .field_type
+                    .convert_to_dotnet(&format!("native.{}", el_name))
+                    .unwrap_or(format!("native.{}", el_name));
+                f.writeln(&format!("{} = {},", el_name, conversion))?;
+            }
+            Ok(())
+        })?;
+        f.writeln("};")
     })?;
 
     f.newline()?;

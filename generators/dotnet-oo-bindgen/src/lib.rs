@@ -304,7 +304,7 @@ fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for err in lib.error_types() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(err.exception_name.to_string());
+        filename.push(err.exception_name.camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 

@@ -76,7 +76,7 @@ namespace foo.Tests
             }
         }
 
-        private void singleRun(Counters counters)
+        private void SingleRun(Counters counters)
         {
             using(var cbSource = new CallbackSource())
             {
@@ -93,7 +93,7 @@ namespace foo.Tests
 
             for (int i = 0; i < numRuns; i++)
             {
-                singleRun(counters);
+                SingleRun(counters);
             }
 
             GC.Collect();

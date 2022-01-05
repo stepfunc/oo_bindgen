@@ -27,12 +27,14 @@ pub(crate) fn generate_collection_helpers(
                 if coll.has_reserve {
                     f.writeln(&format!(
                         "var builder = {}.{}((uint)value.Count);",
-                        NATIVE_FUNCTIONS_CLASSNAME, coll.create_func.name
+                        NATIVE_FUNCTIONS_CLASSNAME,
+                        coll.create_func.name.camel_case()
                     ))?;
                 } else {
                     f.writeln(&format!(
                         "var builder = {}.{}();",
-                        NATIVE_FUNCTIONS_CLASSNAME, coll.create_func.name
+                        NATIVE_FUNCTIONS_CLASSNAME,
+                        coll.create_func.name.camel_case()
                     ))?;
                 }
 
@@ -46,7 +48,8 @@ pub(crate) fn generate_collection_helpers(
 
                     f.writeln(&format!(
                         "{}.{}(builder, convertedEl);",
-                        NATIVE_FUNCTIONS_CLASSNAME, coll.add_func.name
+                        NATIVE_FUNCTIONS_CLASSNAME,
+                        coll.add_func.name.camel_case()
                     ))?;
 
                     if let Some(cleanup) = &coll.item_type.cleanup_native("convertedEl") {
@@ -64,7 +67,8 @@ pub(crate) fn generate_collection_helpers(
             blocked(f, |f| {
                 f.writeln(&format!(
                     "{}.{}(value);",
-                    NATIVE_FUNCTIONS_CLASSNAME, coll.delete_func.name
+                    NATIVE_FUNCTIONS_CLASSNAME,
+                    coll.delete_func.name.camel_case()
                 ))
             })?;
 
@@ -93,7 +97,8 @@ pub(crate) fn generate_iterator_helpers(
             blocked(f, |f| {
                 let next_call = format!(
                     "{}.{}(value)",
-                    NATIVE_FUNCTIONS_CLASSNAME, iter.next_function.name
+                    NATIVE_FUNCTIONS_CLASSNAME,
+                    iter.next_function.name.camel_case()
                 );
 
                 f.writeln(&format!(
@@ -157,10 +162,15 @@ pub(crate) fn call_native_function(
         if !method.return_type.is_none() {
             f.write(&format!(
                 "var _result = {}.{}(",
-                NATIVE_FUNCTIONS_CLASSNAME, method.name
+                NATIVE_FUNCTIONS_CLASSNAME,
+                method.name.camel_case()
             ))?;
         } else {
-            f.write(&format!("{}.{}(", NATIVE_FUNCTIONS_CLASSNAME, method.name))?;
+            f.write(&format!(
+                "{}.{}(",
+                NATIVE_FUNCTIONS_CLASSNAME,
+                method.name.camel_case()
+            ))?;
         }
 
         f.write(

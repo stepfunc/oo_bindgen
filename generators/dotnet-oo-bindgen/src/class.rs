@@ -210,7 +210,8 @@ fn generate_destructor(
         f.newline()?;
         f.writeln(&format!(
             "{}.{}(this.self);",
-            NATIVE_FUNCTIONS_CLASSNAME, destructor.function.name
+            NATIVE_FUNCTIONS_CLASSNAME,
+            destructor.function.name.camel_case()
         ))?;
         f.newline()?;
         f.writeln("this.disposed = true;")

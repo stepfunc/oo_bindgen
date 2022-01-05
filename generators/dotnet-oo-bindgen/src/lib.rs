@@ -50,13 +50,13 @@ use std::path::PathBuf;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
+use crate::conversion::*;
 use crate::doc::*;
-use crate::dotnet_type::*;
 use crate::formatting::*;
 
 mod class;
+mod conversion;
 mod doc;
-mod dotnet_type;
 mod formatting;
 mod helpers;
 mod interface;
@@ -280,12 +280,7 @@ fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
-        match st {
-            StructType::FunctionArg(x) => structure::generate(&mut f, x, lib)?,
-            StructType::FunctionReturn(x) => structure::generate(&mut f, x, lib)?,
-            StructType::CallbackArg(x) => structure::generate(&mut f, x, lib)?,
-            StructType::Universal(x) => structure::generate(&mut f, x, lib)?,
-        }
+        structure::generate(&mut f, lib, st)?;
     }
 
     Ok(())
@@ -309,7 +304,7 @@ fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for err in lib.error_types() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(err.exception_name.to_string());
+        filename.push(err.exception_name.camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 

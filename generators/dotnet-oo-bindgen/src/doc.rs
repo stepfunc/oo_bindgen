@@ -1,7 +1,7 @@
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-use crate::dotnet_type::*;
+use crate::conversion::*;
 
 pub(crate) fn xmldoc_print(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
     f.writeln("<summary>")?;
@@ -64,7 +64,7 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
                 .function
                 .arguments
                 .iter()
-                .map(|param| param.arg_type.as_dotnet_type())
+                .map(|param| param.arg_type.get_dotnet_type())
                 .collect::<Vec<_>>()
                 .join(", ");
 

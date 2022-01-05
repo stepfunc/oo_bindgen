@@ -1,8 +1,8 @@
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
+use crate::conversion::{base_functor_type, full_functor_type, TypeInfo};
 use crate::doc::{docstring_print, xmldoc_print};
-use crate::dotnet_type::{base_functor_type, full_functor_type, DotnetType};
 use crate::formatting::{documentation, namespaced};
 use crate::helpers::call_dotnet_function;
 use crate::{print_imports, print_license};
@@ -64,7 +64,7 @@ pub(crate) fn generate(
                 // Callback signature
                 f.writeln(&format!(
                     "{} {}(",
-                    func.return_type.as_dotnet_type(),
+                    func.return_type.get_dotnet_type(),
                     func.name.camel_case()
                 ))?;
                 f.write(
@@ -74,7 +74,7 @@ pub(crate) fn generate(
                         .map(|arg| {
                             format!(
                                 "{} {}",
-                                arg.arg_type.as_dotnet_type(),
+                                arg.arg_type.get_dotnet_type(),
                                 arg.name.mixed_case()
                             )
                         })
@@ -98,7 +98,7 @@ pub(crate) fn generate(
         // write a Task-based implementation if it's a future interface
         if let InterfaceType::Future(fi) = interface {
             let class_name = fi.interface.name.camel_case();
-            let value_type = fi.value_type.as_dotnet_type();
+            let value_type = fi.value_type.get_dotnet_type();
             let success_method_name = fi
                 .interface
                 .settings
@@ -140,7 +140,7 @@ pub(crate) fn generate(
                         "void {}.{}({} err)",
                         interface_name,
                         error_method_name,
-                        err.inner.as_dotnet_type()
+                        err.inner.get_dotnet_type()
                     ))?;
                     blocked(f, |f| {
                         f.writeln(&format!(
@@ -163,7 +163,7 @@ pub(crate) fn generate(
             for cb in &interface.untyped().callbacks {
                 f.writeln(&format!(
                     "private delegate {} {}_delegate(",
-                    cb.return_type.as_native_type(),
+                    cb.return_type.get_native_type(),
                     cb.name
                 ))?;
                 f.write(
@@ -172,7 +172,7 @@ pub(crate) fn generate(
                         .map(|arg| {
                             format!(
                                 "{} {}",
-                                arg.arg_type.as_native_type(),
+                                arg.arg_type.get_native_type(),
                                 arg.name.mixed_case()
                             )
                         })
@@ -249,7 +249,7 @@ pub(crate) fn generate(
             for cb in &interface.untyped().callbacks {
                 f.writeln(&format!(
                     "internal static {} {}_cb(",
-                    cb.return_type.as_native_type(),
+                    cb.return_type.get_native_type(),
                     cb.name
                 ))?;
                 f.write(
@@ -258,7 +258,7 @@ pub(crate) fn generate(
                         .map(|arg| {
                             format!(
                                 "{} {}",
-                                arg.arg_type.as_native_type(),
+                                arg.arg_type.get_native_type(),
                                 arg.name.mixed_case()
                             )
                         })
@@ -336,7 +336,7 @@ pub(crate) fn generate_interface_implementation(
 
         f.writeln(&format!(
             "public {} {}(",
-            cb.return_type.as_dotnet_type(),
+            cb.return_type.get_dotnet_type(),
             cb.name.camel_case()
         ))?;
         f.write(
@@ -345,7 +345,7 @@ pub(crate) fn generate_interface_implementation(
                 .map(|param| {
                     format!(
                         "{} {}",
-                        param.arg_type.as_dotnet_type(),
+                        param.arg_type.get_dotnet_type(),
                         param.name.mixed_case()
                     )
                 })

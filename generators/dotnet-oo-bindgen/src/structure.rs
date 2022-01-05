@@ -1,5 +1,27 @@
 use crate::*;
 
+pub(crate) fn generate(
+    f: &mut dyn Printer,
+    lib: &Library,
+    st: &StructType<Validated>,
+) -> FormattingResult<()> {
+    match st {
+        StructType::FunctionArg(x) => {
+            generate_skeleton(f, x, lib, &|f| generate_to_native_conversions(f, x))
+        }
+        StructType::FunctionReturn(x) => {
+            generate_skeleton(f, x, lib, &|f| generate_to_dotnet_conversions(f, x))
+        }
+        StructType::CallbackArg(x) => {
+            generate_skeleton(f, x, lib, &|f| generate_to_dotnet_conversions(f, x))
+        }
+        StructType::Universal(x) => generate_skeleton(f, x, lib, &|f| {
+            generate_to_native_conversions(f, x)?;
+            generate_to_dotnet_conversions(f, x)
+        }),
+    }
+}
+
 trait DotNetVisibility {
     fn to_str(&self) -> &str;
 }
@@ -61,7 +83,7 @@ fn write_static_constructor<T>(
     constructor: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + DotnetType,
+    T: StructFieldType + TypeInfo,
 {
     write_constructor_documentation(f, handle, constructor, true)?;
 
@@ -94,7 +116,7 @@ fn write_constructor_documentation<T>(
     write_return_info: bool,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + DotnetType,
+    T: StructFieldType + TypeInfo,
 {
     documentation(f, |f| {
         xmldoc_print(f, &constructor.doc)?;
@@ -121,14 +143,14 @@ fn constructor_parameters<T>(
     constructor: &Handle<Initializer<Validated>>,
 ) -> String
 where
-    T: StructFieldType + DotnetType,
+    T: StructFieldType + TypeInfo,
 {
     handle
         .initializer_args(constructor.clone())
         .map(|sf| {
             format!(
                 "{} {}",
-                sf.field_type.as_dotnet_type(),
+                sf.field_type.get_dotnet_type(),
                 sf.name.mixed_case()
             )
         })
@@ -143,7 +165,7 @@ fn write_constructor<T>(
     constructor: &Handle<Initializer<Validated>>,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + DotnetType,
+    T: StructFieldType + TypeInfo,
 {
     if visibility == Visibility::Public && handle.visibility == Visibility::Public {
         write_constructor_documentation(f, handle, constructor, false)?;
@@ -175,13 +197,136 @@ where
     Ok(())
 }
 
-pub(crate) fn generate<T>(
+fn generate_to_native_conversions<T>(
+    f: &mut dyn Printer,
+    handle: &Struct<T, Validated>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + ConvertToNative,
+{
+    let struct_name = handle.name().camel_case();
+    let struct_native_name = format!("{}Native", struct_name);
+
+    f.newline()?;
+
+    // Convert from .NET to native
+    f.writeln(&format!(
+        "internal static {} ToNative({} self)",
+        struct_native_name, struct_name
+    ))?;
+    blocked(f, |f| {
+        f.writeln(&format!("{} result;", struct_native_name))?;
+        for el in handle.fields() {
+            let el_name = el.name.camel_case();
+
+            let conversion = el
+                .field_type
+                .convert_to_native(&format!("self.{}", el_name))
+                .unwrap_or(format!("self.{}", el_name));
+            f.writeln(&format!("result.{} = {};", el_name, conversion))?;
+        }
+        f.writeln("return result;")
+    })?;
+
+    f.newline()?;
+
+    // Convert from .NET to native reference
+    f.writeln(&format!(
+        "internal static IntPtr ToNativeRef({} self)",
+        struct_name
+    ))?;
+    blocked(f, |f| {
+        f.writeln("var handle = IntPtr.Zero;")?;
+        f.writeln("if (self != null)")?;
+        blocked(f, |f| {
+            f.writeln("var nativeStruct = ToNative(self);")?;
+            f.writeln("handle = Marshal.AllocHGlobal(Marshal.SizeOf(nativeStruct));")?;
+            f.writeln("Marshal.StructureToPtr(nativeStruct, handle, false);")?;
+            f.writeln("nativeStruct.Dispose();")
+        })?;
+        f.writeln("return handle;")
+    })?;
+
+    f.newline()?;
+
+    // Finalizer
+    f.writeln("internal void Dispose()")?;
+    blocked(f, |f| {
+        for el in handle.fields() {
+            let el_name = el.name.camel_case();
+
+            if let Some(cleanup) = el.field_type.cleanup_native(&format!("this.{}", el_name)) {
+                f.writeln(&cleanup)?;
+            }
+        }
+        Ok(())
+    })
+}
+
+fn generate_to_dotnet_conversions<T>(
+    f: &mut dyn Printer,
+    handle: &Struct<T, Validated>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + ConvertToDotNet,
+{
+    let struct_name = handle.name().camel_case();
+    let struct_native_name = format!("{}Native", struct_name);
+
+    f.newline()?;
+
+    // Convert from native to .NET
+    f.writeln(&format!(
+        "internal static {} FromNative({} native)",
+        struct_name, struct_native_name
+    ))?;
+    blocked(f, |f| {
+        f.writeln(&format!("return new {}", struct_name))?;
+        f.writeln("{")?;
+        indented(f, |f| {
+            for el in handle.fields() {
+                let el_name = el.name.camel_case();
+
+                let conversion = el
+                    .field_type
+                    .convert_to_dotnet(&format!("native.{}", el_name))
+                    .unwrap_or(format!("native.{}", el_name));
+                f.writeln(&format!("{} = {},", el_name, conversion))?;
+            }
+            Ok(())
+        })?;
+        f.writeln("};")
+    })?;
+
+    f.newline()?;
+
+    // Convert from native ref to .NET
+    f.writeln(&format!(
+        "internal static {} FromNativeRef(IntPtr native)",
+        struct_name
+    ))?;
+    blocked(f, |f| {
+        f.writeln(&format!("{} handle = null;", struct_name))?;
+        f.writeln("if (native != IntPtr.Zero)")?;
+        blocked(f, |f| {
+            f.writeln(&format!(
+                "var nativeStruct = Marshal.PtrToStructure<{}>(native);",
+                struct_native_name
+            ))?;
+            f.writeln("handle = FromNative(nativeStruct);")
+        })?;
+        f.writeln("return handle;")
+    })
+}
+
+fn generate_skeleton<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
     lib: &Library,
+    conversions: &dyn Fn(&mut dyn Printer) -> FormattingResult<()>,
 ) -> FormattingResult<()>
 where
-    T: StructFieldType + DotnetType,
+    T: StructFieldType + TypeInfo,
 {
     let struct_name = handle.name().camel_case();
     let struct_native_name = format!("{}Native", struct_name);
@@ -217,7 +362,7 @@ where
                 f.writeln(&format!(
                     "{} {} {};",
                     handle.visibility.to_str(),
-                    field.field_type.as_dotnet_type(),
+                    field.field_type.get_dotnet_type(),
                     field.name.camel_case()
                 ))?;
             }
@@ -262,71 +407,12 @@ where
             for el in handle.fields() {
                 f.writeln(&format!(
                     "{} {};",
-                    el.field_type.as_native_type(),
+                    el.field_type.get_native_type(),
                     el.name.camel_case()
                 ))?;
             }
 
-            f.newline()?;
-
-            // Convert from .NET to native
-            f.writeln(&format!(
-                "internal static {} ToNative({} self)",
-                struct_native_name, struct_name
-            ))?;
-            blocked(f, |f| {
-                f.writeln(&format!("{} result;", struct_native_name))?;
-                for el in handle.fields() {
-                    let el_name = el.name.camel_case();
-
-                    let conversion = el
-                        .field_type
-                        .convert_to_native(&format!("self.{}", el_name))
-                        .unwrap_or(format!("self.{}", el_name));
-                    f.writeln(&format!("result.{} = {};", el_name, conversion))?;
-                }
-                f.writeln("return result;")
-            })?;
-
-            f.newline()?;
-
-            // Convert from native to .NET
-            f.writeln(&format!(
-                "internal static {} FromNative({} native)",
-                struct_name, struct_native_name
-            ))?;
-            blocked(f, |f| {
-                f.writeln(&format!("{} result = new {}();", struct_name, struct_name))?;
-                for el in handle.fields() {
-                    let el_name = el.name.camel_case();
-
-                    let conversion = el
-                        .field_type
-                        .convert_from_native(&format!("native.{}", el_name))
-                        .unwrap_or(format!("native.{}", el_name));
-                    f.writeln(&format!("result.{} = {};", el_name, conversion))?;
-                }
-                f.writeln("return result;")
-            })?;
-
-            f.newline()?;
-
-            // Convert from .NET to native reference
-            f.writeln(&format!(
-                "internal static IntPtr ToNativeRef({} self)",
-                struct_name
-            ))?;
-            blocked(f, |f| {
-                f.writeln("var handle = IntPtr.Zero;")?;
-                f.writeln("if (self != null)")?;
-                blocked(f, |f| {
-                    f.writeln("var nativeStruct = ToNative(self);")?;
-                    f.writeln("handle = Marshal.AllocHGlobal(Marshal.SizeOf(nativeStruct));")?;
-                    f.writeln("Marshal.StructureToPtr(nativeStruct, handle, false);")?;
-                    f.writeln("nativeStruct.Dispose();")
-                })?;
-                f.writeln("return handle;")
-            })?;
+            conversions(f)?;
 
             f.newline()?;
 
@@ -335,41 +421,6 @@ where
             blocked(f, |f| {
                 f.writeln("if (native != IntPtr.Zero)")?;
                 blocked(f, |f| f.writeln("Marshal.FreeHGlobal(native);"))
-            })?;
-
-            f.newline()?;
-
-            // Convert from native ref to .NET
-            f.writeln(&format!(
-                "internal static {} FromNativeRef(IntPtr native)",
-                struct_name
-            ))?;
-            blocked(f, |f| {
-                f.writeln(&format!("{} handle = null;", struct_name))?;
-                f.writeln("if (native != IntPtr.Zero)")?;
-                blocked(f, |f| {
-                    f.writeln(&format!(
-                        "var nativeStruct = Marshal.PtrToStructure<{}>(native);",
-                        struct_native_name
-                    ))?;
-                    f.writeln("handle = FromNative(nativeStruct);")
-                })?;
-                f.writeln("return handle;")
-            })?;
-
-            f.newline()?;
-
-            // Finalizer
-            f.writeln("internal void Dispose()")?;
-            blocked(f, |f| {
-                for el in handle.fields() {
-                    let el_name = el.name.camel_case();
-
-                    if let Some(cleanup) = el.field_type.cleanup(&format!("this.{}", el_name)) {
-                        f.writeln(&cleanup)?;
-                    }
-                }
-                Ok(())
             })
         })
     })

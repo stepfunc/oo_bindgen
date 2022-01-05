@@ -85,6 +85,7 @@ pub fn generate_dotnet_bindings(
     fs::create_dir_all(&config.output_dir)?;
 
     generate_csproj(lib, config)?;
+    generate_targets_scripts(lib, config)?;
     generate_native_functions(lib, config)?;
     generate_constants(lib, config)?;
     generate_structs(lib, config)?;
@@ -161,6 +162,11 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
         f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, dotnet_platform_string(p.platform)))?;
     }
 
+    // Include the target files to force the copying of DLLs of NuGet packages on .NET Framework
+    // See https://github.com/stepfunc/dnp3/issues/147
+    f.writeln(&format!("    <Content Include=\"build/net45/{}.targets\" Pack=\"true\" PackagePath=\"build/net45/\" />", lib.settings.name))?;
+    f.writeln(&format!("    <Content Include=\"buildTransitive/net45/{}.targets\" Pack=\"true\" PackagePath=\"buildTransitive/net45/\" />", lib.settings.name))?;
+
     f.writeln("  </ItemGroup>")?;
 
     // Dependencies and files to include
@@ -181,6 +187,66 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("  </ItemGroup>")?;
 
     f.writeln("</Project>")
+}
+
+fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    // The target file is used to automatically copy the DLL to the build directory when using
+    // .NET Framework (Windows only). In .NET Core or .NET 5/6, the DLLs are automatically
+    // loaded from the appropriate runtime/*/native directory.
+    // This solution is based on gRPC library.
+    // We only support x64 Platform and .NET Framework 4.5 or higher.
+    // See https://github.com/stepfunc/dnp3/issues/147
+
+    // Main target file
+    {
+        let mut filename = config.output_dir.clone();
+        filename.push("build");
+        filename.push("net45");
+
+        fs::create_dir_all(&filename)?;
+
+        filename.push(lib.settings.name.to_string());
+        filename.set_extension("targets");
+        let mut f = FilePrinter::new(filename)?;
+
+        f.writeln("<?xml version=\"1.0\" encoding=\"utf-8\"?>")?;
+        f.writeln("<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">")?;
+        f.writeln("  <ItemGroup>")?;
+
+        for p in config
+            .platforms
+            .iter()
+            .filter(|x| x.platform == Platform::WinX64Msvc)
+        {
+            f.writeln(&format!("    <Content Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(p.platform), p.bin_filename(&config.ffi_name), p.bin_filename(&config.ffi_name), lib.settings.name))?;
+        }
+
+        f.writeln("  </ItemGroup>")?;
+        f.writeln("</Project>")?;
+    }
+
+    // Transistive target file (simply points to the main one)
+    {
+        let mut filename = config.output_dir.clone();
+        filename.push("buildTransitive");
+        filename.push("net45");
+
+        fs::create_dir_all(&filename)?;
+
+        filename.push(lib.settings.name.to_string());
+        filename.set_extension("targets");
+        let mut f = FilePrinter::new(filename)?;
+
+        f.writeln("<?xml version=\"1.0\" encoding=\"utf-8\"?>")?;
+        f.writeln("<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">")?;
+        f.writeln(&format!(
+            "  <Import Project=\"$(MSBuildThisFileDirectory)../../build/net45/{}.targets\" />",
+            lib.settings.name
+        ))?;
+        f.writeln("</Project>")?;
+    }
+
+    Ok(())
 }
 
 fn generate_native_functions(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {

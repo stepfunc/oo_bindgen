@@ -182,7 +182,13 @@ impl LibraryBuilder {
         }
     }
 
-    pub fn build(self) -> BindResult<Library> {
+    pub fn build(mut self) -> BindResult<Library> {
+        // Add the version function
+        self.define_function("version")?
+            .returns(StringType, "Version number")?
+            .doc("Get the version of the library as a string")?
+            .build()?;
+
         let statements: BindResult<Vec<Statement<Validated>>> = self
             .fields
             .statements

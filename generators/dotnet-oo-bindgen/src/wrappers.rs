@@ -60,11 +60,11 @@ fn write_exception_and_return_blocks(
 ) -> FormattingResult<()> {
     match func.return_type.get() {
         Some(ret) => {
-            f.writeln(&format!("{} _return_value;", ret.value.get_native_type()))?;
             f.writeln(&format!(
-                "var _error_result = PInvoke.{}({}, out _return_value);",
+                "var _error_result = PInvoke.{}({}, out {} _return_value);",
                 func.name.camel_case(),
-                params
+                params,
+                ret.value.get_native_type()
             ))?;
             f.writeln(&format!(
                 "if(_error_result != {}.Ok)",

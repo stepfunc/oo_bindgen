@@ -1,3 +1,4 @@
+use crate::cpp::formatting::pointer;
 use oo_bindgen::model::*;
 
 pub(crate) trait CoreCppType {
@@ -121,6 +122,7 @@ impl CoreCppType for IteratorItemType {
     fn core_cpp_type(&self) -> String {
         match self {
             IteratorItemType::StructRef(x) => x.core_cpp_type(),
+            IteratorItemType::PrimitiveRef(x) => pointer(x.inner.core_cpp_type()),
         }
     }
 }

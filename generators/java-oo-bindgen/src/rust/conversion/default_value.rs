@@ -71,6 +71,12 @@ impl DefaultValue for UniversalDeclarationOr<FunctionReturnStructField> {
     }
 }
 
+impl DefaultValue for PrimitiveRef {
+    fn get_default_value(&self) -> &str {
+        NULL_DEFAULT_VALUE
+    }
+}
+
 impl DefaultValue for FunctionReturnValue {
     fn get_default_value(&self) -> &str {
         match self {
@@ -79,6 +85,7 @@ impl DefaultValue for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.get_default_value(),
             FunctionReturnValue::Struct(x) => x.get_default_value(),
             FunctionReturnValue::StructRef(x) => x.get_default_value(),
+            FunctionReturnValue::PrimitiveRef(x) => x.get_default_value(),
         }
     }
 }

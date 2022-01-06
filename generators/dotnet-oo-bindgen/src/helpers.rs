@@ -92,8 +92,13 @@ pub(crate) fn generate_iterator_helpers(
             iter.name().camel_case()
         ))?;
         blocked(f, |f| {
+            let value_type = match &iter.item_type {
+                IteratorItemType::PrimitiveRef(x) => x.get_dotnet_type(),
+                IteratorItemType::StructRef(x) => x.get_dotnet_type(),
+            };
+
             // ToNative function
-            f.writeln(&format!("internal static System.Collections.Generic.ICollection<{}> FromNative(IntPtr value)", iter.item_type.name().camel_case()))?;
+            f.writeln(&format!("internal static System.Collections.Generic.ICollection<{}> FromNative(IntPtr value)", value_type))?;
             blocked(f, |f| {
                 let next_call = format!(
                     "{}.{}(value)",
@@ -103,24 +108,26 @@ pub(crate) fn generate_iterator_helpers(
 
                 f.writeln(&format!(
                     "var builder = ImmutableArray.CreateBuilder<{}>();",
-                    iter.item_type.name().camel_case()
+                    value_type
                 ))?;
                 f.writeln(&format!(
                     "for (var itRawValue = {}; itRawValue != IntPtr.Zero; itRawValue = {})",
                     next_call, next_call
                 ))?;
                 blocked(f, |f| {
-                    f.writeln(&format!(
-                        "{} itValue = null;",
-                        iter.item_type.name().camel_case()
-                    ))?;
-                    f.writeln(&format!(
-                        "itValue = {};",
-                        iter.item_type
-                            .declaration()
-                            .convert_to_dotnet("itRawValue")
-                            .unwrap()
-                    ))?;
+                    f.writeln(&format!("{} itValue = null;", value_type))?;
+                    // convert the value
+                    match &iter.item_type {
+                        IteratorItemType::PrimitiveRef(_x) => {
+                            todo!()
+                        }
+                        IteratorItemType::StructRef(x) => {
+                            f.writeln(&format!(
+                                "itValue = {};",
+                                x.declaration().convert_to_dotnet("itRawValue").unwrap()
+                            ))?;
+                        }
+                    }
                     f.writeln("builder.Add(itValue);")
                 })?;
                 f.writeln("return builder.ToImmutable();")

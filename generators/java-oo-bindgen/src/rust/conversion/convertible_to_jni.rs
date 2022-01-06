@@ -171,6 +171,12 @@ impl MaybeConvertibleToJni for CallbackArgument {
     }
 }
 
+impl ConvertibleToJni for PrimitiveRef {
+    fn convert(&self, _expr: &str) -> String {
+        todo!()
+    }
+}
+
 impl MaybeConvertibleToJni for FunctionReturnValue {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
@@ -179,6 +185,7 @@ impl MaybeConvertibleToJni for FunctionReturnValue {
             Self::ClassRef(x) => x.maybe_convert(expr),
             Self::Struct(x) => x.maybe_convert(expr),
             Self::StructRef(x) => x.untyped().maybe_convert(expr),
+            Self::PrimitiveRef(x) => x.maybe_convert(expr),
         }
     }
 }
@@ -187,6 +194,7 @@ impl MaybeConvertibleToJni for IteratorItemType {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
             IteratorItemType::StructRef(x) => x.maybe_convert(expr),
+            IteratorItemType::PrimitiveRef(x) => x.maybe_convert(expr),
         }
     }
 }

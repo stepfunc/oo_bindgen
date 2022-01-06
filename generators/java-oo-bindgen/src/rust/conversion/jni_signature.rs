@@ -112,6 +112,12 @@ impl JniSignatureType for FunctionArgument {
     }
 }
 
+impl JniSignatureType for PrimitiveRef {
+    fn jni_signature_type(&self) -> &str {
+        JNI_SYS_JOBJECT
+    }
+}
+
 impl JniSignatureType for FunctionReturnValue {
     fn jni_signature_type(&self) -> &str {
         match self {
@@ -120,6 +126,7 @@ impl JniSignatureType for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.jni_signature_type(),
             FunctionReturnValue::Struct(x) => x.jni_signature_type(),
             FunctionReturnValue::StructRef(x) => x.jni_signature_type(),
+            FunctionReturnValue::PrimitiveRef(x) => x.jni_signature_type(),
         }
     }
 }

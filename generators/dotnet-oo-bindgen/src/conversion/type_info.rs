@@ -184,10 +184,20 @@ where
     D: DocReference,
 {
     fn get_dotnet_type(&self) -> String {
-        format!(
-            "System.Collections.Generic.ICollection<{}>",
-            self.item_type.name().camel_case()
-        )
+        match &self.item_type {
+            IteratorItemType::PrimitiveRef(x) => {
+                format!(
+                    "System.Collections.Generic.ICollection<{}>",
+                    x.get_dotnet_type()
+                )
+            }
+            IteratorItemType::StructRef(x) => {
+                format!(
+                    "System.Collections.Generic.ICollection<{}>",
+                    x.name().camel_case()
+                )
+            }
+        }
     }
 
     fn get_native_type(&self) -> String {
@@ -352,6 +362,16 @@ impl TypeInfo for CallbackReturnValue {
     }
 }
 
+impl TypeInfo for PrimitiveRef {
+    fn get_dotnet_type(&self) -> String {
+        todo!()
+    }
+
+    fn get_native_type(&self) -> String {
+        todo!()
+    }
+}
+
 impl TypeInfo for FunctionReturnValue {
     fn get_dotnet_type(&self) -> String {
         match self {
@@ -360,6 +380,7 @@ impl TypeInfo for FunctionReturnValue {
             Self::ClassRef(x) => x.get_dotnet_type(),
             Self::Struct(x) => x.get_dotnet_type(),
             Self::StructRef(x) => x.untyped().get_dotnet_type(),
+            Self::PrimitiveRef(x) => x.get_dotnet_type(),
         }
     }
 
@@ -370,6 +391,7 @@ impl TypeInfo for FunctionReturnValue {
             Self::ClassRef(x) => x.get_native_type(),
             Self::Struct(x) => x.get_native_type(),
             Self::StructRef(x) => x.untyped().get_native_type(),
+            Self::PrimitiveRef(x) => x.get_native_type(),
         }
     }
 }

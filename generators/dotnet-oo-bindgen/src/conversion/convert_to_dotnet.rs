@@ -163,6 +163,12 @@ impl ConvertToDotNet for CallbackArgument {
     }
 }
 
+impl ConvertToDotNet for PrimitiveRef {
+    fn convert_to_dotnet(&self, _from: &str) -> Option<String> {
+        todo!()
+    }
+}
+
 impl ConvertToDotNet for FunctionReturnValue {
     fn convert_to_dotnet(&self, from: &str) -> Option<String> {
         match self {
@@ -171,6 +177,7 @@ impl ConvertToDotNet for FunctionReturnValue {
             Self::ClassRef(x) => x.convert_to_dotnet(from),
             Self::Struct(x) => x.convert_to_dotnet(from),
             Self::StructRef(x) => x.untyped().convert_to_dotnet(from),
+            Self::PrimitiveRef(x) => x.convert_to_dotnet(from),
         }
     }
 }

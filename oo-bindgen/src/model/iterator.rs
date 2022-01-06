@@ -4,6 +4,7 @@ use crate::model::*;
 
 #[derive(Debug, Clone)]
 pub enum IteratorItemType {
+    PrimitiveRef(PrimitiveRef),
     StructRef(UniversalOr<FunctionReturnStructField>),
 }
 
@@ -25,7 +26,14 @@ impl From<FunctionReturnStructHandle> for IteratorItemType {
     }
 }
 
+impl From<PrimitiveRef> for IteratorItemType {
+    fn from(x: PrimitiveRef) -> Self {
+        Self::PrimitiveRef(x)
+    }
+}
+
 impl IteratorItemType {
+    /*
     pub fn name(&self) -> &Name {
         match self {
             IteratorItemType::StructRef(x) => x.name(),
@@ -37,10 +45,12 @@ impl IteratorItemType {
             IteratorItemType::StructRef(x) => x.declaration(),
         }
     }
+     */
 
     pub(crate) fn get_function_return_value(&self) -> FunctionReturnValue {
         match self {
             IteratorItemType::StructRef(x) => FunctionReturnValue::StructRef(x.typed_declaration()),
+            IteratorItemType::PrimitiveRef(x) => FunctionReturnValue::PrimitiveRef(*x),
         }
     }
 }

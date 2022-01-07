@@ -19,7 +19,6 @@ namespace foo.Tests
             Assert.Equal(1u, values[0]);
             Assert.Equal(2u, values[1]);
             Assert.Equal(3u, values[2]);
-
         }
 
     }

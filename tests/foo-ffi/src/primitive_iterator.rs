@@ -1,20 +1,20 @@
-pub struct Int32Iterator {
-    current: i32,
-    next: i32,
-    max: i32,
+pub struct RangeIterator {
+    current: u32,
+    next: u32,
+    max: u32,
 }
 
-impl Int32Iterator {
-    pub(crate) fn new(start: i32, max: i32) -> Self {
+impl RangeIterator {
+    pub(crate) fn new(min: u32, max: u32) -> Self {
         Self {
-            current: start,
-            next: start,
+            current: min,
+            next: min,
             max,
         }
     }
 }
 
-pub(crate) fn int32_iterator_next(it: *mut Int32Iterator) -> *const i32 {
+pub(crate) fn range_iterator_next(it: *mut RangeIterator) -> *const u32 {
     let mut it = unsafe { it.as_mut().unwrap() };
     if it.next > it.max {
         return std::ptr::null();
@@ -24,7 +24,7 @@ pub(crate) fn int32_iterator_next(it: *mut Int32Iterator) -> *const i32 {
     &it.current
 }
 
-pub(crate) fn invoke_int32_callback(callback: crate::ffi::IntValueReceiver) {
-    let mut iter = Int32Iterator::new(1, 3);
-    callback.on_int32(&mut iter)
+pub(crate) fn invoke_range_callback(min: u32, max: u32, callback: crate::ffi::RangeReceiver) {
+    let mut iter = RangeIterator::new(min, max);
+    callback.on_range(&mut iter)
 }

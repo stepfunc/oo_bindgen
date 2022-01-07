@@ -115,20 +115,16 @@ pub(crate) fn generate_iterator_helpers(
                     next_call, next_call
                 ))?;
                 blocked(f, |f| {
-                    f.writeln(&format!("{} itValue = null;", value_type))?;
                     // convert the value
                     match &iter.item_type {
                         IteratorItemType::Primitive(_x) => {
-                            todo!()
+                            f.writeln("tada!")
                         }
                         IteratorItemType::Struct(x) => {
-                            f.writeln(&format!(
-                                "itValue = {};",
-                                x.declaration().convert_to_dotnet("itRawValue").unwrap()
-                            ))?;
+                            let conversion = x.declaration().convert_to_dotnet("itRawValue").unwrap_or_else(|| "itRawValue".to_string());
+                            f.writeln(&format!("builder.Add({});", conversion))
                         }
                     }
-                    f.writeln("builder.Add(itValue);")
                 })?;
                 f.writeln("return builder.ToImmutable();")
             })

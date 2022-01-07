@@ -270,12 +270,16 @@ fn write_iterator_methods(
 
         f.newline()?;
 
-        f.writeln(&format!(
-            "return ::convert::to_cpp(*reinterpret_cast<{}*>(this->current));",
-            c_value_type
-        ))?;
-
-        Ok(())
+        match it.item_type {
+            IteratorItemType::PrimitiveRef(_) => f.writeln(&format!(
+                "return *reinterpret_cast<{}>(this->current);",
+                c_value_type
+            )),
+            IteratorItemType::StructRef(_) => f.writeln(&format!(
+                "return ::convert::to_cpp(*reinterpret_cast<{}*>(this->current));",
+                c_value_type
+            )),
+        }
     })?;
 
     f.newline()?;

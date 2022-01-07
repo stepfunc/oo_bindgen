@@ -492,11 +492,11 @@ impl LifetimeInfo for FunctionReturnValue {
 
 impl RustType for PrimitiveRef {
     fn as_rust_type(&self) -> String {
-        format!("*{}", self.inner.as_rust_type())
+        format!("*const {}", self.inner.as_rust_type())
     }
 
     fn as_c_type(&self) -> String {
-        format!("{}*", self.inner.as_rust_type())
+        format!("*const {}", self.inner.as_rust_type())
     }
 
     fn is_copyable(&self) -> bool {

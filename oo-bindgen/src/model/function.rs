@@ -8,6 +8,12 @@ pub struct PrimitiveRef {
     pub inner: Primitive,
 }
 
+impl PrimitiveRef {
+    pub fn new(inner: Primitive) -> Self {
+        Self { inner }
+    }
+}
+
 /// types that can be returns from native functions
 #[derive(Debug, Clone, PartialEq)]
 pub enum FunctionReturnValue {

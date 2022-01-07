@@ -36,7 +36,7 @@ impl ToCppReturnValue for FunctionReturnValue {
             FunctionReturnValue::ClassRef(_) => false,
             FunctionReturnValue::Struct(_) => true,
             FunctionReturnValue::StructRef(_) => false,
-            FunctionReturnValue::PrimitiveRef(_) => todo!(),
+            FunctionReturnValue::PrimitiveRef(_) => false,
         }
     }
 }

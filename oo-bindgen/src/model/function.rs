@@ -9,7 +9,7 @@ pub struct PrimitiveRef {
 }
 
 impl PrimitiveRef {
-    pub fn new(inner: Primitive) -> Self {
+    pub(crate) fn new(inner: Primitive) -> Self {
         Self { inner }
     }
 }

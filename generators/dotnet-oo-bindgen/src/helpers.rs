@@ -93,8 +93,8 @@ pub(crate) fn generate_iterator_helpers(
         ))?;
         blocked(f, |f| {
             let value_type = match &iter.item_type {
-                IteratorItemType::PrimitiveRef(x) => x.get_dotnet_type(),
-                IteratorItemType::StructRef(x) => x.get_dotnet_type(),
+                IteratorItemType::Primitive(x) => x.get_dotnet_type(),
+                IteratorItemType::Struct(x) => x.get_dotnet_type(),
             };
 
             // ToNative function
@@ -118,10 +118,10 @@ pub(crate) fn generate_iterator_helpers(
                     f.writeln(&format!("{} itValue = null;", value_type))?;
                     // convert the value
                     match &iter.item_type {
-                        IteratorItemType::PrimitiveRef(_x) => {
+                        IteratorItemType::Primitive(_x) => {
                             todo!()
                         }
-                        IteratorItemType::StructRef(x) => {
+                        IteratorItemType::Struct(x) => {
                             f.writeln(&format!(
                                 "itValue = {};",
                                 x.declaration().convert_to_dotnet("itRawValue").unwrap()

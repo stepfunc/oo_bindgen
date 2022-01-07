@@ -4,53 +4,41 @@ use crate::model::*;
 
 #[derive(Debug, Clone)]
 pub enum IteratorItemType {
-    PrimitiveRef(PrimitiveRef),
-    StructRef(UniversalOr<FunctionReturnStructField>),
+    Primitive(Primitive),
+    Struct(UniversalOr<FunctionReturnStructField>),
 }
 
 impl From<UniversalOr<FunctionReturnStructField>> for IteratorItemType {
     fn from(x: UniversalOr<FunctionReturnStructField>) -> Self {
-        IteratorItemType::StructRef(x)
+        IteratorItemType::Struct(x)
     }
 }
 
 impl From<UniversalStructHandle> for IteratorItemType {
     fn from(x: UniversalStructHandle) -> Self {
-        Self::StructRef(UniversalOr::Universal(x))
+        Self::Struct(UniversalOr::Universal(x))
     }
 }
 
 impl From<FunctionReturnStructHandle> for IteratorItemType {
     fn from(x: FunctionReturnStructHandle) -> Self {
-        Self::StructRef(UniversalOr::Specific(x))
+        Self::Struct(UniversalOr::Specific(x))
     }
 }
 
-impl From<PrimitiveRef> for IteratorItemType {
-    fn from(x: PrimitiveRef) -> Self {
-        Self::PrimitiveRef(x)
+impl From<Primitive> for IteratorItemType {
+    fn from(x: Primitive) -> Self {
+        Self::Primitive(x)
     }
 }
 
 impl IteratorItemType {
-    /*
-    pub fn name(&self) -> &Name {
-        match self {
-            IteratorItemType::StructRef(x) => x.name(),
-        }
-    }
-
-    pub fn declaration(&self) -> StructDeclarationHandle {
-        match self {
-            IteratorItemType::StructRef(x) => x.declaration(),
-        }
-    }
-     */
-
     pub(crate) fn get_function_return_value(&self) -> FunctionReturnValue {
         match self {
-            IteratorItemType::StructRef(x) => FunctionReturnValue::StructRef(x.typed_declaration()),
-            IteratorItemType::PrimitiveRef(x) => FunctionReturnValue::PrimitiveRef(*x),
+            IteratorItemType::Struct(x) => FunctionReturnValue::StructRef(x.typed_declaration()),
+            IteratorItemType::Primitive(x) => {
+                FunctionReturnValue::PrimitiveRef(PrimitiveRef::new(*x))
+            }
         }
     }
 }

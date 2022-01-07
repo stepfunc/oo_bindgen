@@ -2,7 +2,7 @@ use oo_bindgen::model::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // iterators can only be used in callback arguments, so we need an interface
-    let iterator = lib.define_iterator("int32_iterator", PrimitiveRef::new(Primitive::S32))?;
+    let iterator = lib.define_iterator("int32_iterator", Primitive::S32)?;
 
     let interface = lib
         .define_interface(

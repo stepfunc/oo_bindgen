@@ -141,8 +141,8 @@ where
 impl CType for IteratorItemType {
     fn to_c_type(&self) -> String {
         match self {
-            IteratorItemType::StructRef(x) => x.to_c_type(),
-            IteratorItemType::PrimitiveRef(x) => pointer(&x.inner).to_c_type(),
+            IteratorItemType::Struct(x) => x.to_c_type(),
+            IteratorItemType::Primitive(x) => pointer(x).to_c_type(),
         }
     }
 }

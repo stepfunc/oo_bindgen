@@ -119,15 +119,15 @@ impl JavaType for StructDeclarationHandle {
 impl JavaType for IteratorItemType {
     fn as_java_primitive(&self) -> String {
         match self {
-            IteratorItemType::StructRef(x) => x.as_java_primitive(),
-            IteratorItemType::PrimitiveRef(x) => x.as_java_primitive(),
+            IteratorItemType::Struct(x) => x.as_java_primitive(),
+            IteratorItemType::Primitive(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            IteratorItemType::StructRef(x) => x.as_java_object(),
-            IteratorItemType::PrimitiveRef(x) => x.as_java_object(),
+            IteratorItemType::Struct(x) => x.as_java_object(),
+            IteratorItemType::Primitive(x) => x.as_java_object(),
         }
     }
 }

@@ -193,8 +193,8 @@ impl MaybeConvertibleToJni for FunctionReturnValue {
 impl MaybeConvertibleToJni for IteratorItemType {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            IteratorItemType::StructRef(x) => x.maybe_convert(expr),
-            IteratorItemType::PrimitiveRef(x) => x.maybe_convert(expr),
+            IteratorItemType::Struct(x) => x.maybe_convert(expr),
+            IteratorItemType::Primitive(x) => x.maybe_convert(expr),
         }
     }
 }

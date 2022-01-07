@@ -185,13 +185,13 @@ where
 {
     fn get_dotnet_type(&self) -> String {
         match &self.item_type {
-            IteratorItemType::PrimitiveRef(x) => {
+            IteratorItemType::Primitive(x) => {
                 format!(
                     "System.Collections.Generic.ICollection<{}>",
                     x.get_dotnet_type()
                 )
             }
-            IteratorItemType::StructRef(x) => {
+            IteratorItemType::Struct(x) => {
                 format!(
                     "System.Collections.Generic.ICollection<{}>",
                     x.name().camel_case()

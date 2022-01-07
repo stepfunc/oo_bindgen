@@ -32,4 +32,61 @@ namespace Helpers
             return System.Text.Encoding.UTF8.GetString(buffer);
         }
     }
+
+    internal static class PrimitivePointer
+    {
+        internal static sbyte ReadByte(IntPtr x)
+        {
+            return unchecked((sbyte)ReadUByte(x));
+        }
+
+        internal static byte ReadUByte(IntPtr x)
+        {
+            return Marshal.ReadByte(x);
+        }
+
+        internal static short ReadShort(IntPtr x)
+        {
+            return Marshal.ReadInt16(x);
+        }
+
+        internal static ushort ReadUShort(IntPtr x)
+        {
+            return unchecked((ushort) ReadShort(x));
+        }
+
+        internal static int ReadInt(IntPtr x)
+        {
+            return Marshal.ReadInt32(x);
+        }
+
+        internal static uint ReadUInt(IntPtr x)
+        {
+            return unchecked((uint) ReadInt(x));
+        }
+
+        internal static long ReadLong(IntPtr x)
+        {
+            return Marshal.ReadInt64(x);
+        }
+
+        internal static ulong ReadULong(IntPtr x)
+        {
+            return unchecked((ulong) ReadLong(x));
+        }
+
+        internal static float ReadFloat(IntPtr x)
+        {
+            var bytes = new byte[4];
+            Marshal.copy(x, bytes, 0, 4);
+            return BitConverter.ToSingle(bytes, 0);
+        }
+
+        internal static double ReadDouble(IntPtr x)
+        {
+            var bytes = new byte[8];
+            Marshal.copy(x, bytes, 0, 8);
+            return BitConverter.ToDouble(bytes, 0);
+        }
+    }
 }

@@ -364,11 +364,11 @@ impl TypeInfo for CallbackReturnValue {
 
 impl TypeInfo for PrimitiveRef {
     fn get_dotnet_type(&self) -> String {
-        todo!()
+        self.inner.get_dotnet_type()
     }
 
     fn get_native_type(&self) -> String {
-        todo!()
+        INT_PTR_STRING.to_string()
     }
 }
 

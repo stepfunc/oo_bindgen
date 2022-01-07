@@ -19,6 +19,7 @@ set(c_test_files
         c_tests/error_tests.c
         c_tests/duration_tests.c
         c_tests/iterator_tests.c
+        c_tests/primitive_iterator_tests.c
         c_tests/string_tests.c
         c_tests/structure_tests.c
         c_tests/universal_tests.c

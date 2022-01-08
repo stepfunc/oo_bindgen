@@ -139,11 +139,15 @@ pub(crate) fn generate_iterator_helpers(
                 blocked(f, |f| {
                     // convert the value
                     match &iter.item_type {
-                        IteratorItemType::Primitive(x) => {
-                            f.writeln(&format!("builder.Add({});", x.convert_primitive_pointer("itRawValue")))
-                        }
+                        IteratorItemType::Primitive(x) => f.writeln(&format!(
+                            "builder.Add({});",
+                            x.convert_primitive_pointer("itRawValue")
+                        )),
                         IteratorItemType::Struct(x) => {
-                            let conversion = x.declaration().convert_to_dotnet("itRawValue").unwrap_or_else(|| "itRawValue".to_string());
+                            let conversion = x
+                                .declaration()
+                                .convert_to_dotnet("itRawValue")
+                                .unwrap_or_else(|| "itRawValue".to_string());
                             f.writeln(&format!("builder.Add({});", conversion))
                         }
                     }

@@ -246,8 +246,19 @@ fn write_iterator_conversion(
             config.ffi_name, iter.iter_class.settings.c_ffi_prefix, iter.next_function.name
         ))?;
         indented(f, |f| {
-            if let Some(conversion) = iter.item_type.maybe_convert("next") {
-                f.writeln(&format!("let next = _env.auto_local({});", conversion))?;
+            match &iter.item_type {
+                IteratorItemType::Primitive(x) => {
+                    let converted = x
+                        .maybe_convert("*next")
+                        .unwrap_or_else(|| "*next".to_string());
+                    f.writeln(&format!("let next = _env.auto_local({});", converted))?;
+                }
+                IteratorItemType::Struct(x) => {
+                    f.writeln(&format!(
+                        "let next = _env.auto_local({});",
+                        x.convert("next")
+                    ))?;
+                }
             }
             f.writeln("_cache.collection.add_to_array_list(&_env, list, next.as_obj().into());")
         })?;

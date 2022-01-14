@@ -30,11 +30,33 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
     f.writeln("#include <vector>")?;
     f.newline()?;
 
-    // Doxygen needs the @file tag
-    f.writeln(&format!(
-        "/// @file C++ API for the {} library",
-        lib.settings.name
-    ))?;
+    doxygen(&mut f, |f| {
+        // Doxygen needs the @file tag
+        f.writeln(&format!(
+            "@file {}.hpp C++ API for the {} library",
+            lib.settings.name, lib.settings.name,
+        ))?;
+
+        f.newline()?;
+
+        // Doxygen main page
+        f.writeln("@mainpage")?;
+        f.newline()?;
+        f.writeln(&lib.info.description)?;
+        f.newline()?;
+        f.writeln(&format!(
+            "For complete documentation, see @ref {} namespace",
+            lib.settings.name
+        ))?;
+        f.newline()?;
+        f.writeln("@section license License")?;
+        f.newline()?;
+        for line in &lib.info.license_description {
+            f.writeln(line)?;
+        }
+
+        Ok(())
+    })?;
     f.newline()?;
 
     f.writeln(&format!(

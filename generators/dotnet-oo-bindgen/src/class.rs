@@ -125,17 +125,10 @@ fn generate_constructor(
             f.write("</param>")?;
         }
 
-        // Print return value
-        if let Some(doc) = &constructor.function.return_type.get_doc() {
-            f.writeln("<returns>")?;
-            docstring_print(f, doc)?;
-            f.write("</returns>")?;
-        }
-
         // Print exception
         if let Some(error) = &constructor.function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
+                "<exception cref=\"{}\"></exception>",
                 error.exception_name.camel_case()
             ))?;
         }
@@ -240,7 +233,7 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
         // Print exception
         if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
+                "<exception cref=\"{}\"></exception>",
                 error.exception_name.camel_case()
             ))?;
         }
@@ -308,7 +301,7 @@ fn generate_static_method(
         // Print exception
         if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
+                "<exception cref=\"{}\"></exception>",
                 error.exception_name.camel_case()
             ))?;
         }
@@ -376,7 +369,7 @@ fn generate_async_method(
         // Print exception
         if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
+                "<exception cref=\"{}\"></exception>",
                 error.exception_name.camel_case()
             ))?;
         }

@@ -42,6 +42,7 @@ pub fn build_lib() -> BackTraced<Library> {
             organization: "Step Function I/O".to_string(),
             organization_url: "https://stepfunc.io/".to_string(),
         }],
+        logo_png: include_bytes!("../../../sfio_logo.png"),
     };
 
     let settings = LibrarySettings::create(

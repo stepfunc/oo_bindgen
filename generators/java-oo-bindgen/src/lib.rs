@@ -101,7 +101,7 @@ impl JavaBindgenConfig {
     }
 
     fn java_signature_path(&self, libname: &str) -> String {
-        let mut result = self.group_id.replace(".", "/");
+        let mut result = self.group_id.replace('.', "/");
         result.push('/');
         result.push_str(libname);
         result

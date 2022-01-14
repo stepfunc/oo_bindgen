@@ -118,6 +118,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
         }
     }
 
+    #[must_use]
     pub fn enable_functional_transform(mut self) -> Self {
         self.functional_transform = FunctionalTransform::Yes;
         self

@@ -20,6 +20,27 @@ pub(crate) fn generate_native_functions_class(
     print_imports(f)?;
     f.newline()?;
 
+    doxygen(f, |f| {
+        // Doxygen main page
+        f.writeln("@mainpage")?;
+        f.newline()?;
+        f.writeln(&lib.info.description)?;
+        f.newline()?;
+        f.writeln(&format!(
+            "For complete documentation, see @ref {} namespace",
+            lib.settings.name
+        ))?;
+        f.newline()?;
+        f.writeln("@section license License")?;
+        f.newline()?;
+        for line in &lib.info.license_description {
+            f.writeln(line)?;
+        }
+
+        Ok(())
+    })?;
+    f.newline()?;
+
     namespaced(f, &lib.settings.name, |f| {
         f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
         blocked(f, |f| {

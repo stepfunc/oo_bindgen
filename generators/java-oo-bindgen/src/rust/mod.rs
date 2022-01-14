@@ -66,7 +66,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
 fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     let ffi_project_name = config.ffi_path.file_name().unwrap();
     let path_to_ffi_lib = pathdiff::diff_paths(&config.ffi_path, &config.rust_output_dir).unwrap();
-    let path_to_ffi_lib = path_to_ffi_lib.to_string_lossy().replace("\\", "/");
+    let path_to_ffi_lib = path_to_ffi_lib.to_string_lossy().replace('\\', "/");
 
     let mut filename = config.rust_output_dir.clone();
     filename.push("Cargo");
@@ -402,9 +402,9 @@ fn write_function_signature(
     f.writeln(
         &format!(
             "pub extern \"C\" fn Java_{}_{}_NativeFunctions_{}(_env: jni::JNIEnv, _: jni::sys::jobject, {}){}",
-            config.group_id.replace(".", "_"),
+            config.group_id.replace('.', "_"),
             lib.settings.name,
-            handle.name.replace("_", "_1"),
+            handle.name.replace('_', "_1"),
             args,
             returns
         )

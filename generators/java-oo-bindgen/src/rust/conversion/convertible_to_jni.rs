@@ -50,7 +50,7 @@ impl ConvertibleToJni for StringType {
 impl MaybeConvertibleToJni for Primitive {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Bool => Some(format!("{} as u8", expr)),
+            Self::Bool => Some(format!("u8::from({})", expr)),
             Self::U8 => Some(UnsignedConverter::U8.apply(expr)),
             Self::S8 => None,
             Self::U16 => Some(UnsignedConverter::U16.apply(expr)),

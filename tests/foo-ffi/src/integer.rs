@@ -29,3 +29,7 @@ pub fn uint64_echo(value: u64) -> u64 {
 pub fn sint64_echo(value: i64) -> i64 {
     value
 }
+
+pub fn bool_echo(value: bool) -> bool {
+    value
+}

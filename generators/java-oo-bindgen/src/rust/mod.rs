@@ -296,9 +296,9 @@ fn write_collection_guard(
     indented(f, |f| {
         f.writeln("pub(crate) fn new(_env: jni::JNIEnv, list: jni::sys::jobject) -> Result<Self, jni::errors::Error> {")?;
         indented(f, |f| {
-            f.writeln("let cache = crate::get_cache();")?;
+            f.writeln("let _cache = crate::get_cache();")?;
             let size = if col.has_reserve {
-                f.writeln("let size = cache.collection.get_size(&_env, list.into());")?;
+                f.writeln("let size = _cache.collection.get_size(&_env, list.into());")?;
                 "size"
             } else {
                 ""
@@ -308,14 +308,17 @@ fn write_collection_guard(
                 config.ffi_name, c_ffi_prefix, col.create_func.name, size
             ))?;
             f.writeln(
-                "let it = _env.auto_local(cache.collection.get_iterator(&_env, list.into()));",
+                "let it = _env.auto_local(_cache.collection.get_iterator(&_env, list.into()));",
             )?;
-            f.writeln("while cache.collection.has_next(&_env, it.as_obj()) {")?;
+            f.writeln("while _cache.collection.has_next(&_env, it.as_obj()) {")?;
             indented(f, |f| {
                 f.writeln(
-                    "let next = _env.auto_local(cache.collection.next(&_env, it.as_obj()));",
+                    "let next = _env.auto_local(_cache.collection.next(&_env, it.as_obj()));",
                 )?;
-                if let Some(converted) = col.item_type.to_rust_from_object("next.as_obj()") {
+                if let Some(converted) = col
+                    .item_type
+                    .to_rust_from_object("next.as_obj().into_inner()")
+                {
                     // perform  primary conversion that shadows the variable
                     f.writeln(&format!("let next = {};", converted))?;
                 }

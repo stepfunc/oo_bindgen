@@ -143,6 +143,7 @@ fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<
     let include_path = format!("{}/include", config.platform_location.platform.as_string());
 
     // Build C documentation
+    fs::create_dir_all(config.output_dir.join("doc").join("c"))?;
     run_doxygen(
         &config.output_dir,
         &[
@@ -168,6 +169,7 @@ fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<
     )?;
 
     // Build C++ documentation
+    fs::create_dir_all(config.output_dir.join("doc").join("cpp"))?;
     run_doxygen(
         &config.output_dir,
         &[

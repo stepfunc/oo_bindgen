@@ -46,7 +46,7 @@ impl ConvertibleToRust for StringType {
 impl ConvertibleToRust for Primitive {
     fn to_rust(&self, expr: &str) -> Option<String> {
         match self {
-            Primitive::Bool => None,
+            Primitive::Bool => Some(format!("{} != 0", expr)),
             Primitive::U8 => Some(format!("_cache.unsigned.byte.to_rust(&_env, {})", expr)),
             Primitive::S8 => None,
             Primitive::U16 => Some(format!("_cache.unsigned.short.to_rust(&_env, {})", expr)),

@@ -45,7 +45,10 @@ clippy::all
 )]
 
 use std::fs;
+use std::io::Write;
+use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
 
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
@@ -76,6 +79,7 @@ pub struct DotnetBindgenConfig {
     pub ffi_name: String,
     pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
+    pub generate_doxygen: bool,
 }
 
 pub fn generate_dotnet_bindings(
@@ -98,6 +102,10 @@ pub fn generate_dotnet_bindings(
 
     // generate the helper classes
     generate_helpers(lib, config)?;
+
+    if config.generate_doxygen {
+        generate_doxygen(lib, config)?;
+    }
 
     Ok(())
 }
@@ -516,4 +524,59 @@ fn dotnet_platform_string(platform: Platform) -> &'static str {
         Platform::LinuxArm8Gnu => "linux-arm64",
         _ => panic!("Unsupported platform"),
     }
+}
+
+fn generate_doxygen(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    // Copy doxygen awesome in target directory
+    let doxygen_awesome = include_str!("../../doxygen-awesome.css");
+    fs::write(
+        config.output_dir.join("doxygen-awesome.css"),
+        doxygen_awesome,
+    )?;
+
+    // Write the logo file
+    fs::write(config.output_dir.join("logo.png"), lib.info.logo_png)?;
+
+    run_doxygen(
+        &config.output_dir,
+        &[
+            &format!("PROJECT_NAME = {} (.NET API)", lib.settings.name),
+            &format!("PROJECT_NUMBER = {}", lib.version),
+            "INPUT = ./",
+            "HTML_OUTPUT = doc",
+            // Output customization
+            "GENERATE_LATEX = NO",       // No LaTeX
+            "HIDE_UNDOC_CLASSES = YES",  // I guess this will help the output
+            "ALWAYS_DETAILED_SEC = YES", // Always print detailed section
+            // Styling
+            "HTML_EXTRA_STYLESHEET = doxygen-awesome.css",
+            "GENERATE_TREEVIEW = YES",
+            "PROJECT_LOGO = logo.png",
+            "HTML_COLORSTYLE_HUE = 209", // See https://jothepro.github.io/doxygen-awesome-css/index.html#autotoc_md14
+            "HTML_COLORSTYLE_SAT = 255",
+            "HTML_COLORSTYLE_GAMMA = 113",
+        ],
+    )?;
+
+    Ok(())
+}
+
+fn run_doxygen(cwd: &Path, config_lines: &[&str]) -> FormattingResult<()> {
+    let mut command = Command::new("doxygen")
+        .current_dir(cwd)
+        .arg("-")
+        .stdin(std::process::Stdio::piped())
+        .spawn()?;
+
+    {
+        let stdin = command.stdin.as_mut().unwrap();
+
+        for line in config_lines {
+            stdin.write_all(&format!("{}\n", line).into_bytes())?;
+        }
+    }
+
+    command.wait()?;
+
+    Ok(())
 }

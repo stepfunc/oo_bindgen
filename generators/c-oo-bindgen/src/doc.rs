@@ -68,8 +68,10 @@ fn print_c_reference(f: &mut dyn Printer, reference: &Validated) -> FormattingRe
         }
         Validated::ClassMethod(class, method_name, _) => {
             f.write(&format!(
-                "@ref {}_{}",
-                class.settings.c_ffi_prefix, method_name
+                "@ref {}_{}_{}",
+                class.settings.c_ffi_prefix,
+                class.name(),
+                method_name
             ))?;
         }
         Validated::ClassConstructor(class, constructor) => {

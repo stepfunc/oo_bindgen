@@ -46,6 +46,7 @@ clippy::all
 
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -65,6 +66,7 @@ pub struct CBindgenConfig {
     pub is_release: bool,
     pub extra_files: Vec<PathBuf>,
     pub platform_location: PlatformLocation,
+    pub generate_doxygen: bool,
 }
 
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
@@ -119,38 +121,93 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         fs::copy(path, output_dir.join(path.file_name().unwrap()))?;
     }
 
+    // Generate doxygen (if asked)
+    if config.generate_doxygen {
+        generate_doxygen(lib, config)?;
+    }
+
     Ok(())
 }
 
-pub fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
-    // Build documentation
+fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+    // Copy doxygen awesome in target directory
+    let doxygen_awesome = include_str!("../../doxygen-awesome.css");
+    fs::write(
+        config.output_dir.join("doxygen-awesome.css"),
+        doxygen_awesome,
+    )?;
+
+    // Write the logo file
+    fs::write(config.output_dir.join("logo.png"), lib.info.logo_png)?;
+
+    let include_path = format!("{}/include", config.platform_location.platform.as_string());
+
+    // Build C documentation
+    fs::create_dir_all(config.output_dir.join("doc").join("c"))?;
+    run_doxygen(
+        &config.output_dir,
+        &[
+            &format!("PROJECT_NAME = {} (C API)", lib.settings.name),
+            &format!("PROJECT_NUMBER = {}", lib.version),
+            &format!("INPUT = {}/{}.h", include_path, lib.settings.name),
+            "HTML_OUTPUT = doc/c",
+            // Output customization
+            "GENERATE_LATEX = NO",                          // No LaTeX
+            "EXTRACT_STATIC = YES",                         // We want all functions
+            "TYPEDEF_HIDES_STRUCT = YES",                   // To avoid a large
+            "OPTIMIZE_OUTPUT_FOR_C = YES",                  // I guess this will help the output
+            "ALWAYS_DETAILED_SEC = YES",                    // Always print detailed section
+            &format!("STRIP_FROM_PATH = {}", include_path), // Remove include path
+            // Styling
+            "HTML_EXTRA_STYLESHEET = doxygen-awesome.css",
+            "GENERATE_TREEVIEW = YES",
+            "PROJECT_LOGO = logo.png",
+            "HTML_COLORSTYLE_HUE = 209", // See https://jothepro.github.io/doxygen-awesome-css/index.html#autotoc_md14
+            "HTML_COLORSTYLE_SAT = 255",
+            "HTML_COLORSTYLE_GAMMA = 113",
+        ],
+    )?;
+
+    // Build C++ documentation
+    fs::create_dir_all(config.output_dir.join("doc").join("cpp"))?;
+    run_doxygen(
+        &config.output_dir,
+        &[
+            &format!("PROJECT_NAME = {} (C++ API)", lib.settings.name),
+            &format!("PROJECT_NUMBER = {}", lib.version),
+            &format!("INPUT = {}/{}.hpp", include_path, lib.settings.name),
+            "HTML_OUTPUT = doc/cpp",
+            // Output customization
+            "GENERATE_LATEX = NO",                          // No LaTeX
+            "EXTRACT_STATIC = YES",                         // We want all functions
+            "ALWAYS_DETAILED_SEC = YES",                    // Always print detailed section
+            &format!("STRIP_FROM_PATH = {}", include_path), // Remove include path
+            // Styling
+            "HTML_EXTRA_STYLESHEET = doxygen-awesome.css",
+            "GENERATE_TREEVIEW = YES",
+            "PROJECT_LOGO = logo.png",
+            "HTML_COLORSTYLE_HUE = 209", // See https://jothepro.github.io/doxygen-awesome-css/index.html#autotoc_md14
+            "HTML_COLORSTYLE_SAT = 255",
+            "HTML_COLORSTYLE_GAMMA = 113",
+        ],
+    )?;
+
+    Ok(())
+}
+
+fn run_doxygen(cwd: &Path, config_lines: &[&str]) -> FormattingResult<()> {
     let mut command = Command::new("doxygen")
-        .current_dir(&config.output_dir)
+        .current_dir(cwd)
         .arg("-")
         .stdin(std::process::Stdio::piped())
-        .spawn()
-        .expect("failed to spawn doxygen");
+        .spawn()?;
 
     {
         let stdin = command.stdin.as_mut().unwrap();
-        stdin
-            .write_all(&format!("PROJECT_NAME = {}\n", lib.settings.name).into_bytes())
-            .unwrap();
-        stdin
-            .write_all(&format!("PROJECT_NUMBER = {}\n", lib.version).into_bytes())
-            .unwrap();
-        stdin.write_all(b"HTML_OUTPUT = doc\n").unwrap();
-        stdin.write_all(b"GENERATE_LATEX = NO\n").unwrap();
-        stdin.write_all(b"EXTRACT_STATIC = YES\n").unwrap();
-        stdin
-            .write_all(
-                &format!(
-                    "INPUT = {}/include\n",
-                    config.platform_location.platform.as_string()
-                )
-                .into_bytes(),
-            )
-            .unwrap();
+
+        for line in config_lines {
+            stdin.write_all(&format!("{}\n", line).into_bytes())?;
+        }
     }
 
     command.wait()?;

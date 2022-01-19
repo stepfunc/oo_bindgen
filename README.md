@@ -1,10 +1,12 @@
+![Step Function I/O](./sfio_logo.png)
+
 # oo-bindgen
 
 ![CI](https://github.com/stepfunc/oo_bindgen/workflows/CI/badge.svg)
 
 Object-oriented binding generator for Rust.
 
-## License 
+## License
 
 Refer to `License.txt` for the terms of the non-commercial license.  This software is "source available", 
 but is not "open source". You must purchase a commercial license to use this software for profit.

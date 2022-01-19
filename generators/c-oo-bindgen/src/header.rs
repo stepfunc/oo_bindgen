@@ -50,11 +50,33 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
         f.writeln("#include <stdint.h>")?;
         f.newline()?;
 
-        // Doxygen needs the @file tag
-        f.writeln(&format!(
-            "/// @file C API for the {} library",
-            lib.settings.name
-        ))?;
+        doxygen(f, |f| {
+            // Doxygen needs the @file tag
+            f.writeln(&format!(
+                "@file {}.h C API for the {} library",
+                lib.settings.name, lib.settings.name,
+            ))?;
+
+            f.newline()?;
+
+            // Doxygen main page
+            f.writeln("@mainpage")?;
+            f.newline()?;
+            f.writeln(&lib.info.description)?;
+            f.newline()?;
+            f.writeln(&format!(
+                "For complete documentation, see @link {}.h @endlink",
+                lib.settings.name
+            ))?;
+            f.newline()?;
+            f.writeln("@section license License")?;
+            f.newline()?;
+            for line in &lib.info.license_description {
+                f.writeln(line)?;
+            }
+
+            Ok(())
+        })?;
         f.newline()?;
 
         // Iterate through each statement and print them
@@ -72,7 +94,7 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
                     StructType::Universal(x) => write_struct_definition(f, x)?,
                 },
                 Statement::EnumDefinition(handle) => write_enum_definition(f, handle)?,
-                Statement::ClassDeclaration(handle) => write_class_declaration(f, handle)?,
+                Statement::ClassDeclaration(handle) => write_class_declaration(f, handle, lib)?,
                 Statement::FunctionDefinition(handle) => write_function(f, handle)?,
                 Statement::InterfaceDefinition(handle) => write_interface(f, handle.untyped())?,
                 _ => (),
@@ -320,7 +342,26 @@ fn write_enum_definition(
 fn write_class_declaration(
     f: &mut dyn Printer,
     handle: &ClassDeclarationHandle,
+    lib: &Library,
 ) -> FormattingResult<()> {
+    // Find documentation
+    if let Some(class) = lib.classes().find(|x| x.name() == &handle.name) {
+        doxygen(f, |f| doxygen_print(f, &class.doc))?;
+    }
+    if let Some(iterator) = lib.iterators().find(|x| x.name() == &handle.name) {
+        doxygen(f, |f| {
+            doxygen_print(
+                f,
+                &brief(&format!("Iterator of {}", iterator.item_type.name())),
+            )
+        })?;
+    }
+    if let Some(collection) = lib.collections().find(|x| x.name() == &handle.name) {
+        doxygen(f, |f| {
+            doxygen_print(f, &brief(&format!("Collection of {}", collection.name())))
+        })?;
+    }
+
     f.writeln(&format!(
         "typedef struct {} {};",
         handle.to_c_type(),

@@ -57,6 +57,13 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Echo a Sint64 value")?
         .build_static_with_same_name()?;
 
+    let boolean_echo = lib
+        .define_function("bool_echo")?
+        .param("value", Primitive::Bool, "Bool")?
+        .returns(Primitive::Bool, "Bool")?
+        .doc("Echo a boolean value")?
+        .build_static_with_same_name()?;
+
     // Declare static class
     lib.define_static_class("integer_echo_functions")?
         .static_method(uint8_echo)?
@@ -67,7 +74,8 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .static_method(sint32_echo)?
         .static_method(uint64_echo)?
         .static_method(sint64_echo)?
-        .doc("Enum echo functions")?
+        .static_method(boolean_echo)?
+        .doc("Integer echo functions")?
         .build()?;
 
     Ok(())

@@ -81,6 +81,7 @@ where
 }
 
 impl Doc<Validated> {
+    #[must_use]
     pub fn warning(mut self, warning: &str) -> Self {
         self.details.push(DocParagraph::Warning(text(warning)));
         self
@@ -113,11 +114,13 @@ impl Doc<Unvalidated> {
         })
     }
 
+    #[must_use]
     pub fn warning<D: Into<DocString<Unvalidated>>>(mut self, warning: D) -> Self {
         self.details.push(DocParagraph::Warning(warning.into()));
         self
     }
 
+    #[must_use]
     pub fn details<D: Into<DocString<Unvalidated>>>(mut self, details: D) -> Self {
         self.details.push(DocParagraph::Details(details.into()));
         self

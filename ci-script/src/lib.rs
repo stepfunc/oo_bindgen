@@ -69,17 +69,14 @@ pub fn run(settings: BindingBuilderSettings) {
         .map_or(Vec::new(), |v| v.map(PathBuf::from).collect());
 
     if run_c || run_all {
-        let builder = run_builder::<CBindingBuilder>(
+        run_builder::<CBindingBuilder>(
             &settings,
             run_tests,
             package,
             package_src,
             &extra_files,
+            matches.is_present("doxygen"),
         );
-
-        if matches.is_present("doxygen") {
-            builder.build_doxygen();
-        }
     }
     if run_dotnet || run_all {
         run_builder::<DotnetBindingBuilder>(
@@ -88,10 +85,18 @@ pub fn run(settings: BindingBuilderSettings) {
             package,
             package_src,
             &extra_files,
+            matches.is_present("doxygen"),
         );
     }
     if run_java || run_all {
-        run_builder::<JavaBindingBuilder>(&settings, run_tests, package, package_src, &extra_files);
+        run_builder::<JavaBindingBuilder>(
+            &settings,
+            run_tests,
+            package,
+            package_src,
+            &extra_files,
+            false,
+        );
     }
 }
 
@@ -105,6 +110,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
     package: bool,
     package_src: Option<&str>,
     extra_files: &[PathBuf],
+    generate_doxygen: bool,
 ) -> B {
     let mut platforms = PlatformLocations::new();
     if let Some(package_src) = package_src {
@@ -145,7 +151,7 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
         return builder;
     }
 
-    builder.generate(package);
+    builder.generate(package, generate_doxygen);
 
     if !package {
         if run_tests {
@@ -182,7 +188,7 @@ trait BindingBuilder<'a> {
         platforms: PlatformLocations,
         extra_files: &[PathBuf],
     ) -> Self;
-    fn generate(&mut self, is_packaging: bool);
+    fn generate(&mut self, is_packaging: bool, generate_doxygen: bool);
     fn build(&mut self);
     fn test(&mut self);
     fn package(&mut self);
@@ -195,20 +201,6 @@ struct CBindingBuilder<'a> {
 }
 
 impl<'a> CBindingBuilder<'a> {
-    fn build_doxygen(&self) {
-        let config = c_oo_bindgen::CBindgenConfig {
-            output_dir: self.output_dir(),
-            ffi_target_name: self.settings.ffi_target_name.to_owned(),
-            ffi_name: self.settings.ffi_name.to_owned(),
-            is_release: env!("PROFILE") == "release",
-            extra_files: Vec::new(),
-            platform_location: self.platforms.iter().next().unwrap(),
-        };
-
-        c_oo_bindgen::generate_doxygen(self.settings.library, &config)
-            .expect("failed to package C lib");
-    }
-
     fn output_dir(&self) -> PathBuf {
         let mut output_dir = PathBuf::from(self.settings.destination_path);
         output_dir.push("c");
@@ -245,7 +237,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self, _is_packaging: bool) {
+    fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
         for platform in self.platforms.iter() {
             let config = c_oo_bindgen::CBindgenConfig {
                 output_dir: self.output_dir(),
@@ -254,6 +246,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
                 is_release: env!("PROFILE") == "release",
                 extra_files: self.extra_files.clone(),
                 platform_location: platform.clone(),
+                generate_doxygen,
             };
 
             c_oo_bindgen::generate_c_package(self.settings.library, &config)
@@ -342,7 +335,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self, _is_packaging: bool) {
+    fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
         // Clear/create generated files
         let build_dir = self.build_dir();
         if build_dir.exists() {
@@ -355,6 +348,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
             ffi_name: self.settings.ffi_name.to_owned(),
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
+            generate_doxygen,
         };
 
         dotnet_oo_bindgen::generate_dotnet_bindings(self.settings.library, &config).unwrap();
@@ -461,7 +455,7 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self, is_packaging: bool) {
+    fn generate(&mut self, is_packaging: bool, _generate_doxygen: bool) {
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
             rust_output_dir: self.rust_build_dir(),

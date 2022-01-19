@@ -80,6 +80,10 @@ pub struct LibraryInfo {
     pub license_path: PathBuf,
     /// List of developers
     pub developers: Vec<DeveloperInfo>,
+    /// Logo of the company (in PNG)
+    ///
+    /// Use `include_bytes` to import the data
+    pub logo_png: &'static [u8],
 }
 
 /// Settings that affect iterator function naming

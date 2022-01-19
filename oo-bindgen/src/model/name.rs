@@ -172,6 +172,7 @@ impl Name {
     }
 
     /// Append a name to this one
+    #[must_use]
     pub fn append(&self, other: &Name) -> Self {
         Self {
             validated: Rc::new(format!(
@@ -183,6 +184,7 @@ impl Name {
     }
 
     /// Prepend a name to this one
+    #[must_use]
     pub fn prepend(&self, other: &Name) -> Self {
         Self {
             validated: Rc::new(format!(

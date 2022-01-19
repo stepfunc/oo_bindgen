@@ -77,28 +77,6 @@ pub(crate) fn generate_collection_helpers(
     })
 }
 
-trait PointerConversion {
-    fn convert_primitive_pointer(&self, expr: &str) -> String;
-}
-
-impl PointerConversion for Primitive {
-    fn convert_primitive_pointer(&self, expr: &str) -> String {
-        match self {
-            Primitive::Bool => todo!(),
-            Primitive::U8 => format!("Helpers.PrimitivePointer.Unsigned.ReadByte({})", expr),
-            Primitive::S8 => format!("Helpers.PrimitivePointer.Signed.ReadByte({})", expr),
-            Primitive::U16 => format!("Helpers.PrimitivePointer.Unsigned.ReadShort({})", expr),
-            Primitive::S16 => format!("Helpers.PrimitivePointer.Signed.ReadShort({})", expr),
-            Primitive::U32 => format!("Helpers.PrimitivePointer.Unsigned.ReadInt({})", expr),
-            Primitive::S32 => format!("Helpers.PrimitivePointer.Signed.ReadInt({})", expr),
-            Primitive::U64 => format!("Helpers.PrimitivePointer.Unsigned.ReadLong({})", expr),
-            Primitive::S64 => format!("Helpers.PrimitivePointer.Signed.ReadLong({})", expr),
-            Primitive::Float => format!("Helpers.PrimitivePointer.ReadFloat({})", expr),
-            Primitive::Double => format!("Helpers.PrimitivePointer.ReadDouble({})", expr),
-        }
-    }
-}
-
 pub(crate) fn generate_iterator_helpers(
     f: &mut dyn Printer,
     iter: &Handle<AbstractIterator<Validated>>,
@@ -141,7 +119,9 @@ pub(crate) fn generate_iterator_helpers(
                     match &iter.item_type {
                         IteratorItemType::Primitive(x) => f.writeln(&format!(
                             "builder.Add({});",
-                            x.convert_primitive_pointer("itRawValue")
+                            PrimitiveRef::new(*x)
+                                .convert_to_dotnet("itRawValue")
+                                .unwrap()
                         )),
                         IteratorItemType::Struct(x) => {
                             let conversion = x

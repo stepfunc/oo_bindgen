@@ -14,6 +14,10 @@ impl Boolean {
         }
     }
 
+    pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: bool) -> jni::objects::JObject<'a> {
+        unimplemented!()
+    }
+
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> bool {
         env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Boolean), &[]).unwrap()
             .z().unwrap()
@@ -32,6 +36,10 @@ impl Byte {
             _class: env.new_global_ref(class).unwrap(),
             value_method:env.get_method_id(class, "byteValue", "()B").map(|mid| mid.into_inner().into()).expect("Unable to find Byte::byteValue"),
         }
+    }
+
+    pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: i8) -> jni::objects::JObject<'a> {
+        unimplemented!()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i8 {
@@ -54,6 +62,10 @@ impl Short {
         }
     }
 
+    pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: i16) -> jni::objects::JObject<'a> {
+        unimplemented!()
+    }
+
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i16 {
         env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Short), &[]).unwrap()
             .s().unwrap()
@@ -61,17 +73,23 @@ impl Short {
 }
 
 pub(crate) struct Integer {
-    _class: jni::objects::GlobalRef,
+    class: jni::objects::GlobalRef,
     value_method: jni::objects::JMethodID<'static>,
+    constructor: jni::objects::JMethodID<'static>,
 }
 
 impl Integer {
     fn init(env: &jni::JNIEnv) -> Self {
         let class = env.find_class("Ljava/lang/Integer;").expect("Unable to find java/lang/Integer class");
         Self {
-            _class: env.new_global_ref(class).unwrap(),
+            class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "intValue", "()I").map(|mid| mid.into_inner().into()).expect("Unable to find Integer::intValue"),
+            constructor: env.get_method_id(class, "<init>", "(I)V").map(|mid| mid.into_inner().into()).expect("Unable to find Integer::<init>"),
         }
+    }
+
+    pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: i32) -> jni::objects::JObject<'a> {
+        env.new_object_unchecked(&self.class, self.constructor.into(), &[value.into()]).unwrap()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i32 {
@@ -95,6 +113,10 @@ impl Long {
         }
     }
 
+    pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: i64) -> jni::objects::JObject<'a> {
+        unimplemented!()
+    }
+
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i64 {
         env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Long), &[]).unwrap()
             .j().unwrap()
@@ -114,6 +136,10 @@ impl Float {
             _class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "floatValue", "()F").map(|mid| mid.into_inner().into()).expect("Unable to find Float::floatValue"),
         }
+    }
+
+    pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: f32) -> jni::objects::JObject<'a> {
+        unimplemented!()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f32 {
@@ -137,6 +163,10 @@ impl Double {
         }
     }
 
+    pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: f64) -> jni::objects::JObject<'a> {
+        unimplemented!()
+    }
+
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f64 {
         env.call_method_unchecked(obj, self.value_method, JavaType::Primitive(Primitive::Double), &[]).unwrap()
             .d().unwrap()
@@ -145,13 +175,13 @@ impl Double {
 
 
 pub(crate) struct Primitives {
-    boolean: Boolean,
-    byte: Byte,
-    short: Short,
-    integer: Integer,
-    long: Long,
-    float: Float,
-    double: Double,
+    pub(crate) boolean: Boolean,
+    pub(crate) byte: Byte,
+    pub(crate) short: Short,
+    pub(crate) integer: Integer,
+    pub(crate) long: Long,
+    pub(crate) float: Float,
+    pub(crate) double: Double,
 }
 
 impl Primitives {

@@ -711,12 +711,9 @@ impl LibraryBuilder {
                 self.check_class_declaration(&x.iter_class)?;
                 self.check_function(&x.next_function)?;
                 match &x.item_type {
-                    IteratorItemType::Struct(x) => {
-                        self.check_struct_declaration(&x.declaration())
-                    }
-                    IteratorItemType::Primitive(_) => Ok(())
+                    IteratorItemType::Struct(x) => self.check_struct_declaration(&x.declaration()),
+                    IteratorItemType::Primitive(_) => Ok(()),
                 }
-
             }
             Statement::CollectionDeclaration(x) => {
                 self.check_class_declaration(&x.collection_class)?;

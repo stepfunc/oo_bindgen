@@ -119,13 +119,15 @@ impl JavaType for StructDeclarationHandle {
 impl JavaType for IteratorItemType {
     fn as_java_primitive(&self) -> String {
         match self {
-            IteratorItemType::StructRef(x) => x.as_java_primitive(),
+            IteratorItemType::Struct(x) => x.as_java_primitive(),
+            IteratorItemType::Primitive(x) => x.as_java_primitive(),
         }
     }
 
     fn as_java_object(&self) -> String {
         match self {
-            IteratorItemType::StructRef(x) => x.as_java_object(),
+            IteratorItemType::Struct(x) => x.as_java_object(),
+            IteratorItemType::Primitive(x) => x.as_java_object(),
         }
     }
 }
@@ -314,6 +316,17 @@ impl JavaType for CallbackReturnValue {
     }
 }
 
+/// we always use the Boxed form since it's an optional (reference) of a primitive
+impl JavaType for PrimitiveRef {
+    fn as_java_primitive(&self) -> String {
+        self.inner.as_java_object()
+    }
+
+    fn as_java_object(&self) -> String {
+        self.inner.as_java_object()
+    }
+}
+
 impl JavaType for FunctionReturnValue {
     fn as_java_primitive(&self) -> String {
         match self {
@@ -322,6 +335,7 @@ impl JavaType for FunctionReturnValue {
             Self::ClassRef(x) => x.as_java_primitive(),
             Self::Struct(x) => x.as_java_primitive(),
             Self::StructRef(x) => x.untyped().as_java_primitive(),
+            Self::PrimitiveRef(x) => x.as_java_primitive(),
         }
     }
 
@@ -332,6 +346,7 @@ impl JavaType for FunctionReturnValue {
             Self::ClassRef(x) => x.as_java_object(),
             Self::Struct(x) => x.as_java_object(),
             Self::StructRef(x) => x.untyped().as_java_object(),
+            Self::PrimitiveRef(x) => x.as_java_object(),
         }
     }
 }

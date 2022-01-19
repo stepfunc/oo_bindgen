@@ -56,6 +56,10 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("./copy/collection.rs"))?;
 
+    filename.set_file_name("pointers.rs");
+    let mut f = FilePrinter::new(&filename)?;
+    f.write(include_str!("./copy/pointers.rs"))?;
+
     filename.set_file_name("util.rs");
     let mut f = FilePrinter::new(&filename)?;
     f.write(include_str!("copy/util.rs"))?;
@@ -107,12 +111,17 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod classes;")?;
     f.writeln("mod enums;")?;
     f.writeln("mod collection;")?;
+    f.writeln("mod pointers;")?;
     f.writeln("mod structs;")?;
     f.writeln("mod interfaces;")?;
     f.writeln("mod exceptions;")?;
     f.writeln("mod unsigned;")?;
     f.writeln("mod util;")?;
     f.newline()?;
+
+    f.writeln("use crate::pointers::CreateObject;")?;
+    f.newline()?;
+
     // Create cache
     f.writeln("struct JCache")?;
     blocked(f, |f| {
@@ -246,8 +255,19 @@ fn write_iterator_conversion(
             config.ffi_name, iter.iter_class.settings.c_ffi_prefix, iter.next_function.name
         ))?;
         indented(f, |f| {
-            if let Some(conversion) = iter.item_type.maybe_convert("next") {
-                f.writeln(&format!("let next = _env.auto_local({});", conversion))?;
+            match &iter.item_type {
+                IteratorItemType::Primitive(x) => {
+                    let converted = x
+                        .maybe_convert("*next")
+                        .unwrap_or_else(|| "*next".to_string());
+                    f.writeln(&format!("let next = _env.auto_local({});", converted))?;
+                }
+                IteratorItemType::Struct(x) => {
+                    f.writeln(&format!(
+                        "let next = _env.auto_local({});",
+                        x.convert("next")
+                    ))?;
+                }
             }
             f.writeln("_cache.collection.add_to_array_list(&_env, list, next.as_obj().into());")
         })?;

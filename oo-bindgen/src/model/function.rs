@@ -2,14 +2,33 @@ use std::rc::Rc;
 
 use crate::model::*;
 
+/// Used for iterator "next" functions to get an optional primitive
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct PrimitiveRef {
+    pub inner: Primitive,
+}
+
+impl PrimitiveRef {
+    pub fn new(inner: Primitive) -> Self {
+        Self { inner }
+    }
+}
+
 /// types that can be returns from native functions
 #[derive(Debug, Clone, PartialEq)]
 pub enum FunctionReturnValue {
     Basic(BasicType),
+    PrimitiveRef(PrimitiveRef),
     String(StringType),
     ClassRef(ClassDeclarationHandle),
     Struct(UniversalOr<FunctionReturnStructField>),
     StructRef(UniversalDeclarationOr<FunctionReturnStructField>),
+}
+
+impl From<PrimitiveRef> for FunctionReturnValue {
+    fn from(x: PrimitiveRef) -> Self {
+        FunctionReturnValue::PrimitiveRef(x)
+    }
 }
 
 impl From<Primitive> for FunctionReturnValue {

@@ -22,6 +22,10 @@ impl ToCppReturnValue for FunctionReturnValue {
                 //  we don't transform struct refs in the wrappers
                 expr
             }
+            FunctionReturnValue::PrimitiveRef(_) => {
+                // point to a primitive same in C++
+                expr
+            }
         }
     }
 
@@ -32,6 +36,7 @@ impl ToCppReturnValue for FunctionReturnValue {
             FunctionReturnValue::ClassRef(_) => false,
             FunctionReturnValue::Struct(_) => true,
             FunctionReturnValue::StructRef(_) => false,
+            FunctionReturnValue::PrimitiveRef(_) => false,
         }
     }
 }

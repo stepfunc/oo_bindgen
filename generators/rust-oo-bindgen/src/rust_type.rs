@@ -456,6 +456,16 @@ impl RustType for FunctionArgument {
     }
 }
 
+impl LifetimeInfo for PrimitiveRef {
+    fn rust_requires_lifetime(&self) -> bool {
+        false
+    }
+
+    fn c_requires_lifetime(&self) -> bool {
+        false
+    }
+}
+
 impl LifetimeInfo for FunctionReturnValue {
     fn rust_requires_lifetime(&self) -> bool {
         match self {
@@ -464,6 +474,7 @@ impl LifetimeInfo for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.rust_requires_lifetime(),
             FunctionReturnValue::Struct(x) => x.rust_requires_lifetime(),
             FunctionReturnValue::StructRef(x) => x.untyped().rust_requires_lifetime(),
+            FunctionReturnValue::PrimitiveRef(x) => x.rust_requires_lifetime(),
         }
     }
 
@@ -474,7 +485,26 @@ impl LifetimeInfo for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.c_requires_lifetime(),
             FunctionReturnValue::Struct(x) => x.c_requires_lifetime(),
             FunctionReturnValue::StructRef(x) => x.untyped().c_requires_lifetime(),
+            FunctionReturnValue::PrimitiveRef(x) => x.c_requires_lifetime(),
         }
+    }
+}
+
+impl RustType for PrimitiveRef {
+    fn as_rust_type(&self) -> String {
+        format!("*const {}", self.inner.as_rust_type())
+    }
+
+    fn as_c_type(&self) -> String {
+        format!("*const {}", self.inner.as_rust_type())
+    }
+
+    fn is_copyable(&self) -> bool {
+        true
+    }
+
+    fn conversion(&self) -> Option<TypeConverter> {
+        None
     }
 }
 
@@ -486,6 +516,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.as_rust_type(),
             FunctionReturnValue::Struct(x) => x.as_rust_type(),
             FunctionReturnValue::StructRef(x) => x.untyped().as_rust_type(),
+            FunctionReturnValue::PrimitiveRef(x) => x.as_rust_type(),
         }
     }
 
@@ -496,6 +527,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.as_c_type(),
             FunctionReturnValue::Struct(x) => x.as_c_type(),
             FunctionReturnValue::StructRef(x) => x.untyped().as_c_type(),
+            FunctionReturnValue::PrimitiveRef(x) => x.as_c_type(),
         }
     }
 
@@ -506,6 +538,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.is_copyable(),
             FunctionReturnValue::Struct(x) => x.is_copyable(),
             FunctionReturnValue::StructRef(x) => x.untyped().is_copyable(),
+            FunctionReturnValue::PrimitiveRef(x) => x.is_copyable(),
         }
     }
 
@@ -516,6 +549,7 @@ impl RustType for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => x.conversion(),
             FunctionReturnValue::Struct(x) => x.conversion(),
             FunctionReturnValue::StructRef(x) => x.untyped().conversion(),
+            FunctionReturnValue::PrimitiveRef(x) => x.conversion(),
         }
     }
 }

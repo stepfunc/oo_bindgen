@@ -19,6 +19,7 @@ set(c_test_files
         c_tests/error_tests.c
         c_tests/duration_tests.c
         c_tests/iterator_tests.c
+        c_tests/primitive_iterator_tests.c
         c_tests/string_tests.c
         c_tests/structure_tests.c
         c_tests/universal_tests.c
@@ -34,6 +35,7 @@ set(cpp_test_files
         cpp_tests/error_tests.cpp
         cpp_tests/duration_tests.cpp
         cpp_tests/iterator_tests.cpp
+        cpp_tests/primitive_iterator_tests.cpp
         cpp_tests/string_tests.cpp
         cpp_tests/structure_tests.cpp
         cpp_tests/thread_tests.cpp

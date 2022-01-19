@@ -171,6 +171,12 @@ impl MaybeConvertibleToJni for CallbackArgument {
     }
 }
 
+impl MaybeConvertibleToJni for PrimitiveRef {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
+        Some(format!("{}.create_inner_object(&_env)", expr))
+    }
+}
+
 impl MaybeConvertibleToJni for FunctionReturnValue {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
@@ -179,6 +185,7 @@ impl MaybeConvertibleToJni for FunctionReturnValue {
             Self::ClassRef(x) => x.maybe_convert(expr),
             Self::Struct(x) => x.maybe_convert(expr),
             Self::StructRef(x) => x.untyped().maybe_convert(expr),
+            Self::PrimitiveRef(x) => x.maybe_convert(expr),
         }
     }
 }
@@ -186,7 +193,8 @@ impl MaybeConvertibleToJni for FunctionReturnValue {
 impl MaybeConvertibleToJni for IteratorItemType {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            IteratorItemType::StructRef(x) => x.maybe_convert(expr),
+            IteratorItemType::Struct(x) => x.maybe_convert(expr),
+            IteratorItemType::Primitive(x) => x.maybe_convert(expr),
         }
     }
 }

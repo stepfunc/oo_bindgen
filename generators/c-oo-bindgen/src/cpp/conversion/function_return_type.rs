@@ -17,6 +17,7 @@ impl CppFunctionReturnType for OptionalReturnType<FunctionReturnValue, Validated
                 FunctionReturnValue::ClassRef(x) => x.core_cpp_type(),
                 FunctionReturnValue::Struct(x) => x.core_cpp_type(),
                 FunctionReturnValue::StructRef(x) => pointer(x.untyped().core_cpp_type()),
+                FunctionReturnValue::PrimitiveRef(x) => pointer(x.inner.core_cpp_type()),
             },
         }
     }

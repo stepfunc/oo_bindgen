@@ -62,6 +62,7 @@ impl CType for FunctionReturnValue {
             FunctionReturnValue::ClassRef(x) => pointer(x).to_c_type(),
             FunctionReturnValue::Struct(x) => x.to_c_type(),
             FunctionReturnValue::StructRef(x) => pointer(x.untyped()).to_c_type(),
+            FunctionReturnValue::PrimitiveRef(x) => pointer(&x.inner).to_c_type(),
         }
     }
 }
@@ -140,7 +141,8 @@ where
 impl CType for IteratorItemType {
     fn to_c_type(&self) -> String {
         match self {
-            IteratorItemType::StructRef(x) => x.to_c_type(),
+            IteratorItemType::Struct(x) => x.to_c_type(),
+            IteratorItemType::Primitive(x) => pointer(x).to_c_type(),
         }
     }
 }

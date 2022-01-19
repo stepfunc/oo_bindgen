@@ -13,6 +13,8 @@ mod integer;
 mod iterator;
 mod lifetime;
 mod opaque_struct;
+mod primitive_iterator;
+mod primitive_pointer;
 mod strings;
 mod structure;
 mod thread_class;
@@ -67,6 +69,8 @@ pub fn build_lib() -> BackTraced<Library> {
     integer::define(&mut builder)?;
     iterator::define(&mut builder)?;
     opaque_struct::define(&mut builder)?;
+    primitive_iterator::define(&mut builder)?;
+    primitive_pointer::define(&mut builder)?;
     strings::define(&mut builder)?;
     lifetime::define(&mut builder)?;
     collection::define(&mut builder)?;

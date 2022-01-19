@@ -120,7 +120,8 @@ where
 impl CoreCppType for IteratorItemType {
     fn core_cpp_type(&self) -> String {
         match self {
-            IteratorItemType::StructRef(x) => x.core_cpp_type(),
+            IteratorItemType::Struct(x) => x.core_cpp_type(),
+            IteratorItemType::Primitive(x) => x.core_cpp_type(),
         }
     }
 }

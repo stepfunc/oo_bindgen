@@ -711,11 +711,9 @@ impl LibraryBuilder {
                 self.check_class_declaration(&x.iter_class)?;
                 self.check_function(&x.next_function)?;
                 match &x.item_type {
-                    IteratorItemType::StructRef(x) => {
-                        self.check_struct_declaration(&x.declaration())?;
-                    }
+                    IteratorItemType::Struct(x) => self.check_struct_declaration(&x.declaration()),
+                    IteratorItemType::Primitive(_) => Ok(()),
                 }
-                Ok(())
             }
             Statement::CollectionDeclaration(x) => {
                 self.check_class_declaration(&x.collection_class)?;
@@ -833,6 +831,7 @@ impl LibraryBuilder {
     fn check_function_return_type(&self, value: &FunctionReturnValue) -> BindResult<()> {
         match value {
             FunctionReturnValue::Basic(x) => self.check_basic_type(x),
+            FunctionReturnValue::PrimitiveRef(_) => Ok(()),
             FunctionReturnValue::String(_) => Ok(()),
             FunctionReturnValue::ClassRef(x) => self.check_class_declaration(x),
             FunctionReturnValue::Struct(x) => self.check_struct_declaration(&x.declaration()),

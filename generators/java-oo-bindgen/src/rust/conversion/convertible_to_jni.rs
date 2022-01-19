@@ -171,9 +171,9 @@ impl MaybeConvertibleToJni for CallbackArgument {
     }
 }
 
-impl ConvertibleToJni for PrimitiveRef {
-    fn convert(&self, _expr: &str) -> String {
-        todo!()
+impl MaybeConvertibleToJni for PrimitiveRef {
+    fn maybe_convert(&self, expr: &str) -> Option<String> {
+        Some(format!("{}.create_inner_object(&_env)", expr))
     }
 }
 

@@ -34,65 +34,94 @@ namespace Helpers
     }
 
     internal static class PrimitivePointer
-    {
-        internal static float ReadFloat(IntPtr x)
-        {
-            var bytes = new byte[4];
-            Marshal.Copy(x, bytes, 0, 4);
-            return BitConverter.ToSingle(bytes, 0);
-        }
+   {
+       internal static bool ReadBool(IntPtr x)
+       {
+           return Unsigned.ReadByte(x) != 0;
+       }
 
-        internal static double ReadDouble(IntPtr x)
-        {
-            var bytes = new byte[8];
-            Marshal.Copy(x, bytes, 0, 8);
-            return BitConverter.ToDouble(bytes, 0);
-        }
+       internal static float ReadFloat(IntPtr x)
+       {
+           if (x == IntPtr.Zero)
+           {
+               throw new ArgumentException("IntPtr cannot be zero");
+           }
+           var bytes = new byte[4];
+           Marshal.Copy(x, bytes, 0, 4);
+           return BitConverter.ToSingle(bytes, 0);
+       }
 
-        internal static class Signed
-        {
-            internal static sbyte ReadByte(IntPtr x)
-            {
-                return unchecked((sbyte)Unsigned.ReadByte(x));
-            }
+       internal static double ReadDouble(IntPtr x)
+       {
+           if (x == IntPtr.Zero)
+           {
+               throw new ArgumentException("IntPtr cannot be zero");
+           }
+           var bytes = new byte[8];
+           Marshal.Copy(x, bytes, 0, 8);
+           return BitConverter.ToDouble(bytes, 0);
+       }
 
-            internal static short ReadShort(IntPtr x)
-            {
-                return Marshal.ReadInt16(x);
-            }
+       internal static class Signed
+       {
+           internal static sbyte ReadByte(IntPtr x)
+           {
+               return unchecked((sbyte)Unsigned.ReadByte(x));
+           }
 
-            internal static int ReadInt(IntPtr x)
-            {
-                return Marshal.ReadInt32(x);
-            }
+           internal static short ReadShort(IntPtr x)
+           {
+               if (x == IntPtr.Zero)
+               {
+                   throw new ArgumentException("IntPtr cannot be zero");
+               }
+               return Marshal.ReadInt16(x);
+           }
 
-            internal static long ReadLong(IntPtr x)
-            {
-                return Marshal.ReadInt64(x);
-            }
-        }
+           internal static int ReadInt(IntPtr x)
+           {
+               if (x == IntPtr.Zero)
+               {
+                   throw new ArgumentException("IntPtr cannot be zero");
+               }
+               return Marshal.ReadInt32(x);
+           }
 
-        internal static class Unsigned
-        {
-            internal static byte ReadByte(IntPtr x)
-            {
-                return Marshal.ReadByte(x);
-            }
+           internal static long ReadLong(IntPtr x)
+           {
+               if (x == IntPtr.Zero)
+               {
+                   throw new ArgumentException("IntPtr cannot be zero");
+               }
+               return Marshal.ReadInt64(x);
+           }
+       }
 
-            internal static ushort ReadShort(IntPtr x)
-            {
-                return unchecked((ushort)Signed.ReadShort(x));
-            }
+       internal static class Unsigned
+       {
+           internal static byte ReadByte(IntPtr x)
+           {
+               if(x == IntPtr.Zero)
+               {
+                   throw new ArgumentException("IntPtr cannot be zero");
+               }
+               return Marshal.ReadByte(x);
+           }
 
-            internal static uint ReadInt(IntPtr x)
-            {
-                return unchecked((uint)Signed.ReadInt(x));
-            }
+           internal static ushort ReadShort(IntPtr x)
+           {
+               return unchecked((ushort)Signed.ReadShort(x));
+           }
 
-            internal static ulong ReadLong(IntPtr x)
-            {
-                return unchecked((ulong)Signed.ReadLong(x));
-            }
-        }
-    }
+           internal static uint ReadInt(IntPtr x)
+           {
+               return unchecked((uint)Signed.ReadInt(x));
+           }
+
+           internal static ulong ReadLong(IntPtr x)
+           {
+               return unchecked((ulong)Signed.ReadLong(x));
+           }
+       }
+   }
 }

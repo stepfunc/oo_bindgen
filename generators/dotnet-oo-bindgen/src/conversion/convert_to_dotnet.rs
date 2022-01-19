@@ -164,8 +164,41 @@ impl ConvertToDotNet for CallbackArgument {
 }
 
 impl ConvertToDotNet for PrimitiveRef {
-    fn convert_to_dotnet(&self, _from: &str) -> Option<String> {
-        todo!()
+    fn convert_to_dotnet(&self, expr: &str) -> Option<String> {
+        match self.inner {
+            Primitive::Bool => Some(format!("Helpers.PrimitivePointer.ReadBool({})", expr)),
+            Primitive::U8 => Some(format!(
+                "Helpers.PrimitivePointer.Unsigned.ReadByte({})",
+                expr
+            )),
+            Primitive::S8 => Some(format!(
+                "Helpers.PrimitivePointer.Signed.ReadByte({})",
+                expr
+            )),
+            Primitive::U16 => Some(format!(
+                "Helpers.PrimitivePointer.Unsigned.ReadShort({})",
+                expr
+            )),
+            Primitive::S16 => Some(format!(
+                "Helpers.PrimitivePointer.Signed.ReadShort({})",
+                expr
+            )),
+            Primitive::U32 => Some(format!(
+                "Helpers.PrimitivePointer.Unsigned.ReadInt({})",
+                expr
+            )),
+            Primitive::S32 => Some(format!("Helpers.PrimitivePointer.Signed.ReadInt({})", expr)),
+            Primitive::U64 => Some(format!(
+                "Helpers.PrimitivePointer.Unsigned.ReadLong({})",
+                expr
+            )),
+            Primitive::S64 => Some(format!(
+                "Helpers.PrimitivePointer.Signed.ReadLong({})",
+                expr
+            )),
+            Primitive::Float => Some(format!("Helpers.PrimitivePointer.ReadFloat({})", expr)),
+            Primitive::Double => Some(format!("Helpers.PrimitivePointer.ReadDouble({})", expr)),
+        }
     }
 }
 

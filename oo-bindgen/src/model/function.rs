@@ -9,7 +9,7 @@ pub struct PrimitiveRef {
 }
 
 impl PrimitiveRef {
-    pub(crate) fn new(inner: Primitive) -> Self {
+    pub fn new(inner: Primitive) -> Self {
         Self { inner }
     }
 }
@@ -23,6 +23,12 @@ pub enum FunctionReturnValue {
     ClassRef(ClassDeclarationHandle),
     Struct(UniversalOr<FunctionReturnStructField>),
     StructRef(UniversalDeclarationOr<FunctionReturnStructField>),
+}
+
+impl From<PrimitiveRef> for FunctionReturnValue {
+    fn from(x: PrimitiveRef) -> Self {
+        FunctionReturnValue::PrimitiveRef(x)
+    }
 }
 
 impl From<Primitive> for FunctionReturnValue {

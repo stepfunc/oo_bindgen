@@ -339,6 +339,13 @@ fn write_enum_definition(
     })
 }
 
+fn get_type_description(item: &IteratorItemType) -> String {
+    match item {
+        IteratorItemType::Primitive(x) => x.to_c_type(),
+        IteratorItemType::Struct(x) => x.name().to_string(),
+    }
+}
+
 fn write_class_declaration(
     f: &mut dyn Printer,
     handle: &ClassDeclarationHandle,
@@ -352,7 +359,10 @@ fn write_class_declaration(
         doxygen(f, |f| {
             doxygen_print(
                 f,
-                &brief(&format!("Iterator of {}", iterator.item_type.name())),
+                &brief(&format!(
+                    "Iterator of {}",
+                    get_type_description(&iterator.item_type)
+                )),
             )
         })?;
     }

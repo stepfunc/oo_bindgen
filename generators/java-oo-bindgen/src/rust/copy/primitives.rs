@@ -1,21 +1,23 @@
 use jni::signature::*;
 
 pub(crate) struct Boolean {
-    _class: jni::objects::GlobalRef,
+    class: jni::objects::GlobalRef,
     value_method: jni::objects::JMethodID<'static>,
+    constructor: jni::objects::JMethodID<'static>,
 }
 
 impl Boolean {
     fn init(env: &jni::JNIEnv) -> Self {
         let class = env.find_class("Ljava/lang/Boolean;").expect("Unable to find java/lang/Boolean class");
         Self {
-            _class: env.new_global_ref(class).unwrap(),
+            class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "booleanValue", "()Z").map(|mid| mid.into_inner().into()).expect("Unable to find Boolean::booleanValue"),
+            constructor: env.get_method_id(class, "<init>", "(Z)V").map(|mid| mid.into_inner().into()).expect("Unable to find Boolean::<init>"),
         }
     }
 
     pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: bool) -> jni::objects::JObject<'a> {
-        unimplemented!()
+        env.new_object_unchecked(&self.class, self.constructor.into(), &[value.into()]).unwrap()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> bool {
@@ -25,21 +27,23 @@ impl Boolean {
 }
 
 pub(crate) struct Byte {
-    _class: jni::objects::GlobalRef,
+    class: jni::objects::GlobalRef,
     value_method: jni::objects::JMethodID<'static>,
+    constructor: jni::objects::JMethodID<'static>,
 }
 
 impl Byte {
     fn init(env: &jni::JNIEnv) -> Self {
         let class = env.find_class("Ljava/lang/Byte;").expect("Unable to find java/lang/Byte class");
         Self {
-            _class: env.new_global_ref(class).unwrap(),
+            class: env.new_global_ref(class).unwrap(),
             value_method:env.get_method_id(class, "byteValue", "()B").map(|mid| mid.into_inner().into()).expect("Unable to find Byte::byteValue"),
+            constructor: env.get_method_id(class, "<init>", "(B)V").map(|mid| mid.into_inner().into()).expect("Unable to find Byte::<init>"),
         }
     }
 
     pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: i8) -> jni::objects::JObject<'a> {
-        unimplemented!()
+        env.new_object_unchecked(&self.class, self.constructor.into(), &[value.into()]).unwrap()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i8 {
@@ -49,21 +53,23 @@ impl Byte {
 }
 
 pub(crate) struct Short {
-    _class: jni::objects::GlobalRef,
+    class: jni::objects::GlobalRef,
     value_method: jni::objects::JMethodID<'static>,
+    constructor: jni::objects::JMethodID<'static>,
 }
 
 impl Short {
     fn init(env: &jni::JNIEnv) -> Self {
         let class = env.find_class("Ljava/lang/Short;").expect("Unable to find java/lang/Short class");
         Self {
-            _class: env.new_global_ref(class).unwrap(),
+            class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "shortValue", "()S").map(|mid| mid.into_inner().into()).expect("Unable to find Short::shortValue"),
+            constructor: env.get_method_id(class, "<init>", "(S)V").map(|mid| mid.into_inner().into()).expect("Unable to find Short::<init>"),
         }
     }
 
     pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: i16) -> jni::objects::JObject<'a> {
-        unimplemented!()
+        env.new_object_unchecked(&self.class, self.constructor.into(), &[value.into()]).unwrap()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i16 {
@@ -99,8 +105,9 @@ impl Integer {
 }
 
 pub(crate) struct Long {
-    _class: jni::objects::GlobalRef,
+    class: jni::objects::GlobalRef,
     value_method: jni::objects::JMethodID<'static>,
+    constructor: jni::objects::JMethodID<'static>,
 }
 
 
@@ -108,13 +115,14 @@ impl Long {
     fn init(env: &jni::JNIEnv) -> Self {
         let class = env.find_class("Ljava/lang/Long;").expect("Unable to find java/lang/Long class");
         Self {
-            _class: env.new_global_ref(class).unwrap(),
+            class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find Long::longValue"),
+            constructor: env.get_method_id(class, "<init>", "(J)V").map(|mid| mid.into_inner().into()).expect("Unable to find Long::<init>"),
         }
     }
 
     pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: i64) -> jni::objects::JObject<'a> {
-        unimplemented!()
+        env.new_object_unchecked(&self.class, self.constructor.into(), &[value.into()]).unwrap()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> i64 {
@@ -124,8 +132,9 @@ impl Long {
 }
 
 pub(crate) struct Float {
-    _class: jni::objects::GlobalRef,
+    class: jni::objects::GlobalRef,
     value_method: jni::objects::JMethodID<'static>,
+    constructor: jni::objects::JMethodID<'static>,
 }
 
 
@@ -133,13 +142,14 @@ impl Float {
     fn init(env: &jni::JNIEnv) -> Self {
         let class = env.find_class("Ljava/lang/Float;").expect("Unable to find java/lang/Float class");
         Self {
-            _class: env.new_global_ref(class).unwrap(),
+            class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "floatValue", "()F").map(|mid| mid.into_inner().into()).expect("Unable to find Float::floatValue"),
+            constructor: env.get_method_id(class, "<init>", "(F)V").map(|mid| mid.into_inner().into()).expect("Unable to find Float::<init>"),
         }
     }
 
     pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: f32) -> jni::objects::JObject<'a> {
-        unimplemented!()
+        env.new_object_unchecked(&self.class, self.constructor.into(), &[value.into()]).unwrap()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f32 {
@@ -149,8 +159,9 @@ impl Float {
 }
 
 pub(crate) struct Double {
-    _class: jni::objects::GlobalRef,
+    class: jni::objects::GlobalRef,
     value_method: jni::objects::JMethodID<'static>,
+    constructor: jni::objects::JMethodID<'static>,
 }
 
 
@@ -158,13 +169,14 @@ impl Double {
     fn init(env: &jni::JNIEnv) -> Self {
         let class = env.find_class("Ljava/lang/Double;").expect("Unable to find java/lang/Double class");
         Self {
-            _class: env.new_global_ref(class).unwrap(),
+            class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "doubleValue", "()D").map(|mid| mid.into_inner().into()).expect("Unable to find Double::doubleValue"),
+            constructor: env.get_method_id(class, "<init>", "(D)V").map(|mid| mid.into_inner().into()).expect("Unable to find Float::<init>"),
         }
     }
 
     pub(crate) fn create<'a>(&self, env: &'a jni::JNIEnv, value: f64) -> jni::objects::JObject<'a> {
-        unimplemented!()
+        env.new_object_unchecked(&self.class, self.constructor.into(), &[value.into()]).unwrap()
     }
 
     pub(crate) fn value(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> f64 {

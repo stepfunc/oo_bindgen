@@ -119,9 +119,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("mod util;")?;
     f.newline()?;
 
-    f.writeln("use crate::pointers::CreateObject;")?;
-    f.newline()?;
-
     // Create cache
     f.writeln("struct JCache")?;
     blocked(f, |f| {

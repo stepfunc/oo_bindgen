@@ -173,7 +173,10 @@ impl MaybeConvertibleToJni for CallbackArgument {
 
 impl MaybeConvertibleToJni for PrimitiveRef {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
-        Some(format!("{}.create_inner_object(&_env)", expr))
+        Some(format!(
+            "crate::pointers::CreateObject::create_inner_object(&{}, &_env)",
+            expr
+        ))
     }
 }
 

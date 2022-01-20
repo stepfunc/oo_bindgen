@@ -132,6 +132,14 @@ impl ConvertibleToRust for BasicType {
         }
     }
 
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        match self {
+            BasicType::Primitive(x) => x.to_rust_from_object(expr),
+            BasicType::Duration(x) => x.to_rust_from_object(expr),
+            BasicType::Enum(x) => x.to_rust_from_object(expr),
+        }
+    }
+
     fn call_site(&self, expr: &str) -> Option<String> {
         match self {
             BasicType::Primitive(x) => x.call_site(expr),
@@ -219,6 +227,13 @@ impl ConvertibleToRust for UniversalOr<FunctionArgStructField> {
         }
     }
 
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        match self {
+            UniversalOr::Specific(x) => x.to_rust_from_object(expr),
+            UniversalOr::Universal(x) => x.to_rust_from_object(expr),
+        }
+    }
+
     fn call_site(&self, expr: &str) -> Option<String> {
         match self {
             UniversalOr::Specific(x) => x.call_site(expr),
@@ -253,6 +268,18 @@ impl ConvertibleToRust for FunctionArgument {
         }
     }
 
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        match self {
+            FunctionArgument::Basic(x) => x.to_rust_from_object(expr),
+            FunctionArgument::String(x) => x.to_rust_from_object(expr),
+            FunctionArgument::Collection(x) => x.to_rust_from_object(expr),
+            FunctionArgument::Struct(x) => x.to_rust_from_object(expr),
+            FunctionArgument::StructRef(x) => x.to_rust_from_object(expr),
+            FunctionArgument::ClassRef(x) => x.to_rust_from_object(expr),
+            FunctionArgument::Interface(x) => x.to_rust_from_object(expr),
+        }
+    }
+
     fn call_site(&self, expr: &str) -> Option<String> {
         match self {
             FunctionArgument::Basic(x) => x.call_site(expr),
@@ -274,6 +301,13 @@ impl ConvertibleToRust for CallbackReturnValue {
         }
     }
 
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        match self {
+            CallbackReturnValue::Basic(x) => x.to_rust_from_object(expr),
+            CallbackReturnValue::Struct(x) => x.to_rust_from_object(expr),
+        }
+    }
+
     fn call_site(&self, expr: &str) -> Option<String> {
         match self {
             CallbackReturnValue::Basic(x) => x.call_site(expr),
@@ -292,6 +326,15 @@ impl ConvertibleToRust for FunctionArgStructField {
         }
     }
 
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        match self {
+            FunctionArgStructField::Basic(x) => x.to_rust_from_object(expr),
+            FunctionArgStructField::String(x) => x.to_rust_from_object(expr),
+            FunctionArgStructField::Interface(x) => x.to_rust_from_object(expr),
+            FunctionArgStructField::Struct(x) => x.to_rust_from_object(expr),
+        }
+    }
+
     fn call_site(&self, expr: &str) -> Option<String> {
         match self {
             FunctionArgStructField::Basic(x) => x.call_site(expr),
@@ -307,6 +350,13 @@ impl ConvertibleToRust for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.to_rust(expr),
             UniversalStructField::Struct(x) => x.to_rust(expr),
+        }
+    }
+
+    fn to_rust_from_object(&self, expr: &str) -> Option<String> {
+        match self {
+            UniversalStructField::Basic(x) => x.to_rust_from_object(expr),
+            UniversalStructField::Struct(x) => x.to_rust_from_object(expr),
         }
     }
 

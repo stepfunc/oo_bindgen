@@ -23,36 +23,39 @@ mod structure;
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 const SUPPORTED_PLATFORMS: &[Platform] = &[
-    Platform::WinX64Msvc,
-    Platform::LinuxX64Gnu,
-    Platform::LinuxArm8Gnu,
+    platform::X86_64_PC_WINDOWS_MSVC,
+    platform::X86_64_UNKNOWN_LINUX_GNU,
+    platform::AARCH64_UNKNOWN_LINUX_GNU,
 ];
 
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+    for p in config.platforms.iter() {
+        if !SUPPORTED_PLATFORMS.contains(&p.platform) {
+            println!(
+                "Java generation for {} is not supported. Use at your own risks.",
+                p.platform
+            );
+        }
+    }
+
     fs::create_dir_all(&config.java_output_dir)?;
 
     // Create the pom.xml
     generate_pom(lib, config)?;
 
     // Copy the compiled libraries to the resource folder
+    fs::create_dir_all(config.java_resource_dir())?;
     let mut ffi_name = config.ffi_name.clone();
     ffi_name.push_str("_java");
-    for platform in config
-        .platforms
-        .iter()
-        .filter(|x| SUPPORTED_PLATFORMS.iter().any(|y| *y == x.platform))
-    {
-        let mut target_dir = config.java_resource_dir();
-        target_dir.push(platform.platform.as_string());
-        fs::create_dir_all(&target_dir)?;
+    for p in config.platforms.iter() {
+        let target_dir = config.java_resource_dir().join(p.platform.target_triple);
+        let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
+        let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
 
-        let mut source_file = platform.location.clone();
-        source_file.push(platform.bin_filename(&ffi_name));
-
-        let mut target_file = target_dir.clone();
-        target_file.push(platform.bin_filename(&ffi_name));
-
-        fs::copy(&source_file, &target_file)?;
+        if source_file.exists() {
+            fs::create_dir_all(&target_dir)?;
+            fs::copy(&source_file, &target_file)?;
+        }
     }
 
     // Copy the extra files
@@ -280,37 +283,43 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     let libname = format!("{}_java", config.ffi_name);
                     for platform in config.platforms.iter() {
                         match platform.platform {
-                            Platform::WinX64Msvc => {
+                            platform::X86_64_PC_WINDOWS_MSVC => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
                                         "loaded = loadLibrary(\"{}\", \"{}\", \"dll\");",
-                                        platform.platform.as_string(),
-                                        libname
+                                        platform.platform.target_triple, libname
                                     ))
                                 })?;
                             }
-                            Platform::LinuxX64Gnu => {
+                            platform::X86_64_UNKNOWN_LINUX_GNU => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
                                         "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                        platform.platform.as_string(),
-                                        libname
+                                        platform.platform.target_triple, libname
                                     ))
                                 })?;
                             }
-                            Platform::LinuxArm8Gnu => {
+                            platform::AARCH64_UNKNOWN_LINUX_GNU => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
                                         "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                        platform.platform.as_string(),
-                                        libname
+                                        platform.platform.target_triple, libname
                                     ))
                                 })?;
                             }
-                            _ => (), // Other platforms are not supported
+                            platform::X86_64_APPLE_DARWIN => {
+                                f.writeln("if(!loaded)")?;
+                                blocked(f, |f| {
+                                    f.writeln(&format!(
+                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"dylib\");",
+                                        platform.platform.target_triple, libname
+                                    ))
+                                })?;
+                            }
+                            _ => (), // Other platforms are not supported, but you can load them with XXX_NATIVE_LIB_LOCATION env variable
                         }
                     }
 

@@ -72,7 +72,7 @@ pub struct CBindgenConfig {
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
     let output_dir = config
         .output_dir
-        .join(config.platform_location.platform.as_string());
+        .join(config.platform_location.platform.target_triple);
 
     // Create header file
     let include_path = output_dir.join("include");
@@ -88,25 +88,32 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     // Copy lib files (lib and DLL on Windows, .so on Linux)
     let lib_path = output_dir
         .join("lib")
-        .join(config.platform_location.platform.as_string());
+        .join(config.platform_location.platform.target_triple);
     fs::create_dir_all(&lib_path)?;
 
     let lib_filename = config
         .platform_location
+        .platform
         .static_lib_filename(&config.ffi_name);
     fs::copy(
         config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
 
-    let lib_filename = config.platform_location.dyn_lib_filename(&config.ffi_name);
+    let lib_filename = config
+        .platform_location
+        .platform
+        .dyn_lib_filename(&config.ffi_name);
     fs::copy(
         config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
 
     // Copy DLL on Windows
-    let bin_filename = config.platform_location.bin_filename(&config.ffi_name);
+    let bin_filename = config
+        .platform_location
+        .platform
+        .bin_filename(&config.ffi_name);
     fs::copy(
         config.platform_location.location.join(&bin_filename),
         lib_path.join(&bin_filename),
@@ -140,7 +147,10 @@ fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<
     // Write the logo file
     fs::write(config.output_dir.join("logo.png"), lib.info.logo_png)?;
 
-    let include_path = format!("{}/include", config.platform_location.platform.as_string());
+    let include_path = format!(
+        "{}/include",
+        config.platform_location.platform.target_triple
+    );
 
     // Build C documentation
     fs::create_dir_all(config.output_dir.join("doc").join("c"))?;
@@ -223,7 +233,7 @@ fn generate_cmake_config(
     // Create file
     let cmake_path = config
         .output_dir
-        .join(platform_location.platform.as_string())
+        .join(platform_location.platform.target_triple)
         .join("cmake");
     fs::create_dir_all(&cmake_path)?;
     let filename = cmake_path.join(format!("{}-config.cmake", lib.settings.name));
@@ -247,13 +257,15 @@ fn generate_cmake_config(
     indented(&mut f, |f| {
         f.writeln(&format!(
             "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.as_string(),
-            platform_location.bin_filename(&config.ffi_name)
+            platform_location.platform.target_triple,
+            platform_location.platform.bin_filename(&config.ffi_name)
         ))?;
         f.writeln(&format!(
             "IMPORTED_IMPLIB \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.as_string(),
-            platform_location.dyn_lib_filename(&config.ffi_name)
+            platform_location.platform.target_triple,
+            platform_location
+                .platform
+                .dyn_lib_filename(&config.ffi_name)
         ))?;
         f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
     })?;
@@ -273,8 +285,10 @@ fn generate_cmake_config(
     indented(&mut f, |f| {
         f.writeln(&format!(
             "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.as_string(),
-            platform_location.static_lib_filename(&config.ffi_name)
+            platform_location.platform.target_triple,
+            platform_location
+                .platform
+                .static_lib_filename(&config.ffi_name)
         ))?;
         f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")?;
         f.writeln(&format!(

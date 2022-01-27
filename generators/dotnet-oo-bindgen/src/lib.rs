@@ -69,9 +69,9 @@ mod wrappers;
 pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 const SUPPORTED_PLATFORMS: &[Platform] = &[
-    Platform::WinX64Msvc,
-    Platform::LinuxX64Gnu,
-    Platform::LinuxArm8Gnu,
+    platform::X86_64_PC_WINDOWS_MSVC,
+    platform::X86_64_UNKNOWN_LINUX_GNU,
+    platform::AARCH64_UNKNOWN_LINUX_GNU,
 ];
 
 pub struct DotnetBindgenConfig {
@@ -86,6 +86,15 @@ pub fn generate_dotnet_bindings(
     lib: &Library,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
+    for p in config.platforms.iter() {
+        if !SUPPORTED_PLATFORMS.contains(&p.platform) {
+            println!(
+                ".NET generation for {} is not supported. Use at your own risks.",
+                p.platform
+            );
+        }
+    }
+
     fs::create_dir_all(&config.output_dir)?;
 
     generate_csproj(lib, config)?;
@@ -160,14 +169,10 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("  <ItemGroup>")?;
 
     // Include each compiled FFI lib
-    for p in config
-        .platforms
-        .iter()
-        .filter(|x| SUPPORTED_PLATFORMS.iter().any(|y| *y == x.platform))
-    {
-        let filename = p.bin_filename(&config.ffi_name);
+    for p in config.platforms.iter() {
+        let filename = p.platform.bin_filename(&config.ffi_name);
         let filepath = dunce::canonicalize(p.location.join(&filename))?;
-        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, dotnet_platform_string(p.platform)))?;
+        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, dotnet_platform_string(&p.platform)))?;
     }
 
     // Include the target files to force the copying of DLLs of NuGet packages on .NET Framework
@@ -221,12 +226,10 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
         f.writeln("<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">")?;
         f.writeln("  <ItemGroup>")?;
 
-        for p in config
-            .platforms
-            .iter()
-            .filter(|x| x.platform == Platform::WinX64Msvc)
-        {
-            f.writeln(&format!("    <Content Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(p.platform), p.bin_filename(&config.ffi_name), p.bin_filename(&config.ffi_name), lib.settings.name))?;
+        for p in config.platforms.iter().filter(|x| {
+            x.platform.target_os == OS::Windows && x.platform.target_arch == Arch::X86_64
+        }) {
+            f.writeln(&format!("    <Content Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
         }
 
         f.writeln("  </ItemGroup>")?;
@@ -516,13 +519,14 @@ fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("using System.Collections.Immutable;")
 }
 
-fn dotnet_platform_string(platform: Platform) -> &'static str {
+fn dotnet_platform_string(platform: &Platform) -> String {
     // Names taken from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-    match platform {
-        Platform::WinX64Msvc => "win-x64",
-        Platform::LinuxX64Gnu => "linux-x64",
-        Platform::LinuxArm8Gnu => "linux-arm64",
-        _ => panic!("Unsupported platform"),
+    match *platform {
+        platform::X86_64_PC_WINDOWS_MSVC => "win-x64".to_string(),
+        platform::X86_64_UNKNOWN_LINUX_GNU => "linux-x64".to_string(),
+        platform::AARCH64_UNKNOWN_LINUX_GNU => "linux-arm64".to_string(),
+        platform::X86_64_APPLE_DARWIN => "osx-x64".to_string(),
+        _ => platform.target_triple.to_owned(),
     }
 }
 

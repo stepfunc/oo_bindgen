@@ -526,6 +526,7 @@ fn dotnet_platform_string(platform: &Platform) -> String {
         platform::X86_64_UNKNOWN_LINUX_GNU => "linux-x64".to_string(),
         platform::AARCH64_UNKNOWN_LINUX_GNU => "linux-arm64".to_string(),
         platform::X86_64_APPLE_DARWIN => "osx-x64".to_string(),
+        platform::AARCH64_APPLE_DARWIN => "osx-arm64".to_string(),
         _ => platform.target_triple.to_owned(),
     }
 }

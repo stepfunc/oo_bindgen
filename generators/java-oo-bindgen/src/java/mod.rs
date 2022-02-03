@@ -319,6 +319,15 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                     ))
                                 })?;
                             }
+                            platform::AARCH64_APPLE_DARWIN => {
+                                f.writeln("if(!loaded)")?;
+                                blocked(f, |f| {
+                                    f.writeln(&format!(
+                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"dylib\");",
+                                        platform.platform.target_triple, libname
+                                    ))
+                                })?;
+                            }
                             _ => (), // Other platforms are not supported, but you can load them with XXX_NATIVE_LIB_LOCATION env variable
                         }
                     }
@@ -359,7 +368,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 f.writeln("System.load(tempFilePath.toString());")?;
                 f.writeln("return true;")
             })?;
-            f.writeln("catch(Exception e)")?;
+            f.writeln("catch(Throwable e)")?;
             blocked(f, |f| f.writeln("return false;"))
         })?;
 

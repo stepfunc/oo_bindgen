@@ -28,7 +28,7 @@ static void check_inner_struct(foo_inner_structure_t* x)
 }
 
 static void check_struct(foo_structure_t* x)
-{    
+{
     assert(x->boolean_true == true);
     assert(x->boolean_false == false);
     assert(x->duration_millis == 4200);
@@ -36,16 +36,16 @@ static void check_struct(foo_structure_t* x)
     assert(x->enum_var1 == FOO_STRUCTURE_ENUM_VAR1);
     assert(x->enum_var2 == FOO_STRUCTURE_ENUM_VAR2);
     assert(strcmp("Hello", x->string_hello) == 0);
-    check_inner_struct(&x->inner_structure);           
+    check_inner_struct(&x->inner_structure);
 }
 
 static void test_struct_init()
 {
-    foo_structure_t test = foo_structure_init(foo_inner_structure_init(foo_empty_interface_init(NULL, NULL)));    
+    foo_structure_t test = foo_structure_init(foo_inner_structure_init(foo_empty_interface_init(NULL, NULL)));
     check_struct(&test);
 }
 
 void structure_tests()
-{    
+{
     test_struct_init();
 }

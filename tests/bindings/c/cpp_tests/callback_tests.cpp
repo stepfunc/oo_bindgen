@@ -63,5 +63,5 @@ static void simple_callback_test()
 
 void callback_tests()
 {
-    simple_callback_test();    
+    simple_callback_test();
 }

@@ -39,7 +39,7 @@ static void test_enum_one_to_six()
 
 
 static void test_enum_disjoint_enum_value(foo::EnumDisjoint value, int x)
-{    
+{
     const auto result = foo::EnumEchoFunctions::enum_disjoint_echo(value);
     assert(result == value);
     assert(static_cast<int>(result) == x);
@@ -59,13 +59,13 @@ static void test_enum_single()
 {
     const auto value = foo::EnumSingle::single;
     const auto result = foo::EnumEchoFunctions::enum_single_echo(value);
-    assert(result == value);    
+    assert(result == value);
 }
 
 
 static void test_enum_to_string()
 {
-    assert(strcmp("two", foo::to_string(foo::EnumZeroToFive::two)) == 0);    
+    assert(strcmp("two", foo::to_string(foo::EnumZeroToFive::two)) == 0);
     assert(strcmp("five", foo::to_string(foo::EnumDisjoint::five)) == 0);
     assert(strcmp("single", foo::to_string(foo::EnumSingle::single)) == 0);
     try {
@@ -79,10 +79,10 @@ static void test_enum_to_string()
 }
 
 void enum_tests()
-{    
+{
     test_enum_zero_to_five();
-    test_enum_one_to_six();    
-    test_enum_disjoint();    
-    test_enum_single();    
+    test_enum_one_to_six();
+    test_enum_disjoint();
+    test_enum_single();
     test_enum_to_string();
 }

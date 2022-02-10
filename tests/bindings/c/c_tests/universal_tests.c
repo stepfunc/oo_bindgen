@@ -4,7 +4,6 @@
 
 #include "foo.h"
 
-
 static foo_universal_outer_struct_t increment_fields(foo_universal_outer_struct_t value, void* ctx)
 {
     value.inner.value += 1;
@@ -27,6 +26,6 @@ static void test_universal_interface()
 }
 
 void universal_tests()
-{        
+{
     test_universal_interface();
 }

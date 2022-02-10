@@ -80,7 +80,7 @@ namespace foo.Tests
         {
             using var cbSource = new CallbackSource();
             cbSource.SetInterface(new CallbackFinalizerCounterImpl(counters));
-            cbSource.SetValue(76);            
+            cbSource.SetValue(76);
         }
 
         [Fact]

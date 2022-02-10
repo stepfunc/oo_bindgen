@@ -17,7 +17,7 @@ static void test_echo_seconds(uint64_t value)
 }
 
 static void test_duration_milli_seconds()
-{    
+{
     test_echo_milli_seconds(0);
     test_echo_milli_seconds(2000);
     test_echo_milli_seconds(UINT64_MAX);

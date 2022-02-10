@@ -7,7 +7,7 @@ namespace foo.Tests
     class EmptyInterface : IEmptyInterface {}
 
     public class StructureTest
-    {                       
+    {
         private static void CheckNumbersDefaults(Numbers x)
         {
             Assert.Equal(1u, x.Uint8Value);
@@ -47,7 +47,15 @@ namespace foo.Tests
             CheckStructureDefaults(x);
         }
 
-       
-       
+        [Fact]
+        public void StructureBuilderMethodsTest()
+        {
+            var x = new Structure(new InnerStructure(new EmptyInterface()))
+                .WithBooleanFalse(true) // introducing some chaos
+                .WithBooleanTrue(false);
+
+            Assert.True(x.BooleanFalse);
+            Assert.False(x.BooleanTrue);
+        }
     }
 }

@@ -13,7 +13,7 @@ public:
             assert(values.get() == value);
             ++value;
             ++count;
-        }        
+        }
     }
 };
 

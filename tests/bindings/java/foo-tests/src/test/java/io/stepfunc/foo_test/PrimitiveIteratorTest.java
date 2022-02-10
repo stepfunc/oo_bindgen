@@ -12,7 +12,6 @@ import static org.joou.Unsigned.ubyte;
 import static org.joou.Unsigned.uint;
 
 class PrimitiveIteratorTest {
-
     static class TestRangeReceiver implements RangeReceiver {
         List<org.joou.UInteger> values = new ArrayList<>();
 
@@ -21,8 +20,6 @@ class PrimitiveIteratorTest {
             this.values.addAll(values);
         }
     }
-
-
 
     @Test
     void canReceiveUnsignedInts() {

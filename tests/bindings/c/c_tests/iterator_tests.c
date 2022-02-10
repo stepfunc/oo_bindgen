@@ -54,7 +54,7 @@ void test_callback_with_iterator()
    
     foo_invoke_callback("ABCDE", receiver);
    
-    assert(invoked_count == 1);       
+    assert(invoked_count == 1);
 }
 
 void test_double_iterator_with_lifetime()

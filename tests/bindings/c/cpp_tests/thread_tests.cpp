@@ -15,7 +15,7 @@ struct AddResult {
 class AddHandler : public foo::AddHandler {
     std::shared_ptr<std::promise<AddResult>> result;
 
-public:    
+public:
 
     AddHandler(std::shared_ptr<std::promise<AddResult>> result) : result(result) {}
 
@@ -54,12 +54,12 @@ static void test_async_callbacks()
                 }
             )
         );
-                
+
         {
             tc.update(43);
             auto promise = std::make_shared<std::promise<AddResult>>();
             auto future = promise->get_future();
-            tc.add(4, std::make_unique<AddHandler>(promise));                        
+            tc.add(4, std::make_unique<AddHandler>(promise));
             auto result = future.get();
             assert(!result.is_error);
             assert(result.value == 47);
@@ -85,6 +85,6 @@ static void test_async_callbacks()
 }
 
 void thread_tests()
-{    
+{
     test_async_callbacks();
 }

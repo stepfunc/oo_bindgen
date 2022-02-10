@@ -20,12 +20,12 @@ static void check_numbers_struct(const foo::Numbers& x)
 }
 
 static void check_inner_struct(const foo::InnerStructure& x)
-{    
+{
     check_numbers_struct(x.numbers_field);
 }
 
 static void check_struct(const foo::Structure& x)
-{    
+{
     assert(x.boolean_true == true);
     assert(x.boolean_false == false);
     assert(x.duration_millis == std::chrono::milliseconds(4200));
@@ -33,7 +33,7 @@ static void check_struct(const foo::Structure& x)
     assert(x.enum_var1 == foo::StructureEnum::var1);
     assert(x.enum_var2 == foo::StructureEnum::var2);
     assert(x.string_hello == "Hello");
-    check_inner_struct(x.inner_structure);           
+    check_inner_struct(x.inner_structure);
 }
 
 class EmptyInterface : public foo::EmptyInterface {};
@@ -46,6 +46,6 @@ static void test_struct_init()
 
 
 void structure_tests()
-{    
+{
     test_struct_init();
 }

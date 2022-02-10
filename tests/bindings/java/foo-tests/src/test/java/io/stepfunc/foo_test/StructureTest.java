@@ -46,4 +46,14 @@ public class StructureTest {
         Structure x = new Structure(new InnerStructure(new TestInterface()));
         checkStructure(x);
     }
+
+    @Test
+    public void testStructureBuilderMethods() {
+        Structure x = new Structure(new InnerStructure(new TestInterface()))
+            .withBooleanFalse(true) // introducing some chaos
+            .withBooleanTrue(false);
+
+        assertThat(x.booleanTrue).isFalse();
+        assertThat(x.booleanFalse).isTrue();
+    }
 }

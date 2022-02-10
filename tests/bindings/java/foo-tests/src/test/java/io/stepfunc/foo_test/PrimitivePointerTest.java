@@ -15,7 +15,6 @@ import static org.joou.Unsigned.ubyte;
 import static org.joou.Unsigned.uint;
 
 class PrimitivePointerTest {
-
     @Test
     void canReadBoolean() {
         PrimitivePointers values = new PrimitivePointers();
@@ -47,5 +46,4 @@ class PrimitivePointerTest {
         assertThat(values.getDouble(1e6)).isEqualTo(1e6);
         assertThat(values.getDouble(0)).isEqualTo(0);
     }
-
 }

@@ -38,7 +38,7 @@ static void test_static_method_that_throws()
 
 static void test_defensive_exception_after_move()
 {
-    foo::ClassWithPassword instance(std::string(CORRECT_PASSWORD));    
+    foo::ClassWithPassword instance(std::string(CORRECT_PASSWORD));
     foo::ClassWithPassword other(std::move(instance));
 
     try {

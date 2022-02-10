@@ -7,12 +7,11 @@ using System.Collections.Generic;
 namespace foo.Tests
 {
     public class IteratorTest
-    {               
+    {
         [Fact]
         public void StringIteratorTest()
         {
             List<Byte> values = new List<Byte>();
-
 
             IteratorTestHelper.InvokeCallback("ABCDE", strings => { 
                 foreach(StringIteratorItem item in strings) {
@@ -43,7 +42,5 @@ namespace foo.Tests
             Assert.Equal(values[2], new char[] { 'W', 'o', 'r' });
             Assert.Equal(values[3], new char[] { 'l', 'd', '!' });
         }
-
     }
 }
-

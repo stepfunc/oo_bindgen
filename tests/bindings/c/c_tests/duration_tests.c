@@ -30,5 +30,5 @@ static void test_duration_s()
 void duration_tests()
 {
     test_duration_ms();
-    test_duration_s();    
+    test_duration_s();
 }

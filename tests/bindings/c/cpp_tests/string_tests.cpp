@@ -17,7 +17,7 @@ static void test_english_string()
     assert(strlen(ENGLISH_STRING_1) == string_class.get_length(ENGLISH_STRING_1));
 
     assert(string_class.echo(ENGLISH_STRING_2) == ENGLISH_STRING_2);
-    assert(strlen(ENGLISH_STRING_2) == string_class.get_length(ENGLISH_STRING_2));    
+    assert(strlen(ENGLISH_STRING_2) == string_class.get_length(ENGLISH_STRING_2));
 }
 
 static void test_french_string()

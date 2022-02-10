@@ -10,14 +10,14 @@ namespace foo.Tests
         public void ThrowsBadPassword()
         {
             try
-            {                
+            {
                 ClassWithPassword.GetSpecialValue("hi!");
                 Assert.True(false);
             }
             catch(MyException ex)
             {
                 Assert.Equal(MyError.BadPassword, ex.error);
-            }            
+            }
         }
 
         [Fact]

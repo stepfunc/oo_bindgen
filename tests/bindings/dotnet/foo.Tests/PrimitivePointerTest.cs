@@ -57,5 +57,3 @@ namespace foo.Tests
         }
     }
 }
-
-

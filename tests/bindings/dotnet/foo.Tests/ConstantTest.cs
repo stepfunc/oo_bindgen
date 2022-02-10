@@ -3,7 +3,7 @@ using Xunit;
 using foo;
 
 namespace foo.Tests
-{   
+{
     public class ConstantTests
     {
         [Fact]

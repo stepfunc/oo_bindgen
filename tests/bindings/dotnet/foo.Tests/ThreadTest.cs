@@ -4,9 +4,9 @@ using foo;
 using System.Collections.Generic;
 
 namespace foo.Tests
-{  
+{
     public class ThreadTest
-    {   
+    {
         [Fact]
         public async void AsyncCallbacksWork()
         {

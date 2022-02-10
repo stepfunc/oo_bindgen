@@ -73,5 +73,4 @@ public class CallbackTest {
         public int numConstructorsCalled = 0;
         public int numFinalizersCalled = 0;
     }
-
 }

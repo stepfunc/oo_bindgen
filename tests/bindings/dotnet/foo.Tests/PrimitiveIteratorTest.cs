@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace foo.Tests
 {
     public class PrimitiveIteratorTest
-    {               
+    {
         [Fact]
         public void StringIteratorTest()
         {
@@ -20,7 +20,5 @@ namespace foo.Tests
             Assert.Equal(2u, values[1]);
             Assert.Equal(3u, values[2]);
         }
-
     }
 }
-

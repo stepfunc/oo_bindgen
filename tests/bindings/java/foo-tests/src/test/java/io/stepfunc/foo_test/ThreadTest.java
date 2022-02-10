@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.joou.Unsigned.uint;
 
 class ThreadTest {
-
     @Test
     void testAsynchronousCallbacks() throws Exception {
         List<UInteger> values = new ArrayList<>();
@@ -58,5 +57,4 @@ class ThreadTest {
             tc.shutdown();
         }
     }
-
 }

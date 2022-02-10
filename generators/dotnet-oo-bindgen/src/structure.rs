@@ -7,15 +7,15 @@ pub(crate) fn generate(
 ) -> FormattingResult<()> {
     match st {
         StructType::FunctionArg(x) => {
-            generate_skeleton(f, x, lib, &|f| generate_to_native_conversions(f, x))
+            generate_skeleton(f, x, lib, true, &|f| generate_to_native_conversions(f, x))
         }
         StructType::FunctionReturn(x) => {
-            generate_skeleton(f, x, lib, &|f| generate_to_dotnet_conversions(f, x))
+            generate_skeleton(f, x, lib, false, &|f| generate_to_dotnet_conversions(f, x))
         }
         StructType::CallbackArg(x) => {
-            generate_skeleton(f, x, lib, &|f| generate_to_dotnet_conversions(f, x))
+            generate_skeleton(f, x, lib, false, &|f| generate_to_dotnet_conversions(f, x))
         }
-        StructType::Universal(x) => generate_skeleton(f, x, lib, &|f| {
+        StructType::Universal(x) => generate_skeleton(f, x, lib, true, &|f| {
             generate_to_native_conversions(f, x)?;
             generate_to_dotnet_conversions(f, x)
         }),
@@ -323,6 +323,7 @@ fn generate_skeleton<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
     lib: &Library,
+    generate_builder_methods: bool,
     conversions: &dyn Fn(&mut dyn Printer) -> FormattingResult<()>,
 ) -> FormattingResult<()>
 where
@@ -365,6 +366,33 @@ where
                     field.field_type.get_dotnet_type(),
                     field.name.camel_case()
                 ))?;
+            }
+
+            // Write builder methods
+            if handle.visibility == Visibility::Public && generate_builder_methods {
+                f.newline()?;
+
+                for field in handle.fields() {
+                    documentation(f, |f| {
+                        // Print top-level documentation
+                        xmldoc_print(f, &field.doc)?;
+                        Ok(())
+                    })?;
+
+                    f.writeln(&format!(
+                        "public {} With{}({} value)",
+                        struct_name,
+                        field.name.camel_case(),
+                        field.field_type.get_dotnet_type(),
+                    ))?;
+                    blocked(f, |f| {
+                        f.writeln(&format!(
+                            "this.{} = value;",
+                            field.name.camel_case(),
+                        ))?;
+                        f.writeln("return this;")
+                    })?;
+                }
             }
 
             for c in &handle.initializers {

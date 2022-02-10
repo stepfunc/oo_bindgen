@@ -204,7 +204,7 @@ where
     })
 }
 
-pub(crate) fn generate<T>(f: &mut dyn Printer, st: &Struct<T, Validated>) -> FormattingResult<()>
+pub(crate) fn generate<T>(f: &mut dyn Printer, st: &Struct<T, Validated>, generate_builder_methods: bool) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType + Nullable + IsStruct,
 {
@@ -237,6 +237,30 @@ where
                 field.field_type.as_java_primitive(),
                 field.name.mixed_case()
             ))?;
+        }
+
+        // Write builder methods
+        if st.visibility == Visibility::Public && generate_builder_methods {
+            for field in st.fields() {
+                documentation(f, |f| {
+                    javadoc_print(f, &field.doc)?;
+                    Ok(())
+                })?;
+
+                f.writeln(&format!(
+                    "public {} with{}({} value)",
+                    struct_name,
+                    field.name.camel_case(),
+                    field.field_type.as_java_primitive(),
+                ))?;
+                blocked(f, |f| {
+                    f.writeln(&format!(
+                        "this.{} = value;",
+                        field.name.mixed_case(),
+                    ))?;
+                    f.writeln("return this;")
+                })?;
+            }
         }
 
         for c in &st.initializers {

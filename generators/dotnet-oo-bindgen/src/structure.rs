@@ -386,10 +386,7 @@ where
                         field.field_type.get_dotnet_type(),
                     ))?;
                     blocked(f, |f| {
-                        f.writeln(&format!(
-                            "this.{} = value;",
-                            field.name.camel_case(),
-                        ))?;
+                        f.writeln(&format!("this.{} = value;", field.name.camel_case(),))?;
                         f.writeln("return this;")
                     })?;
                 }

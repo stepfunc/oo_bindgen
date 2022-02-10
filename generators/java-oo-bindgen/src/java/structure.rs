@@ -204,7 +204,11 @@ where
     })
 }
 
-pub(crate) fn generate<T>(f: &mut dyn Printer, st: &Struct<T, Validated>, generate_builder_methods: bool) -> FormattingResult<()>
+pub(crate) fn generate<T>(
+    f: &mut dyn Printer,
+    st: &Struct<T, Validated>,
+    generate_builder_methods: bool,
+) -> FormattingResult<()>
 where
     T: StructFieldType + JavaType + Nullable + IsStruct,
 {
@@ -254,10 +258,7 @@ where
                     field.field_type.as_java_primitive(),
                 ))?;
                 blocked(f, |f| {
-                    f.writeln(&format!(
-                        "this.{} = value;",
-                        field.name.mixed_case(),
-                    ))?;
+                    f.writeln(&format!("this.{} = value;", field.name.mixed_case(),))?;
                     f.writeln("return this;")
                 })?;
             }

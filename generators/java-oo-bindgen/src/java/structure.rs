@@ -58,6 +58,26 @@ where
     }
 }
 
+fn get_default_value_doc(x: &ValidatedDefaultValue) -> String {
+    match x {
+        ValidatedDefaultValue::Bool(x) => x.to_string(),
+        ValidatedDefaultValue::Number(x) => x.to_string(),
+        ValidatedDefaultValue::Duration(DurationType::Milliseconds, x) => {
+            format!("{}ms", x.as_millis())
+        }
+        ValidatedDefaultValue::Duration(DurationType::Seconds, x) => format!("{}s", x.as_secs()),
+        ValidatedDefaultValue::Enum(x, variant) => format!(
+            "{{@link {}#{}}}",
+            x.name.camel_case(),
+            variant.capital_snake_case()
+        ),
+        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::DefaultStruct(x, _, _) => {
+            format!("Default {{@link {}}}", x.name().camel_case())
+        }
+    }
+}
+
 fn write_constructor_docs<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
@@ -68,8 +88,23 @@ where
     T: StructFieldType,
 {
     documentation(f, |f| {
-        f.newline()?;
         javadoc_print(f, &constructor.doc)?;
+
+        if !constructor.values.is_empty() {
+            f.newline()?;
+            f.writeln("<p>Values are initialized to:")?;
+            f.writeln("<ul>")?;
+            for value in constructor.values.iter() {
+                f.writeln(&format!(
+                    "<li> {{@link {}#{}}} : {}</li>",
+                    handle.name().camel_case(),
+                    value.name.mixed_case(),
+                    get_default_value_doc(&value.value)
+                ))?;
+            }
+            f.writeln("</ul><p>")?;
+        }
+
         f.newline()?;
 
         for field in handle.initializer_args(constructor.clone()) {
@@ -79,7 +114,7 @@ where
 
         if write_return_info {
             f.writeln(&format!(
-                "@return initialized {} instance",
+                "@return Initialized {{@link {}}} instance",
                 handle.name().camel_case()
             ))?;
         }

@@ -8,6 +8,13 @@ pub(crate) fn print_cpp_doc(f: &mut dyn Printer, doc: &Doc<Validated>) -> Format
     doxygen_print_generic(f, print_cpp_reference, doc)
 }
 
+pub(crate) fn print_cpp_docstring(
+    f: &mut dyn Printer,
+    docstring: &DocString<Validated>,
+) -> FormattingResult<()> {
+    docstring_print_generic(f, print_cpp_reference, docstring)
+}
+
 pub(crate) fn print_cpp_method_docs(
     f: &mut dyn Printer,
     method: &Method<Validated>,

@@ -218,9 +218,32 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
     }
 }
 
+fn get_default_value_doc(default: &ValidatedDefaultValue) -> String {
+    match default {
+        ValidatedDefaultValue::Bool(x) => format!("@p {}", x),
+        ValidatedDefaultValue::Number(x) => x.to_string(),
+        ValidatedDefaultValue::Duration(DurationType::Milliseconds, x) => {
+            format!("{}ms", x.as_millis())
+        }
+        ValidatedDefaultValue::Duration(DurationType::Seconds, x) => format!("{}s", x.as_secs()),
+        ValidatedDefaultValue::Enum(x, variant) => {
+            format!(
+                "@ref {}_{}_{}",
+                x.settings.c_ffi_prefix.capital_snake_case(),
+                x.name.capital_snake_case(),
+                variant.capital_snake_case()
+            )
+        }
+        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
+            format!("Default @ref {}", handle.to_c_type())
+        }
+    }
+}
+
 fn write_struct_initializer<T>(
     f: &mut dyn Printer,
-    initializer: &Initializer<Validated>,
+    initializer: &Handle<Initializer<Validated>>,
     handle: &Handle<Struct<T, Validated>>,
 ) -> FormattingResult<()>
 where
@@ -232,15 +255,27 @@ where
 
         if !initializer.values.is_empty() {
             f.newline()?;
-            f.writeln("@note")?;
+            f.writeln("@note Values are initialized to:")?;
             for value in initializer.values.iter() {
-                f.writeln(&format!("{} is initialized to {}", value.name, value.value))?;
+                f.writeln(&format!(
+                    "- @ref {}.{} : {}",
+                    handle.to_c_type(),
+                    value.name,
+                    get_default_value_doc(&value.value)
+                ))?;
             }
             f.newline()?;
         }
 
-        f.writeln("@returns ")?;
-        docstring_print(f, &text(&format!("New instance of {}", handle.name())))?;
+        for field in handle.initializer_args(initializer.clone()) {
+            f.writeln(&format!("@param {} ", field.name))?;
+            docstring_print(f, &field.doc.brief)?;
+        }
+
+        f.writeln(&format!(
+            "@returns New instance of @ref {}",
+            handle.to_c_type()
+        ))?;
 
         Ok(())
     })?;

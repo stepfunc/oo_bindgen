@@ -47,6 +47,7 @@ impl PlatformExt for Platform {
         #[allow(clippy::match_like_matches_macro)]
         match self.target_triple {
             "x86_64-pc-windows-msvc" => true,
+            "i686-pc-windows-msvc" => true,
             "x86_64-unknown-linux-gnu" => true,
             "aarch64-unknown-linux-gnu" => true,
             "armv7-unknown-linux-gnueabihf" => true,

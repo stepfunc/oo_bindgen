@@ -109,6 +109,26 @@ where
     })
 }
 
+fn get_default_value_doc(x: &ValidatedDefaultValue) -> String {
+    match x {
+        ValidatedDefaultValue::Bool(x) => x.to_string(),
+        ValidatedDefaultValue::Number(x) => x.to_string(),
+        ValidatedDefaultValue::Duration(DurationType::Milliseconds, x) => {
+            format!("{}ms", x.as_millis())
+        }
+        ValidatedDefaultValue::Duration(DurationType::Seconds, x) => format!("{}s", x.as_secs()),
+        ValidatedDefaultValue::Enum(handle, variant) => format!(
+            "<see cref=\"{}.{}\" />",
+            handle.name.camel_case(),
+            variant.camel_case()
+        ),
+        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::DefaultStruct(x, _, _) => {
+            format!("Default <see cref=\"{}\" />", x.name().camel_case())
+        }
+    }
+}
+
 fn write_constructor_documentation<T>(
     f: &mut dyn Printer,
     handle: &Struct<T, Validated>,
@@ -121,6 +141,25 @@ where
     documentation(f, |f| {
         xmldoc_print(f, &constructor.doc)?;
 
+        if !constructor.values.is_empty() {
+            f.newline()?;
+            f.writeln("<remarks>")?;
+            f.writeln("Default values:")?;
+            f.writeln("<list type=\"bullet\">")?;
+            for init_value in constructor.values.iter() {
+                f.writeln(&format!(
+                    "<item><description><see cref=\"{}.{}\" />: {}</description></item>",
+                    handle.name().camel_case(),
+                    init_value.name.camel_case(),
+                    get_default_value_doc(&init_value.value)
+                ))?;
+            }
+            f.writeln("</list>")?;
+            f.writeln("</remarks>")?;
+        }
+
+        f.newline()?;
+
         for arg in handle.initializer_args(constructor.clone()) {
             f.writeln(&format!("<param name=\"{}\">", arg.name.mixed_case()))?;
             docstring_print(f, &arg.doc.brief)?;
@@ -129,7 +168,7 @@ where
 
         if write_return_info {
             f.writeln(&format!(
-                "<returns> initialized {} instance </returns>",
+                "<returns>Initialized <see cref=\"{}\" /> instance </returns>",
                 handle.name().camel_case()
             ))?;
         }

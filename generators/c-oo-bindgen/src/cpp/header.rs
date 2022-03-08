@@ -4,6 +4,7 @@ use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
 use crate::cpp::conversion::*;
+use crate::cpp::doc::print_cpp_docstring;
 use crate::cpp::doc::{
     print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_constructor_docs, print_cpp_doc,
     print_cpp_future_method_docs, print_cpp_method_docs, print_cpp_return_type_doc,
@@ -498,6 +499,23 @@ fn print_interface(
     f.writeln("};")?;
     f.newline()
 }
+
+fn get_default_value_doc(default: &ValidatedDefaultValue) -> String {
+    match default {
+        ValidatedDefaultValue::Bool(x) => format!("@p {}", x),
+        ValidatedDefaultValue::Number(x) => x.to_string(),
+        ValidatedDefaultValue::Duration(DurationType::Milliseconds, x) => {
+            format!("{}ms", x.as_millis())
+        }
+        ValidatedDefaultValue::Duration(DurationType::Seconds, x) => format!("{}s", x.as_secs()),
+        ValidatedDefaultValue::Enum(x, variant) => format!("{}::{}", x.core_cpp_type(), variant),
+        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
+            format!("Default @ref {}", handle.core_cpp_type())
+        }
+    }
+}
+
 fn print_initializer_definition<T>(
     f: &mut dyn Printer,
     handle: &Handle<Struct<T, Validated>>,
@@ -514,10 +532,31 @@ where
 
     doxygen(f, |f| {
         print_cpp_doc(f, &initializer.doc)?;
-        f.newline()?;
-        for x in initializer.values.iter() {
-            f.writeln(&format!("@note {} is initialized to {}", x.name, x.value))?;
+
+        if !initializer.values.is_empty() {
+            f.newline()?;
+            f.writeln("@note Values are initialized to:")?;
+            for value in initializer.values.iter() {
+                f.writeln(&format!(
+                    "- @ref {}.{} : {}",
+                    handle.core_cpp_type(),
+                    value.name,
+                    get_default_value_doc(&value.value)
+                ))?;
+            }
+            f.newline()?;
         }
+
+        for field in handle.initializer_args(initializer.clone()) {
+            f.writeln(&format!("@param {} ", field.name))?;
+            print_cpp_docstring(f, &field.doc.brief)?;
+        }
+
+        f.writeln(&format!(
+            "@returns New instance of @ref {}",
+            handle.core_cpp_type()
+        ))?;
+
         Ok(())
     })?;
     match initializer.initializer_type {

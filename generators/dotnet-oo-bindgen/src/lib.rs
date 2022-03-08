@@ -553,6 +553,7 @@ fn generate_doxygen(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
             "GENERATE_LATEX = NO",       // No LaTeX
             "HIDE_UNDOC_CLASSES = YES",  // I guess this will help the output
             "ALWAYS_DETAILED_SEC = YES", // Always print detailed section
+            "AUTOLINK_SUPPORT = NO",     // Only link when we explicitly want to
             // Styling
             "HTML_EXTRA_STYLESHEET = doxygen-awesome.css",
             "GENERATE_TREEVIEW = YES",

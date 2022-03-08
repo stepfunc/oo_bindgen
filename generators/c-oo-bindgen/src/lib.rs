@@ -164,7 +164,8 @@ fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<
             // Output customization
             "GENERATE_LATEX = NO",                          // No LaTeX
             "EXTRACT_STATIC = YES",                         // We want all functions
-            "TYPEDEF_HIDES_STRUCT = YES",                   // To avoid a large
+            "TYPEDEF_HIDES_STRUCT = YES",                   // To avoid a large typedef table
+            "AUTOLINK_SUPPORT = NO",                        // Only link when we explicitly want to
             "OPTIMIZE_OUTPUT_FOR_C = YES",                  // I guess this will help the output
             "ALWAYS_DETAILED_SEC = YES",                    // Always print detailed section
             &format!("STRIP_FROM_PATH = {}", include_path), // Remove include path

@@ -70,6 +70,7 @@ pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 const SUPPORTED_PLATFORMS: &[Platform] = &[
     platform::X86_64_PC_WINDOWS_MSVC,
+    platform::I686_PC_WINDOWS_MSVC,
     platform::X86_64_UNKNOWN_LINUX_GNU,
     platform::AARCH64_UNKNOWN_LINUX_GNU,
 ];
@@ -226,10 +227,12 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
         f.writeln("<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">")?;
         f.writeln("  <ItemGroup>")?;
 
-        for p in config.platforms.iter().filter(|x| {
-            x.platform.target_os == OS::Windows && x.platform.target_arch == Arch::X86_64
-        }) {
-            f.writeln(&format!("    <Content Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+        for p in config.platforms.iter() {
+            if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86_64 {
+                f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x64'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+            } else if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86 {
+                f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x86'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+            }
         }
 
         f.writeln("  </ItemGroup>")?;
@@ -523,6 +526,7 @@ fn dotnet_platform_string(platform: &Platform) -> String {
     // Names taken from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
     match *platform {
         platform::X86_64_PC_WINDOWS_MSVC => "win-x64".to_string(),
+        platform::I686_PC_WINDOWS_MSVC => "win-x86".to_string(),
         platform::X86_64_UNKNOWN_LINUX_GNU => "linux-x64".to_string(),
         platform::AARCH64_UNKNOWN_LINUX_GNU => "linux-arm64".to_string(),
         platform::X86_64_APPLE_DARWIN => "osx-x64".to_string(),

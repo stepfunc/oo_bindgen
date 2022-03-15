@@ -24,6 +24,7 @@ const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 const SUPPORTED_PLATFORMS: &[Platform] = &[
     platform::X86_64_PC_WINDOWS_MSVC,
+    platform::I686_PC_WINDOWS_MSVC,
     platform::X86_64_UNKNOWN_LINUX_GNU,
     platform::AARCH64_UNKNOWN_LINUX_GNU,
 ];
@@ -283,7 +284,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     let libname = format!("{}_java", config.ffi_name);
                     for platform in config.platforms.iter() {
                         match platform.platform {
-                            platform::X86_64_PC_WINDOWS_MSVC => {
+                            platform::X86_64_PC_WINDOWS_MSVC | platform::I686_PC_WINDOWS_MSVC => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
@@ -292,7 +293,8 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                     ))
                                 })?;
                             }
-                            platform::X86_64_UNKNOWN_LINUX_GNU => {
+                            platform::X86_64_UNKNOWN_LINUX_GNU
+                            | platform::AARCH64_UNKNOWN_LINUX_GNU => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
@@ -301,25 +303,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                     ))
                                 })?;
                             }
-                            platform::AARCH64_UNKNOWN_LINUX_GNU => {
-                                f.writeln("if(!loaded)")?;
-                                blocked(f, |f| {
-                                    f.writeln(&format!(
-                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                        platform.platform.target_triple, libname
-                                    ))
-                                })?;
-                            }
-                            platform::X86_64_APPLE_DARWIN => {
-                                f.writeln("if(!loaded)")?;
-                                blocked(f, |f| {
-                                    f.writeln(&format!(
-                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"dylib\");",
-                                        platform.platform.target_triple, libname
-                                    ))
-                                })?;
-                            }
-                            platform::AARCH64_APPLE_DARWIN => {
+                            platform::X86_64_APPLE_DARWIN | platform::AARCH64_APPLE_DARWIN => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(

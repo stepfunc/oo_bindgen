@@ -298,6 +298,15 @@ impl FutureMethod<Validated> {
     pub fn arguments(&self) -> impl Iterator<Item = &Arg<FunctionArgument, Validated>> {
         self.native_function.arguments.iter().skip(1)
     }
+
+    pub fn arguments_without_callback(
+        &self,
+    ) -> impl Iterator<Item = &Arg<FunctionArgument, Validated>> {
+        self.arguments().filter(|param| match &param.arg_type {
+            FunctionArgument::Interface(handle) => handle.name != self.future.interface.name,
+            _ => true,
+        })
+    }
 }
 
 impl FutureMethod<Unvalidated> {

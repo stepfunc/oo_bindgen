@@ -354,13 +354,7 @@ fn generate_async_method(
         f.newline()?;
 
         // Print each parameter value
-        for param in method
-            .native_function
-            .arguments
-            .iter()
-            .skip(1)
-            .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
-        {
+        for param in method.arguments_without_callback() {
             f.writeln(&format!("@param {} ", param.name.mixed_case()))?;
             docstring_print(f, &param.doc)?;
         }
@@ -388,11 +382,7 @@ fn generate_async_method(
     ))?;
     f.write(
         &method
-            .native_function
-            .arguments
-            .iter()
-            .skip(1)
-            .filter(|param| !matches!(param.arg_type, FunctionArgument::Interface(_)))
+            .arguments_without_callback()
             .map(|param| {
                 format!(
                     "{} {}",

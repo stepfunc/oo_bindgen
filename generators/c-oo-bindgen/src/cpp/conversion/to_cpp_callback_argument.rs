@@ -31,7 +31,7 @@ impl ToNativeCallbackArgument for CallbackArgument {
     fn to_cpp_callback_argument(&self, expr: String) -> String {
         match self {
             CallbackArgument::Basic(x) => x.to_cpp_callback_argument(expr),
-            CallbackArgument::String(x) => x.to_cpp_callback_argument(expr),
+            CallbackArgument::String(_) => expr,
             CallbackArgument::Iterator(x) => x.to_cpp_struct_field(expr),
             CallbackArgument::Class(x) => x.to_cpp_struct_field(expr),
             CallbackArgument::Struct(x) => x.to_cpp_struct_field(expr),

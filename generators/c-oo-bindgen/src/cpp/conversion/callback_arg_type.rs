@@ -11,7 +11,7 @@ impl CppCallbackArgType for CallbackArgument {
     fn get_cpp_callback_arg_type(&self) -> String {
         match self {
             CallbackArgument::Basic(x) => x.core_cpp_type(),
-            CallbackArgument::String(x) => x.core_cpp_type(),
+            CallbackArgument::String(_) => "const char*".to_string(),
             CallbackArgument::Iterator(x) => mut_ref(x.core_cpp_type()),
             CallbackArgument::Class(x) => mut_ref(x.core_cpp_type()),
             CallbackArgument::Struct(x) => const_ref(x.core_cpp_type()),

@@ -161,6 +161,7 @@ pub(crate) fn generate(
         blocked(f, |f| {
             // Define each delegate type
             for cb in &interface.untyped().callbacks {
+                f.writeln("[UnmanagedFunctionPointer(CallingConvention.Cdecl)]")?; // C calling convetion
                 f.writeln(&format!(
                     "private delegate {} {}_delegate(",
                     cb.return_type.get_native_type(),
@@ -190,6 +191,7 @@ pub(crate) fn generate(
                 ))?;
             }
 
+            f.writeln("[UnmanagedFunctionPointer(CallingConvention.Cdecl)]")?; // C calling convetion
             f.writeln(&format!(
                 "private delegate void {}_delegate(IntPtr arg);",
                 destroy_func_name

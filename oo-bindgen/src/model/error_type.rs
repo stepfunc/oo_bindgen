@@ -51,10 +51,7 @@ where
     }
 
     pub fn get(&self) -> Option<&ErrorType<D>> {
-        match &self.inner {
-            None => None,
-            Some(x) => Some(x),
-        }
+        self.inner.as_ref()
     }
 
     pub fn is_some(&self) -> bool {

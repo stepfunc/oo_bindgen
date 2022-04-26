@@ -51,10 +51,7 @@ where
     D: DocReference,
 {
     pub fn get(&self) -> Option<&ReturnType<T, D>> {
-        match &self.value {
-            None => None,
-            Some(x) => Some(x),
-        }
+        self.value.as_ref()
     }
 
     pub fn is_none(&self) -> bool {

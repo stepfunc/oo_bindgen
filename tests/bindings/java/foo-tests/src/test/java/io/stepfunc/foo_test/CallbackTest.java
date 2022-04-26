@@ -64,7 +64,7 @@ public class CallbackTest {
         }
 
         @Override
-        public void finalize() {
+        protected void finalize() {
             this.counters.numFinalizersCalled++;
         }
     }
@@ -72,25 +72,5 @@ public class CallbackTest {
     static class Counters {
         public int numConstructorsCalled = 0;
         public int numFinalizersCalled = 0;
-    }
-
-    @Test
-    @Disabled // System.gc and System.runFinalization are not deterministic
-    public void CallbackMemoryLeakTest() {
-        final int NUM_RUNS = 1000;
-        final Counters counters = new Counters();
-
-        for(int i = 0; i < NUM_RUNS; i++) {
-            try(CallbackSource cbSource = new CallbackSource()) {
-                cbSource.setInterface(new CallbackFinalizerCounterImpl(counters));
-                cbSource.setValue(uint(76));
-            }
-        }
-
-        System.gc();
-        System.runFinalization();
-
-        assertThat(counters.numConstructorsCalled).isEqualTo(NUM_RUNS);
-        assertThat(counters.numFinalizersCalled).isCloseTo(NUM_RUNS, Percentage.withPercentage(5));
     }
 }

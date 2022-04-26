@@ -17,7 +17,7 @@ namespace foo.Tests
             catch(MyException ex)
             {
                 Assert.Equal(MyError.BadPassword, ex.error);
-            }            
+            }
         }
 
         [Fact]
@@ -27,20 +27,15 @@ namespace foo.Tests
         }
 
         [Fact]
-        public void GetStructThrowsOnBadPassword()
+        public void ValidatePasswordThrowsOnBadPassword()
         {
-            Assert.Throws<MyException>(() => ClassWithPassword.GetStruct("hi!"));
+            Assert.Throws<MyException>(() => ClassWithPassword.ValidatePassword("hi!"));
         }
 
         [Fact]
-        public void GetStructAcceptsGoodPassword()
+        public void ValidatePasswordAcceptsGoodPassword()
         {
-            var result = ClassWithPassword.GetStruct("12345");
-            Assert.Equal(41, result.Test);
-            Assert.Equal(StructureEnum.Var2, result.FirstEnumValue);
-            Assert.Equal(1, result.Int1);
-            Assert.False(result.Bool2);
-            Assert.Equal(StructureEnum.Var2, result.SecondEnumValue);
+            ClassWithPassword.ValidatePassword("12345");
         }
 
         [Fact]
@@ -62,7 +57,7 @@ namespace foo.Tests
             Assert.Throws<MyException>(() => new ClassWithPassword("hi!"));
 
             var secret = new ClassWithPassword("12345");
-            Assert.Equal(42u, secret.GetSpecialValueFromInstance());
+            Assert.Equal(42u, secret.GetSpecialValue());
         }
     }
 }

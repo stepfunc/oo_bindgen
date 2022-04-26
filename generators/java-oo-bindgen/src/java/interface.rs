@@ -1,18 +1,15 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, MixedCase};
-use oo_bindgen::callback::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    interface: &InterfaceHandle,
-    lib: &Library,
+    interface: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
-    let interface_name = interface.name.to_camel_case();
+    let interface_name = interface.name.camel_case();
 
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &interface.doc, lib)
+        javadoc_print(f, &interface.doc)
     })?;
 
     if interface.is_functional() {
@@ -21,28 +18,23 @@ pub(crate) fn generate(
     f.writeln(&format!("public interface {}", interface_name))?;
     blocked(f, |f| {
         // Write each required method
-        for func in interface
-            .callbacks()
-            .filter(|func| func.name != interface.destroy_name)
-        {
+        for func in interface.callbacks.iter() {
             // Documentation
             documentation(f, |f| {
                 // Print top-level documentation
-                javadoc_print(f, &func.doc, lib)?;
+                javadoc_print(f, &func.doc)?;
                 f.newline()?;
 
-                // Print each parameter value
-                for param in &func.parameters {
-                    if let CallbackParameter::Parameter(param) = param {
-                        f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-                        docstring_print(f, &param.doc, lib)?;
-                    }
+                // Print each argument value
+                for arg in &func.arguments {
+                    f.writeln(&format!("@param {} ", arg.name.mixed_case()))?;
+                    docstring_print(f, &arg.doc)?;
                 }
 
                 // Print return value
-                if let ReturnType::Type(_, doc) = &func.return_type {
+                if let Some(doc) = &func.return_type.get_doc() {
                     f.writeln("@return ")?;
-                    docstring_print(f, doc, lib)?;
+                    docstring_print(f, doc)?;
                 }
 
                 Ok(())
@@ -52,19 +44,18 @@ pub(crate) fn generate(
             f.writeln(&format!(
                 "{} {}(",
                 func.return_type.as_java_primitive(),
-                func.name.to_mixed_case()
+                func.name.mixed_case()
             ))?;
             f.write(
                 &func
-                    .parameters
+                    .arguments
                     .iter()
-                    .filter_map(|param| match param {
-                        CallbackParameter::Parameter(param) => Some(format!(
+                    .map(|arg| {
+                        format!(
                             "{} {}",
-                            param.param_type.as_java_primitive(),
-                            param.name.to_mixed_case()
-                        )),
-                        _ => None,
+                            arg.arg_type.as_java_primitive(),
+                            arg.name.mixed_case()
+                        )
                     })
                     .collect::<Vec<String>>()
                     .join(", "),

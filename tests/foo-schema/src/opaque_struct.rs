@@ -1,40 +1,33 @@
-use oo_bindgen::native_function::{ReturnType, Type};
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
-    let opaque_struct = lib.declare_native_struct("OpaqueStruct")?;
-
-    let opaque_struct = lib
-        .define_native_struct(&opaque_struct)?
-        .make_opaque()
-        .add("id", Type::Uint64, "64-bit id")?
-        .doc("Opaque structure")?
-        .build()?;
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
+    let opaque_struct = lib.declare_universal_struct("opaque_struct")?;
 
     let get_id_fn = lib
-        .declare_native_function("opaque_struct_get_id")?
-        .param(
-            "value",
-            Type::StructRef(opaque_struct.declaration.clone()),
-            "struct value",
-        )?
-        .return_type(ReturnType::Type(Type::Uint64, "value of id field".into()))?
+        .define_function("opaque_struct_get_id")?
+        .param("value", opaque_struct.clone(), "struct value")?
+        .returns(Primitive::U64, "value of id field")?
         .doc("Get the id field of the struct")?
+        .build_static("get_id")?;
+
+    let opaque_struct = lib
+        .define_opaque_struct(opaque_struct)?
+        .add("id", Primitive::U64, "64-bit id")?
+        .doc("Opaque structure")?
+        .end_fields()?
         .build()?;
 
     let opaque_struct_magic_init_fn = lib
-        .declare_native_function("opaque_struct_magic_init")?
-        .return_type(ReturnType::Type(
-            Type::Struct(opaque_struct.clone()),
-            "initialized value".into(),
-        ))?
+        .define_function("opaque_struct_magic_init")?
+        .returns(opaque_struct, "initialized value")?
         .doc("Create an OpaqueStruct initialized with a magic id")?
-        .build()?;
+        .build_static("create_magic_value")?;
 
-    lib.define_struct(&opaque_struct)?
-        .method("GetId", &get_id_fn)?
-        .static_method("CreateMagicValue", &opaque_struct_magic_init_fn)?
-        .build();
+    lib.define_static_class("opaque_struct_helpers")?
+        .doc("Helpers for manipulating instances of {struct:opaque_struct}")?
+        .static_method(get_id_fn)?
+        .static_method(opaque_struct_magic_init_fn)?
+        .build()?;
 
     Ok(())
 }

@@ -1,6 +1,6 @@
 package io.stepfunc.foo_test;
 
-import io.stepfunc.foo.StringCollection;
+import io.stepfunc.foo.StringCollectionTestMethods;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -17,10 +17,10 @@ public class CollectionTest {
         strings.add("World!");
         strings.add("Émile");
 
-        assertThat(StringCollection.getSize(strings)).isEqualTo(uint(3));
-        assertThat(StringCollection.getValue(strings, uint(0))).isEqualTo("Hello");
-        assertThat(StringCollection.getValue(strings, uint(1))).isEqualTo("World!");
-        assertThat(StringCollection.getValue(strings, uint(2))).isEqualTo("Émile");
+        assertThat(StringCollectionTestMethods.getSize(strings)).isEqualTo(uint(3));
+        assertThat(StringCollectionTestMethods.getValue(strings, uint(0))).isEqualTo("Hello");
+        assertThat(StringCollectionTestMethods.getValue(strings, uint(1))).isEqualTo("World!");
+        assertThat(StringCollectionTestMethods.getValue(strings, uint(2))).isEqualTo("Émile");
     }
 
     @Test
@@ -30,9 +30,9 @@ public class CollectionTest {
         strings.add("World!");
         strings.add("Émile");
 
-        assertThat(StringCollection.getSizeWithReserve(strings)).isEqualTo(uint(3));
-        assertThat(StringCollection.getValueWithReserve(strings, uint(0))).isEqualTo("Hello");
-        assertThat(StringCollection.getValueWithReserve(strings, uint(1))).isEqualTo("World!");
-        assertThat(StringCollection.getValueWithReserve(strings, uint(2))).isEqualTo("Émile");
+        assertThat(StringCollectionTestMethods.getSizeWithReserve(strings)).isEqualTo(uint(3));
+        assertThat(StringCollectionTestMethods.getValueWithReserve(strings, uint(0))).isEqualTo("Hello");
+        assertThat(StringCollectionTestMethods.getValueWithReserve(strings, uint(1))).isEqualTo("World!");
+        assertThat(StringCollectionTestMethods.getValueWithReserve(strings, uint(2))).isEqualTo("Émile");
     }
 }

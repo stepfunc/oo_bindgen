@@ -21,20 +21,15 @@ public class ErrorTest {
     }
 
     @Test
-    public void GetStructThrowsOnBadPassword() {
+    public void ValidatePasswordThrowsOnBadPassword() {
         assertThatThrownBy(() -> {
-            ClassWithPassword.getStruct("hi!");
+            ClassWithPassword.validatePassword("hi!");
         }).isInstanceOf(MyException.class);
     }
 
     @Test
-    public void GetStructReturnsStruct() {
-        OtherStructure result = ClassWithPassword.getStruct("12345");
-        assertThat(result.test).isEqualTo(ushort(41));
-        assertThat(result.firstEnumValue).isEqualTo(StructureEnum.VAR2);
-        assertThat(result.int1).isEqualTo((short)1);
-        assertThat(result.bool2).isEqualTo(false);
-        assertThat(result.secondEnumValue).isEqualTo(StructureEnum.VAR2);
+    public void ValidatePasswordAcceptsCorrectPassword() {
+        ClassWithPassword.validatePassword("12345");
     }
 
     @Test
@@ -57,6 +52,6 @@ public class ErrorTest {
         }).isInstanceOf(MyException.class);
 
         ClassWithPassword secret = new ClassWithPassword("12345");
-        assertThat(secret.getSpecialValueFromInstance()).isEqualTo(uint(42));
+        assertThat(secret.getSpecialValue()).isEqualTo(uint(42));
     }
 }

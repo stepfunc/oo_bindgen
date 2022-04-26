@@ -1,9 +1,11 @@
-use clap::{App, Arg};
-use oo_bindgen::platforms::*;
-use oo_bindgen::Library;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+use clap::{App, Arg};
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::Library;
 
 pub fn run(settings: BindingBuilderSettings) {
     let matches = App::new("oo-bindgen")
@@ -52,7 +54,7 @@ pub fn run(settings: BindingBuilderSettings) {
         )
         .get_matches();
 
-    let run_tests = !matches.is_present("no-tests");
+    let mut run_tests = !matches.is_present("no-tests");
 
     let run_c = matches.is_present("c");
     let run_dotnet = matches.is_present("dotnet");
@@ -66,30 +68,65 @@ pub fn run(settings: BindingBuilderSettings) {
         .values_of("extra-files")
         .map_or(Vec::new(), |v| v.map(PathBuf::from).collect());
 
+    let mut platforms = PlatformLocations::new();
+    if let Some(package_src) = package_src {
+        for entry in fs::read_dir(package_src).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                if let Some(p) = Platform::find(&entry.file_name().to_string_lossy()) {
+                    platforms.add(p.clone(), entry.path());
+                }
+            }
+        }
+    } else {
+        let current_platform =
+            Platform::guess_current().expect("could not determine current platform");
+        platforms.add(current_platform.clone(), ffi_path());
+
+        if !current_platform.has_official_support() {
+            println!(
+                "WARNING: building for an unsupported platform: {}",
+                current_platform.target_triple
+            );
+            if run_tests {
+                println!("Skipping tests an unsupported platform");
+                run_tests = false;
+            }
+        }
+    }
+
+    assert!(!platforms.is_empty(), "No platforms found!");
+
     if run_c || run_all {
-        let builder = run_builder::<CBindingBuilder>(
+        run_builder::<CBindingBuilder>(
             &settings,
             run_tests,
             package,
-            package_src,
+            &platforms,
             &extra_files,
+            matches.is_present("doxygen"),
         );
-
-        if matches.is_present("doxygen") {
-            builder.build_doxygen();
-        }
     }
     if run_dotnet || run_all {
         run_builder::<DotnetBindingBuilder>(
             &settings,
             run_tests,
             package,
-            package_src,
+            &platforms,
             &extra_files,
+            matches.is_present("doxygen"),
         );
     }
     if run_java || run_all {
-        run_builder::<JavaBindingBuilder>(&settings, run_tests, package, package_src, &extra_files);
+        run_builder::<JavaBindingBuilder>(
+            &settings,
+            run_tests,
+            package,
+            &platforms,
+            &extra_files,
+            false,
+        );
     }
 }
 
@@ -101,49 +138,13 @@ fn run_builder<'a, B: BindingBuilder<'a>>(
     settings: &'a BindingBuilderSettings,
     run_tests: bool,
     package: bool,
-    package_src: Option<&str>,
+    platforms: &'a PlatformLocations,
     extra_files: &[PathBuf],
+    generate_doxygen: bool,
 ) -> B {
-    let mut platforms = PlatformLocations::new();
-    if let Some(package_src) = package_src {
-        let mut check_platform = |platform: Platform| {
-            let platform_path = [package_src, platform.as_string()]
-                .iter()
-                .collect::<PathBuf>();
-            if platform_path.is_dir() {
-                platforms.add(platform, platform_path);
-            }
-        };
-
-        check_platform(Platform::WinX64Msvc);
-        check_platform(Platform::LinuxX64Gnu);
-        check_platform(Platform::LinuxX64Musl);
-        check_platform(Platform::LinuxArm6Gnueabi);
-        check_platform(Platform::LinuxArm6GnueabiHf);
-        check_platform(Platform::LinuxArm7GnueabiHf);
-        check_platform(Platform::LinuxArm8Gnu);
-    } else {
-        platforms.add(
-            Platform::from_target_triple(env!("TARGET_TRIPLE")).expect("Unsupported platform"),
-            ffi_path(),
-        );
-    }
-
-    assert!(!platforms.is_empty(), "No platforms found!");
-
-    let has_dynamic_libs = platforms.has_dynamic_lib();
-
     let mut builder = B::new(settings, platforms, extra_files);
 
-    if B::requires_dynamic_lib() && !has_dynamic_libs {
-        println!(
-            "Skipping {} because it requires dynamic libraries",
-            B::name()
-        );
-        return builder;
-    }
-
-    builder.generate(package);
+    builder.generate(package, generate_doxygen);
 
     if !package {
         if run_tests {
@@ -174,13 +175,12 @@ pub struct BindingBuilderSettings<'a> {
 
 trait BindingBuilder<'a> {
     fn name() -> &'static str;
-    fn requires_dynamic_lib() -> bool;
     fn new(
         settings: &'a BindingBuilderSettings<'a>,
-        platforms: PlatformLocations,
+        platforms: &'a PlatformLocations,
         extra_files: &[PathBuf],
     ) -> Self;
-    fn generate(&mut self, is_packaging: bool);
+    fn generate(&mut self, is_packaging: bool, generate_doxygen: bool);
     fn build(&mut self);
     fn test(&mut self);
     fn package(&mut self);
@@ -188,25 +188,11 @@ trait BindingBuilder<'a> {
 
 struct CBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
-    platforms: PlatformLocations,
+    platforms: &'a PlatformLocations,
     extra_files: Vec<PathBuf>,
 }
 
 impl<'a> CBindingBuilder<'a> {
-    fn build_doxygen(&self) {
-        let config = c_oo_bindgen::CBindgenConfig {
-            output_dir: self.output_dir(),
-            ffi_target_name: self.settings.ffi_target_name.to_owned(),
-            ffi_name: self.settings.ffi_name.to_owned(),
-            is_release: env!("PROFILE") == "release",
-            extra_files: Vec::new(),
-            platform_location: self.platforms.iter().next().unwrap(),
-        };
-
-        c_oo_bindgen::generate_doxygen(self.settings.library, &config)
-            .expect("failed to package C lib");
-    }
-
     fn output_dir(&self) -> PathBuf {
         let mut output_dir = PathBuf::from(self.settings.destination_path);
         output_dir.push("c");
@@ -227,13 +213,9 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         "c"
     }
 
-    fn requires_dynamic_lib() -> bool {
-        false
-    }
-
     fn new(
         settings: &'a BindingBuilderSettings<'a>,
-        platforms: PlatformLocations,
+        platforms: &'a PlatformLocations,
         extra_files: &[PathBuf],
     ) -> Self {
         Self {
@@ -243,7 +225,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self, _is_packaging: bool) {
+    fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
         for platform in self.platforms.iter() {
             let config = c_oo_bindgen::CBindgenConfig {
                 output_dir: self.output_dir(),
@@ -252,6 +234,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
                 is_release: env!("PROFILE") == "release",
                 extra_files: self.extra_files.clone(),
                 platform_location: platform.clone(),
+                generate_doxygen,
             };
 
             c_oo_bindgen::generate_c_package(self.settings.library, &config)
@@ -301,7 +284,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
 
 struct DotnetBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
-    platforms: PlatformLocations,
+    platforms: &'a PlatformLocations,
     extra_files: Vec<PathBuf>,
 }
 
@@ -314,7 +297,7 @@ impl<'a> DotnetBindingBuilder<'a> {
 
     fn build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
-        output_dir.push(self.settings.library.name.to_owned());
+        output_dir.push(self.settings.library.settings.name.to_string());
         output_dir
     }
 }
@@ -324,13 +307,9 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         "dotnet"
     }
 
-    fn requires_dynamic_lib() -> bool {
-        true
-    }
-
     fn new(
         settings: &'a BindingBuilderSettings<'a>,
-        platforms: PlatformLocations,
+        platforms: &'a PlatformLocations,
         extra_files: &[PathBuf],
     ) -> Self {
         Self {
@@ -340,7 +319,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self, _is_packaging: bool) {
+    fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
         // Clear/create generated files
         let build_dir = self.build_dir();
         if build_dir.exists() {
@@ -353,6 +332,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
             ffi_name: self.settings.ffi_name.to_owned(),
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
+            generate_doxygen,
         };
 
         dotnet_oo_bindgen::generate_dotnet_bindings(self.settings.library, &config).unwrap();
@@ -399,7 +379,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
 
 struct JavaBindingBuilder<'a> {
     settings: &'a BindingBuilderSettings<'a>,
-    platforms: PlatformLocations,
+    platforms: &'a PlatformLocations,
     extra_files: Vec<PathBuf>,
 }
 
@@ -412,13 +392,13 @@ impl<'a> JavaBindingBuilder<'a> {
 
     fn java_build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
-        output_dir.push(self.settings.library.name.to_owned());
+        output_dir.push(self.settings.library.settings.name.to_string());
         output_dir
     }
 
     fn rust_build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
-        output_dir.push(format!("{}-jni", self.settings.library.name));
+        output_dir.push(format!("{}-jni", self.settings.library.settings.name));
         output_dir
     }
 
@@ -443,13 +423,9 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         "java"
     }
 
-    fn requires_dynamic_lib() -> bool {
-        true
-    }
-
     fn new(
         settings: &'a BindingBuilderSettings<'a>,
-        platforms: PlatformLocations,
+        platforms: &'a PlatformLocations,
         extra_files: &[PathBuf],
     ) -> Self {
         Self {
@@ -459,7 +435,7 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         }
     }
 
-    fn generate(&mut self, is_packaging: bool) {
+    fn generate(&mut self, is_packaging: bool, _generate_doxygen: bool) {
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
             rust_output_dir: self.rust_build_dir(),
@@ -494,7 +470,7 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
             let target_dir = pathdiff::diff_paths("./target", self.rust_build_dir()).unwrap();
             let mut cmd = Command::new("cargo");
 
-            let current_platform = Platform::from_target_triple(env!("TARGET_TRIPLE")).unwrap();
+            let current_platform = Platform::guess_current().unwrap();
 
             cmd.current_dir(self.rust_build_dir()).args(&[
                 "build",
@@ -502,10 +478,13 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
                 &target_dir.to_string_lossy(),
             ]);
 
-            if current_platform == Platform::LinuxArm8Gnu {
-                // This is a hack in order to have the CI properly work
-                // It is due to how `cross` works.
-                cmd.args(&["--target", env!("TARGET_TRIPLE")]);
+            // When not building for the native target of the host system, the output path
+            // changes. That's the only way I figured out how to properly handle this.
+            if ffi_path()
+                .to_string_lossy()
+                .contains(current_platform.target_triple)
+            {
+                cmd.args(&["--target", current_platform.target_triple]);
             }
 
             if env!("PROFILE") == "release" {

@@ -4,85 +4,58 @@ using foo;
 
 namespace foo.Tests
 {
-    class TestInterface : IStructureInterface
-    {
-        public Structure lastValue = null;
-
-        public void OnValue(Structure value)
-        {
-            this.lastValue = value;
-        }
-    }
+    class EmptyInterface : IEmptyInterface {}
 
     public class StructureTest
     {
-        [Fact]
-        public void StructureByValueEchoTest()
+        private static void CheckNumbersDefaults(Numbers x)
         {
-            var value = CreateStructure();
-            var result = Structure.StructByValueEcho(value);
-            CheckStructure(result);
+            Assert.Equal(1u, x.Uint8Value);
+            Assert.Equal(-1, x.Int8Value);
+            Assert.Equal(2u, x.Uint16Value);
+            Assert.Equal(-2, x.Int16Value);
+            Assert.Equal(3u, x.Uint32Value);
+            Assert.Equal(-3, x.Int32Value);
+            Assert.Equal(4u, x.Uint64Value);
+            Assert.Equal(-4, x.Int64Value);
+            Assert.Equal(12.34f, x.FloatValue);
+            Assert.Equal(-56.78, x.DoubleValue);
+        }
+
+        private static void CheckInnerStructureDefaults(InnerStructure x)
+        {
+            Assert.NotNull(x.InterfaceField);
+            CheckNumbersDefaults(x.NumbersField);
+        }
+
+        private static void CheckStructureDefaults(Structure x)
+        {
+            Assert.False(x.BooleanFalse);
+            Assert.True(x.BooleanTrue);
+            Assert.Equal(StructureEnum.Var1, x.EnumVar1);
+            Assert.Equal(StructureEnum.Var2, x.EnumVar2);
+            Assert.Equal(TimeSpan.FromMilliseconds(4200), x.DurationMillis);
+            Assert.Equal(TimeSpan.FromSeconds(76), x.DurationSeconds);
+            Assert.Equal("Hello", x.StringHello);
+            CheckInnerStructureDefaults(x.InnerStructure);
         }
 
         [Fact]
-        public void StructureByReferenceEchoTest()
+        public void StructureConstructorTest()
         {
-            var value = CreateStructure();
-            var result = value.StructByReferenceEcho();
-            CheckStructure(result);
+            var x = new Structure(new InnerStructure(new EmptyInterface()));
+            CheckStructureDefaults(x);
         }
 
         [Fact]
-        public void InterfaceStruct()
+        public void StructureBuilderMethodsTest()
         {
-            var value = CreateStructure();
-            var testInterface = new TestInterface();
-            value.InterfaceValue = testInterface;
+            var x = new Structure(new InnerStructure(new EmptyInterface()))
+                .WithBooleanFalse(true) // introducing some chaos
+                .WithBooleanTrue(false);
 
-            Structure.StructByValueEcho(value);
-
-            Assert.NotNull(testInterface.lastValue);
-            CheckStructure(testInterface.lastValue);
-        }
-
-        [Fact]
-        public void StructureMemoryLeakTest()
-        {
-            var numRuns = 1000;
-
-            for (int i = 0; i < numRuns; i++)
-            {
-                CreateStructure();
-            }
-        }
-
-        private Structure CreateStructure()
-        {
-            var structure = new Structure(new TestInterface());
-
-            return structure;
-        }
-
-        private void CheckStructure(Structure structure)
-        {
-            Assert.True(structure.BooleanValue);
-            Assert.Equal(1u, structure.Uint8Value);
-            Assert.Equal(-1, structure.Int8Value);
-            Assert.Equal(2u, structure.Uint16Value);
-            Assert.Equal(-2, structure.Int16Value);
-            Assert.Equal(3u, structure.Uint32Value);
-            Assert.Equal(-3, structure.Int32Value);
-            Assert.Equal(4u, structure.Uint64Value);
-            Assert.Equal(-4, structure.Int64Value);
-            Assert.Equal(12.34f, structure.FloatValue);
-            Assert.Equal(-56.78, structure.DoubleValue);
-
-            Assert.Equal(41, structure.StructureValue.Test);
-            Assert.Equal(StructureEnum.Var2, structure.EnumValue);
-
-            Assert.Equal(TimeSpan.FromMilliseconds(4200), structure.DurationMillis);
-            Assert.Equal(TimeSpan.FromSeconds(76), structure.DurationSeconds);
-            Assert.Equal(TimeSpan.FromSeconds(15.25f), structure.DurationSecondsFloat);
+            Assert.True(x.BooleanFalse);
+            Assert.False(x.BooleanTrue);
         }
     }
 }

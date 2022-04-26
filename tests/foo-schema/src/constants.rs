@@ -1,8 +1,7 @@
-use oo_bindgen::constants::*;
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
-    lib.define_constants("SpecialValues")?
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
+    lib.define_constants("special_values")?
         .add(
             "one",
             ConstantValue::U8(1, Representation::Hex),

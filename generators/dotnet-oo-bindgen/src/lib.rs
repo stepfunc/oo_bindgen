@@ -44,19 +44,18 @@ clippy::all
     bare_trait_objects
 )]
 
+use std::fs;
+use std::io::Write;
+use std::path::Path;
+use std::path::PathBuf;
+use std::process::Command;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::conversion::*;
 use crate::doc::*;
 use crate::formatting::*;
-use heck::CamelCase;
-use oo_bindgen::constants::*;
-use oo_bindgen::error_type::ErrorType;
-use oo_bindgen::formatting::*;
-use oo_bindgen::native_enum::*;
-use oo_bindgen::native_function::*;
-use oo_bindgen::platforms::*;
-use oo_bindgen::*;
-use std::fs;
-use std::path::PathBuf;
 
 mod class;
 mod conversion;
@@ -70,9 +69,10 @@ mod wrappers;
 pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 const SUPPORTED_PLATFORMS: &[Platform] = &[
-    Platform::WinX64Msvc,
-    Platform::LinuxX64Gnu,
-    Platform::LinuxArm8Gnu,
+    platform::X86_64_PC_WINDOWS_MSVC,
+    platform::I686_PC_WINDOWS_MSVC,
+    platform::X86_64_UNKNOWN_LINUX_GNU,
+    platform::AARCH64_UNKNOWN_LINUX_GNU,
 ];
 
 pub struct DotnetBindgenConfig {
@@ -80,12 +80,22 @@ pub struct DotnetBindgenConfig {
     pub ffi_name: String,
     pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
+    pub generate_doxygen: bool,
 }
 
 pub fn generate_dotnet_bindings(
     lib: &Library,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
+    for p in config.platforms.iter() {
+        if !SUPPORTED_PLATFORMS.contains(&p.platform) {
+            println!(
+                ".NET generation for {} is not supported. Use at your own risks.",
+                p.platform
+            );
+        }
+    }
+
     fs::create_dir_all(&config.output_dir)?;
 
     generate_csproj(lib, config)?;
@@ -103,6 +113,10 @@ pub fn generate_dotnet_bindings(
     // generate the helper classes
     generate_helpers(lib, config)?;
 
+    if config.generate_doxygen {
+        generate_doxygen(lib, config)?;
+    }
+
     Ok(())
 }
 
@@ -119,7 +133,7 @@ fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
 fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     // Open file
     let mut filename = config.output_dir.clone();
-    filename.push(&lib.name);
+    filename.push(lib.settings.name.to_string());
     filename.set_extension("csproj");
     let mut f = FilePrinter::new(filename)?;
 
@@ -129,7 +143,7 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
     f.writeln("    <IncludeSymbols>true</IncludeSymbols>")?; // Include symbols
     f.writeln("    <SymbolPackageFormat>snupkg</SymbolPackageFormat>")?; // Use new file format
-    f.writeln(&format!("    <PackageId>{}</PackageId>", lib.name))?;
+    f.writeln(&format!("    <PackageId>{}</PackageId>", lib.settings.name))?;
     f.writeln(&format!(
         "    <PackageVersion>{}</PackageVersion>",
         lib.version
@@ -156,20 +170,16 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     f.writeln("  <ItemGroup>")?;
 
     // Include each compiled FFI lib
-    for p in config
-        .platforms
-        .iter()
-        .filter(|x| SUPPORTED_PLATFORMS.iter().any(|y| *y == x.platform))
-    {
-        let filename = p.bin_filename(&config.ffi_name);
+    for p in config.platforms.iter() {
+        let filename = p.platform.bin_filename(&config.ffi_name);
         let filepath = dunce::canonicalize(p.location.join(&filename))?;
-        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, dotnet_platform_string(p.platform)))?;
+        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, dotnet_platform_string(&p.platform)))?;
     }
 
     // Include the target files to force the copying of DLLs of NuGet packages on .NET Framework
     // See https://github.com/stepfunc/dnp3/issues/147
-    f.writeln(&format!("    <Content Include=\"build/net45/{}.targets\" Pack=\"true\" PackagePath=\"build/net45/\" />", lib.name))?;
-    f.writeln(&format!("    <Content Include=\"buildTransitive/net45/{}.targets\" Pack=\"true\" PackagePath=\"buildTransitive/net45/\" />", lib.name))?;
+    f.writeln(&format!("    <Content Include=\"build/net45/{}.targets\" Pack=\"true\" PackagePath=\"build/net45/\" />", lib.settings.name))?;
+    f.writeln(&format!("    <Content Include=\"buildTransitive/net45/{}.targets\" Pack=\"true\" PackagePath=\"buildTransitive/net45/\" />", lib.settings.name))?;
 
     f.writeln("  </ItemGroup>")?;
 
@@ -209,7 +219,7 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
 
         fs::create_dir_all(&filename)?;
 
-        filename.push(&lib.name);
+        filename.push(lib.settings.name.to_string());
         filename.set_extension("targets");
         let mut f = FilePrinter::new(filename)?;
 
@@ -217,12 +227,12 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
         f.writeln("<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">")?;
         f.writeln("  <ItemGroup>")?;
 
-        for p in config
-            .platforms
-            .iter()
-            .filter(|x| x.platform == Platform::WinX64Msvc)
-        {
-            f.writeln(&format!("    <Content Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(p.platform), p.bin_filename(&config.ffi_name), p.bin_filename(&config.ffi_name), lib.name))?;
+        for p in config.platforms.iter() {
+            if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86_64 {
+                f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x64'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+            } else if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86 {
+                f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x86'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+            }
         }
 
         f.writeln("  </ItemGroup>")?;
@@ -237,7 +247,7 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
 
         fs::create_dir_all(&filename)?;
 
-        filename.push(&lib.name);
+        filename.push(lib.settings.name.to_string());
         filename.set_extension("targets");
         let mut f = FilePrinter::new(filename)?;
 
@@ -245,7 +255,7 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
         f.writeln("<Project ToolsVersion=\"4.0\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">")?;
         f.writeln(&format!(
             "  <Import Project=\"$(MSBuildThisFileDirectory)../../build/net45/{}.targets\" />",
-            lib.name
+            lib.settings.name
         ))?;
         f.writeln("</Project>")?;
     }
@@ -266,7 +276,7 @@ fn generate_constants(lib: &Library, config: &DotnetBindgenConfig) -> Formatting
     for constants in lib.constants() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&constants.name);
+        filename.push(constants.name.to_string());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -277,24 +287,24 @@ fn generate_constants(lib: &Library, config: &DotnetBindgenConfig) -> Formatting
 }
 
 fn generate_structs(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-    for native_struct in lib.structs() {
+    for st in lib.structs() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(native_struct.name());
+        filename.push(st.name().camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
-        structure::generate(&mut f, native_struct, lib)?;
+        structure::generate(&mut f, lib, st)?;
     }
 
     Ok(())
 }
 
 fn generate_enums(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
-    for native_enum in lib.native_enums() {
+    for native_enum in lib.enums() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&native_enum.name);
+        filename.push(native_enum.name.camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -308,7 +318,7 @@ fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for err in lib.error_types() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&err.exception_name);
+        filename.push(err.exception_name.camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -320,7 +330,7 @@ fn generate_exceptions(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
 
 fn generate_constant_set(
     f: &mut impl Printer,
-    set: &ConstantSetHandle,
+    set: &Handle<ConstantSet<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     fn get_type_as_string(value: &ConstantValue) -> &'static str {
@@ -339,20 +349,20 @@ fn generate_constant_set(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &set.doc, lib)
+            xmldoc_print(f, &set.doc)
         })?;
 
-        f.writeln(&format!("public static class {}", set.name.to_camel_case()))?;
+        f.writeln(&format!("public static class {}", set.name.camel_case()))?;
         blocked(f, |f| {
             for value in &set.values {
-                documentation(f, |f| xmldoc_print(f, &value.doc, lib))?;
+                documentation(f, |f| xmldoc_print(f, &value.doc))?;
                 f.writeln(&format!(
                     "public const {} {} = {};",
                     get_type_as_string(&value.value),
-                    value.name.to_camel_case(),
+                    value.name.camel_case(),
                     get_value_as_string(&value.value),
                 ))?;
             }
@@ -363,26 +373,26 @@ fn generate_constant_set(
 
 fn generate_enum(
     f: &mut impl Printer,
-    native_enum: &NativeEnumHandle,
+    native_enum: &Handle<Enum<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &native_enum.doc, lib)
+            xmldoc_print(f, &native_enum.doc)
         })?;
 
-        f.writeln(&format!("public enum {}", native_enum.name.to_camel_case()))?;
+        f.writeln(&format!("public enum {}", native_enum.name.camel_case()))?;
         blocked(f, |f| {
             for variant in &native_enum.variants {
-                documentation(f, |f| xmldoc_print(f, &variant.doc, lib))?;
+                documentation(f, |f| xmldoc_print(f, &variant.doc))?;
                 f.writeln(&format!(
                     "{} =  {},",
-                    variant.name.to_camel_case(),
+                    variant.name.camel_case(),
                     variant.value
                 ))?;
             }
@@ -393,21 +403,21 @@ fn generate_enum(
 
 fn generate_exception(
     f: &mut impl Printer,
-    err: &ErrorType,
+    err: &ErrorType<Validated>,
     lib: &Library,
 ) -> FormattingResult<()> {
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &err.inner.doc, lib)
+            xmldoc_print(f, &err.inner.doc)
         })?;
 
-        let error_name = err.inner.name.to_camel_case();
-        let exception_name = err.exception_name.to_camel_case();
+        let error_name = err.inner.name.camel_case();
+        let exception_name = err.exception_name.camel_case();
 
         f.writeln(&format!("public class {}: Exception", exception_name))?;
         blocked(f, |f| {
@@ -431,7 +441,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(class.name());
+        filename.push(class.name().camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -441,7 +451,7 @@ fn generate_classes(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     for class in lib.static_classes() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&class.name);
+        filename.push(class.name.camel_case());
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -455,7 +465,7 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for interface in lib.interfaces() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("I{}", interface.name.to_camel_case()));
+        filename.push(&format!("I{}", interface.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -469,7 +479,7 @@ fn generate_iterator_helpers(lib: &Library, config: &DotnetBindgenConfig) -> For
     for iter in lib.iterators() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("{}Helpers", iter.name().to_camel_case()));
+        filename.push(&format!("{}Helpers", iter.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -486,7 +496,7 @@ fn generate_collection_helpers(
     for coll in lib.collections() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("{}Helpers", coll.name().to_camel_case()));
+        filename.push(&format!("{}Helpers", coll.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -512,12 +522,71 @@ fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("using System.Collections.Immutable;")
 }
 
-fn dotnet_platform_string(platform: Platform) -> &'static str {
+fn dotnet_platform_string(platform: &Platform) -> String {
     // Names taken from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-    match platform {
-        Platform::WinX64Msvc => "win-x64",
-        Platform::LinuxX64Gnu => "linux-x64",
-        Platform::LinuxArm8Gnu => "linux-arm64",
-        _ => panic!("Unsupported platform"),
+    match *platform {
+        platform::X86_64_PC_WINDOWS_MSVC => "win-x64".to_string(),
+        platform::I686_PC_WINDOWS_MSVC => "win-x86".to_string(),
+        platform::X86_64_UNKNOWN_LINUX_GNU => "linux-x64".to_string(),
+        platform::AARCH64_UNKNOWN_LINUX_GNU => "linux-arm64".to_string(),
+        platform::X86_64_APPLE_DARWIN => "osx-x64".to_string(),
+        platform::AARCH64_APPLE_DARWIN => "osx-arm64".to_string(),
+        _ => platform.target_triple.to_owned(),
     }
+}
+
+fn generate_doxygen(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
+    // Copy doxygen awesome in target directory
+    let doxygen_awesome = include_str!("../../doxygen-awesome.css");
+    fs::write(
+        config.output_dir.join("doxygen-awesome.css"),
+        doxygen_awesome,
+    )?;
+
+    // Write the logo file
+    fs::write(config.output_dir.join("logo.png"), lib.info.logo_png)?;
+
+    run_doxygen(
+        &config.output_dir,
+        &[
+            &format!("PROJECT_NAME = {} (.NET API)", lib.settings.name),
+            &format!("PROJECT_NUMBER = {}", lib.version),
+            "INPUT = ./",
+            "HTML_OUTPUT = doc",
+            // Output customization
+            "GENERATE_LATEX = NO",       // No LaTeX
+            "HIDE_UNDOC_CLASSES = YES",  // I guess this will help the output
+            "ALWAYS_DETAILED_SEC = YES", // Always print detailed section
+            "AUTOLINK_SUPPORT = NO",     // Only link when we explicitly want to
+            // Styling
+            "HTML_EXTRA_STYLESHEET = doxygen-awesome.css",
+            "GENERATE_TREEVIEW = YES",
+            "PROJECT_LOGO = logo.png",
+            "HTML_COLORSTYLE_HUE = 209", // See https://jothepro.github.io/doxygen-awesome-css/index.html#autotoc_md14
+            "HTML_COLORSTYLE_SAT = 255",
+            "HTML_COLORSTYLE_GAMMA = 113",
+        ],
+    )?;
+
+    Ok(())
+}
+
+fn run_doxygen(cwd: &Path, config_lines: &[&str]) -> FormattingResult<()> {
+    let mut command = Command::new("doxygen")
+        .current_dir(cwd)
+        .arg("-")
+        .stdin(std::process::Stdio::piped())
+        .spawn()?;
+
+    {
+        let stdin = command.stdin.as_mut().unwrap();
+
+        for line in config_lines {
+            stdin.write_all(&format!("{}\n", line).into_bytes())?;
+        }
+    }
+
+    command.wait()?;
+
+    Ok(())
 }

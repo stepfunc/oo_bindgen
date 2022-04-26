@@ -1,73 +1,5 @@
-use oo_bindgen::formatting::*;
-
-struct CommentedPrinter<'a> {
-    inner: &'a mut dyn Printer,
-}
-
-impl<'a> CommentedPrinter<'a> {
-    fn new(printer: &'a mut dyn Printer) -> Self {
-        Self { inner: printer }
-    }
-}
-
-impl<'a> Printer for CommentedPrinter<'a> {
-    fn write(&mut self, s: &str) -> FormattingResult<()> {
-        self.inner.write(s)
-    }
-
-    fn newline(&mut self) -> FormattingResult<()> {
-        self.inner.newline()?;
-        self.inner.write("// ")
-    }
-}
-
-struct DoxygenPrinter<'a> {
-    inner: &'a mut dyn Printer,
-}
-
-impl<'a> DoxygenPrinter<'a> {
-    fn new(printer: &'a mut dyn Printer) -> Self {
-        Self { inner: printer }
-    }
-}
-
-impl<'a> Printer for DoxygenPrinter<'a> {
-    fn write(&mut self, s: &str) -> FormattingResult<()> {
-        self.inner.write(s)
-    }
-
-    fn newline(&mut self) -> FormattingResult<()> {
-        self.inner.newline()?;
-        self.inner.write("/// ")
-    }
-}
-
-pub(crate) fn blocked<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where
-    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
-{
-    f.writeln("{")?;
-    let result = indented(f, |f| cb(f))?;
-    f.writeln("}")?;
-
-    Ok(result)
-}
-
-pub(crate) fn commented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where
-    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
-{
-    let mut printer = CommentedPrinter::new(f);
-    cb(&mut printer)
-}
-
-pub(crate) fn doxygen<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
-where
-    F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
-{
-    let mut printer = DoxygenPrinter::new(f);
-    cb(&mut printer)
-}
+use oo_bindgen::backend::*;
+use oo_bindgen::model::Library;
 
 pub(crate) fn cpp_guard<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where
@@ -84,4 +16,13 @@ where
     f.writeln("#endif")?;
 
     Ok(result)
+}
+
+pub(crate) fn print_license(f: &mut dyn Printer, lib: &Library) -> FormattingResult<()> {
+    commented(f, |f| {
+        for line in lib.info.license_description.iter() {
+            f.writeln(line)?;
+        }
+        Ok(())
+    })
 }

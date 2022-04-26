@@ -8,7 +8,7 @@ pub struct ClassWithPassword {
 const SPECIAL_VALUE: u32 = 42;
 const PASSWORD: &str = "12345";
 
-pub(crate) fn get_special_number(password: &CStr) -> std::result::Result<u32, crate::ffi::MyError> {
+pub(crate) fn get_special_value(password: &CStr) -> std::result::Result<u32, crate::ffi::MyError> {
     if password.to_str()? == PASSWORD {
         Ok(SPECIAL_VALUE)
     } else {
@@ -16,18 +16,9 @@ pub(crate) fn get_special_number(password: &CStr) -> std::result::Result<u32, cr
     }
 }
 
-pub(crate) fn get_struct(
-    password: &CStr,
-) -> std::result::Result<crate::ffi::OtherStructure, crate::ffi::MyError> {
+pub(crate) fn validate_password(password: &CStr) -> std::result::Result<(), crate::ffi::MyError> {
     if password.to_str()? == PASSWORD {
-        Ok(crate::ffi::OtherStructureFields {
-            test: 41,
-            first_enum_value: crate::ffi::StructureEnum::Var2,
-            int1: 1,
-            bool2: false,
-            second_enum_value: crate::ffi::StructureEnum::Var2,
-        }
-        .into())
+        Ok(())
     } else {
         Err(crate::ffi::MyError::BadPassword)
     }
@@ -41,7 +32,7 @@ pub(crate) fn echo_password(password: &CStr) -> std::result::Result<&CStr, crate
     }
 }
 
-pub(crate) fn create_class_with_password(
+pub(crate) fn class_with_password_create(
     password: &CStr,
 ) -> std::result::Result<*mut crate::ClassWithPassword, crate::ffi::MyError> {
     if password.to_str()? == PASSWORD {
@@ -53,7 +44,7 @@ pub(crate) fn create_class_with_password(
     }
 }
 
-pub(crate) unsafe fn get_special_value_from_class(
+pub(crate) unsafe fn class_with_password_get_special_value(
     instance: *mut crate::ClassWithPassword,
 ) -> Result<u32, crate::ffi::MyError> {
     match instance.as_ref() {
@@ -62,7 +53,7 @@ pub(crate) unsafe fn get_special_value_from_class(
     }
 }
 
-pub(crate) unsafe fn destroy_class_with_password(instance: *mut crate::ClassWithPassword) {
+pub(crate) unsafe fn class_with_password_destroy(instance: *mut crate::ClassWithPassword) {
     if !instance.is_null() {
         Box::from_raw(instance);
     }

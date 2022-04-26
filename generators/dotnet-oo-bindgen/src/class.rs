@@ -1,22 +1,21 @@
+use crate::helpers::call_native_function;
 use crate::*;
-use heck::{CamelCase, MixedCase};
-use oo_bindgen::class::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    class: &ClassHandle,
+    class: &Handle<Class<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let classname = class.name().to_camel_case();
+    let classname = class.name().camel_case();
 
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &class.doc, lib)
+            xmldoc_print(f, &class.doc)
         })?;
 
         f.writeln(&format!("public sealed class {}", classname))?;
@@ -50,27 +49,27 @@ pub(crate) fn generate(
             f.newline()?;
 
             if let Some(constructor) = &class.constructor {
-                generate_constructor(f, &classname, constructor, lib)?;
+                generate_constructor(f, &classname, constructor)?;
                 f.newline()?;
             }
 
             if let Some(destructor) = &class.destructor {
-                generate_destructor(f, &classname, destructor, &class.destruction_mode, lib)?;
+                generate_destructor(f, &classname, destructor, &class.destruction_mode)?;
                 f.newline()?;
             }
 
             for method in &class.methods {
-                generate_method(f, method, lib)?;
+                generate_method(f, method)?;
                 f.newline()?;
             }
 
-            for method in &class.async_methods {
-                generate_async_method(f, method, lib)?;
+            for method in &class.future_methods {
+                generate_async_method(f, method)?;
                 f.newline()?;
             }
 
             for method in &class.static_methods {
-                generate_static_method(f, method, lib)?;
+                generate_static_method(f, method)?;
                 f.newline()?;
             }
 
@@ -81,26 +80,26 @@ pub(crate) fn generate(
 
 pub(crate) fn generate_static(
     f: &mut dyn Printer,
-    class: &StaticClassHandle,
+    class: &Handle<StaticClass<Validated>>,
     lib: &Library,
 ) -> FormattingResult<()> {
-    let classname = class.name.to_camel_case();
+    let classname = class.name.camel_case();
 
     print_license(f, &lib.info.license_description)?;
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    namespaced(f, &lib.settings.name, |f| {
         documentation(f, |f| {
             // Print top-level documentation
-            xmldoc_print(f, &class.doc, lib)
+            xmldoc_print(f, &class.doc)
         })?;
 
         f.writeln(&format!("public static class {}", classname))?;
 
         blocked(f, |f| {
             for method in &class.static_methods {
-                generate_static_method(f, method, lib)?;
+                generate_static_method(f, method)?;
                 f.newline()?;
             }
 
@@ -112,33 +111,25 @@ pub(crate) fn generate_static(
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
-    constructor: &NativeFunctionHandle,
-    lib: &Library,
+    constructor: &ClassConstructor<Validated>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &constructor.doc, lib)?;
+        xmldoc_print(f, &constructor.function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in &constructor.parameters {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in &constructor.function.arguments {
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
-        // Print return value
-        if let ReturnType::Type(_, doc) = &constructor.return_type {
-            f.writeln("<returns>")?;
-            docstring_print(f, doc, lib)?;
-            f.write("</returns>")?;
-        }
-
         // Print exception
-        if let Some(error) = &constructor.error_type {
+        if let Some(error) = &constructor.function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                "<exception cref=\"{}\"></exception>",
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -148,13 +139,14 @@ fn generate_constructor(
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor
-            .parameters
+            .function
+            .arguments
             .iter()
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.arg_type.get_dotnet_type(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -163,23 +155,22 @@ fn generate_constructor(
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, constructor, "this.self = ", None, true)
+        call_native_function(f, &constructor.function, "this.self = ", None, true)
     })
 }
 
 fn generate_destructor(
     f: &mut dyn Printer,
     classname: &str,
-    destructor: &NativeFunctionHandle,
+    destructor: &ClassDestructor<Validated>,
     destruction_mode: &DestructionMode,
-    lib: &Library,
 ) -> FormattingResult<()> {
     if destruction_mode.is_manual_destruction() {
         // Public Dispose method
-        documentation(f, |f| xmldoc_print(f, &destructor.doc, lib))?;
+        documentation(f, |f| xmldoc_print(f, &destructor.function.doc))?;
 
         let method_name = if let DestructionMode::Custom(name) = destruction_mode {
-            name.to_camel_case()
+            name.camel_case()
         } else {
             "Dispose".to_string()
         };
@@ -212,38 +203,39 @@ fn generate_destructor(
         f.newline()?;
         f.writeln(&format!(
             "{}.{}(this.self);",
-            NATIVE_FUNCTIONS_CLASSNAME, destructor.name
+            NATIVE_FUNCTIONS_CLASSNAME,
+            destructor.function.name.camel_case()
         ))?;
         f.newline()?;
         f.writeln("this.disposed = true;")
     })
 }
 
-fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
+fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &method.native_function.doc, lib)?;
+        xmldoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in method.native_function.parameters.iter().skip(1) {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in method.native_function.arguments.iter().skip(1) {
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let Some(doc) = &method.native_function.return_type.get_doc() {
             f.writeln("<returns>")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
             f.write("</returns>")?;
         }
 
         // Print exception
-        if let Some(error) = &method.native_function.error_type {
+        if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                "<exception cref=\"{}\"></exception>",
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -252,20 +244,20 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
 
     f.writeln(&format!(
         "public {} {}(",
-        method.native_function.return_type.as_dotnet_type(),
-        method.name.to_camel_case()
+        method.native_function.return_type.get_dotnet_type(),
+        method.name.camel_case()
     ))?;
     f.write(
         &method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .skip(1)
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.arg_type.get_dotnet_type(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -286,33 +278,32 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
 
 fn generate_static_method(
     f: &mut dyn Printer,
-    method: &Method,
-    lib: &Library,
+    method: &StaticMethod<Validated>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &method.native_function.doc, lib)?;
+        xmldoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in &method.native_function.parameters {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in &method.native_function.arguments {
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let Some(doc) = &method.native_function.return_type.get_doc() {
             f.writeln("<returns>")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
             f.write("</returns>")?;
         }
 
         // Print exception
-        if let Some(error) = &method.native_function.error_type {
+        if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                "<exception cref=\"{}\"></exception>",
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -321,19 +312,19 @@ fn generate_static_method(
 
     f.writeln(&format!(
         "public static {} {}(",
-        method.native_function.return_type.as_dotnet_type(),
-        method.name.to_camel_case()
+        method.native_function.return_type.get_dotnet_type(),
+        method.name.camel_case()
     ))?;
     f.write(
         &method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.arg_type.get_dotnet_type(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -348,73 +339,33 @@ fn generate_static_method(
 
 fn generate_async_method(
     f: &mut dyn Printer,
-    method: &AsyncMethod,
-    lib: &Library,
+    method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
-    let method_name = method.name.to_camel_case();
-    let async_handler_name = format!("{}Handler", method_name);
-    let return_type = method.return_type.as_dotnet_type();
-    let one_time_callback_name = format!("I{}", method.one_time_callback_name.to_camel_case());
-    let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
-    let callback_name = method.callback_name.to_camel_case();
-    let callback_param_name = method.callback_param_name.to_mixed_case();
-
-    // Write the task completion handler
-    f.writeln(&format!(
-        "internal class {} : {}",
-        async_handler_name, one_time_callback_name
-    ))?;
-    blocked(f, |f| {
-        f.writeln(&format!(
-            "internal TaskCompletionSource<{}> tcs = new TaskCompletionSource<{}>();",
-            return_type, return_type
-        ))?;
-
-        f.newline()?;
-
-        f.writeln(&format!(
-            "public void {}({} {})",
-            callback_name, return_type, callback_param_name
-        ))?;
-        blocked(f, |f| {
-            f.writeln(&format!(
-                "Task.Run(() => tcs.SetResult({}));",
-                callback_param_name
-            ))
-        })
-    })?;
-
-    f.newline()?;
+    let callback_success_type = method.future.value_type.get_dotnet_type();
 
     // Documentation
     documentation(f, |f| {
         // Print top-level documentation
-        xmldoc_print(f, &method.native_function.doc, lib)?;
+        xmldoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in method
-            .native_function
-            .parameters
-            .iter()
-            .skip(1)
-            .filter(|param| !matches!(param.param_type, Type::Interface(_)))
-        {
-            f.writeln(&format!("<param name=\"{}\">", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in method.arguments_without_callback() {
+            f.writeln(&format!("<param name=\"{}\">", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
             f.write("</param>")?;
         }
 
         // Print return value
         f.writeln("<returns>")?;
-        docstring_print(f, &method.return_type_doc, lib)?;
+        docstring_print(f, &method.future.value_type_doc)?;
         f.write("</returns>")?;
 
         // Print exception
-        if let Some(error) = &method.native_function.error_type {
+        if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
-                "<exception cref=\"{}\" />",
-                error.exception_name.to_camel_case()
+                "<exception cref=\"{}\"></exception>",
+                error.exception_name.camel_case()
             ))?;
         }
 
@@ -423,21 +374,17 @@ fn generate_async_method(
 
     f.writeln(&format!(
         "public Task<{}> {}(",
-        return_type,
-        method.name.to_camel_case()
+        callback_success_type,
+        method.name.camel_case()
     ))?;
     f.write(
         &method
-            .native_function
-            .parameters
-            .iter()
-            .skip(1)
-            .filter(|param| !matches!(param.param_type, Type::Interface(_)))
+            .arguments_without_callback()
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_dotnet_type(),
-                    param.name.to_mixed_case()
+                    param.arg_type.get_dotnet_type(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -445,10 +392,17 @@ fn generate_async_method(
     )?;
     f.write(")")?;
 
+    let tcs_var_name = "_oo_bindgen_tcs";
+
     blocked(f, |f| {
         f.writeln(&format!(
-            "var {} = new {}();",
-            one_time_callback_param_name, async_handler_name
+            "var {} = new TaskCompletionSource<{}>();",
+            tcs_var_name, callback_success_type
+        ))?;
+        f.writeln(&format!(
+            "var callback = new {}({});",
+            method.future.interface.name.camel_case(),
+            tcs_var_name
         ))?;
         call_native_function(
             f,
@@ -457,9 +411,6 @@ fn generate_async_method(
             Some("this".to_string()),
             false,
         )?;
-        f.writeln(&format!(
-            "return {}.tcs.Task;",
-            one_time_callback_param_name
-        ))
+        f.writeln(&format!("return {}.Task;", tcs_var_name))
     })
 }

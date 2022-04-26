@@ -1,57 +1,37 @@
-use oo_bindgen::native_function::*;
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare the class
-    let stringclass = lib.declare_class("StringClass")?;
+    let string_class = lib.declare_class("string_class")?;
 
     // Declare each native function
-    let stringclass_new_func = lib
-        .declare_native_function("string_new")?
-        .return_type(ReturnType::new(
-            Type::ClassRef(stringclass.clone()),
-            "New StringClass",
-        ))?
+    let constructor = lib
+        .define_constructor(string_class.clone())?
         .doc("Create a new StringClass")?
         .build()?;
 
-    let stringclass_destroy_func = lib
-        .declare_native_function("string_destroy")?
-        .param(
-            "stringclass",
-            Type::ClassRef(stringclass.clone()),
-            "StringClass",
-        )?
-        .return_type(ReturnType::void())?
-        .doc("Destroy a StringClass")?
-        .build()?;
+    let destructor = lib.define_destructor(string_class.clone(), "Destroy a StringClass")?;
 
-    let stringclass_echo_func = lib
-        .declare_native_function("string_echo")?
-        .param(
-            "stringclass",
-            Type::ClassRef(stringclass.clone()),
-            "StringClass",
-        )?
-        .param("value", Type::String, "String to echo")?
-        .return_type(ReturnType::new(Type::String, "Echoed string"))?
+    let echo = lib
+        .define_method("echo", string_class.clone())?
+        .param("value", StringType, "String to echo")?
+        .returns(StringType, "Echoed string")?
         .doc("Echo a string")?
         .build()?;
 
-    let stringclass_length_func = lib
-        .declare_native_function("string_length")?
-        .param("value", Type::String, "String")?
-        .return_type(ReturnType::new(Type::Uint32, "String length"))?
-        .doc("Get the string length")?
-        .build()?;
+    let string_length = lib
+        .define_function("string_length")?
+        .param("value", StringType, "String")?
+        .returns(Primitive::U32, "String length")?
+        .doc("Get the length of a string")?
+        .build_static("get_length")?;
 
     // Define the class
-    let _testclass = lib
-        .define_class(&stringclass)?
-        .constructor(&stringclass_new_func)?
-        .destructor(&stringclass_destroy_func)?
-        .method("Echo", &stringclass_echo_func)?
-        .static_method("GetLength", &stringclass_length_func)?
+    lib.define_class(&string_class)?
+        .constructor(constructor)?
+        .destructor(destructor)?
+        .method(echo)?
+        .static_method(string_length)?
         .disposable_destroy()?
         .doc("StringClass")?
         .build()?;

@@ -1,108 +1,62 @@
-use oo_bindgen::native_function::*;
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     // Declare interface
     let interface = lib
-        .define_interface("CallbackInterface", "Test interface")?
-        .callback("on_value", "On value callback")?
-        .param("value", Type::Uint32, "Value")?
-        .return_type(ReturnType::new(Type::Uint32, "Some value"))?
-        .build()?
-        .callback("on_duration", "On duration callback")?
-        .param(
-            "value",
-            Type::Duration(DurationMapping::Milliseconds),
-            "Value",
+        .define_interface("callback_interface", "Test interface")?
+        .begin_callback(
+            "on_value",
+            "On value callback which takes parameter {param:value}",
         )?
-        .return_type(ReturnType::new(
-            Type::Duration(DurationMapping::Milliseconds),
-            "Some value",
-        ))?
-        .build()?
-        .destroy_callback("on_destroy")?
-        .build()?;
+        .param("value", Primitive::U32, "Value")?
+        .returns(Primitive::U32, "Some value")?
+        .end_callback()?
+        .begin_callback("on_duration", "On duration callback")?
+        .param("value", DurationType::Milliseconds, "Value")?
+        .returns(DurationType::Milliseconds, "Some value")?
+        .end_callback()?
+        .build_async()?;
 
     // Declare the class
-    let cbsource = lib.declare_class("CallbackSource")?;
+    let callback_source = lib.declare_class("callback_source")?;
 
     // Declare each native function
-    let cbsource_new_func = lib
-        .declare_native_function("cbsource_new")?
-        .return_type(ReturnType::new(
-            Type::ClassRef(cbsource.clone()),
-            "Handle to a CallbackSource",
-        ))?
+    let constructor = lib
+        .define_constructor(callback_source.clone())?
         .doc("Create a new CallbackSource")?
         .build()?;
 
-    let cbsource_destroy_func = lib
-        .declare_native_function("cbsource_destroy")?
-        .param(
-            "cbsource",
-            Type::ClassRef(cbsource.clone()),
-            "Callback source",
-        )?
-        .return_type(ReturnType::void())?
-        .doc("Destroy a callback source")?
-        .build()?;
+    let destructor = lib.define_destructor(callback_source.clone(), "Destroy a callback source")?;
 
-    let cbsource_set_interface = lib
-        .declare_native_function("cbsource_set_interface")?
-        .param(
-            "cbsource",
-            Type::ClassRef(cbsource.clone()),
-            "Callback source",
-        )?
-        .param("cb", Type::Interface(interface), "Callback to add")?
-        .return_type(ReturnType::void())?
+    let set_interface = lib
+        .define_method("set_interface", callback_source.clone())?
+        .param("cb", interface, "Callback to add")?
         .doc("Add a callback")?
         .build()?;
 
-    let cbsource_set_value_func = lib
-        .declare_native_function("cbsource_set_value")?
-        .param(
-            "cbsource",
-            Type::ClassRef(cbsource.clone()),
-            "Callback source",
-        )?
-        .param("value", Type::Uint32, "New value")?
-        .return_type(ReturnType::new(
-            Type::Uint32,
-            "Value returned by the callback",
-        ))?
+    let set_value = lib
+        .define_method("set_value", callback_source.clone())?
+        .param("value", Primitive::U32, "New value")?
+        .returns(Primitive::U32, "Value returned by the callback")?
         .doc("Set the value and call all the callbacks")?
         .build()?;
 
-    let cbsource_set_duration_func = lib
-        .declare_native_function("cbsource_set_duration")?
-        .param(
-            "cbsource",
-            Type::ClassRef(cbsource.clone()),
-            "Callback source",
-        )?
-        .param(
-            "value",
-            Type::Duration(DurationMapping::Milliseconds),
-            "New duration",
-        )?
-        .return_type(ReturnType::new(
-            Type::Duration(DurationMapping::Milliseconds),
-            "Some value",
-        ))?
+    let set_duration = lib
+        .define_method("set_duration", callback_source.clone())?
+        .param("value", DurationType::Milliseconds, "New duration")?
+        .returns(DurationType::Milliseconds, "Some value")?
         .doc("Set the duration and call all the callbacks")?
         .build()?;
 
     // Define the class
-    let _cbsource = lib
-        .define_class(&cbsource)?
-        .constructor(&cbsource_new_func)?
-        .destructor(&cbsource_destroy_func)?
-        .method("SetInterface", &cbsource_set_interface)?
-        .method("SetValue", &cbsource_set_value_func)?
-        .method("SetDuration", &cbsource_set_duration_func)?
+    lib.define_class(&callback_source)?
+        .constructor(constructor)?
+        .destructor(destructor)?
+        .method(set_interface)?
+        .method(set_value)?
+        .method(set_duration)?
         .disposable_destroy()?
-        .doc("CallbackSource class")?
+        .doc("Class that demonstrate the usage of an async interface")?
         .build()?;
 
     Ok(())

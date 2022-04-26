@@ -1,9 +1,6 @@
 package io.stepfunc.foo_test;
 
-import io.stepfunc.foo.OtherStructure;
-import io.stepfunc.foo.Structure;
-import io.stepfunc.foo.StructureEnum;
-import io.stepfunc.foo.StructureInterface;
+import io.stepfunc.foo.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -12,67 +9,51 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.joou.Unsigned.*;
 
 public class StructureTest {
-    @Test
-    public void StructureByValueEchoTest() {
-        Structure value = createStructure();
-        Structure result = Structure.structByValueEcho(value);
-        checkStructure(result);
+    static class TestInterface implements EmptyInterface {}
+
+     private static void checkNumbersDefaults(Numbers x)
+     {
+        assertThat(x.uint8Value).isEqualTo(ubyte(1));
+        assertThat(x.int8Value).isEqualTo((byte)-1);
+        assertThat(x.uint16Value).isEqualTo(ushort(2));
+        assertThat(x.int16Value).isEqualTo((short)-2);
+        assertThat(x.uint32Value).isEqualTo(uint(3));
+        assertThat(x.int32Value).isEqualTo(-3);
+        assertThat(x.uint64Value).isEqualTo(ulong(4));
+        assertThat(x.int64Value).isEqualTo(-4);
+        assertThat(x.floatValue).isEqualTo(12.34f);
+        assertThat(x.doubleValue).isEqualTo(-56.78);
+    }
+
+    private static void checkInnerStructure(InnerStructure x) {
+        assertThat(x.interfaceField).isNotNull();
+        checkNumbersDefaults(x.numbersField);
+    }
+
+    private static void checkStructure(Structure x) {
+        assertThat(x.booleanTrue).isTrue();
+        assertThat(x.booleanFalse).isFalse();
+        assertThat(x.enumVar1).isEqualTo(StructureEnum.VAR1);
+        assertThat(x.enumVar2).isEqualTo(StructureEnum.VAR2);
+        assertThat(x.durationMillis).isEqualTo(Duration.ofMillis(4200));
+        assertThat(x.durationSeconds).isEqualTo(Duration.ofSeconds(76));
+        assertThat(x.stringHello).isEqualTo("Hello");
+        checkInnerStructure(x.innerStructure);
     }
 
     @Test
-    public void StructureByReferenceEchoTest() {
-        Structure value = createStructure();
-        Structure result = value.structByReferenceEcho();
-        checkStructure(result);
+    public void testStructureConstructor() {
+        Structure x = new Structure(new InnerStructure(new TestInterface()));
+        checkStructure(x);
     }
 
     @Test
-    public void InterfaceStruct() {
-        Structure value = createStructure();
-        TestInterface testInterface = new TestInterface();
-        value.interfaceValue = testInterface;
+    public void testStructureBuilderMethods() {
+        Structure x = new Structure(new InnerStructure(new TestInterface()))
+            .withBooleanFalse(true) // introducing some chaos
+            .withBooleanTrue(false);
 
-        Structure result = Structure.structByValueEcho(value);
-
-        assertThat(result.interfaceValue).isNotNull();
-        checkStructure(testInterface.lastValue);
-    }
-
-    static class TestInterface implements StructureInterface {
-        public Structure lastValue = null;
-
-        @Override
-        public void onValue(Structure value) {
-            lastValue = value;
-        }
-    }
-
-    public static Structure createStructure() {
-        return new Structure(new TestInterface());
-    }
-
-    private static void checkStructure(Structure structure) {
-        assertThat(structure.booleanValue).isTrue();
-        assertThat(structure.uint8Value).isEqualTo(ubyte(1));
-        assertThat(structure.int8Value).isEqualTo((byte)-1);
-        assertThat(structure.uint16Value).isEqualTo(ushort(2));
-        assertThat(structure.int16Value).isEqualTo((short)-2);
-        assertThat(structure.uint32Value).isEqualTo(uint(3));
-        assertThat(structure.int32Value).isEqualTo(-3);
-        assertThat(structure.uint64Value).isEqualTo(ulong(4));
-        assertThat(structure.int64Value).isEqualTo(-4);
-        assertThat(structure.floatValue).isEqualTo(12.34f);
-        assertThat(structure.doubleValue).isEqualTo(-56.78);
-        assertThat(structure.stringValue).isEqualTo("Hello");
-
-        assertThat(structure.structureValue.test).isEqualTo(ushort(41));
-        assertThat(structure.structureValue.firstEnumValue).isEqualTo(StructureEnum.VAR2);
-        assertThat(structure.structureValue.secondEnumValue).isEqualTo(StructureEnum.VAR2);
-        assertThat(structure.enumValue).isEqualTo(StructureEnum.VAR2);
-        assertThat(structure.enumValue2).isEqualTo(StructureEnum.VAR2);
-
-        assertThat(structure.durationMillis).isEqualTo(Duration.ofMillis(4200));
-        assertThat(structure.durationSeconds).isEqualTo(Duration.ofSeconds(76));
-        assertThat(structure.durationSecondsFloat).isEqualTo(Duration.ofSeconds(15).plusMillis(250));
+        assertThat(x.booleanTrue).isFalse();
+        assertThat(x.booleanFalse).isTrue();
     }
 }

@@ -2,10 +2,13 @@
 name = "oo-bindgen"
 version = "0.1.5"
 authors = ["Émile Grégoire <emile@stepfunc.io>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 thiserror = "1.0"
 semver = "0.11"
 regex = "1.3"
 lazy_static = "1.4"
+backtrace = "0.3"
+heck = "0.3"
+platforms = "2.0"

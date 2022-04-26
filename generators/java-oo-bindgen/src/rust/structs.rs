@@ -1,33 +1,37 @@
-use super::conversion::*;
-use super::formatting::*;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
 use crate::*;
-use heck::{CamelCase, MixedCase, SnakeCase};
-use oo_bindgen::formatting::*;
 
-pub(crate) fn generate_structs_cache(
-    lib: &Library,
-    config: &JavaBindgenConfig,
-) -> FormattingResult<()> {
-    let lib_path = config.java_signature_path(&lib.name);
+use crate::rust::conversion::*;
 
+pub(crate) fn generate(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     let mut filename = config.rust_source_dir();
     filename.push("structs");
     filename.set_extension("rs");
     let mut f = FilePrinter::new(&filename)?;
 
-    // Imports
-    f.writeln("use std::str::FromStr;")?;
+    f.newline()?;
+
+    generate_top_level_cache(&mut f, lib)?;
 
     f.newline()?;
 
+    f.writeln("mod instances {")?;
+
+    indented(&mut f, |f| generate_structs(f, lib, config))?;
+    f.writeln("}")
+}
+
+fn generate_top_level_cache(f: &mut dyn Printer, lib: &Library) -> FormattingResult<()> {
     // Top-level enums struct
     f.writeln("pub struct Structs")?;
-    blocked(&mut f, |f| {
-        for structure in lib.native_structs() {
+    blocked(f, |f| {
+        for structure in lib.structs() {
             f.writeln(&format!(
-                "pub struct_{}: Struct{},",
-                structure.name().to_snake_case(),
-                structure.name().to_camel_case()
+                "pub {}: instances::{},",
+                structure.name(),
+                structure.name().camel_case()
             ))?;
         }
 
@@ -37,167 +41,268 @@ pub(crate) fn generate_structs_cache(
     f.newline()?;
 
     f.writeln("impl Structs")?;
-    blocked(&mut f, |f| {
+    blocked(f, |f| {
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
             f.writeln("Self")?;
             blocked(f, |f| {
-                for structure in lib.native_structs() {
+                for structure in lib.structs() {
                     f.writeln(&format!(
-                        "struct_{}: Struct{}::init(env),",
-                        structure.name().to_snake_case(),
-                        structure.name().to_camel_case()
+                        "{}: instances::{}::init(env),",
+                        structure.name(),
+                        structure.name().camel_case()
                     ))?;
                 }
                 Ok(())
             })
         })
-    })?;
+    })
+}
 
+fn generate_structs(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
     // Each struct implementation
-    for structure in lib.native_structs() {
-        let struct_name = structure.name().to_camel_case();
-        let struct_sig = format!("\"L{}/{};\"", lib_path, struct_name);
-
-        f.writeln(&format!("pub struct Struct{}", struct_name))?;
-        blocked(&mut f, |f| {
-            f.writeln("class: jni::objects::GlobalRef,")?;
-            for field in &structure.elements {
-                f.writeln(&format!(
-                    "field_{}: jni::objects::JFieldID<'static>,",
-                    field.name.to_snake_case()
-                ))?;
+    for st in lib.structs() {
+        match st {
+            StructType::FunctionArg(x) => {
+                generate_struct_fields(f, x)?;
+                generate_struct_init(f, x, config)?;
+                generate_conversion_to_rust(f, x, config)?;
             }
-
-            Ok(())
-        })?;
-
-        f.newline()?;
-
-        f.writeln(&format!("impl Struct{}", struct_name))?;
-        blocked(&mut f, |f| {
-            f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
-            blocked(f, |f| {
-                f.writeln(&format!(
-                    "let class = env.find_class({}).expect(\"Unable to find {}\");",
-                    struct_sig, struct_name
-                ))?;
-                for field in &structure.elements {
-                    f.writeln(&format!("let field_{field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name.to_snake_case(), field_mixed=field.name.to_mixed_case(), field_sig=field.element_type.to_type().as_jni_sig(&lib_path)))?;
-                }
-                f.writeln("Self")?;
-                blocked(f, |f| {
-                    f.writeln("class: env.new_global_ref(class).unwrap(),")?;
-                    for field in &structure.elements {
-                        f.writeln(&format!("field_{},", field.name.to_snake_case()))?;
-                    }
-                    Ok(())
-                })
-            })?;
-
-            f.newline()?;
-
-            let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
-
-            f.writeln(&format!("pub(crate) fn struct_to_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}", ffi_struct_name))?;
-            blocked(f, |f| {
-                for field in &structure.elements {
-                    f.writeln(&format!("let {} = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", field.name.to_snake_case(), field.name.to_snake_case(), field.element_type.to_type().as_jni_sig(&lib_path), field.element_type.to_type().convert_jvalue()))?;
-                }
-
-                f.writeln(&ffi_struct_name)?;
-                blocked(f, |f| {
-                    for field in &structure.elements {
-                        if let Some(conversion) = field
-                            .element_type
-                            .to_type()
-                            .conversion(&config.ffi_name, &lib.c_ffi_prefix)
-                        {
-                            conversion.convert_to_rust(
-                                f,
-                                &field.name.to_snake_case(),
-                                &format!("{}: ", field.name.to_snake_case()),
-                            )?;
-                            f.write(",")?;
-                        } else {
-                            f.writeln(&format!("{},", field.name.to_snake_case()))?;
-                        }
-                    }
-
-                    Ok(())
-                })?;
-
-                Ok(())
-            })?;
-
-            f.newline()?;
-
-            f.writeln(&format!("pub(crate) fn struct_to_rust_cleanup(&self, _cache: &super::JCache, _env: &jni::JNIEnv, _value: &{})", ffi_struct_name))?;
-            blocked(f, |f| {
-                for field in &structure.elements {
-                    if let Some(conversion) = field
-                        .element_type
-                        .to_type()
-                        .conversion(&config.ffi_name, &lib.c_ffi_prefix)
-                    {
-                        conversion.convert_to_rust_cleanup(
-                            f,
-                            &format!("_value.{}", field.name.to_snake_case()),
-                        )?;
-                    }
-                }
-
-                Ok(())
-            })?;
-
-            f.newline()?;
-
-            f.writeln(&format!("pub(crate) fn struct_from_rust(&self, _cache: &super::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
-            blocked(f, |f| {
-                f.writeln("let obj = _env.alloc_object(&self.class).unwrap();")?;
-                for field in &structure.elements {
-                    if let Some(conversion) = field
-                        .element_type
-                        .to_type()
-                        .conversion(&config.ffi_name, &lib.c_ffi_prefix)
-                    {
-                        conversion.convert_from_rust(
-                            f,
-                            &format!("value.{}", field.name.to_snake_case()),
-                            "let temp = ",
-                        )?;
-                        f.write(";")?;
-                    } else {
-                        f.writeln(&format!("let temp = value.{};", field.name.to_snake_case()))?;
-                    }
-                    f.writeln(&format!(
-                        "_env.set_field_unchecked(obj, self.field_{}, temp.into()).unwrap();",
-                        field.name.to_snake_case()
-                    ))?;
-
-                    if field.element_type.to_type().requires_local_ref_cleanup() {
-                        f.writeln("_env.delete_local_ref(temp.into()).unwrap();")?;
-                    }
-                }
-
-                f.writeln("obj.into_inner()")
-            })?;
-
-            f.newline()?;
-
-            // Check for null elements helper function
-            f.writeln("pub(crate) fn check_null(&self, _cache: &super::JCache, _env: &jni::JNIEnv, obj: jni::sys::jobject) -> Result<(), String>")?;
-            blocked(f, |f| {
-                for el in &structure.elements {
-                    f.writeln(&format!("let temp = _env.get_field_unchecked(obj, self.field_{}, jni::signature::JavaType::from_str(\"{}\").unwrap()).unwrap().{};", el.name.to_snake_case(), el.element_type.to_type().as_jni_sig(&lib_path), el.element_type.to_type().convert_jvalue()))?;
-                    el.element_type.to_type().check_null(f, "temp")?;
-                }
-                f.writeln("Ok(())")
-            })
-        })?;
-
-        f.newline()?;
+            StructType::FunctionReturn(x) => {
+                generate_struct_fields(f, x)?;
+                generate_struct_init(f, x, config)?;
+                generate_conversion_to_jni(f, x, config)?;
+            }
+            StructType::CallbackArg(x) => {
+                generate_struct_fields(f, x)?;
+                generate_struct_init(f, x, config)?;
+                generate_conversion_to_jni(f, x, config)?;
+            }
+            StructType::Universal(x) => {
+                generate_struct_fields(f, x)?;
+                generate_struct_init(f, x, config)?;
+                generate_conversion_to_rust(f, x, config)?;
+                generate_conversion_to_jni(f, x, config)?;
+            }
+        }
     }
 
     Ok(())
+}
+
+fn generate_conversion_to_rust<T>(
+    f: &mut dyn Printer,
+    structure: &Handle<Struct<T, Validated>>,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + UnwrapValue + ConvertibleToRust + GuardType + JniJavaType,
+{
+    let struct_name = structure.name().camel_case();
+    let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
+    let guard_struct_name = format!("{}Guard", struct_name);
+
+    f.newline()?;
+
+    f.writeln(&format!(
+        "/// Guard object ensures a {} struct is valid",
+        ffi_struct_name
+    ))?;
+    f.writeln(&format!("pub(crate) struct {}<'a> {{", guard_struct_name))?;
+    indented(f, |f| {
+        if !structure
+            .fields
+            .iter()
+            .any(|x| x.field_type.guard_type().is_some())
+        {
+            f.writeln("/// empty guard objects require this field to make use of the lifetime")?;
+            f.writeln("_phantom: std::marker::PhantomData<&'a usize>,")?;
+        }
+
+        for x in structure.fields.iter() {
+            if let Some(guard_type) = x.field_type.guard_type() {
+                f.writeln(&format!("/// guard for the {} field", x.name))?;
+                f.writeln(&format!("{}: {},", x.name, guard_type))?;
+            }
+        }
+
+        Ok(())
+    })?;
+    f.writeln("}")?;
+
+    f.newline()?;
+    f.writeln(&format!("impl {}", struct_name))?;
+    blocked(f, |f| {
+        f.writeln(&format!("pub(crate) fn to_rust<'a>(&self, _cache: &'a crate::JCache, _env: &'a jni::JNIEnv, obj: jni::sys::jobject) -> ({}<'a>, {})", guard_struct_name, ffi_struct_name))?;
+        blocked(f, |f| {
+            // retrieve the fields from the jobject
+            for field in structure.fields() {
+                f.writeln(&format!(
+                    "let {} = _env.get_field_unchecked(obj, self.{}, {}).unwrap().{};",
+                    field.name,
+                    field.name,
+                    field.field_type.jni_java_type(),
+                    field.field_type.unwrap_value()
+                ))?;
+            }
+
+            f.newline()?;
+
+            // transform the fields and shadow the variables
+            for field in structure.fields() {
+                if let Some(converted) = field.field_type.to_rust(&field.name) {
+                    f.writeln(&format!("let {} = {};", field.name, converted))?;
+                }
+            }
+
+            f.newline()?;
+            f.writeln(&format!("let _ffi_struct = {} {{", ffi_struct_name))?;
+            indented(f, |f| {
+                for field in structure.fields() {
+                    if let Some(converted) = field.field_type.call_site(&field.name) {
+                        f.writeln(&format!("{}: {},", field.name, converted))?;
+                    } else {
+                        f.writeln(&format!("{},", field.name))?;
+                    }
+                }
+
+                Ok(())
+            })?;
+            f.writeln("};")?;
+
+            f.newline()?;
+
+            f.writeln(&format!("let _guard = {} {{", guard_struct_name))?;
+            indented(f, |f| {
+                if structure
+                    .fields
+                    .iter()
+                    .any(|f| f.field_type.guard_type().is_some())
+                {
+                    for field in structure
+                        .fields
+                        .iter()
+                        .filter(|x| x.field_type.guard_type().is_some())
+                    {
+                        if let Some(transform) = field.field_type.guard_transform(&field.name) {
+                            f.writeln(&format!("{} : {},", field.name, transform))?;
+                        } else {
+                            f.writeln(&format!("{},", field.name))?;
+                        }
+                    }
+                } else {
+                    f.writeln("_phantom: std::marker::PhantomData::default(),")?;
+                }
+                Ok(())
+            })?;
+            f.writeln("};")?;
+
+            f.newline()?;
+
+            f.writeln("(_guard, _ffi_struct)")
+        })
+    })
+}
+
+fn generate_conversion_to_jni<T>(
+    f: &mut dyn Printer,
+    structure: &Handle<Struct<T, Validated>>,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + MaybeConvertibleToJni,
+{
+    let struct_name = structure.name().camel_case();
+    let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
+
+    f.newline()?;
+    f.writeln(&format!("impl {}", struct_name))?;
+    blocked(f, |f| {
+        f.writeln(&format!("pub(crate) fn to_jni(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
+        blocked(f, |f| {
+            f.writeln("// automatically free all local references except for the struct itself which is returned")?;
+            f.writeln("// upper bound on the number of references in the local frame is the number of fields + 1 for struct itself")?;
+            f.writeln(&format!(
+                "_env.with_local_frame({}, || {{",
+                structure.fields.len() + 1
+            ))?;
+            indented(f, |f| {
+                f.writeln("let obj = _env.alloc_object(&self._class).unwrap();")?;
+                for field in structure.fields() {
+                    let field_name = format!("value.{}", field.name);
+                    let conversion = field
+                        .field_type
+                        .maybe_convert(&field_name)
+                        .unwrap_or(field_name);
+                    f.writeln(&format!(
+                        "_env.set_field_unchecked(obj, self.{}, {}.into()).unwrap();",
+                        field.name, conversion,
+                    ))?;
+                }
+
+                f.writeln("Ok(obj)")
+            })?;
+            f.writeln("}).unwrap().into_inner()")
+        })
+    })
+}
+
+fn generate_struct_fields<T>(
+    f: &mut dyn Printer,
+    structure: &Handle<Struct<T, Validated>>,
+) -> FormattingResult<()>
+where
+    T: StructFieldType,
+{
+    let struct_name = structure.name().camel_case();
+
+    f.newline()?;
+    f.writeln(&format!("pub struct {}", struct_name))?;
+    blocked(f, |f| {
+        f.writeln("_class: jni::objects::GlobalRef,")?;
+        for field in structure.fields() {
+            f.writeln(&format!("{}: jni::objects::JFieldID<'static>,", field.name))?;
+        }
+        Ok(())
+    })
+}
+
+fn generate_struct_init<T>(
+    f: &mut dyn Printer,
+    structure: &Handle<Struct<T, Validated>>,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()>
+where
+    T: StructFieldType + JniTypeId,
+{
+    let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
+    let struct_name = structure.name().camel_case();
+    let struct_sig = format!("\"L{}/{};\"", lib_path, struct_name);
+
+    f.newline()?;
+    f.writeln(&format!("impl {}", struct_name))?;
+    blocked(f, |f| {
+        f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
+        blocked(f, |f| {
+            f.writeln(&format!(
+                "let class = env.find_class({}).expect(\"Unable to find {}\");",
+                struct_sig, struct_name
+            ))?;
+            for field in structure.fields() {
+                f.writeln(&format!("let {field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name, field_mixed=field.name.mixed_case(), field_sig=field.field_type.jni_type_id().as_string(&lib_path)))?;
+            }
+            f.writeln("Self")?;
+            blocked(f, |f| {
+                f.writeln("_class: env.new_global_ref(class).unwrap(),")?;
+                for field in structure.fields() {
+                    f.writeln(&format!("{},", field.name))?;
+                }
+                Ok(())
+            })
+        })
+    })
 }

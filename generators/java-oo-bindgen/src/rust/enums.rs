@@ -1,13 +1,12 @@
-use super::formatting::*;
+use oo_bindgen::model::Library;
+
 use crate::*;
-use heck::{CamelCase, ShoutySnakeCase, SnakeCase};
-use oo_bindgen::formatting::*;
 
 pub(crate) fn generate_enums_cache(
     lib: &Library,
     config: &JavaBindgenConfig,
 ) -> FormattingResult<()> {
-    let lib_path = config.java_signature_path(&lib.name);
+    let lib_path = config.java_signature_path(&lib.settings.name);
 
     let mut filename = config.rust_source_dir();
     filename.push("enums");
@@ -17,11 +16,11 @@ pub(crate) fn generate_enums_cache(
     // Top-level enums struct
     f.writeln("pub struct Enums")?;
     blocked(&mut f, |f| {
-        for enumeration in lib.native_enums() {
+        for enumeration in lib.enums() {
             f.writeln(&format!(
-                "pub enum_{}: Enum{},",
-                enumeration.name.to_snake_case(),
-                enumeration.name.to_camel_case()
+                "pub {}: {},",
+                enumeration.name,
+                enumeration.name.camel_case()
             ))?;
         }
 
@@ -36,11 +35,11 @@ pub(crate) fn generate_enums_cache(
         blocked(f, |f| {
             f.writeln("Self")?;
             blocked(f, |f| {
-                for enumeration in lib.native_enums() {
+                for enumeration in lib.enums() {
                     f.writeln(&format!(
-                        "enum_{}: Enum{}::init(env),",
-                        enumeration.name.to_snake_case(),
-                        enumeration.name.to_camel_case()
+                        "{}: {}::init(env),",
+                        enumeration.name,
+                        enumeration.name.camel_case()
                     ))?;
                 }
                 Ok(())
@@ -49,18 +48,15 @@ pub(crate) fn generate_enums_cache(
     })?;
 
     // Each enum implementation
-    for enumeration in lib.native_enums() {
-        let enum_name = enumeration.name.to_camel_case();
+    for enumeration in lib.enums() {
+        let enum_name = enumeration.name.camel_case();
         let enum_sig = format!("\"L{}/{};\"", lib_path, enum_name);
 
-        f.writeln(&format!("pub struct Enum{}", enum_name))?;
+        f.writeln(&format!("pub struct {}", enum_name))?;
         blocked(&mut f, |f| {
-            f.writeln("value_field: jni::objects::JFieldID<'static>,")?;
+            f.writeln("_value_field: jni::objects::JFieldID<'static>,")?;
             for variant in &enumeration.variants {
-                f.writeln(&format!(
-                    "variant_{}: jni::objects::GlobalRef,",
-                    variant.name.to_snake_case()
-                ))?;
+                f.writeln(&format!("{}: jni::objects::GlobalRef,", variant.name))?;
             }
 
             Ok(())
@@ -68,7 +64,7 @@ pub(crate) fn generate_enums_cache(
 
         f.newline()?;
 
-        f.writeln(&format!("impl Enum{}", enum_name))?;
+        f.writeln(&format!("impl {}", enum_name))?;
         blocked(&mut f, |f| {
             f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
             blocked(f, |f| {
@@ -78,9 +74,9 @@ pub(crate) fn generate_enums_cache(
                 ))?;
                 f.writeln("Self")?;
                 blocked(f, |f| {
-                    f.writeln(&format!("value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {}\"),", enum_name))?;
+                    f.writeln(&format!("_value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {}\"),", enum_name))?;
                     for variant in &enumeration.variants {
-                        f.writeln(&format!("variant_{}: env.new_global_ref(env.get_static_field(class, \"{}\", {}).expect(\"Unable to find variant {}\").l().unwrap()).unwrap(),", variant.name.to_snake_case(), variant.name.to_shouty_snake_case(), enum_sig, variant.name.to_shouty_snake_case()))?;
+                        f.writeln(&format!("{}: env.new_global_ref(env.get_static_field(class, \"{}\", {}).expect(\"Unable to find variant {}\").l().unwrap()).unwrap(),", variant.name, variant.name.capital_snake_case(), enum_sig, variant.name.capital_snake_case()))?;
                     }
                     Ok(())
                 })
@@ -88,22 +84,21 @@ pub(crate) fn generate_enums_cache(
 
             f.newline()?;
 
-            f.writeln("pub fn enum_to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> std::os::raw::c_int")?;
+            f.writeln("pub fn to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> std::os::raw::c_int")?;
             blocked(f, |f| {
-                f.writeln("env.get_field_unchecked(obj, self.value_field, jni::signature::JavaType::Primitive(jni::signature::Primitive::Int)).unwrap().i().unwrap()")
+                f.writeln("env.get_field_unchecked(obj, self._value_field, jni::signature::JavaType::Primitive(jni::signature::Primitive::Int)).unwrap().i().unwrap()")
             })?;
 
             f.newline()?;
 
-            f.writeln("pub fn enum_from_rust(&self, _env: &jni::JNIEnv, value: std::os::raw::c_int) -> jni::sys::jobject")?;
+            f.writeln("pub fn to_jni(&self, _env: &jni::JNIEnv, value: std::os::raw::c_int) -> jni::sys::jobject")?;
             blocked(f, |f| {
                 f.writeln("match value")?;
                 blocked(f, |f| {
                     for variant in &enumeration.variants {
                         f.writeln(&format!(
-                            "{} => self.variant_{}.as_obj().into_inner(),",
-                            variant.value,
-                            variant.name.to_snake_case()
+                            "{} => self.{}.as_obj().into_inner(),",
+                            variant.value, variant.name
                         ))?;
                     }
                     f.writeln(&format!(

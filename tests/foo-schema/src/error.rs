@@ -1,86 +1,65 @@
-use oo_bindgen::error_type::ExceptionType;
-use oo_bindgen::native_function::{ReturnType, Type};
-use oo_bindgen::native_struct::NativeStructHandle;
-use oo_bindgen::{BindingError, LibraryBuilder};
+use oo_bindgen::model::*;
 
-pub(crate) fn define(
-    lib: &mut LibraryBuilder,
-    structure: NativeStructHandle,
-) -> Result<(), BindingError> {
+pub(crate) fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let error_type = lib
-        .define_error_type("MyError", "MyException", ExceptionType::UncheckedException)?
-        .add_error("BadPassword", "Wrong password!")?
-        .add_error("NullArgument", "Provided argument was NULL")?
+        .define_error_type(
+            "my_error",
+            "my_exception",
+            ExceptionType::UncheckedException,
+        )?
+        .add_error("bad_password", "Wrong password!")?
+        .add_error("null_argument", "Provided argument was NULL")?
         .doc("Errors returned by the various functions")?
         .build()?;
 
-    let my_class = lib.declare_class("ClassWithPassword")?;
+    let my_class = lib.declare_class("class_with_password")?;
 
     let get_special_number_fb = lib
-        .declare_native_function("get_special_number")?
-        .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::new(Type::Uint32, "unlocked value"))?
+        .define_function("get_special_value")?
+        .param("password", StringType, "secret password")?
+        .returns(Primitive::U32, "unlocked value")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a secret value")?
-        .build()?;
+        .build_static_with_same_name()?;
 
     let get_struct_fn = lib
-        .declare_native_function("get_struct")?
-        .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::new(Type::Struct(structure), "A struct"))?
+        .define_function("validate_password")?
+        .param("password", StringType, "secret password")?
         .fails_with(error_type.clone())?
         .doc("Use a password to retrieve a struct")?
-        .build()?;
+        .build_static_with_same_name()?;
 
     let echo_password_fn = lib
-        .declare_native_function("echo_password")?
-        .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::new(Type::String, "The password"))?
+        .define_function("echo_password")?
+        .param("password", StringType, "secret password")?
+        .returns(StringType, "The password")?
         .fails_with(error_type.clone())?
         .doc("Use a password and echoes it if it's valid")?
-        .build()?;
+        .build_static_with_same_name()?;
 
-    let constructor_fn = lib
-        .declare_native_function("create_class_with_password")?
-        .param("password", Type::String, "secret password")?
-        .return_type(ReturnType::Type(
-            Type::ClassRef(my_class.clone()),
-            "allocated class".into(),
-        ))?
+    let constructor = lib
+        .define_constructor(my_class.clone())?
+        .param("password", StringType, "secret password")?
         .fails_with(error_type.clone())?
         .doc("Use a password to allocate a class")?
         .build()?;
 
-    let get_special_value_fn = lib
-        .declare_native_function("get_special_value_from_class")?
-        .param(
-            "instance",
-            Type::ClassRef(my_class.clone()),
-            "class instance",
-        )?
-        .return_type(ReturnType::Type(Type::Uint32, "special value".into()))?
+    let get_special_value = lib
+        .define_method("get_special_value", my_class.clone())?
+        .returns(Primitive::U32, "special value")?
         .fails_with(error_type)?
         .doc("extract a special value from the class instance")?
         .build()?;
 
-    let destructor_fn = lib
-        .declare_native_function("destroy_class_with_password")?
-        .param(
-            "instance",
-            Type::ClassRef(my_class.clone()),
-            "class to destroy",
-        )?
-        .return_nothing()?
-        .doc("Destroy an instance")?
-        .build()?;
+    let destructor = lib.define_destructor(my_class.clone(), "Destroy an instance")?;
 
     lib.define_class(&my_class)?
-        .constructor(&constructor_fn)?
-        .destructor(&destructor_fn)?
-        .method("GetSpecialValueFromInstance", &get_special_value_fn)?
-        .static_method("GetSpecialValue", &get_special_number_fb)?
-        .static_method("GetStruct", &get_struct_fn)?
-        .static_method("EchoPassword", &echo_password_fn)?
+        .constructor(constructor)?
+        .destructor(destructor)?
+        .method(get_special_value)?
+        .static_method(get_special_number_fb)?
+        .static_method(get_struct_fn)?
+        .static_method(echo_password_fn)?
         .doc("A very special class")?
         .build()?;
 

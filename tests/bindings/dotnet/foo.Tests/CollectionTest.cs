@@ -16,10 +16,10 @@ namespace foo.Tests
             strings.Add("World!");
             strings.Add("Émile");
 
-            Assert.Equal((uint)strings.Count, StringCollection.GetSize(strings));
-            Assert.Equal("Hello", StringCollection.GetValue(strings, 0));
-            Assert.Equal("World!", StringCollection.GetValue(strings, 1));
-            Assert.Equal("Émile", StringCollection.GetValue(strings, 2));
+            Assert.Equal((uint)strings.Count, StringCollectionTestMethods.GetSize(strings));
+            Assert.Equal("Hello", StringCollectionTestMethods.GetValue(strings, 0));
+            Assert.Equal("World!", StringCollectionTestMethods.GetValue(strings, 1));
+            Assert.Equal("Émile", StringCollectionTestMethods.GetValue(strings, 2));
         }
 
         [Fact]
@@ -30,10 +30,10 @@ namespace foo.Tests
             strings.Add("World!");
             strings.Add("Émile");
 
-            Assert.Equal((uint)strings.Count, StringCollection.GetSizeWithReserve(strings));
-            Assert.Equal("Hello", StringCollection.GetValueWithReserve(strings, 0));
-            Assert.Equal("World!", StringCollection.GetValueWithReserve(strings, 1));
-            Assert.Equal("Émile", StringCollection.GetValueWithReserve(strings, 2));
+            Assert.Equal((uint)strings.Count, StringCollectionTestMethods.GetSizeWithReserve(strings));
+            Assert.Equal("Hello", StringCollectionTestMethods.GetValueWithReserve(strings, 0));
+            Assert.Equal("World!", StringCollectionTestMethods.GetValueWithReserve(strings, 1));
+            Assert.Equal("Émile", StringCollectionTestMethods.GetValueWithReserve(strings, 2));
         }
     }
 }

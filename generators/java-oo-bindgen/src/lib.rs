@@ -44,16 +44,15 @@ clippy::all
     bare_trait_objects
 )]
 
-use heck::KebabCase;
-use oo_bindgen::platforms::*;
-use oo_bindgen::*;
 use std::path::PathBuf;
+
+pub use java::generate_java_bindings;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::Library;
+pub use rust::generate_java_ffi;
 
 mod java;
 mod rust;
-
-pub use java::generate_java_bindings;
-pub use rust::generate_java_ffi;
 
 pub struct JavaBindgenConfig {
     /// Path to output the generated Java code
@@ -79,7 +78,7 @@ impl JavaBindgenConfig {
         for dir in self.group_id.split('.') {
             result.push(dir);
         }
-        result.push(&lib.name.to_kebab_case());
+        result.push(&lib.settings.name.kebab_case());
         result
     }
 
@@ -102,7 +101,7 @@ impl JavaBindgenConfig {
     }
 
     fn java_signature_path(&self, libname: &str) -> String {
-        let mut result = self.group_id.replace(".", "/");
+        let mut result = self.group_id.replace('.', "/");
         result.push('/');
         result.push_str(libname);
         result

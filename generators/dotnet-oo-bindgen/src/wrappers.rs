@@ -1,10 +1,15 @@
-use oo_bindgen::formatting::{FormattingResult, Printer};
-use oo_bindgen::Library;
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
 
-use crate::conversion::DotnetType;
+use crate::conversion::TypeInfo;
 use crate::formatting::*;
 use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
-use oo_bindgen::native_function::{NativeFunctionHandle, NativeFunctionType};
+
+fn filter_has_error(
+    x: &Handle<Function<Validated>>,
+) -> Option<(Handle<Function<Validated>>, ErrorType<Validated>)> {
+    x.error_type.get().map(|err| (x.clone(), err.clone()))
+}
 
 pub(crate) fn generate_native_functions_class(
     f: &mut dyn Printer,
@@ -15,7 +20,28 @@ pub(crate) fn generate_native_functions_class(
     print_imports(f)?;
     f.newline()?;
 
-    namespaced(f, &lib.name, |f| {
+    doxygen(f, |f| {
+        // Doxygen main page
+        f.writeln("@mainpage")?;
+        f.newline()?;
+        f.writeln(&lib.info.description)?;
+        f.newline()?;
+        f.writeln(&format!(
+            "For complete documentation, see @ref {} namespace",
+            lib.settings.name
+        ))?;
+        f.newline()?;
+        f.writeln("@section license License")?;
+        f.newline()?;
+        for line in &lib.info.license_description {
+            f.writeln(line)?;
+        }
+
+        Ok(())
+    })?;
+    f.newline()?;
+
+    namespaced(f, &lib.settings.name, |f| {
         f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
         blocked(f, |f| {
             f.writeln(&format!("const string VERSION = \"{}\";", lib.version))?;
@@ -23,18 +49,18 @@ pub(crate) fn generate_native_functions_class(
             // Static constructor used to verify the version
             f.writeln(&format!("static {}()", NATIVE_FUNCTIONS_CLASSNAME))?;
             blocked(f, |f| {
-                f.writeln("var loadedVersion = Helpers.RustString.FromNative(version());")?;
+                f.writeln("var loadedVersion = Helpers.RustString.FromNative(Version());")?;
                 f.writeln("if (loadedVersion != VERSION)")?;
                 blocked(f, |f| {
-                    f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.name))
+                    f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.settings.name))
                 })
             })?;
 
             f.newline()?;
 
-            for func in lib.native_functions() {
+            for func in lib.functions() {
                 f.newline()?;
-                write_conversion_wrapper(f, func, &lib.c_ffi_prefix)?;
+                write_conversion_wrapper(f, func)?;
             }
 
             Ok(())
@@ -43,9 +69,9 @@ pub(crate) fn generate_native_functions_class(
         f.newline()?;
         f.writeln("internal class ExceptionWrappers")?;
         blocked(f, |f| {
-            for func in lib.native_functions().filter(|x| x.error_type.is_some()) {
+            for (func, err) in lib.functions().filter_map(filter_has_error) {
                 f.newline()?;
-                write_exception_wrapper(f, func, &lib.c_ffi_prefix)?;
+                write_exception_wrapper(f, &func, &err)?;
             }
             Ok(())
         })?;
@@ -54,68 +80,72 @@ pub(crate) fn generate_native_functions_class(
 
         f.writeln("internal class PInvoke")?;
         blocked(f, |f| {
-            for func in lib.native_functions() {
-                write_pinvoke_signature(f, func, &lib.c_ffi_prefix, config)?;
+            for func in lib.functions() {
+                write_pinvoke_signature(f, func, &lib.settings.c_ffi_prefix, config)?;
             }
             Ok(())
         })
     })
 }
 
-fn write_exception_and_return_block(
+fn write_exception_and_return_blocks(
     f: &mut dyn Printer,
-    func: &NativeFunctionHandle,
+    err: &ErrorType<Validated>,
+    func: &Handle<Function<Validated>>,
     params: &str,
-    prefix: &str,
 ) -> FormattingResult<()> {
-    match func.get_type() {
-        NativeFunctionType::NoErrorNoReturn => {
-            unreachable!()
-        }
-        NativeFunctionType::NoErrorWithReturn(_, _) => {
-            unreachable!()
-        }
-        NativeFunctionType::ErrorNoReturn(err) => {
+    match func.return_type.get() {
+        Some(ret) => {
             f.writeln(&format!(
-                "var error = PInvoke.{}_{}({});",
-                prefix, func.name, params
+                "var _error_result = PInvoke.{}({}, out {} _return_value);",
+                func.name.camel_case(),
+                params,
+                ret.value.get_native_type()
             ))?;
-            f.writeln(&format!("if(error != {}.Ok)", err.inner.name))?;
-            blocked(f, |f| {
-                f.writeln(&format!("throw new {}(error);", err.exception_name))
-            })
-        }
-        NativeFunctionType::ErrorWithReturn(err, ret, _) => {
-            f.writeln(&format!("{} _return_value;", ret.as_native_type()))?;
             f.writeln(&format!(
-                "var _error_result = PInvoke.{}_{}({}, out _return_value);",
-                prefix, func.name, params
+                "if(_error_result != {}.Ok)",
+                err.inner.name.camel_case()
             ))?;
-            f.writeln(&format!("if(_error_result != {}.Ok)", err.inner.name))?;
             blocked(f, |f| {
-                f.writeln(&format!("throw new {}(_error_result);", err.exception_name))
+                f.writeln(&format!(
+                    "throw new {}(_error_result);",
+                    err.exception_name.camel_case()
+                ))
             })?;
             f.writeln("return _return_value;")
+        }
+        None => {
+            f.writeln(&format!(
+                "var error = PInvoke.{}({});",
+                func.name.camel_case(),
+                params
+            ))?;
+            f.writeln(&format!("if(error != {}.Ok)", err.inner.name.camel_case()))?;
+            blocked(f, |f| {
+                f.writeln(&format!(
+                    "throw new {}(error);",
+                    err.exception_name.camel_case()
+                ))
+            })
         }
     }
 }
 
 fn write_conversion_wrapper(
     f: &mut dyn Printer,
-    func: &NativeFunctionHandle,
-    prefix: &str,
+    func: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
     f.write(&format!(
         "internal static {} {}(",
-        func.return_type.as_native_type(),
-        func.name
+        func.return_type.get_native_type(),
+        func.name.camel_case()
     ))?;
 
     f.write(
         &func
-            .parameters
+            .arguments
             .iter()
-            .map(|param| format!("{} {}", param.param_type.as_native_type(), param.name))
+            .map(|param| format!("{} {}", param.arg_type.get_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -123,9 +153,9 @@ fn write_conversion_wrapper(
     f.write(")")?;
 
     let params = func
-        .parameters
+        .arguments
         .iter()
-        .map(|p| p.name.clone())
+        .map(|p| p.name.to_string())
         .collect::<Vec<String>>()
         .join(", ");
 
@@ -137,30 +167,34 @@ fn write_conversion_wrapper(
 
     blocked(f, |f| {
         f.newline()?;
-        if !func.return_type.is_void() {
+        if func.return_type.is_some() {
             f.write("return ")?;
         }
-        f.write(&format!("{}.{}_{}({});", target, prefix, func.name, params))
+        f.write(&format!(
+            "{}.{}({});",
+            target,
+            func.name.camel_case(),
+            params
+        ))
     })
 }
 
 fn write_exception_wrapper(
     f: &mut dyn Printer,
-    func: &NativeFunctionHandle,
-    prefix: &str,
+    func: &Handle<Function<Validated>>,
+    err: &ErrorType<Validated>,
 ) -> FormattingResult<()> {
     f.write(&format!(
-        "internal static {} {}_{}(",
-        func.return_type.as_native_type(),
-        prefix,
-        func.name,
+        "internal static {} {}(",
+        func.return_type.get_native_type(),
+        func.name.camel_case(),
     ))?;
 
     f.write(
         &func
-            .parameters
+            .arguments
             .iter()
-            .map(|param| format!("{} {}", param.param_type.as_native_type(), param.name))
+            .map(|param| format!("{} {}", param.arg_type.get_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
@@ -168,59 +202,57 @@ fn write_exception_wrapper(
     f.write(")")?;
 
     let params = func
-        .parameters
+        .arguments
         .iter()
-        .map(|p| p.name.clone())
+        .map(|p| p.name.to_string())
         .collect::<Vec<String>>()
         .join(", ");
 
     blocked(f, |f| {
-        write_exception_and_return_block(f, func, &params, prefix)
+        write_exception_and_return_blocks(f, err, func, &params)
     })
 }
 
 fn write_pinvoke_signature(
     f: &mut dyn Printer,
-    handle: &NativeFunctionHandle,
+    handle: &Handle<Function<Validated>>,
     prefix: &str,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
     f.writeln(&format!(
-        "[DllImport(\"{}\", CallingConvention = CallingConvention.Cdecl)]",
-        config.ffi_name
+        "[DllImport(\"{}\", CallingConvention = CallingConvention.Cdecl, EntryPoint = \"{}_{}\")]",
+        config.ffi_name, prefix, handle.name
     ))?;
     f.newline()?;
 
-    if let Some(err) = &handle.error_type {
+    if let Some(err) = handle.error_type.get() {
         f.write(&format!(
-            "internal static extern {} {}_{}(",
-            err.to_enum_type().as_native_type(),
-            prefix,
-            handle.name,
+            "internal static extern {} {}(",
+            err.inner.get_native_type(),
+            handle.name.camel_case(),
         ))?;
     } else {
         f.write(&format!(
-            "internal static extern {} {}_{}(",
-            handle.return_type.as_native_type(),
-            prefix,
-            handle.name,
+            "internal static extern {} {}(",
+            handle.return_type.get_native_type(),
+            handle.name.camel_case()
         ))?;
     }
 
     f.write(
         &handle
-            .parameters
+            .arguments
             .iter()
-            .map(|param| format!("{} {}", param.param_type.as_native_type(), param.name))
+            .map(|param| format!("{} {}", param.arg_type.get_native_type(), param.name))
             .collect::<Vec<String>>()
             .join(", "),
     )?;
 
-    if let NativeFunctionType::ErrorWithReturn(_, ret, _) = handle.get_type() {
-        if !handle.parameters.is_empty() {
+    if let SignatureType::ErrorWithReturn(_, ret, _) = handle.get_signature_type() {
+        if !handle.arguments.is_empty() {
             f.write(", ")?;
         }
-        f.write(&format!("out {} @out", ret.as_native_type()))?
+        f.write(&format!("out {} @out", ret.get_native_type()))?
     }
 
     f.write(");")

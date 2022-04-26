@@ -1,18 +1,14 @@
 use super::doc::*;
 use super::*;
-use heck::{CamelCase, MixedCase};
-use oo_bindgen::class::*;
-use oo_bindgen::error_type::ExceptionType;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
-    class: &ClassHandle,
-    lib: &Library,
+    class: &Handle<Class<Validated>>,
 ) -> FormattingResult<()> {
-    let classname = class.name().to_camel_case();
+    let classname = class.name().camel_case();
 
     // Documentation
-    documentation(f, |f| javadoc_print(f, &class.doc, lib))?;
+    documentation(f, |f| javadoc_print(f, &class.doc))?;
 
     // Class definition
     f.writeln(&format!("public final class {}", classname))?;
@@ -34,27 +30,27 @@ pub(crate) fn generate(
         f.newline()?;
 
         if let Some(constructor) = &class.constructor {
-            generate_constructor(f, &classname, constructor, lib)?;
+            generate_constructor(f, &classname, constructor)?;
             f.newline()?;
         }
 
         if let Some(destructor) = &class.destructor {
-            generate_destructor(f, destructor, &class.destruction_mode, lib)?;
+            generate_destructor(f, destructor, &class.destruction_mode)?;
             f.newline()?;
         }
 
         for method in &class.methods {
-            generate_method(f, method, lib)?;
+            generate_method(f, method)?;
             f.newline()?;
         }
 
-        for method in &class.async_methods {
-            generate_async_method(f, method, lib)?;
+        for method in &class.future_methods {
+            generate_async_method(f, method)?;
             f.newline()?;
         }
 
         for method in &class.static_methods {
-            generate_static_method(f, method, lib)?;
+            generate_static_method(f, method)?;
             f.newline()?;
         }
 
@@ -64,13 +60,12 @@ pub(crate) fn generate(
 
 pub(crate) fn generate_static(
     f: &mut dyn Printer,
-    class: &StaticClassHandle,
-    lib: &Library,
+    class: &Handle<StaticClass<Validated>>,
 ) -> FormattingResult<()> {
-    let classname = class.name.to_camel_case();
+    let classname = class.name.camel_case();
 
     // Documentation
-    documentation(f, |f| javadoc_print(f, &class.doc, lib))?;
+    documentation(f, |f| javadoc_print(f, &class.doc))?;
 
     // Class definition
     f.writeln(&format!("public final class {}", classname))?;
@@ -81,7 +76,7 @@ pub(crate) fn generate_static(
         f.newline()?;
 
         for method in &class.static_methods {
-            generate_static_method(f, method, lib)?;
+            generate_static_method(f, method)?;
             f.newline()?;
         }
 
@@ -92,26 +87,25 @@ pub(crate) fn generate_static(
 fn generate_constructor(
     f: &mut dyn Printer,
     classname: &str,
-    constructor: &NativeFunctionHandle,
-    lib: &Library,
+    constructor: &ClassConstructor<Validated>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &constructor.doc, lib)?;
+        javadoc_print(f, &constructor.function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in constructor.parameters.iter() {
-            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in constructor.function.arguments.iter() {
+            f.writeln(&format!("@param {} ", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print exception
-        if let Some(error) = &constructor.error_type {
+        if let Some(error) = &constructor.function.error_type.get() {
             f.writeln(&format!(
                 "@throws {} {}",
-                error.exception_name.to_camel_case(),
-                error.inner.name.to_camel_case()
+                error.exception_name.camel_case(),
+                error.inner.name.camel_case()
             ))?;
         }
 
@@ -121,13 +115,14 @@ fn generate_constructor(
     f.writeln(&format!("public {}(", classname))?;
     f.write(
         &constructor
-            .parameters
+            .function
+            .arguments
             .iter()
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_java_primitive(),
-                    param.name.to_mixed_case()
+                    param.arg_type.as_java_primitive(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -136,7 +131,12 @@ fn generate_constructor(
     f.write(")")?;
 
     blocked(f, |f| {
-        call_native_function(f, constructor, &format!("{} object = ", classname), false)?;
+        call_native_function(
+            f,
+            &constructor.function,
+            &format!("{} object = ", classname),
+            false,
+        )?;
         f.writeln("this.self = object.self;")?;
         f.writeln("object.disposed.set(true);")
     })
@@ -144,20 +144,19 @@ fn generate_constructor(
 
 fn generate_destructor(
     f: &mut dyn Printer,
-    destructor: &NativeFunctionHandle,
+    destructor: &ClassDestructor<Validated>,
     destruction_mode: &DestructionMode,
-    lib: &Library,
 ) -> FormattingResult<()> {
     if destruction_mode.is_manual_destruction() {
         documentation(f, |f| {
             // Print top-level documentation
-            javadoc_print(f, &destructor.doc, lib)?;
+            javadoc_print(f, &destructor.function.doc)?;
             f.newline()?;
 
             // Print each parameter value
-            for param in destructor.parameters.iter().skip(1) {
-                f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-                docstring_print(f, &param.doc, lib)?;
+            for param in destructor.function.arguments.iter().skip(1) {
+                f.writeln(&format!("@param {} ", param.name.mixed_case()))?;
+                docstring_print(f, &param.doc)?;
             }
 
             Ok(())
@@ -169,7 +168,7 @@ fn generate_destructor(
             f.writeln("private void close()")?;
         }
         DestructionMode::Custom(name) => {
-            f.writeln(&format!("public void {}()", name.to_mixed_case()))?;
+            f.writeln(&format!("public void {}()", name.mixed_case()))?;
         }
         DestructionMode::Dispose => {
             // AutoCloseable implementation
@@ -185,8 +184,8 @@ fn generate_destructor(
         f.newline()?;
 
         f.writeln(&format!(
-            "{}.{}(this);",
-            NATIVE_FUNCTIONS_CLASSNAME, destructor.name
+            "{}.Wrapped.{}(this);",
+            NATIVE_FUNCTIONS_CLASSNAME, destructor.function.name
         ))
     })?;
 
@@ -197,37 +196,37 @@ fn generate_destructor(
     f.writeln("public void finalize()")?;
     blocked(f, |f| {
         if let DestructionMode::Custom(name) = destruction_mode {
-            f.writeln(&format!("this.{}();", name.to_mixed_case()))
+            f.writeln(&format!("this.{}();", name.mixed_case()))
         } else {
             f.writeln("this.close();")
         }
     })
 }
 
-fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> FormattingResult<()> {
+fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &method.native_function.doc, lib)?;
+        javadoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in method.native_function.parameters.iter().skip(1) {
-            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in method.native_function.arguments.iter().skip(1) {
+            f.writeln(&format!("@param {} ", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let Some(doc) = &method.native_function.return_type.get_doc() {
             f.writeln("@return ")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
         }
 
         // Print exception
-        if let Some(error) = &method.native_function.error_type {
+        if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
                 "@throws {} {}",
-                error.exception_name.to_camel_case(),
-                error.inner.name.to_camel_case()
+                error.exception_name.camel_case(),
+                error.inner.name.camel_case()
             ))?;
         }
 
@@ -237,19 +236,19 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
     f.writeln(&format!(
         "public {} {}(",
         method.native_function.return_type.as_java_primitive(),
-        method.name.to_mixed_case()
+        method.name.mixed_case()
     ))?;
     f.write(
         &method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .skip(1)
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_java_primitive(),
-                    param.name.to_mixed_case()
+                    param.arg_type.as_java_primitive(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -257,9 +256,9 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
     )?;
     f.write(")")?;
 
-    if let Some(error) = &method.native_function.error_type {
+    if let Some(error) = method.native_function.error_type.get() {
         if error.exception_type == ExceptionType::CheckedException {
-            f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+            f.write(&format!(" throws {}", error.exception_name.camel_case()))?;
         }
     }
 
@@ -270,32 +269,31 @@ fn generate_method(f: &mut dyn Printer, method: &Method, lib: &Library) -> Forma
 
 fn generate_static_method(
     f: &mut dyn Printer,
-    method: &Method,
-    lib: &Library,
+    method: &StaticMethod<Validated>,
 ) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &method.native_function.doc, lib)?;
+        javadoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in method.native_function.parameters.iter() {
-            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in method.native_function.arguments.iter() {
+            f.writeln(&format!("@param {} ", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print return value
-        if let ReturnType::Type(_, doc) = &method.native_function.return_type {
+        if let Some(doc) = &method.native_function.return_type.get_doc() {
             f.writeln("@return ")?;
-            docstring_print(f, doc, lib)?;
+            docstring_print(f, doc)?;
         }
 
         // Print exception
-        if let Some(error) = &method.native_function.error_type {
+        if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
                 "@throws {} {}",
-                error.exception_name.to_camel_case(),
-                error.inner.name.to_camel_case()
+                error.exception_name.camel_case(),
+                error.inner.name.camel_case()
             ))?;
         }
 
@@ -305,18 +303,18 @@ fn generate_static_method(
     f.writeln(&format!(
         "public static {} {}(",
         method.native_function.return_type.as_java_primitive(),
-        method.name.to_mixed_case()
+        method.name.mixed_case()
     ))?;
     f.write(
         &method
             .native_function
-            .parameters
+            .arguments
             .iter()
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_java_primitive(),
-                    param.name.to_mixed_case()
+                    param.arg_type.as_java_primitive(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -324,9 +322,9 @@ fn generate_static_method(
     )?;
     f.write(")")?;
 
-    if let Some(error) = &method.native_function.error_type {
+    if let Some(error) = method.native_function.error_type.get() {
         if error.exception_type == ExceptionType::CheckedException {
-            f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+            f.write(&format!(" throws {}", error.exception_name.camel_case()))?;
         }
     }
 
@@ -337,44 +335,40 @@ fn generate_static_method(
 
 fn generate_async_method(
     f: &mut dyn Printer,
-    method: &AsyncMethod,
-    lib: &Library,
+    method: &FutureMethod<Validated>,
 ) -> FormattingResult<()> {
-    let return_type = method.return_type.as_java_object();
-    let one_time_callback_name = method.one_time_callback_name.to_camel_case();
-    let one_time_callback_param_name = method.one_time_callback_param_name.to_mixed_case();
-    let callback_param_name = method.callback_param_name.to_mixed_case();
+    let value_type = method.future.value_type.as_java_object();
+    let settings = method.future.interface.settings.clone();
+    let interface_name = method.future.interface.name.camel_case();
+    let callback_param_name = settings
+        .future
+        .async_method_callback_parameter_name
+        .mixed_case();
 
-    let future_type = format!("java.util.concurrent.CompletableFuture<{}>", return_type);
+    let future_type = format!("java.util.concurrent.CompletableFuture<{}>", value_type);
 
     // Documentation
     documentation(f, |f| {
         // Print top-level documentation
-        javadoc_print(f, &method.native_function.doc, lib)?;
+        javadoc_print(f, &method.native_function.doc)?;
         f.newline()?;
 
         // Print each parameter value
-        for param in method
-            .native_function
-            .parameters
-            .iter()
-            .skip(1)
-            .filter(|param| !matches!(param.param_type, Type::Interface(_)))
-        {
-            f.writeln(&format!("@param {} ", param.name.to_mixed_case()))?;
-            docstring_print(f, &param.doc, lib)?;
+        for param in method.arguments_without_callback() {
+            f.writeln(&format!("@param {} ", param.name.mixed_case()))?;
+            docstring_print(f, &param.doc)?;
         }
 
         // Print return value
         f.writeln("@return ")?;
-        docstring_print(f, &method.return_type_doc, lib)?;
+        docstring_print(f, &method.future.value_type_doc)?;
 
         // Print exception
-        if let Some(error) = &method.native_function.error_type {
+        if let Some(error) = &method.native_function.error_type.get() {
             f.writeln(&format!(
                 "@throws {} {}",
-                error.exception_name.to_camel_case(),
-                error.inner.name.to_camel_case()
+                error.exception_name.camel_case(),
+                error.inner.name.camel_case()
             ))?;
         }
 
@@ -383,21 +377,17 @@ fn generate_async_method(
 
     f.writeln(&format!(
         "public java.util.concurrent.CompletionStage<{}> {}(",
-        return_type,
-        method.name.to_mixed_case()
+        value_type,
+        method.name.mixed_case()
     ))?;
     f.write(
         &method
-            .native_function
-            .parameters
-            .iter()
-            .skip(1)
-            .filter(|param| !matches!(param.param_type, Type::Interface(_)))
+            .arguments_without_callback()
             .map(|param| {
                 format!(
                     "{} {}",
-                    param.param_type.as_java_primitive(),
-                    param.name.to_mixed_case()
+                    param.arg_type.as_java_primitive(),
+                    param.name.mixed_case()
                 )
             })
             .collect::<Vec<String>>()
@@ -405,25 +395,47 @@ fn generate_async_method(
     )?;
     f.write(")")?;
 
-    if let Some(error) = &method.native_function.error_type {
+    if let Some(error) = method.native_function.error_type.get() {
         if error.exception_type == ExceptionType::CheckedException {
-            f.write(&format!(" throws {}", error.exception_name.to_camel_case()))?;
+            f.write(&format!(" throws {}", error.exception_name.camel_case()))?;
         }
     }
 
     blocked(f, |f| {
-        f.writeln(&format!("{} future = new {}();", future_type, future_type))?;
+        f.writeln(&format!("{} _future = new {}();", future_type, future_type))?;
 
         f.writeln(&format!(
-            "{} {} = {} -> {{",
-            one_time_callback_name, one_time_callback_param_name, callback_param_name
+            "{} {} = new {}() {{",
+            interface_name, callback_param_name, interface_name
         ))?;
         indented(f, |f| {
-            f.writeln(&format!("future.complete({});", callback_param_name))
+            f.writeln(&format!(
+                "public void {}({} value)",
+                settings.future.success_callback_method_name.mixed_case(),
+                value_type
+            ))?;
+            blocked(f, |f| f.writeln("_future.complete(value);"))?;
+
+            if let Some(err) = method.future.error_type.get() {
+                f.newline()?;
+                f.writeln(&format!(
+                    "public void {}({} error)",
+                    settings.future.failure_callback_method_name.mixed_case(),
+                    err.inner.name.camel_case()
+                ))?;
+                blocked(f, |f| {
+                    f.writeln(&format!(
+                        "_future.completeExceptionally(new {}(error));",
+                        err.exception_name.camel_case()
+                    ))
+                })?;
+            }
+
+            Ok(())
         })?;
         f.writeln("};")?;
 
         call_native_function(f, &method.native_function, "return ", true)?;
-        f.writeln("return future;")
+        f.writeln("return _future;")
     })
 }

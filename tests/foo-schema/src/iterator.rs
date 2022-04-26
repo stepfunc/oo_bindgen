@@ -1,49 +1,47 @@
-use oo_bindgen::native_function::*;
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
-    // Define the iterator next function
-    // Must always take a class pointer as a param and return a struct pointer
-    // (null if no other value available)
-    let iterator_class = lib.declare_class("StringIterator")?;
-    let iterator_item = lib.declare_native_struct("StringIteratorItem")?;
-    let iterator_next_fn = lib
-        .declare_native_function("iterator_next")?
-        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
-        .return_type(ReturnType::new(
-            Type::StructRef(iterator_item.clone()),
-            "Iterator value",
-        ))?
-        .doc("Get the next value, or NULL if the iterator reached the end")?
-        .build()?;
-
+fn define_iterator(lib: &mut LibraryBuilder) -> BackTraced<AbstractIteratorHandle> {
     // Define the iterator item structure
+    let iterator_item = lib.declare_function_return_struct("string_iterator_item")?;
     let iterator_item = lib
-        .define_native_struct(&iterator_item)?
-        .add("value", Type::Uint8, "Charater value")?
+        .define_function_return_struct(iterator_item)?
+        .add("value", Primitive::U8, "Character value")?
         .doc("Single iterator item")?
+        .end_fields()?
         .build()?;
 
     // Define the actual iterator
-    let iterator = lib.define_iterator(&iterator_next_fn, &iterator_item)?;
+    let iterator = lib.define_iterator("string_iterator", iterator_item)?;
 
-    // Define test method
-    let iterate_string_fn = lib
-        .declare_native_function("iterator_create")?
-        .param("value", Type::String, "String to iterate on")?
-        .return_type(ReturnType::new(Type::Iterator(iterator), "New iterator"))?
-        .doc("Create an iterator")?
-        .build()?;
-    let iterator_destroy_fn = lib
-        .declare_native_function("iterator_destroy")?
-        .param("it", Type::ClassRef(iterator_class.clone()), "Iterator")?
-        .return_type(ReturnType::Void)?
-        .doc("Destroy an iterator")?
-        .build()?;
-    lib.define_class(&iterator_class)?
-        .static_method("IterateString", &iterate_string_fn)?
-        .destructor(&iterator_destroy_fn)?
-        .doc("IterateString functions")?
+    Ok(iterator)
+}
+
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
+    // iterators can only be used in callback arguments, so we need an interface
+    let iterator = define_iterator(lib)?;
+
+    let interface = lib
+        .define_interface("values_receiver", "Callback interface for receiving values")?
+        .begin_callback("on_characters", "callback to receive character values")?
+        .param("values", iterator, "byte value for each character")?
+        .enable_functional_transform()
+        .end_callback()?
+        .build_sync()?;
+
+    let invoke_fn = lib
+        .define_function("invoke_callback")?
+        .doc("invokes the callback with an iterator over the elements of the string")?
+        .param(
+            "values",
+            StringType,
+            "String to pass to the callback interface",
+        )?
+        .param("callback", interface, "callback interface to invoke")?
+        .build_static_with_same_name()?;
+
+    lib.define_static_class("iterator_test_helper")?
+        .doc("Helper methods for the iterator tests")?
+        .static_method(invoke_fn)?
         .build()?;
 
     Ok(())

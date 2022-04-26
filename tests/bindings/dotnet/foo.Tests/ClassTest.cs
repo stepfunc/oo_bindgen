@@ -18,7 +18,7 @@ namespace foo.Tests
             testclass.IncrementValue();
             Assert.Equal(42u, testclass.GetValue());
 
-            testclass.Delete();
+            testclass.Shutdown();
 
             Assert.Equal(0u, TestClass.ConstructionCounter());
         }
@@ -28,12 +28,12 @@ namespace foo.Tests
         {
             var testclass = new TestClass(41);
             Assert.Equal(1u, TestClass.ConstructionCounter());
-            Assert.Equal(41u, await testclass.GetValueAsync());
+            Assert.Equal(42u, await testclass.AddAsync(1));
 
             testclass.IncrementValue();
-            Assert.Equal(42u, await testclass.GetValueAsync());
+            Assert.Equal(43u, await testclass.AddAsync(1));
 
-            testclass.Delete();
+            testclass.Shutdown();
         }
     }
 }

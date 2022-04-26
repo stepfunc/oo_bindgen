@@ -1,32 +1,67 @@
-use oo_bindgen::native_function::*;
-use oo_bindgen::*;
+use oo_bindgen::model::*;
 
-pub fn define(lib: &mut LibraryBuilder) -> Result<(), BindingError> {
-    let iterator_class = lib.declare_class("IteratorWithLifeTime")?;
-    let iterator_item = lib.declare_native_struct("IteratorItem")?;
-    let iterator_next_fn = lib
-        .declare_native_function("next_value_with_lifetime")?
-        .param("it", Type::ClassRef(iterator_class), "Iterator")?
-        .return_type(ReturnType::new(
-            Type::StructRef(iterator_item.clone()),
-            "Iterator Value",
-        ))?
-        .doc("test")?
+fn define_inner_iterator(lib: &mut LibraryBuilder) -> BackTraced<AbstractIteratorHandle> {
+    let byte_value = lib.declare_function_return_struct("byte_value")?;
+    let byte_value = lib
+        .define_function_return_struct(byte_value)?
+        .add("value", Primitive::U8, "byte")?
+        .doc("item type for inner iterator")?
+        .end_fields()?
         .build()?;
 
-    let iterator_item = lib
-        .define_native_struct(&iterator_item)?
-        .add("value", Type::Uint8, "test")?
-        .doc("item type for iterator")?
-        .build()?;
+    let iterator = lib.define_iterator_with_lifetime("inner_byte_iterator", byte_value)?;
 
-    let iter = lib.define_iterator_with_lifetime(&iterator_next_fn, &iterator_item)?;
+    Ok(iterator)
+}
 
-    let outer = lib.declare_native_struct("StructWithIteratorWithLifeTime")?;
-
-    lib.define_native_struct(&outer)?
-        .add("iter", Type::Iterator(iter), "test")?
+fn define_outer_iter(lib: &mut LibraryBuilder) -> BackTraced<AbstractIteratorHandle> {
+    let inner_iter = define_inner_iterator(lib)?;
+    let chunk = lib.declare_function_return_struct("chunk")?;
+    let chunk = lib
+        .define_function_return_struct(chunk)?
+        .add(
+            "iter",
+            inner_iter,
+            "inner iterator over individual byte values",
+        )?
         .doc("Structure with an iterator with a lifetime")?
+        .end_fields()?
+        .build()?;
+
+    let iterator = lib.define_iterator_with_lifetime("chunk_iterator", chunk)?;
+
+    Ok(iterator)
+}
+
+pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
+    let outer_iter = define_outer_iter(lib)?;
+
+    let interface = lib
+        .define_interface(
+            "chunk_receiver",
+            "Callback interface for chunks of a byte array",
+        )?
+        .begin_callback("on_chunk", "callback to bytes")?
+        .param("values", outer_iter, "iterator over an iterator of bytes")?
+        .enable_functional_transform()
+        .end_callback()?
+        .build_sync()?;
+
+    let invoke_fn = lib
+        .define_function("iterate_string_by_chunks")?
+        .doc("iterate over a string by invoking the callback interface with chunks of the string")?
+        .param(
+            "values",
+            StringType,
+            "String to pass to the callback interface",
+        )?
+        .param("chunk_size", Primitive::U32, "size of each iteration")?
+        .param("callback", interface, "callback interface to invoke")?
+        .build_static_with_same_name()?;
+
+    lib.define_static_class("double_iterator_test_helper")?
+        .doc("Helper methods for the double iterator tests with lifetimes")?
+        .static_method(invoke_fn)?
         .build()?;
 
     Ok(())

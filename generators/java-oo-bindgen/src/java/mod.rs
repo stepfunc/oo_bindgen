@@ -1,13 +1,13 @@
+use std::fs;
+
+use oo_bindgen::backend::*;
+use oo_bindgen::model::*;
+
+use crate::JavaBindgenConfig;
+
 use self::conversion::*;
 use self::formatting::*;
-use crate::JavaBindgenConfig;
-use heck::ShoutySnakeCase;
-use heck::{CamelCase, KebabCase};
-use oo_bindgen::formatting::*;
-use oo_bindgen::native_function::*;
-use oo_bindgen::platforms::Platform;
-use oo_bindgen::*;
-use std::fs;
+use crate::java::nullable::{IsStruct, Nullable};
 
 mod class;
 mod constant;
@@ -17,41 +17,46 @@ mod enumeration;
 mod exception;
 mod formatting;
 mod interface;
+mod nullable;
 mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 const SUPPORTED_PLATFORMS: &[Platform] = &[
-    Platform::WinX64Msvc,
-    Platform::LinuxX64Gnu,
-    Platform::LinuxArm8Gnu,
+    platform::X86_64_PC_WINDOWS_MSVC,
+    platform::I686_PC_WINDOWS_MSVC,
+    platform::X86_64_UNKNOWN_LINUX_GNU,
+    platform::AARCH64_UNKNOWN_LINUX_GNU,
 ];
 
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+    for p in config.platforms.iter() {
+        if !SUPPORTED_PLATFORMS.contains(&p.platform) {
+            println!(
+                "Java generation for {} is not supported. Use at your own risks.",
+                p.platform
+            );
+        }
+    }
+
     fs::create_dir_all(&config.java_output_dir)?;
 
     // Create the pom.xml
     generate_pom(lib, config)?;
 
     // Copy the compiled libraries to the resource folder
+    fs::create_dir_all(config.java_resource_dir())?;
     let mut ffi_name = config.ffi_name.clone();
     ffi_name.push_str("_java");
-    for platform in config
-        .platforms
-        .iter()
-        .filter(|x| SUPPORTED_PLATFORMS.iter().any(|y| *y == x.platform))
-    {
-        let mut target_dir = config.java_resource_dir();
-        target_dir.push(platform.platform.as_string());
-        fs::create_dir_all(&target_dir)?;
+    for p in config.platforms.iter() {
+        let target_dir = config.java_resource_dir().join(p.platform.target_triple);
+        let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
+        let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
 
-        let mut source_file = platform.location.clone();
-        source_file.push(platform.bin_filename(&ffi_name));
-
-        let mut target_file = target_dir.clone();
-        target_file.push(platform.bin_filename(&ffi_name));
-
-        fs::copy(&source_file, &target_file)?;
+        if source_file.exists() {
+            fs::create_dir_all(&target_dir)?;
+            fs::copy(&source_file, &target_file)?;
+        }
     }
 
     // Copy the extra files
@@ -98,14 +103,14 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln(&format!("<groupId>{}</groupId>", config.group_id))?;
         f.writeln(&format!(
             "<artifactId>{}</artifactId>",
-            lib.name.to_kebab_case()
+            lib.settings.name.kebab_case()
         ))?;
         f.writeln(&format!("<version>{}</version>", lib.version))?;
 
         f.newline()?;
 
         // General metadata
-        f.writeln(&format!("<name>{}</name>", lib.name))?;
+        f.writeln(&format!("<name>{}</name>", lib.settings.name))?;
         f.writeln(&format!(
             "<description>{}</description>",
             lib.info.description
@@ -216,6 +221,33 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
     f.writeln("</project>")
 }
 
+fn write_null_checks(
+    f: &mut dyn Printer,
+    args: &[Arg<FunctionArgument, Validated>],
+) -> FormattingResult<()> {
+    for arg in args.iter().filter(|a| a.arg_type.is_nullable()) {
+        let arg_name = arg.name.mixed_case();
+        f.writeln(&format!(
+            "java.util.Objects.requireNonNull({}, \"{} cannot be null\");",
+            arg_name, arg_name
+        ))?;
+        if arg.arg_type.is_struct() {
+            f.writeln(&format!("{}._assertFieldsNotNull();", arg_name))?;
+        }
+        if let FunctionArgument::Collection(x) = &arg.arg_type {
+            f.writeln(&format!(
+                "for({} _item: {})",
+                x.item_type.as_java_object(),
+                arg_name
+            ))?;
+            blocked(f, |f| {
+                f.writeln(&format!("java.util.Objects.requireNonNull(_item, \"List {} may not contain a null member\");", arg_name))
+            })?;
+        }
+    }
+    Ok(())
+}
+
 fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     let mut f = create_file(NATIVE_FUNCTIONS_CLASSNAME, config, lib)?;
 
@@ -235,8 +267,10 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         blocked(f, |f| {
             f.writeln("try")?;
             blocked(f, |f| {
-                let env_variable_name =
-                    format!("{}_NATIVE_LIB_LOCATION", lib.name.to_shouty_snake_case());
+                let env_variable_name = format!(
+                    "{}_NATIVE_LIB_LOCATION",
+                    lib.settings.name.capital_snake_case()
+                );
                 f.writeln(&format!(
                     "String nativeLibLocation = System.getenv(\"{}\");",
                     env_variable_name
@@ -250,37 +284,35 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     let libname = format!("{}_java", config.ffi_name);
                     for platform in config.platforms.iter() {
                         match platform.platform {
-                            Platform::WinX64Msvc => {
+                            platform::X86_64_PC_WINDOWS_MSVC | platform::I686_PC_WINDOWS_MSVC => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
                                         "loaded = loadLibrary(\"{}\", \"{}\", \"dll\");",
-                                        platform.platform.as_string(),
-                                        libname
+                                        platform.platform.target_triple, libname
                                     ))
                                 })?;
                             }
-                            Platform::LinuxX64Gnu => {
+                            platform::X86_64_UNKNOWN_LINUX_GNU
+                            | platform::AARCH64_UNKNOWN_LINUX_GNU => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
                                         "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                        platform.platform.as_string(),
-                                        libname
+                                        platform.platform.target_triple, libname
                                     ))
                                 })?;
                             }
-                            Platform::LinuxArm8Gnu => {
+                            platform::X86_64_APPLE_DARWIN | platform::AARCH64_APPLE_DARWIN => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
-                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                        platform.platform.as_string(),
-                                        libname
+                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"dylib\");",
+                                        platform.platform.target_triple, libname
                                     ))
                                 })?;
                             }
-                            _ => (), // Other platforms are not supported
+                            _ => (), // Other platforms are not supported, but you can load them with XXX_NATIVE_LIB_LOCATION env variable
                         }
                     }
 
@@ -295,7 +327,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     f.writeln("String loadedVersion = version();")?;
                     f.writeln("if (!loadedVersion.equals(VERSION))")?;
                     blocked(f, |f| {
-                        f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.name))
+                        f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.settings.name))
                     })
                 })
             })?;
@@ -320,54 +352,91 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 f.writeln("System.load(tempFilePath.toString());")?;
                 f.writeln("return true;")
             })?;
-            f.writeln("catch(Exception e)")?;
+            f.writeln("catch(Throwable e)")?;
             blocked(f, |f| f.writeln("return false;"))
         })?;
 
         f.newline()?;
 
-        // Write each native functions
-        for handle in lib.native_functions() {
-            if let Some(first_param) = handle.parameters.first() {
-                if let Type::ClassRef(class_handle) = &first_param.param_type {
-                    // We don't want to generate the `next` methods of iterators
-                    if let Some(it) = lib.find_iterator(&class_handle.name) {
-                        if &it.native_func == handle {
-                            continue;
-                        }
-                    }
-                    // We don't want to generate the `add` and `delete` methods of collections
-                    if let Some(col) = lib.find_collection(&class_handle.name) {
-                        if &col.add_func == handle || &col.delete_func == handle {
-                            continue;
-                        }
-                    }
-                }
+        fn skip(c: FunctionCategory) -> bool {
+            match c {
+                FunctionCategory::Native => false,
+                // we don't generate any of these
+                FunctionCategory::CollectionCreate => true,
+                FunctionCategory::CollectionDestroy => true,
+                FunctionCategory::CollectionAdd => true,
+                FunctionCategory::IteratorNext => true,
             }
-            if let ReturnType::Type(Type::ClassRef(class_handle), _) = &handle.return_type {
-                // We don't want to generate the `create` method of collections
-                if lib.find_collection(&class_handle.name).is_some() {
-                    continue;
-                }
-            }
+        }
 
+        for handle in lib.functions().filter(|func| !skip(func.category)) {
             f.writeln(&format!(
-                "static native {} {}(",
+                "private static native {} {}(",
                 handle.return_type.as_java_primitive(),
                 handle.name
             ))?;
 
-            f.write(
-                &handle
-                    .parameters
-                    .iter()
-                    .map(|param| format!("{} {}", param.param_type.as_java_primitive(), param.name))
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            )?;
+            let args = handle
+                .arguments
+                .iter()
+                .map(|param| {
+                    format!(
+                        "{} {}",
+                        param.arg_type.as_java_primitive(),
+                        param.name.mixed_case()
+                    )
+                })
+                .collect::<Vec<String>>()
+                .join(", ");
+
+            f.write(&args)?;
             f.write(");")?;
             f.newline()?;
         }
+
+        f.writeln("// wrappers around the native functions that do null checking")?;
+        f.writeln("static class Wrapped")?;
+        blocked(f, |f| {
+            for handle in lib.functions().filter(|func| !skip(func.category)) {
+                f.writeln(&format!(
+                    "static {} {}(",
+                    handle.return_type.as_java_primitive(),
+                    handle.name
+                ))?;
+
+                let args = handle
+                    .arguments
+                    .iter()
+                    .map(|param| {
+                        format!(
+                            "{} {}",
+                            param.arg_type.as_java_primitive(),
+                            param.name.mixed_case()
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                f.write(&args)?;
+                f.write(")")?;
+                blocked(f, |f| {
+                    write_null_checks(f, &handle.arguments)?;
+                    let arg_names = handle
+                        .arguments
+                        .iter()
+                        .map(|x| x.name.mixed_case())
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    let invocation = format!("NativeFunctions.{}({});", handle.name, arg_names);
+                    if handle.return_type.is_some() {
+                        f.writeln(&format!("return {}", invocation))
+                    } else {
+                        f.writeln(&invocation)
+                    }
+                })?;
+            }
+            Ok(())
+        })?;
 
         Ok(())
     })
@@ -375,8 +444,8 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
 fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for set in lib.constants() {
-        let mut f = create_file(&set.name.to_camel_case(), config, lib)?;
-        constant::generate(&mut f, set, lib)?;
+        let mut f = create_file(&set.name.camel_case(), config, lib)?;
+        constant::generate(&mut f, set)?;
     }
 
     Ok(())
@@ -384,26 +453,31 @@ fn generate_constants(lib: &Library, config: &JavaBindgenConfig) -> FormattingRe
 
 fn generate_exceptions(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for error in lib.error_types() {
-        let mut f = create_file(&error.exception_name.to_camel_case(), config, lib)?;
-        exception::generate(&mut f, error, lib)?;
+        let mut f = create_file(&error.exception_name.camel_case(), config, lib)?;
+        exception::generate(&mut f, error)?;
     }
 
     Ok(())
 }
 
 fn generate_structs(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for native_struct in lib.structs() {
-        let mut f = create_file(&native_struct.name().to_camel_case(), config, lib)?;
-        structure::generate(&mut f, native_struct, lib)?;
+    for st in lib.structs() {
+        let mut f = create_file(&st.name().camel_case(), config, lib)?;
+        match st {
+            StructType::FunctionArg(x) => structure::generate(&mut f, x, true)?,
+            StructType::FunctionReturn(x) => structure::generate(&mut f, x, false)?,
+            StructType::CallbackArg(x) => structure::generate(&mut f, x, false)?,
+            StructType::Universal(x) => structure::generate(&mut f, x, true)?,
+        }
     }
 
     Ok(())
 }
 
 fn generate_enums(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for native_enum in lib.native_enums() {
-        let mut f = create_file(&native_enum.name.to_camel_case(), config, lib)?;
-        enumeration::generate(&mut f, native_enum, lib)?;
+    for native_enum in lib.enums() {
+        let mut f = create_file(&native_enum.name.camel_case(), config, lib)?;
+        enumeration::generate(&mut f, native_enum)?;
     }
 
     Ok(())
@@ -411,22 +485,22 @@ fn generate_enums(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult
 
 fn generate_classes(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for class in lib.classes() {
-        let mut f = create_file(&class.name().to_camel_case(), config, lib)?;
-        class::generate(&mut f, class, lib)?;
+        let mut f = create_file(&class.name().camel_case(), config, lib)?;
+        class::generate(&mut f, class)?;
     }
 
     for class in lib.static_classes() {
-        let mut f = create_file(&class.name.to_camel_case(), config, lib)?;
-        class::generate_static(&mut f, class, lib)?;
+        let mut f = create_file(&class.name.camel_case(), config, lib)?;
+        class::generate_static(&mut f, class)?;
     }
 
     Ok(())
 }
 
 fn generate_interfaces(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for interface in lib.interfaces() {
-        let mut f = create_file(&interface.name.to_camel_case(), config, lib)?;
-        interface::generate(&mut f, interface, lib)?;
+    for interface in lib.untyped_interfaces() {
+        let mut f = create_file(&interface.name.camel_case(), config, lib)?;
+        interface::generate(&mut f, interface)?;
     }
 
     Ok(())
@@ -467,7 +541,7 @@ fn print_package(
     f.writeln(&format!(
         "package {}.{};",
         config.group_id,
-        lib.name.to_kebab_case()
+        lib.settings.name.kebab_case()
     ))?;
     f.newline()?;
     f.writeln("import org.joou.*;")

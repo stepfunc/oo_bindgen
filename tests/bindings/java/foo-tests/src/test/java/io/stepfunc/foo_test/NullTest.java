@@ -3,121 +3,80 @@ package io.stepfunc.foo_test;
 import io.stepfunc.foo.*;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 public class NullTest {
     @Test
     public void NullUnsignedByte() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             IntegerEchoFunctions.uint8Echo(null);
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 
     @Test
     public void NullUnsignedShort() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             IntegerEchoFunctions.uint16Echo(null);
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 
     @Test
     public void NullUnsignedInteger() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             IntegerEchoFunctions.uint32Echo(null);
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 
     @Test
     public void NullUnsignedLong() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             IntegerEchoFunctions.uint64Echo(null);
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 
     @Test
     public void NullString() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             try(StringClass test = new StringClass()) {
                 test.echo(null);
             }
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 
     @Test
     public void NullEnum() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             EnumEchoFunctions.enumDisjointEcho(null);
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 
     @Test
     public void NullCollection() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            StringCollection.getSize(null);
-        }).withMessage("col");
-    }
-
-    @Test
-    public void NullStruct() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(null);
-        }).withMessage("value");
-    }
-
-    @Test
-    public void NullStructElement() {
-        Structure structure = StructureTest.createStructure();
-        structure.interfaceValue = null;
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(structure);
-        }).withMessage("value");
+        assertThatNullPointerException().isThrownBy(() -> {
+            StringCollectionTestMethods.getSize(null);
+        }).withMessage("col cannot be null");
     }
 
     @Test
     public void NullInterface() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             try(CallbackSource source = new CallbackSource()) {
                 source.setInterface(null);
             }
-        }).withMessage("cb");
-    }
-
-    @Test
-    public void NullStructSubStruct() {
-        Structure structure = StructureTest.createStructure();
-        structure.structureValue = null;
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(structure);
-        }).withMessage("value");
-    }
-
-    @Test
-    public void NullStructSubStructElement() {
-        Structure structure = StructureTest.createStructure();
-        structure.structureValue.test = null;
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            Structure.structByValueEcho(structure);
-        }).withMessage("value");
+        }).withMessage("cb cannot be null");
     }
 
     @Test
     public void NullDurationMillis() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             DurationEchoFunctions.millisecondsEcho(null);
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 
     @Test
     public void NullDurationSeconds() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
+        assertThatNullPointerException().isThrownBy(() -> {
             DurationEchoFunctions.secondsEcho(null);
-        }).withMessage("value");
-    }
-
-    @Test
-    public void NullDurationSecondsFloat() {
-        assertThatIllegalArgumentException().isThrownBy(() -> {
-            DurationEchoFunctions.secondsFloatEcho(null);
-        }).withMessage("value");
+        }).withMessage("value cannot be null");
     }
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-project(foo_c LANGUAGES C)
+project(foo_c LANGUAGES C CXX)
 
 # Find foo_ffi
 if(WIN32)
@@ -11,25 +11,49 @@ if(UNIX)
 endif()
 find_package(foo REQUIRED)
 
-set(tests
-    ./version_tests.c
-    ./enum_tests.c
-    ./duration_tests.c
-    ./error_tests.c
-    ./string_tests.c
-    ./structure_tests.c
-    ./callback_tests.c
-    ./iterator_tests.c
-    ./constant_tests.c
+set(c_test_files
+        c_tests/main.c
+        c_tests/callback_tests.c
+        c_tests/constant_tests.c
+        c_tests/enum_tests.c
+        c_tests/error_tests.c
+        c_tests/duration_tests.c
+        c_tests/iterator_tests.c
+        c_tests/primitive_iterator_tests.c
+        c_tests/string_tests.c
+        c_tests/structure_tests.c
+        c_tests/universal_tests.c
+        c_tests/version_tests.c
 )
 
-add_executable(foo_c main.c ${tests})
-target_link_libraries(foo_c PRIVATE foo)
+set(cpp_test_files
+        cpp_tests/main.cpp
+        cpp_tests/callback_tests.cpp
+        cpp_tests/collection_tests.cpp
+        cpp_tests/constant_tests.cpp
+        cpp_tests/enum_tests.cpp
+        cpp_tests/error_tests.cpp
+        cpp_tests/duration_tests.cpp
+        cpp_tests/iterator_tests.cpp
+        cpp_tests/primitive_iterator_tests.cpp
+        cpp_tests/string_tests.cpp
+        cpp_tests/structure_tests.cpp
+        cpp_tests/thread_tests.cpp
+        cpp_tests/universal_tests.cpp
+        cpp_tests/version_tests.cpp
+)
+
+add_executable(foo_c_tests ${c_test_files})
+target_link_libraries(foo_c_tests PRIVATE foo)
 
 # Copy the DLL after build
-add_custom_command(TARGET foo_c POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:foo> $<TARGET_FILE_DIR:foo_c>
+add_custom_command(TARGET foo_c_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:foo> $<TARGET_FILE_DIR:foo_c_tests>
 )
 
+add_executable(foo_cpp_tests ${cpp_test_files})
+target_link_libraries(foo_cpp_tests PRIVATE foo_cpp)
+
 enable_testing()
-add_test(NAME foo_c COMMAND foo_c)
+add_test(NAME foo_c_tests COMMAND foo_c_tests)
+add_test(NAME foo_cpp_tests COMMAND foo_cpp_tests)

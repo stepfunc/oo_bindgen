@@ -1,5 +1,21 @@
 #![allow(clippy::missing_safety_doc)]
 
+pub use callback::*;
+pub use class::*;
+pub use collection::*;
+pub use duration::*;
+pub use enums::*;
+pub use error::*;
+pub use integer::*;
+pub use iterator::*;
+pub use lifetime::*;
+pub use opaque_struct::*;
+pub use primitive_iterator::*;
+pub use primitive_pointers::*;
+pub use strings::*;
+pub use thread_class::*;
+use universal::*;
+
 mod callback;
 mod class;
 mod collection;
@@ -10,21 +26,11 @@ mod integer;
 mod iterator;
 mod lifetime;
 mod opaque_struct;
+mod primitive_iterator;
+mod primitive_pointers;
 mod strings;
-mod structure;
-
-pub use callback::*;
-pub use class::*;
-pub use collection::*;
-pub use duration::*;
-pub use enums::*;
-pub use error::*;
-pub use integer::*;
-pub use iterator::*;
-pub use lifetime::*;
-pub(crate) use opaque_struct::*;
-pub use strings::*;
-pub(crate) use structure::*;
+mod thread_class;
+mod universal;
 
 pub mod ffi;
 

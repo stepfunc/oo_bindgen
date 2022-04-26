@@ -20,7 +20,7 @@ public class ClassTest {
         testclass.incrementValue();
         assertThat(testclass.getValue()).isEqualTo(uint(42));
 
-        testclass.delete();
+        testclass.shutdown();
 
         assertThat(TestClass.constructionCounter().intValue()).isZero();
     }
@@ -29,11 +29,11 @@ public class ClassTest {
     public void AsyncMethodTest() throws ExecutionException, InterruptedException {
         TestClass testclass = new TestClass(uint(41));
         assertThat(TestClass.constructionCounter()).isEqualTo(uint(1));
-        assertThat(testclass.getValueAsync().toCompletableFuture().get()).isEqualTo(uint(41));
+        assertThat(testclass.addAsync(uint(1)).toCompletableFuture().get()).isEqualTo(uint(42));
 
         testclass.incrementValue();
-        assertThat(testclass.getValueAsync().toCompletableFuture().get()).isEqualTo(uint(42));
+        assertThat(testclass.addAsync(uint(1)).toCompletableFuture().get()).isEqualTo(uint(43));
 
-        testclass.delete();
+        testclass.shutdown();
     }
 }

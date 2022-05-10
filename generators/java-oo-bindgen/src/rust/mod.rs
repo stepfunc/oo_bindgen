@@ -1,5 +1,3 @@
-use std::fs;
-
 use conversion::*;
 use oo_bindgen::model::*;
 
@@ -12,19 +10,28 @@ mod exceptions;
 mod interface;
 mod structs;
 
-pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    fs::create_dir_all(&config.rust_output_dir)?;
+/// configuration specific to the JNI (Rust) generation
+pub struct JniBindgenConfig {
+    /// where to put the generated Rust modules. this will typically be a "src" dir
+    pub rust_output_dir: PathBuf,
+    /// Maven group id (e.g. io.stepfunc)
+    pub group_id: String,
+    /// Name of the FFI target
+    pub ffi_name: String,
+}
 
-    // Create the Cargo.toml
-    generate_toml(lib, config)?;
+impl JniBindgenConfig {
+    fn java_signature_path(&self, libname: &str) -> String {
+        let mut result = self.group_id.replace('.', "/");
+        result.push('/');
+        result.push_str(libname);
+        result
+    }
+}
 
-    // Create the source directory
-    fs::create_dir_all(&config.rust_source_dir())?;
-
+pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
     // Create the root file
-    let mut filename = config.rust_source_dir();
-    filename.push("lib");
-    filename.set_extension("rs");
+    let mut filename = config.rust_output_dir.join("mod.rs");
     let mut f = FilePrinter::new(&filename)?;
 
     generate_cache(&mut f)?;
@@ -67,35 +74,6 @@ pub fn generate_java_ffi(lib: &Library, config: &JavaBindgenConfig) -> Formattin
     Ok(())
 }
 
-fn generate_toml(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    let ffi_project_name = config.ffi_path.file_name().unwrap();
-    let path_to_ffi_lib = pathdiff::diff_paths(&config.ffi_path, &config.rust_output_dir).unwrap();
-    let path_to_ffi_lib = path_to_ffi_lib.to_string_lossy().replace('\\', "/");
-
-    let mut filename = config.rust_output_dir.clone();
-    filename.push("Cargo");
-    filename.set_extension("toml");
-    let mut f = FilePrinter::new(filename)?;
-
-    f.writeln("[package]")?;
-    f.writeln(&format!("name = \"{}\"", config.java_ffi_name()))?;
-    f.writeln(&format!("version = \"{}\"", lib.version))?;
-    f.writeln("edition = \"2018\"")?;
-    f.newline()?;
-    f.writeln("[lib]")?;
-    f.writeln("crate-type = [\"cdylib\"]")?;
-    f.newline()?;
-    f.writeln("[dependencies]")?;
-    f.writeln("jni = \"0.19\"")?;
-    f.writeln(&format!(
-        "{} = {{ path = \"{}\" }}",
-        ffi_project_name.to_string_lossy(),
-        path_to_ffi_lib
-    ))?;
-    f.newline()?;
-    f.writeln("[workspace]")
-}
-
 fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     // Disable some warnings, otherwise I won't see the light of day
     f.writeln("#![allow(dead_code)]")?;
@@ -106,21 +84,21 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()?;
 
     // Import modules
-    f.writeln("mod primitives;")?;
-    f.writeln("mod duration;")?;
-    f.writeln("mod classes;")?;
-    f.writeln("mod enums;")?;
-    f.writeln("mod collection;")?;
-    f.writeln("mod pointers;")?;
-    f.writeln("mod structs;")?;
-    f.writeln("mod interfaces;")?;
-    f.writeln("mod exceptions;")?;
-    f.writeln("mod unsigned;")?;
-    f.writeln("mod util;")?;
+    f.writeln("pub(crate) mod primitives;")?;
+    f.writeln("pub(crate) mod duration;")?;
+    f.writeln("pub(crate) mod classes;")?;
+    f.writeln("pub(crate) mod enums;")?;
+    f.writeln("pub(crate) mod collection;")?;
+    f.writeln("pub(crate) mod pointers;")?;
+    f.writeln("pub(crate) mod structs;")?;
+    f.writeln("pub(crate) mod interfaces;")?;
+    f.writeln("pub(crate) mod exceptions;")?;
+    f.writeln("pub(crate) mod unsigned;")?;
+    f.writeln("pub(crate) mod util;")?;
     f.newline()?;
 
     // Create cache
-    f.writeln("struct JCache")?;
+    f.writeln("pub(crate) struct JCache")?;
     blocked(f, |f| {
         f.writeln("vm: jni::JavaVM,")?;
         f.writeln("primitives: primitives::Primitives,")?;
@@ -174,9 +152,9 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
 
     f.newline()?;
 
-    f.writeln("fn get_cache<'a>() -> &'a JCache {")?;
+    f.writeln("pub(crate) fn get_cache<'a>() -> &'a JCache {")?;
     indented(f, |f| {
-        f.writeln("unsafe { crate::JCACHE.as_ref().unwrap() }")
+        f.writeln("unsafe { JCACHE.as_ref().unwrap() }")
     })?;
     f.writeln("}")?;
 
@@ -206,11 +184,11 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
 fn write_collection_conversions(
     f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     f.newline()?;
     f.writeln("/// convert Java lists into native API collections")?;
-    f.writeln("mod collections {")?;
+    f.writeln("pub(crate) mod collections {")?;
     indented(f, |f| {
         for col in lib.collections() {
             f.newline()?;
@@ -224,11 +202,11 @@ fn write_collection_conversions(
 fn write_iterator_conversions(
     f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     f.newline()?;
     f.writeln("/// functions that convert native API iterators into Java lists")?;
-    f.writeln("mod iterators {")?;
+    f.writeln("pub(crate) mod iterators {")?;
     indented(f, |f| {
         for iter in lib.iterators() {
             f.newline()?;
@@ -241,7 +219,7 @@ fn write_iterator_conversions(
 
 fn write_iterator_conversion(
     f: &mut dyn Printer,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
     iter: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
     f.writeln(&format!("pub(crate) fn {}(_env: &jni::JNIEnv, _cache: &crate::JCache, iter: {}) -> jni::sys::jobject {{", iter.name(), iter.iter_class.get_rust_type(&config.ffi_name)))?;
@@ -276,7 +254,7 @@ fn write_iterator_conversion(
 
 fn write_collection_guard(
     f: &mut dyn Printer,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
     col: &Handle<Collection<Validated>>,
 ) -> FormattingResult<()> {
     let collection_name = col.collection_class.name.camel_case();
@@ -377,7 +355,7 @@ fn write_collection_guard(
 fn write_functions(
     f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     fn skip(c: FunctionCategory) -> bool {
         match c {
@@ -401,7 +379,7 @@ fn write_functions(
 fn write_function_signature(
     f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
     handle: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
     let args = handle
@@ -434,7 +412,7 @@ fn write_function_signature(
 fn write_function(
     f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
     handle: &Handle<Function<Validated>>,
 ) -> FormattingResult<()> {
     write_function_signature(f, lib, config, handle)?;

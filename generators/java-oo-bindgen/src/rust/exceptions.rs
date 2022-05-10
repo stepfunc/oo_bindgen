@@ -1,16 +1,15 @@
 use oo_bindgen::model::Library;
 
+use crate::rust::JniBindgenConfig;
 use crate::*;
 
 pub(crate) fn generate_exceptions_cache(
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.settings.name);
 
-    let mut filename = config.rust_source_dir();
-    filename.push("exceptions");
-    filename.set_extension("rs");
+    let filename = config.rust_output_dir.join("exceptions.rs");
     let mut f = FilePrinter::new(&filename)?;
 
     f.writeln("/// cached information about an exception")?;

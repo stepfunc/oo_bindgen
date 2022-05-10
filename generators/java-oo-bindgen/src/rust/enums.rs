@@ -1,16 +1,15 @@
 use oo_bindgen::model::Library;
 
+use crate::rust::JniBindgenConfig;
 use crate::*;
 
 pub(crate) fn generate_enums_cache(
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.settings.name);
 
-    let mut filename = config.rust_source_dir();
-    filename.push("enums");
-    filename.set_extension("rs");
+    let filename = config.rust_output_dir.join("enums.rs");
     let mut f = FilePrinter::new(&filename)?;
 
     // Top-level enums struct

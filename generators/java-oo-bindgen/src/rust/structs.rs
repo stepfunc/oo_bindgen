@@ -1,14 +1,11 @@
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
-use crate::*;
-
 use crate::rust::conversion::*;
+use crate::rust::JniBindgenConfig;
 
-pub(crate) fn generate(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    let mut filename = config.rust_source_dir();
-    filename.push("structs");
-    filename.set_extension("rs");
+pub(crate) fn generate(lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
+    let filename = config.rust_output_dir.join("structs.rs");
     let mut f = FilePrinter::new(&filename)?;
 
     f.newline()?;
@@ -62,7 +59,7 @@ fn generate_top_level_cache(f: &mut dyn Printer, lib: &Library) -> FormattingRes
 fn generate_structs(
     f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     // Each struct implementation
     for st in lib.structs() {
@@ -97,7 +94,7 @@ fn generate_structs(
 fn generate_conversion_to_rust<T>(
     f: &mut dyn Printer,
     structure: &Handle<Struct<T, Validated>>,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + UnwrapValue + ConvertibleToRust + GuardType + JniJavaType,
@@ -211,7 +208,7 @@ where
 fn generate_conversion_to_jni<T>(
     f: &mut dyn Printer,
     structure: &Handle<Struct<T, Validated>>,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + MaybeConvertibleToJni,
@@ -274,7 +271,7 @@ where
 fn generate_struct_init<T>(
     f: &mut dyn Printer,
     structure: &Handle<Struct<T, Validated>>,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()>
 where
     T: StructFieldType + JniTypeId,

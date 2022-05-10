@@ -456,7 +456,8 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
             fs::create_dir_all(&build_dir).unwrap();
 
             // Generate the Rust code
-            java_oo_bindgen::generate_java_ffi(self.settings.library, &config).unwrap();
+            java_oo_bindgen::generate_java_ffi(self.settings.library, &config.to_jni_config())
+                .unwrap();
 
             // You: You're setting the target directory to point at the workspace dir. This doesn't look right...
             // Me: Yeah, it avoids some recompilation.

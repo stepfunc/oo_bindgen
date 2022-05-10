@@ -30,6 +30,9 @@ impl JniBindgenConfig {
 }
 
 pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
+
+    std::fs::create_dir_all(&config.rust_output_dir)?;
+
     // Create the root file
     let mut filename = config.rust_output_dir.join("mod.rs");
     let mut f = FilePrinter::new(&filename)?;

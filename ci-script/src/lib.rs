@@ -396,12 +396,6 @@ impl<'a> JavaBindingBuilder<'a> {
         output_dir
     }
 
-    fn rust_build_dir(&self) -> PathBuf {
-        let mut output_dir = self.output_dir();
-        output_dir.push(format!("{}-jni", self.settings.library.settings.name));
-        output_dir
-    }
-
     fn maven(&self) -> Command {
         let mut command = if cfg!(windows) {
             let mut command = Command::new("cmd");
@@ -438,7 +432,6 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
     fn generate(&mut self, is_packaging: bool, _generate_doxygen: bool) {
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
-            rust_output_dir: self.rust_build_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
             ffi_path: self.settings.ffi_path.to_owned(),
             group_id: self.settings.java_group_id.to_owned(),
@@ -446,47 +439,13 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
             platforms: self.platforms.clone(),
         };
 
-        // Generate Java JNI DLL if we are not packaging
+        // Generate Java JNI shared library if we are not packaging
         if !is_packaging {
-            // Clear/create the generated files
-            let build_dir = self.rust_build_dir();
-            if build_dir.exists() {
-                fs::remove_dir_all(&build_dir).unwrap();
-            }
-            fs::create_dir_all(&build_dir).unwrap();
-
-            // Generate the Rust code
-            java_oo_bindgen::generate_java_ffi(self.settings.library, &config.to_jni_config())
-                .unwrap();
-
-            // You: You're setting the target directory to point at the workspace dir. This doesn't look right...
-            // Me: Yeah, it avoids some recompilation.
-            // You: But this doesn't feel safe. What are your credentials for doing such a thing?
-            // Me: Here's my business card. *hands said card*. The lettering is something called "Silian Rail".
-            // You: Impressive, but still, that doesn't give you the right to do that.
-            // Me: Let's see Paul Allen's card.
-            // You: What!?
-            // Me: You know what, I got to go. I have to return some videotapes. *leaves in a hurry*
-            // You: *still puzzled about the situation, but accepting this hack*
-            let target_dir = pathdiff::diff_paths("./target", self.rust_build_dir()).unwrap();
             let mut cmd = Command::new("cargo");
 
-            let current_platform = Platform::guess_current().unwrap();
+            let java_target = format!("{}_java", self.settings.ffi_name);
 
-            cmd.current_dir(self.rust_build_dir()).args(&[
-                "build",
-                "--target-dir",
-                &target_dir.to_string_lossy(),
-            ]);
-
-            // When not building for the native target of the host system, the output path
-            // changes. That's the only way I figured out how to properly handle this.
-            if ffi_path()
-                .to_string_lossy()
-                .contains(current_platform.target_triple)
-            {
-                cmd.args(&["--target", current_platform.target_triple]);
-            }
+            cmd.args(&["build", "-p", &java_target]);
 
             if env!("PROFILE") == "release" {
                 cmd.arg("--release");

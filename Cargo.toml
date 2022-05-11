@@ -12,5 +12,5 @@ members = [
     "tests/foo-schema",
     "tests/foo-ffi",
     "tests/foo-bindings",
-    "tests/foo-jni",
+    "tests/foo-ffi-java",
 ]

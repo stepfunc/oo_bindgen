@@ -12,7 +12,7 @@ mod structs;
 
 /// configuration specific to the JNI (Rust) generation
 pub struct JniBindgenConfig {
-    /// where to put the generated Rust modules. this will typically be a "src" dir
+    /// where to put the generated Rust modules. this will typically be a subdirectory of the "src" dir
     pub rust_output_dir: PathBuf,
     /// Maven group id (e.g. io.stepfunc)
     pub group_id: String,
@@ -30,7 +30,6 @@ impl JniBindgenConfig {
 }
 
 pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
-
     std::fs::create_dir_all(&config.rust_output_dir)?;
 
     // Create the root file
@@ -156,9 +155,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()?;
 
     f.writeln("pub(crate) fn get_cache<'a>() -> &'a JCache {")?;
-    indented(f, |f| {
-        f.writeln("unsafe { JCACHE.as_ref().unwrap() }")
-    })?;
+    indented(f, |f| f.writeln("unsafe { JCACHE.as_ref().unwrap() }"))?;
     f.writeln("}")?;
 
     f.newline()?;

@@ -28,4 +28,4 @@ tests/bindings/java/*/target
 tests/bindings/java/**/*.iml
 
 # generated jni code
-tests/foo-jni/src/generated
+tests/foo-ffi-java/src/generated

@@ -66,7 +66,9 @@ pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> Formatting
         interface::generate_interfaces_cache(f, lib, config)
     })?;
 
-    exceptions::generate_exceptions_cache(lib, config)?;
+    module("exceptions", &mut f, |f| {
+        exceptions::generate_exceptions_cache(f, lib, config)
+    })?;
 
     // Copy the modules that never change
     filename.set_file_name("primitives.rs");
@@ -110,7 +112,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("pub(crate) mod duration;")?;
     f.writeln("pub(crate) mod collection;")?;
     f.writeln("pub(crate) mod pointers;")?;
-    f.writeln("pub(crate) mod exceptions;")?;
     f.writeln("pub(crate) mod unsigned;")?;
     f.writeln("pub(crate) mod util;")?;
     f.newline()?;

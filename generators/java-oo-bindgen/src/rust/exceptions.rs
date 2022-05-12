@@ -4,17 +4,15 @@ use crate::rust::JniBindgenConfig;
 use crate::*;
 
 pub(crate) fn generate_exceptions_cache(
+    f: &mut dyn Printer,
     lib: &Library,
     config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.settings.name);
 
-    let filename = config.rust_output_dir.join("exceptions.rs");
-    let mut f = FilePrinter::new(&filename)?;
-
     f.writeln("/// cached information about an exception")?;
     f.writeln("pub struct ExceptionInfo {")?;
-    indented(&mut f, |f| {
+    indented(f, |f| {
         f.writeln("class: jni::objects::GlobalRef,")?;
         f.writeln("constructor: jni::objects::JMethodID<'static>,")
     })?;
@@ -23,7 +21,7 @@ pub(crate) fn generate_exceptions_cache(
     f.newline()?;
 
     f.writeln("impl ExceptionInfo {")?;
-    indented(&mut f, |f| {
+    indented(f, |f| {
         f.writeln("pub(crate) fn throw(&self, env: &jni::JNIEnv, error: jni::sys::jobject) {")?;
         indented(f, |f| {
             f.writeln("let obj = env.new_object_unchecked(&self.class, self.constructor, &[jni::objects::JValue::Object(error.into())]).unwrap();")?;
@@ -53,7 +51,7 @@ pub(crate) fn generate_exceptions_cache(
 
     // Top-level exceptions struct
     f.writeln("pub struct Exceptions")?;
-    blocked(&mut f, |f| {
+    blocked(f, |f| {
         for error in lib.error_types() {
             f.writeln(&format!(
                 "pub(crate) {}: ExceptionInfo,",
@@ -66,7 +64,7 @@ pub(crate) fn generate_exceptions_cache(
     f.newline()?;
 
     f.writeln("impl Exceptions {")?;
-    indented(&mut f, |f| {
+    indented(f, |f| {
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self {")?;
         indented(f, |f| {
             f.writeln("Self {")?;

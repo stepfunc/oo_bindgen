@@ -30,7 +30,12 @@ impl JniBindgenConfig {
 }
 
 fn module_string(name: &str, f: &mut dyn Printer, content: &str) -> FormattingResult<()> {
-    module(name, f, |f| f.write(content))
+    module(name, f, |f| {
+        for line in content.lines() {
+            f.writeln(line)?;
+        }
+        Ok(())
+    })
 }
 
 fn module<F>(name: &str, f: &mut dyn Printer, write: F) -> FormattingResult<()>
@@ -38,7 +43,7 @@ where
     F: Fn(&mut dyn Printer) -> FormattingResult<()>,
 {
     f.newline()?;
-    f.writeln(&format!("mod {} {{", name))?;
+    f.writeln(&format!("pub(crate) mod {} {{", name))?;
     indented(f, |f| write(f))?;
     f.writeln("}")?;
     Ok(())
@@ -48,7 +53,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> Formatting
     std::fs::create_dir_all(&config.rust_output_dir)?;
 
     // Create the root file
-    let mut filename = config.rust_output_dir.join("mod.rs");
+    let filename = config.rust_output_dir.join("mod.rs");
     let mut f = FilePrinter::new(&filename)?;
 
     generate_cache(&mut f)?;
@@ -76,26 +81,11 @@ pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> Formatting
 
     // Copy the modules that never change
     module_string("primitives", &mut f, include_str!("./copy/primitives.rs"))?;
-
-    filename.set_file_name("unsigned.rs");
-    let mut f = FilePrinter::new(&filename)?;
-    f.write(include_str!("./copy/unsigned.rs"))?;
-
-    filename.set_file_name("duration.rs");
-    let mut f = FilePrinter::new(&filename)?;
-    f.write(include_str!("./copy/duration.rs"))?;
-
-    filename.set_file_name("collection.rs");
-    let mut f = FilePrinter::new(&filename)?;
-    f.write(include_str!("./copy/collection.rs"))?;
-
-    filename.set_file_name("pointers.rs");
-    let mut f = FilePrinter::new(&filename)?;
-    f.write(include_str!("./copy/pointers.rs"))?;
-
-    filename.set_file_name("util.rs");
-    let mut f = FilePrinter::new(&filename)?;
-    f.write(include_str!("copy/util.rs"))?;
+    module_string("unsigned", &mut f, include_str!("./copy/unsigned.rs"))?;
+    module_string("duration", &mut f, include_str!("./copy/duration.rs"))?;
+    module_string("collection", &mut f, include_str!("./copy/collection.rs"))?;
+    module_string("pointers", &mut f, include_str!("./copy/pointers.rs"))?;
+    module_string("util", &mut f, include_str!("./copy/util.rs"))?;
 
     Ok(())
 }
@@ -107,14 +97,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("#![allow(non_snake_case)]")?;
     f.writeln("#![allow(unused_variables)]")?;
 
-    f.newline()?;
-
-    // Import modules
-    f.writeln("pub(crate) mod duration;")?;
-    f.writeln("pub(crate) mod collection;")?;
-    f.writeln("pub(crate) mod pointers;")?;
-    f.writeln("pub(crate) mod unsigned;")?;
-    f.writeln("pub(crate) mod util;")?;
     f.newline()?;
 
     // Create cache

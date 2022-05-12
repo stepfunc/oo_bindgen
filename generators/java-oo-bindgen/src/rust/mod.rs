@@ -60,7 +60,8 @@ pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> Formatting
         enums::generate_enums_cache(f, lib, config)
     })?;
 
-    structs::generate(lib, config)?;
+    module("structs", &mut f, |f| structs::generate(f, lib, config))?;
+
     interface::generate_interfaces_cache(lib, config)?;
     exceptions::generate_exceptions_cache(lib, config)?;
 
@@ -106,7 +107,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("pub(crate) mod duration;")?;
     f.writeln("pub(crate) mod collection;")?;
     f.writeln("pub(crate) mod pointers;")?;
-    f.writeln("pub(crate) mod structs;")?;
     f.writeln("pub(crate) mod interfaces;")?;
     f.writeln("pub(crate) mod exceptions;")?;
     f.writeln("pub(crate) mod unsigned;")?;

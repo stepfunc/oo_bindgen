@@ -4,19 +4,19 @@ use oo_bindgen::model::*;
 use crate::rust::conversion::*;
 use crate::rust::JniBindgenConfig;
 
-pub(crate) fn generate(lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
-    let filename = config.rust_output_dir.join("structs.rs");
-    let mut f = FilePrinter::new(&filename)?;
-
+pub(crate) fn generate(
+    f: &mut dyn Printer,
+    lib: &Library,
+    config: &JniBindgenConfig,
+) -> FormattingResult<()> {
     f.newline()?;
 
-    generate_top_level_cache(&mut f, lib)?;
+    generate_top_level_cache(f, lib)?;
 
     f.newline()?;
 
     f.writeln("mod instances {")?;
-
-    indented(&mut f, |f| generate_structs(f, lib, config))?;
+    indented(f, |f| generate_structs(f, lib, config))?;
     f.writeln("}")
 }
 

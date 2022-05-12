@@ -29,6 +29,10 @@ impl JniBindgenConfig {
     }
 }
 
+fn module_string(name: &str, f: &mut dyn Printer, content: &str) -> FormattingResult<()> {
+    module(name, f, |f| f.write(content))
+}
+
 fn module<F>(name: &str, f: &mut dyn Printer, write: F) -> FormattingResult<()>
 where
     F: Fn(&mut dyn Printer) -> FormattingResult<()>,
@@ -71,9 +75,7 @@ pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> Formatting
     })?;
 
     // Copy the modules that never change
-    filename.set_file_name("primitives.rs");
-    let mut f = FilePrinter::new(&filename)?;
-    f.write(include_str!("./copy/primitives.rs"))?;
+    module_string("primitives", &mut f, include_str!("./copy/primitives.rs"))?;
 
     filename.set_file_name("unsigned.rs");
     let mut f = FilePrinter::new(&filename)?;
@@ -108,7 +110,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()?;
 
     // Import modules
-    f.writeln("pub(crate) mod primitives;")?;
     f.writeln("pub(crate) mod duration;")?;
     f.writeln("pub(crate) mod collection;")?;
     f.writeln("pub(crate) mod pointers;")?;

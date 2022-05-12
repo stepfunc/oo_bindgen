@@ -4,13 +4,12 @@ use std::path::{Path, PathBuf};
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=lib.rs");
 
     // normally you'd never want to write files here, but this crate isn't used as a dependency
-    let out_dir: PathBuf =
-        Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/generated");
+    let out_path: PathBuf = Path::new(&std::env::var_os("OUT_DIR").unwrap()).join("jni.rs");
 
     let config = JniBindgenConfig {
-        rust_output_dir: out_dir,
         group_id: "io.stepfunc".to_string(),
         ffi_name: "foo_ffi".to_string(),
     };
@@ -21,9 +20,7 @@ fn main() {
             std::process::exit(-1);
         }
         Ok(lib) => {
-            println!("writing the lib!");
-            generate_java_ffi(&lib, &config).unwrap();
-            println!("success!");
+            generate_java_ffi(&out_path, &lib, &config).unwrap();
         }
     }
 }

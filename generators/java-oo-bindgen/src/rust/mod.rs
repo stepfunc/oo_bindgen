@@ -1,5 +1,6 @@
 use conversion::*;
 use oo_bindgen::model::*;
+use std::path::Path;
 
 use crate::*;
 
@@ -12,8 +13,6 @@ mod structs;
 
 /// configuration specific to the JNI (Rust) generation
 pub struct JniBindgenConfig {
-    /// where to put the generated Rust modules. this will typically be a subdirectory of the "src" dir
-    pub rust_output_dir: PathBuf,
     /// Maven group id (e.g. io.stepfunc)
     pub group_id: String,
     /// Name of the FFI target
@@ -49,12 +48,12 @@ where
     Ok(())
 }
 
-pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
-    std::fs::create_dir_all(&config.rust_output_dir)?;
-
-    // Create the root file
-    let filename = config.rust_output_dir.join("mod.rs");
-    let mut f = FilePrinter::new(&filename)?;
+pub fn generate_java_ffi(
+    path: &Path,
+    lib: &Library,
+    config: &JniBindgenConfig,
+) -> FormattingResult<()> {
+    let mut f = FilePrinter::new(path)?;
 
     generate_cache(&mut f)?;
     write_functions(&mut f, lib, config)?;
@@ -91,14 +90,6 @@ pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> Formatting
 }
 
 fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
-    // Disable some warnings, otherwise I won't see the light of day
-    f.writeln("#![allow(dead_code)]")?;
-    f.writeln("#![allow(irrefutable_let_patterns)]")?;
-    f.writeln("#![allow(non_snake_case)]")?;
-    f.writeln("#![allow(unused_variables)]")?;
-
-    f.newline()?;
-
     // Create cache
     f.writeln("pub(crate) struct JCache")?;
     blocked(f, |f| {

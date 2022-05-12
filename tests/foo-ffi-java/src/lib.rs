@@ -4,9 +4,10 @@
     clippy::redundant_closure,
     clippy::needless_borrow,
     clippy::needless_return,
-    clippy::not_unsafe_ptr_arg_deref
+    clippy::not_unsafe_ptr_arg_deref,
+    unused_variables,
+    dead_code
 )]
 // ^ these lints don't matter in the generated code
 
-mod generated;
-pub use generated::*;
+include!(concat!(env!("OUT_DIR"), "/jni.rs"));

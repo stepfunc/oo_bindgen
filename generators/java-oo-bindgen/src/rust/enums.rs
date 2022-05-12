@@ -4,17 +4,15 @@ use crate::rust::JniBindgenConfig;
 use crate::*;
 
 pub(crate) fn generate_enums_cache(
+    f: &mut dyn Printer,
     lib: &Library,
     config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.settings.name);
 
-    let filename = config.rust_output_dir.join("enums.rs");
-    let mut f = FilePrinter::new(&filename)?;
-
     // Top-level enums struct
     f.writeln("pub struct Enums")?;
-    blocked(&mut f, |f| {
+    blocked(f, |f| {
         for enumeration in lib.enums() {
             f.writeln(&format!(
                 "pub {}: {},",
@@ -29,7 +27,7 @@ pub(crate) fn generate_enums_cache(
     f.newline()?;
 
     f.writeln("impl Enums")?;
-    blocked(&mut f, |f| {
+    blocked(f, |f| {
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
             f.writeln("Self")?;
@@ -52,7 +50,7 @@ pub(crate) fn generate_enums_cache(
         let enum_sig = format!("\"L{}/{};\"", lib_path, enum_name);
 
         f.writeln(&format!("pub struct {}", enum_name))?;
-        blocked(&mut f, |f| {
+        blocked(f, |f| {
             f.writeln("_value_field: jni::objects::JFieldID<'static>,")?;
             for variant in &enumeration.variants {
                 f.writeln(&format!("{}: jni::objects::GlobalRef,", variant.name))?;
@@ -64,7 +62,7 @@ pub(crate) fn generate_enums_cache(
         f.newline()?;
 
         f.writeln(&format!("impl {}", enum_name))?;
-        blocked(&mut f, |f| {
+        blocked(f, |f| {
             f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
             blocked(f, |f| {
                 f.writeln(&format!(

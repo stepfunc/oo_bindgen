@@ -29,6 +29,17 @@ impl JniBindgenConfig {
     }
 }
 
+fn module<F>(name: &str, f: &mut dyn Printer, write: F) -> FormattingResult<()>
+where
+    F: Fn(&mut dyn Printer) -> FormattingResult<()>,
+{
+    f.newline()?;
+    f.writeln(&format!("mod {} {{", name))?;
+    indented(f, |f| write(f))?;
+    f.writeln("}")?;
+    Ok(())
+}
+
 pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
     std::fs::create_dir_all(&config.rust_output_dir)?;
 
@@ -41,8 +52,10 @@ pub fn generate_java_ffi(lib: &Library, config: &JniBindgenConfig) -> Formatting
     write_collection_conversions(&mut f, lib, config)?;
     write_iterator_conversions(&mut f, lib, config)?;
 
-    // Create the cache modules
-    classes::generate_classes_cache(lib, config)?;
+    module("classes", &mut f, |f| {
+        classes::generate_classes_cache(f, lib, config)
+    })?;
+
     enums::generate_enums_cache(lib, config)?;
     structs::generate(lib, config)?;
     interface::generate_interfaces_cache(lib, config)?;
@@ -88,7 +101,6 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     // Import modules
     f.writeln("pub(crate) mod primitives;")?;
     f.writeln("pub(crate) mod duration;")?;
-    f.writeln("pub(crate) mod classes;")?;
     f.writeln("pub(crate) mod enums;")?;
     f.writeln("pub(crate) mod collection;")?;
     f.writeln("pub(crate) mod pointers;")?;

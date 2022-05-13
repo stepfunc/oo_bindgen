@@ -272,8 +272,8 @@ jobs:
           - arm-unknown-linux-gnueabi # ARMv6 Linux (kernel 3.2, glibc 2.17)
           - arm-unknown-linux-gnueabihf # ARMv6 Linux, hardfloat (kernel 3.2, glibc 2.17)
           - armv7-unknown-linux-gnueabihf # ARMv7 Linux, hardfloat (kernel 3.2, glibc 2.17)
-          - aarch64-unknown-linux-gnu # Linux AArch64
-          - i686-unknown-linux-gnu # x64 Linux
+          - aarch64-unknown-linux-gnu # ARM64 Linux (kernel 4.2, glibc 2.17+)
+          - x86_64-unknown-linux-gnu # 64-bit Linux (kernel 2.6.32+, glibc 2.11+)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

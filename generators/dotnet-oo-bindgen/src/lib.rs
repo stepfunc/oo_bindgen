@@ -525,12 +525,17 @@ fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
 fn dotnet_platform_string(platform: &Platform) -> String {
     // Names taken from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
     match *platform {
+        // windows targets
         platform::X86_64_PC_WINDOWS_MSVC => "win-x64".to_string(),
         platform::I686_PC_WINDOWS_MSVC => "win-x86".to_string(),
-        platform::X86_64_UNKNOWN_LINUX_GNU => "linux-x64".to_string(),
-        platform::AARCH64_UNKNOWN_LINUX_GNU => "linux-arm64".to_string(),
+        // OSX targets
         platform::X86_64_APPLE_DARWIN => "osx-x64".to_string(),
         platform::AARCH64_APPLE_DARWIN => "osx-arm64".to_string(),
+        // linux targets
+        platform::X86_64_UNKNOWN_LINUX_GNU => "linux-x64".to_string(),
+        platform::AARCH64_UNKNOWN_LINUX_GNU => "linux-arm64".to_string(),
+        platform::ARM_UNKNOWN_LINUX_GNUEABIHF => "linux-arm".to_string(),
+        // other targets just use the target triple
         _ => platform.target_triple.to_owned(),
     }
 }

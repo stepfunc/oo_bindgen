@@ -104,8 +104,8 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
-  # Build bindings on Linux x64 [64-bit Linux (kernel 2.6.32+, glibc 2.11+) (x86_64-unknown-linux-gnu)]
-  bindings-linux:
+  # Build documentation
+  documentation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -148,21 +148,6 @@ jobs:
           cp -a tests/bindings/dotnet/foo/doc ~/doc/dotnet
           cp -a tests/bindings/java/foo/target/apidocs ~/doc/java
           rm tests/bindings/c/generated/logo.png tests/bindings/c/generated/doxygen-awesome.css
-      - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/c/generated/x86_64-unknown-linux-gnu/lib
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
       - name: Upload documentation
         uses: actions/upload-artifact@v2
         with:
@@ -288,6 +273,7 @@ jobs:
           - arm-unknown-linux-gnueabihf # ARMv6 Linux, hardfloat (kernel 3.2, glibc 2.17)
           - armv7-unknown-linux-gnueabihf # ARMv7 Linux, hardfloat (kernel 3.2, glibc 2.17)
           - aarch64-unknown-linux-gnu # Linux AArch64
+          - i686-unknown-linux-gnu # x64 Linux
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

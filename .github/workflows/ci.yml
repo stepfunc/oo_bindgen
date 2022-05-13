@@ -320,7 +320,7 @@ jobs:
           path: tests/bindings/c/generated
   # Package all the generated bindings
   packaging:
-    needs: [dependencies, bindings-linux, bindings-windows, bindings-macos, cross]
+    needs: [dependencies, documentation, bindings-windows, bindings-macos, cross]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

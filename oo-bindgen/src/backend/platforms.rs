@@ -77,7 +77,7 @@ impl PlatformLocations {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.iter().count() == 0
+        self.locations.is_empty()
     }
 }
 

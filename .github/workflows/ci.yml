@@ -44,7 +44,7 @@ jobs:
           path: |
             oo-bindgen/dependencies.json
             oo-bindgen/dependencies.txt
-  # Run the unit tests on Windows and Linux
+  # Run the unit tests on Windows, Linux, and MacOS
   test:
     strategy:
       fail-fast: false
@@ -52,6 +52,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
+          - macos-latest
         rust:
           - stable
           - beta

@@ -6,7 +6,6 @@ pub trait PlatformExt {
     fn static_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn dyn_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn bin_filename<T: AsRef<str>>(&self, libname: T) -> String;
-    fn has_official_support(&self) -> bool;
 }
 
 // Source for these are:
@@ -42,23 +41,7 @@ impl PlatformExt for Platform {
             format!("lib{}.so", libname.as_ref())
         }
     }
-
-    fn has_official_support(&self) -> bool {
-        SUPPORTED_PLATFORMS
-            .iter()
-            .any(|x| self.target_triple == x.target_triple)
-    }
 }
-
-const SUPPORTED_PLATFORMS: &[&Platform] = &[
-    &platforms::platform::X86_64_PC_WINDOWS_MSVC,
-    &platforms::platform::I686_PC_WINDOWS_MSVC,
-    &platforms::platform::X86_64_UNKNOWN_LINUX_GNU,
-    &platforms::platform::AARCH64_UNKNOWN_LINUX_GNU,
-    &platforms::platform::ARMV7_UNKNOWN_LINUX_GNUEABIHF,
-    &platforms::platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
-    &platforms::platform::ARM_UNKNOWN_LINUX_GNUEABI,
-];
 
 #[derive(Clone)]
 pub struct PlatformLocation {

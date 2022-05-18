@@ -8,6 +8,22 @@ use clap::{App, Arg};
 use oo_bindgen::backend::*;
 use oo_bindgen::model::Library;
 
+const SUPPORTED_PLATFORMS: &[&Platform] = &[
+    &platform::X86_64_PC_WINDOWS_MSVC,
+    &platform::I686_PC_WINDOWS_MSVC,
+    &platform::X86_64_UNKNOWN_LINUX_GNU,
+    &platform::AARCH64_UNKNOWN_LINUX_GNU,
+    &platform::ARMV7_UNKNOWN_LINUX_GNUEABIHF,
+    &platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
+    &platform::ARM_UNKNOWN_LINUX_GNUEABI,
+];
+
+fn is_officially_supported(p: &Platform) -> bool {
+    SUPPORTED_PLATFORMS
+        .iter()
+        .any(|x| x.target_triple == p.target_triple)
+}
+
 pub fn run(settings: BindingBuilderSettings) {
     let matches = App::new("oo-bindgen")
         .arg(
@@ -85,7 +101,7 @@ pub fn run(settings: BindingBuilderSettings) {
             Platform::guess_current().expect("could not determine current platform");
         platforms.add(current_platform.clone(), ffi_path());
 
-        if !current_platform.has_official_support() {
+        if !is_officially_supported(current_platform) {
             println!(
                 "WARNING: building for an unsupported platform: {}",
                 current_platform.target_triple

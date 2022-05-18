@@ -42,9 +42,9 @@ fn jni_supported(p: &Platform) -> bool {
 
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for p in config.platforms.iter() {
-        if !SUPPORTED_JNI_PLATFORMS.contains(&p.platform) {
+        if !jni_supported(&p.platform) {
             println!(
-                "Java generation for {} is not supported. Use at your own risks.",
+                "Java is not officially supported on {}. Use at your own risks.",
                 p.platform
             );
         }

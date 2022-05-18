@@ -44,19 +44,21 @@ impl PlatformExt for Platform {
     }
 
     fn has_official_support(&self) -> bool {
-        #[allow(clippy::match_like_matches_macro)]
-        match self.target_triple {
-            "x86_64-pc-windows-msvc" => true,
-            "i686-pc-windows-msvc" => true,
-            "x86_64-unknown-linux-gnu" => true,
-            "aarch64-unknown-linux-gnu" => true,
-            "armv7-unknown-linux-gnueabihf" => true,
-            "arm-unknown-linux-gnueabihf" => true,
-            "arm-unknown-linux-gnueabi" => true,
-            _ => false,
-        }
+        SUPPORTED_PLATFORMS
+            .iter()
+            .any(|x| self.target_triple == x.target_triple)
     }
 }
+
+const SUPPORTED_PLATFORMS: &[&Platform] = &[
+    &platforms::platform::X86_64_PC_WINDOWS_MSVC,
+    &platforms::platform::I686_PC_WINDOWS_MSVC,
+    &platforms::platform::X86_64_UNKNOWN_LINUX_GNU,
+    &platforms::platform::AARCH64_UNKNOWN_LINUX_GNU,
+    &platforms::platform::ARMV7_UNKNOWN_LINUX_GNUEABIHF,
+    &platforms::platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
+    &platforms::platform::ARM_UNKNOWN_LINUX_GNUEABI,
+];
 
 #[derive(Clone)]
 pub struct PlatformLocation {

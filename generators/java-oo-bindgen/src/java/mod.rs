@@ -22,9 +22,12 @@ mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
+/// This controls the platforms that are:
+///
+/// 1) copied to resource folders
+/// 2) attempt to automatically load in the static initializer
 const SUPPORTED_JNI_PLATFORMS: &[Platform] = &[
     platform::X86_64_PC_WINDOWS_MSVC,
-    platform::I686_PC_WINDOWS_MSVC,
     platform::X86_64_UNKNOWN_LINUX_GNU,
     platform::AARCH64_UNKNOWN_LINUX_GNU,
     platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
@@ -56,7 +59,11 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     fs::create_dir_all(config.java_resource_dir())?;
     let mut ffi_name = config.ffi_name.clone();
     ffi_name.push_str("_java");
-    for p in config.platforms.iter() {
+    for p in config
+        .platforms
+        .iter()
+        .filter(|x| jni_supported(&x.platform))
+    {
         let target_dir = config.java_resource_dir().join(p.platform.target_triple);
         let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
         let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));

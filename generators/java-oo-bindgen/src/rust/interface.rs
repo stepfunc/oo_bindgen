@@ -3,23 +3,18 @@ use oo_bindgen::model::*;
 use crate::*;
 
 use crate::rust::conversion::*;
+use crate::rust::JniBindgenConfig;
 
 pub(crate) fn generate_interfaces_cache(
+    f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.settings.name);
 
-    let mut filename = config.rust_source_dir();
-    filename.push("interfaces");
-    filename.set_extension("rs");
-    let mut f = FilePrinter::new(&filename)?;
-
-    f.newline()?;
-
     // Top-level enums struct
     f.writeln("pub struct Interfaces")?;
-    blocked(&mut f, |f| {
+    blocked(f, |f| {
         for interface in lib.untyped_interfaces() {
             f.writeln(&format!(
                 "pub {}: {},",
@@ -34,7 +29,7 @@ pub(crate) fn generate_interfaces_cache(
     f.newline()?;
 
     f.writeln("impl Interfaces")?;
-    blocked(&mut f, |f| {
+    blocked(f, |f| {
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
             f.writeln("Self")?;
@@ -60,7 +55,7 @@ pub(crate) fn generate_interfaces_cache(
         let interface_name = interface.name.camel_case();
 
         f.writeln(&format!("pub struct {}", interface_name))?;
-        blocked(&mut f, |f| {
+        blocked(f, |f| {
             f.writeln("_class: jni::objects::GlobalRef,")?;
             for callback in &interface.callbacks {
                 f.writeln(&format!(
@@ -75,7 +70,7 @@ pub(crate) fn generate_interfaces_cache(
         f.newline()?;
 
         f.writeln(&format!("impl {}", interface_name))?;
-        blocked(&mut f, |f| {
+        blocked(f, |f| {
             write_interface_init(f, &interface_name, &lib_path, &interface.callbacks)?;
 
             f.newline()?;
@@ -138,7 +133,7 @@ pub(crate) fn generate_interfaces_cache(
                 params,
                 cb.return_type.get_rust_type(&config.ffi_name)
             ))?;
-            blocked(&mut f, |f| {
+            blocked(f, |f| {
                 call_java_callback(
                     f,
                     &interface.name,
@@ -171,7 +166,7 @@ pub(crate) fn generate_interfaces_cache(
             "extern \"C\" fn {}_{}(ctx: *mut std::ffi::c_void)",
             interface.name, destroy_func_name
         ))?;
-        blocked(&mut f, |f| {
+        blocked(f, |f| {
             f.writeln("unsafe { Box::from_raw(ctx as *mut jni::objects::GlobalRef) };")
         })?;
     }

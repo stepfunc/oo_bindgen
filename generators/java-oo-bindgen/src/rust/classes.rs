@@ -1,20 +1,17 @@
 use oo_bindgen::model::Library;
 
+use crate::rust::JniBindgenConfig;
 use crate::*;
 
 pub(crate) fn generate_classes_cache(
+    f: &mut dyn Printer,
     lib: &Library,
-    config: &JavaBindgenConfig,
+    config: &JniBindgenConfig,
 ) -> FormattingResult<()> {
     let lib_path = config.java_signature_path(&lib.settings.name);
 
-    let mut filename = config.rust_source_dir();
-    filename.push("classes");
-    filename.set_extension("rs");
-    let mut f = FilePrinter::new(&filename)?;
-
     f.writeln("pub(crate) struct ClassInfo {")?;
-    indented(&mut f, |f| {
+    indented(f, |f| {
         f.writeln("class: jni::objects::GlobalRef,")?;
         f.writeln("constructor: jni::objects::JMethodID<'static>,")?;
         f.writeln("self_field: jni::objects::JFieldID<'static>,")
@@ -25,11 +22,11 @@ pub(crate) fn generate_classes_cache(
         let class_name = class.name().camel_case();
         f.newline()?;
         f.writeln(&format!("pub(crate) struct {} {{", class_name))?;
-        indented(&mut f, |f| f.writeln("info: ClassInfo"))?;
+        indented(f, |f| f.writeln("info: ClassInfo"))?;
         f.writeln("}")?;
         f.newline()?;
         f.writeln(&format!("impl {} {{", class_name))?;
-        indented(&mut f, |f| {
+        indented(f, |f| {
             f.writeln("fn init(env: &jni::JNIEnv) -> Self {")?;
             indented(f, |f| {
                 let class_name = class.name().camel_case();
@@ -69,7 +66,7 @@ pub(crate) fn generate_classes_cache(
     f.newline()?;
 
     f.writeln("pub(crate) struct Classes {")?;
-    indented(&mut f, |f| {
+    indented(f, |f| {
         for class in lib.classes() {
             f.writeln(&format!(
                 "pub(crate) {}: {},",
@@ -85,7 +82,7 @@ pub(crate) fn generate_classes_cache(
     f.newline()?;
 
     f.writeln("impl Classes {")?;
-    indented(&mut f, |f| {
+    indented(f, |f| {
         f.writeln("pub(crate) fn init(env: &jni::JNIEnv) -> Self {")?;
         indented(f, |f| {
             f.writeln("Self {")?;

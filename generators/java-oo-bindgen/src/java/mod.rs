@@ -22,18 +22,29 @@ mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
-const SUPPORTED_PLATFORMS: &[Platform] = &[
+/// This controls the platforms that are:
+///
+/// 1) copied to resource folders
+/// 2) attempt to automatically load in the static initializer
+const SUPPORTED_JNI_PLATFORMS: &[Platform] = &[
     platform::X86_64_PC_WINDOWS_MSVC,
-    platform::I686_PC_WINDOWS_MSVC,
     platform::X86_64_UNKNOWN_LINUX_GNU,
     platform::AARCH64_UNKNOWN_LINUX_GNU,
+    platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
+    platform::X86_64_APPLE_DARWIN,
 ];
+
+fn jni_supported(p: &Platform) -> bool {
+    SUPPORTED_JNI_PLATFORMS
+        .iter()
+        .any(|x| x.target_triple == p.target_triple)
+}
 
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     for p in config.platforms.iter() {
-        if !SUPPORTED_PLATFORMS.contains(&p.platform) {
+        if !jni_supported(&p.platform) {
             println!(
-                "Java generation for {} is not supported. Use at your own risks.",
+                "Java is not officially supported on {}. Use at your own risks.",
                 p.platform
             );
         }
@@ -48,7 +59,11 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     fs::create_dir_all(config.java_resource_dir())?;
     let mut ffi_name = config.ffi_name.clone();
     ffi_name.push_str("_java");
-    for p in config.platforms.iter() {
+    for p in config
+        .platforms
+        .iter()
+        .filter(|x| jni_supported(&x.platform))
+    {
         let target_dir = config.java_resource_dir().join(p.platform.target_triple);
         let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
         let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
@@ -282,9 +297,13 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 blocked(f, |f| {
                     f.writeln("boolean loaded = false;")?;
                     let libname = format!("{}_java", config.ffi_name);
-                    for platform in config.platforms.iter() {
-                        match platform.platform {
-                            platform::X86_64_PC_WINDOWS_MSVC | platform::I686_PC_WINDOWS_MSVC => {
+                    for platform in config
+                        .platforms
+                        .iter()
+                        .filter(|x| jni_supported(&x.platform))
+                    {
+                        match platform.platform.target_os {
+                            OS::Windows => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
@@ -293,8 +312,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                     ))
                                 })?;
                             }
-                            platform::X86_64_UNKNOWN_LINUX_GNU
-                            | platform::AARCH64_UNKNOWN_LINUX_GNU => {
+                            OS::Linux => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
@@ -303,7 +321,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                     ))
                                 })?;
                             }
-                            platform::X86_64_APPLE_DARWIN | platform::AARCH64_APPLE_DARWIN => {
+                            OS::MacOS => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(
@@ -312,7 +330,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                     ))
                                 })?;
                             }
-                            _ => (), // Other platforms are not supported, but you can load them with XXX_NATIVE_LIB_LOCATION env variable
+                            _ => unimplemented!(),
                         }
                     }
 

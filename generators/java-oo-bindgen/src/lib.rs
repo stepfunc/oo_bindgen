@@ -46,10 +46,11 @@ clippy::all
 
 use std::path::PathBuf;
 
+pub use crate::rust::generate_java_ffi;
+pub use crate::rust::JniBindgenConfig;
 pub use java::generate_java_bindings;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::Library;
-pub use rust::generate_java_ffi;
 
 mod java;
 mod rust;
@@ -57,8 +58,6 @@ mod rust;
 pub struct JavaBindgenConfig {
     /// Path to output the generated Java code
     pub java_output_dir: PathBuf,
-    /// Path to output the generated Rust code
-    pub rust_output_dir: PathBuf,
     /// Path to the C FFI target lib (the actual Rust code, not the compiled FFI)
     pub ffi_path: PathBuf,
     /// Name of the FFI target
@@ -85,25 +84,6 @@ impl JavaBindgenConfig {
     fn java_resource_dir(&self) -> PathBuf {
         let mut result = self.java_output_dir.clone();
         result.extend(&["src", "main", "resources"]);
-        result
-    }
-
-    fn java_ffi_name(&self) -> String {
-        let mut result = self.ffi_name.clone();
-        result.push_str("-java");
-        result
-    }
-
-    fn rust_source_dir(&self) -> PathBuf {
-        let mut result = self.rust_output_dir.clone();
-        result.extend(&["src"]);
-        result
-    }
-
-    fn java_signature_path(&self, libname: &str) -> String {
-        let mut result = self.group_id.replace('.', "/");
-        result.push('/');
-        result.push_str(libname);
         result
     }
 }

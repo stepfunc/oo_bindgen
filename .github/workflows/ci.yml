@@ -44,7 +44,7 @@ jobs:
           path: |
             oo-bindgen/dependencies.json
             oo-bindgen/dependencies.txt
-  # Run the unit tests on Windows and Linux
+  # Run the unit tests on Windows, Linux, and MacOS
   test:
     strategy:
       fail-fast: false
@@ -52,6 +52,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
+          - macos-latest
         rust:
           - stable
           - beta
@@ -104,8 +105,8 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
-  # Build bindings on Linux x64 [64-bit Linux (kernel 2.6.32+, glibc 2.11+) (x86_64-unknown-linux-gnu)]
-  bindings-linux:
+  # Build documentation
+  documentation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -148,21 +149,6 @@ jobs:
           cp -a tests/bindings/dotnet/foo/doc ~/doc/dotnet
           cp -a tests/bindings/java/foo/target/apidocs ~/doc/java
           rm tests/bindings/c/generated/logo.png tests/bindings/c/generated/doxygen-awesome.css
-      - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/c/generated/x86_64-unknown-linux-gnu/lib
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
       - name: Upload documentation
         uses: actions/upload-artifact@v2
         with:
@@ -278,60 +264,6 @@ jobs:
         with:
           name: ffi-modules
           path: tests/bindings/java/foo/src/main/resources
-  # Build bindings on Linux AArch64
-  bindings-aarch64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: aarch64-unknown-linux-gnu
-          override: true
-      - name: Caching
-        uses: Swatinem/rust-cache@v1
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target aarch64-unknown-linux-gnu
-      - name: C bindings
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: run
-          args: --release --target aarch64-unknown-linux-gnu --bin foo-bindings -- --c --no-tests
-      - name: .NET bindings
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: run
-          args: --release --target aarch64-unknown-linux-gnu --bin foo-bindings -- --dotnet --no-tests
-      - name: Java bindings
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: run
-          args: --release --target aarch64-unknown-linux-gnu --bin foo-bindings -- --java --no-tests
-      - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/c/generated/aarch64-unknown-linux-gnu/lib
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
   # Cross-compilation for ARM devices and produce C bindings
   cross:
     strategy:
@@ -341,6 +273,8 @@ jobs:
           - arm-unknown-linux-gnueabi # ARMv6 Linux (kernel 3.2, glibc 2.17)
           - arm-unknown-linux-gnueabihf # ARMv6 Linux, hardfloat (kernel 3.2, glibc 2.17)
           - armv7-unknown-linux-gnueabihf # ARMv7 Linux, hardfloat (kernel 3.2, glibc 2.17)
+          - aarch64-unknown-linux-gnu # ARM64 Linux (kernel 4.2, glibc 2.17+)
+          - x86_64-unknown-linux-gnu # 64-bit Linux (kernel 2.6.32+, glibc 2.11+)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -364,11 +298,22 @@ jobs:
           use-cross: true
           command: run
           args: --release --target ${{ matrix.target }} --bin foo-bindings -- --c --no-tests
+      - name: Java bindings
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: run
+          args: --release --target ${{ matrix.target }} --bin foo-bindings -- --java --no-tests
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
           name: ffi-modules
           path: tests/bindings/c/generated/${{ matrix.target }}/lib
+      - name: Upload compiled Java bindings
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffi-modules
+          path: tests/bindings/java/foo/src/main/resources
       - name: Upload C bindings
         uses: actions/upload-artifact@v2
         with:
@@ -376,7 +321,7 @@ jobs:
           path: tests/bindings/c/generated
   # Package all the generated bindings
   packaging:
-    needs: [dependencies, bindings-linux, bindings-windows, bindings-macos, bindings-aarch64, cross]
+    needs: [dependencies, documentation, bindings-windows, bindings-macos, cross]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

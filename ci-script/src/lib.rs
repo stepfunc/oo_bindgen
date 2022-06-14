@@ -1,11 +1,28 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
+use std::rc::Rc;
 
 use clap::{App, Arg};
 
 use oo_bindgen::backend::*;
 use oo_bindgen::model::Library;
+
+const SUPPORTED_PLATFORMS: &[&Platform] = &[
+    &platform::X86_64_PC_WINDOWS_MSVC,
+    &platform::I686_PC_WINDOWS_MSVC,
+    &platform::X86_64_UNKNOWN_LINUX_GNU,
+    &platform::AARCH64_UNKNOWN_LINUX_GNU,
+    &platform::ARMV7_UNKNOWN_LINUX_GNUEABIHF,
+    &platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
+    &platform::ARM_UNKNOWN_LINUX_GNUEABI,
+];
+
+fn is_officially_supported(p: &Platform) -> bool {
+    SUPPORTED_PLATFORMS
+        .iter()
+        .any(|x| x.target_triple == p.target_triple)
+}
 
 pub fn run(settings: BindingBuilderSettings) {
     let matches = App::new("oo-bindgen")
@@ -84,7 +101,7 @@ pub fn run(settings: BindingBuilderSettings) {
             Platform::guess_current().expect("could not determine current platform");
         platforms.add(current_platform.clone(), ffi_path());
 
-        if !current_platform.has_official_support() {
+        if !is_officially_supported(current_platform) {
             println!(
                 "WARNING: building for an unsupported platform: {}",
                 current_platform.target_triple
@@ -98,35 +115,20 @@ pub fn run(settings: BindingBuilderSettings) {
 
     assert!(!platforms.is_empty(), "No platforms found!");
 
+    let doxygen = matches.is_present("doxygen");
+
     if run_c || run_all {
-        run_builder::<CBindingBuilder>(
-            &settings,
-            run_tests,
-            package,
-            &platforms,
-            &extra_files,
-            matches.is_present("doxygen"),
-        );
+        let mut builder = CBindingBuilder::new(settings.clone(), platforms.clone(), &extra_files);
+        builder.run(run_tests, package, doxygen);
     }
     if run_dotnet || run_all {
-        run_builder::<DotnetBindingBuilder>(
-            &settings,
-            run_tests,
-            package,
-            &platforms,
-            &extra_files,
-            matches.is_present("doxygen"),
-        );
+        let mut builder =
+            DotnetBindingBuilder::new(settings.clone(), platforms.clone(), &extra_files);
+        builder.run(run_tests, package, doxygen);
     }
     if run_java || run_all {
-        run_builder::<JavaBindingBuilder>(
-            &settings,
-            run_tests,
-            package,
-            &platforms,
-            &extra_files,
-            false,
-        );
+        let mut builder = JavaBindingBuilder::new(settings, platforms, &extra_files);
+        builder.run(run_tests, package, doxygen);
     }
 }
 
@@ -134,88 +136,54 @@ fn ffi_path() -> PathBuf {
     [env!("TARGET_DIR"), "deps"].iter().collect()
 }
 
-fn run_builder<'a, B: BindingBuilder<'a>>(
-    settings: &'a BindingBuilderSettings,
-    run_tests: bool,
-    package: bool,
-    platforms: &'a PlatformLocations,
-    extra_files: &[PathBuf],
-    generate_doxygen: bool,
-) -> B {
-    let mut builder = B::new(settings, platforms, extra_files);
-
-    builder.generate(package, generate_doxygen);
-
-    if !package {
-        if run_tests {
-            builder.build();
-            builder.test();
-        }
-    } else {
-        builder.package();
-    }
-
-    builder
-}
-
-pub struct BindingBuilderSettings<'a> {
+#[derive(Clone)]
+pub struct BindingBuilderSettings {
     /// FFI target name (as specified in with `cargo build -p <...>`)
-    pub ffi_target_name: &'a str,
+    pub ffi_target_name: &'static str,
     /// Compiled FFI name (usually the same as `ffi_target_name`, but with hyphens replaced by underscores)
-    pub ffi_name: &'a str,
+    pub ffi_name: &'static str,
     /// Path to the FFI target
-    pub ffi_path: &'a Path,
+    pub ffi_path: PathBuf,
     /// Name of the Java group (e.g. `io.stepfunc`)
-    pub java_group_id: &'a str,
+    pub java_group_id: &'static str,
     /// Destination path
-    pub destination_path: &'a Path,
+    pub destination_path: PathBuf,
     /// Library to build
-    pub library: &'a Library,
+    pub library: Rc<Library>,
 }
 
-trait BindingBuilder<'a> {
+trait BindingBuilder {
     fn name() -> &'static str;
-    fn new(
-        settings: &'a BindingBuilderSettings<'a>,
-        platforms: &'a PlatformLocations,
-        extra_files: &[PathBuf],
-    ) -> Self;
     fn generate(&mut self, is_packaging: bool, generate_doxygen: bool);
     fn build(&mut self);
     fn test(&mut self);
     fn package(&mut self);
+
+    /// run the builder
+    fn run(&mut self, run_tests: bool, package: bool, generate_doxygen: bool) {
+        self.generate(package, generate_doxygen);
+
+        if !package {
+            if run_tests {
+                self.build();
+                self.test();
+            }
+        } else {
+            self.package();
+        }
+    }
 }
 
-struct CBindingBuilder<'a> {
-    settings: &'a BindingBuilderSettings<'a>,
-    platforms: &'a PlatformLocations,
+struct CBindingBuilder {
+    settings: BindingBuilderSettings,
+    platforms: PlatformLocations,
     extra_files: Vec<PathBuf>,
 }
 
-impl<'a> CBindingBuilder<'a> {
-    fn output_dir(&self) -> PathBuf {
-        let mut output_dir = PathBuf::from(self.settings.destination_path);
-        output_dir.push("c");
-        output_dir.push("generated");
-        output_dir
-    }
-
-    fn build_dir(&self) -> PathBuf {
-        let mut build_dir = PathBuf::from(self.settings.destination_path);
-        build_dir.push("c");
-        build_dir.push("build");
-        build_dir
-    }
-}
-
-impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
-    fn name() -> &'static str {
-        "c"
-    }
-
+impl CBindingBuilder {
     fn new(
-        settings: &'a BindingBuilderSettings<'a>,
-        platforms: &'a PlatformLocations,
+        settings: BindingBuilderSettings,
+        platforms: PlatformLocations,
         extra_files: &[PathBuf],
     ) -> Self {
         Self {
@@ -223,6 +191,20 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
             platforms,
             extra_files: extra_files.to_vec(),
         }
+    }
+
+    fn output_dir(&self) -> PathBuf {
+        self.settings.destination_path.join("c/generated")
+    }
+
+    fn build_dir(&self) -> PathBuf {
+        self.settings.destination_path.join("c/build")
+    }
+}
+
+impl BindingBuilder for CBindingBuilder {
+    fn name() -> &'static str {
+        "c"
     }
 
     fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
@@ -237,7 +219,7 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
                 generate_doxygen,
             };
 
-            c_oo_bindgen::generate_c_package(self.settings.library, &config)
+            c_oo_bindgen::generate_c_package(&self.settings.library, &config)
                 .expect("failed to package C lib");
         }
     }
@@ -282,17 +264,27 @@ impl<'a> BindingBuilder<'a> for CBindingBuilder<'a> {
     }
 }
 
-struct DotnetBindingBuilder<'a> {
-    settings: &'a BindingBuilderSettings<'a>,
-    platforms: &'a PlatformLocations,
+struct DotnetBindingBuilder {
+    settings: BindingBuilderSettings,
+    platforms: PlatformLocations,
     extra_files: Vec<PathBuf>,
 }
 
-impl<'a> DotnetBindingBuilder<'a> {
+impl DotnetBindingBuilder {
+    fn new(
+        settings: BindingBuilderSettings,
+        platforms: PlatformLocations,
+        extra_files: &[PathBuf],
+    ) -> Self {
+        Self {
+            settings,
+            platforms,
+            extra_files: extra_files.to_vec(),
+        }
+    }
+
     fn output_dir(&self) -> PathBuf {
-        let mut output_dir = PathBuf::from(self.settings.destination_path);
-        output_dir.push("dotnet");
-        output_dir
+        self.settings.destination_path.join("dotnet")
     }
 
     fn build_dir(&self) -> PathBuf {
@@ -302,21 +294,9 @@ impl<'a> DotnetBindingBuilder<'a> {
     }
 }
 
-impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
+impl BindingBuilder for DotnetBindingBuilder {
     fn name() -> &'static str {
         "dotnet"
-    }
-
-    fn new(
-        settings: &'a BindingBuilderSettings<'a>,
-        platforms: &'a PlatformLocations,
-        extra_files: &[PathBuf],
-    ) -> Self {
-        Self {
-            settings,
-            platforms,
-            extra_files: extra_files.to_vec(),
-        }
     }
 
     fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
@@ -335,7 +315,7 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
             generate_doxygen,
         };
 
-        dotnet_oo_bindgen::generate_dotnet_bindings(self.settings.library, &config).unwrap();
+        dotnet_oo_bindgen::generate_dotnet_bindings(&self.settings.library, &config).unwrap();
     }
 
     fn build(&mut self) {
@@ -377,28 +357,32 @@ impl<'a> BindingBuilder<'a> for DotnetBindingBuilder<'a> {
     }
 }
 
-struct JavaBindingBuilder<'a> {
-    settings: &'a BindingBuilderSettings<'a>,
-    platforms: &'a PlatformLocations,
+struct JavaBindingBuilder {
+    settings: BindingBuilderSettings,
+    platforms: PlatformLocations,
     extra_files: Vec<PathBuf>,
 }
 
-impl<'a> JavaBindingBuilder<'a> {
+impl JavaBindingBuilder {
+    fn new(
+        settings: BindingBuilderSettings,
+        platforms: PlatformLocations,
+        extra_files: &[PathBuf],
+    ) -> Self {
+        Self {
+            settings,
+            platforms,
+            extra_files: extra_files.to_vec(),
+        }
+    }
+
     fn output_dir(&self) -> PathBuf {
-        let mut output_dir = PathBuf::from(self.settings.destination_path);
-        output_dir.push("java");
-        output_dir
+        self.settings.destination_path.join("java")
     }
 
     fn java_build_dir(&self) -> PathBuf {
         let mut output_dir = self.output_dir();
         output_dir.push(self.settings.library.settings.name.to_string());
-        output_dir
-    }
-
-    fn rust_build_dir(&self) -> PathBuf {
-        let mut output_dir = self.output_dir();
-        output_dir.push(format!("{}-jni", self.settings.library.settings.name));
         output_dir
     }
 
@@ -418,27 +402,14 @@ impl<'a> JavaBindingBuilder<'a> {
     }
 }
 
-impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
+impl BindingBuilder for JavaBindingBuilder {
     fn name() -> &'static str {
         "java"
-    }
-
-    fn new(
-        settings: &'a BindingBuilderSettings<'a>,
-        platforms: &'a PlatformLocations,
-        extra_files: &[PathBuf],
-    ) -> Self {
-        Self {
-            settings,
-            platforms,
-            extra_files: extra_files.to_vec(),
-        }
     }
 
     fn generate(&mut self, is_packaging: bool, _generate_doxygen: bool) {
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
-            rust_output_dir: self.rust_build_dir(),
             ffi_name: self.settings.ffi_name.to_owned(),
             ffi_path: self.settings.ffi_path.to_owned(),
             group_id: self.settings.java_group_id.to_owned(),
@@ -446,46 +417,13 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
             platforms: self.platforms.clone(),
         };
 
-        // Generate Java JNI DLL if we are not packaging
+        // Generate Java JNI shared library if we are not packaging
         if !is_packaging {
-            // Clear/create the generated files
-            let build_dir = self.rust_build_dir();
-            if build_dir.exists() {
-                fs::remove_dir_all(&build_dir).unwrap();
-            }
-            fs::create_dir_all(&build_dir).unwrap();
-
-            // Generate the Rust code
-            java_oo_bindgen::generate_java_ffi(self.settings.library, &config).unwrap();
-
-            // You: You're setting the target directory to point at the workspace dir. This doesn't look right...
-            // Me: Yeah, it avoids some recompilation.
-            // You: But this doesn't feel safe. What are your credentials for doing such a thing?
-            // Me: Here's my business card. *hands said card*. The lettering is something called "Silian Rail".
-            // You: Impressive, but still, that doesn't give you the right to do that.
-            // Me: Let's see Paul Allen's card.
-            // You: What!?
-            // Me: You know what, I got to go. I have to return some videotapes. *leaves in a hurry*
-            // You: *still puzzled about the situation, but accepting this hack*
-            let target_dir = pathdiff::diff_paths("./target", self.rust_build_dir()).unwrap();
             let mut cmd = Command::new("cargo");
 
-            let current_platform = Platform::guess_current().unwrap();
+            let java_target = format!("{}_java", self.settings.ffi_name);
 
-            cmd.current_dir(self.rust_build_dir()).args(&[
-                "build",
-                "--target-dir",
-                &target_dir.to_string_lossy(),
-            ]);
-
-            // When not building for the native target of the host system, the output path
-            // changes. That's the only way I figured out how to properly handle this.
-            if ffi_path()
-                .to_string_lossy()
-                .contains(current_platform.target_triple)
-            {
-                cmd.args(&["--target", current_platform.target_triple]);
-            }
+            cmd.args(&["build", "-p", &java_target]);
 
             if env!("PROFILE") == "release" {
                 cmd.arg("--release");
@@ -503,7 +441,7 @@ impl<'a> BindingBuilder<'a> for JavaBindingBuilder<'a> {
         fs::create_dir_all(&build_dir).unwrap();
 
         // Generate the Java code
-        java_oo_bindgen::generate_java_bindings(self.settings.library, &config).unwrap();
+        java_oo_bindgen::generate_java_bindings(&self.settings.library, &config).unwrap();
     }
 
     fn build(&mut self) {

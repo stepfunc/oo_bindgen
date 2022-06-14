@@ -6,7 +6,6 @@ pub trait PlatformExt {
     fn static_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn dyn_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn bin_filename<T: AsRef<str>>(&self, libname: T) -> String;
-    fn has_official_support(&self) -> bool;
 }
 
 // Source for these are:
@@ -40,20 +39,6 @@ impl PlatformExt for Platform {
             format!("lib{}.dylib", libname.as_ref())
         } else {
             format!("lib{}.so", libname.as_ref())
-        }
-    }
-
-    fn has_official_support(&self) -> bool {
-        #[allow(clippy::match_like_matches_macro)]
-        match self.target_triple {
-            "x86_64-pc-windows-msvc" => true,
-            "i686-pc-windows-msvc" => true,
-            "x86_64-unknown-linux-gnu" => true,
-            "aarch64-unknown-linux-gnu" => true,
-            "armv7-unknown-linux-gnueabihf" => true,
-            "arm-unknown-linux-gnueabihf" => true,
-            "arm-unknown-linux-gnueabi" => true,
-            _ => false,
         }
     }
 }
@@ -92,7 +77,7 @@ impl PlatformLocations {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.iter().count() == 0
+        self.locations.is_empty()
     }
 }
 

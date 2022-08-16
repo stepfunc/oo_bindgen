@@ -3,11 +3,11 @@ use std::time::Duration;
 use crate::model::*;
 
 /// Marker class used to denote the String type with conversions to more specialized types
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct StringType;
 
 /// Durations may be represented in multiple ways in the underlying C API
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
 pub enum DurationType {
     /// Duration is represented as a count of milliseconds in a u64 value
     Milliseconds,
@@ -80,7 +80,7 @@ where
 }
 
 /// primitive types in most languages
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Primitive {
     Bool,
     U8,
@@ -97,7 +97,7 @@ pub enum Primitive {
 
 /// Basic types are trivially copyable. They can be used
 /// in almost any context within the API model
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BasicType {
     Primitive(Primitive),
     Duration(DurationType),

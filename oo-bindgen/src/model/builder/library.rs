@@ -673,10 +673,10 @@ impl LibraryBuilder {
             Statement::ErrorType(x) => self.check_enum(&x.inner),
             Statement::ClassDefinition(x) => {
                 self.check_class_declaration(&x.declaration)?;
-                for x in x.constructor.iter() {
+                if let Some(x) = &x.constructor {
                     self.check_function(&x.function)?;
                 }
-                for x in x.destructor.iter() {
+                if let Some(x) = &x.destructor {
                     self.check_function(&x.function)?;
                 }
                 for x in x.static_methods.iter() {
@@ -730,7 +730,7 @@ impl LibraryBuilder {
                 if let Some(r) = x.return_type.get() {
                     self.check_function_return_type(&r.value)?;
                 }
-                for err in x.error_type.get().iter() {
+                if let Some(err) = x.error_type.get() {
                     self.check_enum(&err.inner)?;
                 }
                 Ok(())

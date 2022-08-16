@@ -67,7 +67,7 @@ impl From<ClassDeclarationHandle> for CallbackArgument {
 }
 
 /// types that can be returned from callback functions
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallbackReturnValue {
     Basic(BasicType),
     Struct(UniversalStructHandle),

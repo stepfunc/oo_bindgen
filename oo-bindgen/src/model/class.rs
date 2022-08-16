@@ -118,7 +118,7 @@ impl StaticMethod<Unvalidated> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DestructionMode {
     /// Object is automatically deleted by the GC
     Automatic,

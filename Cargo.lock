@@ -167,20 +167,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "foo-schema"
-version = "0.1.0"
-dependencies = [
- "oo-bindgen",
-]
-
-[[package]]
-name = "foo_ffi_java"
+name = "foo-ffi-java"
 version = "1.2.3"
 dependencies = [
  "foo-ffi",
  "foo-schema",
  "java-oo-bindgen",
  "jni",
+]
+
+[[package]]
+name = "foo-schema"
+version = "0.1.0"
+dependencies = [
+ "oo-bindgen",
 ]
 
 [[package]]

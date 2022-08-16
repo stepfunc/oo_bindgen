@@ -1,5 +1,6 @@
 #![allow(
     clippy::unused_unit,
+    clippy::let_unit_value,
     clippy::useless_conversion,
     clippy::redundant_closure,
     clippy::needless_borrow,

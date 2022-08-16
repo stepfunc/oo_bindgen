@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::model::*;
 
 /// Used for iterator "next" functions to get an optional primitive
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PrimitiveRef {
     pub inner: Primitive,
 }

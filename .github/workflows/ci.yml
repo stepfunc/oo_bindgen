@@ -5,45 +5,6 @@ on:
       - main
   pull_request:
 jobs:
-  # Check dependencies
-  dependencies:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          path: oo-bindgen
-      - name: Checkout complicense
-        uses: actions/checkout@v2
-        with:
-          repository: stepfunc/complicense
-          path: complicense
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Caching
-        uses: Swatinem/rust-cache@v1
-      - name: Install cargo-license
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-license
-      - name: Generate dependencies.json
-        working-directory: oo-bindgen/oo-bindgen
-        run: cargo-license --avoid-dev-deps --avoid-build-deps -j > ../dependencies.json
-      - name: Generate dependencies.txt
-        working-directory: complicense
-        run: cargo run -- --import ../oo-bindgen/dependencies.json --config ../oo-bindgen/deps-config.json --token ${{ github.token }} > ../oo-bindgen/dependencies.txt
-      - name: Upload dependencies info
-        uses: actions/upload-artifact@v2
-        with:
-          name: dependencies
-          path: |
-            oo-bindgen/dependencies.json
-            oo-bindgen/dependencies.txt
   # Run the unit tests on Windows, Linux, and MacOS
   test:
     strategy:
@@ -321,7 +282,7 @@ jobs:
           path: tests/bindings/c/generated
   # Package all the generated bindings
   packaging:
-    needs: [dependencies, documentation, bindings-windows, bindings-macos, cross]
+    needs: [documentation, bindings-windows, bindings-macos, cross]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -334,10 +295,6 @@ jobs:
           override: true
       - name: Caching
         uses: Swatinem/rust-cache@v1
-      - name: Download dependencies
-        uses: actions/download-artifact@v2
-        with:
-          name: dependencies
       - name: Download compiled FFI
         uses: actions/download-artifact@v2
         with:
@@ -347,7 +304,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --bin foo-bindings -- --package ./ffi-modules -f dependencies.txt
+          args: --bin foo-bindings -- --package ./ffi-modules
       - name: Upload .NET bindings
         uses: actions/upload-artifact@v2
         with:

@@ -140,6 +140,8 @@ fn ffi_path() -> PathBuf {
 pub struct BindingBuilderSettings {
     /// FFI target name (as specified in with `cargo build -p <...>`)
     pub ffi_target_name: &'static str,
+    /// JNI target name (as specified in with `cargo build -p <...>`)
+    pub jni_target_name: &'static str,
     /// Compiled FFI name (usually the same as `ffi_target_name`, but with hyphens replaced by underscores)
     pub ffi_name: &'static str,
     /// Path to the FFI target
@@ -421,9 +423,7 @@ impl BindingBuilder for JavaBindingBuilder {
         if !is_packaging {
             let mut cmd = Command::new("cargo");
 
-            let java_target = format!("{}_java", self.settings.ffi_name);
-
-            cmd.args(&["build", "-p", &java_target]);
+            cmd.args(&["build", "-p", self.settings.jni_target_name]);
 
             if env!("PROFILE") == "release" {
                 cmd.arg("--release");

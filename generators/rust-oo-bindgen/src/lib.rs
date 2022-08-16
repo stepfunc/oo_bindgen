@@ -288,7 +288,7 @@ impl<'a> RustCodegen<'a> {
     ) -> FormattingResult<()> {
         let enum_name = handle.name.to_camel_case();
         f.writeln("#[repr(C)]")?;
-        f.writeln("#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]")?;
+        f.writeln("#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]")?;
         f.writeln(&format!("pub enum {}", enum_name))?;
         blocked(f, |f| {
             for variant in &handle.variants {

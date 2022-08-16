@@ -151,7 +151,7 @@ impl std::fmt::Display for ValidatedDefaultValue {
 }
 
 /// struct type affects the type of code the backend will generate
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Visibility {
     /// struct members are public
     Public,
@@ -436,7 +436,7 @@ pub struct InitializedValue {
     pub value: ValidatedDefaultValue,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum InitializerType {
     /// Normal initializers map to actual language constructors
     /// A name is still required as some languages (e.g. C) don't support

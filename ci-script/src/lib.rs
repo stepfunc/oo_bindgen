@@ -423,7 +423,7 @@ impl BindingBuilder for JavaBindingBuilder {
         if !is_packaging {
             let mut cmd = Command::new("cargo");
 
-            cmd.args(&["build", "-p", &self.settings.jni_target_name]);
+            cmd.args(&["build", "-p", self.settings.jni_target_name]);
 
             if env!("PROFILE") == "release" {
                 cmd.arg("--release");

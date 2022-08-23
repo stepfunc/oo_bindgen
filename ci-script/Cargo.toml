@@ -9,5 +9,5 @@ oo-bindgen = { path = "../oo-bindgen" }
 c-oo-bindgen = { path = "../generators/c-oo-bindgen" }
 dotnet-oo-bindgen = { path = "../generators/dotnet-oo-bindgen" }
 java-oo-bindgen = { path = "../generators/java-oo-bindgen" }
-clap = "2.33"
+clap = "3.2.17"
 pathdiff = "0.2"

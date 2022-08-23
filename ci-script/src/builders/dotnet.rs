@@ -48,7 +48,7 @@ impl BindingBuilder for DotnetBindingBuilder {
 
         let config = dotnet_oo_bindgen::DotnetBindgenConfig {
             output_dir: build_dir,
-            ffi_name: self.settings.ffi_name.to_owned(),
+            ffi_name: self.settings.ffi_name,
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
             generate_doxygen,

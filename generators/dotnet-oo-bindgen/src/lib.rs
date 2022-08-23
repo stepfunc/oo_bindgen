@@ -77,7 +77,7 @@ const SUPPORTED_PLATFORMS: &[Platform] = &[
 
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
-    pub ffi_name: String,
+    pub ffi_name: &'static str,
     pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
     pub generate_doxygen: bool,

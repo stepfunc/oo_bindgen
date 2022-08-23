@@ -40,8 +40,8 @@ impl BindingBuilder for CBindingBuilder {
         for platform in self.platforms.iter() {
             let config = c_oo_bindgen::CBindgenConfig {
                 output_dir: self.output_dir(),
-                ffi_target_name: self.settings.ffi_target_name.to_owned(),
-                ffi_name: self.settings.ffi_name.to_owned(),
+                ffi_target_name: self.settings.ffi_target_name,
+                ffi_name: self.settings.ffi_name,
                 is_release: env!("PROFILE") == "release",
                 extra_files: self.extra_files.clone(),
                 platform_location: platform.clone(),
@@ -66,7 +66,7 @@ impl BindingBuilder for CBindingBuilder {
             .current_dir(&build_dir)
             .arg("..")
             .status()
-            .unwrap();
+            .expect("cmake failed");
         assert!(result.success());
 
         // CMake build
@@ -74,7 +74,7 @@ impl BindingBuilder for CBindingBuilder {
             .current_dir(&build_dir)
             .args(&["--build", ".", "--config", "Debug"])
             .status()
-            .unwrap();
+            .expect("cmake failed");
         assert!(result.success());
     }
 

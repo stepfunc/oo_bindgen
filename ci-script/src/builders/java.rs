@@ -56,7 +56,7 @@ impl BindingBuilder for JavaBindingBuilder {
     fn generate(&mut self, is_packaging: bool, _generate_doxygen: bool) {
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
-            ffi_name: self.settings.ffi_name.to_owned(),
+            ffi_name: self.settings.ffi_name,
             ffi_path: self.settings.ffi_path.to_owned(),
             group_id: self.settings.java_group_id.to_owned(),
             extra_files: self.extra_files.clone(),

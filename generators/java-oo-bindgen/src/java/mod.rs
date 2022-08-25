@@ -57,7 +57,7 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
 
     // Copy the compiled libraries to the resource folder
     fs::create_dir_all(config.java_resource_dir())?;
-    let mut ffi_name = config.ffi_name.clone();
+    let mut ffi_name = config.ffi_name.to_string();
     ffi_name.push_str("_java");
     for p in config
         .platforms

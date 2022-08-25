@@ -1,9 +1,9 @@
+pub(crate) mod builders;
+pub(crate) mod cli;
+
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
 use std::rc::Rc;
-
-use clap::{App, Arg};
 
 use oo_bindgen::backend::*;
 use oo_bindgen::model::Library;
@@ -25,51 +25,7 @@ fn is_officially_supported(p: &Platform) -> bool {
 }
 
 pub fn run(settings: BindingBuilderSettings) {
-    let matches = App::new("oo-bindgen")
-        .arg(
-            Arg::with_name("c")
-                .long("c")
-                .takes_value(false)
-                .help("Build C bindings"),
-        )
-        .arg(
-            Arg::with_name("dotnet")
-                .long("dotnet")
-                .takes_value(false)
-                .help("Build .NET Core bindings"),
-        )
-        .arg(
-            Arg::with_name("java")
-                .long("java")
-                .takes_value(false)
-                .help("Build Java (JNI) bindings"),
-        )
-        .arg(
-            Arg::with_name("doxygen")
-                .long("doxygen")
-                .takes_value(false)
-                .help("Generate Doxygen documentation"),
-        )
-        .arg(
-            Arg::with_name("no-tests")
-                .long("no-tests")
-                .takes_value(false)
-                .help("Do not run the unit tests"),
-        )
-        .arg(
-            Arg::with_name("package")
-                .long("package")
-                .takes_value(true)
-                .help("Generate package with the provided modules"),
-        )
-        .arg(
-            Arg::with_name("extra-files")
-                .short("f")
-                .long("extra-files")
-                .takes_value(true)
-                .help("Path to extra files to include in the generated bindings"),
-        )
-        .get_matches();
+    let matches = cli::build();
 
     let mut run_tests = !matches.is_present("no-tests");
 
@@ -118,16 +74,24 @@ pub fn run(settings: BindingBuilderSettings) {
     let doxygen = matches.is_present("doxygen");
 
     if run_c || run_all {
-        let mut builder = CBindingBuilder::new(settings.clone(), platforms.clone(), &extra_files);
+        let mut builder = crate::builders::c::CBindingBuilder::new(
+            settings.clone(),
+            platforms.clone(),
+            &extra_files,
+        );
         builder.run(run_tests, package, doxygen);
     }
     if run_dotnet || run_all {
-        let mut builder =
-            DotnetBindingBuilder::new(settings.clone(), platforms.clone(), &extra_files);
+        let mut builder = crate::builders::dotnet::DotnetBindingBuilder::new(
+            settings.clone(),
+            platforms.clone(),
+            &extra_files,
+        );
         builder.run(run_tests, package, doxygen);
     }
     if run_java || run_all {
-        let mut builder = JavaBindingBuilder::new(settings, platforms, &extra_files);
+        let mut builder =
+            crate::builders::java::JavaBindingBuilder::new(settings, platforms, &extra_files);
         builder.run(run_tests, package, doxygen);
     }
 }
@@ -165,302 +129,11 @@ trait BindingBuilder {
     fn run(&mut self, run_tests: bool, package: bool, generate_doxygen: bool) {
         self.generate(package, generate_doxygen);
 
-        if !package {
-            if run_tests {
-                self.build();
-                self.test();
-            }
-        } else {
+        if package {
             self.package();
+        } else if run_tests {
+            self.build();
+            self.test();
         }
-    }
-}
-
-struct CBindingBuilder {
-    settings: BindingBuilderSettings,
-    platforms: PlatformLocations,
-    extra_files: Vec<PathBuf>,
-}
-
-impl CBindingBuilder {
-    fn new(
-        settings: BindingBuilderSettings,
-        platforms: PlatformLocations,
-        extra_files: &[PathBuf],
-    ) -> Self {
-        Self {
-            settings,
-            platforms,
-            extra_files: extra_files.to_vec(),
-        }
-    }
-
-    fn output_dir(&self) -> PathBuf {
-        self.settings.destination_path.join("c/generated")
-    }
-
-    fn build_dir(&self) -> PathBuf {
-        self.settings.destination_path.join("c/build")
-    }
-}
-
-impl BindingBuilder for CBindingBuilder {
-    fn name() -> &'static str {
-        "c"
-    }
-
-    fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
-        for platform in self.platforms.iter() {
-            let config = c_oo_bindgen::CBindgenConfig {
-                output_dir: self.output_dir(),
-                ffi_target_name: self.settings.ffi_target_name.to_owned(),
-                ffi_name: self.settings.ffi_name.to_owned(),
-                is_release: env!("PROFILE") == "release",
-                extra_files: self.extra_files.clone(),
-                platform_location: platform.clone(),
-                generate_doxygen,
-            };
-
-            c_oo_bindgen::generate_c_package(&self.settings.library, &config)
-                .expect("failed to package C lib");
-        }
-    }
-
-    fn build(&mut self) {
-        // Clear/create build directory
-        let build_dir = self.build_dir();
-        if build_dir.exists() {
-            fs::remove_dir_all(&build_dir).unwrap();
-        }
-        fs::create_dir_all(&build_dir).unwrap();
-
-        // CMake configure
-        let result = Command::new("cmake")
-            .current_dir(&build_dir)
-            .arg("..")
-            .status()
-            .unwrap();
-        assert!(result.success());
-
-        // CMake build
-        let result = Command::new("cmake")
-            .current_dir(&build_dir)
-            .args(&["--build", ".", "--config", "Debug"])
-            .status()
-            .unwrap();
-        assert!(result.success());
-    }
-
-    fn test(&mut self) {
-        // Run unit tests
-        let result = Command::new("ctest")
-            .current_dir(&self.build_dir())
-            .args(&[".", "-C", "Debug"])
-            .status()
-            .unwrap();
-        assert!(result.success());
-    }
-
-    fn package(&mut self) {
-        // Already done in generate
-    }
-}
-
-struct DotnetBindingBuilder {
-    settings: BindingBuilderSettings,
-    platforms: PlatformLocations,
-    extra_files: Vec<PathBuf>,
-}
-
-impl DotnetBindingBuilder {
-    fn new(
-        settings: BindingBuilderSettings,
-        platforms: PlatformLocations,
-        extra_files: &[PathBuf],
-    ) -> Self {
-        Self {
-            settings,
-            platforms,
-            extra_files: extra_files.to_vec(),
-        }
-    }
-
-    fn output_dir(&self) -> PathBuf {
-        self.settings.destination_path.join("dotnet")
-    }
-
-    fn build_dir(&self) -> PathBuf {
-        let mut output_dir = self.output_dir();
-        output_dir.push(self.settings.library.settings.name.to_string());
-        output_dir
-    }
-}
-
-impl BindingBuilder for DotnetBindingBuilder {
-    fn name() -> &'static str {
-        "dotnet"
-    }
-
-    fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
-        // Clear/create generated files
-        let build_dir = self.build_dir();
-        if build_dir.exists() {
-            fs::remove_dir_all(&build_dir).unwrap();
-        }
-        fs::create_dir_all(&build_dir).unwrap();
-
-        let config = dotnet_oo_bindgen::DotnetBindgenConfig {
-            output_dir: build_dir,
-            ffi_name: self.settings.ffi_name.to_owned(),
-            extra_files: self.extra_files.clone(),
-            platforms: self.platforms.clone(),
-            generate_doxygen,
-        };
-
-        dotnet_oo_bindgen::generate_dotnet_bindings(&self.settings.library, &config).unwrap();
-    }
-
-    fn build(&mut self) {
-        let result = Command::new("dotnet")
-            .current_dir(&self.output_dir())
-            .arg("build")
-            .arg("--configuration")
-            .arg("Release")
-            .status()
-            .unwrap();
-        assert!(result.success());
-    }
-
-    fn test(&mut self) {
-        // Run unit tests
-        let result = Command::new("dotnet")
-            .current_dir(&self.output_dir())
-            .arg("test")
-            .arg("--configuration")
-            .arg("Release")
-            .status()
-            .unwrap();
-        assert!(result.success());
-    }
-
-    fn package(&mut self) {
-        // Produce a nupkg
-        let result = Command::new("dotnet")
-            .current_dir(&self.output_dir())
-            .arg("pack")
-            .arg("--configuration")
-            .arg("Release")
-            .arg("--include-symbols")
-            .arg("--output")
-            .arg("nupkg")
-            .status()
-            .unwrap();
-        assert!(result.success());
-    }
-}
-
-struct JavaBindingBuilder {
-    settings: BindingBuilderSettings,
-    platforms: PlatformLocations,
-    extra_files: Vec<PathBuf>,
-}
-
-impl JavaBindingBuilder {
-    fn new(
-        settings: BindingBuilderSettings,
-        platforms: PlatformLocations,
-        extra_files: &[PathBuf],
-    ) -> Self {
-        Self {
-            settings,
-            platforms,
-            extra_files: extra_files.to_vec(),
-        }
-    }
-
-    fn output_dir(&self) -> PathBuf {
-        self.settings.destination_path.join("java")
-    }
-
-    fn java_build_dir(&self) -> PathBuf {
-        let mut output_dir = self.output_dir();
-        output_dir.push(self.settings.library.settings.name.to_string());
-        output_dir
-    }
-
-    fn maven(&self) -> Command {
-        let mut command = if cfg!(windows) {
-            let mut command = Command::new("cmd");
-            command.args(&["/c", "mvn.cmd"]);
-            command
-        } else {
-            Command::new("mvn")
-        };
-
-        command.current_dir(self.output_dir());
-        command.arg("-B"); // No progress on CI
-
-        command
-    }
-}
-
-impl BindingBuilder for JavaBindingBuilder {
-    fn name() -> &'static str {
-        "java"
-    }
-
-    fn generate(&mut self, is_packaging: bool, _generate_doxygen: bool) {
-        let config = java_oo_bindgen::JavaBindgenConfig {
-            java_output_dir: self.java_build_dir(),
-            ffi_name: self.settings.ffi_name.to_owned(),
-            ffi_path: self.settings.ffi_path.to_owned(),
-            group_id: self.settings.java_group_id.to_owned(),
-            extra_files: self.extra_files.clone(),
-            platforms: self.platforms.clone(),
-        };
-
-        // Generate Java JNI shared library if we are not packaging
-        if !is_packaging {
-            let mut cmd = Command::new("cargo");
-
-            cmd.args(&["build", "-p", self.settings.jni_target_name]);
-
-            if env!("PROFILE") == "release" {
-                cmd.arg("--release");
-            }
-
-            let result = cmd.status().unwrap();
-            assert!(result.success());
-        }
-
-        // Clear/create Java generated files
-        let build_dir = self.java_build_dir();
-        if build_dir.exists() {
-            fs::remove_dir_all(&build_dir).unwrap();
-        }
-        fs::create_dir_all(&build_dir).unwrap();
-
-        // Generate the Java code
-        java_oo_bindgen::generate_java_bindings(&self.settings.library, &config).unwrap();
-    }
-
-    fn build(&mut self) {
-        let result = self.maven().arg("compile").status().unwrap();
-        assert!(result.success());
-    }
-
-    fn test(&mut self) {
-        let result = self.maven().arg("verify").status().unwrap();
-        assert!(result.success());
-    }
-
-    fn package(&mut self) {
-        let result = self
-            .maven()
-            .arg("package")
-            .arg("-DskipTests")
-            .status()
-            .unwrap();
-        assert!(result.success());
     }
 }

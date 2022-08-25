@@ -61,8 +61,8 @@ mod header;
 
 pub struct CBindgenConfig {
     pub output_dir: PathBuf,
-    pub ffi_target_name: String,
-    pub ffi_name: String,
+    pub ffi_target_name: &'static str,
+    pub ffi_name: &'static str,
     pub is_release: bool,
     pub extra_files: Vec<PathBuf>,
     pub platform_location: PlatformLocation,
@@ -322,7 +322,7 @@ fn generate_cmake_config(
 }
 
 fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {
-    let mut args = Vec::from(["rustc", "-p", &config.ffi_target_name]);
+    let mut args = Vec::from(["rustc", "-p", config.ffi_target_name]);
 
     if config.is_release {
         args.push("--release");

@@ -322,7 +322,7 @@ fn generate_cmake_config(
 }
 
 fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {
-    let mut args = Vec::from(["rustc", "-p", &config.ffi_target_name]);
+    let mut args = Vec::from(["rustc", "-p", config.ffi_target_name]);
 
     if config.is_release {
         args.push("--release");

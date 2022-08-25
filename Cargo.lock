@@ -160,7 +160,6 @@ name = "foo-bindings"
 version = "0.1.0"
 dependencies = [
  "ci-script",
- "foo-ffi",
  "foo-schema",
 ]
 

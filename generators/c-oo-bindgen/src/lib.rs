@@ -69,6 +69,11 @@ pub struct CBindgenConfig {
     pub generate_doxygen: bool,
 }
 
+pub fn copy_and_log<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> std::io::Result<u64> {
+    tracing::info!("Copying {:?} to {:?}", from.as_ref(), to.as_ref());
+    fs::copy(from, to)
+}
+
 pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
     let output_dir = config
         .output_dir
@@ -95,7 +100,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         .platform_location
         .platform
         .static_lib_filename(&config.ffi_name);
-    fs::copy(
+    copy_and_log(
         config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
@@ -104,7 +109,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         .platform_location
         .platform
         .dyn_lib_filename(&config.ffi_name);
-    fs::copy(
+    copy_and_log(
         config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
@@ -114,7 +119,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         .platform_location
         .platform
         .bin_filename(&config.ffi_name);
-    fs::copy(
+    copy_and_log(
         config.platform_location.location.join(&bin_filename),
         lib_path.join(&bin_filename),
     )?;
@@ -125,7 +130,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         output_dir.join(lib.info.license_path.file_name().unwrap()),
     )?;
     for path in &config.extra_files {
-        fs::copy(path, output_dir.join(path.file_name().unwrap()))?;
+        copy_and_log(path, output_dir.join(path.file_name().unwrap()))?;
     }
 
     // Generate doxygen (if asked)
@@ -238,6 +243,7 @@ fn generate_cmake_config(
         .join("cmake");
     fs::create_dir_all(&cmake_path)?;
     let filename = cmake_path.join(format!("{}-config.cmake", lib.settings.name));
+    tracing::info!("Generating: {:?}", filename);
     let mut f = FilePrinter::new(filename)?;
 
     let link_deps = get_link_dependencies(config);

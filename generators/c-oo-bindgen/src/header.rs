@@ -13,6 +13,7 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
     // Open file
     std::fs::create_dir_all(&path)?;
     let filename = path.join(format!("{}.h", lib.settings.name));
+    tracing::info!("Generating: {:?}", filename);
     let mut f = FilePrinter::new(filename)?;
 
     // Print license

@@ -17,6 +17,7 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
     // Open the file
     std::fs::create_dir_all(&path)?;
     let filename = path.join(format!("{}.hpp", lib.settings.name));
+    tracing::info!("Generating: {:?}", filename);
     let mut f = FilePrinter::new(filename)?;
 
     print_license(&mut f, lib)?;

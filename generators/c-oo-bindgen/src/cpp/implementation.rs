@@ -9,9 +9,8 @@ use crate::ctype::CType;
 
 pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
-    std::fs::create_dir_all(&path)?;
+    logged::create_dir_all(&path)?;
     let filename = path.join(format!("{}.cpp", lib.settings.name));
-    tracing::info!("Generating: {:?}", filename);
     let mut f = FilePrinter::new(filename)?;
 
     f.writeln(&format!("#include \"{}.h\"", lib.settings.name))?;

@@ -421,6 +421,7 @@ dependencies = [
  "regex",
  "semver",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

@@ -21,6 +21,7 @@ pub struct FilePrinter {
 
 impl FilePrinter {
     pub fn new<T: AsRef<Path>>(filepath: T) -> FormattingResult<Self> {
+        tracing::info!("Create file: {}", filepath.as_ref().display());
         let file = File::create(filepath)?;
         let writer = BufWriter::new(file);
         Ok(Self {

@@ -129,6 +129,24 @@ impl DefaultCallbackReturnValue {
     }
 }
 
+impl From<PrimitiveValue> for DefaultCallbackReturnValue {
+    fn from(x: PrimitiveValue) -> Self {
+        DefaultCallbackReturnValue::Basic(BasicValue::Primitive(x))
+    }
+}
+
+impl From<DurationValue> for DefaultCallbackReturnValue {
+    fn from(x: DurationValue) -> Self {
+        DefaultCallbackReturnValue::Basic(BasicValue::Duration(x))
+    }
+}
+
+impl From<EnumValue> for DefaultCallbackReturnValue {
+    fn from(x: EnumValue) -> Self {
+        DefaultCallbackReturnValue::Basic(BasicValue::Enum(x))
+    }
+}
+
 impl From<Primitive> for CallbackReturnValue {
     fn from(x: Primitive) -> Self {
         Self::Basic(x.into())

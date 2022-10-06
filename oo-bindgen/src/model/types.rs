@@ -15,6 +15,15 @@ pub enum DurationType {
     Seconds,
 }
 
+/// Same as DurationType but with an associated value
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
+pub enum DurationValue {
+    /// Duration is represented as a count of milliseconds in a u64 value
+    Milliseconds(u64),
+    /// Duration is represented as a count of seconds in a u64 value
+    Seconds(u64),
+}
+
 impl DurationType {
     pub fn unit(&self) -> &'static str {
         match self {

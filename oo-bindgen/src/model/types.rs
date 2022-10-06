@@ -95,6 +95,22 @@ pub enum Primitive {
     Double,
 }
 
+/// same as primitive, but with a value
+#[derive(Debug, Copy, Clone)]
+pub enum PrimitiveValue {
+    Bool(bool),
+    U8(u8),
+    S8(i8),
+    U16(u16),
+    S16(i16),
+    U32(u32),
+    S32(i32),
+    U64(u64),
+    S64(i64),
+    Float(f32),
+    Double(f64),
+}
+
 /// Basic types are trivially copyable. They can be used
 /// in almost any context within the API model
 #[derive(Debug, Clone, PartialEq, Eq)]

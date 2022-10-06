@@ -102,6 +102,7 @@ pub struct CallbackFunctionBuilder<'a> {
     name: Name,
     functional_transform: FunctionalTransform,
     return_type: OptionalReturnType<CallbackReturnValue, Unvalidated>,
+    default_implementation: Option<DefaultCallbackReturnValue>,
     arguments: Vec<Arg<CallbackArgument, Unvalidated>>,
     doc: Doc<Unvalidated>,
 }
@@ -113,6 +114,7 @@ impl<'a> CallbackFunctionBuilder<'a> {
             name,
             functional_transform: FunctionalTransform::No,
             return_type: OptionalReturnType::new(),
+            default_implementation: None,
             arguments: Vec::new(),
             doc,
         }
@@ -158,11 +160,30 @@ impl<'a> CallbackFunctionBuilder<'a> {
         Ok(self)
     }
 
+    pub fn returns_with_default<
+        T: Into<DefaultCallbackReturnValue>,
+        D: Into<DocString<Unvalidated>>,
+    >(
+        self,
+        t: T,
+        d: D,
+    ) -> BindResult<Self> {
+        let default: DefaultCallbackReturnValue = t.into();
+
+        // first, try to set the return type to ensure it hasn't previously been set
+        let mut ret = self.returns(default.get_callback_return_value(), d)?;
+
+        ret.default_implementation = Some(default);
+
+        Ok(ret)
+    }
+
     pub fn end_callback(mut self) -> BindResult<InterfaceBuilder<'a>> {
         let cb = CallbackFunction {
             name: self.name,
             functional_transform: self.functional_transform,
             return_type: self.return_type,
+            default_implementation: self.default_implementation,
             arguments: self.arguments,
             doc: self.doc,
         };

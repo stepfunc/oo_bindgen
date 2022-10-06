@@ -24,6 +24,15 @@ pub enum DurationValue {
     Seconds(u64),
 }
 
+impl From<DurationValue> for DurationType {
+    fn from(x: DurationValue) -> Self {
+        match x {
+            DurationValue::Milliseconds(_) => DurationType::Milliseconds,
+            DurationValue::Seconds(_) => DurationType::Seconds,
+        }
+    }
+}
+
 impl DurationType {
     pub fn unit(&self) -> &'static str {
         match self {
@@ -118,6 +127,24 @@ pub enum PrimitiveValue {
     S64(i64),
     Float(f32),
     Double(f64),
+}
+
+impl From<PrimitiveValue> for Primitive {
+    fn from(x: PrimitiveValue) -> Self {
+        match x {
+            PrimitiveValue::Bool(_) => Primitive::Bool,
+            PrimitiveValue::U8(_) => Primitive::U8,
+            PrimitiveValue::S8(_) => Primitive::S8,
+            PrimitiveValue::U16(_) => Primitive::U16,
+            PrimitiveValue::S16(_) => Primitive::S16,
+            PrimitiveValue::U32(_) => Primitive::U32,
+            PrimitiveValue::S32(_) => Primitive::S32,
+            PrimitiveValue::U64(_) => Primitive::U64,
+            PrimitiveValue::S64(_) => Primitive::S64,
+            PrimitiveValue::Float(_) => Primitive::Float,
+            PrimitiveValue::Double(_) => Primitive::Double,
+        }
+    }
 }
 
 /// Basic types are trivially copyable. They can be used

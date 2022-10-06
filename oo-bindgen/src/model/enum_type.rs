@@ -24,6 +24,12 @@ impl EnumVariant<Unvalidated> {
 
 pub type EnumHandle = Handle<Enum<Unvalidated>>;
 
+impl Handle<Enum<Unvalidated>> {
+    pub fn value(&self, name: &'static str) -> BindResult<EnumValue> {
+        EnumValue::new(self.clone(), name)
+    }
+}
+
 #[derive(Debug)]
 pub struct Enum<T>
 where

@@ -89,13 +89,13 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
     let lib_path = output_dir
         .join("lib")
         .join(config.platform_location.platform.target_triple);
-    fs::create_dir_all(&lib_path)?;
+    logged::create_dir_all(&lib_path)?;
 
     let lib_filename = config
         .platform_location
         .platform
         .static_lib_filename(&config.ffi_name);
-    fs::copy(
+    logged::copy(
         config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
@@ -104,7 +104,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         .platform_location
         .platform
         .dyn_lib_filename(&config.ffi_name);
-    fs::copy(
+    logged::copy(
         config.platform_location.location.join(&lib_filename),
         lib_path.join(&lib_filename),
     )?;
@@ -114,7 +114,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         .platform_location
         .platform
         .bin_filename(&config.ffi_name);
-    fs::copy(
+    logged::copy(
         config.platform_location.location.join(&bin_filename),
         lib_path.join(&bin_filename),
     )?;
@@ -125,7 +125,7 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         output_dir.join(lib.info.license_path.file_name().unwrap()),
     )?;
     for path in &config.extra_files {
-        fs::copy(path, output_dir.join(path.file_name().unwrap()))?;
+        logged::copy(path, output_dir.join(path.file_name().unwrap()))?;
     }
 
     // Generate doxygen (if asked)
@@ -236,7 +236,7 @@ fn generate_cmake_config(
         .output_dir
         .join(platform_location.platform.target_triple)
         .join("cmake");
-    fs::create_dir_all(&cmake_path)?;
+    logged::create_dir_all(&cmake_path)?;
     let filename = cmake_path.join(format!("{}-config.cmake", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 

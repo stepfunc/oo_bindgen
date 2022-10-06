@@ -2,6 +2,11 @@ use std::path::Path;
 use std::rc::Rc;
 
 fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_target(false)
+        .init();
+
     let builder_settings = ci_script::BindingBuilderSettings {
         ffi_target_name: "foo-ffi",
         jni_target_name: "foo-ffi-java",

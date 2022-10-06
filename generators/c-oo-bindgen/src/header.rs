@@ -11,7 +11,7 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
     let uppercase_name = lib.settings.c_ffi_prefix.to_uppercase();
 
     // Open file
-    std::fs::create_dir_all(&path)?;
+    logged::create_dir_all(&path)?;
     let filename = path.join(format!("{}.h", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 

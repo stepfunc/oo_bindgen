@@ -7,4 +7,6 @@ edition = "2021"
 [dependencies]
 ci-script = { path = "../../ci-script" }
 foo-schema = { path = "../foo-schema" }
-foo-ffi = { path = "../foo-ffi" }
+tracing = "^0.1"
+tracing-subscriber = "^0.2"
+

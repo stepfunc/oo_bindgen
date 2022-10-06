@@ -127,13 +127,33 @@ trait BindingBuilder {
 
     /// run the builder
     fn run(&mut self, run_tests: bool, package: bool, generate_doxygen: bool) {
-        self.generate(package, generate_doxygen);
+        let span = tracing::info_span!("generate()", lang = Self::name());
+        span.in_scope(|| {
+            tracing::info!("begin");
+            self.generate(package, generate_doxygen);
+            tracing::info!("end");
+        });
 
         if package {
-            self.package();
+            let span = tracing::info_span!("package()", lang = Self::name());
+            span.in_scope(|| {
+                tracing::info!("begin");
+                self.package();
+                tracing::info!("end");
+            });
         } else if run_tests {
-            self.build();
-            self.test();
+            let span = tracing::info_span!("build()", lang = Self::name());
+            span.in_scope(|| {
+                tracing::info!("begin");
+                self.build();
+                tracing::info!("end");
+            });
+            let span = tracing::info_span!("test()", lang = Self::name());
+            span.in_scope(|| {
+                tracing::info!("begin");
+                self.test();
+                tracing::info!("end");
+            });
         }
     }
 }

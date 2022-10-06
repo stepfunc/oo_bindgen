@@ -1,3 +1,6 @@
+/// Standard file-system routines, but logged with tracing
+pub mod logged;
+
 pub use self::platforms::*;
 pub use ::platforms::platform;
 pub use ::platforms::target::*;

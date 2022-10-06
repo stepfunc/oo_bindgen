@@ -55,7 +55,7 @@ pub(crate) unsafe fn class_with_password_get_special_value(
 
 pub(crate) unsafe fn class_with_password_destroy(instance: *mut crate::ClassWithPassword) {
     if !instance.is_null() {
-        Box::from_raw(instance);
+        drop(Box::from_raw(instance));
     }
 }
 

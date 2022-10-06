@@ -21,7 +21,7 @@ pub(crate) fn primitive_pointers_create() -> *mut crate::PrimitivePointers {
 }
 
 pub(crate) unsafe fn primitive_pointers_destroy(instance: *mut crate::PrimitivePointers) {
-    Box::from_raw(instance);
+    drop(Box::from_raw(instance));
 }
 
 pub(crate) unsafe fn primitive_pointers_get_bool(

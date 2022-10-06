@@ -37,7 +37,7 @@ pub unsafe fn string_collection_create() -> *mut StringCollection {
 
 pub unsafe fn string_collection_destroy(col: *mut StringCollection) {
     if !col.is_null() {
-        Box::from_raw(col);
+        drop(Box::from_raw(col));
     }
 }
 
@@ -57,7 +57,7 @@ pub unsafe fn string_collection_with_reserve_create(
 
 pub unsafe fn string_collection_with_reserve_destroy(col: *mut StringCollectionWithReserve) {
     if !col.is_null() {
-        Box::from_raw(col);
+        drop(Box::from_raw(col));
     }
 }
 

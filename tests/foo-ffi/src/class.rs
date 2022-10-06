@@ -15,7 +15,7 @@ pub unsafe fn test_class_create(value: u32) -> *mut TestClass {
 pub unsafe fn test_class_destroy(testclass: *mut TestClass) {
     CONSTRUCTION_COUNTER -= 1;
     if !testclass.is_null() {
-        Box::from_raw(testclass);
+        drop(Box::from_raw(testclass));
     };
 }
 

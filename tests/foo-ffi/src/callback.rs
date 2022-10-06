@@ -43,7 +43,7 @@ pub unsafe fn callback_source_create() -> *mut CallbackSource {
 
 pub unsafe fn callback_source_destroy(cb_source: *mut CallbackSource) {
     if !cb_source.is_null() {
-        Box::from_raw(cb_source);
+        drop(Box::from_raw(cb_source));
     }
 }
 

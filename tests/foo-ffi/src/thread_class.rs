@@ -80,7 +80,7 @@ pub(crate) fn thread_class_create(
 
 pub(crate) unsafe fn thread_class_destroy(instance: *mut ThreadClass) {
     if !instance.is_null() {
-        Box::from_raw(instance);
+        drop(Box::from_raw(instance));
     }
 }
 

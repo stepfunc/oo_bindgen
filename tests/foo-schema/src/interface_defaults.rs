@@ -25,6 +25,16 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .end_callback()?
         // i32
         .begin_callback(
+            "get_i32_value",
+            "Retrieve an i32 value from a user interface",
+        )?
+        .returns_with_default(
+            PrimitiveValue::S32(42),
+            "Some value special value from the user or the default",
+        )?
+        .end_callback()?
+        // u32
+        .begin_callback(
             "get_u32_value",
             "Retrieve an u32 value from a user interface",
         )?
@@ -63,6 +73,13 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("retrieve value from interface")?
         .build_static("get_u32_value")?;
 
+    let get_i32 = lib
+        .define_function("get_i32_value")?
+        .param("cb", interface.clone(), "callback interface")?
+        .returns(Primitive::S32, "value retrieved from interface")?
+        .doc("retrieve value from interface")?
+        .build_static("get_i32_value")?;
+
     let get_duration = lib
         .define_function("get_duration_value")?
         .param("cb", interface.clone(), "callback interface")?
@@ -81,6 +98,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     lib.define_static_class("default_interface_test")?
         .static_method(get_bool)?
         .static_method(get_u32)?
+        .static_method(get_i32)?
         .static_method(get_duration)?
         .static_method(get_switch_pos)?
         .doc("Class that demonstrate the usage of an async interface")?

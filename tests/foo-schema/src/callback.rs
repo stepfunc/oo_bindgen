@@ -9,7 +9,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "On value callback which takes parameter {param:value}",
         )?
         .param("value", Primitive::U32, "Value")?
-        .returns_with_default(PrimitiveValue::U32(42), "Some value")?
+        .returns(Primitive::U32, "Some value")?
         .end_callback()?
         .begin_callback("on_duration", "On duration callback")?
         .param("value", DurationType::Milliseconds, "Value")?

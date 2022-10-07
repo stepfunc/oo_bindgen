@@ -1,0 +1,13 @@
+#include <cassert>
+
+#include "foo.hpp"
+
+class DefaultedInterface final : public foo::DefaultedInterface {};
+
+void defaulted_interface_tests()
+{
+    auto instance = DefaultedInterface();
+
+    assert(foo::DefaultInterfaceTest::get_duration_value(instance) == std::chrono::milliseconds(42));
+    assert(foo::DefaultInterfaceTest::get_u32_value(instance) == 42);
+}

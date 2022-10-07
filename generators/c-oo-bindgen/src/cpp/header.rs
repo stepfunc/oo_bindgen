@@ -450,6 +450,62 @@ where
     f.newline()
 }
 
+trait ToConstantCpp {
+    fn to_constant_cpp(&self) -> String;
+}
+
+impl ToConstantCpp for PrimitiveValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            PrimitiveValue::Bool(x) => x.to_string(),
+            PrimitiveValue::U8(x) => x.to_string(),
+            PrimitiveValue::S8(x) => x.to_string(),
+            PrimitiveValue::U16(x) => x.to_string(),
+            PrimitiveValue::S16(x) => x.to_string(),
+            PrimitiveValue::U32(x) => x.to_string(),
+            PrimitiveValue::S32(x) => x.to_string(),
+            PrimitiveValue::U64(x) => x.to_string(),
+            PrimitiveValue::S64(x) => x.to_string(),
+            PrimitiveValue::Float(x) => x.to_string(),
+            PrimitiveValue::Double(x) => x.to_string(),
+        }
+    }
+}
+
+impl ToConstantCpp for DurationValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            DurationValue::Milliseconds(x) => format!("std::chrono::milliseconds({})", x),
+            DurationValue::Seconds(x) => format!("std::chrono::Duration::seconds({})", x),
+        }
+    }
+}
+
+impl ToConstantCpp for EnumValue {
+    fn to_constant_cpp(&self) -> String {
+        format!("{}::{}", self.handle.core_cpp_type(), self.variant)
+    }
+}
+
+impl ToConstantCpp for BasicValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            BasicValue::Primitive(x) => x.to_constant_cpp(),
+            BasicValue::Duration(x) => x.to_constant_cpp(),
+            BasicValue::Enum(x) => x.to_constant_cpp(),
+        }
+    }
+}
+
+impl ToConstantCpp for DefaultCallbackReturnValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            DefaultCallbackReturnValue::Basic(x) => x.to_constant_cpp(),
+            DefaultCallbackReturnValue::Struct(x) => format!("{}()", x.core_cpp_type()),
+        }
+    }
+}
+
 fn print_interface(
     f: &mut dyn Printer,
     handle: &Handle<Interface<Validated>>,
@@ -487,12 +543,29 @@ fn print_interface(
                 print_cpp_return_type_doc(f, &cb.return_type)?;
                 Ok(())
             })?;
-            f.writeln(&format!(
-                "virtual {} {}({}) = 0;",
-                cb.return_type.get_cpp_callback_return_type(),
-                cb.core_cpp_type(),
-                args
-            ))?;
+
+            match &cb.default_implementation {
+                None => {
+                    f.writeln(&format!(
+                        "virtual {} {}({}) = 0;",
+                        cb.return_type.get_cpp_callback_return_type(),
+                        cb.core_cpp_type(),
+                        args
+                    ))?;
+                }
+                Some(v) => {
+                    f.writeln(&format!(
+                        "virtual {} {}({}) {{",
+                        cb.return_type.get_cpp_callback_return_type(),
+                        cb.core_cpp_type(),
+                        args
+                    ))?;
+                    indented(f, |f| {
+                        f.writeln(&format!("return {};", v.to_constant_cpp()))
+                    })?;
+                    f.writeln("}")?;
+                }
+            }
         }
         Ok(())
     })?;

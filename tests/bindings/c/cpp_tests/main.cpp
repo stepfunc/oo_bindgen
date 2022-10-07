@@ -1,5 +1,6 @@
 void version_tests();
 void constant_tests();
+void defaulted_interface_tests();
 void enum_tests();
 void error_tests();
 void duration_tests();
@@ -16,6 +17,7 @@ int main()
 {
     version_tests();
     constant_tests();
+    defaulted_interface_tests();
     enum_tests();
     error_tests();
     iterator_tests();

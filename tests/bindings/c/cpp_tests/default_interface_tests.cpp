@@ -10,4 +10,6 @@ void defaulted_interface_tests()
 
     assert(foo::DefaultInterfaceTest::get_duration_value(instance) == std::chrono::milliseconds(42));
     assert(foo::DefaultInterfaceTest::get_u32_value(instance) == 42);
+    assert(foo::DefaultInterfaceTest::get_switch_pos(instance) == foo::SwitchPosition::on);
+    assert(foo::DefaultInterfaceTest::get_bool_value(instance));
 }

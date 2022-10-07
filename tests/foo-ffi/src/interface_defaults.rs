@@ -1,8 +1,16 @@
 pub(crate) fn get_u32_value(cb: crate::ffi::DefaultedInterface) -> u32 {
-    cb.get_u32_value().unwrap_or(0)
+    cb.get_u32_value().unwrap()
 }
 
 pub(crate) fn get_duration_value(cb: crate::ffi::DefaultedInterface) -> std::time::Duration {
     cb.get_duration_ms()
         .unwrap_or(std::time::Duration::from_secs(0))
+}
+
+pub(crate) fn get_switch_pos(cb: crate::ffi::DefaultedInterface) -> crate::ffi::SwitchPosition {
+    cb.get_switch_position().unwrap()
+}
+
+pub(crate) fn get_bool_value(cb: crate::ffi::DefaultedInterface) -> bool {
+    cb.get_bool_value().unwrap()
 }

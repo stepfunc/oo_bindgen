@@ -566,6 +566,7 @@ fn print_interface(
                     f.writeln("}")?;
                 }
             }
+            f.newline()?;
         }
         Ok(())
     })?;

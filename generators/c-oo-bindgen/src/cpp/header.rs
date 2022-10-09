@@ -512,7 +512,8 @@ fn print_interface(
 ) -> FormattingResult<()> {
     doxygen(f, |f| {
         print_cpp_doc(f, &handle.doc)?;
-        f.writeln("@note this class is an \"interface\" and only has pure virtual methods")
+        f.newline()?;
+        f.writeln("@note this class is an \"interface\" and only has virtual methods, some of which may have default implementations.")
     })?;
     f.writeln(&format!("class {} {{", handle.core_cpp_type()))?;
     f.writeln("public:")?;
@@ -533,6 +534,11 @@ fn print_interface(
                 .collect::<Vec<String>>()
                 .join(", ");
 
+            let default_value = cb
+                .default_implementation
+                .as_ref()
+                .map(|v| v.to_constant_cpp());
+
             doxygen(f, |f| {
                 print_cpp_doc(f, &cb.doc)?;
                 f.newline()?;
@@ -541,10 +547,17 @@ fn print_interface(
                     print_cpp_argument_doc(f, arg)?;
                 }
                 print_cpp_return_type_doc(f, &cb.return_type)?;
+                if let Some(x) = &default_value {
+                    f.newline()?;
+                    f.writeln(&format!(
+                        "@note This method has a default implementation that returns '{}'",
+                        x
+                    ))?;
+                }
                 Ok(())
             })?;
 
-            match &cb.default_implementation {
+            match &default_value {
                 None => {
                     f.writeln(&format!(
                         "virtual {} {}({}) = 0;",
@@ -560,9 +573,7 @@ fn print_interface(
                         cb.core_cpp_type(),
                         args
                     ))?;
-                    indented(f, |f| {
-                        f.writeln(&format!("return {};", v.to_constant_cpp()))
-                    })?;
+                    indented(f, |f| f.writeln(&format!("return {};", v)))?;
                     f.writeln("}")?;
                 }
             }

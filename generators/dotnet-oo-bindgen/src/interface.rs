@@ -81,6 +81,9 @@ pub(crate) fn generate(
                         .collect::<Vec<String>>()
                         .join(", "),
                 )?;
+                if func.default_implementation.is_some() {
+                    tracing::warn!("Method {}::{} has a default implementation defined, but it cannot be supported in C# 7.X", interface.name().camel_case(), func.name.camel_case());
+                }
                 f.write(");")
             })
         })?;

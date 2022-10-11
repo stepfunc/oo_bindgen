@@ -191,6 +191,7 @@ version = "0.3.0"
 dependencies = [
  "dunce",
  "oo-bindgen",
+ "tracing",
 ]
 
 [[package]]

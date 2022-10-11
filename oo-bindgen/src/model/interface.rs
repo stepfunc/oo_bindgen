@@ -70,12 +70,12 @@ impl From<ClassDeclarationHandle> for CallbackArgument {
 #[derive(Debug, Clone)]
 pub struct EnumValue {
     pub handle: EnumHandle,
-    pub variant: &'static str,
+    pub variant: EnumVariant<Unvalidated>,
 }
 
 impl EnumValue {
     pub(crate) fn new(handle: EnumHandle, variant: &'static str) -> BindResult<Self> {
-        handle.validate_contains_variant_name(variant)?;
+        let variant = handle.validate_contains_variant_name(variant)?.clone();
         Ok(Self { handle, variant })
     }
 }

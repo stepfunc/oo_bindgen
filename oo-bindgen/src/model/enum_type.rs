@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::model::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumVariant<T>
 where
     T: DocReference,
@@ -68,14 +68,16 @@ where
             .find(|variant| variant.name.as_ref() == variant_name.as_ref())
     }
 
-    pub(crate) fn validate_contains_variant_name(&self, variant_name: &str) -> BindResult<()> {
-        if self.find_variant_by_name(variant_name).is_none() {
-            Err(BindingError::UnknownEnumVariant {
+    pub(crate) fn validate_contains_variant_name(
+        &self,
+        variant_name: &str,
+    ) -> BindResult<&EnumVariant<T>> {
+        match self.find_variant_by_name(variant_name) {
+            None => Err(BindingError::UnknownEnumVariant {
                 name: self.name.clone(),
                 variant_name: variant_name.to_string(),
-            })
-        } else {
-            Ok(())
+            }),
+            Some(x) => Ok(x),
         }
     }
 }

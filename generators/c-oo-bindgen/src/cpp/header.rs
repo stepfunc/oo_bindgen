@@ -483,7 +483,7 @@ impl ToConstantCpp for DurationValue {
 
 impl ToConstantCpp for EnumValue {
     fn to_constant_cpp(&self) -> String {
-        format!("{}::{}", self.handle.core_cpp_type(), self.variant)
+        format!("{}::{}", self.handle.core_cpp_type(), self.variant.name)
     }
 }
 

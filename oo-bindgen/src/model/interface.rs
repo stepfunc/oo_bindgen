@@ -80,6 +80,50 @@ impl EnumValue {
     }
 }
 
+/// Struct handle combined with the validated name of one of it's initializers.
+/// The initializer may not take parameters
+#[derive(Debug, Clone)]
+pub struct ZeroParameterStructInitializer {
+    pub handle: UniversalStructHandle,
+    pub initializer: Handle<Initializer<Unvalidated>>,
+}
+
+impl ZeroParameterStructInitializer {
+    fn try_create(handle: UniversalStructHandle, name: &'static str) -> BindResult<Self> {
+        let initializer = match handle.initializers.iter().find(|x| x.name == name) {
+            None => {
+                return Err(BindingError::InitializerDoesNotExist {
+                    name,
+                    struct_name: handle.declaration.name().clone(),
+                })
+            }
+            Some(x) => x.clone(),
+        };
+
+        // all values must be initialized
+        if initializer.values.len() != handle.fields.len() {
+            return Err(BindingError::InitializerNotParameterless {
+                name,
+                struct_name: handle.declaration.name().clone(),
+            });
+        }
+
+        Ok(Self {
+            handle,
+            initializer,
+        })
+    }
+}
+
+impl UniversalStructHandle {
+    pub fn zero_parameter_initializer(
+        &self,
+        name: &'static str,
+    ) -> BindResult<ZeroParameterStructInitializer> {
+        ZeroParameterStructInitializer::try_create(self.clone(), name)
+    }
+}
+
 /// Like a BasicType but with values
 #[derive(Debug, Clone)]
 pub enum BasicValue {
@@ -117,15 +161,23 @@ pub enum CallbackReturnValue {
 #[derive(Debug, Clone)]
 pub enum DefaultCallbackReturnValue {
     Basic(BasicValue),
-    Struct(UniversalStructHandle),
+    InitializedStruct(ZeroParameterStructInitializer),
 }
 
 impl DefaultCallbackReturnValue {
     pub(crate) fn get_callback_return_value(&self) -> CallbackReturnValue {
         match self {
             DefaultCallbackReturnValue::Basic(x) => CallbackReturnValue::Basic(x.get_basic_type()),
-            DefaultCallbackReturnValue::Struct(x) => CallbackReturnValue::Struct(x.clone()),
+            DefaultCallbackReturnValue::InitializedStruct(x) => {
+                CallbackReturnValue::Struct(x.handle.clone())
+            }
         }
+    }
+}
+
+impl From<ZeroParameterStructInitializer> for DefaultCallbackReturnValue {
+    fn from(x: ZeroParameterStructInitializer) -> Self {
+        DefaultCallbackReturnValue::InitializedStruct(x)
     }
 }
 

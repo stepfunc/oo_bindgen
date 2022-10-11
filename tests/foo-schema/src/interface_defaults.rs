@@ -1,6 +1,24 @@
 use oo_bindgen::model::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
+    let simple_struct = lib.declare_universal_struct("wrapped_number")?;
+
+    let num_field = Name::create("num")?;
+
+    let wrapped_number = lib
+        .define_universal_struct(simple_struct)?
+        .add(num_field.clone(), Primitive::S32, "the number")?
+        .doc("Wrapped around a single i32")?
+        .end_fields()?
+        .begin_initializer(
+            "default_value",
+            InitializerType::Static,
+            "initialize to default values",
+        )?
+        .default(&num_field, NumberValue::S32(42))?
+        .end_initializer()?
+        .build()?;
+
     let switch_position = lib
         .define_enum("switch_position")?
         .push("on", "Switch is in the ON position")?
@@ -57,6 +75,16 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .begin_callback("get_switch_position", "retrieve the position of a switch")?
         .returns_with_default(default_switch_pos, "The current position of the switch")?
         .end_callback()?
+        // struct
+        .begin_callback(
+            "get_wrapped_number",
+            "retrieve a structure which is just a wrapped i32",
+        )?
+        .returns_with_default(
+            wrapped_number.zero_parameter_initializer("default_value")?,
+            "Wrapped number value",
+        )?
+        .end_callback()?
         .build_sync()?;
 
     let get_bool = lib
@@ -89,10 +117,20 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let get_switch_pos = lib
         .define_function("get_switch_pos")?
-        .param("cb", interface, "callback interface")?
+        .param("cb", interface.clone(), "callback interface")?
         .returns(switch_position, "current position of the switch")?
         .doc("retrieve the current position of the switch")?
         .build_static("get_switch_pos")?;
+
+    let get_wrapped_number = lib
+        .define_function("get_wrapped_number")?
+        .param("cb", interface, "callback interface")?
+        .returns(
+            wrapped_number,
+            "wrapped number retrieved from the interface",
+        )?
+        .doc("retrieve the current wrapped number value")?
+        .build_static("get_wrapped_number")?;
 
     // Define the class
     lib.define_static_class("default_interface_test")?
@@ -101,6 +139,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .static_method(get_i32)?
         .static_method(get_duration)?
         .static_method(get_switch_pos)?
+        .static_method(get_wrapped_number)?
         .doc("Class that demonstrate the usage of an async interface")?
         .build()?;
 

@@ -501,7 +501,16 @@ impl ToConstantCpp for DefaultCallbackReturnValue {
     fn to_constant_cpp(&self) -> String {
         match self {
             DefaultCallbackReturnValue::Basic(x) => x.to_constant_cpp(),
-            DefaultCallbackReturnValue::Struct(x) => format!("{}()", x.core_cpp_type()),
+            DefaultCallbackReturnValue::InitializedStruct(x) => {
+                match x.initializer.initializer_type {
+                    // normal default constructor
+                    InitializerType::Normal => format!("{}()", x.handle.core_cpp_type()),
+                    // static factory method
+                    InitializerType::Static => {
+                        format!("{}::{}()", x.handle.core_cpp_type(), x.initializer.name)
+                    }
+                }
+            }
         }
     }
 }

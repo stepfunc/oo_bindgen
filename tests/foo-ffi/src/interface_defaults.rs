@@ -17,3 +17,7 @@ pub(crate) fn get_duration_value(cb: crate::ffi::DefaultedInterface) -> std::tim
 pub(crate) fn get_switch_pos(cb: crate::ffi::DefaultedInterface) -> crate::ffi::SwitchPosition {
     cb.get_switch_position().unwrap()
 }
+
+pub(crate) fn get_wrapped_number(cb: crate::ffi::DefaultedInterface) -> crate::ffi::WrappedNumber {
+    cb.get_wrapped_number().unwrap()
+}

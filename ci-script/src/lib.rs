@@ -30,7 +30,7 @@ fn is_officially_supported(p: &Platform) -> bool {
 }
 
 pub fn run(settings: BindingBuilderSettings) {
-    let args = crate::cli::Cli::parse();
+    let args = crate::cli::Args::parse();
 
     let mut run_tests = !args.no_tests;
 
@@ -80,6 +80,7 @@ pub fn run(settings: BindingBuilderSettings) {
     if args.build_dotnet || run_all {
         let mut builder = crate::builders::dotnet::DotnetBindingBuilder::new(
             settings.clone(),
+            args.target_framework,
             platforms.clone(),
             &args.extra_files,
         );
@@ -110,8 +111,6 @@ pub struct BindingBuilderSettings {
     pub java_group_id: &'static str,
     /// Destination path
     pub destination_path: PathBuf,
-    /// .NET target framework
-    pub net_target_framework: TargetFramework,
     /// Library to build
     pub library: Rc<Library>,
 }

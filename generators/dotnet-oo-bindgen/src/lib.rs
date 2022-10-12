@@ -44,6 +44,7 @@ clippy::all
     bare_trait_objects
 )]
 
+use std::fmt::Formatter;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
@@ -81,7 +82,7 @@ const SUPPORTED_PLATFORMS: &[Platform] = &[
 ///
 /// https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
 ///
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, clap::ValueEnum)]
 pub enum TargetFramework {
     /// .NET Standard 2.0 - Compatible with .NET Framework 4.6.1 -> 4.8
     /// Defaults to C# 7.3
@@ -89,6 +90,12 @@ pub enum TargetFramework {
     /// .NET Standard 2.1 - NOT compatible with any .NET Framework
     /// Defaults to C# 8.0
     NetStandard2_1,
+}
+
+impl std::fmt::Display for TargetFramework {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl TargetFramework {

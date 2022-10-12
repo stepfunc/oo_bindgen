@@ -1,9 +1,10 @@
 use clap::Parser;
+use dotnet_oo_bindgen::TargetFramework;
 use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-pub(crate) struct Cli {
+pub(crate) struct Args {
     /// build the C bindings
     #[arg(long = "c", default_value_t = false)]
     pub(crate) build_c: bool,
@@ -13,6 +14,9 @@ pub(crate) struct Cli {
     /// build the Java bindings
     #[arg(long = "java", default_value_t = false)]
     pub(crate) build_java: bool,
+    /// Target .NET framework, which indirectly determines the C# language version
+    #[arg(value_enum, short = 't', long = "target-dotnet-framework", default_value_t = TargetFramework::NetStandard2_0)]
+    pub(crate) target_framework: TargetFramework,
     /// generate doxygen documentation
     #[arg(long = "doxygen", default_value_t = false)]
     pub(crate) generate_doxygen: bool,

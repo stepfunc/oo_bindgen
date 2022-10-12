@@ -58,7 +58,7 @@ namespace foo.Tests
     {
         [Fact]
         public void CallbackTest()
-        {
+        {            
             using var cbSource = new CallbackSource();
             
             var cb = new CallbackImpl();

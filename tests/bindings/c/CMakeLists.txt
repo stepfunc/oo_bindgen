@@ -31,6 +31,7 @@ set(cpp_test_files
         cpp_tests/callback_tests.cpp
         cpp_tests/collection_tests.cpp
         cpp_tests/constant_tests.cpp
+        cpp_tests/default_interface_tests.cpp
         cpp_tests/enum_tests.cpp
         cpp_tests/error_tests.cpp
         cpp_tests/duration_tests.cpp

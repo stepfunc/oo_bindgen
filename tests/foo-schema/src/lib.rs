@@ -10,6 +10,7 @@ mod duration;
 mod enums;
 mod error;
 mod integer;
+mod interface_defaults;
 mod iterator;
 mod lifetime;
 mod opaque_struct;
@@ -67,6 +68,7 @@ pub fn build_lib() -> BackTraced<Library> {
     enums::define(&mut builder)?;
     error::define(&mut builder)?;
     integer::define(&mut builder)?;
+    interface_defaults::define(&mut builder)?;
     iterator::define(&mut builder)?;
     opaque_struct::define(&mut builder)?;
     primitive_iterator::define(&mut builder)?;

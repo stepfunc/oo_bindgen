@@ -1,10 +1,12 @@
 use crate::{BindingBuilder, BindingBuilderSettings};
+use dotnet_oo_bindgen::TargetFramework;
 use oo_bindgen::backend::PlatformLocations;
 use std::path::PathBuf;
 use std::process::Command;
 
 pub(crate) struct DotnetBindingBuilder {
     settings: BindingBuilderSettings,
+    target_framework: TargetFramework,
     platforms: PlatformLocations,
     extra_files: Vec<PathBuf>,
 }
@@ -12,11 +14,13 @@ pub(crate) struct DotnetBindingBuilder {
 impl DotnetBindingBuilder {
     pub(crate) fn new(
         settings: BindingBuilderSettings,
+        target_framework: TargetFramework,
         platforms: PlatformLocations,
         extra_files: &[PathBuf],
     ) -> Self {
         Self {
             settings,
+            target_framework,
             platforms,
             extra_files: extra_files.to_vec(),
         }
@@ -52,6 +56,7 @@ impl BindingBuilder for DotnetBindingBuilder {
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
             generate_doxygen,
+            target_framework: self.target_framework,
         };
 
         dotnet_oo_bindgen::generate_dotnet_bindings(&self.settings.library, &config).unwrap();

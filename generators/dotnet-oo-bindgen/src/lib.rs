@@ -44,6 +44,7 @@ clippy::all
     bare_trait_objects
 )]
 
+use std::fmt::Formatter;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
@@ -75,12 +76,51 @@ const SUPPORTED_PLATFORMS: &[Platform] = &[
     platform::AARCH64_UNKNOWN_LINUX_GNU,
 ];
 
+/// Target framework - affects runtime compatible and allowed language features
+///
+/// Default C# versions for different targets specified here:
+///
+/// https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
+///
+#[derive(Debug, Copy, Clone, clap::ValueEnum)]
+pub enum TargetFramework {
+    /// .NET Standard 2.0 - Compatible with .NET Framework 4.6.1 -> 4.8
+    /// Defaults to C# 7.3
+    NetStandard2_0,
+    /// .NET Standard 2.1 - NOT compatible with any .NET Framework
+    /// Defaults to C# 8.0
+    NetStandard2_1,
+}
+
+impl std::fmt::Display for TargetFramework {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl TargetFramework {
+    pub(crate) fn get_target_framework_str(&self) -> &'static str {
+        match self {
+            TargetFramework::NetStandard2_0 => "netstandard2.0",
+            TargetFramework::NetStandard2_1 => "netstandard2.1",
+        }
+    }
+
+    pub(crate) fn supports_default_interface_methods(&self) -> bool {
+        match self {
+            TargetFramework::NetStandard2_0 => false,
+            TargetFramework::NetStandard2_1 => true,
+        }
+    }
+}
+
 pub struct DotnetBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_name: &'static str,
     pub extra_files: Vec<PathBuf>,
     pub platforms: PlatformLocations,
     pub generate_doxygen: bool,
+    pub target_framework: TargetFramework,
 }
 
 pub fn generate_dotnet_bindings(
@@ -139,7 +179,10 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
 
     f.writeln("<Project Sdk=\"Microsoft.NET.Sdk\">")?;
     f.writeln("  <PropertyGroup>")?;
-    f.writeln("    <TargetFramework>netstandard2.0</TargetFramework>")?;
+    f.writeln(&format!(
+        "    <TargetFramework>{}</TargetFramework>",
+        config.target_framework.get_target_framework_str()
+    ))?;
     f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
     f.writeln("    <IncludeSymbols>true</IncludeSymbols>")?; // Include symbols
     f.writeln("    <SymbolPackageFormat>snupkg</SymbolPackageFormat>")?; // Use new file format
@@ -469,7 +512,7 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
-        interface::generate(&mut f, interface, lib)?;
+        interface::generate(&mut f, interface, lib, config.target_framework)?;
     }
 
     Ok(())

@@ -15,6 +15,24 @@ pub enum DurationType {
     Seconds,
 }
 
+/// Same as DurationType but with an associated value
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
+pub enum DurationValue {
+    /// Duration is represented as a count of milliseconds in a u64 value
+    Milliseconds(u64),
+    /// Duration is represented as a count of seconds in a u64 value
+    Seconds(u64),
+}
+
+impl From<DurationValue> for DurationType {
+    fn from(x: DurationValue) -> Self {
+        match x {
+            DurationValue::Milliseconds(_) => DurationType::Milliseconds,
+            DurationValue::Seconds(_) => DurationType::Seconds,
+        }
+    }
+}
+
 impl DurationType {
     pub fn unit(&self) -> &'static str {
         match self {
@@ -93,6 +111,40 @@ pub enum Primitive {
     S64,
     Float,
     Double,
+}
+
+/// same as primitive, but with a value
+#[derive(Debug, Copy, Clone)]
+pub enum PrimitiveValue {
+    Bool(bool),
+    U8(u8),
+    S8(i8),
+    U16(u16),
+    S16(i16),
+    U32(u32),
+    S32(i32),
+    U64(u64),
+    S64(i64),
+    Float(f32),
+    Double(f64),
+}
+
+impl From<PrimitiveValue> for Primitive {
+    fn from(x: PrimitiveValue) -> Self {
+        match x {
+            PrimitiveValue::Bool(_) => Primitive::Bool,
+            PrimitiveValue::U8(_) => Primitive::U8,
+            PrimitiveValue::S8(_) => Primitive::S8,
+            PrimitiveValue::U16(_) => Primitive::U16,
+            PrimitiveValue::S16(_) => Primitive::S16,
+            PrimitiveValue::U32(_) => Primitive::U32,
+            PrimitiveValue::S32(_) => Primitive::S32,
+            PrimitiveValue::U64(_) => Primitive::U64,
+            PrimitiveValue::S64(_) => Primitive::S64,
+            PrimitiveValue::Float(_) => Primitive::Float,
+            PrimitiveValue::Double(_) => Primitive::Double,
+        }
+    }
 }
 
 /// Basic types are trivially copyable. They can be used

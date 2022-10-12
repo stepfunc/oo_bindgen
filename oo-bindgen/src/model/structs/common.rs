@@ -452,7 +452,7 @@ impl InitializerType {
     }
 }
 
-// An initializer defines how to construct a struct
+/// An initializer defines how to construct a struct
 #[derive(Debug, Clone)]
 pub struct Initializer<D>
 where

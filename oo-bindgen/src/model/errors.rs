@@ -111,6 +111,24 @@ pub enum BindingError {
         name
     )]
     CallbackMethodArgumentWithReservedName { name: Name },
+    #[error(
+        "Initializer '{}' does not exist within struct '{}'",
+        name,
+        struct_name
+    )]
+    InitializerDoesNotExist {
+        name: &'static str,
+        struct_name: Name,
+    },
+    #[error(
+        "Initializer '{}' within struct '{}' is not parameterless",
+        name,
+        struct_name
+    )]
+    InitializerNotParameterless {
+        name: &'static str,
+        struct_name: Name,
+    },
 
     // ----------------- struct errors -------------------
     #[error("Native struct '{}' was already defined", handle.name)]

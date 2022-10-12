@@ -66,11 +66,137 @@ impl From<ClassDeclarationHandle> for CallbackArgument {
     }
 }
 
+/// An enum handle and a default validated variant
+#[derive(Debug, Clone)]
+pub struct EnumValue {
+    pub handle: EnumHandle,
+    pub variant: EnumVariant<Unvalidated>,
+}
+
+impl EnumValue {
+    pub(crate) fn new(handle: EnumHandle, variant: &'static str) -> BindResult<Self> {
+        let variant = handle.validate_contains_variant_name(variant)?.clone();
+        Ok(Self { handle, variant })
+    }
+}
+
+/// Struct handle combined with the validated name of one of it's initializers.
+/// The initializer may not take parameters
+#[derive(Debug, Clone)]
+pub struct ZeroParameterStructInitializer {
+    pub handle: UniversalStructHandle,
+    pub initializer: Handle<Initializer<Unvalidated>>,
+}
+
+impl ZeroParameterStructInitializer {
+    fn try_create(handle: UniversalStructHandle, name: &'static str) -> BindResult<Self> {
+        let initializer = match handle.initializers.iter().find(|x| x.name == name) {
+            None => {
+                return Err(BindingError::InitializerDoesNotExist {
+                    name,
+                    struct_name: handle.declaration.name().clone(),
+                })
+            }
+            Some(x) => x.clone(),
+        };
+
+        // all values must be initialized
+        if initializer.values.len() != handle.fields.len() {
+            return Err(BindingError::InitializerNotParameterless {
+                name,
+                struct_name: handle.declaration.name().clone(),
+            });
+        }
+
+        Ok(Self {
+            handle,
+            initializer,
+        })
+    }
+}
+
+impl UniversalStructHandle {
+    pub fn zero_parameter_initializer(
+        &self,
+        name: &'static str,
+    ) -> BindResult<ZeroParameterStructInitializer> {
+        ZeroParameterStructInitializer::try_create(self.clone(), name)
+    }
+}
+
+/// Like a BasicType but with values
+#[derive(Debug, Clone)]
+pub enum BasicValue {
+    Primitive(PrimitiveValue),
+    Duration(DurationValue),
+    Enum(EnumValue),
+}
+
+impl BasicValue {
+    pub(crate) fn get_basic_type(&self) -> BasicType {
+        match self {
+            BasicValue::Primitive(x) => {
+                let pv: PrimitiveValue = *x;
+                let x: Primitive = pv.into();
+                BasicType::Primitive(x)
+            }
+            BasicValue::Duration(x) => {
+                let dv: DurationValue = *x;
+                let dt: DurationType = dv.into();
+                BasicType::Duration(dt)
+            }
+            BasicValue::Enum(x) => BasicType::Enum(x.handle.clone()),
+        }
+    }
+}
+
 /// types that can be returned from callback functions
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallbackReturnValue {
     Basic(BasicType),
     Struct(UniversalStructHandle),
+}
+
+/// Like CallbackReturnValue, but with a value
+#[derive(Debug, Clone)]
+pub enum DefaultCallbackReturnValue {
+    Basic(BasicValue),
+    InitializedStruct(ZeroParameterStructInitializer),
+}
+
+impl DefaultCallbackReturnValue {
+    pub(crate) fn get_callback_return_value(&self) -> CallbackReturnValue {
+        match self {
+            DefaultCallbackReturnValue::Basic(x) => CallbackReturnValue::Basic(x.get_basic_type()),
+            DefaultCallbackReturnValue::InitializedStruct(x) => {
+                CallbackReturnValue::Struct(x.handle.clone())
+            }
+        }
+    }
+}
+
+impl From<ZeroParameterStructInitializer> for DefaultCallbackReturnValue {
+    fn from(x: ZeroParameterStructInitializer) -> Self {
+        DefaultCallbackReturnValue::InitializedStruct(x)
+    }
+}
+
+impl From<PrimitiveValue> for DefaultCallbackReturnValue {
+    fn from(x: PrimitiveValue) -> Self {
+        DefaultCallbackReturnValue::Basic(BasicValue::Primitive(x))
+    }
+}
+
+impl From<DurationValue> for DefaultCallbackReturnValue {
+    fn from(x: DurationValue) -> Self {
+        DefaultCallbackReturnValue::Basic(BasicValue::Duration(x))
+    }
+}
+
+impl From<EnumValue> for DefaultCallbackReturnValue {
+    fn from(x: EnumValue) -> Self {
+        DefaultCallbackReturnValue::Basic(BasicValue::Enum(x))
+    }
 }
 
 impl From<Primitive> for CallbackReturnValue {
@@ -134,6 +260,7 @@ where
     pub name: Name,
     pub functional_transform: FunctionalTransform,
     pub return_type: OptionalReturnType<CallbackReturnValue, D>,
+    pub default_implementation: Option<DefaultCallbackReturnValue>,
     pub arguments: Vec<Arg<CallbackArgument, D>>,
     pub doc: Doc<D>,
 }
@@ -149,6 +276,7 @@ impl CallbackFunction<Unvalidated> {
             name: self.name.clone(),
             functional_transform: self.functional_transform,
             return_type: self.return_type.validate(&self.name, lib)?,
+            default_implementation: self.default_implementation.clone(),
             arguments: arguments?,
             doc: self
                 .doc

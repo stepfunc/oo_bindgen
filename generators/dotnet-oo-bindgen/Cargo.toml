@@ -7,4 +7,6 @@ edition = "2021"
 [dependencies]
 oo-bindgen = { path = "../../oo-bindgen" }
 dunce = "1.0"
+tracing = "^0.1"
+clap = { version = "^4", features = ["derive"] }
 

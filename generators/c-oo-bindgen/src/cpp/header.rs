@@ -450,13 +450,79 @@ where
     f.newline()
 }
 
+trait ToConstantCpp {
+    fn to_constant_cpp(&self) -> String;
+}
+
+impl ToConstantCpp for PrimitiveValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            PrimitiveValue::Bool(x) => x.to_string(),
+            PrimitiveValue::U8(x) => x.to_string(),
+            PrimitiveValue::S8(x) => x.to_string(),
+            PrimitiveValue::U16(x) => x.to_string(),
+            PrimitiveValue::S16(x) => x.to_string(),
+            PrimitiveValue::U32(x) => x.to_string(),
+            PrimitiveValue::S32(x) => x.to_string(),
+            PrimitiveValue::U64(x) => x.to_string(),
+            PrimitiveValue::S64(x) => x.to_string(),
+            PrimitiveValue::Float(x) => x.to_string(),
+            PrimitiveValue::Double(x) => x.to_string(),
+        }
+    }
+}
+
+impl ToConstantCpp for DurationValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            DurationValue::Milliseconds(x) => format!("std::chrono::milliseconds({})", x),
+            DurationValue::Seconds(x) => format!("std::chrono::Duration::seconds({})", x),
+        }
+    }
+}
+
+impl ToConstantCpp for EnumValue {
+    fn to_constant_cpp(&self) -> String {
+        format!("{}::{}", self.handle.core_cpp_type(), self.variant.name)
+    }
+}
+
+impl ToConstantCpp for BasicValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            BasicValue::Primitive(x) => x.to_constant_cpp(),
+            BasicValue::Duration(x) => x.to_constant_cpp(),
+            BasicValue::Enum(x) => x.to_constant_cpp(),
+        }
+    }
+}
+
+impl ToConstantCpp for DefaultCallbackReturnValue {
+    fn to_constant_cpp(&self) -> String {
+        match self {
+            DefaultCallbackReturnValue::Basic(x) => x.to_constant_cpp(),
+            DefaultCallbackReturnValue::InitializedStruct(x) => {
+                match x.initializer.initializer_type {
+                    // normal default constructor
+                    InitializerType::Normal => format!("{}()", x.handle.core_cpp_type()),
+                    // static factory method
+                    InitializerType::Static => {
+                        format!("{}::{}()", x.handle.core_cpp_type(), x.initializer.name)
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn print_interface(
     f: &mut dyn Printer,
     handle: &Handle<Interface<Validated>>,
 ) -> FormattingResult<()> {
     doxygen(f, |f| {
         print_cpp_doc(f, &handle.doc)?;
-        f.writeln("@note this class is an \"interface\" and only has pure virtual methods")
+        f.newline()?;
+        f.writeln("@note this class is an \"interface\" and only has virtual methods, some of which may have default implementations.")
     })?;
     f.writeln(&format!("class {} {{", handle.core_cpp_type()))?;
     f.writeln("public:")?;
@@ -477,6 +543,11 @@ fn print_interface(
                 .collect::<Vec<String>>()
                 .join(", ");
 
+            let default_value = cb
+                .default_implementation
+                .as_ref()
+                .map(|v| v.to_constant_cpp());
+
             doxygen(f, |f| {
                 print_cpp_doc(f, &cb.doc)?;
                 f.newline()?;
@@ -485,14 +556,37 @@ fn print_interface(
                     print_cpp_argument_doc(f, arg)?;
                 }
                 print_cpp_return_type_doc(f, &cb.return_type)?;
+                if let Some(x) = &default_value {
+                    f.newline()?;
+                    f.writeln(&format!(
+                        "@note This method has a default implementation that returns '{}'",
+                        x
+                    ))?;
+                }
                 Ok(())
             })?;
-            f.writeln(&format!(
-                "virtual {} {}({}) = 0;",
-                cb.return_type.get_cpp_callback_return_type(),
-                cb.core_cpp_type(),
-                args
-            ))?;
+
+            match &default_value {
+                None => {
+                    f.writeln(&format!(
+                        "virtual {} {}({}) = 0;",
+                        cb.return_type.get_cpp_callback_return_type(),
+                        cb.core_cpp_type(),
+                        args
+                    ))?;
+                }
+                Some(v) => {
+                    f.writeln(&format!(
+                        "virtual {} {}({}) {{",
+                        cb.return_type.get_cpp_callback_return_type(),
+                        cb.core_cpp_type(),
+                        args
+                    ))?;
+                    indented(f, |f| f.writeln(&format!("return {};", v)))?;
+                    f.writeln("}")?;
+                }
+            }
+            f.newline()?;
         }
         Ok(())
     })?;

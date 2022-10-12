@@ -5,12 +5,13 @@ use crate::conversion::{base_functor_type, full_functor_type, TypeInfo};
 use crate::doc::{docstring_print, xmldoc_print};
 use crate::formatting::{documentation, namespaced};
 use crate::helpers::call_dotnet_function;
-use crate::{print_imports, print_license};
+use crate::{print_imports, print_license, TargetFramework};
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
     interface: &InterfaceType<Validated>,
     lib: &Library,
+    framework: TargetFramework,
 ) -> FormattingResult<()> {
     let interface_name = format!("I{}", interface.name().camel_case());
 
@@ -81,7 +82,7 @@ pub(crate) fn generate(
                         .collect::<Vec<String>>()
                         .join(", "),
                 )?;
-                if func.default_implementation.is_some() {
+                if func.default_implementation.is_some() && !framework.supports_default_interface_methods() {
                     tracing::warn!("Method {}::{} has a default implementation defined, but it cannot be supported in C# 7.X", interface.name().camel_case(), func.name.camel_case());
                 }
                 f.write(");")

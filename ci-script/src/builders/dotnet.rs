@@ -52,6 +52,7 @@ impl BindingBuilder for DotnetBindingBuilder {
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
             generate_doxygen,
+            target_framework: self.settings.net_target_framework,
         };
 
         dotnet_oo_bindgen::generate_dotnet_bindings(&self.settings.library, &config).unwrap();

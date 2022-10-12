@@ -1,3 +1,4 @@
+use ci_script::TargetFramework;
 use std::path::Path;
 use std::rc::Rc;
 
@@ -14,6 +15,7 @@ fn main() {
         ffi_path: Path::new("tests/foo-ffi").into(),
         java_group_id: "io.stepfunc",
         destination_path: Path::new("tests/bindings").into(),
+        net_target_framework: TargetFramework::NetStandard2_0,
         library: Rc::new(foo_schema::build_lib().unwrap()),
     };
 

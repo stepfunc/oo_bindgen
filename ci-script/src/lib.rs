@@ -1,6 +1,9 @@
 pub(crate) mod builders;
 pub(crate) mod cli;
 
+// re-export this so that dependencies don't need the dotnet generator directly
+pub use dotnet_oo_bindgen::TargetFramework;
+
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -114,6 +117,8 @@ pub struct BindingBuilderSettings {
     pub java_group_id: &'static str,
     /// Destination path
     pub destination_path: PathBuf,
+    /// .NET target framework
+    pub net_target_framework: TargetFramework,
     /// Library to build
     pub library: Rc<Library>,
 }

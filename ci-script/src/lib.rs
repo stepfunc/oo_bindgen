@@ -11,6 +11,8 @@ use std::rc::Rc;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::Library;
 
+use clap::Parser;
+
 const SUPPORTED_PLATFORMS: &[&Platform] = &[
     &platform::X86_64_PC_WINDOWS_MSVC,
     &platform::I686_PC_WINDOWS_MSVC,
@@ -28,24 +30,17 @@ fn is_officially_supported(p: &Platform) -> bool {
 }
 
 pub fn run(settings: BindingBuilderSettings) {
-    let matches = cli::build();
+    let args = crate::cli::Cli::parse();
 
-    let mut run_tests = !matches.is_present("no-tests");
+    let mut run_tests = !args.no_tests;
 
-    let run_c = matches.is_present("c");
-    let run_dotnet = matches.is_present("dotnet");
-    let run_java = matches.is_present("java");
-    let run_all = !run_c && !run_dotnet && !run_java;
+    // if not languages are selected, we build all of them
+    let run_all = !args.build_c && !args.build_dotnet && !args.build_java;
 
-    let package = matches.is_present("package");
-    let package_src = matches.value_of("package");
-
-    let extra_files = matches
-        .values_of("extra-files")
-        .map_or(Vec::new(), |v| v.map(PathBuf::from).collect());
+    let package = args.package.is_some();
 
     let mut platforms = PlatformLocations::new();
-    if let Some(package_src) = package_src {
+    if let Some(package_src) = args.package {
         for entry in fs::read_dir(package_src).unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
@@ -74,28 +69,26 @@ pub fn run(settings: BindingBuilderSettings) {
 
     assert!(!platforms.is_empty(), "No platforms found!");
 
-    let doxygen = matches.is_present("doxygen");
-
-    if run_c || run_all {
+    if args.build_c || run_all {
         let mut builder = crate::builders::c::CBindingBuilder::new(
             settings.clone(),
             platforms.clone(),
-            &extra_files,
+            &args.extra_files,
         );
-        builder.run(run_tests, package, doxygen);
+        builder.run(run_tests, package, args.generate_doxygen);
     }
-    if run_dotnet || run_all {
+    if args.build_dotnet || run_all {
         let mut builder = crate::builders::dotnet::DotnetBindingBuilder::new(
             settings.clone(),
             platforms.clone(),
-            &extra_files,
+            &args.extra_files,
         );
-        builder.run(run_tests, package, doxygen);
+        builder.run(run_tests, package, args.generate_doxygen);
     }
-    if run_java || run_all {
+    if args.build_java || run_all {
         let mut builder =
-            crate::builders::java::JavaBindingBuilder::new(settings, platforms, &extra_files);
-        builder.run(run_tests, package, doxygen);
+            crate::builders::java::JavaBindingBuilder::new(settings, platforms, &args.extra_files);
+        builder.run(run_tests, package, args.generate_doxygen);
     }
 }
 

@@ -20,6 +20,7 @@ pub(crate) struct Cli {
     #[arg(long = "no-tests", default_value_t = false)]
     pub(crate) no_tests: bool,
     /// Generate package from the provided directory
+    #[arg(long = "package")]
     pub(crate) package: Option<PathBuf>,
     /// Path(s) to extra files to include in the generated bindings
     #[arg(short = 'f', long = "extra-files")]

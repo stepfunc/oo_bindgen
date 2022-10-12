@@ -34,7 +34,7 @@ pub fn run(settings: BindingBuilderSettings) {
 
     let mut run_tests = !args.no_tests;
 
-    // if not languages are selected, we build all of them
+    // if no languages are selected, we build all of them
     let run_all = !args.build_c && !args.build_dotnet && !args.build_java;
 
     let package = args.package.is_some();

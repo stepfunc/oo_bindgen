@@ -188,7 +188,7 @@ jobs:
       - name: Caching
         uses: Swatinem/rust-cache@v1
       - name: Build FFI and JNI
-        run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
+        run: cargo build -p foo-ffi -p foo-ffi-java --release
       - name: C bindings
         uses: actions-rs/cargo@v1
         with:
@@ -241,10 +241,10 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
-      - name: Caching
-        uses: Swatinem/rust-cache@v1
+      - name: Install Rust Cross
+        run: cargo install cross
       - name: Build FFI and JNI
-        run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
+        run: cross build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
       - name: C bindings
         uses: actions-rs/cargo@v1
         with:

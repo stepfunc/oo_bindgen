@@ -7,6 +7,79 @@ use crate::formatting::{documentation, namespaced};
 use crate::helpers::call_dotnet_function;
 use crate::{print_imports, print_license, TargetFramework};
 
+trait ConstantReturnValue {
+    fn get_constant_return_value(&self) -> String;
+}
+
+impl ConstantReturnValue for PrimitiveValue {
+    fn get_constant_return_value(&self) -> String {
+        match self {
+            PrimitiveValue::Bool(x) => x.to_string(),
+            PrimitiveValue::U8(x) => x.to_string(),
+            PrimitiveValue::S8(x) => x.to_string(),
+            PrimitiveValue::U16(x) => x.to_string(),
+            PrimitiveValue::S16(x) => x.to_string(),
+            PrimitiveValue::U32(x) => x.to_string(),
+            PrimitiveValue::S32(x) => x.to_string(),
+            PrimitiveValue::U64(x) => x.to_string(),
+            PrimitiveValue::S64(x) => x.to_string(),
+            PrimitiveValue::Float(x) => x.to_string(),
+            PrimitiveValue::Double(x) => x.to_string(),
+        }
+    }
+}
+
+impl ConstantReturnValue for EnumValue {
+    fn get_constant_return_value(&self) -> String {
+        format!(
+            "{}.{}",
+            self.handle.name.camel_case(),
+            self.variant.name.camel_case()
+        )
+    }
+}
+
+impl ConstantReturnValue for DurationValue {
+    fn get_constant_return_value(&self) -> String {
+        match self {
+            DurationValue::Milliseconds(x) => format!("TimeSpan.FromMilliseconds({})", x),
+            DurationValue::Seconds(x) => format!("TimeSpan.FromSeconds({})", x),
+        }
+    }
+}
+
+impl ConstantReturnValue for BasicValue {
+    fn get_constant_return_value(&self) -> String {
+        match self {
+            BasicValue::Primitive(x) => x.get_constant_return_value(),
+            BasicValue::Duration(x) => x.get_constant_return_value(),
+            BasicValue::Enum(x) => x.get_constant_return_value(),
+        }
+    }
+}
+
+impl ConstantReturnValue for ZeroParameterStructInitializer {
+    fn get_constant_return_value(&self) -> String {
+        match self.initializer.initializer_type {
+            InitializerType::Normal => format!("new {}()", self.handle.name().camel_case()),
+            InitializerType::Static => format!(
+                "{}.{}()",
+                self.handle.name().camel_case(),
+                self.initializer.name.camel_case()
+            ),
+        }
+    }
+}
+
+impl ConstantReturnValue for DefaultCallbackReturnValue {
+    fn get_constant_return_value(&self) -> String {
+        match self {
+            DefaultCallbackReturnValue::Basic(x) => x.get_constant_return_value(),
+            DefaultCallbackReturnValue::InitializedStruct(x) => x.get_constant_return_value(),
+        }
+    }
+}
+
 pub(crate) fn generate(
     f: &mut dyn Printer,
     interface: &InterfaceType<Validated>,
@@ -82,10 +155,23 @@ pub(crate) fn generate(
                         .collect::<Vec<String>>()
                         .join(", "),
                 )?;
-                if func.default_implementation.is_some() && !framework.supports_default_interface_methods() {
-                    tracing::warn!("Method {}::{} has a default implementation defined, but it cannot be supported in C# 7.X", interface.name().camel_case(), func.name.camel_case());
+                match &func.default_implementation {
+                    None => {
+                        f.write(");")
+                    }
+                    Some(di) => {
+                        if framework.supports_default_interface_methods() {
+                            f.write(") {")?;
+                            indented(f, |f| {
+                                f.writeln(&format!("return {};", di.get_constant_return_value()))
+                            })?;
+                            f.writeln("}")
+                        } else {
+                            tracing::warn!("Method {}::{} has a default implementation defined, but it cannot be supported in C# 7.3", interface.name().camel_case(), func.name.camel_case());
+                            f.write(");")
+                        }
+                    }
                 }
-                f.write(");")
             })
         })?;
 

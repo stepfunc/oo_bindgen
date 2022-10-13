@@ -17,6 +17,9 @@ pub(crate) struct Args {
     /// Path to where the compiled FFI/JNI shared libraries reside or a directory with multiple target triple dirs if packaging
     #[arg(long = "artifact-dir", short = 'a')]
     pub(crate) artifact_dir: PathBuf,
+    /// Target triple to use to lookup the platform for generation, otherwise assume the HOST platform.
+    #[arg(long = "target", short = 'r')]
+    pub(crate) target_triple: Option<String>,
     /// Target .NET framework, which indirectly determines the C# language version
     #[arg(value_enum, short = 't', long = "target-dotnet-framework", default_value_t = TargetFramework::NetStandard2_0)]
     pub(crate) target_framework: TargetFramework,

@@ -11,6 +11,7 @@ use std::rc::Rc;
 use oo_bindgen::backend::*;
 use oo_bindgen::model::Library;
 
+use crate::cli::Args;
 use clap::Parser;
 
 const SUPPORTED_PLATFORMS: &[&Platform] = &[
@@ -30,7 +31,7 @@ fn is_officially_supported(p: &Platform) -> bool {
 }
 
 pub fn run(settings: BindingBuilderSettings) {
-    let args = crate::cli::Args::parse();
+    let args: Args = crate::cli::Args::parse();
 
     tracing::info!("Artifact dir is {}", args.artifact_dir.display());
 
@@ -51,15 +52,25 @@ pub fn run(settings: BindingBuilderSettings) {
             }
         }
     } else {
-        let current_platform =
-            Platform::guess_current().expect("could not determine current platform");
+        let platform = match args.target_triple {
+            None => {
+                tracing::info!(
+                    "No target platform specified, assuming target is the host platform"
+                );
+                Platform::guess_current().expect("Could not determine current platform")
+            }
+            Some(tt) => match Platform::find(&tt) {
+                None => panic!("Unable to determine Platform from target triple: {}", tt),
+                Some(x) => x,
+            },
+        };
 
-        platforms.add(current_platform.clone(), args.artifact_dir);
+        platforms.add(platform.clone(), args.artifact_dir);
 
-        if !is_officially_supported(current_platform) {
+        if !is_officially_supported(platform) {
             println!(
                 "WARNING: building for an unsupported platform: {}",
-                current_platform.target_triple
+                platform.target_triple
             );
             if run_tests {
                 println!("Skipping tests an unsupported platform");
@@ -69,6 +80,10 @@ pub fn run(settings: BindingBuilderSettings) {
     }
 
     assert!(!platforms.is_empty(), "No platforms found!");
+
+    for p in platforms.iter() {
+        tracing::info!("Platform {} in {}", p.platform, p.location.display());
+    }
 
     if args.build_c || run_all {
         let mut builder = crate::builders::c::CBindingBuilder::new(

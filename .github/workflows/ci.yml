@@ -79,29 +79,17 @@ jobs:
           toolchain: stable
           override: true
       - name: Install doxygen 1.9.3
-        run: wget -q https://www.doxygen.nl/files/doxygen-1.9.3.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.3
+        run: wget -q https://www.doxygen.nl/files/doxygen-1.9.5.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
       - name: Caching
         uses: Swatinem/rust-cache@v1
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
+      - name: Build FFI and JNI shared libraries
+        run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --bin foo-bindings -- --c --doxygen
+        run: cargo run --release --bin foo-bindings -- --doxygen --c --no-tests  -a ./target/release
       - name: .NET bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --bin foo-bindings -- --dotnet --doxygen
+        run: cargo run --release --bin foo-bindings -- --doxygen --dotnet --no-tests -a ./target/release
       - name: Java bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --bin foo-bindings -- --java
+        run: cargo run --release --bin foo-bindings -- --java --no-tests -a ./target/release
       - name: Extract documentation
         run: |
           mkdir -p ~/doc

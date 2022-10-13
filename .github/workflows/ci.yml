@@ -89,7 +89,7 @@ jobs:
       - name: .NET bindings
         run: cargo run --release --bin foo-bindings -- --doxygen --dotnet --no-tests -a ./target/release
       - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java --no-tests -a ./target/release
+        run: cargo run --release --bin foo-bindings -- --java -a ./target/release
       - name: Extract documentation
         run: |
           mkdir -p ~/doc

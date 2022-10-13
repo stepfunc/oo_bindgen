@@ -160,16 +160,20 @@ pub enum CallbackReturnValue {
 /// Like CallbackReturnValue, but with a value
 #[derive(Debug, Clone)]
 pub enum DefaultCallbackReturnValue {
+    Void,
     Basic(BasicValue),
     InitializedStruct(ZeroParameterStructInitializer),
 }
 
 impl DefaultCallbackReturnValue {
-    pub(crate) fn get_callback_return_value(&self) -> CallbackReturnValue {
+    pub(crate) fn get_callback_return_value(&self) -> Option<CallbackReturnValue> {
         match self {
-            DefaultCallbackReturnValue::Basic(x) => CallbackReturnValue::Basic(x.get_basic_type()),
+            DefaultCallbackReturnValue::Void => None,
+            DefaultCallbackReturnValue::Basic(x) => {
+                Some(CallbackReturnValue::Basic(x.get_basic_type()))
+            }
             DefaultCallbackReturnValue::InitializedStruct(x) => {
-                CallbackReturnValue::Struct(x.handle.clone())
+                Some(CallbackReturnValue::Struct(x.handle.clone()))
             }
         }
     }

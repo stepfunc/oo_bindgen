@@ -170,12 +170,29 @@ impl<'a> CallbackFunctionBuilder<'a> {
     ) -> BindResult<Self> {
         let default: DefaultCallbackReturnValue = t.into();
 
-        // first, try to set the return type to ensure it hasn't previously been set
-        let mut ret = self.returns(default.get_callback_return_value(), d)?;
+        let mut ret = if let Some(return_type) = default.get_callback_return_value() {
+            // first, try to set the return type to ensure it hasn't previously been set
+            self.returns(return_type, d)?
+        } else {
+            self
+        };
 
         ret.default_implementation = Some(default);
 
         Ok(ret)
+    }
+
+    pub fn returns_nothing_by_default(mut self) -> BindResult<Self> {
+        // return type should not already be defined
+        if self.return_type.is_some() {
+            return Err(BindingError::ReturnTypeAlreadyDefined {
+                func_name: self.name,
+            });
+        }
+
+        self.default_implementation = Some(DefaultCallbackReturnValue::Void);
+
+        Ok(self)
     }
 
     pub fn end_callback(mut self) -> BindResult<InterfaceBuilder<'a>> {

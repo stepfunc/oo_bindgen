@@ -85,6 +85,13 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             "Wrapped number value",
         )?
         .end_callback()?
+        // method that returns nothing
+        .begin_callback(
+            "do_nothing",
+            "A method with a default implementation that does nothing",
+        )?
+        .returns_nothing_by_default()?
+        .end_callback()?
         .build_sync()?;
 
     let get_bool = lib
@@ -124,7 +131,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let get_wrapped_number = lib
         .define_function("get_wrapped_number")?
-        .param("cb", interface, "callback interface")?
+        .param("cb", interface.clone(), "callback interface")?
         .returns(
             wrapped_number,
             "wrapped number retrieved from the interface",
@@ -132,8 +139,15 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("retrieve the current wrapped number value")?
         .build_static("get_wrapped_number")?;
 
+    let invoke_do_nothing = lib
+        .define_function("invoke_do_nothing")?
+        .param("cb", interface, "callback interface")?
+        .doc("invokes the 'do_nothing' method if the interface")?
+        .build_static("invoke_do_nothing")?;
+
     // Define the class
     lib.define_static_class("default_interface_test")?
+        .static_method(invoke_do_nothing)?
         .static_method(get_bool)?
         .static_method(get_u32)?
         .static_method(get_i32)?

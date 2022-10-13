@@ -5,6 +5,19 @@ trait ToConstantValue {
     fn get_constant_value(&self) -> String;
 }
 
+trait PossiblyVoidReturnValue {
+    fn get_optional_constant_value(&self) -> Option<String>;
+}
+
+impl<T> PossiblyVoidReturnValue for T
+where
+    T: ToConstantValue,
+{
+    fn get_optional_constant_value(&self) -> Option<String> {
+        Some(self.get_constant_value())
+    }
+}
+
 impl ToConstantValue for PrimitiveValue {
     fn get_constant_value(&self) -> String {
         match self {
@@ -48,20 +61,25 @@ impl ToConstantValue for BasicValue {
     }
 }
 
-impl ToConstantValue for DefaultCallbackReturnValue {
+impl ToConstantValue for ZeroParameterStructInitializer {
     fn get_constant_value(&self) -> String {
+        match self.initializer.initializer_type {
+            InitializerType::Normal => format!("new {}()", self.handle.name().camel_case()),
+            InitializerType::Static => format!(
+                "{}.{}()",
+                self.handle.name().camel_case(),
+                self.initializer.name.mixed_case()
+            ),
+        }
+    }
+}
+
+impl PossiblyVoidReturnValue for DefaultCallbackReturnValue {
+    fn get_optional_constant_value(&self) -> Option<String> {
         match self {
-            DefaultCallbackReturnValue::Basic(x) => x.get_constant_value(),
-            DefaultCallbackReturnValue::InitializedStruct(x) => {
-                match x.initializer.initializer_type {
-                    InitializerType::Normal => format!("new {}()", x.handle.name().camel_case()),
-                    InitializerType::Static => format!(
-                        "{}.{}()",
-                        x.handle.name().camel_case(),
-                        x.initializer.name.mixed_case()
-                    ),
-                }
-            }
+            DefaultCallbackReturnValue::Void => None,
+            DefaultCallbackReturnValue::Basic(x) => x.get_optional_constant_value(),
+            DefaultCallbackReturnValue::InitializedStruct(x) => x.get_optional_constant_value(),
         }
     }
 }
@@ -87,7 +105,7 @@ pub(crate) fn generate(
             let constant_return_value = func
                 .default_implementation
                 .as_ref()
-                .map(|x| x.get_constant_value());
+                .map(|x| x.get_optional_constant_value());
 
             // Documentation
             documentation(f, |f| {
@@ -96,10 +114,20 @@ pub(crate) fn generate(
                 f.newline()?;
 
                 if let Some(v) = &constant_return_value {
-                    f.writeln(&format!(
-                        "<p>The default implementation of this method returns '{}'</p>",
-                        v
-                    ))?;
+                    match v {
+                        None => {
+                            f.writeln(
+                                "<p>The default implementation of this method does nothing</p>",
+                            )?;
+                        }
+                        Some(value) => {
+                            f.writeln(&format!(
+                                "<p>The default implementation of this method returns '{}'</p>",
+                                value
+                            ))?;
+                        }
+                    }
+
                     f.newline()?;
                 }
 
@@ -148,7 +176,8 @@ pub(crate) fn generate(
 
             match constant_return_value {
                 None => f.write(");")?,
-                Some(v) => {
+                Some(None) => f.write(") {}")?,
+                Some(Some(v)) => {
                     f.write(")")?;
                     blocked(f, |f| f.writeln(&format!("return {};", v)))?;
                 }

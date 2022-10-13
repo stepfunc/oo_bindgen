@@ -11,6 +11,19 @@ trait ConstantReturnValue {
     fn get_constant_return_value(&self) -> String;
 }
 
+trait MaybeConstantReturnValue {
+    fn try_get_constant_return_value(&self) -> Option<String>;
+}
+
+impl<T> MaybeConstantReturnValue for T
+where
+    T: ConstantReturnValue,
+{
+    fn try_get_constant_return_value(&self) -> Option<String> {
+        Some(self.get_constant_return_value())
+    }
+}
+
 impl ConstantReturnValue for PrimitiveValue {
     fn get_constant_return_value(&self) -> String {
         match self {
@@ -71,11 +84,12 @@ impl ConstantReturnValue for ZeroParameterStructInitializer {
     }
 }
 
-impl ConstantReturnValue for DefaultCallbackReturnValue {
-    fn get_constant_return_value(&self) -> String {
+impl MaybeConstantReturnValue for DefaultCallbackReturnValue {
+    fn try_get_constant_return_value(&self) -> Option<String> {
         match self {
-            DefaultCallbackReturnValue::Basic(x) => x.get_constant_return_value(),
-            DefaultCallbackReturnValue::InitializedStruct(x) => x.get_constant_return_value(),
+            DefaultCallbackReturnValue::Void => None,
+            DefaultCallbackReturnValue::Basic(x) => x.try_get_constant_return_value(),
+            DefaultCallbackReturnValue::InitializedStruct(x) => x.try_get_constant_return_value(),
         }
     }
 }
@@ -161,11 +175,18 @@ pub(crate) fn generate(
                     }
                     Some(di) => {
                         if framework.supports_default_interface_methods() {
-                            f.write(") {")?;
-                            indented(f, |f| {
-                                f.writeln(&format!("return {};", di.get_constant_return_value()))
-                            })?;
-                            f.writeln("}")
+                            match di.try_get_constant_return_value() {
+                                None => {
+                                    f.write(") {}")
+                                }
+                                Some(value) => {
+                                    f.write(") {")?;
+                                    indented(f, |f| {
+                                        f.writeln(&format!("return {};", value))
+                                    })?;
+                                    f.writeln("}")
+                                }
+                            }
                         } else {
                             tracing::warn!("Method {}::{} has a default implementation defined, but it cannot be supported in C# 7.3", interface.name().camel_case(), func.name.camel_case());
                             f.write(");")

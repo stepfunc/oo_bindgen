@@ -497,20 +497,38 @@ impl ToConstantCpp for BasicValue {
     }
 }
 
-impl ToConstantCpp for DefaultCallbackReturnValue {
+impl ToConstantCpp for ZeroParameterStructInitializer {
     fn to_constant_cpp(&self) -> String {
+        match self.initializer.initializer_type {
+            InitializerType::Normal => format!("{}()", self.handle.core_cpp_type()),
+            InitializerType::Static => format!(
+                "{}::{}()",
+                self.handle.core_cpp_type(),
+                self.initializer.name
+            ),
+        }
+    }
+}
+
+trait TryToConstantCpp {
+    fn try_to_constant_cpp(&self) -> Option<String>;
+}
+
+impl<T> TryToConstantCpp for T
+where
+    T: ToConstantCpp,
+{
+    fn try_to_constant_cpp(&self) -> Option<String> {
+        Some(self.to_constant_cpp())
+    }
+}
+
+impl TryToConstantCpp for DefaultCallbackReturnValue {
+    fn try_to_constant_cpp(&self) -> Option<String> {
         match self {
-            DefaultCallbackReturnValue::Basic(x) => x.to_constant_cpp(),
-            DefaultCallbackReturnValue::InitializedStruct(x) => {
-                match x.initializer.initializer_type {
-                    // normal default constructor
-                    InitializerType::Normal => format!("{}()", x.handle.core_cpp_type()),
-                    // static factory method
-                    InitializerType::Static => {
-                        format!("{}::{}()", x.handle.core_cpp_type(), x.initializer.name)
-                    }
-                }
-            }
+            DefaultCallbackReturnValue::Void => None,
+            DefaultCallbackReturnValue::Basic(x) => x.try_to_constant_cpp(),
+            DefaultCallbackReturnValue::InitializedStruct(x) => x.try_to_constant_cpp(),
         }
     }
 }
@@ -546,7 +564,7 @@ fn print_interface(
             let default_value = cb
                 .default_implementation
                 .as_ref()
-                .map(|v| v.to_constant_cpp());
+                .map(|v| v.try_to_constant_cpp());
 
             doxygen(f, |f| {
                 print_cpp_doc(f, &cb.doc)?;
@@ -557,11 +575,21 @@ fn print_interface(
                 }
                 print_cpp_return_type_doc(f, &cb.return_type)?;
                 if let Some(x) = &default_value {
-                    f.newline()?;
-                    f.writeln(&format!(
-                        "@note This method has a default implementation that returns '{}'",
-                        x
-                    ))?;
+                    match x {
+                        None => {
+                            f.newline()?;
+                            f.writeln(
+                                "@note This method has a default implementation that does nothing",
+                            )?;
+                        }
+                        Some(value) => {
+                            f.newline()?;
+                            f.writeln(&format!(
+                                "@note This method has a default implementation that returns '{}'",
+                                value
+                            ))?;
+                        }
+                    }
                 }
                 Ok(())
             })?;
@@ -575,14 +603,22 @@ fn print_interface(
                         args
                     ))?;
                 }
-                Some(v) => {
+                Some(None) => {
+                    f.writeln(&format!(
+                        "virtual {} {}({}) {{}};",
+                        cb.return_type.get_cpp_callback_return_type(),
+                        cb.core_cpp_type(),
+                        args
+                    ))?;
+                }
+                Some(Some(value)) => {
                     f.writeln(&format!(
                         "virtual {} {}({}) {{",
                         cb.return_type.get_cpp_callback_return_type(),
                         cb.core_cpp_type(),
                         args
                     ))?;
-                    indented(f, |f| f.writeln(&format!("return {};", v)))?;
+                    indented(f, |f| f.writeln(&format!("return {};", value)))?;
                     f.writeln("}")?;
                 }
             }

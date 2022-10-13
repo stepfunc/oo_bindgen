@@ -16,6 +16,9 @@ class DefaultInterfaceMethodTest {
     @Test
     void InterfaceAndOneTimeCallbackTest() {
         DefaultedInterface di = new DefaultInterfaceImpl();
+
+        DefaultInterfaceTest.invokeDoNothing(di);
+
         Assertions.assertTrue(DefaultInterfaceTest.getBoolValue(di));
         Assertions.assertEquals(42, DefaultInterfaceTest.getI32Value(di));
         Assertions.assertEquals(Duration.ofMillis(42), DefaultInterfaceTest.getDurationValue(di));

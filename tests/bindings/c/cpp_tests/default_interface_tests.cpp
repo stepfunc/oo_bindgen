@@ -8,6 +8,8 @@ void defaulted_interface_tests()
 {
     auto instance = DefaultedInterface();
 
+    foo::DefaultInterfaceTest::invoke_do_nothing(instance);
+
     assert(foo::DefaultInterfaceTest::get_duration_value(instance) == std::chrono::milliseconds(42));
     assert(foo::DefaultInterfaceTest::get_u32_value(instance) == 42);
     assert(foo::DefaultInterfaceTest::get_switch_pos(instance) == foo::SwitchPosition::on);

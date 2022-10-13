@@ -1,3 +1,7 @@
+pub(crate) fn invoke_do_nothing(cb: crate::ffi::DefaultedInterface) {
+    cb.do_nothing()
+}
+
 pub(crate) fn get_bool_value(cb: crate::ffi::DefaultedInterface) -> bool {
     cb.get_bool_value().unwrap()
 }

@@ -144,20 +144,11 @@ jobs:
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
       - name: C bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --target ${{ matrix.target }} --bin foo-bindings -- --c ${{ matrix.extra-params }}
+        run: cargo run --release --bin foo-bindings -- --c ${{ matrix.extra-params }} -a ./target/${{ matrix.target }}/release
       - name: .NET bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --target ${{ matrix.target }} --bin foo-bindings -- --dotnet ${{ matrix.extra-params }}
+        run: cargo run --release --bin foo-bindings -- --dotnet ${{ matrix.extra-params }} -a ./target/${{ matrix.target }}/release
       - name: Java bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --target ${{ matrix.target }} --bin foo-bindings -- --java ${{ matrix.extra-params }}
+        run: cargo run --release --bin foo-bindings -- --java ${{ matrix.extra-params }} -a ./target/${{ matrix.target }}/release
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
@@ -190,20 +181,11 @@ jobs:
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release
       - name: C bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --bin foo-bindings -- --c
+        run: cargo run --release --bin foo-bindings -- --c -a ./target/release
       - name: .NET bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --bin foo-bindings -- --dotnet
+        run: cargo run --release --bin foo-bindings -- --dotnet -a ./target/release
       - name: Java bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --release --bin foo-bindings -- --java
+        run: cargo run --release --bin foo-bindings -- --java -a ./target/release
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
@@ -243,20 +225,12 @@ jobs:
           override: true
       - name: Install Rust Cross
         run: cargo install cross
-      - name: Build FFI and JNI
+      - name: Build FFI and JNI shared libraries
         run: cross build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
-      - name: C bindings
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: run
-          args: --release --target ${{ matrix.target }} --bin foo-bindings -- --c --no-tests
-      - name: Java bindings
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: run
-          args: --release --target ${{ matrix.target }} --bin foo-bindings -- --java --no-tests
+      - name: Generate C bindings
+        run: cargo run --release --bin foo-bindings -- --c --no-tests -a ./target/${{ matrix.target }}/release
+      - name: Generate Java bindings
+        run: cargo run --release --bin foo-bindings -- --java --no-tests -a ./target/${{ matrix.target }}/release
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
@@ -293,10 +267,7 @@ jobs:
           name: ffi-modules
           path: ffi-modules
       - name: Package all bindings
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --bin foo-bindings -- --package ./ffi-modules
+        run: cargo run --bin foo-bindings -- -a ./ffi-modules --package
       - name: Upload .NET bindings
         uses: actions/upload-artifact@v2
         with:

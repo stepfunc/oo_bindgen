@@ -63,7 +63,6 @@ pub struct CBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_target_name: &'static str,
     pub ffi_name: &'static str,
-    pub is_release: bool,
     pub extra_files: Vec<PathBuf>,
     pub platform_location: PlatformLocation,
     pub generate_doxygen: bool,

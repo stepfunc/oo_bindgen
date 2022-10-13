@@ -1,6 +1,6 @@
 use crate::{BindingBuilder, BindingBuilderSettings};
 use dotnet_oo_bindgen::TargetFramework;
-use oo_bindgen::backend::PlatformLocations;
+use oo_bindgen::backend::{logged, PlatformLocations};
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -48,7 +48,7 @@ impl BindingBuilder for DotnetBindingBuilder {
         if build_dir.exists() {
             std::fs::remove_dir_all(&build_dir).unwrap();
         }
-        std::fs::create_dir_all(&build_dir).unwrap();
+        logged::create_dir_all(&build_dir).unwrap();
 
         let config = dotnet_oo_bindgen::DotnetBindgenConfig {
             output_dir: build_dir,

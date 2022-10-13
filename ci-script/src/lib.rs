@@ -32,16 +32,16 @@ fn is_officially_supported(p: &Platform) -> bool {
 pub fn run(settings: BindingBuilderSettings) {
     let args = crate::cli::Args::parse();
 
+    tracing::info!("Artifact dir is {}", args.artifact_dir.display());
+
     let mut run_tests = !args.no_tests;
 
     // if no languages are selected, we build all of them
     let run_all = !args.build_c && !args.build_dotnet && !args.build_java;
 
-    let package = args.package.is_some();
-
     let mut platforms = PlatformLocations::new();
-    if let Some(package_src) = args.package {
-        for entry in fs::read_dir(package_src).unwrap() {
+    if args.package {
+        for entry in fs::read_dir(args.artifact_dir).unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_dir() {
@@ -53,7 +53,8 @@ pub fn run(settings: BindingBuilderSettings) {
     } else {
         let current_platform =
             Platform::guess_current().expect("could not determine current platform");
-        platforms.add(current_platform.clone(), ffi_path());
+
+        platforms.add(current_platform.clone(), args.artifact_dir);
 
         if !is_officially_supported(current_platform) {
             println!(
@@ -75,7 +76,7 @@ pub fn run(settings: BindingBuilderSettings) {
             platforms.clone(),
             &args.extra_files,
         );
-        builder.run(run_tests, package, args.generate_doxygen);
+        builder.run(run_tests, args.package, args.generate_doxygen);
     }
     if args.build_dotnet || run_all {
         let mut builder = crate::builders::dotnet::DotnetBindingBuilder::new(
@@ -84,17 +85,13 @@ pub fn run(settings: BindingBuilderSettings) {
             platforms.clone(),
             &args.extra_files,
         );
-        builder.run(run_tests, package, args.generate_doxygen);
+        builder.run(run_tests, args.package, args.generate_doxygen);
     }
     if args.build_java || run_all {
         let mut builder =
             crate::builders::java::JavaBindingBuilder::new(settings, platforms, &args.extra_files);
-        builder.run(run_tests, package, args.generate_doxygen);
+        builder.run(run_tests, args.package, args.generate_doxygen);
     }
-}
-
-fn ffi_path() -> PathBuf {
-    [env!("TARGET_DIR"), "deps"].iter().collect()
 }
 
 #[derive(Clone)]

@@ -42,7 +42,6 @@ impl BindingBuilder for CBindingBuilder {
                 output_dir: self.output_dir(),
                 ffi_target_name: self.settings.ffi_target_name,
                 ffi_name: self.settings.ffi_name,
-                is_release: env!("PROFILE") == "release",
                 extra_files: self.extra_files.clone(),
                 platform_location: platform.clone(),
                 generate_doxygen,

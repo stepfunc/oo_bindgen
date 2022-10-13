@@ -14,6 +14,9 @@ pub(crate) struct Args {
     /// build the Java bindings
     #[arg(long = "java", default_value_t = false)]
     pub(crate) build_java: bool,
+    /// Path to where the compiled FFI/JNI shared libraries reside or a directory with multiple target triple dirs if packaging
+    #[arg(long = "artifact-dir", short = 'a')]
+    pub(crate) artifact_dir: PathBuf,
     /// Target .NET framework, which indirectly determines the C# language version
     #[arg(value_enum, short = 't', long = "target-dotnet-framework", default_value_t = TargetFramework::NetStandard2_0)]
     pub(crate) target_framework: TargetFramework,
@@ -24,8 +27,8 @@ pub(crate) struct Args {
     #[arg(long = "no-tests", default_value_t = false)]
     pub(crate) no_tests: bool,
     /// Generate package from the provided directory
-    #[arg(long = "package")]
-    pub(crate) package: Option<PathBuf>,
+    #[arg(long = "package", short = 'k', default_value_t = false)]
+    pub(crate) package: bool,
     /// Path(s) to extra files to include in the generated bindings
     #[arg(short = 'f', long = "extra-files")]
     pub(crate) extra_files: Vec<PathBuf>,

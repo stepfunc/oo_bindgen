@@ -136,7 +136,7 @@ pub fn generate_dotnet_bindings(
         }
     }
 
-    fs::create_dir_all(&config.output_dir)?;
+    logged::create_dir_all(&config.output_dir)?;
 
     generate_csproj(lib, config)?;
     generate_targets_scripts(lib, config)?;

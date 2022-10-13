@@ -50,13 +50,13 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
         }
     }
 
-    fs::create_dir_all(&config.java_output_dir)?;
+    logged::create_dir_all(&config.java_output_dir)?;
 
     // Create the pom.xml
     generate_pom(lib, config)?;
 
     // Copy the compiled libraries to the resource folder
-    fs::create_dir_all(config.java_resource_dir())?;
+    logged::create_dir_all(config.java_resource_dir())?;
     let mut ffi_name = config.ffi_name.to_string();
     ffi_name.push_str("_java");
     for p in config
@@ -68,10 +68,8 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
         let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
         let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
 
-        if source_file.exists() {
-            fs::create_dir_all(&target_dir)?;
-            fs::copy(&source_file, &target_file)?;
-        }
+        logged::create_dir_all(&target_dir)?;
+        logged::copy(&source_file, &target_file)?;
     }
 
     // Copy the extra files

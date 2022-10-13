@@ -69,13 +69,6 @@ mod wrappers;
 
 pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
-const SUPPORTED_PLATFORMS: &[Platform] = &[
-    platform::X86_64_PC_WINDOWS_MSVC,
-    platform::I686_PC_WINDOWS_MSVC,
-    platform::X86_64_UNKNOWN_LINUX_GNU,
-    platform::AARCH64_UNKNOWN_LINUX_GNU,
-];
-
 /// Target framework - affects runtime compatible and allowed language features
 ///
 /// Default C# versions for different targets specified here:
@@ -127,15 +120,6 @@ pub fn generate_dotnet_bindings(
     lib: &Library,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {
-    for p in config.platforms.iter() {
-        if !SUPPORTED_PLATFORMS.contains(&p.platform) {
-            println!(
-                ".NET generation for {} is not supported. Use at your own risks.",
-                p.platform
-            );
-        }
-    }
-
     logged::create_dir_all(&config.output_dir)?;
 
     generate_csproj(lib, config)?;
@@ -214,9 +198,19 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
 
     // Include each compiled FFI lib
     for p in config.platforms.iter() {
-        let filename = p.platform.bin_filename(&config.ffi_name);
-        let filepath = dunce::canonicalize(p.location.join(&filename))?;
-        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, dotnet_platform_string(&p.platform)))?;
+        match dotnet_platform_string(&p.platform) {
+            None => {
+                tracing::warn!(
+                    "No .NET platform string defined for Rust platform {}",
+                    p.platform
+                );
+            }
+            Some(ps) => {
+                let filename = p.platform.bin_filename(&config.ffi_name);
+                let filepath = dunce::canonicalize(p.location.join(&filename))?;
+                f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, ps))?;
+            }
+        }
     }
 
     // Include the target files to force the copying of DLLs of NuGet packages on .NET Framework
@@ -271,10 +265,13 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
         f.writeln("  <ItemGroup>")?;
 
         for p in config.platforms.iter() {
-            if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86_64 {
-                f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x64'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
-            } else if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86 {
-                f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x86'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", dotnet_platform_string(&p.platform), p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+            if let Some(ps) = dotnet_platform_string(&p.platform) {
+                if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86_64 {
+                    f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x64'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", ps, p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+                } else if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86
+                {
+                    f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x86'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", ps, p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+                }
             }
         }
 
@@ -565,21 +562,25 @@ fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("using System.Collections.Immutable;")
 }
 
-fn dotnet_platform_string(platform: &Platform) -> String {
+/// map from Rust platform to a .NET platform string
+///
+/// This also determines what platforms we'll package in the nuget, as
+/// anything that returns None will just get ignored
+fn dotnet_platform_string(platform: &Platform) -> Option<&'static str> {
     // Names taken from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
     match *platform {
         // windows targets
-        platform::X86_64_PC_WINDOWS_MSVC => "win-x64".to_string(),
-        platform::I686_PC_WINDOWS_MSVC => "win-x86".to_string(),
+        platform::X86_64_PC_WINDOWS_MSVC => Some("win-x64"),
+        platform::I686_PC_WINDOWS_MSVC => Some("win-x86"),
         // OSX targets
-        platform::X86_64_APPLE_DARWIN => "osx-x64".to_string(),
-        platform::AARCH64_APPLE_DARWIN => "osx-arm64".to_string(),
+        platform::X86_64_APPLE_DARWIN => Some("osx-x64"),
+        platform::AARCH64_APPLE_DARWIN => Some("osx-arm64"),
         // linux targets
-        platform::X86_64_UNKNOWN_LINUX_GNU => "linux-x64".to_string(),
-        platform::AARCH64_UNKNOWN_LINUX_GNU => "linux-arm64".to_string(),
-        platform::ARM_UNKNOWN_LINUX_GNUEABIHF => "linux-arm".to_string(),
+        platform::X86_64_UNKNOWN_LINUX_GNU => Some("linux-x64"),
+        platform::AARCH64_UNKNOWN_LINUX_GNU => Some("linux-arm64"),
+        platform::ARM_UNKNOWN_LINUX_GNUEABIHF => Some("linux-arm"),
         // other targets just use the target triple
-        _ => platform.target_triple.to_owned(),
+        _ => None,
     }
 }
 

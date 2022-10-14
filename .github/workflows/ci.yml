@@ -169,11 +169,11 @@ jobs:
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release
       - name: C bindings
-        run: cargo run --release --bin foo-bindings -- --c -a ./target/release
+        run: cargo run --release --bin foo-bindings -- --c
       - name: .NET bindings
-        run: cargo run --release --bin foo-bindings -- --dotnet -a ./target/release
+        run: cargo run --release --bin foo-bindings -- --dotnet
       - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java -a ./target/release
+        run: cargo run --release --bin foo-bindings -- --java
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
@@ -255,7 +255,7 @@ jobs:
           name: ffi-modules
           path: ffi-modules
       - name: Package all bindings
-        run: cargo run --bin foo-bindings -- -a ./ffi-modules --package
+        run: cargo run --bin foo-bindings -- --package ./ffi-modules
       - name: Upload .NET bindings
         uses: actions/upload-artifact@v2
         with:

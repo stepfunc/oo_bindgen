@@ -33,16 +33,14 @@ fn is_officially_supported(p: &Platform) -> bool {
 pub fn run(settings: BindingBuilderSettings) {
     let args: Args = crate::cli::Args::parse();
 
-    tracing::info!("Artifact dir is {}", args.artifact_dir.display());
-
     let mut run_tests = !args.no_tests;
 
     // if no languages are selected, we build all of them
     let run_all = !args.build_c && !args.build_dotnet && !args.build_java;
 
     let mut platforms = PlatformLocations::new();
-    if args.package {
-        for entry in fs::read_dir(args.artifact_dir).unwrap() {
+    if let Some(dir) = &args.package_dir {
+        for entry in fs::read_dir(dir).unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_dir() {
@@ -52,12 +50,27 @@ pub fn run(settings: BindingBuilderSettings) {
             }
         }
     } else {
+        let artifact_dir = match args.artifact_dir {
+            Some(x) => {
+                tracing::info!("Artifact dir is {}", x.display());
+                x
+            }
+            None => {
+                let x: PathBuf = "./target/release".into();
+                tracing::info!("No artifact dir specified, assuming: {}", x.display());
+                x
+            }
+        };
+
         let platform = match args.target_triple {
             None => {
+                let platform =
+                    Platform::guess_current().expect("Could not determine current platform");
                 tracing::info!(
-                    "No target platform specified, assuming target is the host platform"
+                    "No target platform specified assuming target is the host platform: {}",
+                    platform
                 );
-                Platform::guess_current().expect("Could not determine current platform")
+                platform
             }
             Some(tt) => match Platform::find(&tt) {
                 None => panic!("Unable to determine Platform from target triple: {}", tt),
@@ -65,7 +78,7 @@ pub fn run(settings: BindingBuilderSettings) {
             },
         };
 
-        platforms.add(platform.clone(), args.artifact_dir);
+        platforms.add(platform.clone(), artifact_dir);
 
         if !is_officially_supported(platform) {
             println!(
@@ -79,6 +92,8 @@ pub fn run(settings: BindingBuilderSettings) {
         }
     }
 
+    let is_packaging = args.package_dir.is_some();
+
     assert!(!platforms.is_empty(), "No platforms found!");
 
     for p in platforms.iter() {
@@ -91,7 +106,7 @@ pub fn run(settings: BindingBuilderSettings) {
             platforms.clone(),
             &args.extra_files,
         );
-        builder.run(run_tests, args.package, args.generate_doxygen);
+        builder.run(run_tests, is_packaging, args.generate_doxygen);
     }
     if args.build_dotnet || run_all {
         let mut builder = crate::builders::dotnet::DotnetBindingBuilder::new(
@@ -100,12 +115,12 @@ pub fn run(settings: BindingBuilderSettings) {
             platforms.clone(),
             &args.extra_files,
         );
-        builder.run(run_tests, args.package, args.generate_doxygen);
+        builder.run(run_tests, is_packaging, args.generate_doxygen);
     }
     if args.build_java || run_all {
         let mut builder =
             crate::builders::java::JavaBindingBuilder::new(settings, platforms, &args.extra_files);
-        builder.run(run_tests, args.package, args.generate_doxygen);
+        builder.run(run_tests, is_packaging, args.generate_doxygen);
     }
 }
 

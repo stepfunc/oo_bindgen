@@ -89,6 +89,7 @@ fn dotnet_platform_string(platform: &Platform) -> Option<&'static str> {
         // Linux MUSL targets
         platform::X86_64_UNKNOWN_LINUX_MUSL => Some("linux-musl-x64"),
         platform::AARCH64_UNKNOWN_LINUX_MUSL => Some("linux-musl-arm64"),
+        platform::ARM_UNKNOWN_LINUX_MUSLEABIHF => Some("linux-musl-arm"),
         // other targets just use the target triple
         _ => None,
     }

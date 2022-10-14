@@ -53,7 +53,7 @@ impl BindingBuilder for JavaBindingBuilder {
         "java"
     }
 
-    fn generate(&mut self, is_packaging: bool, _generate_doxygen: bool) {
+    fn generate(&mut self, _is_packaging: bool, _generate_doxygen: bool) {
         let config = java_oo_bindgen::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
             ffi_name: self.settings.ffi_name,
@@ -62,20 +62,6 @@ impl BindingBuilder for JavaBindingBuilder {
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
         };
-
-        // Generate Java JNI shared library if we are not packaging
-        if !is_packaging {
-            let mut cmd = Command::new("cargo");
-
-            cmd.args(&["build", "-p", self.settings.jni_target_name]);
-
-            if env!("PROFILE") == "release" {
-                cmd.arg("--release");
-            }
-
-            let result = cmd.status().unwrap();
-            assert!(result.success());
-        }
 
         // Clear/create Java generated files
         let build_dir = self.java_build_dir();

@@ -63,7 +63,6 @@ pub struct CBindgenConfig {
     pub output_dir: PathBuf,
     pub ffi_target_name: &'static str,
     pub ffi_name: &'static str,
-    pub is_release: bool,
     pub extra_files: Vec<PathBuf>,
     pub platform_location: PlatformLocation,
     pub generate_doxygen: bool,
@@ -90,15 +89,6 @@ pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingR
         .join("lib")
         .join(config.platform_location.platform.target_triple);
     logged::create_dir_all(&lib_path)?;
-
-    let lib_filename = config
-        .platform_location
-        .platform
-        .static_lib_filename(&config.ffi_name);
-    logged::copy(
-        config.platform_location.location.join(&lib_filename),
-        lib_path.join(&lib_filename),
-    )?;
 
     let lib_filename = config
         .platform_location
@@ -240,8 +230,6 @@ fn generate_cmake_config(
     let filename = cmake_path.join(format!("{}-config.cmake", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 
-    let link_deps = get_link_dependencies(config);
-
     // Prefix used everywhere else
     f.writeln("set(prefix \"${CMAKE_CURRENT_LIST_DIR}/..\")")?;
     f.newline()?;
@@ -274,33 +262,6 @@ fn generate_cmake_config(
 
     f.newline()?;
 
-    // Write static library
-    f.writeln(&format!(
-        "add_library({}_static STATIC IMPORTED GLOBAL)",
-        lib.settings.name
-    ))?;
-    f.writeln(&format!(
-        "set_target_properties({}_static PROPERTIES",
-        lib.settings.name
-    ))?;
-    indented(&mut f, |f| {
-        f.writeln(&format!(
-            "IMPORTED_LOCATION \"${{prefix}}/lib/{}/{}\"",
-            platform_location.platform.target_triple,
-            platform_location
-                .platform
-                .static_lib_filename(&config.ffi_name)
-        ))?;
-        f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")?;
-        f.writeln(&format!(
-            "INTERFACE_LINK_LIBRARIES \"{}\"",
-            link_deps.join(";")
-        ))
-    })?;
-    f.writeln(")")?;
-
-    f.newline()?;
-
     // C++ target
     f.writeln("get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)")?;
     f.writeln("if(\"CXX\" IN_LIST languages)")?;
@@ -319,47 +280,4 @@ fn generate_cmake_config(
     f.writeln("endif()")?;
 
     Ok(())
-}
-
-fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {
-    let mut args = Vec::from(["rustc", "-p", config.ffi_target_name]);
-
-    if config.is_release {
-        args.push("--release");
-    }
-
-    args.extend(&["--", "--print", "native-static-libs"]);
-
-    let output = Command::new("cargo")
-        .args(&args)
-        .output()
-        .expect("failed to run cargo");
-
-    assert!(
-        output.status.success(),
-        "failed to get the link dependencies"
-    );
-
-    // It prints to stderr for some reason
-    let result = String::from_utf8_lossy(&output.stderr);
-
-    // Find where the libs are written
-    const PATTERN: &str = "native-static-libs: ";
-    let pattern_idx = result
-        .find(PATTERN)
-        .expect("failed to parse link dependencies");
-    let deps = &result[pattern_idx + PATTERN.len()..result.len()];
-    let endline = deps.find('\n').expect("failed to parse link dependencies");
-    let deps = &deps[0..endline];
-
-    // Extract the libs
-    let mut result = deps
-        .split_whitespace()
-        .map(|x| x.to_owned())
-        .collect::<Vec<_>>();
-
-    // Remove duplicates
-    result.dedup();
-
-    result
 }

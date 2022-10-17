@@ -3,12 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 project(foo_c LANGUAGES C CXX)
 
 # Find foo_ffi
-if(WIN32)
-    set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/generated/x86_64-pc-windows-msvc/cmake)
-endif()
-if(UNIX)
-    set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/generated/x86_64-unknown-linux-gnu/cmake)
-endif()
+set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR}/generated/cmake)
 find_package(foo REQUIRED)
 
 set(c_test_files

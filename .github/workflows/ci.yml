@@ -142,11 +142,6 @@ jobs:
         with:
           name: ffi-modules
           path: tests/bindings/c/generated/${{ matrix.target }}/lib
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
       - name: Upload compiled Java bindings
         uses: actions/upload-artifact@v2
         with:
@@ -179,11 +174,6 @@ jobs:
         with:
           name: ffi-modules
           path: tests/bindings/c/generated/x86_64-apple-darwin/lib
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
       - name: Upload compiled Java bindings
         uses: actions/upload-artifact@v2
         with:
@@ -229,11 +219,6 @@ jobs:
         with:
           name: ffi-modules
           path: tests/bindings/java/foo/src/main/resources
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
   # Package all the generated bindings
   packaging:
     needs: [documentation, bindings-windows, bindings-macos, cross]
@@ -256,6 +241,11 @@ jobs:
           path: ffi-modules
       - name: Package all bindings
         run: cargo run --bin foo-bindings -- --package ./ffi-modules
+      - name: Upload C/C++ bindings
+        uses: actions/upload-artifact@v2
+        with:
+          name: c-bindings
+          path: tests/bindings/c/generated/*
       - name: Upload .NET bindings
         uses: actions/upload-artifact@v2
         with:

@@ -14,26 +14,10 @@ use oo_bindgen::model::Library;
 use crate::cli::Args;
 use clap::Parser;
 
-const SUPPORTED_PLATFORMS: &[&Platform] = &[
-    &platform::X86_64_PC_WINDOWS_MSVC,
-    &platform::I686_PC_WINDOWS_MSVC,
-    &platform::X86_64_UNKNOWN_LINUX_GNU,
-    &platform::AARCH64_UNKNOWN_LINUX_GNU,
-    &platform::ARMV7_UNKNOWN_LINUX_GNUEABIHF,
-    &platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
-    &platform::ARM_UNKNOWN_LINUX_GNUEABI,
-];
-
-fn is_officially_supported(p: &Platform) -> bool {
-    SUPPORTED_PLATFORMS
-        .iter()
-        .any(|x| x.target_triple == p.target_triple)
-}
-
 pub fn run(settings: BindingBuilderSettings) {
     let args: Args = crate::cli::Args::parse();
 
-    let mut run_tests = !args.no_tests;
+    let run_tests = !args.no_tests;
 
     // if no languages are selected, we build all of them
     let run_all = !args.build_c && !args.build_dotnet && !args.build_java;
@@ -79,17 +63,6 @@ pub fn run(settings: BindingBuilderSettings) {
         };
 
         platforms.add(platform.clone(), artifact_dir);
-
-        if !is_officially_supported(platform) {
-            println!(
-                "WARNING: building for an unsupported platform: {}",
-                platform.target_triple
-            );
-            if run_tests {
-                println!("Skipping tests an unsupported platform");
-                run_tests = false;
-            }
-        }
     }
 
     let is_packaging = args.package_dir.is_some();

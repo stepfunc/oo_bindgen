@@ -27,10 +27,6 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Copy Windows config
-        if: ${{ runner.os == 'Windows' }}
-        shell: pwsh
-        run: Copy-Item -Path .cargo/config-windows.toml -Destination .cargo/config.toml
       - name: Caching
         uses: Swatinem/rust-cache@v1
       - name: Run Rust unit tests
@@ -124,9 +120,6 @@ jobs:
           toolchain: stable
           override: true
           target: ${{ matrix.target }}
-      - name: Copy Windows config
-        shell: pwsh
-        run: Copy-Item -Path .cargo/config-windows.toml -Destination .cargo/config.toml
       - name: Caching
         uses: Swatinem/rust-cache@v1
       - name: Build FFI and JNI

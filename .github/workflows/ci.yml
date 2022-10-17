@@ -131,22 +131,24 @@ jobs:
         uses: Swatinem/rust-cache@v1
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
-      - name: C bindings
-        run: cargo run --release --bin foo-bindings -- --c ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
-      - name: .NET bindings
-        run: cargo run --release --bin foo-bindings -- --dotnet ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
-      - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: Copy the FFI and JNI libs
+        shell: pwsh
+        run: |
+          New-Item .\ffi-modules\${{ matrix.target }} -ItemType Directory
+          Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi.dll -Destination ffi-modules/${{ matrix.target }}
+          Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi.dll.lib -Destination ffi-modules/${{ matrix.target }}
+          Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi_java.dll -Destination ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
           name: ffi-modules
-          path: tests/bindings/c/generated/${{ matrix.target }}/lib
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
+          path: ffi-modules
+      - name: C bindings Test
+        run: cargo run --release --bin foo-bindings -- --c ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: .NET bindings Test
+        run: cargo run --release --bin foo-bindings -- --dotnet ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: Java bindings Test
+        run: cargo run --release --bin foo-bindings -- --java ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
   # Build bindings on MacOS [64-bit macOS (10.7+, Lion+) (x86_64-apple-darwin)]
   bindings-macos:
     runs-on: macos-latest
@@ -163,22 +165,22 @@ jobs:
         uses: Swatinem/rust-cache@v1
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release
-      - name: C bindings
-        run: cargo run --release --bin foo-bindings -- --c
-      - name: .NET bindings
-        run: cargo run --release --bin foo-bindings -- --dotnet
-      - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java
+      - name: Copy the FFI and JNI libs
+        run: |
+          mkdir -p ./ffi-modules/x86_64-apple-darwin
+          cp ./target/release/libfoo_ffi.dylib ./ffi-modules/x86_64-apple-darwin
+          cp ./target/release/libfoo_ffi_java.dylib ./ffi-modules/x86_64-apple-darwin
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
           name: ffi-modules
-          path: tests/bindings/c/generated/x86_64-apple-darwin/lib
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
+          path: ffi-modules
+      - name: C bindings Tests
+        run: cargo run --release --bin foo-bindings -- --c
+      - name: .NET bindings Tests
+        run: cargo run --release --bin foo-bindings -- --dotnet
+      - name: Java bindings Tests
+        run: cargo run --release --bin foo-bindings -- --java
   # Cross-compilation for ARM devices and produce C bindings
   cross:
     strategy:
@@ -205,20 +207,16 @@ jobs:
         run: cargo install cross
       - name: Build FFI and JNI shared libraries
         run: cross build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
-      - name: Generate C bindings
-        run: cargo run --release --bin foo-bindings -- --c --no-tests -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
-      - name: Generate Java bindings
-        run: cargo run --release --bin foo-bindings -- --java --no-tests -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: Copy the FFI and JNI libs
+        run: |
+          mkdir -p ./ffi-modules/${{ matrix.target }}
+          cp ./target/${{ matrix.target }}/release/libfoo_ffi.so ./ffi-modules/${{ matrix.target }}
+          cp ./target/${{ matrix.target }}/release/libfoo_ffi_java.so ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
           name: ffi-modules
-          path: tests/bindings/c/generated/${{ matrix.target }}/lib
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
+          path: ffi-modules
   # Package all the generated bindings
   packaging:
     needs: [documentation, bindings-windows, bindings-macos, cross]

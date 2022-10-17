@@ -263,23 +263,33 @@ fn generate_cmake_config(
         .expect("there must be at least one target");
 
     // first check that the target triple is defined
-    f.writeln(&format!("if(NOT ${})", rust_target_var))?;
+    f.writeln(&format!("if(NOT {})", rust_target_var))?;
     indented(&mut f, |f| {
         if others.is_empty() {
-            // if there's only a single possible target configure the variable
+            f.writeln("# since there is only 1 target in this package we can assume this is what is wanted")?;
             f.writeln(&format!(
-                "set({} {})",
+                "message(\"{} not set, default to the only library in this package: {}\")",
+                rust_target_var, first.platform.target_triple
+            ))?;
+            f.writeln(&format!(
+                "set({} \"{}\")",
                 rust_target_var, first.platform.target_triple
             ))
         } else {
             f.writeln(&format!(
-                "message(FATAL_ERROR {} not specified and there {} options to choose from",
+                "message(FATAL_ERROR {} not specified and there {} possible targets",
                 rust_target_var,
                 platform_locations.locations.len()
             ))
         }
     })?;
     f.writeln("endif()")?;
+
+    f.newline()?;
+    f.writeln(&format!(
+        "message(\"{} is: ${{{}}}\")",
+        rust_target_var, rust_target_var
+    ))?;
     f.newline()?;
 
     // validate the target triple
@@ -300,6 +310,7 @@ fn generate_cmake_config(
         ))
     })?;
     f.writeln("endif()")?;
+    f.newline()?;
 
     // Write dynamic library version
     f.writeln(&format!(

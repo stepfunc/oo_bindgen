@@ -343,6 +343,7 @@ fn generate_cmake_config(
     f.writeln("get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)")?;
     f.writeln("if(\"CXX\" IN_LIST languages)")?;
     indented(&mut f, |f| {
+        f.writeln("set(CMAKE_CXX_STANDARD 11)")?;
         f.writeln(&format!(
             "add_library({}_cpp OBJECT EXCLUDE_FROM_ALL ${{prefix}}/src/{}.cpp)",
             lib.settings.name, lib.settings.name

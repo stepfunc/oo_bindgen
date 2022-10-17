@@ -111,9 +111,9 @@ jobs:
       matrix:
         include:
           - target: x86_64-pc-windows-msvc # 64-bit MSVC (Windows 7+)
-            extra-param: # nothing
+            test: true
           - target: i686-pc-windows-msvc # 32-bit MSVC (Windows 7+)
-            extra-params: --no-tests
+            test: false
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -144,11 +144,14 @@ jobs:
           name: ffi-modules
           path: ffi-modules
       - name: C bindings Test
-        run: cargo run --release --bin foo-bindings -- --c ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+        if: ${{ matrix.test }
+        run: cargo run --release --bin foo-bindings -- --c -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
       - name: .NET bindings Test
-        run: cargo run --release --bin foo-bindings -- --dotnet ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+        if: ${{ matrix.test }
+        run: cargo run --release --bin foo-bindings -- --dotnet -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
       - name: Java bindings Test
-        run: cargo run --release --bin foo-bindings -- --java ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+        if: ${{ matrix.test }
+        run: cargo run --release --bin foo-bindings -- --java -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
   # Build bindings on MacOS [64-bit macOS (10.7+, Lion+) (x86_64-apple-darwin)]
   bindings-macos:
     runs-on: macos-latest

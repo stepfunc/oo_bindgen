@@ -176,8 +176,6 @@ jobs:
         with:
           name: ffi-modules
           path: ffi-modules
-      - name: C Bindings Tests
-        run: cargo run --release --bin foo-bindings -- --c
       - name: .NET Bindings Tests
         run: cargo run --release --bin foo-bindings -- --dotnet
       - name: Java Bindings Tests

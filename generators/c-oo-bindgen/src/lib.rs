@@ -299,7 +299,10 @@ fn generate_cmake_config(
     ))?;
     write_set_libs(&mut f, lib, config, first)?;
     for pl in others {
-        f.writeln(&format!("elseif(${{{}}} STREQUAL \"{}\")", rust_target_var, pl.platform.target_triple))?;
+        f.writeln(&format!(
+            "elseif(${{{}}} STREQUAL \"{}\")",
+            rust_target_var, pl.platform.target_triple
+        ))?;
         write_set_libs(&mut f, lib, config, pl)?;
     }
     f.writeln("else()")?;

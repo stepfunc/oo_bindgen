@@ -277,7 +277,7 @@ fn generate_cmake_config(
             ))
         } else {
             f.writeln(&format!(
-                "message(FATAL_ERROR {} not specified and there {} possible targets",
+                "message(FATAL_ERROR \"{} not specified and there {} possible targets\")",
                 rust_target_var,
                 platform_locations.locations.len()
             ))
@@ -299,7 +299,7 @@ fn generate_cmake_config(
     ))?;
     write_set_libs(&mut f, lib, config, first)?;
     for pl in others {
-        f.writeln("elseif()")?;
+        f.writeln(&format!("elseif(${{{}}} STREQUAL \"{}\")", rust_target_var, pl.platform.target_triple))?;
         write_set_libs(&mut f, lib, config, pl)?;
     }
     f.writeln("else()")?;

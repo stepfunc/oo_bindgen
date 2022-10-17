@@ -4,6 +4,10 @@ on:
     branches:
       - main
   pull_request:
+env:
+  lib: foo
+  ffi: foo-ffi
+  jni: foo-ffi-java
 jobs:
   # Run the unit tests on Windows, Linux, and MacOS
   test:
@@ -148,6 +152,11 @@ jobs:
   # Build bindings on MacOS [64-bit macOS (10.7+, Lion+) (x86_64-apple-darwin)]
   bindings-macos:
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-apple-darwin # 64-bit macOS (10.7+, Lion+)
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -163,9 +172,9 @@ jobs:
         run: cargo build -p foo-ffi -p foo-ffi-java --release
       - name: Copy the FFI and JNI libs
         run: |
-          mkdir -p ./ffi-modules/x86_64-apple-darwin
-          cp ./target/release/libfoo_ffi.dylib ./ffi-modules/x86_64-apple-darwin
-          cp ./target/release/libfoo_ffi_java.dylib ./ffi-modules/x86_64-apple-darwin
+          mkdir -p ./ffi-modules/${{ matrix.target }}
+          cp ./target/release/libfoo_ffi.dylib ./ffi-modules/${{ matrix.target }}
+          cp ./target/release/libfoo_ffi_java.dylib ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:

@@ -41,7 +41,7 @@ pub fn build_lib() -> BackTraced<Library> {
         license_path: PathBuf::from("LICENSE.txt"),
         developers: vec![DeveloperInfo {
             name: "Émile Grégoire".to_string(),
-            email: "emile@stepfunc.io".to_string(),
+            email: "info@stepfunc.io".to_string(),
             organization: "Step Function I/O".to_string(),
             organization_url: "https://stepfunc.io/".to_string(),
         }],

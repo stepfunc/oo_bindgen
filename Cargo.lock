@@ -96,7 +96,7 @@ checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
 
 [[package]]
 name = "c-oo-bindgen"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "oo-bindgen",
  "tracing",
@@ -134,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "ci-script"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "c-oo-bindgen",
  "clap",
@@ -200,7 +200,7 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
 name = "dotnet-oo-bindgen"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "clap",
  "dunce",
@@ -300,7 +300,7 @@ checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
 name = "java-oo-bindgen"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "dunce",
  "oo-bindgen",
@@ -418,7 +418,7 @@ checksum = "074864da206b4973b84eb91683020dbefd6a8c3f0f38e054d93954e891935e4e"
 
 [[package]]
 name = "oo-bindgen"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "backtrace",
  "heck 0.3.3",
@@ -534,7 +534,7 @@ checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
 
 [[package]]
 name = "rust-oo-bindgen"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "heck 0.3.3",
  "oo-bindgen",

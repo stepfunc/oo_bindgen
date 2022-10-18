@@ -12,17 +12,11 @@ use oo_bindgen::backend::*;
 use oo_bindgen::model::Library;
 
 use crate::cli::Args;
-use clap::Parser;
 
 pub fn run(settings: BindingBuilderSettings) {
-    let args: Args = crate::cli::Args::parse();
+    let args = Args::get();
 
-    let platforms = get_platforms(&args);
-    let run_tests = !args.no_tests;
-    let is_packaging = args.package_dir.is_some();
-
-    // if no languages are selected, we build all of them
-    let run_all = !args.build_c && !args.build_dotnet && !args.build_java;
+    let (options, platforms) = get_platforms(&args);
 
     assert!(!platforms.is_empty(), "No platforms found!");
 
@@ -30,33 +24,33 @@ pub fn run(settings: BindingBuilderSettings) {
         tracing::info!("Platform {} in {}", p.platform, p.location.display());
     }
 
-    if args.build_c || run_all {
+    if args.build_c {
         let mut builder = crate::builders::c::CBindingBuilder::new(
             settings.clone(),
             platforms.clone(),
             &args.extra_files,
         );
-        builder.run(run_tests, is_packaging, args.generate_doxygen);
+        builder.run(options);
     }
-    if args.build_dotnet || run_all {
+    if args.build_dotnet {
         let mut builder = crate::builders::dotnet::DotnetBindingBuilder::new(
             settings.clone(),
             args.target_framework,
             platforms.clone(),
             &args.extra_files,
         );
-        builder.run(run_tests, is_packaging, args.generate_doxygen);
+        builder.run(options);
     }
-    if args.build_java || run_all {
+    if args.build_java {
         let mut builder =
             crate::builders::java::JavaBindingBuilder::new(settings, platforms, &args.extra_files);
-        builder.run(run_tests, is_packaging, args.generate_doxygen);
+        builder.run(options);
     }
 }
 
-fn get_platforms(args: &Args) -> PlatformLocations {
+fn get_platforms(args: &Args) -> (RunOptions, PlatformLocations) {
     let mut platforms = PlatformLocations::new();
-    if let Some(dir) = &args.package_dir {
+    let options = if let Some(dir) = &args.package_dir {
         for entry in fs::read_dir(dir).unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
@@ -65,6 +59,11 @@ fn get_platforms(args: &Args) -> PlatformLocations {
                     platforms.add(p.clone(), entry.path());
                 }
             }
+        }
+        RunOptions {
+            test: false,
+            package: true,
+            docs: false,
         }
     } else {
         let artifact_dir = match &args.artifact_dir {
@@ -96,8 +95,14 @@ fn get_platforms(args: &Args) -> PlatformLocations {
         };
 
         platforms.add(platform.clone(), artifact_dir);
-    }
-    platforms
+
+        RunOptions {
+            test: !args.no_tests,
+            package: false,
+            docs: args.generate_doxygen,
+        }
+    };
+    (options, platforms)
 }
 
 #[derive(Clone)]
@@ -118,30 +123,57 @@ pub struct BindingBuilderSettings {
     pub library: Rc<Library>,
 }
 
+/// options for an invocation of a binding builder
+#[derive(Copy, Clone, Debug)]
+pub struct RunOptions {
+    /// run the tests
+    pub test: bool,
+    /// package the library if this is a separate step from generation
+    pub package: bool,
+    /// generate the docs if this is a separate step
+    pub docs: bool,
+}
+
+impl RunOptions {
+    pub fn new() -> Self {
+        Self {
+            test: false,
+            package: false,
+            docs: false,
+        }
+    }
+}
+
+impl Default for RunOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 trait BindingBuilder {
     fn name() -> &'static str;
-    fn generate(&mut self, is_packaging: bool, generate_doxygen: bool);
+    fn generate(&mut self, is_packaging: bool, generate_docs: bool);
     fn build(&mut self);
     fn test(&mut self);
     fn package(&mut self);
 
     /// run the builder
-    fn run(&mut self, run_tests: bool, package: bool, generate_doxygen: bool) {
+    fn run(&mut self, options: RunOptions) {
         let span = tracing::info_span!("generate()", lang = Self::name());
         span.in_scope(|| {
             tracing::info!("begin");
-            self.generate(package, generate_doxygen);
+            self.generate(options.package, options.docs);
             tracing::info!("end");
         });
 
-        if package {
+        if options.package {
             let span = tracing::info_span!("package()", lang = Self::name());
             span.in_scope(|| {
                 tracing::info!("begin");
                 self.package();
                 tracing::info!("end");
             });
-        } else if run_tests {
+        } else if options.test {
             let span = tracing::info_span!("build()", lang = Self::name());
             span.in_scope(|| {
                 tracing::info!("begin");

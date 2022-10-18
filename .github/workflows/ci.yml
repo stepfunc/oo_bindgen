@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -28,7 +28,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Run Rust unit tests
         uses: actions-rs/cargo@v1
         with:
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -77,7 +77,7 @@ jobs:
       - name: Install doxygen 1.9.3
         run: wget -q https://www.doxygen.nl/files/doxygen-1.9.5.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings
@@ -112,7 +112,7 @@ jobs:
             test: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -121,7 +121,7 @@ jobs:
           override: true
           target: ${{ matrix.target }}
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
       - name: Copy the FFI and JNI libs
@@ -155,7 +155,7 @@ jobs:
           - x86_64-apple-darwin # 64-bit macOS (10.7+, Lion+)
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -163,7 +163,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release
       - name: Copy the FFI and JNI libs
@@ -194,7 +194,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -222,7 +222,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -230,7 +230,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Download compiled FFI
         uses: actions/download-artifact@v2
         with:

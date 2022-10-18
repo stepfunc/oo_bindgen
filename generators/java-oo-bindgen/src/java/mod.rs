@@ -1,5 +1,3 @@
-use std::fs;
-
 use oo_bindgen::backend::*;
 use oo_bindgen::model::*;
 
@@ -59,21 +57,22 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     logged::create_dir_all(config.java_resource_dir())?;
     let mut ffi_name = config.ffi_name.to_string();
     ffi_name.push_str("_java");
-    for p in config
-        .platforms
-        .iter()
-        .filter(|x| jni_supported(&x.platform))
-    {
-        let target_dir = config.java_resource_dir().join(p.platform.target_triple);
-        let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
-        let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
 
-        logged::create_dir_all(&target_dir)?;
-        logged::copy(&source_file, &target_file)?;
+    for p in config.platforms.iter() {
+        if jni_supported(&p.platform) {
+            let target_dir = config.java_resource_dir().join(p.platform.target_triple);
+            let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
+            let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
+
+            logged::create_dir_all(&target_dir)?;
+            logged::copy(&source_file, &target_file)?;
+        } else {
+            tracing::warn!("Skipping packaging for platform: {}", p.platform);
+        }
     }
 
     // Copy the extra files
-    fs::copy(
+    logged::copy(
         &lib.info.license_path,
         config
             .java_resource_dir()
@@ -81,11 +80,11 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     )?;
     for path in &config.extra_files {
         let dest = config.java_resource_dir().join(path.file_name().unwrap());
-        fs::copy(path, dest)?;
+        logged::copy(path, dest)?;
     }
 
     // Create the source directory
-    fs::create_dir_all(&config.java_source_dir(lib))?;
+    logged::create_dir_all(&config.java_source_dir(lib))?;
 
     // Create all the direct mappings
     generate_native_func_class(lib, config)?;

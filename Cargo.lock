@@ -305,6 +305,7 @@ dependencies = [
  "dunce",
  "oo-bindgen",
  "pathdiff",
+ "tracing",
 ]
 
 [[package]]

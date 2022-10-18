@@ -8,3 +8,4 @@ edition = "2021"
 oo-bindgen = { path = "../../oo-bindgen" }
 dunce = "1.0"
 pathdiff = "0.2"
+tracing = "^0.1"

@@ -37,19 +37,17 @@ impl BindingBuilder for CBindingBuilder {
     }
 
     fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
-        for platform in self.platforms.iter() {
-            let config = c_oo_bindgen::CBindgenConfig {
-                output_dir: self.output_dir(),
-                ffi_target_name: self.settings.ffi_target_name,
-                ffi_name: self.settings.ffi_name,
-                extra_files: self.extra_files.clone(),
-                platform_location: platform.clone(),
-                generate_doxygen,
-            };
+        let config = c_oo_bindgen::CBindgenConfig {
+            output_dir: self.output_dir(),
+            ffi_target_name: self.settings.ffi_target_name,
+            ffi_name: self.settings.ffi_name,
+            extra_files: self.extra_files.clone(),
+            platform_locations: self.platforms.clone(),
+            generate_doxygen,
+        };
 
-            c_oo_bindgen::generate_c_package(&self.settings.library, &config)
-                .expect("failed to package C lib");
-        }
+        c_oo_bindgen::generate_c_package(&self.settings.library, &config)
+            .expect("failed to package C lib");
     }
 
     fn build(&mut self) {

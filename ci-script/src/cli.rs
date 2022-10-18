@@ -2,6 +2,18 @@ use clap::Parser;
 use dotnet_oo_bindgen::TargetFramework;
 use std::path::PathBuf;
 
+impl Args {
+    pub fn get() -> Self {
+        let mut args = crate::cli::Args::parse();
+        if !(args.build_c || args.build_dotnet || args.build_java) {
+            args.build_c = true;
+            args.build_dotnet = true;
+            args.build_java = true;
+        }
+        args
+    }
+}
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Args {

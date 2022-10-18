@@ -20,23 +20,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           override: true
-      - name: Copy Windows config
-        if: ${{ runner.os == 'Windows' }}
-        shell: pwsh
-        run: Copy-Item -Path .cargo/config-windows.toml -Destination .cargo/config.toml
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Run Rust unit tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
   # Check formatting and run clippy lints
   linting:
     strategy:
@@ -48,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -57,21 +51,15 @@ jobs:
           override: true
           components: rustfmt, clippy
       - name: Format
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all --check
       - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+        run: cargo clippy -- -D warnings
   # Build documentation
   documentation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -81,15 +69,15 @@ jobs:
       - name: Install doxygen 1.9.3
         run: wget -q https://www.doxygen.nl/files/doxygen-1.9.5.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings
-        run: cargo run --release --bin foo-bindings -- --doxygen --c --no-tests  -a ./target/release
+        run: cargo run --bin foo-bindings -- --doxygen --c --no-tests  -a ./target/release
       - name: .NET bindings
-        run: cargo run --release --bin foo-bindings -- --doxygen --dotnet --no-tests -a ./target/release
+        run: cargo run --bin foo-bindings -- --doxygen --dotnet --no-tests -a ./target/release
       - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java -a ./target/release
+        run: cargo run --bin foo-bindings -- --java -a ./target/release
       - name: Extract documentation
         run: |
           mkdir -p ~/doc
@@ -111,12 +99,12 @@ jobs:
       matrix:
         include:
           - target: x86_64-pc-windows-msvc # 64-bit MSVC (Windows 7+)
-            extra-param: # nothing
+            test: true
           - target: i686-pc-windows-msvc # 32-bit MSVC (Windows 7+)
-            extra-params: --no-tests
+            test: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -124,40 +112,42 @@ jobs:
           toolchain: stable
           override: true
           target: ${{ matrix.target }}
-      - name: Copy Windows config
-        shell: pwsh
-        run: Copy-Item -Path .cargo/config-windows.toml -Destination .cargo/config.toml
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
-      - name: C bindings
-        run: cargo run --release --bin foo-bindings -- --c ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
-      - name: .NET bindings
-        run: cargo run --release --bin foo-bindings -- --dotnet ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
-      - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java ${{ matrix.extra-params }} -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: Copy the FFI and JNI libs
+        shell: pwsh
+        run: |
+          New-Item .\ffi-modules\${{ matrix.target }} -ItemType Directory
+          Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi.dll -Destination ffi-modules/${{ matrix.target }}
+          Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi.dll.lib -Destination ffi-modules/${{ matrix.target }}
+          Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi_java.dll -Destination ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
           name: ffi-modules
-          path: tests/bindings/c/generated/${{ matrix.target }}/lib
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
+          path: ffi-modules
+      - name: C Bindings Tests
+        if: ${{ matrix.test }}
+        run: cargo run --bin foo-bindings -- --c -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: .NET Bindings Tests
+        if: ${{ matrix.test }}
+        run: cargo run --bin foo-bindings -- --dotnet -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: Java Bindings Tests
+        if: ${{ matrix.test }}
+        run: cargo run --bin foo-bindings -- --java -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
   # Build bindings on MacOS [64-bit macOS (10.7+, Lion+) (x86_64-apple-darwin)]
   bindings-macos:
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-apple-darwin # 64-bit macOS (10.7+, Lion+)
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -165,30 +155,23 @@ jobs:
           toolchain: stable
           override: true
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release
-      - name: C bindings
-        run: cargo run --release --bin foo-bindings -- --c
-      - name: .NET bindings
-        run: cargo run --release --bin foo-bindings -- --dotnet
-      - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java
+      - name: Copy the FFI and JNI libs
+        run: |
+          mkdir -p ./ffi-modules/${{ matrix.target }}
+          cp ./target/release/libfoo_ffi.dylib ./ffi-modules/${{ matrix.target }}
+          cp ./target/release/libfoo_ffi_java.dylib ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
           name: ffi-modules
-          path: tests/bindings/c/generated/x86_64-apple-darwin/lib
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
+          path: ffi-modules
+      - name: .NET Bindings Tests
+        run: cargo run --bin foo-bindings -- --dotnet
+      - name: Java Bindings Tests
+        run: cargo run --bin foo-bindings -- --java
   # Cross-compilation for ARM devices and produce C bindings
   cross:
     strategy:
@@ -203,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -215,32 +198,23 @@ jobs:
         run: cargo install cross
       - name: Build FFI and JNI shared libraries
         run: cross build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
-      - name: Generate C bindings
-        run: cargo run --release --bin foo-bindings -- --c --no-tests -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
-      - name: Generate Java bindings
-        run: cargo run --release --bin foo-bindings -- --java --no-tests -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+      - name: Copy the FFI and JNI libs
+        run: |
+          mkdir -p ./ffi-modules/${{ matrix.target }}
+          cp ./target/${{ matrix.target }}/release/libfoo_ffi.so ./ffi-modules/${{ matrix.target }}
+          cp ./target/${{ matrix.target }}/release/libfoo_ffi_java.so ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v2
         with:
           name: ffi-modules
-          path: tests/bindings/c/generated/${{ matrix.target }}/lib
-      - name: Upload compiled Java bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: ffi-modules
-          path: tests/bindings/java/foo/src/main/resources
-      - name: Upload C bindings
-        uses: actions/upload-artifact@v2
-        with:
-          name: c-bindings
-          path: tests/bindings/c/generated
+          path: ffi-modules
   # Package all the generated bindings
   packaging:
     needs: [documentation, bindings-windows, bindings-macos, cross]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -248,7 +222,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
       - name: Download compiled FFI
         uses: actions/download-artifact@v2
         with:
@@ -256,6 +230,11 @@ jobs:
           path: ffi-modules
       - name: Package all bindings
         run: cargo run --bin foo-bindings -- --package ./ffi-modules
+      - name: Upload C/C++ bindings
+        uses: actions/upload-artifact@v2
+        with:
+          name: c-bindings
+          path: tests/bindings/c/generated/*
       - name: Upload .NET bindings
         uses: actions/upload-artifact@v2
         with:

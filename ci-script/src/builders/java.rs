@@ -1,5 +1,5 @@
 use crate::{BindingBuilder, BindingBuilderSettings};
-use oo_bindgen::backend::PlatformLocations;
+use oo_bindgen::backend::{logged, PlatformLocations};
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -66,9 +66,9 @@ impl BindingBuilder for JavaBindingBuilder {
         // Clear/create Java generated files
         let build_dir = self.java_build_dir();
         if build_dir.exists() {
-            std::fs::remove_dir_all(&build_dir).unwrap();
+            logged::remove_dir_all(&build_dir).unwrap();
         }
-        std::fs::create_dir_all(&build_dir).unwrap();
+        logged::create_dir_all(&build_dir).unwrap();
 
         // Generate the Java code
         java_oo_bindgen::generate_java_bindings(&self.settings.library, &config).unwrap();

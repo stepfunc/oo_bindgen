@@ -73,11 +73,11 @@ jobs:
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings
-        run: cargo run --release --bin foo-bindings -- --doxygen --c --no-tests  -a ./target/release
+        run: cargo run --bin foo-bindings -- --doxygen --c --no-tests  -a ./target/release
       - name: .NET bindings
-        run: cargo run --release --bin foo-bindings -- --doxygen --dotnet --no-tests -a ./target/release
+        run: cargo run --bin foo-bindings -- --doxygen --dotnet --no-tests -a ./target/release
       - name: Java bindings
-        run: cargo run --release --bin foo-bindings -- --java -a ./target/release
+        run: cargo run --bin foo-bindings -- --java -a ./target/release
       - name: Extract documentation
         run: |
           mkdir -p ~/doc
@@ -130,13 +130,13 @@ jobs:
           path: ffi-modules
       - name: C Bindings Tests
         if: ${{ matrix.test }}
-        run: cargo run --release --bin foo-bindings -- --c -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+        run: cargo run --bin foo-bindings -- --c -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
       - name: .NET Bindings Tests
         if: ${{ matrix.test }}
-        run: cargo run --release --bin foo-bindings -- --dotnet -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+        run: cargo run --bin foo-bindings -- --dotnet -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
       - name: Java Bindings Tests
         if: ${{ matrix.test }}
-        run: cargo run --release --bin foo-bindings -- --java -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+        run: cargo run --bin foo-bindings -- --java -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
   # Build bindings on MacOS [64-bit macOS (10.7+, Lion+) (x86_64-apple-darwin)]
   bindings-macos:
     runs-on: macos-latest
@@ -169,9 +169,9 @@ jobs:
           name: ffi-modules
           path: ffi-modules
       - name: .NET Bindings Tests
-        run: cargo run --release --bin foo-bindings -- --dotnet
+        run: cargo run --bin foo-bindings -- --dotnet
       - name: Java Bindings Tests
-        run: cargo run --release --bin foo-bindings -- --java
+        run: cargo run --bin foo-bindings -- --java
   # Cross-compilation for ARM devices and produce C bindings
   cross:
     strategy:

@@ -1,6 +1,6 @@
 [package]
 name = "foo-ffi"
-version = "0.1.0"
+version = "0.5.0"
 authors = ["Step Function I/O LLC <info@stepfunc.io>"]
 edition = "2021"
 

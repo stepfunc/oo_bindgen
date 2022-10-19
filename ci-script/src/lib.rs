@@ -15,7 +15,10 @@ use crate::cli::{Args, PackageOptions};
 pub fn run(settings: BindingBuilderSettings) {
     let args = Args::get();
 
-    let (options, platforms) = get_platforms(&args);
+    let (options, platforms) = {
+        let span = tracing::info_span!("configure()");
+        span.in_scope(|| get_platforms(&args))
+    };
 
     if args.build_c {
         let mut builder = crate::builders::c::CBindingBuilder::new(
@@ -126,11 +129,7 @@ fn get_packaging_platforms(
             if options.package_cpp(&p.platform) {
                 cpp.locations.push(p.clone());
             } else {
-                tracing::warn!(
-                    "Ignoring available C/C++ package {} in {:?}",
-                    p.platform,
-                    p.location
-                )
+                tracing::warn!("Ignoring available C/C++ package {}", p.platform)
             }
         }
         cpp
@@ -142,11 +141,7 @@ fn get_packaging_platforms(
             if options.package_dotnet(&p.platform) {
                 dotnet.locations.push(p.clone());
             } else {
-                tracing::warn!(
-                    "Ignoring available .NET package {} in {:?}",
-                    p.platform,
-                    p.location
-                )
+                tracing::warn!("Ignoring available .NET package {}", p.platform)
             }
         }
         dotnet
@@ -158,11 +153,7 @@ fn get_packaging_platforms(
             if options.package_java(&p.platform) {
                 java.locations.push(p.clone());
             } else {
-                tracing::warn!(
-                    "Ignoring available Java package {} in {:?}",
-                    p.platform,
-                    p.location
-                )
+                tracing::warn!("Ignoring available Java package {}", p.platform)
             }
         }
         java

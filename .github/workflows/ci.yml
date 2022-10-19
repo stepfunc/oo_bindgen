@@ -229,7 +229,7 @@ jobs:
           name: ffi-modules
           path: ffi-modules
       - name: Package all bindings
-        run: cargo run --bin foo-bindings -- --package ./ffi-modules
+        run: cargo run --bin foo-bindings -- --package ./ffi-modules --options ./packaging.json
       - name: Upload C/C++ bindings
         uses: actions/upload-artifact@v2
         with:

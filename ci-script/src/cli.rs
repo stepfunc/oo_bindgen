@@ -1,5 +1,6 @@
 use clap::Parser;
 use dotnet_oo_bindgen::TargetFramework;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 impl Args {
@@ -11,6 +12,45 @@ impl Args {
             args.build_java = true;
         }
         args
+    }
+}
+
+use crate::Platform;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub(crate) struct EnabledLanguages {
+    pub(crate) cpp: bool,
+    pub(crate) dotnet: bool,
+    pub(crate) java: bool,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct PackageOptions {
+    /// This limits which available target platforms are packaged for each language
+    targets: HashMap<String, EnabledLanguages>,
+}
+
+impl PackageOptions {
+    pub(crate) fn package_dotnet(&self, platform: &Platform) -> bool {
+        self.targets
+            .get(platform.target_triple)
+            .map(|x| x.dotnet)
+            .unwrap_or(false)
+    }
+
+    pub(crate) fn package_cpp(&self, platform: &Platform) -> bool {
+        self.targets
+            .get(platform.target_triple)
+            .map(|x| x.cpp)
+            .unwrap_or(false)
+    }
+
+    pub(crate) fn package_java(&self, platform: &Platform) -> bool {
+        self.targets
+            .get(platform.target_triple)
+            .map(|x| x.java)
+            .unwrap_or(false)
     }
 }
 
@@ -45,6 +85,9 @@ pub(crate) struct Args {
     /// Generate package from the provided directory
     #[arg(long = "package", short = 'k')]
     pub(crate) package_dir: Option<PathBuf>,
+    /// Generate package(s) with the following options file
+    #[arg(long = "options", short = 'o')]
+    pub(crate) package_options: Option<PathBuf>,
     /// Path(s) to extra files to include in the generated bindings
     #[arg(short = 'f', long = "extra-files")]
     pub(crate) extra_files: Vec<PathBuf>,

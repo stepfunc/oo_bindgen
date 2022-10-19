@@ -1,0 +1,44 @@
+{
+  "targets": {
+    "x86_64-pc-windows-msvc": {
+      "cpp": true,
+      "dotnet": true,
+      "java": true
+    },
+    "i686-pc-windows-msvc": {
+      "cpp": true,
+      "dotnet": true,
+      "java": false
+    },
+    "x86_64-apple-darwin": {
+      "cpp": false,
+      "dotnet": true,
+      "java": true
+    },
+    "x86_64-unknown-linux-gnu": {
+      "cpp": true,
+      "dotnet": true,
+      "java": true
+    },
+    "aarch64-unknown-linux-gnu": {
+      "cpp": true,
+      "dotnet": true,
+      "java": true
+    },
+    "arm-unknown-linux-gnueabihf": {
+      "cpp": true,
+      "dotnet": true,
+      "java": true
+    },
+    "arm-unknown-linux-gnueabi": {
+      "cpp": true,
+      "dotnet": false,
+      "java": false
+    },
+    "armv7-unknown-linux-gnueabihf": {
+      "cpp": true,
+      "dotnet": false,
+      "java": false
+    }
+  }
+}

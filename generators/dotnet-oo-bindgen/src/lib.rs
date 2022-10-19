@@ -69,10 +69,9 @@ mod wrappers;
 
 pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
-/// map from Rust platform to a .NET platform string
+/// Map from Rust platform to a .NET platform string
 ///
-/// This also determines what platforms we'll package in the nuget, as
-/// anything that returns None will just get ignored
+/// Packages not in this map will cause an error
 fn dotnet_platform_string(platform: &Platform) -> Option<&'static str> {
     // Names taken from https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
     match *platform {
@@ -99,7 +98,7 @@ fn dotnet_platform_string(platform: &Platform) -> Option<&'static str> {
 ///
 /// Default C# versions for different targets specified here:
 ///
-/// https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version
+/// <https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version>
 ///
 #[derive(Debug, Copy, Clone, clap::ValueEnum)]
 pub enum TargetFramework {
@@ -224,19 +223,11 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
 
     // Include each compiled FFI lib
     for p in config.platforms.iter() {
-        match dotnet_platform_string(&p.platform) {
-            None => {
-                tracing::warn!(
-                    "No .NET platform string defined for Rust platform {}",
-                    p.platform
-                );
-            }
-            Some(ps) => {
-                let filename = p.platform.bin_filename(&config.ffi_name);
-                let filepath = dunce::canonicalize(p.location.join(&filename))?;
-                f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, ps))?;
-            }
-        }
+        let ps = dotnet_platform_string(&p.platform)
+            .unwrap_or_else(|| panic!("No RID mapped for Rust target: {}", p.platform));
+        let filename = p.platform.bin_filename(&config.ffi_name);
+        let filepath = dunce::canonicalize(p.location.join(&filename))?;
+        f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, ps))?;
     }
 
     // Include the target files to force the copying of DLLs of NuGet packages on .NET Framework

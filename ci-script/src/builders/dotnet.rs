@@ -46,7 +46,7 @@ impl BindingBuilder for DotnetBindingBuilder {
         // Clear/create generated files
         let build_dir = self.build_dir();
         if build_dir.exists() {
-            std::fs::remove_dir_all(&build_dir).unwrap();
+            logged::remove_dir_all(&build_dir).unwrap();
         }
         logged::create_dir_all(&build_dir).unwrap();
 

@@ -1,6 +1,6 @@
 use clap::Parser;
 use dotnet_oo_bindgen::TargetFramework;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 impl Args {
@@ -19,27 +19,38 @@ use crate::Platform;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+pub(crate) struct EnabledLanguages {
+    pub(crate) cpp: bool,
+    pub(crate) dotnet: bool,
+    pub(crate) java: bool,
+}
+
+#[derive(Deserialize)]
 pub(crate) struct PackageOptions {
-    /// This limits which available libs are packaged as a Nuget
-    packaged_dotnet_targets: HashSet<String>,
-    /// This limits which available libs are packaged as a C/C++ distribution
-    packaged_cpp_targets: HashSet<String>,
-    /// This limits which available libs are packaged as Java distribution
-    packaged_java_targets: HashSet<String>,
+    /// This limits which available target platforms are packaged for each language
+    targets: HashMap<String, EnabledLanguages>,
 }
 
 impl PackageOptions {
     pub(crate) fn package_dotnet(&self, platform: &Platform) -> bool {
-        self.packaged_dotnet_targets
-            .contains(platform.target_triple)
+        self.targets
+            .get(platform.target_triple)
+            .map(|x| x.dotnet)
+            .unwrap_or(false)
     }
 
     pub(crate) fn package_cpp(&self, platform: &Platform) -> bool {
-        self.packaged_cpp_targets.contains(platform.target_triple)
+        self.targets
+            .get(platform.target_triple)
+            .map(|x| x.cpp)
+            .unwrap_or(false)
     }
 
     pub(crate) fn package_java(&self, platform: &Platform) -> bool {
-        self.packaged_java_targets.contains(platform.target_triple)
+        self.targets
+            .get(platform.target_triple)
+            .map(|x| x.java)
+            .unwrap_or(false)
     }
 }
 

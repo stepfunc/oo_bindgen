@@ -20,34 +20,7 @@ mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
-/// This controls the platforms that are:
-///
-/// 1) copied to resource folders
-/// 2) attempt to automatically load in the static initializer
-const SUPPORTED_JNI_PLATFORMS: &[Platform] = &[
-    platform::X86_64_PC_WINDOWS_MSVC,
-    platform::X86_64_UNKNOWN_LINUX_GNU,
-    platform::AARCH64_UNKNOWN_LINUX_GNU,
-    platform::ARM_UNKNOWN_LINUX_GNUEABIHF,
-    platform::X86_64_APPLE_DARWIN,
-];
-
-fn jni_supported(p: &Platform) -> bool {
-    SUPPORTED_JNI_PLATFORMS
-        .iter()
-        .any(|x| x.target_triple == p.target_triple)
-}
-
 pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
-    for p in config.platforms.iter() {
-        if !jni_supported(&p.platform) {
-            println!(
-                "Java is not officially supported on {}. Use at your own risks.",
-                p.platform
-            );
-        }
-    }
-
     logged::create_dir_all(&config.java_output_dir)?;
 
     // Create the pom.xml
@@ -59,16 +32,12 @@ pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> Form
     ffi_name.push_str("_java");
 
     for p in config.platforms.iter() {
-        if jni_supported(&p.platform) {
-            let target_dir = config.java_resource_dir().join(p.platform.target_triple);
-            let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
-            let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
+        let target_dir = config.java_resource_dir().join(p.platform.target_triple);
+        let source_file = p.location.join(p.platform.bin_filename(&ffi_name));
+        let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
 
-            logged::create_dir_all(&target_dir)?;
-            logged::copy(&source_file, &target_file)?;
-        } else {
-            tracing::warn!("Skipping packaging for platform: {}", p.platform);
-        }
+        logged::create_dir_all(&target_dir)?;
+        logged::copy(&source_file, &target_file)?;
     }
 
     // Copy the extra files
@@ -294,11 +263,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                 blocked(f, |f| {
                     f.writeln("boolean loaded = false;")?;
                     let libname = format!("{}_java", config.ffi_name);
-                    for platform in config
-                        .platforms
-                        .iter()
-                        .filter(|x| jni_supported(&x.platform))
-                    {
+                    for platform in config.platforms.iter() {
                         match platform.platform.target_os {
                             OS::Windows => {
                                 f.writeln("if(!loaded)")?;

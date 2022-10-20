@@ -1,11 +1,7 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
 
-use crate::conversion::{base_functor_type, full_functor_type, TypeInfo};
-use crate::doc::{docstring_print, xmldoc_print};
-use crate::formatting::{documentation, namespaced};
-use crate::helpers::call_dotnet_function;
-use crate::{print_imports, print_license, TargetFramework};
+use crate::backend::dotnet::helpers::*;
+use crate::backend::dotnet::*;
 
 trait ConstantReturnValue {
     fn get_constant_return_value(&self) -> String;

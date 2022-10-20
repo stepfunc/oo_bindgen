@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 const INT_PTR_STRING: &str = "IntPtr";
 

@@ -1,5 +1,4 @@
 use clap::Parser;
-use dotnet_oo_bindgen::TargetFramework;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -16,6 +15,7 @@ impl Args {
 }
 
 use crate::Platform;
+use oo_bindgen::backend::dotnet::TargetFramework;
 use serde::Deserialize;
 
 #[derive(Deserialize)]

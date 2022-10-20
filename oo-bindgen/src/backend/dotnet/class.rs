@@ -1,5 +1,5 @@
-use crate::helpers::call_native_function;
-use crate::*;
+use super::helpers::call_native_function;
+use super::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

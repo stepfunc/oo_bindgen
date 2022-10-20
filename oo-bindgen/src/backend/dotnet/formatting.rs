@@ -1,4 +1,4 @@
-use oo_bindgen::backend::*;
+use crate::backend::*;
 
 struct DocumentationPrinter<'a> {
     inner: &'a mut dyn Printer,

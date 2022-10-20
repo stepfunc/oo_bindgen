@@ -1,9 +1,4 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
-
-use crate::conversion::TypeInfo;
-use crate::formatting::*;
-use crate::{print_imports, print_license, DotnetBindgenConfig, NATIVE_FUNCTIONS_CLASSNAME};
+use crate::backend::dotnet::*;
 
 fn filter_has_error(
     x: &Handle<Function<Validated>>,

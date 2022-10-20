@@ -1,49 +1,3 @@
-#![deny(
-// dead_code,
-arithmetic_overflow,
-invalid_type_param_default,
-//missing_fragment_specifier,
-mutable_transmutes,
-no_mangle_const_items,
-overflowing_literals,
-patterns_in_fns_without_body,
-pub_use_of_private_extern_crate,
-unknown_crate_types,
-const_err,
-order_dependent_trait_objects,
-illegal_floating_point_literal_pattern,
-improper_ctypes,
-late_bound_lifetime_arguments,
-non_camel_case_types,
-non_shorthand_field_patterns,
-non_snake_case,
-non_upper_case_globals,
-no_mangle_generic_items,
-private_in_public,
-stable_features,
-type_alias_bounds,
-tyvar_behind_raw_pointer,
-unconditional_recursion,
-unused_comparisons,
-unreachable_pub,
-anonymous_parameters,
-missing_copy_implementations,
-// missing_debug_implementations,
-// missing_docs,
-trivial_casts,
-trivial_numeric_casts,
-unused_import_braces,
-unused_qualifications,
-clippy::all
-)]
-#![forbid(
-    unsafe_code,
-    //intra_doc_link_resolution_failure, broken_intra_doc_links
-    unaligned_references,
-    while_true,
-    bare_trait_objects
-)]
-
 use std::fmt::Formatter;
 use std::fs;
 use std::io::Write;
@@ -51,12 +5,12 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::conversion::*;
-use crate::doc::*;
-use crate::formatting::*;
+use conversion::*;
+use doc::*;
+use formatting::*;
 
 mod class;
 mod conversion;
@@ -176,7 +130,7 @@ fn generate_helpers(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRe
     let mut f = FilePrinter::new(filename)?;
 
     print_license(&mut f, &lib.info.license_description)?;
-    f.writeln(include_str!("../copy/Helpers.cs"))
+    f.writeln(include_str!("../../../static/dotnet/Helpers.cs"))
 }
 
 fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
@@ -581,7 +535,7 @@ fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
 
 fn generate_doxygen(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     // Copy doxygen awesome in target directory
-    let doxygen_awesome = include_str!("../../doxygen-awesome.css");
+    let doxygen_awesome = include_str!("../../../../generators/doxygen-awesome.css");
     fs::write(
         config.output_dir.join("doxygen-awesome.css"),
         doxygen_awesome,

@@ -5,6 +5,8 @@ authors = ["Step Function I/O LLC <info@stepfunc.io>"]
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.0.10", features = ["derive"] }
+dunce = "1.0"
 thiserror = "1.0"
 semver = "0.11"
 regex = "1.3"

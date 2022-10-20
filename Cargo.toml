@@ -4,7 +4,6 @@ members = [
     "oo-bindgen",
     "ci-script",
 
-    "generators/dotnet-oo-bindgen",
     "generators/java-oo-bindgen",
 
     "tests/foo-schema",

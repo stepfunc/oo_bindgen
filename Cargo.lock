@@ -129,7 +129,6 @@ name = "ci-script"
 version = "0.5.1"
 dependencies = [
  "clap",
- "dotnet-oo-bindgen",
  "java-oo-bindgen",
  "oo-bindgen",
  "pathdiff",
@@ -243,16 +242,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "dotnet-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "clap",
- "dunce",
- "oo-bindgen",
- "tracing",
 ]
 
 [[package]]
@@ -488,6 +477,8 @@ name = "oo-bindgen"
 version = "0.5.1"
 dependencies = [
  "backtrace",
+ "clap",
+ "dunce",
  "heck 0.3.3",
  "lazy_static",
  "platforms",

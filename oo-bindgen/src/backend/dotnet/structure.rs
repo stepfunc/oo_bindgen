@@ -1,4 +1,9 @@
-use crate::*;
+use crate::backend::*;
+
+use crate::backend::dotnet::conversion::*;
+use crate::backend::dotnet::doc::*;
+use crate::backend::dotnet::formatting::*;
+use crate::backend::dotnet::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

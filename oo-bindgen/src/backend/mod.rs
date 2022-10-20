@@ -13,4 +13,5 @@ mod platforms;
 mod util;
 
 pub mod c;
+pub mod dotnet;
 pub mod rust;

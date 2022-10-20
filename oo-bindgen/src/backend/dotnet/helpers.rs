@@ -1,7 +1,5 @@
-use oo_bindgen::model::*;
-
-use crate::conversion::TypeInfo;
-use crate::*;
+use crate::backend::dotnet::formatting::namespaced;
+use crate::backend::dotnet::*;
 
 pub(crate) fn generate_collection_helpers(
     f: &mut dyn Printer,

@@ -1,5 +1,5 @@
 use crate::{BindingBuilder, BindingBuilderSettings};
-use dotnet_oo_bindgen::TargetFramework;
+use oo_bindgen::backend::dotnet::TargetFramework;
 use oo_bindgen::backend::{logged, PlatformLocations};
 use std::path::PathBuf;
 use std::process::Command;
@@ -50,7 +50,7 @@ impl BindingBuilder for DotnetBindingBuilder {
         }
         logged::create_dir_all(&build_dir).unwrap();
 
-        let config = dotnet_oo_bindgen::DotnetBindgenConfig {
+        let config = oo_bindgen::backend::dotnet::DotnetBindgenConfig {
             output_dir: build_dir,
             ffi_name: self.settings.ffi_name,
             extra_files: self.extra_files.clone(),
@@ -59,7 +59,8 @@ impl BindingBuilder for DotnetBindingBuilder {
             target_framework: self.target_framework,
         };
 
-        dotnet_oo_bindgen::generate_dotnet_bindings(&self.settings.library, &config).unwrap();
+        oo_bindgen::backend::dotnet::generate_dotnet_bindings(&self.settings.library, &config)
+            .unwrap();
     }
 
     fn build(&mut self) {

@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 /// Conversion from .NET types to native types
 pub(crate) trait ConvertToNative {

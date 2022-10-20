@@ -1,5 +1,5 @@
-use crate::conversion::TypeInfo;
-use oo_bindgen::model::*;
+use crate::backend::dotnet::conversion::TypeInfo;
+use crate::model::*;
 
 pub(crate) trait ConvertToDotNet {
     /// optional conversion from native type to .NET type

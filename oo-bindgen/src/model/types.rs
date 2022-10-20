@@ -65,9 +65,9 @@ where
     T: Clone,
     D: DocReference,
 {
-    pub arg_type: T,
-    pub name: Name,
-    pub doc: DocString<D>,
+    pub(crate) arg_type: T,
+    pub(crate) name: Name,
+    pub(crate) doc: DocString<D>,
 }
 
 impl<T> Arg<T, Unvalidated>
@@ -88,7 +88,7 @@ where
     T: Clone,
     D: DocReference,
 {
-    pub fn new(arg_type: T, name: Name, doc: DocString<D>) -> Self {
+    pub(crate) fn new(arg_type: T, name: Name, doc: DocString<D>) -> Self {
         Self {
             arg_type,
             name,
@@ -286,7 +286,7 @@ impl InitializerValidator for BasicType {
 
 impl Primitive {
     /// get the string representation of the type used in the Rust for the C FFI
-    pub fn get_c_rust_type(&self) -> &str {
+    pub(crate) fn get_c_rust_type(&self) -> &str {
         match self {
             Self::Bool => "bool",
             Self::U8 => "u8",
@@ -305,7 +305,7 @@ impl Primitive {
 
 impl BasicType {
     /// get the string representation of the type used in the Rust for the C FFI
-    pub fn get_c_rust_type(&self) -> &str {
+    pub(crate) fn get_c_rust_type(&self) -> &str {
         match self {
             Self::Primitive(x) => x.get_c_rust_type(),
             Self::Duration(_) => "u64",
@@ -314,7 +314,7 @@ impl BasicType {
     }
 }
 
-pub trait TypeExtractor {
+pub(crate) trait TypeExtractor {
     fn get_basic_type(&self) -> Option<&BasicType>;
 
     fn get_duration_type(&self) -> Option<DurationType> {

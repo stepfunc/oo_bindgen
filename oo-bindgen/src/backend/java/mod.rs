@@ -1,2 +1,4 @@
 pub(crate) mod api;
-pub mod jni;
+
+mod jni;
+pub use jni::*;

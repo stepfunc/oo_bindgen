@@ -12,7 +12,7 @@ mod exceptions;
 mod interface;
 mod structs;
 
-/// configuration specific to the JNI (Rust) generation
+/// Configuration for JNI (Rust) generation
 pub struct JniBindgenConfig {
     /// Maven group id (e.g. io.stepfunc)
     pub group_id: String,
@@ -49,6 +49,7 @@ where
     Ok(())
 }
 
+/// Generate all of the JNI (Rust) source code that glues the Java and FFI together
 pub fn generate_jni(path: &Path, lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
     let mut f = FilePrinter::new(path)?;
 

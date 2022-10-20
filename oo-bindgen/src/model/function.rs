@@ -5,7 +5,7 @@ use crate::model::*;
 /// Used for iterator "next" functions to get an optional primitive
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PrimitiveRef {
-    pub inner: Primitive,
+    pub(crate) inner: Primitive,
 }
 
 impl PrimitiveRef {
@@ -216,13 +216,13 @@ pub struct Function<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub category: FunctionCategory,
-    pub return_type: OptionalReturnType<FunctionReturnValue, T>,
-    pub arguments: Vec<Arg<FunctionArgument, T>>,
-    pub error_type: OptionalErrorType<T>,
-    pub settings: Rc<LibrarySettings>,
-    pub doc: Doc<T>,
+    pub(crate) name: Name,
+    pub(crate) category: FunctionCategory,
+    pub(crate) return_type: OptionalReturnType<FunctionReturnValue, T>,
+    pub(crate) arguments: Vec<Arg<FunctionArgument, T>>,
+    pub(crate) error_type: OptionalErrorType<T>,
+    pub(crate) settings: Rc<LibrarySettings>,
+    pub(crate) doc: Doc<T>,
 }
 
 impl Function<Unvalidated> {
@@ -246,8 +246,9 @@ impl Function<Unvalidated> {
     }
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone)]
-pub enum SignatureType {
+pub(crate) enum SignatureType {
     /// function that cannot fail and returns nothing
     NoErrorNoReturn,
     /// function that cannot fail and returns something
@@ -263,7 +264,7 @@ pub enum SignatureType {
 }
 
 impl Function<Validated> {
-    pub fn get_signature_type(&self) -> SignatureType {
+    pub(crate) fn get_signature_type(&self) -> SignatureType {
         match self.error_type.get() {
             Some(e) => match self.return_type.get() {
                 None => SignatureType::ErrorNoReturn(e.clone()),
@@ -288,10 +289,10 @@ pub struct FutureMethod<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub associated_class: Handle<ClassDeclaration>,
-    pub future: FutureInterface<T>,
-    pub native_function: Handle<Function<T>>,
+    pub(crate) name: Name,
+    pub(crate) associated_class: Handle<ClassDeclaration>,
+    pub(crate) future: FutureInterface<T>,
+    pub(crate) native_function: Handle<Function<T>>,
 }
 
 impl FutureMethod<Validated> {
@@ -327,8 +328,8 @@ pub struct ClassDestructor<T>
 where
     T: DocReference,
 {
-    pub class: ClassDeclarationHandle,
-    pub function: Handle<Function<T>>,
+    pub(crate) class: ClassDeclarationHandle,
+    pub(crate) function: Handle<Function<T>>,
 }
 
 impl ClassDestructor<Unvalidated> {
@@ -368,8 +369,8 @@ pub struct ClassConstructor<T>
 where
     T: DocReference,
 {
-    pub class: ClassDeclarationHandle,
-    pub function: Handle<Function<T>>,
+    pub(crate) class: ClassDeclarationHandle,
+    pub(crate) function: Handle<Function<T>>,
 }
 
 impl ClassConstructor<Unvalidated> {

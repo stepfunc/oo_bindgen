@@ -147,22 +147,22 @@ impl AsRef<str> for Name {
 
 impl Name {
     /// convert to CamelCase
-    pub fn camel_case(&self) -> String {
+    pub(crate) fn camel_case(&self) -> String {
         self.validated.to_camel_case()
     }
 
     /// convert to CAPITAL_SNAKE_CASE
-    pub fn capital_snake_case(&self) -> String {
+    pub(crate) fn capital_snake_case(&self) -> String {
         self.validated.to_shouty_snake_case()
     }
 
     /// convert to mixedCase
-    pub fn mixed_case(&self) -> String {
+    pub(crate) fn mixed_case(&self) -> String {
         self.validated.to_mixed_case()
     }
 
     /// convert to kebab-case
-    pub fn kebab_case(&self) -> String {
+    pub(crate) fn kebab_case(&self) -> String {
         self.validated.to_kebab_case()
     }
 
@@ -173,24 +173,12 @@ impl Name {
 
     /// Append a name to this one
     #[must_use]
-    pub fn append(&self, other: &Name) -> Self {
+    pub(crate) fn append(&self, other: &Name) -> Self {
         Self {
             validated: Rc::new(format!(
                 "{}_{}",
                 self.validated.as_str(),
                 other.validated.as_str()
-            )),
-        }
-    }
-
-    /// Prepend a name to this one
-    #[must_use]
-    pub fn prepend(&self, other: &Name) -> Self {
-        Self {
-            validated: Rc::new(format!(
-                "{}_{}",
-                other.validated.as_str(),
-                self.validated.as_str()
             )),
         }
     }
@@ -643,17 +631,6 @@ mod tests {
                 .append(&Name::create("def").unwrap())
                 .as_ref(),
             "abc_def"
-        );
-    }
-
-    #[test]
-    fn can_prepend_string() {
-        assert_eq!(
-            Name::create("abc")
-                .unwrap()
-                .prepend(&Name::create("g123").unwrap())
-                .as_ref(),
-            "g123_abc"
         );
     }
 

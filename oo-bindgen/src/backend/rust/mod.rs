@@ -17,6 +17,11 @@ mod rust_struct;
 mod rust_type;
 mod type_converter;
 
+/// Generate the FFI (C ABI) interface for the library.
+///
+/// This layer consists of all the public symbols that will be exported by the shared library.
+/// The user must then go and write a number of functions referenced by the FFI functions to glue
+/// the C API layer to the underlying rust crate.
 pub fn generate_ffi(library: &Library) -> FormattingResult<()> {
     RustCodegen::new(library).generate()
 }

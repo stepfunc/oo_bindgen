@@ -4,7 +4,7 @@ use std::rc::Rc;
 use crate::model::*;
 
 #[derive(Clone, Debug)]
-pub enum Statement<D>
+pub(crate) enum Statement<D>
 where
     D: DocReference,
 {
@@ -307,9 +307,9 @@ impl LibrarySettings {
 }
 
 pub struct Library {
-    pub version: Version,
-    pub info: Rc<LibraryInfo>,
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) version: Version,
+    pub(crate) info: Rc<LibraryInfo>,
+    pub(crate) settings: Rc<LibrarySettings>,
     /// history of statements from which we can find other types
     statements: Vec<Statement<Validated>>,
 }
@@ -329,25 +329,18 @@ impl Library {
         }
     }
 
-    pub fn statements(&self) -> impl Iterator<Item = &Statement<Validated>> {
+    pub(crate) fn statements(&self) -> impl Iterator<Item = &Statement<Validated>> {
         self.statements.iter()
     }
 
-    pub fn functions(&self) -> impl Iterator<Item = &Handle<Function<Validated>>> {
+    pub(crate) fn functions(&self) -> impl Iterator<Item = &Handle<Function<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::FunctionDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn future_interfaces(&self) -> impl Iterator<Item = &FutureInterface<Validated>> {
-        self.statements.iter().filter_map(|x| match x {
-            Statement::InterfaceDefinition(InterfaceType::Future(x)) => Some(x),
-            _ => None,
-        })
-    }
-
-    pub fn structs(&self) -> impl Iterator<Item = &StructType<Validated>> {
+    pub(crate) fn structs(&self) -> impl Iterator<Item = &StructType<Validated>> {
         self.statements
             .iter()
             .filter_map(|statement| match statement {
@@ -356,46 +349,46 @@ impl Library {
             })
     }
 
-    pub fn constants(&self) -> impl Iterator<Item = &Handle<ConstantSet<Validated>>> {
+    pub(crate) fn constants(&self) -> impl Iterator<Item = &Handle<ConstantSet<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::Constants(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn enums(&self) -> impl Iterator<Item = &Handle<Enum<Validated>>> {
+    pub(crate) fn enums(&self) -> impl Iterator<Item = &Handle<Enum<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::EnumDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn classes(&self) -> impl Iterator<Item = &Handle<Class<Validated>>> {
+    pub(crate) fn classes(&self) -> impl Iterator<Item = &Handle<Class<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::ClassDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn error_types(&self) -> impl Iterator<Item = &ErrorType<Validated>> {
+    pub(crate) fn error_types(&self) -> impl Iterator<Item = &ErrorType<Validated>> {
         self.statements().filter_map(|statement| match statement {
             Statement::ErrorType(err) => Some(err),
             _ => None,
         })
     }
 
-    pub fn static_classes(&self) -> impl Iterator<Item = &Handle<StaticClass<Validated>>> {
+    pub(crate) fn static_classes(&self) -> impl Iterator<Item = &Handle<StaticClass<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::StaticClassDefinition(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn untyped_interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
+    pub(crate) fn untyped_interfaces(&self) -> impl Iterator<Item = &Handle<Interface<Validated>>> {
         self.interfaces().map(|x| x.untyped())
     }
 
-    pub fn interfaces(&self) -> impl Iterator<Item = &InterfaceType<Validated>> {
+    pub(crate) fn interfaces(&self) -> impl Iterator<Item = &InterfaceType<Validated>> {
         self.statements
             .iter()
             .filter_map(|statement| match statement {
@@ -404,14 +397,14 @@ impl Library {
             })
     }
 
-    pub fn iterators(&self) -> impl Iterator<Item = &Handle<AbstractIterator<Validated>>> {
+    pub(crate) fn iterators(&self) -> impl Iterator<Item = &Handle<AbstractIterator<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::IteratorDeclaration(handle) => Some(handle),
             _ => None,
         })
     }
 
-    pub fn collections(&self) -> impl Iterator<Item = &Handle<Collection<Validated>>> {
+    pub(crate) fn collections(&self) -> impl Iterator<Item = &Handle<Collection<Validated>>> {
         self.statements().filter_map(|statement| match statement {
             Statement::CollectionDeclaration(handle) => Some(handle),
             _ => None,

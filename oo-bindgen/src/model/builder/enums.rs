@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::model::*;
 
 pub struct EnumBuilder<'a> {
-    pub(crate) lib: &'a mut LibraryBuilder,
+    lib: &'a mut LibraryBuilder,
     name: Name,
     variants: Vec<EnumVariant<Unvalidated>>,
     variant_names: HashSet<String>,

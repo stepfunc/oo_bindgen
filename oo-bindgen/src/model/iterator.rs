@@ -49,16 +49,16 @@ where
     D: DocReference,
 {
     /// underlying Rust iterator may have an associated lifetime annotation
-    pub has_lifetime_annotation: bool,
+    pub(crate) has_lifetime_annotation: bool,
     /// function used to retrieve the next value
     /// it takes the `iter_class` and returns a pointer to the `iter_type`
-    pub next_function: Handle<Function<D>>,
+    pub(crate) next_function: Handle<Function<D>>,
     /// opaque c struct type for the iterator
-    pub iter_class: ClassDeclarationHandle,
+    pub(crate) iter_class: ClassDeclarationHandle,
     /// type of the value returned as a possibly null pointer
-    pub item_type: IteratorItemType,
+    pub(crate) item_type: IteratorItemType,
     /// library settings
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) settings: Rc<LibrarySettings>,
 }
 
 impl AbstractIterator<Unvalidated> {
@@ -96,7 +96,7 @@ where
         }
     }
 
-    pub fn name(&self) -> &Name {
+    pub(crate) fn name(&self) -> &Name {
         &self.iter_class.name
     }
 }

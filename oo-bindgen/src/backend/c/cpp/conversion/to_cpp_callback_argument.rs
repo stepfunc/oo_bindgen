@@ -1,6 +1,6 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
-use crate::cpp::conversion::{ToCpp, ToCppStructField};
+use crate::backend::c::cpp::conversion::*;
 
 pub(crate) trait ToNativeCallbackArgument {
     fn to_cpp_callback_argument(&self, expr: String) -> String;

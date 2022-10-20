@@ -12,4 +12,5 @@ mod formatting;
 mod platforms;
 mod util;
 
+pub mod c;
 pub mod rust;

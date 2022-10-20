@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::cpp::conversion::*;
-use crate::cpp::formatting::{const_ref, mut_ref, namespace, std_move, unique_ptr, FriendClass};
-use crate::ctype::CType;
+use crate::backend::c::cpp::conversion::*;
+use crate::backend::c::cpp::formatting::*;
+use crate::backend::c::ctype::CType;
 
 pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
@@ -25,7 +25,7 @@ pub(crate) fn generate_cpp_file(lib: &Library, path: &Path) -> FormattingResult<
 
     // conversions
     namespace(&mut f, "convert", |f| {
-        for line in include_str!("./snippet/convert_time.cpp").lines() {
+        for line in include_str!("snippet/convert_time.cpp").lines() {
             f.writeln(line)?;
         }
         f.newline()?;
@@ -637,7 +637,7 @@ fn print_friend_class(
     f: &mut dyn Printer,
     handle: &Handle<Class<Validated>>,
 ) -> FormattingResult<()> {
-    let iterator = include_str!("./snippet/class_friend_class.hpp");
+    let iterator = include_str!("snippet/class_friend_class.hpp");
     let c_type = handle.declaration.to_c_type();
     let cpp_type = handle.core_cpp_type();
     for line in iterator.lines() {

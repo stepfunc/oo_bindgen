@@ -95,14 +95,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
 
 [[package]]
-name = "c-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "oo-bindgen",
- "tracing",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -136,7 +128,6 @@ dependencies = [
 name = "ci-script"
 version = "0.5.1"
 dependencies = [
- "c-oo-bindgen",
  "clap",
  "dotnet-oo-bindgen",
  "java-oo-bindgen",

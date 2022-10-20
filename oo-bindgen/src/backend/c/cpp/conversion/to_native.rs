@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 /// Some types have a C++ -> C conversion that is context independent
 pub(crate) trait ToNative {

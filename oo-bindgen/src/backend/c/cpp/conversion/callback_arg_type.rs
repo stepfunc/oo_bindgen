@@ -1,8 +1,6 @@
-use oo_bindgen::model::*;
-
-use crate::cpp::conversion::CoreCppType;
-use crate::cpp::formatting::*;
-
+use crate::backend::c::cpp::conversion::*;
+use crate::backend::c::cpp::formatting::*;
+use crate::model::*;
 pub(crate) trait CppCallbackArgType {
     fn get_cpp_callback_arg_type(&self) -> String;
 }

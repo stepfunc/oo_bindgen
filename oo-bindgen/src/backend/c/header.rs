@@ -1,11 +1,10 @@
 use std::path::Path;
 
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
-
-use crate::ctype::CType;
-use crate::doc::{docstring_print, doxygen_print};
-use crate::formatting::{cpp_guard, print_license};
+use crate::backend::c::ctype::*;
+use crate::backend::c::doc::*;
+use crate::backend::c::formatting::*;
+use crate::backend::*;
+use crate::model::*;
 
 pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     let uppercase_name = lib.settings.c_ffi_prefix.to_uppercase();

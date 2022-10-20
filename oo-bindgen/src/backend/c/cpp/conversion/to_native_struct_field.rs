@@ -1,6 +1,5 @@
-use oo_bindgen::model::*;
-
-use crate::cpp::conversion::ToNative;
+use crate::backend::c::cpp::conversion::ToNative;
+use crate::model::*;
 
 pub(crate) trait ToNativeStructField {
     /// takes a C++ type and converts it to a native type

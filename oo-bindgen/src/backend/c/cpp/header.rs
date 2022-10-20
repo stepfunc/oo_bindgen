@@ -1,17 +1,12 @@
 use std::path::Path;
 
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::c::cpp::conversion::*;
+use crate::backend::c::cpp::doc::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::cpp::conversion::*;
-use crate::cpp::doc::print_cpp_docstring;
-use crate::cpp::doc::{
-    print_commented_cpp_doc, print_cpp_argument_doc, print_cpp_constructor_docs, print_cpp_doc,
-    print_cpp_future_method_docs, print_cpp_method_docs, print_cpp_return_type_doc,
-    print_cpp_static_method_docs,
-};
-use crate::cpp::formatting::{namespace, FriendClass};
-use crate::formatting::print_license;
+use crate::backend::c::cpp::formatting::*;
+use crate::backend::c::formatting::*;
 
 pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
@@ -248,7 +243,7 @@ fn print_iterator_definition(
     f: &mut dyn Printer,
     iter: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
-    let iterator = include_str!("./snippet/iterator.hpp");
+    let iterator = include_str!("snippet/iterator.hpp");
     for line in iterator.lines() {
         let substituted = line
             .replace("<name>", &iter.core_cpp_type())

@@ -1,7 +1,7 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
-use crate::cpp::conversion::CoreCppType;
-use crate::cpp::formatting::*;
+use crate::backend::c::cpp::conversion::*;
+use crate::backend::c::cpp::formatting::*;
 
 pub(crate) trait CppStructType {
     fn struct_member_type(&self) -> String;

@@ -1,5 +1,5 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
 pub(crate) fn mut_ref(expr: String) -> String {
     format!("{}&", expr)

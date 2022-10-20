@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 oo-bindgen = { path = "../oo-bindgen" }
-c-oo-bindgen = { path = "../generators/c-oo-bindgen" }
 dotnet-oo-bindgen = { path = "../generators/dotnet-oo-bindgen" }
 java-oo-bindgen = { path = "../generators/java-oo-bindgen" }
 clap = { version = "^4", features = ["derive"] }

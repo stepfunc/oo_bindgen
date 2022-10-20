@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 pub(crate) trait CoreCppType {
     fn core_cpp_type(&self) -> String;

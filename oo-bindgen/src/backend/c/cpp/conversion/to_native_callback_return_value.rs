@@ -1,6 +1,5 @@
-use oo_bindgen::model::CallbackReturnValue;
-
-use crate::cpp::conversion::{ToNative, ToNativeStructField};
+use crate::backend::c::cpp::conversion::*;
+use crate::model::CallbackReturnValue;
 
 pub(crate) trait ToNativeCallbackReturnValue {
     fn to_native_callback_return_value(&self, expr: String) -> String;

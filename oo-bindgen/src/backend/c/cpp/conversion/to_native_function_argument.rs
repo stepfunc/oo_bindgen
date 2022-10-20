@@ -1,7 +1,7 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
-use crate::cpp::conversion::{CoreCppType, ToNative};
-use crate::cpp::formatting::FriendClass;
+use crate::backend::c::cpp::conversion::{CoreCppType, ToNative};
+use crate::backend::c::cpp::formatting::FriendClass;
 
 pub(crate) trait ToNativeFunctionArgument {
     fn to_native_function_argument(&self, expr: String) -> String;

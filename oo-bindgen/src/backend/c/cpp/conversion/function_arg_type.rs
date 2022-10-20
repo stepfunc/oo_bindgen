@@ -1,7 +1,7 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
-use crate::cpp::conversion::{CoreCppType, PassBy, TypeInfo};
-use crate::cpp::formatting::*;
+use crate::backend::c::cpp::conversion::*;
+use crate::backend::c::cpp::formatting::*;
 
 pub(crate) trait CppFunctionArgType {
     fn get_cpp_function_arg_type(&self) -> String;

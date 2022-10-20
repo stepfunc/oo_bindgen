@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 pub(crate) trait CType {
     fn to_c_type(&self) -> String;

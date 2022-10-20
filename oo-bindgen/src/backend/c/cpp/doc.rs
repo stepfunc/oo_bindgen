@@ -1,8 +1,8 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::cpp::conversion::{CoreCppType, CppFunctionArgType};
-use crate::doc::{docstring_print_generic, doxygen_print_generic};
+use crate::backend::c::cpp::conversion::{CoreCppType, CppFunctionArgType};
+use crate::backend::c::doc::{docstring_print_generic, doxygen_print_generic};
 
 pub(crate) fn print_cpp_doc(f: &mut dyn Printer, doc: &Doc<Validated>) -> FormattingResult<()> {
     doxygen_print_generic(f, print_cpp_reference, doc)

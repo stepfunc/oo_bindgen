@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum PassBy {

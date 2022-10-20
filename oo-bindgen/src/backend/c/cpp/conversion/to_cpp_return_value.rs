@@ -1,6 +1,5 @@
-use oo_bindgen::model::FunctionReturnValue;
-
-use crate::cpp::conversion::ToCpp;
+use crate::backend::c::cpp::conversion::ToCpp;
+use crate::model::FunctionReturnValue;
 
 pub(crate) trait ToCppReturnValue {
     fn to_cpp_return_value(&self, expr: String) -> String;

@@ -1,5 +1,5 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::Library;
+use crate::backend::*;
+use crate::model::Library;
 
 pub(crate) fn cpp_guard<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where

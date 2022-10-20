@@ -5,7 +5,7 @@ authors = ["Step Function I/O LLC <info@stepfunc.io>"]
 edition = "2021"
 
 [dependencies]
-ci-script = { path = "../../ci-script" }
+oo-bindgen = { path = "../../oo-bindgen" }
 foo-schema = { path = "../foo-schema" }
 tracing = "^0.1"
 tracing-subscriber = "^0.2"

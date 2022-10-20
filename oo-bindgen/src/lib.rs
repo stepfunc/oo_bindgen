@@ -44,7 +44,10 @@ clippy::all
     bare_trait_objects
 )]
 
-/// API specific to backend binding generators
-pub mod backend;
+/// Command-line interface for generating things locally and in CI
+pub mod cli;
 /// API used to create a model of a library
 pub mod model;
+
+/// API specific to backend binding generators
+pub mod backend;

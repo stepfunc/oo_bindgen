@@ -1,9 +1,10 @@
 use clap::Parser;
+use platforms::Platform;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 impl Args {
-    pub fn get() -> Self {
+    pub(crate) fn get() -> Self {
         let mut args = crate::cli::Args::parse();
         if !(args.build_c || args.build_dotnet || args.build_java) {
             args.build_c = true;
@@ -14,8 +15,7 @@ impl Args {
     }
 }
 
-use crate::Platform;
-use oo_bindgen::backend::dotnet::TargetFramework;
+use crate::backend::dotnet::TargetFramework;
 use serde::Deserialize;
 
 #[derive(Deserialize)]

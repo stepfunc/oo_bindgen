@@ -67,14 +67,6 @@ impl PlatformLocations {
         }
     }
 
-    pub fn single(&self) -> Option<&PlatformLocation> {
-        if self.locations.len() == 1 {
-            self.locations.get(0)
-        } else {
-            None
-        }
-    }
-
     pub fn add(&mut self, platform: Platform, location: PathBuf) {
         let loc = PlatformLocation::new(platform, location);
         self.locations.push(loc);

@@ -1,5 +1,6 @@
-use crate::{BindingBuilder, BindingBuilderSettings};
-use oo_bindgen::backend::{logged, PlatformLocations};
+use crate::backend::{logged, PlatformLocations};
+use crate::cli::{BindingBuilder, BindingBuilderSettings};
+
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -54,7 +55,7 @@ impl BindingBuilder for JavaBindingBuilder {
     }
 
     fn generate(&mut self, _is_packaging: bool, _generate_doxygen: bool) {
-        let config = oo_bindgen::backend::java::JavaBindgenConfig {
+        let config = crate::backend::java::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
             ffi_name: self.settings.ffi_name,
             ffi_path: self.settings.ffi_path.to_owned(),
@@ -71,7 +72,7 @@ impl BindingBuilder for JavaBindingBuilder {
         logged::create_dir_all(&build_dir).unwrap();
 
         // Generate the Java code
-        oo_bindgen::backend::java::generate_java_bindings(&self.settings.library, &config).unwrap();
+        crate::backend::java::generate_java_bindings(&self.settings.library, &config).unwrap();
     }
 
     fn build(&mut self) {

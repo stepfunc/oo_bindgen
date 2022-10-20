@@ -2,7 +2,6 @@
 
 members = [
     "oo-bindgen",
-    "ci-script",
     "tests/foo-schema",
     "tests/foo-ffi",
     "tests/foo-bindings",

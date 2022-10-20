@@ -1,15 +1,15 @@
+pub(crate) mod args;
 pub(crate) mod builders;
-pub(crate) mod cli;
 
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use oo_bindgen::backend::*;
-use oo_bindgen::model::Library;
+use crate::backend::*;
+use crate::model::Library;
 
-use crate::cli::{Args, PackageOptions};
+use crate::cli::args::{Args, PackageOptions};
 
 /// Run the binding generator
 pub fn run(settings: BindingBuilderSettings) {
@@ -21,15 +21,12 @@ pub fn run(settings: BindingBuilderSettings) {
     };
 
     if args.build_c {
-        let mut builder = crate::builders::c::CBindingBuilder::new(
-            settings.clone(),
-            platforms.cpp,
-            &args.extra_files,
-        );
+        let mut builder =
+            builders::c::CBindingBuilder::new(settings.clone(), platforms.cpp, &args.extra_files);
         builder.run(options);
     }
     if args.build_dotnet {
-        let mut builder = crate::builders::dotnet::DotnetBindingBuilder::new(
+        let mut builder = builders::dotnet::DotnetBindingBuilder::new(
             settings.clone(),
             args.target_framework,
             platforms.dotnet,
@@ -38,11 +35,8 @@ pub fn run(settings: BindingBuilderSettings) {
         builder.run(options);
     }
     if args.build_java {
-        let mut builder = crate::builders::java::JavaBindingBuilder::new(
-            settings,
-            platforms.java,
-            &args.extra_files,
-        );
+        let mut builder =
+            builders::java::JavaBindingBuilder::new(settings, platforms.java, &args.extra_files);
         builder.run(options);
     }
 }

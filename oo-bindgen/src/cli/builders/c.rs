@@ -1,7 +1,9 @@
-use crate::{BindingBuilder, BindingBuilderSettings};
-use oo_bindgen::backend::PlatformLocations;
+use crate::backend::PlatformLocations;
+
 use std::path::PathBuf;
 use std::process::Command;
+
+use crate::cli::{BindingBuilder, BindingBuilderSettings};
 
 pub(crate) struct CBindingBuilder {
     settings: BindingBuilderSettings,
@@ -37,7 +39,7 @@ impl BindingBuilder for CBindingBuilder {
     }
 
     fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
-        let config = oo_bindgen::backend::c::CBindgenConfig {
+        let config = crate::backend::c::CBindgenConfig {
             output_dir: self.output_dir(),
             ffi_target_name: self.settings.ffi_target_name,
             ffi_name: self.settings.ffi_name,
@@ -46,7 +48,7 @@ impl BindingBuilder for CBindingBuilder {
             generate_doxygen,
         };
 
-        oo_bindgen::backend::c::generate_c_package(&self.settings.library, &config)
+        crate::backend::c::generate_c_package(&self.settings.library, &config)
             .expect("failed to package C lib");
     }
 

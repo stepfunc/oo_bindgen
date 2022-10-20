@@ -96,7 +96,7 @@ checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
 
 [[package]]
 name = "c-oo-bindgen"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "oo-bindgen",
  "tracing",
@@ -134,7 +134,7 @@ dependencies = [
 
 [[package]]
 name = "ci-script"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "c-oo-bindgen",
  "clap",
@@ -256,7 +256,7 @@ dependencies = [
 
 [[package]]
 name = "dotnet-oo-bindgen"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "clap",
  "dunce",
@@ -272,7 +272,7 @@ checksum = "0bd4b30a6560bbd9b4620f4de34c3f14f60848e58a9b7216801afcb4c7b31c3c"
 
 [[package]]
 name = "foo-bindings"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ci-script",
  "foo-schema",
@@ -282,7 +282,7 @@ dependencies = [
 
 [[package]]
 name = "foo-ffi"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "foo-schema",
  "rust-oo-bindgen",
@@ -290,7 +290,7 @@ dependencies = [
 
 [[package]]
 name = "foo-ffi-java"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "foo-ffi",
  "foo-schema",
@@ -300,7 +300,7 @@ dependencies = [
 
 [[package]]
 name = "foo-schema"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "oo-bindgen",
 ]
@@ -367,7 +367,7 @@ checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
 
 [[package]]
 name = "java-oo-bindgen"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "dunce",
  "oo-bindgen",
@@ -494,7 +494,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 
 [[package]]
 name = "oo-bindgen"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "backtrace",
  "heck 0.3.3",
@@ -610,7 +610,7 @@ checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
 
 [[package]]
 name = "rust-oo-bindgen"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "heck 0.3.3",
  "oo-bindgen",
@@ -683,9 +683,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.86"
+version = "1.0.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41feea4228a6f1cd09ec7a3593a682276702cd67b5273544757dae23c096f074"
+checksum = "6ce777b7b150d76b9cf60d28b55f5847135a003f7d7350c6be7a773508ce7d45"
 dependencies = [
  "itoa",
  "ryu",

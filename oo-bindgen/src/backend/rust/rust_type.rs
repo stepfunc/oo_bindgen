@@ -1,8 +1,7 @@
+use crate::backend::rust::type_converter::TypeConverter;
 use heck::CamelCase;
 
-use oo_bindgen::model::*;
-
-use crate::type_converter::*;
+use crate::model::*;
 
 pub(crate) trait LifetimeInfo {
     fn rust_requires_lifetime(&self) -> bool;

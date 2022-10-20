@@ -285,7 +285,7 @@ name = "foo-ffi"
 version = "0.5.1"
 dependencies = [
  "foo-schema",
- "rust-oo-bindgen",
+ "oo-bindgen",
 ]
 
 [[package]]
@@ -607,14 +607,6 @@ name = "regex-syntax"
 version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
-
-[[package]]
-name = "rust-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "heck 0.3.3",
- "oo-bindgen",
-]
 
 [[package]]
 name = "rustc-demangle"

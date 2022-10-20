@@ -1,6 +1,5 @@
-use oo_bindgen::model::*;
-
-use crate::rust_type::RustType;
+use crate::backend::rust::rust_type::RustType;
+use crate::model::*;
 
 pub(crate) trait RustStruct {
     fn annotate_rust_with_lifetime(&self) -> bool;

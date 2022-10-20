@@ -1,80 +1,40 @@
-#![deny(
-// dead_code,
-arithmetic_overflow,
-invalid_type_param_default,
-//missing_fragment_specifier,
-mutable_transmutes,
-no_mangle_const_items,
-overflowing_literals,
-patterns_in_fns_without_body,
-pub_use_of_private_extern_crate,
-unknown_crate_types,
-const_err,
-order_dependent_trait_objects,
-illegal_floating_point_literal_pattern,
-improper_ctypes,
-late_bound_lifetime_arguments,
-non_camel_case_types,
-non_shorthand_field_patterns,
-non_snake_case,
-non_upper_case_globals,
-no_mangle_generic_items,
-private_in_public,
-stable_features,
-type_alias_bounds,
-tyvar_behind_raw_pointer,
-unconditional_recursion,
-unused_comparisons,
-unreachable_pub,
-anonymous_parameters,
-missing_copy_implementations,
-// missing_debug_implementations,
-// missing_docs,
-trivial_casts,
-trivial_numeric_casts,
-unused_import_braces,
-unused_qualifications,
-clippy::all
-)]
-#![forbid(
-    unsafe_code,
-    // intra_doc_link_resolution_failure, broken_intra_doc_links
-    unaligned_references,
-    while_true,
-    bare_trait_objects
-)]
-
 use std::env;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use heck::CamelCase;
 
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::rust_struct::*;
-use crate::rust_type::*;
-use crate::type_converter::*;
+use crate::backend::rust::rust_struct::RustStruct;
+use crate::backend::rust::rust_type::RustType;
+use crate::backend::rust::type_converter::TypeConverter;
+
+use crate::backend::rust::rust_type::LifetimeInfo;
 
 mod rust_struct;
 mod rust_type;
 mod type_converter;
 
-pub struct RustCodegen<'a> {
+pub fn generate(library: &Library) -> FormattingResult<()> {
+    RustCodegen::new(library).generate()
+}
+
+struct RustCodegen<'a> {
     library: &'a Library,
     dest_path: PathBuf,
 }
 
 impl<'a> RustCodegen<'a> {
-    pub fn new(lib: &'a Library) -> Self {
+    fn new(lib: &'a Library) -> Self {
         RustCodegen {
             library: lib,
             dest_path: Path::new(&env::var_os("OUT_DIR").unwrap()).join("ffi.rs"),
         }
     }
 
-    pub fn generate(self) -> FormattingResult<()> {
+    fn generate(self) -> FormattingResult<()> {
         let mut f = FilePrinter::new(&self.dest_path)?;
 
         for statement in self.library.statements() {

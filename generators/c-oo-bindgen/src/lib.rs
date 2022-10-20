@@ -349,6 +349,10 @@ fn generate_cmake_config(
             lib.settings.name, lib.settings.name
         ))?;
         f.writeln(&format!(
+            "target_compile_features({} INTERFACE cxx_std_14)",
+            lib.settings.name
+        ))?;
+        f.writeln(&format!(
             "target_link_libraries({}_cpp {})",
             lib.settings.name, lib.settings.name
         ))?;

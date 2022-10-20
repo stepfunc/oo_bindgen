@@ -2,7 +2,7 @@ use platforms::target::OS;
 use platforms::Platform;
 use std::path::PathBuf;
 
-pub trait PlatformExt {
+pub(crate) trait PlatformExt {
     fn static_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn dyn_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn bin_filename<T: AsRef<str>>(&self, libname: T) -> String;
@@ -44,39 +44,39 @@ impl PlatformExt for Platform {
 }
 
 #[derive(Clone)]
-pub struct PlatformLocation {
-    pub platform: Platform,
-    pub location: PathBuf,
+pub(crate) struct PlatformLocation {
+    pub(crate) platform: Platform,
+    pub(crate) location: PathBuf,
 }
 
 impl PlatformLocation {
-    pub fn new(platform: Platform, location: PathBuf) -> Self {
+    pub(crate) fn new(platform: Platform, location: PathBuf) -> Self {
         Self { platform, location }
     }
 }
 
 #[derive(Clone)]
-pub struct PlatformLocations {
-    pub locations: Vec<PlatformLocation>,
+pub(crate) struct PlatformLocations {
+    pub(crate) locations: Vec<PlatformLocation>,
 }
 
 impl PlatformLocations {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         PlatformLocations {
             locations: Vec::new(),
         }
     }
 
-    pub fn add(&mut self, platform: Platform, location: PathBuf) {
+    pub(crate) fn add(&mut self, platform: Platform, location: PathBuf) {
         let loc = PlatformLocation::new(platform, location);
         self.locations.push(loc);
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &PlatformLocation> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &PlatformLocation> {
         self.locations.iter()
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.locations.is_empty()
     }
 }

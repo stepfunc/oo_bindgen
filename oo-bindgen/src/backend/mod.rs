@@ -1,18 +1,7 @@
-/// Standard file-system routines, but logged with tracing
-pub mod logged;
-
-pub use self::platforms::*;
-pub use ::platforms::platform;
-pub use ::platforms::target::*;
-pub use ::platforms::Platform;
-pub use formatting::*;
-pub use util::*;
-
-mod formatting;
-mod platforms;
-mod util;
-
-pub mod c;
-pub mod dotnet;
+pub(crate) mod c;
+pub(crate) mod dotnet;
 pub mod java;
 pub mod rust;
+
+mod common;
+pub(crate) use common::*;

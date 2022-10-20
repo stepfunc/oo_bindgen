@@ -46,7 +46,7 @@ clippy::all
 
 /// Command-line interface for generating things locally and in CI
 pub mod cli;
-/// API used to create a model of a library
+/// Backend generators for target languages
 pub mod model;
 
 /// API specific to backend binding generators

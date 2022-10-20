@@ -1,7 +1,7 @@
 use crate::backend::*;
 use crate::model::*;
 
-use crate::backend::java::rust::conversion::*;
+use crate::backend::java::jni::conversion::*;
 
 use std::path::Path;
 
@@ -49,11 +49,7 @@ where
     Ok(())
 }
 
-pub fn generate_java_ffi(
-    path: &Path,
-    lib: &Library,
-    config: &JniBindgenConfig,
-) -> FormattingResult<()> {
+pub fn generate_jni(path: &Path, lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
     let mut f = FilePrinter::new(path)?;
 
     generate_cache(&mut f)?;

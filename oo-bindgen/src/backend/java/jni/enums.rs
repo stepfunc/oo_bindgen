@@ -1,4 +1,4 @@
-use crate::backend::java::JniBindgenConfig;
+use crate::backend::java::jni::JniBindgenConfig;
 use crate::backend::*;
 use crate::model::Library;
 

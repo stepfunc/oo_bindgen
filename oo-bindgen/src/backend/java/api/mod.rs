@@ -1,8 +1,8 @@
 use crate::backend::*;
 use crate::model::*;
+use std::path::PathBuf;
 
 use crate::backend::java::api::nullable::{IsStruct, Nullable};
-use crate::backend::java::JavaBindgenConfig;
 
 use self::conversion::*;
 use self::formatting::*;
@@ -20,7 +20,41 @@ mod structure;
 
 const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
-pub fn generate_java_bindings(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+pub(crate) struct JavaBindgenConfig {
+    /// Path to output the generated Java code
+    pub(crate) java_output_dir: PathBuf,
+    /// Name of the FFI target
+    pub(crate) ffi_name: &'static str,
+    /// Maven group id (e.g. io.stepfunc)
+    pub(crate) group_id: String,
+    /// Extra files to include in the distribution
+    pub(crate) extra_files: Vec<PathBuf>,
+    /// Platforms to include
+    pub(crate) platforms: PlatformLocations,
+}
+
+impl JavaBindgenConfig {
+    fn java_source_dir(&self, lib: &Library) -> PathBuf {
+        let mut result = self.java_output_dir.clone();
+        result.extend(&["src", "main", "java"]);
+        for dir in self.group_id.split('.') {
+            result.push(dir);
+        }
+        result.push(&lib.settings.name.kebab_case());
+        result
+    }
+
+    fn java_resource_dir(&self) -> PathBuf {
+        let mut result = self.java_output_dir.clone();
+        result.extend(&["src", "main", "resources"]);
+        result
+    }
+}
+
+pub(crate) fn generate_java_bindings(
+    lib: &Library,
+    config: &JavaBindgenConfig,
+) -> FormattingResult<()> {
     logged::create_dir_all(&config.java_output_dir)?;
 
     // Create the pom.xml

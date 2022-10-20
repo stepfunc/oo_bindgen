@@ -7,7 +7,7 @@ fn main() {
             std::process::exit(-1);
         }
         Ok(lib) => {
-            oo_bindgen::backend::rust::generate(&lib).unwrap();
+            oo_bindgen::backend::rust::generate_ffi(&lib).unwrap();
         }
     }
 }

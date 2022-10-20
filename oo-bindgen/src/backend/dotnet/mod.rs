@@ -21,7 +21,7 @@ mod interface;
 mod structure;
 mod wrappers;
 
-pub const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
+pub(crate) const NATIVE_FUNCTIONS_CLASSNAME: &str = "NativeFunctions";
 
 /// Map from Rust platform to a .NET platform string
 ///
@@ -55,7 +55,7 @@ fn dotnet_platform_string(platform: &Platform) -> Option<&'static str> {
 /// <https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/configure-language-version>
 ///
 #[derive(Debug, Copy, Clone, clap::ValueEnum)]
-pub enum TargetFramework {
+pub(crate) enum TargetFramework {
     /// .NET Standard 2.0 - Compatible with .NET Framework 4.6.1 -> 4.8
     /// Defaults to C# 7.3
     NetStandard2_0,
@@ -86,16 +86,16 @@ impl TargetFramework {
     }
 }
 
-pub struct DotnetBindgenConfig {
-    pub output_dir: PathBuf,
-    pub ffi_name: &'static str,
-    pub extra_files: Vec<PathBuf>,
-    pub platforms: PlatformLocations,
-    pub generate_doxygen: bool,
-    pub target_framework: TargetFramework,
+pub(crate) struct DotnetBindgenConfig {
+    pub(crate) output_dir: PathBuf,
+    pub(crate) ffi_name: &'static str,
+    pub(crate) extra_files: Vec<PathBuf>,
+    pub(crate) platforms: PlatformLocations,
+    pub(crate) generate_doxygen: bool,
+    pub(crate) target_framework: TargetFramework,
 }
 
-pub fn generate_dotnet_bindings(
+pub(crate) fn generate_dotnet_bindings(
     lib: &Library,
     config: &DotnetBindgenConfig,
 ) -> FormattingResult<()> {

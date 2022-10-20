@@ -2,9 +2,9 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-pub type FormattingResult<T> = Result<T, Box<dyn std::error::Error>>;
+pub(crate) type FormattingResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-pub trait Printer {
+pub(crate) trait Printer {
     fn write(&mut self, s: &str) -> FormattingResult<()>;
     fn newline(&mut self) -> FormattingResult<()>;
 
@@ -14,13 +14,13 @@ pub trait Printer {
     }
 }
 
-pub struct FilePrinter {
+pub(crate) struct FilePrinter {
     writer: BufWriter<File>,
     first_newline: bool,
 }
 
 impl FilePrinter {
-    pub fn new<T: AsRef<Path>>(filepath: T) -> FormattingResult<Self> {
+    pub(crate) fn new<T: AsRef<Path>>(filepath: T) -> FormattingResult<Self> {
         tracing::info!("Create file: {}", filepath.as_ref().display());
         let file = File::create(filepath)?;
         let writer = BufWriter::new(file);
@@ -56,13 +56,13 @@ impl Printer for FilePrinter {
     }
 }
 
-pub struct PrefixPrinter<'a, 'b> {
+pub(crate) struct PrefixPrinter<'a, 'b> {
     inner: &'a mut dyn Printer,
     prefix: &'b str,
 }
 
 impl<'a, 'b> PrefixPrinter<'a, 'b> {
-    pub fn new(printer: &'a mut dyn Printer, prefix: &'b str) -> Self {
+    pub(crate) fn new(printer: &'a mut dyn Printer, prefix: &'b str) -> Self {
         Self {
             inner: printer,
             prefix,
@@ -81,12 +81,12 @@ impl<'a, 'b> Printer for PrefixPrinter<'a, 'b> {
     }
 }
 
-pub struct IndentedPrinter<'a> {
+pub(crate) struct IndentedPrinter<'a> {
     inner: PrefixPrinter<'a, 'static>,
 }
 
 impl<'a> IndentedPrinter<'a> {
-    pub fn new(printer: &'a mut dyn Printer) -> Self {
+    pub(crate) fn new(printer: &'a mut dyn Printer) -> Self {
         Self {
             inner: PrefixPrinter::new(printer, "    "),
         }
@@ -103,12 +103,12 @@ impl<'a> Printer for IndentedPrinter<'a> {
     }
 }
 
-pub struct CommentedPrinter<'a> {
+pub(crate) struct CommentedPrinter<'a> {
     inner: PrefixPrinter<'a, 'static>,
 }
 
 impl<'a> CommentedPrinter<'a> {
-    pub fn new(f: &'a mut dyn Printer) -> Self {
+    pub(crate) fn new(f: &'a mut dyn Printer) -> Self {
         Self {
             inner: PrefixPrinter::new(f, "// "),
         }
@@ -125,12 +125,12 @@ impl<'a> Printer for CommentedPrinter<'a> {
     }
 }
 
-pub struct DoxygenPrinter<'a> {
+pub(crate) struct DoxygenPrinter<'a> {
     inner: PrefixPrinter<'a, 'static>,
 }
 
 impl<'a> DoxygenPrinter<'a> {
-    pub fn new(printer: &'a mut dyn Printer) -> Self {
+    pub(crate) fn new(printer: &'a mut dyn Printer) -> Self {
         Self {
             inner: PrefixPrinter::new(printer, "/// "),
         }
@@ -147,7 +147,7 @@ impl<'a> Printer for DoxygenPrinter<'a> {
     }
 }
 
-pub fn indented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+pub(crate) fn indented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {
@@ -155,7 +155,7 @@ where
     cb(&mut printer)
 }
 
-pub fn commented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+pub(crate) fn commented<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {
@@ -163,7 +163,7 @@ where
     cb(&mut printer)
 }
 
-pub fn doxygen<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+pub(crate) fn doxygen<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {
@@ -171,7 +171,7 @@ where
     cb(&mut printer)
 }
 
-pub fn blocked_open_close<F, T>(
+pub(crate) fn blocked_open_close<F, T>(
     f: &mut dyn Printer,
     open: &str,
     close: &str,
@@ -187,7 +187,7 @@ where
     Ok(result)
 }
 
-pub fn blocked<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
+pub(crate) fn blocked<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {

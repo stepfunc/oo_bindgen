@@ -17,7 +17,7 @@ mod rust_struct;
 mod rust_type;
 mod type_converter;
 
-pub fn generate(library: &Library) -> FormattingResult<()> {
+pub fn generate_ffi(library: &Library) -> FormattingResult<()> {
     RustCodegen::new(library).generate()
 }
 

@@ -13,16 +13,15 @@ mod doc;
 mod formatting;
 mod header;
 
-pub struct CBindgenConfig {
-    pub output_dir: PathBuf,
-    pub ffi_target_name: &'static str,
-    pub ffi_name: &'static str,
-    pub extra_files: Vec<PathBuf>,
-    pub platform_locations: PlatformLocations,
-    pub generate_doxygen: bool,
+pub(crate) struct CBindgenConfig {
+    pub(crate) output_dir: PathBuf,
+    pub(crate) ffi_name: &'static str,
+    pub(crate) extra_files: Vec<PathBuf>,
+    pub(crate) platform_locations: PlatformLocations,
+    pub(crate) generate_doxygen: bool,
 }
 
-pub fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
+pub(crate) fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> FormattingResult<()> {
     // Create header file
     let include_path = config.output_dir.join("include");
     let source_path = config.output_dir.join("src");

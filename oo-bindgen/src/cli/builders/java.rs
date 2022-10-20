@@ -55,10 +55,9 @@ impl BindingBuilder for JavaBindingBuilder {
     }
 
     fn generate(&mut self, _is_packaging: bool, _generate_doxygen: bool) {
-        let config = crate::backend::java::JavaBindgenConfig {
+        let config = crate::backend::java::api::JavaBindgenConfig {
             java_output_dir: self.java_build_dir(),
             ffi_name: self.settings.ffi_name,
-            ffi_path: self.settings.ffi_path.to_owned(),
             group_id: self.settings.java_group_id.to_owned(),
             extra_files: self.extra_files.clone(),
             platforms: self.platforms.clone(),
@@ -72,7 +71,7 @@ impl BindingBuilder for JavaBindingBuilder {
         logged::create_dir_all(&build_dir).unwrap();
 
         // Generate the Java code
-        crate::backend::java::generate_java_bindings(&self.settings.library, &config).unwrap();
+        crate::backend::java::api::generate_java_bindings(&self.settings.library, &config).unwrap();
     }
 
     fn build(&mut self) {

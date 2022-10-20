@@ -1,4 +1,4 @@
-pub struct WithLast<I>
+pub(crate) struct WithLast<I>
 where
     I: Iterator,
 {
@@ -15,7 +15,7 @@ where
     }
 }
 
-pub struct DropLast<I>
+pub(crate) struct DropLast<I>
 where
     I: Iterator,
 {
@@ -42,7 +42,7 @@ where
     }
 }
 
-pub trait WithLastIndication: Iterator + Sized {
+pub(crate) trait WithLastIndication: Iterator + Sized {
     fn with_last(self) -> WithLast<Self>;
 
     fn drop_last(self) -> DropLast<Self>;

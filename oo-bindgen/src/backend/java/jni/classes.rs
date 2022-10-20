@@ -1,6 +1,6 @@
 use crate::model::Library;
 
-use crate::backend::java::JniBindgenConfig;
+use crate::backend::java::jni::JniBindgenConfig;
 use crate::backend::*;
 
 pub(crate) fn generate_classes_cache(

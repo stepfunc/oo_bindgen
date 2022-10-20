@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 pub(crate) trait GuardType {
     fn guard_type(&self) -> Option<String>;

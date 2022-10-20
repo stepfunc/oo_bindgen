@@ -1,9 +1,8 @@
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::*;
-
-use crate::rust::conversion::*;
-use crate::rust::JniBindgenConfig;
+use crate::backend::java::rust::conversion::*;
+use crate::backend::java::JniBindgenConfig;
 
 pub(crate) fn generate_interfaces_cache(
     f: &mut dyn Printer,

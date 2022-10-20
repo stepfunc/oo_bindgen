@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 const NULL_DEFAULT_VALUE: &str = "jni::objects::JObject::null().into_inner()";
 

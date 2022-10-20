@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 pub(crate) trait JniTypeId {
     /// get the JNI identifier of the type used to find methods and fields

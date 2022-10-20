@@ -1,7 +1,6 @@
-use oo_bindgen::model::Library;
-
-use crate::rust::JniBindgenConfig;
-use crate::*;
+use crate::backend::java::JniBindgenConfig;
+use crate::backend::*;
+use crate::model::Library;
 
 pub(crate) fn generate_enums_cache(
     f: &mut dyn Printer,

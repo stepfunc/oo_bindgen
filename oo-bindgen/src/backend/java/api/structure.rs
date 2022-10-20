@@ -1,6 +1,7 @@
 use super::doc::*;
 use super::*;
-use crate::java::nullable::IsStruct;
+
+use crate::backend::java::api::nullable::IsStruct;
 
 fn constructor_visibility(struct_type: Visibility) -> &'static str {
     match struct_type {

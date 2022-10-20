@@ -1,5 +1,5 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
 use super::conversion::*;
 

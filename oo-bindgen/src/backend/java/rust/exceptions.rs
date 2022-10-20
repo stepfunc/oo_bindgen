@@ -1,7 +1,7 @@
-use oo_bindgen::model::Library;
+use crate::backend::*;
+use crate::model::Library;
 
-use crate::rust::JniBindgenConfig;
-use crate::*;
+use crate::backend::java::JniBindgenConfig;
 
 pub(crate) fn generate_exceptions_cache(
     f: &mut dyn Printer,

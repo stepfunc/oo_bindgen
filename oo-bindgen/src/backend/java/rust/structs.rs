@@ -1,8 +1,7 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
-
-use crate::rust::conversion::*;
-use crate::rust::JniBindgenConfig;
+use crate::backend::java::rust::conversion::*;
+use crate::backend::java::JniBindgenConfig;
+use crate::backend::*;
+use crate::model::*;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,

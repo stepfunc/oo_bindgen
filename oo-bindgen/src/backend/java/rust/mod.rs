@@ -1,8 +1,9 @@
-use conversion::*;
-use oo_bindgen::model::*;
-use std::path::Path;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::*;
+use crate::backend::java::rust::conversion::*;
+
+use std::path::Path;
 
 mod classes;
 mod conversion;
@@ -79,12 +80,12 @@ pub fn generate_java_ffi(
     })?;
 
     // Copy the modules that never change
-    module_string("primitives", &mut f, include_str!("./copy/primitives.rs"))?;
-    module_string("unsigned", &mut f, include_str!("./copy/unsigned.rs"))?;
-    module_string("duration", &mut f, include_str!("./copy/duration.rs"))?;
-    module_string("collection", &mut f, include_str!("./copy/collection.rs"))?;
-    module_string("pointers", &mut f, include_str!("./copy/pointers.rs"))?;
-    module_string("util", &mut f, include_str!("./copy/util.rs"))?;
+    module_string("primitives", &mut f, include_str!("copy/primitives.rs"))?;
+    module_string("unsigned", &mut f, include_str!("copy/unsigned.rs"))?;
+    module_string("duration", &mut f, include_str!("copy/duration.rs"))?;
+    module_string("collection", &mut f, include_str!("copy/collection.rs"))?;
+    module_string("pointers", &mut f, include_str!("copy/pointers.rs"))?;
+    module_string("util", &mut f, include_str!("copy/util.rs"))?;
 
     Ok(())
 }

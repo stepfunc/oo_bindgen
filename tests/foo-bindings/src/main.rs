@@ -9,7 +9,7 @@ fn main() {
 
     let builder_settings = ci_script::BindingBuilderSettings {
         ffi_target_name: "foo-ffi",
-        jni_target_name: "foo-ffi-java",
+        jni_target_name: "foo-ffi-api",
         ffi_name: "foo_ffi",
         ffi_path: Path::new("tests/foo-ffi").into(),
         java_group_id: "io.stepfunc",

@@ -1,4 +1,4 @@
-use oo_bindgen::backend::*;
+use crate::backend::*;
 
 pub(crate) fn documentation<F, T>(f: &mut dyn Printer, cb: F) -> FormattingResult<T>
 where

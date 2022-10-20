@@ -535,7 +535,7 @@ fn print_imports(f: &mut dyn Printer) -> FormattingResult<()> {
 
 fn generate_doxygen(lib: &Library, config: &DotnetBindgenConfig) -> FormattingResult<()> {
     // Copy doxygen awesome in target directory
-    let doxygen_awesome = include_str!("../../../../generators/doxygen-awesome.css");
+    let doxygen_awesome = include_str!("../../../static/doxygen-awesome.css");
     fs::write(
         config.output_dir.join("doxygen-awesome.css"),
         doxygen_awesome,

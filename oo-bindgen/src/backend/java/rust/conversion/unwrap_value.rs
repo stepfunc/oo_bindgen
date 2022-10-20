@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 const UNWRAP_OBJECT: &str = "l().unwrap().into_inner()";
 

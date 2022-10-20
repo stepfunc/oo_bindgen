@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 pub(crate) trait Nullable {
     fn is_nullable(&self) -> bool;

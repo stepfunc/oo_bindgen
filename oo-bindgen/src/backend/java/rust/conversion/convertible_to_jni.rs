@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 pub(crate) trait MaybeConvertibleToJni {
     /// Possible conversion from JNI argument type to Rust type

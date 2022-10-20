@@ -14,4 +14,5 @@ mod util;
 
 pub mod c;
 pub mod dotnet;
+pub mod java;
 pub mod rust;

@@ -129,7 +129,6 @@ name = "ci-script"
 version = "0.5.1"
 dependencies = [
  "clap",
- "java-oo-bindgen",
  "oo-bindgen",
  "pathdiff",
  "serde",
@@ -274,8 +273,8 @@ version = "0.5.1"
 dependencies = [
  "foo-ffi",
  "foo-schema",
- "java-oo-bindgen",
  "jni",
+ "oo-bindgen",
 ]
 
 [[package]]
@@ -344,16 +343,6 @@ name = "itoa"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
-
-[[package]]
-name = "java-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "dunce",
- "oo-bindgen",
- "pathdiff",
- "tracing",
-]
 
 [[package]]
 name = "jni"

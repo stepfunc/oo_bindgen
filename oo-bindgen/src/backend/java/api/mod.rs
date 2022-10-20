@@ -1,11 +1,11 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::JavaBindgenConfig;
+use crate::backend::java::api::nullable::{IsStruct, Nullable};
+use crate::backend::java::JavaBindgenConfig;
 
 use self::conversion::*;
 use self::formatting::*;
-use crate::java::nullable::{IsStruct, Nullable};
 
 mod class;
 mod constant;

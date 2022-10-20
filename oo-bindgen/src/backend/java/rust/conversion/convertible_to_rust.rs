@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 /// Trait used for converting types from JNI to Rust
 ///

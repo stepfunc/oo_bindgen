@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 oo-bindgen = { path = "../oo-bindgen" }
-java-oo-bindgen = { path = "../generators/java-oo-bindgen" }
 clap = { version = "^4", features = ["derive"] }
 pathdiff = "0.2"
 serde = { version = "1.0", features = ["derive"] }

@@ -71,13 +71,13 @@ jobs:
       - name: Caching
         uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI shared libraries
-        run: cargo build --release -p foo-ffi -p foo-ffi-java
+        run: cargo build --release -p foo-ffi -p foo-ffi-api
       - name: C bindings
         run: cargo run --bin foo-bindings -- --doxygen --c --no-tests  -a ./target/release
       - name: .NET bindings
         run: cargo run --bin foo-bindings -- --doxygen --dotnet --no-tests -a ./target/release
       - name: Java bindings
-        run: cargo run --bin foo-bindings -- --java -a ./target/release
+        run: cargo run --bin foo-bindings -- --api -a ./target/release
       - name: Extract documentation
         run: |
           mkdir -p ~/doc
@@ -115,7 +115,7 @@ jobs:
       - name: Caching
         uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI
-        run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
+        run: cargo build -p foo-ffi -p foo-ffi-api --release --target ${{ matrix.target }}
       - name: Copy the FFI and JNI libs
         shell: pwsh
         run: |
@@ -136,7 +136,7 @@ jobs:
         run: cargo run --bin foo-bindings -- --dotnet -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
       - name: Java Bindings Tests
         if: ${{ matrix.test }}
-        run: cargo run --bin foo-bindings -- --java -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
+        run: cargo run --bin foo-bindings -- --api -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
   # Build bindings on MacOS [64-bit macOS (10.7+, Lion+) (x86_64-apple-darwin)]
   bindings-macos:
     runs-on: macos-latest
@@ -157,7 +157,7 @@ jobs:
       - name: Caching
         uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI
-        run: cargo build -p foo-ffi -p foo-ffi-java --release
+        run: cargo build -p foo-ffi -p foo-ffi-api --release
       - name: Copy the FFI and JNI libs
         run: |
           mkdir -p ./ffi-modules/${{ matrix.target }}
@@ -171,7 +171,7 @@ jobs:
       - name: .NET Bindings Tests
         run: cargo run --bin foo-bindings -- --dotnet
       - name: Java Bindings Tests
-        run: cargo run --bin foo-bindings -- --java
+        run: cargo run --bin foo-bindings -- --api
   # Cross-compilation for ARM devices and produce C bindings
   cross:
     strategy:
@@ -197,7 +197,7 @@ jobs:
       - name: Install Rust Cross
         run: cargo install cross
       - name: Build FFI and JNI shared libraries
-        run: cross build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
+        run: cross build -p foo-ffi -p foo-ffi-api --release --target ${{ matrix.target }}
       - name: Copy the FFI and JNI libs
         run: |
           mkdir -p ./ffi-modules/${{ matrix.target }}
@@ -243,5 +243,5 @@ jobs:
       - name: Upload Java bindings
         uses: actions/upload-artifact@v2
         with:
-          name: java-bindings
-          path: tests/bindings/java/foo/target/*.jar
+          name: api-bindings
+          path: tests/bindings/api/foo/target/*.jar

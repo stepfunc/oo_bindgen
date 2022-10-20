@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 /// The string argument is not used in `call_method_unchecked` in the jni crate
 const OBJECT_TYPE: &str = "jni::signature::JavaType::Object(String::new())";

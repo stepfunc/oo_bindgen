@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 /// Used to generate the interface conversions routines
 pub(crate) trait RustType {

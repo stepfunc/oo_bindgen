@@ -1,4 +1,4 @@
-use oo_bindgen::model::*;
+use crate::model::*;
 
 /// the raw JNI type for non-primitives (except strings which have their own special type)
 const JNI_SYS_JOBJECT: &str = "jni::sys::jobject";

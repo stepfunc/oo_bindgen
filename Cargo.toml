@@ -3,9 +3,6 @@
 members = [
     "oo-bindgen",
     "ci-script",
-
-    "generators/java-oo-bindgen",
-
     "tests/foo-schema",
     "tests/foo-ffi",
     "tests/foo-bindings",

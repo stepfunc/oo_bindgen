@@ -1,7 +1,7 @@
-use oo_bindgen::backend::*;
-use oo_bindgen::model::*;
+use crate::backend::*;
+use crate::model::*;
 
-use crate::java::NATIVE_FUNCTIONS_CLASSNAME;
+use crate::backend::java::api::NATIVE_FUNCTIONS_CLASSNAME;
 
 pub(crate) trait JavaType {
     fn as_java_primitive(&self) -> String;

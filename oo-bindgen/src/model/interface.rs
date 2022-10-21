@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::model::*;
 
 /// Types allowed in callback function arguments
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
 pub enum CallbackArgument {
     Basic(BasicType),
@@ -152,6 +153,7 @@ impl BasicValue {
 }
 
 /// types that can be returned from callback functions
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallbackReturnValue {
     Basic(BasicType),
@@ -159,6 +161,7 @@ pub enum CallbackReturnValue {
 }
 
 /// Like CallbackReturnValue, but with a value
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum DefaultCallbackReturnValue {
     Void,
@@ -239,6 +242,7 @@ pub type CallbackReturnType<T> = ReturnType<CallbackReturnValue, T>;
 /// A flag to the backend that tells it whether or not
 /// to optimize callbacks into Functors in the public API
 /// This flag is only inspected for functional interfaces
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FunctionalTransform {
     /// If the interface is functional, it should be optimized into
@@ -291,7 +295,7 @@ impl CallbackFunction<Unvalidated> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum InterfaceCategory {
+pub(crate) enum InterfaceCategory {
     /// The interface will only be used in a synchronous context and the Rust
     /// backend will not generate Sync / Send implementations so it cannot be sent
     /// to other threads.
@@ -305,7 +309,7 @@ pub enum InterfaceCategory {
 }
 
 #[derive(Debug, Clone)]
-pub enum InterfaceType<D>
+pub(crate) enum InterfaceType<D>
 where
     D: DocReference,
 {
@@ -328,7 +332,7 @@ impl<D> InterfaceType<D>
 where
     D: DocReference,
 {
-    pub fn name(&self) -> &Name {
+    pub(crate) fn name(&self) -> &Name {
         match self {
             InterfaceType::Synchronous(x) => &x.name,
             InterfaceType::Asynchronous(x) => &x.name,
@@ -336,7 +340,7 @@ where
         }
     }
 
-    pub fn mode(&self) -> InterfaceCategory {
+    pub(crate) fn mode(&self) -> InterfaceCategory {
         match self {
             InterfaceType::Synchronous(_) => InterfaceCategory::Synchronous,
             InterfaceType::Asynchronous(_) => InterfaceCategory::Asynchronous,
@@ -344,7 +348,7 @@ where
         }
     }
 
-    pub fn doc(&self) -> &Doc<D> {
+    pub(crate) fn doc(&self) -> &Doc<D> {
         match self {
             InterfaceType::Synchronous(x) => &x.doc,
             InterfaceType::Asynchronous(x) => &x.doc,
@@ -352,7 +356,7 @@ where
         }
     }
 
-    pub fn untyped(&self) -> &Handle<Interface<D>> {
+    pub(crate) fn untyped(&self) -> &Handle<Interface<D>> {
         match self {
             InterfaceType::Synchronous(x) => x,
             InterfaceType::Asynchronous(x) => x,
@@ -366,11 +370,11 @@ pub struct Interface<D>
 where
     D: DocReference,
 {
-    pub name: Name,
-    pub mode: InterfaceCategory,
-    pub callbacks: Vec<CallbackFunction<D>>,
-    pub doc: Doc<D>,
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) name: Name,
+    pub(crate) mode: InterfaceCategory,
+    pub(crate) callbacks: Vec<CallbackFunction<D>>,
+    pub(crate) doc: Doc<D>,
+    pub(crate) settings: Rc<LibrarySettings>,
 }
 
 impl Interface<Unvalidated> {

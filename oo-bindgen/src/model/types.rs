@@ -7,6 +7,7 @@ use crate::model::*;
 pub struct StringType;
 
 /// Durations may be represented in multiple ways in the underlying C API
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
 pub enum DurationType {
     /// Duration is represented as a count of milliseconds in a u64 value
@@ -16,6 +17,7 @@ pub enum DurationType {
 }
 
 /// Same as DurationType but with an associated value
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
 pub enum DurationValue {
     /// Duration is represented as a count of milliseconds in a u64 value
@@ -98,6 +100,7 @@ where
 }
 
 /// primitive types in most languages
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Primitive {
     Bool,
@@ -114,6 +117,7 @@ pub enum Primitive {
 }
 
 /// same as primitive, but with a value
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone)]
 pub enum PrimitiveValue {
     Bool(bool),

@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::model::*;
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum IteratorItemType {
     Primitive(Primitive),
     Struct(UniversalOr<FunctionReturnStructField>),

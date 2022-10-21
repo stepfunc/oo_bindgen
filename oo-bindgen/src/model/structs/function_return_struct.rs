@@ -1,6 +1,7 @@
 use crate::model::*;
 
 /// Types that can be used in a function return value
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum FunctionReturnStructField {
     Basic(BasicType),

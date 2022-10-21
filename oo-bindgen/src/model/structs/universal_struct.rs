@@ -1,6 +1,7 @@
 use crate::model::*;
 
 /// Types that can be used in a universal struct, some of which might have a default value
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum UniversalStructField {
     Basic(BasicType),

@@ -1,6 +1,7 @@
 use crate::model::*;
 
 /// Types that can be used in a function struct, some of which might have a default value
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum FunctionArgStructField {
     Basic(BasicType),

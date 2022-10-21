@@ -15,6 +15,7 @@ impl PrimitiveRef {
 }
 
 /// types that can be returns from native functions
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
 pub enum FunctionReturnValue {
     Basic(BasicType),
@@ -100,6 +101,7 @@ impl From<CollectionClassDeclaration> for FunctionReturnValue {
 pub type FunctionReturnType<D> = ReturnType<FunctionReturnValue, D>;
 
 /// Types that can be used as native function arguments
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum FunctionArgument {
     Basic(BasicType),
@@ -202,7 +204,7 @@ impl From<CollectionClassDeclaration> for FunctionArgument {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum FunctionCategory {
+pub(crate) enum FunctionCategory {
     Native,
     CollectionCreate,
     CollectionDestroy,

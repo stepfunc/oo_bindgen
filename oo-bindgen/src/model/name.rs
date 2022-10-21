@@ -100,6 +100,7 @@ impl Display for BadName {
     }
 }
 
+#[non_exhaustive]
 #[derive(Error, Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NameError {
     #[error("Name is an empty string")]

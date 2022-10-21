@@ -3,12 +3,14 @@ use std::rc::Rc;
 use crate::model::*;
 
 /// How to render a numeric constant
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum Representation {
     Hex,
 }
 
 /// Types of constants available
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug)]
 pub enum ConstantValue {
     U8(u8, Representation),

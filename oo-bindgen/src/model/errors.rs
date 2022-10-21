@@ -4,6 +4,7 @@ use crate::model::*;
 
 pub type BindResult<T> = Result<T, BindingError>;
 
+#[non_exhaustive]
 #[derive(Error, Debug)]
 pub enum BindingError {
     // ---------------- global errors -----------------------------------

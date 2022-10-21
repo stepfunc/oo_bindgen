@@ -76,8 +76,8 @@ pub struct Doc<T>
 where
     T: DocReference,
 {
-    pub brief: DocString<T>,
-    pub details: Vec<DocParagraph<T>>,
+    pub(crate) brief: DocString<T>,
+    pub(crate) details: Vec<DocParagraph<T>>,
 }
 
 impl Doc<Validated> {
@@ -170,7 +170,7 @@ impl OptionalDoc {
 }
 
 #[derive(Debug, Clone)]
-pub enum DocParagraph<T>
+pub(crate) enum DocParagraph<T>
 where
     T: DocReference,
 {
@@ -234,17 +234,17 @@ impl<T> DocString<T>
 where
     T: DocReference,
 {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             elements: Vec::new(),
         }
     }
 
-    pub fn push(&mut self, element: DocStringElement<T>) {
+    pub(crate) fn push(&mut self, element: DocStringElement<T>) {
         self.elements.push(element);
     }
 
-    pub fn elements(&self) -> impl Iterator<Item = &DocStringElement<T>> {
+    pub(crate) fn elements(&self) -> impl Iterator<Item = &DocStringElement<T>> {
         self.elements.iter()
     }
 }
@@ -289,7 +289,7 @@ impl<U: AsRef<str>> From<U> for DocString<Unvalidated> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DocStringElement<T>
+pub(crate) enum DocStringElement<T>
 where
     T: DocReference,
 {
@@ -317,6 +317,7 @@ impl DocStringElement<Unvalidated> {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Unvalidated {
     /// Reference to an argument
@@ -492,6 +493,7 @@ impl Unvalidated {
 }
 
 /// Validated doc reference
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum Validated {
     /// Reference to an argument

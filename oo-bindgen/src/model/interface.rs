@@ -125,6 +125,7 @@ impl UniversalStructHandle {
 }
 
 /// Like a BasicType but with values
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum BasicValue {
     Primitive(PrimitiveValue),

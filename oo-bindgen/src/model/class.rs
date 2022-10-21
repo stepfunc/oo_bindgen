@@ -4,7 +4,7 @@ use crate::model::*;
 
 /// Different types of classes
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ClassType {
+pub(crate) enum ClassType {
     /// A normal user class which will have a constructor, destructor, methods, etc
     Normal,
     /// An iterator class
@@ -16,14 +16,14 @@ pub enum ClassType {
 /// C-style structure forward declaration
 #[derive(Debug)]
 pub struct ClassDeclaration {
-    pub name: Name,
-    pub class_type: ClassType,
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) name: Name,
+    pub(crate) class_type: ClassType,
+    pub(crate) settings: Rc<LibrarySettings>,
 }
 
 #[derive(Debug, Clone)]
 pub struct IteratorClassDeclaration {
-    pub inner: ClassDeclarationHandle,
+    pub(crate) inner: ClassDeclarationHandle,
 }
 
 impl IteratorClassDeclaration {
@@ -34,7 +34,7 @@ impl IteratorClassDeclaration {
 
 #[derive(Debug, Clone)]
 pub struct CollectionClassDeclaration {
-    pub inner: ClassDeclarationHandle,
+    pub(crate) inner: ClassDeclarationHandle,
 }
 
 impl CollectionClassDeclaration {
@@ -119,7 +119,7 @@ impl StaticMethod<Unvalidated> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DestructionMode {
+pub(crate) enum DestructionMode {
     /// Object is automatically deleted by the GC
     Automatic,
     /// Object is disposed of manually by calling a custom method
@@ -137,7 +137,7 @@ pub enum DestructionMode {
 }
 
 impl DestructionMode {
-    pub fn is_manual_destruction(&self) -> bool {
+    pub(crate) fn is_manual_destruction(&self) -> bool {
         match self {
             Self::Automatic => false,
             Self::Custom(_) => true,
@@ -152,15 +152,15 @@ pub struct Class<T>
 where
     T: DocReference,
 {
-    pub declaration: ClassDeclarationHandle,
-    pub constructor: Option<ClassConstructor<T>>,
-    pub destructor: Option<ClassDestructor<T>>,
-    pub methods: Vec<Method<T>>,
-    pub static_methods: Vec<StaticMethod<T>>,
-    pub future_methods: Vec<FutureMethod<T>>,
-    pub doc: Doc<T>,
-    pub destruction_mode: DestructionMode,
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) declaration: ClassDeclarationHandle,
+    pub(crate) constructor: Option<ClassConstructor<T>>,
+    pub(crate) destructor: Option<ClassDestructor<T>>,
+    pub(crate) methods: Vec<Method<T>>,
+    pub(crate) static_methods: Vec<StaticMethod<T>>,
+    pub(crate) future_methods: Vec<FutureMethod<T>>,
+    pub(crate) doc: Doc<T>,
+    pub(crate) destruction_mode: DestructionMode,
+    pub(crate) settings: Rc<LibrarySettings>,
 }
 
 impl Class<Unvalidated> {

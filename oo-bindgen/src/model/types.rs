@@ -149,6 +149,7 @@ impl From<PrimitiveValue> for Primitive {
 
 /// Basic types are trivially copyable. They can be used
 /// in almost any context within the API model
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BasicType {
     Primitive(Primitive),

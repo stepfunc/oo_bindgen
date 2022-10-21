@@ -1,6 +1,7 @@
 use crate::model::*;
 
 /// Type of exception to generate (only used in Java atm)
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ExceptionType {
     /// Statically checked exceptions

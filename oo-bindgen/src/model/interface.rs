@@ -264,16 +264,16 @@ impl FunctionalTransform {
 }
 
 #[derive(Debug)]
-pub struct CallbackFunction<D>
+pub(crate) struct CallbackFunction<D>
 where
     D: DocReference,
 {
-    pub name: Name,
-    pub functional_transform: FunctionalTransform,
-    pub return_type: OptionalReturnType<CallbackReturnValue, D>,
-    pub default_implementation: Option<DefaultCallbackReturnValue>,
-    pub arguments: Vec<Arg<CallbackArgument, D>>,
-    pub doc: Doc<D>,
+    pub(crate) name: Name,
+    pub(crate) functional_transform: FunctionalTransform,
+    pub(crate) return_type: OptionalReturnType<CallbackReturnValue, D>,
+    pub(crate) default_implementation: Option<DefaultCallbackReturnValue>,
+    pub(crate) arguments: Vec<Arg<CallbackArgument, D>>,
+    pub(crate) doc: Doc<D>,
 }
 
 impl CallbackFunction<Unvalidated> {
@@ -401,18 +401,18 @@ where
     /// Return a reference to a CallbackFunction if and only if the interface has a single callback.
     ///
     /// This type of interface can be converted to a Functor-type in many backend languages
-    pub fn get_functional_callback(&self) -> Option<&CallbackFunction<D>> {
+    pub(crate) fn get_functional_callback(&self) -> Option<&CallbackFunction<D>> {
         match self.callbacks.len() {
             1 => self.callbacks.get(0),
             _ => None,
         }
     }
 
-    pub fn is_functional(&self) -> bool {
+    pub(crate) fn is_functional(&self) -> bool {
         self.get_functional_callback().is_some()
     }
 
-    pub fn find_callback<S: AsRef<str>>(&self, name: S) -> Option<&CallbackFunction<D>> {
+    pub(crate) fn find_callback<S: AsRef<str>>(&self, name: S) -> Option<&CallbackFunction<D>> {
         self.callbacks
             .iter()
             .find(|callback| callback.name.as_ref() == name.as_ref())

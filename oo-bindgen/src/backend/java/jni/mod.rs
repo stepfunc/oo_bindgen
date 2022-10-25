@@ -13,14 +13,14 @@ mod interface;
 mod structs;
 
 /// Configuration for JNI (Rust) generation
-pub struct JniBindgenConfig {
+pub struct JniBindgenConfig<'a> {
     /// Maven group id (e.g. io.stepfunc)
-    pub group_id: String,
+    pub group_id: &'a str,
     /// Name of the FFI target
-    pub ffi_name: String,
+    pub ffi_name: &'a str,
 }
 
-impl JniBindgenConfig {
+impl<'a> JniBindgenConfig<'a> {
     fn java_signature_path(&self, libname: &str) -> String {
         let mut result = self.group_id.replace('.', "/");
         result.push('/');
@@ -211,7 +211,7 @@ fn write_iterator_conversion(
     config: &JniBindgenConfig,
     iter: &Handle<AbstractIterator<Validated>>,
 ) -> FormattingResult<()> {
-    f.writeln(&format!("pub(crate) fn {}(_env: &jni::JNIEnv, _cache: &crate::JCache, iter: {}) -> jni::sys::jobject {{", iter.name(), iter.iter_class.get_rust_type(&config.ffi_name)))?;
+    f.writeln(&format!("pub(crate) fn {}(_env: &jni::JNIEnv, _cache: &crate::JCache, iter: {}) -> jni::sys::jobject {{", iter.name(), iter.iter_class.get_rust_type(config.ffi_name)))?;
     indented(f, |f| {
         f.writeln("let list = _cache.collection.new_array_list(&_env);")?;
         f.writeln(&format!(

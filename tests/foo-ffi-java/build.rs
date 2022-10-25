@@ -8,8 +8,8 @@ fn main() {
     let out_path: PathBuf = Path::new(&std::env::var_os("OUT_DIR").unwrap()).join("jni.rs");
 
     let config = oo_bindgen::backend::java::JniBindgenConfig {
-        group_id: "io.stepfunc".to_string(),
-        ffi_name: "foo_ffi".to_string(),
+        group_id: "io.stepfunc",
+        ffi_name: "foo_ffi",
     };
 
     match foo_schema::build_lib() {

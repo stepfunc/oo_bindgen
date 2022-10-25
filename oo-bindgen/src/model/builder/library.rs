@@ -80,7 +80,7 @@ pub struct LibraryBuilder {
     version: Version,
     info: Rc<LibraryInfo>,
 
-    pub(crate) settings: Rc<LibrarySettings>,
+    settings: Rc<LibrarySettings>,
 
     // names of symbols used in the library
     symbol_names: HashSet<String>,
@@ -96,6 +96,14 @@ impl LibraryBuilder {
             symbol_names: HashSet::new(),
             fields: LibraryFields::new(),
         }
+    }
+
+    pub(crate) fn settings(&self) -> &LibrarySettings {
+        &self.settings
+    }
+
+    pub(crate) fn clone_settings(&self) -> Rc<LibrarySettings> {
+        self.settings.clone()
     }
 
     pub(crate) fn add_statement(&mut self, statement: Statement<Unvalidated>) -> BindResult<()> {

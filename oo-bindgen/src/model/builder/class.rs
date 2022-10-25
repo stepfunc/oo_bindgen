@@ -143,7 +143,7 @@ impl<'a> ClassBuilder<'a> {
             future_methods: self.async_methods,
             doc,
             destruction_mode: self.destruction_mode,
-            settings: self.lib.settings.clone(),
+            settings: self.lib.clone_settings(),
         });
 
         self.lib

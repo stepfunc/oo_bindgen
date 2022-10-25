@@ -342,8 +342,8 @@ impl ClassDestructor<Unvalidated> {
     ) -> BindResult<Self> {
         let destructor_function_name = class
             .name
-            .append(&lib.settings.class.class_destructor_suffix);
-        let instance_name = lib.settings.class.method_instance_argument_name.clone();
+            .append(&lib.settings().class.class_destructor_suffix);
+        let instance_name = lib.settings().class.method_instance_argument_name.clone();
 
         let function = lib
             .define_function(destructor_function_name)?

@@ -70,7 +70,7 @@ impl<'a> EnumBuilder<'a> {
     ) -> BindResult<(Handle<Enum<Unvalidated>>, &'a mut LibraryBuilder)> {
         let handle = Handle::new(Enum {
             name: self.name,
-            settings: self.lib.settings.clone(),
+            settings: self.lib.clone_settings(),
             variants: self.variants,
             doc: self.doc.extract()?,
         });

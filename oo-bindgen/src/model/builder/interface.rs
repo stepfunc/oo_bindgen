@@ -67,22 +67,22 @@ impl<'a> InterfaceBuilder<'a> {
             mode,
             callbacks: self.callbacks,
             doc: self.doc,
-            settings: self.lib.settings.clone(),
+            settings: self.lib.clone_settings(),
         });
 
         (handle, self.lib)
     }
 
     fn check_unique_callback_name(&mut self, name: &Name) -> BindResult<()> {
-        if name == &self.lib.settings.interface.destroy_func_name {
+        if name == &self.lib.settings().interface.destroy_func_name {
             return Err(BindingError::InterfaceMethodWithReservedName {
-                name: self.lib.settings.interface.destroy_func_name.clone(),
+                name: self.lib.settings().interface.destroy_func_name.clone(),
             });
         }
 
-        if name == &self.lib.settings.interface.context_variable_name.clone() {
+        if name == &self.lib.settings().interface.context_variable_name.clone() {
             return Err(BindingError::InterfaceMethodWithReservedName {
-                name: self.lib.settings.interface.context_variable_name.clone(),
+                name: self.lib.settings().interface.context_variable_name.clone(),
             });
         }
 
@@ -135,12 +135,12 @@ impl<'a> CallbackFunctionBuilder<'a> {
         let arg_type = arg_type.into();
         let name = name.into_name()?;
 
-        if name == self.builder.lib.settings.interface.context_variable_name {
+        if name == self.builder.lib.settings().interface.context_variable_name {
             return Err(BindingError::CallbackMethodArgumentWithReservedName {
                 name: self
                     .builder
                     .lib
-                    .settings
+                    .settings()
                     .interface
                     .context_variable_name
                     .clone(),

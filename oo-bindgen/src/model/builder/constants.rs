@@ -50,7 +50,7 @@ impl<'a> ConstantSetBuilder<'a> {
     pub fn build(self) -> BindResult<()> {
         let handle = Handle::new(ConstantSet {
             name: self.name,
-            settings: self.lib.settings.clone(),
+            settings: self.lib.clone_settings(),
             values: self.values,
             doc: self.doc.extract()?,
         });

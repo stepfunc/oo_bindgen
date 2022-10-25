@@ -2,14 +2,23 @@ use std::fmt::Formatter;
 
 use backtrace::Backtrace;
 
-use crate::model::{BadName, BindingError};
+use crate::model::{BadName, BindingError, BindingErrorVariant};
 
 pub type BackTraced<T> = Result<T, BackTracedBindingError>;
 
 #[derive(Debug)]
 pub struct BackTracedBindingError {
-    pub error: BindingError,
-    pub backtrace: Backtrace,
+    pub(crate) error: BindingError,
+    pub(crate) backtrace: Backtrace,
+}
+
+impl From<BindingErrorVariant> for BackTracedBindingError {
+    fn from(error: BindingErrorVariant) -> Self {
+        BackTracedBindingError {
+            error: error.into(),
+            backtrace: Backtrace::new(),
+        }
+    }
 }
 
 impl From<BindingError> for BackTracedBindingError {
@@ -23,7 +32,7 @@ impl From<BindingError> for BackTracedBindingError {
 
 impl From<BadName> for BackTracedBindingError {
     fn from(err: BadName) -> Self {
-        BindingError::BadName { err }.into()
+        BindingErrorVariant::BadName { err }.into()
     }
 }
 

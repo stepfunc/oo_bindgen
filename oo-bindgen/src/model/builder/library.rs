@@ -80,7 +80,7 @@ pub struct LibraryBuilder {
     version: Version,
     info: Rc<LibraryInfo>,
 
-    pub(crate) settings: Rc<LibrarySettings>,
+    settings: Rc<LibrarySettings>,
 
     // names of symbols used in the library
     symbol_names: HashSet<String>,
@@ -96,6 +96,14 @@ impl LibraryBuilder {
             symbol_names: HashSet::new(),
             fields: LibraryFields::new(),
         }
+    }
+
+    pub(crate) fn settings(&self) -> &LibrarySettings {
+        &self.settings
+    }
+
+    pub(crate) fn clone_settings(&self) -> Rc<LibrarySettings> {
+        self.settings.clone()
     }
 
     pub(crate) fn add_statement(&mut self, statement: Statement<Unvalidated>) -> BindResult<()> {
@@ -281,9 +289,10 @@ impl LibraryBuilder {
         declaration: UniversalStructDeclaration,
     ) -> BindResult<UniversalStructBuilder> {
         if self.fields.structs.contains_key(&declaration.inner) {
-            Err(BindingError::StructAlreadyDefined {
+            Err(BindingErrorVariant::StructAlreadyDefined {
                 handle: declaration.inner,
-            })
+            }
+            .into())
         } else {
             Ok(UniversalStructBuilder::new(self, declaration))
         }
@@ -295,9 +304,10 @@ impl LibraryBuilder {
         declaration: UniversalStructDeclaration,
     ) -> BindResult<UniversalStructBuilder> {
         if self.fields.structs.contains_key(&declaration.inner) {
-            Err(BindingError::StructAlreadyDefined {
+            Err(BindingErrorVariant::StructAlreadyDefined {
                 handle: declaration.inner,
-            })
+            }
+            .into())
         } else {
             Ok(UniversalStructBuilder::opaque(self, declaration))
         }
@@ -313,9 +323,10 @@ impl LibraryBuilder {
     {
         let declaration = declaration.into();
         if self.fields.structs.contains_key(&declaration.inner) {
-            Err(BindingError::StructAlreadyDefined {
+            Err(BindingErrorVariant::StructAlreadyDefined {
                 handle: declaration.inner,
-            })
+            }
+            .into())
         } else {
             Ok(CallbackArgStructBuilder::new(self, declaration))
         }
@@ -331,9 +342,10 @@ impl LibraryBuilder {
     {
         let declaration = declaration.into();
         if self.fields.structs.contains_key(&declaration.inner) {
-            Err(BindingError::StructAlreadyDefined {
+            Err(BindingErrorVariant::StructAlreadyDefined {
                 handle: declaration.inner,
-            })
+            }
+            .into())
         } else {
             Ok(FunctionReturnStructBuilder::new(self, declaration))
         }
@@ -349,9 +361,10 @@ impl LibraryBuilder {
     {
         let declaration = declaration.into();
         if self.fields.structs.contains_key(&declaration.inner) {
-            Err(BindingError::StructAlreadyDefined {
+            Err(BindingErrorVariant::StructAlreadyDefined {
                 handle: declaration.inner,
-            })
+            }
+            .into())
         } else {
             Ok(FunctionArgStructBuilder::new(self, declaration))
         }
@@ -447,9 +460,10 @@ impl LibraryBuilder {
     ) -> BindResult<ClassBuilder> {
         self.check_class_declaration(declaration)?;
         if self.fields.classes.contains_key(declaration) {
-            Err(BindingError::ClassAlreadyDefined {
+            Err(BindingErrorVariant::ClassAlreadyDefined {
                 handle: declaration.clone(),
-            })
+            }
+            .into())
         } else {
             Ok(ClassBuilder::new(self, declaration.clone()))
         }
@@ -657,7 +671,7 @@ impl LibraryBuilder {
         if self.symbol_names.insert(name.to_string()) {
             Ok(())
         } else {
-            Err(BindingError::SymbolAlreadyUsed { name: name.clone() })
+            Err(BindingErrorVariant::SymbolAlreadyUsed { name: name.clone() }.into())
         }
     }
 
@@ -742,9 +756,10 @@ impl LibraryBuilder {
         if self.fields.structs_declarations.contains(native_struct) {
             Ok(())
         } else {
-            Err(BindingError::NotPartOfThisLibrary {
+            Err(BindingErrorVariant::NotPartOfThisLibrary {
                 name: native_struct.name.clone(),
-            })
+            }
+            .into())
         }
     }
 
@@ -752,9 +767,10 @@ impl LibraryBuilder {
         if self.fields.functions.contains(native_function) {
             Ok(())
         } else {
-            Err(BindingError::NotPartOfThisLibrary {
+            Err(BindingErrorVariant::NotPartOfThisLibrary {
                 name: native_function.name.clone(),
-            })
+            }
+            .into())
         }
     }
 
@@ -762,9 +778,10 @@ impl LibraryBuilder {
         if self.fields.enums.contains(native_enum) {
             Ok(())
         } else {
-            Err(BindingError::NotPartOfThisLibrary {
+            Err(BindingErrorVariant::NotPartOfThisLibrary {
                 name: native_enum.name.clone(),
-            })
+            }
+            .into())
         }
     }
 
@@ -772,9 +789,10 @@ impl LibraryBuilder {
         if self.fields.interfaces.contains(interface) {
             Ok(())
         } else {
-            Err(BindingError::NotPartOfThisLibrary {
+            Err(BindingErrorVariant::NotPartOfThisLibrary {
                 name: interface.name.clone(),
-            })
+            }
+            .into())
         }
     }
 
@@ -785,9 +803,10 @@ impl LibraryBuilder {
         if self.fields.class_declarations.contains(class_declaration) {
             Ok(())
         } else {
-            Err(BindingError::NotPartOfThisLibrary {
+            Err(BindingErrorVariant::NotPartOfThisLibrary {
                 name: class_declaration.name.clone(),
-            })
+            }
+            .into())
         }
     }
 
@@ -843,9 +862,10 @@ impl LibraryBuilder {
         if self.fields.iterators.contains(iter) {
             Ok(())
         } else {
-            Err(BindingError::NotPartOfThisLibrary {
+            Err(BindingErrorVariant::NotPartOfThisLibrary {
                 name: iter.iter_class.name.clone(),
-            })
+            }
+            .into())
         }
     }
 
@@ -853,9 +873,10 @@ impl LibraryBuilder {
         if self.fields.collections.contains(collection) {
             Ok(())
         } else {
-            Err(BindingError::NotPartOfThisLibrary {
+            Err(BindingErrorVariant::NotPartOfThisLibrary {
                 name: collection.collection_class.name.clone(),
-            })
+            }
+            .into())
         }
     }
 }

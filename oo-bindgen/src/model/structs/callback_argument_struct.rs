@@ -1,6 +1,7 @@
 use crate::model::*;
 
 /// Types that can be used as a callback argument
+#[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum CallbackArgStructField {
     Basic(BasicType),

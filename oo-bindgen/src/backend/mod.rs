@@ -1,13 +1,9 @@
-/// Standard file-system routines, but logged with tracing
-pub mod logged;
+pub(crate) mod c;
+pub(crate) mod dotnet;
+/// generation routines for Java bindings
+pub mod java;
+/// generation routines for the Rust FFI
+pub mod rust;
 
-pub use self::platforms::*;
-pub use ::platforms::platform;
-pub use ::platforms::target::*;
-pub use ::platforms::Platform;
-pub use formatting::*;
-pub use util::*;
-
-mod formatting;
-mod platforms;
-mod util;
+mod common;
+pub(crate) use common::*;

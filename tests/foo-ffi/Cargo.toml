@@ -1,6 +1,6 @@
 [package]
 name = "foo-ffi"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Step Function I/O LLC <info@stepfunc.io>"]
 edition = "2021"
 
@@ -11,4 +11,4 @@ crate-type = ["rlib", "cdylib"]
 
 [build-dependencies]
 foo-schema = { path = "../foo-schema" }
-rust-oo-bindgen = { path = "../../generators/rust-oo-bindgen" }
+oo-bindgen = { path = "../../oo-bindgen" }

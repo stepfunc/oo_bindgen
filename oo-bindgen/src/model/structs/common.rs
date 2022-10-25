@@ -7,6 +7,7 @@ use std::time::Duration;
 use crate::model::*;
 
 /// A numeric value
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum NumberValue {
     U8(u8),
@@ -22,6 +23,7 @@ pub enum NumberValue {
 }
 
 /// Default value for a field in struct initializer
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
 pub enum InitializerDefault {
     Bool(bool),
@@ -72,6 +74,7 @@ impl From<Duration> for InitializerDefault {
 }
 
 // Value used to define a default in a struct initializer
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum ValidatedDefaultValue {
     Bool(bool),
@@ -152,7 +155,7 @@ impl std::fmt::Display for ValidatedDefaultValue {
 
 /// struct type affects the type of code the backend will generate
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Visibility {
+pub(crate) enum Visibility {
     /// struct members are public
     Public,
     /// struct members are private (except C of course), and the struct is just an opaque "token"
@@ -162,12 +165,12 @@ pub enum Visibility {
 /// C-style structure forward declaration
 #[derive(Debug)]
 pub struct StructDeclaration {
-    pub name: Name,
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) name: Name,
+    pub(crate) settings: Rc<LibrarySettings>,
 }
 
 impl StructDeclaration {
-    pub fn new(name: Name, settings: Rc<LibrarySettings>) -> Self {
+    pub(crate) fn new(name: Name, settings: Rc<LibrarySettings>) -> Self {
         Self { name, settings }
     }
 }
@@ -177,7 +180,7 @@ pub type StructDeclarationHandle = Handle<StructDeclaration>;
 /// Typed wrapper around an untyped struct declaration
 #[derive(Debug, Clone, Eq)]
 pub struct TypedStructDeclaration<T> {
-    pub inner: StructDeclarationHandle,
+    pub(crate) inner: StructDeclarationHandle,
     phantom: PhantomData<T>,
 }
 
@@ -216,10 +219,11 @@ pub trait InitializerValidator {
         field_type: String,
         value: &InitializerDefault,
     ) -> BindResult<ValidatedDefaultValue> {
-        Err(BindingError::StructInitializerBadValueForType {
+        Err(BindingErrorVariant::StructInitializerBadValueForType {
             field_type,
             value: value.clone(),
-        })
+        }
+        .into())
     }
 
     /// Check that the value is valid for the type
@@ -288,9 +292,9 @@ where
     F: StructFieldType,
     D: DocReference,
 {
-    pub name: Name,
-    pub field_type: F,
-    pub doc: Doc<D>,
+    pub(crate) name: Name,
+    pub(crate) field_type: F,
+    pub(crate) doc: Doc<D>,
 }
 
 impl<F> StructField<F, Unvalidated>
@@ -313,11 +317,11 @@ where
     F: StructFieldType,
     D: DocReference,
 {
-    pub visibility: Visibility,
-    pub declaration: TypedStructDeclaration<F>,
-    pub fields: Vec<StructField<F, D>>,
-    pub initializers: Vec<Handle<Initializer<D>>>,
-    pub doc: Doc<D>,
+    pub(crate) visibility: Visibility,
+    pub(crate) declaration: TypedStructDeclaration<F>,
+    pub(crate) fields: Vec<StructField<F, D>>,
+    pub(crate) initializers: Vec<Handle<Initializer<D>>>,
+    pub(crate) doc: Doc<D>,
 }
 
 impl<F> Struct<F, Unvalidated>
@@ -360,15 +364,17 @@ where
                     c.name.clone(),
                 )),
                 None => Err(
-                    BindingError::StructInitializerStructFieldWithoutDefaultInitializer {
+                    BindingErrorVariant::StructInitializerStructFieldWithoutDefaultInitializer {
                         struct_name: self.name().to_string(),
-                    },
+                    }
+                    .into(),
                 ),
             },
-            _ => Err(BindingError::StructInitializerBadValueForType {
+            _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                 field_type: "Struct".to_string(),
                 value: value.clone(),
-            }),
+            }
+            .into()),
         }
     }
 }
@@ -431,11 +437,12 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct InitializedValue {
-    pub name: Name,
-    pub value: ValidatedDefaultValue,
+pub(crate) struct InitializedValue {
+    pub(crate) name: Name,
+    pub(crate) value: ValidatedDefaultValue,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum InitializerType {
     /// Normal initializers map to actual language constructors
@@ -447,7 +454,7 @@ pub enum InitializerType {
 }
 
 impl InitializerType {
-    pub fn is_normal(&self) -> bool {
+    pub(crate) fn is_normal(&self) -> bool {
         *self == InitializerType::Normal
     }
 }
@@ -458,10 +465,10 @@ pub struct Initializer<D>
 where
     D: DocReference,
 {
-    pub name: Name,
-    pub initializer_type: InitializerType,
-    pub values: Rc<Vec<InitializedValue>>,
-    pub doc: Doc<D>,
+    pub(crate) name: Name,
+    pub(crate) initializer_type: InitializerType,
+    pub(crate) values: Rc<Vec<InitializedValue>>,
+    pub(crate) doc: Doc<D>,
 }
 
 impl Initializer<Unvalidated> {
@@ -504,6 +511,7 @@ where
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum StructType<D>
 where
@@ -556,6 +564,7 @@ impl From<UniversalStructHandle> for StructType<Unvalidated> {
 
 /// Structs refs can always be the Universal struct type, but may also be a
 /// more specific type depending on context
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum UniversalDeclarationOr<T>
 where
@@ -599,6 +608,7 @@ impl<T> Eq for UniversalDeclarationOr<T> where T: StructFieldType {}
 
 /// Structs can always be the Universal struct type, but may also be a
 /// more specific type depending on context
+#[non_exhaustive]
 #[derive(Debug, Clone, Eq)]
 pub enum UniversalOr<T>
 where

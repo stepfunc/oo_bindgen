@@ -1,6 +1,6 @@
 [package]
 name = "foo-ffi-java"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2018"
 build = "build.rs"
 
@@ -13,4 +13,4 @@ foo-ffi = { path = "../foo-ffi" }
 
 [build-dependencies]
 foo-schema = { path = "../foo-schema" }
-java-oo-bindgen = { path = "../../generators/java-oo-bindgen" }
+oo-bindgen = { path = "../../oo-bindgen" }

@@ -34,10 +34,11 @@ impl<'a> ConstantSetBuilder<'a> {
     ) -> BindResult<Self> {
         let name = name.into_name()?;
         if self.names.contains(name.as_ref()) {
-            return Err(BindingError::ConstantNameAlreadyUsed {
+            return Err(BindingErrorVariant::ConstantNameAlreadyUsed {
                 set_name: self.name,
                 constant_name: name,
-            });
+            }
+            .into());
         }
         self.values.push(Constant {
             name,
@@ -50,7 +51,7 @@ impl<'a> ConstantSetBuilder<'a> {
     pub fn build(self) -> BindResult<()> {
         let handle = Handle::new(ConstantSet {
             name: self.name,
-            settings: self.lib.settings.clone(),
+            settings: self.lib.clone_settings(),
             values: self.values,
             doc: self.doc.extract()?,
         });

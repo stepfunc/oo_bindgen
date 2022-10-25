@@ -1,6 +1,7 @@
 use crate::model::*;
 
 /// Type of exception to generate (only used in Java atm)
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ExceptionType {
     /// Statically checked exceptions
@@ -17,12 +18,17 @@ pub struct ErrorType<D>
 where
     D: DocReference,
 {
-    pub exception_name: Name,
-    pub exception_type: ExceptionType,
-    pub inner: Handle<Enum<D>>,
+    pub(crate) exception_name: Name,
+    pub(crate) exception_type: ExceptionType,
+    pub(crate) inner: Handle<Enum<D>>,
 }
 
 impl ErrorType<Unvalidated> {
+    /// Clone the underlying Enum that represents the error
+    pub fn clone_enum(&self) -> EnumHandle {
+        self.inner.clone()
+    }
+
     pub(crate) fn validate(&self, lib: &LibraryFields) -> BindResult<ErrorType<Validated>> {
         Ok(ErrorType {
             exception_name: self.exception_name.clone(),
@@ -35,7 +41,7 @@ impl ErrorType<Unvalidated> {
 pub type ErrorTypeHandle = ErrorType<Unvalidated>;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct OptionalErrorType<D>
+pub(crate) struct OptionalErrorType<D>
 where
     D: DocReference,
 {
@@ -50,11 +56,11 @@ where
         Self { inner: None }
     }
 
-    pub fn get(&self) -> Option<&ErrorType<D>> {
+    pub(crate) fn get(&self) -> Option<&ErrorType<D>> {
         self.inner.as_ref()
     }
 
-    pub fn is_some(&self) -> bool {
+    pub(crate) fn is_some(&self) -> bool {
         self.inner.is_some()
     }
 }
@@ -62,10 +68,11 @@ where
 impl OptionalErrorType<Unvalidated> {
     pub(crate) fn set(&mut self, parent: &Name, err: &ErrorType<Unvalidated>) -> BindResult<()> {
         if self.inner.is_some() {
-            return Err(BindingError::ErrorTypeAlreadyDefined {
+            return Err(BindingErrorVariant::ErrorTypeAlreadyDefined {
                 function: parent.clone(),
                 error_type: err.inner.name.clone(),
-            });
+            }
+            .into());
         }
 
         self.inner = Some(err.clone());

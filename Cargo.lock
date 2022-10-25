@@ -95,14 +95,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
 
 [[package]]
-name = "c-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "oo-bindgen",
- "tracing",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -130,21 +122,6 @@ dependencies = [
  "num-integer",
  "num-traits",
  "winapi",
-]
-
-[[package]]
-name = "ci-script"
-version = "0.5.1"
-dependencies = [
- "c-oo-bindgen",
- "clap",
- "dotnet-oo-bindgen",
- "java-oo-bindgen",
- "oo-bindgen",
- "pathdiff",
- "serde",
- "serde_json",
- "tracing",
 ]
 
 [[package]]
@@ -255,16 +232,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotnet-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "clap",
- "dunce",
- "oo-bindgen",
- "tracing",
-]
-
-[[package]]
 name = "dunce"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -272,35 +239,35 @@ checksum = "0bd4b30a6560bbd9b4620f4de34c3f14f60848e58a9b7216801afcb4c7b31c3c"
 
 [[package]]
 name = "foo-bindings"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
- "ci-script",
  "foo-schema",
+ "oo-bindgen",
  "tracing",
  "tracing-subscriber",
 ]
 
 [[package]]
 name = "foo-ffi"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "foo-schema",
- "rust-oo-bindgen",
+ "oo-bindgen",
 ]
 
 [[package]]
 name = "foo-ffi-java"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "foo-ffi",
  "foo-schema",
- "java-oo-bindgen",
  "jni",
+ "oo-bindgen",
 ]
 
 [[package]]
 name = "foo-schema"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "oo-bindgen",
 ]
@@ -364,16 +331,6 @@ name = "itoa"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
-
-[[package]]
-name = "java-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "dunce",
- "oo-bindgen",
- "pathdiff",
- "tracing",
-]
 
 [[package]]
 name = "jni"
@@ -494,14 +451,18 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 
 [[package]]
 name = "oo-bindgen"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "backtrace",
+ "clap",
+ "dunce",
  "heck 0.3.3",
  "lazy_static",
  "platforms",
  "regex",
  "semver",
+ "serde",
+ "serde_json",
  "thiserror",
  "tracing",
 ]
@@ -511,22 +472,6 @@ name = "os_str_bytes"
 version = "6.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
-
-[[package]]
-name = "pathdiff"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
-
-[[package]]
-name = "pest"
-version = "2.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbc7bc69c062e492337d74d59b120c274fd3d261b6bf6d3207d499b4b379c41a"
-dependencies = [
- "thiserror",
- "ucd-trie",
-]
 
 [[package]]
 name = "pin-project-lite"
@@ -609,14 +554,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
 
 [[package]]
-name = "rust-oo-bindgen"
-version = "0.5.1"
-dependencies = [
- "heck 0.3.3",
- "oo-bindgen",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -645,21 +582,9 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 
 [[package]]
 name = "semver"
-version = "0.11.0"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
-dependencies = [
- "semver-parser",
-]
-
-[[package]]
-name = "semver-parser"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00b0bef5b7f9e0df16536d3961cfb6e84331c065b4066afb39768d0e319411f7"
-dependencies = [
- "pest",
-]
+checksum = "d4f410fedcf71af0345d7607d246e7ad15faaadd49d240ee3b24e5dc21a820ac"
 
 [[package]]
 name = "serde"
@@ -837,12 +762,6 @@ dependencies = [
  "tracing-log",
  "tracing-serde",
 ]
-
-[[package]]
-name = "ucd-trie"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e79c4d996edb816c91e4308506774452e55e95c3c9de07b6729e17e15a5ef81"
 
 [[package]]
 name = "unicode-ident"

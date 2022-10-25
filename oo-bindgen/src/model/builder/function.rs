@@ -70,7 +70,7 @@ impl<'a> FunctionBuilder<'a> {
             return_type: self.return_type,
             arguments: self.params,
             error_type: self.error_type,
-            settings: self.lib.settings.clone(),
+            settings: self.lib.clone_settings(),
             doc: self.doc.extract()?,
         });
 
@@ -112,10 +112,10 @@ impl<'a> ClassMethodBuilder<'a> {
         class: ClassDeclarationHandle,
     ) -> BindResult<Self> {
         if method_name.contains(class.name.as_ref()) {
-            return Err(BindingError::BadMethodName { class, method_name });
+            return Err(BindingErrorVariant::BadMethodName { class, method_name }.into());
         }
 
-        let instance_arg_name = lib.settings.class.method_instance_argument_name.clone();
+        let instance_arg_name = lib.settings().class.method_instance_argument_name.clone();
 
         let builder = lib
             .define_function(class.name.append(&method_name))?
@@ -195,7 +195,7 @@ impl<'a> ClassConstructorBuilder<'a> {
             .define_function(
                 class
                     .name
-                    .append(&lib.settings.class.class_constructor_suffix),
+                    .append(&lib.settings().class.class_constructor_suffix),
             )?
             .returns(
                 class.clone(),
@@ -294,7 +294,7 @@ impl<'a> FutureMethodBuilder<'a> {
             .inner
             .inner
             .lib
-            .settings
+            .settings()
             .future
             .async_method_callback_parameter_name
             .clone();

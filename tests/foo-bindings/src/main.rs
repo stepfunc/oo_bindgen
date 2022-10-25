@@ -7,9 +7,9 @@ fn main() {
         .with_target(false)
         .init();
 
-    let builder_settings = ci_script::BindingBuilderSettings {
+    let builder_settings = oo_bindgen::cli::BindingBuilderSettings {
         ffi_target_name: "foo-ffi",
-        jni_target_name: "foo-ffi-java",
+        jni_target_name: "foo-ffi-api",
         ffi_name: "foo_ffi",
         ffi_path: Path::new("tests/foo-ffi").into(),
         java_group_id: "io.stepfunc",
@@ -17,5 +17,5 @@ fn main() {
         library: Rc::new(foo_schema::build_lib().unwrap()),
     };
 
-    ci_script::run(builder_settings);
+    oo_bindgen::cli::run(builder_settings);
 }

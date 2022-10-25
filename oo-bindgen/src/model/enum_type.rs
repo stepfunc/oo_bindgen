@@ -3,13 +3,13 @@ use std::rc::Rc;
 use crate::model::*;
 
 #[derive(Debug, Clone)]
-pub struct EnumVariant<T>
+pub(crate) struct EnumVariant<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub value: i32,
-    pub doc: Doc<T>,
+    pub(crate) name: Name,
+    pub(crate) value: i32,
+    pub(crate) doc: Doc<T>,
 }
 
 impl EnumVariant<Unvalidated> {
@@ -35,10 +35,10 @@ pub struct Enum<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub settings: Rc<LibrarySettings>,
-    pub variants: Vec<EnumVariant<T>>,
-    pub doc: Doc<T>,
+    pub(crate) name: Name,
+    pub(crate) settings: Rc<LibrarySettings>,
+    pub(crate) variants: Vec<EnumVariant<T>>,
+    pub(crate) doc: Doc<T>,
 }
 
 impl Enum<Unvalidated> {
@@ -73,10 +73,11 @@ where
         variant_name: &str,
     ) -> BindResult<&EnumVariant<T>> {
         match self.find_variant_by_name(variant_name) {
-            None => Err(BindingError::UnknownEnumVariant {
+            None => Err(BindingErrorVariant::UnknownEnumVariant {
                 name: self.name.clone(),
                 variant_name: variant_name.to_string(),
-            }),
+            }
+            .into()),
             Some(x) => Ok(x),
         }
     }

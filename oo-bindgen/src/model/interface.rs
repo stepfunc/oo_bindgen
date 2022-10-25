@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::model::*;
 
 /// Types allowed in callback function arguments
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
 pub enum CallbackArgument {
     Basic(BasicType),
@@ -69,8 +70,8 @@ impl From<ClassDeclarationHandle> for CallbackArgument {
 /// An enum handle and a default validated variant
 #[derive(Debug, Clone)]
 pub struct EnumValue {
-    pub handle: EnumHandle,
-    pub variant: EnumVariant<Unvalidated>,
+    pub(crate) handle: EnumHandle,
+    pub(crate) variant: EnumVariant<Unvalidated>,
 }
 
 impl EnumValue {
@@ -84,28 +85,30 @@ impl EnumValue {
 /// The initializer may not take parameters
 #[derive(Debug, Clone)]
 pub struct ZeroParameterStructInitializer {
-    pub handle: UniversalStructHandle,
-    pub initializer: Handle<Initializer<Unvalidated>>,
+    pub(crate) handle: UniversalStructHandle,
+    pub(crate) initializer: Handle<Initializer<Unvalidated>>,
 }
 
 impl ZeroParameterStructInitializer {
     fn try_create(handle: UniversalStructHandle, name: &'static str) -> BindResult<Self> {
         let initializer = match handle.initializers.iter().find(|x| x.name == name) {
             None => {
-                return Err(BindingError::InitializerDoesNotExist {
+                return Err(BindingErrorVariant::InitializerDoesNotExist {
                     name,
                     struct_name: handle.declaration.name().clone(),
-                })
+                }
+                .into())
             }
             Some(x) => x.clone(),
         };
 
         // all values must be initialized
         if initializer.values.len() != handle.fields.len() {
-            return Err(BindingError::InitializerNotParameterless {
+            return Err(BindingErrorVariant::InitializerNotParameterless {
                 name,
                 struct_name: handle.declaration.name().clone(),
-            });
+            }
+            .into());
         }
 
         Ok(Self {
@@ -125,6 +128,7 @@ impl UniversalStructHandle {
 }
 
 /// Like a BasicType but with values
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum BasicValue {
     Primitive(PrimitiveValue),
@@ -151,6 +155,7 @@ impl BasicValue {
 }
 
 /// types that can be returned from callback functions
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallbackReturnValue {
     Basic(BasicType),
@@ -158,6 +163,7 @@ pub enum CallbackReturnValue {
 }
 
 /// Like CallbackReturnValue, but with a value
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum DefaultCallbackReturnValue {
     Void,
@@ -238,6 +244,7 @@ pub type CallbackReturnType<T> = ReturnType<CallbackReturnValue, T>;
 /// A flag to the backend that tells it whether or not
 /// to optimize callbacks into Functors in the public API
 /// This flag is only inspected for functional interfaces
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum FunctionalTransform {
     /// If the interface is functional, it should be optimized into
@@ -257,16 +264,16 @@ impl FunctionalTransform {
 }
 
 #[derive(Debug)]
-pub struct CallbackFunction<D>
+pub(crate) struct CallbackFunction<D>
 where
     D: DocReference,
 {
-    pub name: Name,
-    pub functional_transform: FunctionalTransform,
-    pub return_type: OptionalReturnType<CallbackReturnValue, D>,
-    pub default_implementation: Option<DefaultCallbackReturnValue>,
-    pub arguments: Vec<Arg<CallbackArgument, D>>,
-    pub doc: Doc<D>,
+    pub(crate) name: Name,
+    pub(crate) functional_transform: FunctionalTransform,
+    pub(crate) return_type: OptionalReturnType<CallbackReturnValue, D>,
+    pub(crate) default_implementation: Option<DefaultCallbackReturnValue>,
+    pub(crate) arguments: Vec<Arg<CallbackArgument, D>>,
+    pub(crate) doc: Doc<D>,
 }
 
 impl CallbackFunction<Unvalidated> {
@@ -290,7 +297,7 @@ impl CallbackFunction<Unvalidated> {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum InterfaceCategory {
+pub(crate) enum InterfaceCategory {
     /// The interface will only be used in a synchronous context and the Rust
     /// backend will not generate Sync / Send implementations so it cannot be sent
     /// to other threads.
@@ -304,7 +311,7 @@ pub enum InterfaceCategory {
 }
 
 #[derive(Debug, Clone)]
-pub enum InterfaceType<D>
+pub(crate) enum InterfaceType<D>
 where
     D: DocReference,
 {
@@ -327,7 +334,7 @@ impl<D> InterfaceType<D>
 where
     D: DocReference,
 {
-    pub fn name(&self) -> &Name {
+    pub(crate) fn name(&self) -> &Name {
         match self {
             InterfaceType::Synchronous(x) => &x.name,
             InterfaceType::Asynchronous(x) => &x.name,
@@ -335,7 +342,7 @@ where
         }
     }
 
-    pub fn mode(&self) -> InterfaceCategory {
+    pub(crate) fn mode(&self) -> InterfaceCategory {
         match self {
             InterfaceType::Synchronous(_) => InterfaceCategory::Synchronous,
             InterfaceType::Asynchronous(_) => InterfaceCategory::Asynchronous,
@@ -343,7 +350,7 @@ where
         }
     }
 
-    pub fn doc(&self) -> &Doc<D> {
+    pub(crate) fn doc(&self) -> &Doc<D> {
         match self {
             InterfaceType::Synchronous(x) => &x.doc,
             InterfaceType::Asynchronous(x) => &x.doc,
@@ -351,7 +358,7 @@ where
         }
     }
 
-    pub fn untyped(&self) -> &Handle<Interface<D>> {
+    pub(crate) fn untyped(&self) -> &Handle<Interface<D>> {
         match self {
             InterfaceType::Synchronous(x) => x,
             InterfaceType::Asynchronous(x) => x,
@@ -365,11 +372,11 @@ pub struct Interface<D>
 where
     D: DocReference,
 {
-    pub name: Name,
-    pub mode: InterfaceCategory,
-    pub callbacks: Vec<CallbackFunction<D>>,
-    pub doc: Doc<D>,
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) name: Name,
+    pub(crate) mode: InterfaceCategory,
+    pub(crate) callbacks: Vec<CallbackFunction<D>>,
+    pub(crate) doc: Doc<D>,
+    pub(crate) settings: Rc<LibrarySettings>,
 }
 
 impl Interface<Unvalidated> {
@@ -394,18 +401,18 @@ where
     /// Return a reference to a CallbackFunction if and only if the interface has a single callback.
     ///
     /// This type of interface can be converted to a Functor-type in many backend languages
-    pub fn get_functional_callback(&self) -> Option<&CallbackFunction<D>> {
+    pub(crate) fn get_functional_callback(&self) -> Option<&CallbackFunction<D>> {
         match self.callbacks.len() {
             1 => self.callbacks.get(0),
             _ => None,
         }
     }
 
-    pub fn is_functional(&self) -> bool {
+    pub(crate) fn is_functional(&self) -> bool {
         self.get_functional_callback().is_some()
     }
 
-    pub fn find_callback<S: AsRef<str>>(&self, name: S) -> Option<&CallbackFunction<D>> {
+    pub(crate) fn find_callback<S: AsRef<str>>(&self, name: S) -> Option<&CallbackFunction<D>> {
         self.callbacks
             .iter()
             .find(|callback| callback.name.as_ref() == name.as_ref())
@@ -419,7 +426,7 @@ pub type InterfaceHandle = Handle<Interface<Unvalidated>>;
 /// Acts as a "New Type" around an interface handle to restrict where it can be used in the API model
 #[derive(Debug, Clone)]
 pub struct AsynchronousInterface {
-    pub inner: InterfaceHandle,
+    pub(crate) inner: InterfaceHandle,
 }
 
 /// Declares that the contained interface is synchronous only
@@ -427,7 +434,7 @@ pub struct AsynchronousInterface {
 /// Acts as a "New Type" around an interface handle to restrict where it can be used in the API model
 #[derive(Debug, Clone)]
 pub struct SynchronousInterface {
-    pub inner: InterfaceHandle,
+    pub(crate) inner: InterfaceHandle,
 }
 
 #[derive(Debug, Clone)]
@@ -435,10 +442,10 @@ pub struct FutureInterface<D>
 where
     D: DocReference,
 {
-    pub value_type: CallbackArgument,
-    pub value_type_doc: DocString<D>,
-    pub error_type: OptionalErrorType<D>,
-    pub interface: Handle<Interface<D>>,
+    pub(crate) value_type: CallbackArgument,
+    pub(crate) value_type_doc: DocString<D>,
+    pub(crate) error_type: OptionalErrorType<D>,
+    pub(crate) interface: Handle<Interface<D>>,
 }
 
 impl FutureInterface<Unvalidated> {

@@ -1,9 +1,0 @@
-[package]
-name = "c-oo-bindgen"
-version = "0.5.1"
-authors = ["Step Function I/O LLC <info@stepfunc.io>"]
-edition = "2021"
-
-[dependencies]
-tracing = "^0.1"
-oo-bindgen = { path = "../../oo-bindgen" }

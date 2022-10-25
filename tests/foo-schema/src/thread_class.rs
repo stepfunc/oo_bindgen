@@ -76,7 +76,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .define_method("queue_error", thread_class.clone())?
         .param(
             "next_error",
-            error_type.inner.clone(),
+            error_type.clone_enum(),
             "error to return next time {class:thread_class.add()} is called",
         )?
         .doc("Next time {class:thread_class.add()} is called, fail it with this error")?

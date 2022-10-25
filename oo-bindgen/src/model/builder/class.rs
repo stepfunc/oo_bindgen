@@ -33,9 +33,10 @@ impl<'a> ClassBuilder<'a> {
                 self.doc = Some(doc.into());
                 Ok(self)
             }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
+            Some(_) => Err(BindingErrorVariant::DocAlreadyDefined {
                 symbol_name: self.declaration.name.clone(),
-            }),
+            }
+            .into()),
         }
     }
 
@@ -44,9 +45,10 @@ impl<'a> ClassBuilder<'a> {
         self.check_class(&constructor.function.name, constructor.class.clone())?;
 
         if self.constructor.is_some() {
-            return Err(BindingError::ConstructorAlreadyDefined {
+            return Err(BindingErrorVariant::ConstructorAlreadyDefined {
                 handle: self.declaration,
-            });
+            }
+            .into());
         }
 
         self.constructor = Some(constructor);
@@ -56,9 +58,10 @@ impl<'a> ClassBuilder<'a> {
 
     pub fn destructor(mut self, destructor: ClassDestructor<Unvalidated>) -> BindResult<Self> {
         if self.destructor.is_some() {
-            return Err(BindingError::DestructorAlreadyDefined {
+            return Err(BindingErrorVariant::DestructorAlreadyDefined {
                 handle: self.declaration,
-            });
+            }
+            .into());
         }
 
         // make sure the method is defined for this class
@@ -85,11 +88,12 @@ impl<'a> ClassBuilder<'a> {
 
     fn check_class(&self, name: &Name, other: ClassDeclarationHandle) -> BindResult<()> {
         if self.declaration != other {
-            return Err(BindingError::ClassMemberWrongAssociatedClass {
+            return Err(BindingErrorVariant::ClassMemberWrongAssociatedClass {
                 name: name.clone(),
                 declared: other,
                 added_to: self.declaration.clone(),
-            });
+            }
+            .into());
         }
         Ok(())
     }
@@ -104,9 +108,10 @@ impl<'a> ClassBuilder<'a> {
 
     pub fn custom_destroy<T: IntoName>(mut self, name: T) -> BindResult<Self> {
         if self.destructor.is_none() {
-            return Err(BindingError::NoDestructorForManualDestruction {
+            return Err(BindingErrorVariant::NoDestructorForManualDestruction {
                 handle: self.declaration,
-            });
+            }
+            .into());
         }
 
         self.destruction_mode = DestructionMode::Custom(name.into_name()?);
@@ -115,9 +120,10 @@ impl<'a> ClassBuilder<'a> {
 
     pub fn disposable_destroy(mut self) -> BindResult<Self> {
         if self.destructor.is_none() {
-            return Err(BindingError::NoDestructorForManualDestruction {
+            return Err(BindingErrorVariant::NoDestructorForManualDestruction {
                 handle: self.declaration,
-            });
+            }
+            .into());
         }
 
         self.destruction_mode = DestructionMode::Dispose;
@@ -128,9 +134,10 @@ impl<'a> ClassBuilder<'a> {
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
-                return Err(BindingError::DocNotDefined {
+                return Err(BindingErrorVariant::DocNotDefined {
                     symbol_name: self.declaration.name.clone(),
-                })
+                }
+                .into())
             }
         };
 
@@ -143,7 +150,7 @@ impl<'a> ClassBuilder<'a> {
             future_methods: self.async_methods,
             doc,
             destruction_mode: self.destruction_mode,
-            settings: self.lib.settings.clone(),
+            settings: self.lib.clone_settings(),
         });
 
         self.lib

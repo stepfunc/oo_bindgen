@@ -5,12 +5,12 @@ pub struct Collection<D>
 where
     D: DocReference,
 {
-    pub collection_class: ClassDeclarationHandle,
-    pub item_type: FunctionArgument,
-    pub create_func: Handle<Function<D>>,
-    pub delete_func: Handle<Function<D>>,
-    pub add_func: Handle<Function<D>>,
-    pub has_reserve: bool,
+    pub(crate) collection_class: ClassDeclarationHandle,
+    pub(crate) item_type: FunctionArgument,
+    pub(crate) create_func: Handle<Function<D>>,
+    pub(crate) delete_func: Handle<Function<D>>,
+    pub(crate) add_func: Handle<Function<D>>,
+    pub(crate) has_reserve: bool,
 }
 
 impl<D> Collection<D>

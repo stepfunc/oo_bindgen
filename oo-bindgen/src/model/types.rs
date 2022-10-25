@@ -7,6 +7,7 @@ use crate::model::*;
 pub struct StringType;
 
 /// Durations may be represented in multiple ways in the underlying C API
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
 pub enum DurationType {
     /// Duration is represented as a count of milliseconds in a u64 value
@@ -16,6 +17,7 @@ pub enum DurationType {
 }
 
 /// Same as DurationType but with an associated value
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
 pub enum DurationValue {
     /// Duration is represented as a count of milliseconds in a u64 value
@@ -65,9 +67,9 @@ where
     T: Clone,
     D: DocReference,
 {
-    pub arg_type: T,
-    pub name: Name,
-    pub doc: DocString<D>,
+    pub(crate) arg_type: T,
+    pub(crate) name: Name,
+    pub(crate) doc: DocString<D>,
 }
 
 impl<T> Arg<T, Unvalidated>
@@ -88,7 +90,7 @@ where
     T: Clone,
     D: DocReference,
 {
-    pub fn new(arg_type: T, name: Name, doc: DocString<D>) -> Self {
+    pub(crate) fn new(arg_type: T, name: Name, doc: DocString<D>) -> Self {
         Self {
             arg_type,
             name,
@@ -98,6 +100,7 @@ where
 }
 
 /// primitive types in most languages
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Primitive {
     Bool,
@@ -114,6 +117,7 @@ pub enum Primitive {
 }
 
 /// same as primitive, but with a value
+#[non_exhaustive]
 #[derive(Debug, Copy, Clone)]
 pub enum PrimitiveValue {
     Bool(bool),
@@ -149,6 +153,7 @@ impl From<PrimitiveValue> for Primitive {
 
 /// Basic types are trivially copyable. They can be used
 /// in almost any context within the API model
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BasicType {
     Primitive(Primitive),
@@ -170,84 +175,95 @@ impl InitializerValidator for Primitive {
         match self {
             Self::U8 => match value {
                 InitializerDefault::Numeric(NumberValue::U8(x)) => Ok(NumberValue::U8(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u8".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S8 => match value {
                 InitializerDefault::Numeric(NumberValue::S8(x)) => Ok(NumberValue::S8(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i8".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::U16 => match value {
                 InitializerDefault::Numeric(NumberValue::U16(x)) => Ok(NumberValue::U16(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u16".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S16 => match value {
                 InitializerDefault::Numeric(NumberValue::S16(x)) => Ok(NumberValue::S16(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i16".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::U32 => match value {
                 InitializerDefault::Numeric(NumberValue::U32(x)) => Ok(NumberValue::U32(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u32".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S32 => match value {
                 InitializerDefault::Numeric(NumberValue::S32(x)) => Ok(NumberValue::S32(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i32".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::U64 => match value {
                 InitializerDefault::Numeric(NumberValue::U64(x)) => Ok(NumberValue::U64(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u64".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S64 => match value {
                 InitializerDefault::Numeric(NumberValue::S64(x)) => Ok(NumberValue::S64(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i64".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::Float => match value {
                 InitializerDefault::Numeric(NumberValue::Float(x)) => {
                     Ok(NumberValue::Float(*x).into())
                 }
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "f32".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::Double => match value {
                 InitializerDefault::Numeric(NumberValue::Double(x)) => {
                     Ok(NumberValue::Double(*x).into())
                 }
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "f64".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Primitive::Bool => match value {
                 InitializerDefault::Bool(x) => Ok(ValidatedDefaultValue::Bool(*x)),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "bool".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
         }
     }
@@ -262,10 +278,11 @@ impl InitializerValidator for BasicType {
             BasicType::Primitive(x) => x.validate_default_value(value),
             BasicType::Duration(dt) => match value {
                 InitializerDefault::Duration(x) => Ok(ValidatedDefaultValue::Duration(*dt, *x)),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "Duration".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             BasicType::Enum(handle) => match value {
                 InitializerDefault::Enum(value) => {
@@ -275,10 +292,11 @@ impl InitializerValidator for BasicType {
                         Name::create(value)?,
                     ))
                 }
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "Enum".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
         }
     }
@@ -286,7 +304,7 @@ impl InitializerValidator for BasicType {
 
 impl Primitive {
     /// get the string representation of the type used in the Rust for the C FFI
-    pub fn get_c_rust_type(&self) -> &str {
+    pub(crate) fn get_c_rust_type(&self) -> &str {
         match self {
             Self::Bool => "bool",
             Self::U8 => "u8",
@@ -305,7 +323,7 @@ impl Primitive {
 
 impl BasicType {
     /// get the string representation of the type used in the Rust for the C FFI
-    pub fn get_c_rust_type(&self) -> &str {
+    pub(crate) fn get_c_rust_type(&self) -> &str {
         match self {
             Self::Primitive(x) => x.get_c_rust_type(),
             Self::Duration(_) => "u64",
@@ -314,7 +332,7 @@ impl BasicType {
     }
 }
 
-pub trait TypeExtractor {
+pub(crate) trait TypeExtractor {
     fn get_basic_type(&self) -> Option<&BasicType>;
 
     fn get_duration_type(&self) -> Option<DurationType> {

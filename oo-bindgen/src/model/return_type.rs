@@ -6,8 +6,8 @@ where
     T: Clone,
     D: DocReference,
 {
-    pub value: T,
-    pub doc: DocString<D>,
+    pub(crate) value: T,
+    pub(crate) doc: DocString<D>,
 }
 
 impl<T> ReturnType<T, Unvalidated>
@@ -37,7 +37,7 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct OptionalReturnType<T, D>
+pub(crate) struct OptionalReturnType<T, D>
 where
     T: Clone,
     D: DocReference,
@@ -50,26 +50,26 @@ where
     T: Clone,
     D: DocReference,
 {
-    pub fn get(&self) -> Option<&ReturnType<T, D>> {
+    pub(crate) fn get(&self) -> Option<&ReturnType<T, D>> {
         self.value.as_ref()
     }
 
-    pub fn is_none(&self) -> bool {
+    pub(crate) fn is_none(&self) -> bool {
         self.value.is_none()
     }
 
-    pub fn is_some(&self) -> bool {
+    pub(crate) fn is_some(&self) -> bool {
         self.value.is_some()
     }
 
-    pub fn get_value(&self) -> Option<&T> {
+    pub(crate) fn get_value(&self) -> Option<&T> {
         match &self.value {
             None => None,
             Some(x) => Some(&x.value),
         }
     }
 
-    pub fn get_doc(&self) -> Option<&DocString<D>> {
+    pub(crate) fn get_doc(&self) -> Option<&DocString<D>> {
         match &self.value {
             None => None,
             Some(x) => Some(&x.doc),
@@ -96,9 +96,10 @@ where
                 self.value = Some(ReturnType::new(value, doc));
                 Ok(())
             }
-            Some(_) => Err(BindingError::ReturnTypeAlreadyDefined {
+            Some(_) => Err(BindingErrorVariant::ReturnTypeAlreadyDefined {
                 func_name: parent.clone(),
-            }),
+            }
+            .into()),
         }
     }
 

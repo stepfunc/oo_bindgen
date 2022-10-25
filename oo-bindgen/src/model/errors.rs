@@ -1,11 +1,31 @@
+use std::fmt::Formatter;
 use thiserror::Error;
 
 use crate::model::*;
 
 pub type BindResult<T> = Result<T, BindingError>;
 
+#[derive(Debug)]
+pub struct BindingError {
+    inner: BindingErrorVariant,
+}
+
+impl From<BindingErrorVariant> for BindingError {
+    fn from(x: BindingErrorVariant) -> Self {
+        BindingError { inner: x }
+    }
+}
+
+impl std::fmt::Display for BindingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.inner)
+    }
+}
+
+impl std::error::Error for BindingError {}
+
 #[derive(Error, Debug)]
-pub enum BindingError {
+pub(crate) enum BindingErrorVariant {
     // ---------------- global errors -----------------------------------
     #[error("Symbol '{}' already used in the library", name)]
     SymbolAlreadyUsed { name: Name },
@@ -185,6 +205,6 @@ pub enum BindingError {
 
 impl From<BadName> for BindingError {
     fn from(err: BadName) -> Self {
-        BindingError::BadName { err }
+        BindingErrorVariant::BadName { err }.into()
     }
 }

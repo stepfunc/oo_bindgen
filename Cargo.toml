@@ -2,13 +2,6 @@
 
 members = [
     "oo-bindgen",
-    "ci-script",
-
-    "generators/rust-oo-bindgen",
-    "generators/c-oo-bindgen",
-    "generators/dotnet-oo-bindgen",
-    "generators/java-oo-bindgen",
-
     "tests/foo-schema",
     "tests/foo-ffi",
     "tests/foo-bindings",

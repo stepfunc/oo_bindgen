@@ -1,5 +1,3 @@
-use rust_oo_bindgen::RustCodegen;
-
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
@@ -9,7 +7,7 @@ fn main() {
             std::process::exit(-1);
         }
         Ok(lib) => {
-            RustCodegen::new(&lib).generate().unwrap();
+            oo_bindgen::backend::rust::generate_ffi(&lib).unwrap();
         }
     }
 }

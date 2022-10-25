@@ -70,8 +70,8 @@ impl From<ClassDeclarationHandle> for CallbackArgument {
 /// An enum handle and a default validated variant
 #[derive(Debug, Clone)]
 pub struct EnumValue {
-    pub handle: EnumHandle,
-    pub variant: EnumVariant<Unvalidated>,
+    pub(crate) handle: EnumHandle,
+    pub(crate) variant: EnumVariant<Unvalidated>,
 }
 
 impl EnumValue {

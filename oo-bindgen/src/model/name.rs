@@ -102,7 +102,7 @@ impl Display for BadName {
 
 #[non_exhaustive]
 #[derive(Error, Debug, Copy, Clone, PartialEq, Eq)]
-pub enum NameError {
+pub(crate) enum NameError {
     #[error("Name is an empty string")]
     IsEmpty,
     #[error("Name contains invalid character '{}'", c)]

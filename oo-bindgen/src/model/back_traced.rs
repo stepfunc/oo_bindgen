@@ -8,8 +8,8 @@ pub type BackTraced<T> = Result<T, BackTracedBindingError>;
 
 #[derive(Debug)]
 pub struct BackTracedBindingError {
-    pub error: BindingError,
-    pub backtrace: Backtrace,
+    pub(crate) error: BindingError,
+    pub(crate) backtrace: Backtrace,
 }
 
 impl From<BindingError> for BackTracedBindingError {

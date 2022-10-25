@@ -424,7 +424,7 @@ pub type InterfaceHandle = Handle<Interface<Unvalidated>>;
 /// Acts as a "New Type" around an interface handle to restrict where it can be used in the API model
 #[derive(Debug, Clone)]
 pub struct AsynchronousInterface {
-    pub inner: InterfaceHandle,
+    pub(crate) inner: InterfaceHandle,
 }
 
 /// Declares that the contained interface is synchronous only
@@ -432,7 +432,7 @@ pub struct AsynchronousInterface {
 /// Acts as a "New Type" around an interface handle to restrict where it can be used in the API model
 #[derive(Debug, Clone)]
 pub struct SynchronousInterface {
-    pub inner: InterfaceHandle,
+    pub(crate) inner: InterfaceHandle,
 }
 
 #[derive(Debug, Clone)]

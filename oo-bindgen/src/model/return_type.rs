@@ -37,7 +37,7 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct OptionalReturnType<T, D>
+pub(crate) struct OptionalReturnType<T, D>
 where
     T: Clone,
     D: DocReference,

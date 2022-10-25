@@ -165,12 +165,12 @@ pub(crate) enum Visibility {
 /// C-style structure forward declaration
 #[derive(Debug)]
 pub struct StructDeclaration {
-    pub name: Name,
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) name: Name,
+    pub(crate) settings: Rc<LibrarySettings>,
 }
 
 impl StructDeclaration {
-    pub fn new(name: Name, settings: Rc<LibrarySettings>) -> Self {
+    pub(crate) fn new(name: Name, settings: Rc<LibrarySettings>) -> Self {
         Self { name, settings }
     }
 }
@@ -180,7 +180,7 @@ pub type StructDeclarationHandle = Handle<StructDeclaration>;
 /// Typed wrapper around an untyped struct declaration
 #[derive(Debug, Clone, Eq)]
 pub struct TypedStructDeclaration<T> {
-    pub inner: StructDeclarationHandle,
+    pub(crate) inner: StructDeclarationHandle,
     phantom: PhantomData<T>,
 }
 
@@ -292,9 +292,9 @@ where
     F: StructFieldType,
     D: DocReference,
 {
-    pub name: Name,
-    pub field_type: F,
-    pub doc: Doc<D>,
+    pub(crate) name: Name,
+    pub(crate) field_type: F,
+    pub(crate) doc: Doc<D>,
 }
 
 impl<F> StructField<F, Unvalidated>

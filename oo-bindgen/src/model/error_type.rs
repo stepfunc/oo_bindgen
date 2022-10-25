@@ -18,12 +18,17 @@ pub struct ErrorType<D>
 where
     D: DocReference,
 {
-    pub exception_name: Name,
-    pub exception_type: ExceptionType,
-    pub inner: Handle<Enum<D>>,
+    pub(crate) exception_name: Name,
+    pub(crate) exception_type: ExceptionType,
+    pub(crate) inner: Handle<Enum<D>>,
 }
 
 impl ErrorType<Unvalidated> {
+    /// Clone the underlying Enum that represents the error
+    pub fn clone_enum(&self) -> EnumHandle {
+        self.inner.clone()
+    }
+
     pub(crate) fn validate(&self, lib: &LibraryFields) -> BindResult<ErrorType<Validated>> {
         Ok(ErrorType {
             exception_name: self.exception_name.clone(),
@@ -36,7 +41,7 @@ impl ErrorType<Unvalidated> {
 pub type ErrorTypeHandle = ErrorType<Unvalidated>;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct OptionalErrorType<D>
+pub(crate) struct OptionalErrorType<D>
 where
     D: DocReference,
 {
@@ -51,11 +56,11 @@ where
         Self { inner: None }
     }
 
-    pub fn get(&self) -> Option<&ErrorType<D>> {
+    pub(crate) fn get(&self) -> Option<&ErrorType<D>> {
         self.inner.as_ref()
     }
 
-    pub fn is_some(&self) -> bool {
+    pub(crate) fn is_some(&self) -> bool {
         self.inner.is_some()
     }
 }

@@ -61,16 +61,9 @@ pub struct Method<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub associated_class: Handle<ClassDeclaration>,
-    pub native_function: Handle<Function<T>>,
-}
-
-impl Method<Validated> {
-    /// retrieve a list of arguments skipping the first class parameter
-    pub fn arguments(&self) -> impl Iterator<Item = &Arg<FunctionArgument, Validated>> {
-        self.native_function.arguments.iter().skip(1)
-    }
+    pub(crate) name: Name,
+    pub(crate) associated_class: Handle<ClassDeclaration>,
+    pub(crate) native_function: Handle<Function<T>>,
 }
 
 impl Method<Unvalidated> {
@@ -105,8 +98,8 @@ pub struct StaticMethod<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub native_function: Handle<Function<T>>,
+    pub(crate) name: Name,
+    pub(crate) native_function: Handle<Function<T>>,
 }
 
 impl StaticMethod<Unvalidated> {
@@ -253,9 +246,9 @@ pub struct StaticClass<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub static_methods: Vec<StaticMethod<T>>,
-    pub doc: Doc<T>,
+    pub(crate) name: Name,
+    pub(crate) static_methods: Vec<StaticMethod<T>>,
+    pub(crate) doc: Doc<T>,
 }
 
 impl StaticClass<Unvalidated> {

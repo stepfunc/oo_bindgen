@@ -85,8 +85,8 @@ impl EnumValue {
 /// The initializer may not take parameters
 #[derive(Debug, Clone)]
 pub struct ZeroParameterStructInitializer {
-    pub handle: UniversalStructHandle,
-    pub initializer: Handle<Initializer<Unvalidated>>,
+    pub(crate) handle: UniversalStructHandle,
+    pub(crate) initializer: Handle<Initializer<Unvalidated>>,
 }
 
 impl ZeroParameterStructInitializer {
@@ -442,10 +442,10 @@ pub struct FutureInterface<D>
 where
     D: DocReference,
 {
-    pub value_type: CallbackArgument,
-    pub value_type_doc: DocString<D>,
-    pub error_type: OptionalErrorType<D>,
-    pub interface: Handle<Interface<D>>,
+    pub(crate) value_type: CallbackArgument,
+    pub(crate) value_type_doc: DocString<D>,
+    pub(crate) error_type: OptionalErrorType<D>,
+    pub(crate) interface: Handle<Interface<D>>,
 }
 
 impl FutureInterface<Unvalidated> {

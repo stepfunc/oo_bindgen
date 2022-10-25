@@ -50,6 +50,9 @@ where
 }
 
 /// Generate all of the JNI (Rust) source code that glues the Java and FFI together
+///
+/// This function is typically called from a build.rs script in a target that builds
+/// the JNI shared library
 pub fn generate_jni(path: &Path, lib: &Library, config: &JniBindgenConfig) -> FormattingResult<()> {
     let mut f = FilePrinter::new(path)?;
 

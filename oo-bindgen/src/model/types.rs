@@ -175,84 +175,95 @@ impl InitializerValidator for Primitive {
         match self {
             Self::U8 => match value {
                 InitializerDefault::Numeric(NumberValue::U8(x)) => Ok(NumberValue::U8(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u8".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S8 => match value {
                 InitializerDefault::Numeric(NumberValue::S8(x)) => Ok(NumberValue::S8(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i8".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::U16 => match value {
                 InitializerDefault::Numeric(NumberValue::U16(x)) => Ok(NumberValue::U16(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u16".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S16 => match value {
                 InitializerDefault::Numeric(NumberValue::S16(x)) => Ok(NumberValue::S16(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i16".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::U32 => match value {
                 InitializerDefault::Numeric(NumberValue::U32(x)) => Ok(NumberValue::U32(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u32".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S32 => match value {
                 InitializerDefault::Numeric(NumberValue::S32(x)) => Ok(NumberValue::S32(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i32".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::U64 => match value {
                 InitializerDefault::Numeric(NumberValue::U64(x)) => Ok(NumberValue::U64(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "u64".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::S64 => match value {
                 InitializerDefault::Numeric(NumberValue::S64(x)) => Ok(NumberValue::S64(*x).into()),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "i64".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::Float => match value {
                 InitializerDefault::Numeric(NumberValue::Float(x)) => {
                     Ok(NumberValue::Float(*x).into())
                 }
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "f32".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Self::Double => match value {
                 InitializerDefault::Numeric(NumberValue::Double(x)) => {
                     Ok(NumberValue::Double(*x).into())
                 }
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "f64".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             Primitive::Bool => match value {
                 InitializerDefault::Bool(x) => Ok(ValidatedDefaultValue::Bool(*x)),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "bool".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
         }
     }
@@ -267,10 +278,11 @@ impl InitializerValidator for BasicType {
             BasicType::Primitive(x) => x.validate_default_value(value),
             BasicType::Duration(dt) => match value {
                 InitializerDefault::Duration(x) => Ok(ValidatedDefaultValue::Duration(*dt, *x)),
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "Duration".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
             BasicType::Enum(handle) => match value {
                 InitializerDefault::Enum(value) => {
@@ -280,10 +292,11 @@ impl InitializerValidator for BasicType {
                         Name::create(value)?,
                     ))
                 }
-                _ => Err(BindingError::StructInitializerBadValueForType {
+                _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                     field_type: "Enum".to_string(),
                     value: value.clone(),
-                }),
+                }
+                .into()),
             },
         }
     }

@@ -219,10 +219,11 @@ pub trait InitializerValidator {
         field_type: String,
         value: &InitializerDefault,
     ) -> BindResult<ValidatedDefaultValue> {
-        Err(BindingError::StructInitializerBadValueForType {
+        Err(BindingErrorVariant::StructInitializerBadValueForType {
             field_type,
             value: value.clone(),
-        })
+        }
+        .into())
     }
 
     /// Check that the value is valid for the type
@@ -363,15 +364,17 @@ where
                     c.name.clone(),
                 )),
                 None => Err(
-                    BindingError::StructInitializerStructFieldWithoutDefaultInitializer {
+                    BindingErrorVariant::StructInitializerStructFieldWithoutDefaultInitializer {
                         struct_name: self.name().to_string(),
-                    },
+                    }
+                    .into(),
                 ),
             },
-            _ => Err(BindingError::StructInitializerBadValueForType {
+            _ => Err(BindingErrorVariant::StructInitializerBadValueForType {
                 field_type: "Struct".to_string(),
                 value: value.clone(),
-            }),
+            }
+            .into()),
         }
     }
 }

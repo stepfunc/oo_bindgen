@@ -63,10 +63,11 @@ where
 impl OptionalErrorType<Unvalidated> {
     pub(crate) fn set(&mut self, parent: &Name, err: &ErrorType<Unvalidated>) -> BindResult<()> {
         if self.inner.is_some() {
-            return Err(BindingError::ErrorTypeAlreadyDefined {
+            return Err(BindingErrorVariant::ErrorTypeAlreadyDefined {
                 function: parent.clone(),
                 error_type: err.inner.name.clone(),
-            });
+            }
+            .into());
         }
 
         self.inner = Some(err.clone());

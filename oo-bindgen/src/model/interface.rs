@@ -93,20 +93,22 @@ impl ZeroParameterStructInitializer {
     fn try_create(handle: UniversalStructHandle, name: &'static str) -> BindResult<Self> {
         let initializer = match handle.initializers.iter().find(|x| x.name == name) {
             None => {
-                return Err(BindingError::InitializerDoesNotExist {
+                return Err(BindingErrorVariant::InitializerDoesNotExist {
                     name,
                     struct_name: handle.declaration.name().clone(),
-                })
+                }
+                .into())
             }
             Some(x) => x.clone(),
         };
 
         // all values must be initialized
         if initializer.values.len() != handle.fields.len() {
-            return Err(BindingError::InitializerNotParameterless {
+            return Err(BindingErrorVariant::InitializerNotParameterless {
                 name,
                 struct_name: handle.declaration.name().clone(),
-            });
+            }
+            .into());
         }
 
         Ok(Self {

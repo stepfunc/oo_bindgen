@@ -67,10 +67,11 @@ where
             });
             Ok(self)
         } else {
-            Err(BindingError::StructFieldDuplicateName {
+            Err(BindingErrorVariant::StructFieldDuplicateName {
                 handle: self.declaration.inner.clone(),
                 field_name: name,
-            })
+            }
+            .into())
         }
     }
 
@@ -80,9 +81,10 @@ where
                 self.doc = Some(doc.into());
                 Ok(self)
             }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
+            Some(_) => Err(BindingErrorVariant::DocAlreadyDefined {
                 symbol_name: self.declaration.name().clone(),
-            }),
+            }
+            .into()),
         }
     }
 
@@ -90,9 +92,10 @@ where
         let doc = match self.doc {
             Some(doc) => doc,
             None => {
-                return Err(BindingError::DocNotDefined {
+                return Err(BindingErrorVariant::DocNotDefined {
                     symbol_name: self.declaration.name().clone(),
-                })
+                }
+                .into())
             }
         };
 
@@ -146,10 +149,11 @@ where
         if self.fields.iter().any(|field| name == field.name)
             || self.initializers.iter().any(|c| name == c.name)
         {
-            return Err(BindingError::StructInitializerDuplicateName {
+            return Err(BindingErrorVariant::StructInitializerDuplicateName {
                 struct_name: self.declaration.name().clone(),
                 initializer_name: name,
-            });
+            }
+            .into());
         }
 
         Ok(StructInitializerBuilder {
@@ -206,20 +210,22 @@ where
 
         // check that we haven't already defined this field
         if self.fields.iter().any(|f| f.name == *name) {
-            return Err(BindingError::StructInitializerDuplicateField {
+            return Err(BindingErrorVariant::StructInitializerDuplicateField {
                 struct_name: self.builder.declaration.name().clone(),
                 field_name: name.clone(),
-            });
+            }
+            .into());
         }
 
         // find the field and validate it
         let value = match self.builder.fields.iter().find(|f| f.name == *name) {
             Some(x) => x.field_type.validate_default_value(&value)?,
             None => {
-                return Err(BindingError::StructInitializerUnknownField {
+                return Err(BindingErrorVariant::StructInitializerUnknownField {
                     struct_name: self.builder.declaration.name().clone(),
                     field_name: name.clone(),
-                });
+                }
+                .into());
             }
         };
 
@@ -257,11 +263,12 @@ where
             .iter()
             .find(|other| initializer.collides_with(other))
         {
-            return Err(BindingError::StructDuplicateInitializerArgs {
+            return Err(BindingErrorVariant::StructDuplicateInitializerArgs {
                 struct_name: self.builder.declaration.name().clone(),
                 this_initializer: initializer.name.clone(),
                 other_initializer: x.name.clone(),
-            });
+            }
+            .into());
         }
 
         self.builder.initializers.push(initializer);

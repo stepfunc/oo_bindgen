@@ -75,24 +75,27 @@ impl<'a> InterfaceBuilder<'a> {
 
     fn check_unique_callback_name(&mut self, name: &Name) -> BindResult<()> {
         if name == &self.lib.settings().interface.destroy_func_name {
-            return Err(BindingError::InterfaceMethodWithReservedName {
+            return Err(BindingErrorVariant::InterfaceMethodWithReservedName {
                 name: self.lib.settings().interface.destroy_func_name.clone(),
-            });
+            }
+            .into());
         }
 
         if name == &self.lib.settings().interface.context_variable_name.clone() {
-            return Err(BindingError::InterfaceMethodWithReservedName {
+            return Err(BindingErrorVariant::InterfaceMethodWithReservedName {
                 name: self.lib.settings().interface.context_variable_name.clone(),
-            });
+            }
+            .into());
         }
 
         if self.callback_names.insert(name.to_string()) {
             Ok(())
         } else {
-            Err(BindingError::InterfaceDuplicateCallbackName {
+            Err(BindingErrorVariant::InterfaceDuplicateCallbackName {
                 interface_name: self.name.clone(),
                 callback_name: name.clone(),
-            })
+            }
+            .into())
         }
     }
 }
@@ -136,15 +139,18 @@ impl<'a> CallbackFunctionBuilder<'a> {
         let name = name.into_name()?;
 
         if name == self.builder.lib.settings().interface.context_variable_name {
-            return Err(BindingError::CallbackMethodArgumentWithReservedName {
-                name: self
-                    .builder
-                    .lib
-                    .settings()
-                    .interface
-                    .context_variable_name
-                    .clone(),
-            });
+            return Err(
+                BindingErrorVariant::CallbackMethodArgumentWithReservedName {
+                    name: self
+                        .builder
+                        .lib
+                        .settings()
+                        .interface
+                        .context_variable_name
+                        .clone(),
+                }
+                .into(),
+            );
         }
 
         self.arguments.push(Arg::new(arg_type, name, doc.into()));
@@ -185,9 +191,10 @@ impl<'a> CallbackFunctionBuilder<'a> {
     pub fn returns_nothing_by_default(mut self) -> BindResult<Self> {
         // return type should not already be defined
         if self.return_type.is_some() {
-            return Err(BindingError::ReturnTypeAlreadyDefined {
+            return Err(BindingErrorVariant::ReturnTypeAlreadyDefined {
                 func_name: self.name,
-            });
+            }
+            .into());
         }
 
         self.default_implementation = Some(DefaultCallbackReturnValue::Void);

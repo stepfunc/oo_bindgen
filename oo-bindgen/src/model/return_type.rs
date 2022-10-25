@@ -96,9 +96,10 @@ where
                 self.value = Some(ReturnType::new(value, doc));
                 Ok(())
             }
-            Some(_) => Err(BindingError::ReturnTypeAlreadyDefined {
+            Some(_) => Err(BindingErrorVariant::ReturnTypeAlreadyDefined {
                 func_name: parent.clone(),
-            }),
+            }
+            .into()),
         }
     }
 

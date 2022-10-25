@@ -73,10 +73,11 @@ where
         variant_name: &str,
     ) -> BindResult<&EnumVariant<T>> {
         match self.find_variant_by_name(variant_name) {
-            None => Err(BindingError::UnknownEnumVariant {
+            None => Err(BindingErrorVariant::UnknownEnumVariant {
                 name: self.name.clone(),
                 variant_name: variant_name.to_string(),
-            }),
+            }
+            .into()),
             Some(x) => Ok(x),
         }
     }

@@ -112,7 +112,7 @@ impl<'a> ClassMethodBuilder<'a> {
         class: ClassDeclarationHandle,
     ) -> BindResult<Self> {
         if method_name.contains(class.name.as_ref()) {
-            return Err(BindingError::BadMethodName { class, method_name });
+            return Err(BindingErrorVariant::BadMethodName { class, method_name }.into());
         }
 
         let instance_arg_name = lib.settings().class.method_instance_argument_name.clone();

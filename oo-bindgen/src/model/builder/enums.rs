@@ -43,15 +43,17 @@ impl<'a> EnumBuilder<'a> {
             self.next_value = value + 1;
             Ok(self)
         } else if !unique_name {
-            Err(BindingError::DuplicateEnumVariantName {
+            Err(BindingErrorVariant::DuplicateEnumVariantName {
                 name: self.name,
                 variant_name: name.to_string(),
-            })
+            }
+            .into())
         } else {
-            Err(BindingError::DuplicateEnumVariantValue {
+            Err(BindingErrorVariant::DuplicateEnumVariantValue {
                 name: self.name,
                 variant_value: value,
-            })
+            }
+            .into())
         }
     }
 

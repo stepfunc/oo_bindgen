@@ -82,8 +82,8 @@ where
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BadName {
-    pub name: String,
-    pub error: NameError,
+    pub(crate) name: String,
+    pub(crate) error: NameError,
 }
 
 impl BadName {

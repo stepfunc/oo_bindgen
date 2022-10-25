@@ -153,18 +153,20 @@ impl OptionalDoc {
                 self.inner = Some(doc);
                 Ok(())
             }
-            Some(_) => Err(BindingError::DocAlreadyDefined {
+            Some(_) => Err(BindingErrorVariant::DocAlreadyDefined {
                 symbol_name: self.parent_name.clone(),
-            }),
+            }
+            .into()),
         }
     }
 
     pub(crate) fn extract(self) -> BindResult<Doc<Unvalidated>> {
         match self.inner {
             Some(doc) => Ok(doc),
-            None => Err(BindingError::DocNotDefined {
+            None => Err(BindingErrorVariant::DocNotDefined {
                 symbol_name: self.parent_name.clone(),
-            }),
+            }
+            .into()),
         }
     }
 }
@@ -367,26 +369,29 @@ impl Unvalidated {
                 let args = match args {
                     Some(args) => args,
                     None => {
-                        return Err(BindingError::DocInvalidArgumentContext {
+                        return Err(BindingErrorVariant::DocInvalidArgumentContext {
                             symbol_name: symbol_name.to_string(),
                             ref_name: name.to_string(),
-                        })
+                        }
+                        .into())
                     }
                 };
 
                 match args.iter().find(|arg| arg.as_ref() == name) {
                     Some(arg) => Ok(Validated::Argument(arg.clone())),
-                    None => Err(BindingError::DocInvalidReference {
+                    None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: name.to_string(),
-                    }),
+                    }
+                    .into()),
                 }
             }
             Self::Class(name) => match lib.find_class_declaration(name) {
-                None => Err(BindingError::DocInvalidReference {
+                None => Err(BindingErrorVariant::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
                     ref_name: name.to_string(),
-                }),
+                }
+                .into()),
                 Some(x) => Ok(Validated::Class(x.clone())),
             },
             Self::ClassMethod(class_name, method_name) => {
@@ -394,10 +399,11 @@ impl Unvalidated {
                     .find_class(class_name)
                     .and_then(|class| class.find_method(method_name).map(|func| (class, func)))
                 {
-                    None => Err(BindingError::DocInvalidReference {
+                    None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}()", class_name, method_name),
-                    }),
+                    }
+                    .into()),
                     Some((class, (name, function))) => {
                         Ok(Validated::ClassMethod(class.clone(), name, function))
                     }
@@ -408,10 +414,11 @@ impl Unvalidated {
                     .find_class(class_name)
                     .and_then(|x| x.constructor.clone().map(|d| (x.clone(), d)))
                 {
-                    None => Err(BindingError::DocInvalidReference {
+                    None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.[constructor]", class_name,),
-                    }),
+                    }
+                    .into()),
                     Some((class, constructor)) => {
                         Ok(Validated::ClassConstructor(class, constructor))
                     }
@@ -422,20 +429,22 @@ impl Unvalidated {
                     .find_class(class_name)
                     .and_then(|x| x.destructor.clone().map(|d| (x, d)))
                 {
-                    None => Err(BindingError::DocInvalidReference {
+                    None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.[destructor]", class_name),
-                    }),
+                    }
+                    .into()),
                     Some((class, destructor)) => {
                         Ok(Validated::ClassDestructor(class.clone(), destructor))
                     }
                 }
             }
             Self::Struct(struct_name) => match lib.find_struct(struct_name) {
-                None => Err(BindingError::DocInvalidReference {
+                None => Err(BindingErrorVariant::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
                     ref_name: struct_name.to_string(),
-                }),
+                }
+                .into()),
                 Some(x) => Ok(Validated::Struct(x.clone())),
             },
             Self::StructField(struct_name, field_name) => {
@@ -443,18 +452,20 @@ impl Unvalidated {
                     .find_struct(struct_name)
                     .and_then(|st| st.find_field_name(field_name).map(|n| (st, n)))
                 {
-                    None => Err(BindingError::DocInvalidReference {
+                    None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}", struct_name, field_name),
-                    }),
+                    }
+                    .into()),
                     Some((st, name)) => Ok(Validated::StructField(st.clone(), name)),
                 }
             }
             Self::Enum(enum_name) => match lib.find_enum(enum_name) {
-                None => Err(BindingError::DocInvalidReference {
+                None => Err(BindingErrorVariant::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
                     ref_name: enum_name.to_string(),
-                }),
+                }
+                .into()),
                 Some(x) => Ok(Validated::Enum(x.clone())),
             },
             Self::EnumVariant(enum_name, variant_name) => {
@@ -462,18 +473,20 @@ impl Unvalidated {
                     e.find_variant_by_name(variant_name)
                         .map(|v| (e, v.name.clone()))
                 }) {
-                    None => Err(BindingError::DocInvalidReference {
+                    None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}", enum_name, variant_name),
-                    }),
+                    }
+                    .into()),
                     Some((e, v)) => Ok(Validated::EnumVariant(e.clone(), v)),
                 }
             }
             Self::Interface(interface_name) => match lib.find_interface(interface_name) {
-                None => Err(BindingError::DocInvalidReference {
+                None => Err(BindingErrorVariant::DocInvalidReference {
                     symbol_name: symbol_name.to_string(),
                     ref_name: interface_name.to_string(),
-                }),
+                }
+                .into()),
                 Some(x) => Ok(Validated::Interface(x.clone())),
             },
             Self::InterfaceMethod(interface_name, method_name) => {
@@ -481,10 +494,11 @@ impl Unvalidated {
                     .find_interface(interface_name)
                     .and_then(|i| i.find_callback(method_name).map(|m| (i, m)))
                 {
-                    None => Err(BindingError::DocInvalidReference {
+                    None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
                         ref_name: format!("{}.{}()", interface_name, method_name),
-                    }),
+                    }
+                    .into()),
                     Some((i, m)) => Ok(Validated::InterfaceMethod(i.clone(), m.name.clone())),
                 }
             }
@@ -630,7 +644,7 @@ impl TryFrom<&str> for DocStringElement<Unvalidated> {
             return Ok(DocStringElement::Iterator);
         }
 
-        Err(BindingError::InvalidDocString)
+        Err(BindingErrorVariant::InvalidDocString.into())
     }
 }
 

@@ -18,13 +18,13 @@ pub enum ConstantValue {
 
 /// Constant belonging to a set of constants
 #[derive(Debug)]
-pub struct Constant<T>
+pub(crate) struct Constant<T>
 where
     T: DocReference,
 {
-    pub name: Name,
-    pub value: ConstantValue,
-    pub doc: Doc<T>,
+    pub(crate) name: Name,
+    pub(crate) value: ConstantValue,
+    pub(crate) doc: Doc<T>,
 }
 
 impl Constant<Unvalidated> {
@@ -44,13 +44,13 @@ where
     T: DocReference,
 {
     /// name of the set
-    pub name: Name,
+    pub(crate) name: Name,
     /// common library settings
-    pub settings: Rc<LibrarySettings>,
+    pub(crate) settings: Rc<LibrarySettings>,
     /// values
-    pub values: Vec<Constant<T>>,
+    pub(crate) values: Vec<Constant<T>>,
     /// documentation
-    pub doc: Doc<T>,
+    pub(crate) doc: Doc<T>,
 }
 
 impl ConstantSet<Unvalidated> {

@@ -22,7 +22,7 @@ pub struct ClassDeclaration {
 }
 
 #[derive(Debug, Clone)]
-pub struct IteratorClassDeclaration {
+pub(crate) struct IteratorClassDeclaration {
     pub(crate) inner: ClassDeclarationHandle,
 }
 
@@ -33,7 +33,7 @@ impl IteratorClassDeclaration {
 }
 
 #[derive(Debug, Clone)]
-pub struct CollectionClassDeclaration {
+pub(crate) struct CollectionClassDeclaration {
     pub(crate) inner: ClassDeclarationHandle,
 }
 

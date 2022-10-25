@@ -26,7 +26,7 @@ pub fn build_lib() -> BackTraced<Library> {
         description: "Foo is an interesting library".to_string(),
         project_url: "https://stepfunc.io/".to_string(),
         repository: "stepfunc/oo_bindgen".to_string(),
-        license_name: "Custom license".to_string(),
+        license_name: "MIT".to_string(),
         license_description: [
             "foo v1.2.3",
             "Copyright (C) 2020-2021 Step Function I/O",
@@ -38,7 +38,7 @@ pub fn build_lib() -> BackTraced<Library> {
         .iter()
         .map(|s| s.to_string())
         .collect(),
-        license_path: PathBuf::from("../../../LICENSE-MIT"),
+        license_path: PathBuf::from("LICENSE-MIT"),
         developers: vec![DeveloperInfo {
             name: "Émile Grégoire".to_string(),
             email: "info@stepfunc.io".to_string(),

@@ -60,7 +60,7 @@ pub(crate) fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> Form
     }
 
     // Copy extra files
-    fs::copy(
+    logged::copy(
         &lib.info.license_path,
         config
             .output_dir

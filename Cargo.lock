@@ -239,7 +239,7 @@ checksum = "0bd4b30a6560bbd9b4620f4de34c3f14f60848e58a9b7216801afcb4c7b31c3c"
 
 [[package]]
 name = "foo-bindings"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "foo-schema",
  "oo-bindgen",
@@ -249,7 +249,7 @@ dependencies = [
 
 [[package]]
 name = "foo-ffi"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "foo-schema",
  "oo-bindgen",
@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "foo-ffi-java"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "foo-ffi",
  "foo-schema",
@@ -267,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "foo-schema"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "oo-bindgen",
 ]
@@ -451,7 +451,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 
 [[package]]
 name = "oo-bindgen"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "backtrace",
  "clap",

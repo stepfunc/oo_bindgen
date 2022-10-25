@@ -3,6 +3,10 @@ name = "oo-bindgen"
 version = "0.6.0"
 authors = ["Step Function I/O LLC <info@stepfunc.io>"]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "DSL-based binding geneator for C, C++, Java, and C#"
+homepage = "https://github.com/stepfunc/oo_bindgen/"
+readme = "../README.md"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

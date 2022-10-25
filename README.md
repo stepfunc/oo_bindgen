@@ -6,10 +6,9 @@
 
 Object-oriented binding generator for Rust.
 
-## License
 
-Refer to `License.txt` for the terms of the non-commercial license.  This software is "source available", 
-but is not "open source". You must purchase a commercial license to use this software for profit.
+## License
+Licensed under the terms of the MIT or Apache v2 licenses at your choice.
 
 ## How it works
 
@@ -30,18 +29,10 @@ but is not "open source". You must purchase a commercial license to use this sof
 
 - `oo-bindgen`: main library to build an object-oriented representation of your
   library.
-- `generators`: different generators that takes a library defined using
-  `oo-bindgen` to create easy-to-use bindings.
 - `tests`: contains an example `foo-ffi` library with the associated
   `foo-bindings` object-oriented library definition. It builds the same library
   in each supported language. Each language has extensive unit tests written to
   check that the generated bindings work as expected.
-- `ci-script`: a library for uniform CI scripts of projects
-
-## Using the compiled bindings
-
-For every project, a GitHub Actions pipeline generates bindings that are ready
-to use on Windows x64 and Linux distributions based on glibc.
 
 ### C bindings
 

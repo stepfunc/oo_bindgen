@@ -38,7 +38,7 @@ pub fn build_lib() -> BackTraced<Library> {
         .iter()
         .map(|s| s.to_string())
         .collect(),
-        license_path: PathBuf::from("LICENSE.txt"),
+        license_path: PathBuf::from("../../../LICENSE-MIT"),
         developers: vec![DeveloperInfo {
             name: "Émile Grégoire".to_string(),
             email: "info@stepfunc.io".to_string(),

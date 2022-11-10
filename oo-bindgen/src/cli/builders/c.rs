@@ -41,6 +41,7 @@ impl BindingBuilder for CBindingBuilder {
     fn generate(&mut self, _is_packaging: bool, generate_doxygen: bool) {
         let config = crate::backend::c::CBindgenConfig {
             output_dir: self.output_dir(),
+            ffi_target_name: self.settings.ffi_target_name,
             ffi_name: self.settings.ffi_name,
             extra_files: self.extra_files.clone(),
             platform_locations: self.platforms.clone(),

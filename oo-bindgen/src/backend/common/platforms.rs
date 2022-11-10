@@ -25,7 +25,7 @@ impl PlatformExt for Platform {
     fn dyn_lib_filename<T: AsRef<str>>(&self, libname: T) -> String {
         if self.target_os == OS::Windows {
             format!("{}.dll.lib", libname.as_ref())
-        } else if self.target_os == OS::MacOS {
+        } else if self.target_os == OS::MacOS || self.target_os == OS::iOS {
             format!("lib{}.dylib", libname.as_ref())
         } else {
             format!("lib{}.so", libname.as_ref())
@@ -35,7 +35,7 @@ impl PlatformExt for Platform {
     fn bin_filename<T: AsRef<str>>(&self, libname: T) -> String {
         if self.target_os == OS::Windows {
             format!("{}.dll", libname.as_ref())
-        } else if self.target_os == OS::MacOS {
+        } else if self.target_os == OS::MacOS || self.target_os == OS::iOS {
             format!("lib{}.dylib", libname.as_ref())
         } else {
             format!("lib{}.so", libname.as_ref())

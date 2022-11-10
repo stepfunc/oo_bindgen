@@ -15,6 +15,7 @@ mod header;
 
 pub(crate) struct CBindgenConfig {
     pub(crate) output_dir: PathBuf,
+    pub(crate) ffi_target_name: &'static str,
     pub(crate) ffi_name: &'static str,
     pub(crate) extra_files: Vec<PathBuf>,
     pub(crate) platform_locations: PlatformLocations,
@@ -44,6 +45,12 @@ pub(crate) fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> Form
             .join("lib")
             .join(pl.platform.target_triple);
         logged::create_dir_all(&lib_path)?;
+
+        let lib_filename = pl.platform.static_lib_filename(&config.ffi_name);
+        logged::copy(
+            pl.location.join(&lib_filename),
+            lib_path.join(&lib_filename),
+        )?;
 
         let lib_filename = pl.platform.dyn_lib_filename(&config.ffi_name);
         logged::copy(
@@ -183,6 +190,11 @@ fn generate_cmake_config(
                 pl.platform.bin_filename(&config.ffi_name)
             ))?;
             f.writeln(&format!(
+                "set({}_STATIC_IMPORTED_LOCATION {})",
+                lib.settings.name.capital_snake_case(),
+                pl.platform.static_lib_filename(&config.ffi_name)
+            ))?;
+            f.writeln(&format!(
                 "set({}_IMPORTED_IMPLIB {})",
                 lib.settings.name.capital_snake_case(),
                 pl.platform.dyn_lib_filename(&config.ffi_name)
@@ -206,6 +218,10 @@ fn generate_cmake_config(
     let rust_target_var = format!("{}_RUST_TARGET", lib.settings.name.capital_snake_case());
     let imported_location_var = format!(
         "{}_IMPORTED_LOCATION",
+        lib.settings.name.capital_snake_case()
+    );
+    let static_imported_location_var = format!(
+        "{}_STATIC_IMPORTED_LOCATION",
         lib.settings.name.capital_snake_case()
     );
     let imported_implib_var = format!("{}_IMPORTED_IMPLIB", lib.settings.name.capital_snake_case());
@@ -292,6 +308,30 @@ fn generate_cmake_config(
 
     f.newline()?;
 
+    // Write static library
+    f.writeln(&format!(
+        "add_library({}_static STATIC IMPORTED GLOBAL)",
+        lib.settings.name
+    ))?;
+    f.writeln(&format!(
+        "set_target_properties({}_static PROPERTIES",
+        lib.settings.name
+    ))?;
+    indented(&mut f, |f| {
+        f.writeln(&format!(
+            "IMPORTED_LOCATION \"${{prefix}}/lib/${{{}}}/${{{}}}\"",
+            rust_target_var, static_imported_location_var
+        ))?;
+        f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")?;
+        f.writeln(&format!(
+            "INTERFACE_LINK_LIBRARIES \"{}\"",
+            get_link_dependencies(config).join(";")
+        ))
+    })?;
+    f.writeln(")")?;
+
+    f.newline()?;
+
     // C++ target
     f.writeln("get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)")?;
     f.writeln("if(\"CXX\" IN_LIST languages)")?;
@@ -315,4 +355,47 @@ fn generate_cmake_config(
     f.writeln("endif()")?;
 
     Ok(())
+}
+
+// from 39c1728e6cf10f8bc716fa27f318f2db562a05bc
+fn get_link_dependencies(config: &CBindgenConfig) -> Vec<String> {
+    let output = Command::new("cargo")
+        .args(&[
+            "rustc",
+            "-p",
+            config.ffi_target_name,
+            "--",
+            "--print",
+            "native-static-libs",
+        ])
+        .output()
+        .expect("failed to run cargo");
+
+    assert!(
+        output.status.success(),
+        "failed to get the link dependencies"
+    );
+
+    // It prints to stderr for some reason
+    let result = String::from_utf8_lossy(&output.stderr);
+
+    // Find where the libs are written
+    const PATTERN: &str = "native-static-libs: ";
+    let pattern_idx = result
+        .find(PATTERN)
+        .expect("failed to parse link dependencies");
+    let deps = &result[pattern_idx + PATTERN.len()..result.len()];
+    let endline = deps.find('\n').expect("failed to parse link dependencies");
+    let deps = &deps[0..endline];
+
+    // Extract the libs
+    let mut result = deps
+        .split_whitespace()
+        .map(|x| x.to_owned())
+        .collect::<Vec<_>>();
+
+    // Remove duplicates
+    result.dedup();
+
+    result
 }

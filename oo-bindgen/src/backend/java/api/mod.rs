@@ -308,7 +308,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                                     ))
                                 })?;
                             }
-                            OS::Linux => {
+                            OS::Linux | OS::Android => {
                                 f.writeln("if(!loaded)")?;
                                 blocked(f, |f| {
                                     f.writeln(&format!(

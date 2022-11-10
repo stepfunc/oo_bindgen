@@ -24,6 +24,7 @@ pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()
     f.writeln("#include <chrono>")?;
     f.writeln("#include <memory>")?;
     f.writeln("#include <vector>")?;
+    f.writeln("#include <string>")?;
     f.newline()?;
 
     doxygen(&mut f, |f| {

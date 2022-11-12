@@ -204,6 +204,18 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln("  <plugins>")?;
         f.writeln("    <plugin>")?;
         f.writeln("      <groupId>org.apache.maven.plugins</groupId>")?;
+        f.writeln("      <artifactId>maven-compiler-plugin</artifactId>")?;
+        f.writeln("      <version>3.8.1</version>")?;
+        f.writeln("      <configuration>")?;
+        f.writeln("        <source>1.8</source>")?;
+        f.writeln("        <target>1.8</target>")?;
+        f.writeln("         <compilerArgs>")?;
+        f.writeln("           <arg>-Xlint:removal</arg>")?;
+        f.writeln("         </compilerArgs>")?;
+        f.writeln("      </configuration>")?;
+        f.writeln("    </plugin>")?;
+        f.writeln("    <plugin>")?;
+        f.writeln("      <groupId>org.apache.maven.plugins</groupId>")?;
         f.writeln("      <artifactId>maven-source-plugin</artifactId>")?;
         f.writeln("      <version>2.2.1</version>")?;
         f.writeln("      <executions>")?;

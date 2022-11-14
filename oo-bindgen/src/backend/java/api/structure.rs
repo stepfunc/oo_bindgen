@@ -93,7 +93,7 @@ where
 
         if !constructor.values.is_empty() {
             f.newline()?;
-            f.writeln("<p>Values are initialized to:")?;
+            f.writeln("<p>Values are initialized to:</p>")?;
             f.writeln("<ul>")?;
             for value in constructor.values.iter() {
                 f.writeln(&format!(
@@ -103,7 +103,7 @@ where
                     get_default_value_doc(&value.value)
                 ))?;
             }
-            f.writeln("</ul><p>")?;
+            f.writeln("</ul>")?;
         }
 
         f.newline()?;

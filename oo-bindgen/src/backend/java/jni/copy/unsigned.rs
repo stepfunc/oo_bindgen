@@ -27,7 +27,7 @@ pub(crate) struct ULong {
 
 impl UByte {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Lorg/joou/UByte;").expect("Unable to find org/joou/UByte class");
+        let class = env.find_class("org/joou/UByte").expect("Unable to find org/joou/UByte class");
         let to_rust = env.get_method_id(class, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find UByte::longValue");
         let to_jni = env.get_static_method_id(class, "valueOf", "(J)Lorg/joou/UByte;").map(|mid| mid.into_inner().into()).expect("Unable to find UByte::valueOf");
         Self {
@@ -50,7 +50,7 @@ impl UByte {
 
 impl UShort {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Lorg/joou/UShort;").expect("Unable to find org/joou/UShort class");
+        let class = env.find_class("org/joou/UShort").expect("Unable to find org/joou/UShort class");
         let to_rust = env.get_method_id(class, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find UShort::longValue");
         let to_jni = env.get_static_method_id(class, "valueOf", "(I)Lorg/joou/UShort;").map(|mid| mid.into_inner().into()).expect("Unable to find UShort::valueOf");
         Self {
@@ -73,7 +73,7 @@ impl UShort {
 
 impl UInteger {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Lorg/joou/UInteger;").expect("Unable to find org/joou/UInteger class");
+        let class = env.find_class("org/joou/UInteger").expect("Unable to find org/joou/UInteger class");
         let to_rust = env.get_method_id(class, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find UInteger::longValue");
         let to_jni = env.get_static_method_id(class, "valueOf", "(J)Lorg/joou/UInteger;").map(|mid| mid.into_inner().into()).expect("Unable to find UInteger::valueOf");
         Self {
@@ -96,7 +96,7 @@ impl UInteger {
 
 impl ULong {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Lorg/joou/ULong;").expect("Unable to find org/joou/ULong class");
+        let class = env.find_class("org/joou/ULong").expect("Unable to find org/joou/ULong class");
         let to_rust = env.get_method_id(class, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find ULong::longValue");
         let to_jni = env.get_static_method_id(class, "valueOf", "(J)Lorg/joou/ULong;").map(|mid| mid.into_inner().into()).expect("Unable to find ULong::valueOf");
         Self {

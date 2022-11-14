@@ -294,18 +294,13 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         blocked(f, |f| {
             f.writeln("try")?;
             blocked(f, |f| {
-                let env_variable_name = format!(
-                    "{}_NATIVE_LIB_LOCATION",
-                    lib.settings.name.capital_snake_case()
-                );
-                f.writeln(&format!(
-                    "String nativeLibLocation = System.getenv(\"{}\");",
-                    env_variable_name
-                ))?;
-                f.writeln("if(nativeLibLocation != null)")?;
-                blocked(f, |f| f.writeln("System.load(nativeLibLocation);"))?;
+                let libname = format!("{}_java", config.ffi_name);
 
-                f.writeln("else")?;
+                f.writeln("try")?;
+                blocked(f, |f| {
+                    f.writeln(&format!("System.loadLibrary(\"{}\");", libname))
+                })?;
+                f.writeln("catch(Throwable e)")?;
                 blocked(f, |f| {
                     f.writeln("boolean loaded = false;")?;
                     let libname = format!("{}_java", config.ffi_name);
@@ -345,16 +340,16 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     f.writeln("if(!loaded)")?;
                     blocked(f, |f| {
                         f.writeln("throw new Exception(\"Unable to load any of the included native library\");")
-                    })?;
-
-                    f.newline()?;
-
-                    // Check the loaded binary version
-                    f.writeln("String loadedVersion = version();")?;
-                    f.writeln("if (!loadedVersion.equals(VERSION))")?;
-                    blocked(f, |f| {
-                        f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.settings.name))
                     })
+                })?;
+
+                f.newline()?;
+
+                // Check the loaded binary version
+                f.writeln("String loadedVersion = version();")?;
+                f.writeln("if (!loadedVersion.equals(VERSION))")?;
+                blocked(f, |f| {
+                    f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.settings.name))
                 })
             })?;
             f.writeln("catch(Exception e)")?;

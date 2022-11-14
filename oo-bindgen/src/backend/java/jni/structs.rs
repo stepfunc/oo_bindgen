@@ -277,7 +277,7 @@ where
 {
     let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
     let struct_name = structure.name().camel_case();
-    let struct_sig = format!("\"L{}/{};\"", lib_path, struct_name);
+    let struct_sig = format!("\"{}/{}\"", lib_path, struct_name);
 
     f.newline()?;
     f.writeln(&format!("impl {}", struct_name))?;

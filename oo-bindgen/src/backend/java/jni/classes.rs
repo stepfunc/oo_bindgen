@@ -31,7 +31,7 @@ pub(crate) fn generate_classes_cache(
             indented(f, |f| {
                 let class_name = class.name().camel_case();
                 f.writeln(&format!(
-                    "let class = env.find_class(\"L{}/{};\").expect(\"Unable to find class {}\");",
+                    "let class = env.find_class(\"{}/{}\").expect(\"Unable to find class {}\");",
                     lib_path, class_name, class_name
                 ))?;
                 f.writeln(&format!("let constructor = env.get_method_id(class, \"<init>\", \"(J)V\").map(|mid| mid.into_inner().into()).expect(\"Unable to find constructor of {}\");", class_name))?;

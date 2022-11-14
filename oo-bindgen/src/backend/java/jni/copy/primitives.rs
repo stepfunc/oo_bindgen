@@ -8,7 +8,7 @@ pub(crate) struct Boolean {
 
 impl Boolean {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/lang/Boolean;").expect("Unable to find java/lang/Boolean class");
+        let class = env.find_class("java/lang/Boolean").expect("Unable to find java/lang/Boolean class");
         Self {
             class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "booleanValue", "()Z").map(|mid| mid.into_inner().into()).expect("Unable to find Boolean::booleanValue"),
@@ -34,7 +34,7 @@ pub(crate) struct Byte {
 
 impl Byte {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/lang/Byte;").expect("Unable to find java/lang/Byte class");
+        let class = env.find_class("java/lang/Byte").expect("Unable to find java/lang/Byte class");
         Self {
             class: env.new_global_ref(class).unwrap(),
             value_method:env.get_method_id(class, "byteValue", "()B").map(|mid| mid.into_inner().into()).expect("Unable to find Byte::byteValue"),
@@ -60,7 +60,7 @@ pub(crate) struct Short {
 
 impl Short {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/lang/Short;").expect("Unable to find java/lang/Short class");
+        let class = env.find_class("java/lang/Short").expect("Unable to find java/lang/Short class");
         Self {
             class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "shortValue", "()S").map(|mid| mid.into_inner().into()).expect("Unable to find Short::shortValue"),
@@ -86,7 +86,7 @@ pub(crate) struct Integer {
 
 impl Integer {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/lang/Integer;").expect("Unable to find java/lang/Integer class");
+        let class = env.find_class("java/lang/Integer").expect("Unable to find java/lang/Integer class");
         Self {
             class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "intValue", "()I").map(|mid| mid.into_inner().into()).expect("Unable to find Integer::intValue"),
@@ -113,7 +113,7 @@ pub(crate) struct Long {
 
 impl Long {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/lang/Long;").expect("Unable to find java/lang/Long class");
+        let class = env.find_class("java/lang/Long").expect("Unable to find java/lang/Long class");
         Self {
             class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "longValue", "()J").map(|mid| mid.into_inner().into()).expect("Unable to find Long::longValue"),
@@ -140,7 +140,7 @@ pub(crate) struct Float {
 
 impl Float {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/lang/Float;").expect("Unable to find java/lang/Float class");
+        let class = env.find_class("java/lang/Float").expect("Unable to find java/lang/Float class");
         Self {
             class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "floatValue", "()F").map(|mid| mid.into_inner().into()).expect("Unable to find Float::floatValue"),
@@ -167,7 +167,7 @@ pub(crate) struct Double {
 
 impl Double {
     fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/lang/Double;").expect("Unable to find java/lang/Double class");
+        let class = env.find_class("java/lang/Double").expect("Unable to find java/lang/Double class");
         Self {
             class: env.new_global_ref(class).unwrap(),
             value_method: env.get_method_id(class, "doubleValue", "()D").map(|mid| mid.into_inner().into()).expect("Unable to find Double::doubleValue"),

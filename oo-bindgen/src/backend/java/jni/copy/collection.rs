@@ -18,14 +18,14 @@ pub struct Collection {
 
 impl Collection {
     pub fn init(env: &jni::JNIEnv) -> Self {
-        let array_list_class = env.find_class("Ljava/util/ArrayList;").expect("Unable to find java/util/ArrayList class");
+        let array_list_class = env.find_class("java/util/ArrayList").expect("Unable to find java/util/ArrayList class");
 
         let array_list_constructor = env.get_method_id(array_list_class, "<init>", "()V").map(|mid| mid.into_inner().into()).expect("Unable to find ArrayList constructor");
         let array_list_add_method = env.get_method_id(array_list_class, "add", "(Ljava/lang/Object;)Z").map(|mid| mid.into_inner().into()).expect("Unable to find ArrayList::add()");
         let unmodifiable_list_constructor = env.get_static_method_id("java/util/Collections", "unmodifiableList", "(Ljava/util/List;)Ljava/util/List;").map(|mid| mid.into_inner().into()).expect("Unable to find Collections::unmodifiableList()");
 
-        let iterator_class = env.find_class("Ljava/util/Iterator;").expect("Unable to find java/util/Iterator class");
-        let list_class = env.find_class("Ljava/util/List;").expect("Unable to find java/util/List class");
+        let iterator_class = env.find_class("java/util/Iterator").expect("Unable to find java/util/Iterator class");
+        let list_class = env.find_class("java/util/List").expect("Unable to find java/util/List class");
         let iterator_has_next_method = env.get_method_id(iterator_class, "hasNext", "()Z").map(|mid| mid.into_inner().into()).expect("Unable to find Iterator::hasNext()");
         let iterator_next_method = env.get_method_id(iterator_class, "next", "()Ljava/lang/Object;").map(|mid| mid.into_inner().into()).expect("Unable to find Iterator::next()");
         let list_iterator_method = env.get_method_id(list_class, "iterator", "()Ljava/util/Iterator;").map(|mid| mid.into_inner().into()).expect("Unable to find List::iterator()");

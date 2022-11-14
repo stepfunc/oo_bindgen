@@ -182,7 +182,7 @@ fn write_interface_init(
     f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
     blocked(f, |f| {
         f.writeln(&format!(
-            "let class = env.find_class(\"L{}/{};\").expect(\"Unable to find {}\");",
+            "let class = env.find_class(\"{}/{}\").expect(\"Unable to find {}\");",
             lib_path, interface_name, interface_name
         ))?;
         for callback in callbacks {

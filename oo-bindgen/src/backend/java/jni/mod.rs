@@ -159,7 +159,7 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
         f.writeln("let vm = unsafe { jni::JavaVM::from_raw(vm).unwrap() };")?;
         f.writeln("let jcache = JCache::init(vm);")?;
         f.writeln("unsafe { JCACHE.replace(jcache) };")?;
-        f.writeln("jni::JNIVersion::V8.into()")
+        f.writeln("jni::JNIVersion::V6.into()")
     })?;
 
     f.newline()?;

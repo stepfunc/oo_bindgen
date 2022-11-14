@@ -37,7 +37,7 @@ pub(crate) fn generate_exceptions_cache(
                 error.exception_name
             ))?;
             indented(f, |f| {
-                f.writeln(&format!("let class = env.find_class(\"L{}/{};\").expect(\"Unable to find exception {}\");", lib_path, camel_name, camel_name))?;
+                f.writeln(&format!("let class = env.find_class(\"{}/{}\").expect(\"Unable to find exception {}\");", lib_path, camel_name, camel_name))?;
                 f.writeln(&format!("let constructor = env.get_method_id(class, \"<init>\", \"(L{}/{};)V\").map(|mid| mid.into_inner().into()).expect(\"Unable to find constructor of {}\");", lib_path, enum_name, camel_name))?;
                 f.writeln("Self { class : env.new_global_ref(class).unwrap(), constructor }")
             })?;

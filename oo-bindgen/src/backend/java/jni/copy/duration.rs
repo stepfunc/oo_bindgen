@@ -11,7 +11,7 @@ pub struct Duration {
 
 impl Duration {
     pub fn init(env: &jni::JNIEnv) -> Self {
-        let class = env.find_class("Ljava/time/Duration;").expect("Unable to find java/time/Duration class");
+        let class = env.find_class("java/time/Duration").expect("Unable to find java/time/Duration class");
 
         let of_millis_method = env.get_static_method_id(class, "ofMillis", "(J)Ljava/time/Duration;").map(|mid| mid.into_inner().into()).expect("Unable to find Duration::ofMillis()");
         let of_seconds_method = env.get_static_method_id(class, "ofSeconds", "(J)Ljava/time/Duration;").map(|mid| mid.into_inner().into()).expect("Unable to find Duration::ofSeconds()");

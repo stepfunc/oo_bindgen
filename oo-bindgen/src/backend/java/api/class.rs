@@ -40,7 +40,7 @@ pub(crate) fn generate(
         }
 
         for method in &class.methods {
-            generate_method(f, method)?;
+            generate_method(f, method, &class.destruction_mode)?;
             f.newline()?;
         }
 
@@ -203,7 +203,7 @@ fn generate_destructor(
     })
 }
 
-fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> FormattingResult<()> {
+fn generate_method(f: &mut dyn Printer, method: &Method<Validated>, destruction_mode: &DestructionMode) -> FormattingResult<()> {
     documentation(f, |f| {
         // Print top-level documentation
         javadoc_print(f, &method.native_function.doc)?;
@@ -263,6 +263,12 @@ fn generate_method(f: &mut dyn Printer, method: &Method<Validated>) -> Formattin
     }
 
     blocked(f, |f| {
+        if matches!(destruction_mode, DestructionMode::Dispose) {
+            f.writeln("if (this.disposed.get())")?;
+            f.writeln("    throw new RuntimeException(\"class method invoked after close operation\");")?;
+            f.newline()?;
+        }
+
         call_native_function(f, &method.native_function, "return ", true)
     })
 }

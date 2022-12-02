@@ -71,7 +71,7 @@ pub(crate) fn generate_java_bindings(
         let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
 
         logged::create_dir_all(&target_dir)?;
-        logged::copy(&source_file, &target_file)?;
+        logged::copy(source_file, target_file)?;
     }
 
     // Copy the extra files
@@ -87,7 +87,7 @@ pub(crate) fn generate_java_bindings(
     }
 
     // Create the source directory
-    logged::create_dir_all(&config.java_source_dir(lib))?;
+    logged::create_dir_all(config.java_source_dir(lib))?;
 
     // Create all the direct mappings
     generate_native_func_class(lib, config)?;

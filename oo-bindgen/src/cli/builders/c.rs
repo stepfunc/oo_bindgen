@@ -70,7 +70,7 @@ impl BindingBuilder for CBindingBuilder {
         // CMake build
         let result = Command::new("cmake")
             .current_dir(&build_dir)
-            .args(&["--build", ".", "--config", "Debug"])
+            .args(["--build", ".", "--config", "Debug"])
             .status()
             .expect("cmake failed");
         assert!(result.success());
@@ -80,7 +80,7 @@ impl BindingBuilder for CBindingBuilder {
         // Run unit tests
         let result = Command::new("ctest")
             .current_dir(&self.build_dir())
-            .args(&[".", "-C", "Debug"])
+            .args([".", "-C", "Debug"])
             .status()
             .unwrap();
         assert!(result.success());

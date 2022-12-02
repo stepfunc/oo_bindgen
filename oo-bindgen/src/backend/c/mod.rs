@@ -45,13 +45,13 @@ pub(crate) fn generate_c_package(lib: &Library, config: &CBindgenConfig) -> Form
             .join(pl.platform.target_triple);
         logged::create_dir_all(&lib_path)?;
 
-        let lib_filename = pl.platform.dyn_lib_filename(&config.ffi_name);
+        let lib_filename = pl.platform.dyn_lib_filename(config.ffi_name);
         logged::copy(
             pl.location.join(&lib_filename),
             lib_path.join(&lib_filename),
         )?;
 
-        let bin_filename = pl.platform.bin_filename(&config.ffi_name);
+        let bin_filename = pl.platform.bin_filename(config.ffi_name);
         // Copy DLL on Windows
         logged::copy(
             pl.location.join(&bin_filename),
@@ -180,12 +180,12 @@ fn generate_cmake_config(
             f.writeln(&format!(
                 "set({}_IMPORTED_LOCATION {})",
                 lib.settings.name.capital_snake_case(),
-                pl.platform.bin_filename(&config.ffi_name)
+                pl.platform.bin_filename(config.ffi_name)
             ))?;
             f.writeln(&format!(
                 "set({}_IMPORTED_IMPLIB {})",
                 lib.settings.name.capital_snake_case(),
-                pl.platform.dyn_lib_filename(&config.ffi_name)
+                pl.platform.dyn_lib_filename(config.ffi_name)
             ))
         })
     }

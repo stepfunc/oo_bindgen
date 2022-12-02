@@ -10,7 +10,7 @@ use crate::backend::c::formatting::*;
 
 pub(crate) fn generate_header(lib: &Library, path: &Path) -> FormattingResult<()> {
     // Open the file
-    logged::create_dir_all(&path)?;
+    logged::create_dir_all(path)?;
     let filename = path.join(format!("{}.hpp", lib.settings.name));
     let mut f = FilePrinter::new(filename)?;
 

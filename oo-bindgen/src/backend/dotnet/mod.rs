@@ -179,7 +179,7 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
     for p in config.platforms.iter() {
         let ps = dotnet_platform_string(&p.platform)
             .unwrap_or_else(|| panic!("No RID mapped for Rust target: {}", p.platform));
-        let filename = p.platform.bin_filename(&config.ffi_name);
+        let filename = p.platform.bin_filename(config.ffi_name);
         let filepath = dunce::canonicalize(p.location.join(&filename))?;
         f.writeln(&format!("    <Content Include=\"{}\" Link=\"{}\" Pack=\"true\" PackagePath=\"runtimes/{}/native\" CopyToOutputDirectory=\"PreserveNewest\" />", filepath.to_string_lossy(), filename, ps))?;
     }
@@ -238,10 +238,10 @@ fn generate_targets_scripts(lib: &Library, config: &DotnetBindgenConfig) -> Form
         for p in config.platforms.iter() {
             if let Some(ps) = dotnet_platform_string(&p.platform) {
                 if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86_64 {
-                    f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x64'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", ps, p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+                    f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x64'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", ps, p.platform.bin_filename(config.ffi_name), p.platform.bin_filename(config.ffi_name), lib.settings.name))?;
                 } else if p.platform.target_os == OS::Windows && p.platform.target_arch == Arch::X86
                 {
-                    f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x86'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", ps, p.platform.bin_filename(&config.ffi_name), p.platform.bin_filename(&config.ffi_name), lib.settings.name))?;
+                    f.writeln(&format!("    <Content Condition=\"'$(Platform)' == 'x86'\" Include=\"$(MSBuildThisFileDirectory)../../runtimes/{}/native/{}\" Link=\"{}\" CopyToOutputDirectory=\"Always\" Visible=\"false\" NuGetPackageId=\"{}\" />", ps, p.platform.bin_filename(config.ffi_name), p.platform.bin_filename(config.ffi_name), lib.settings.name))?;
                 }
             }
         }

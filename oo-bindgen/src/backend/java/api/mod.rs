@@ -36,7 +36,7 @@ pub(crate) struct JavaBindgenConfig {
 impl JavaBindgenConfig {
     fn java_source_dir(&self, lib: &Library) -> PathBuf {
         let mut result = self.java_output_dir.clone();
-        result.extend(&["src", "main", "java"]);
+        result.extend(["src", "main", "java"]);
         for dir in self.group_id.split('.') {
             result.push(dir);
         }
@@ -46,7 +46,7 @@ impl JavaBindgenConfig {
 
     fn java_resource_dir(&self) -> PathBuf {
         let mut result = self.java_output_dir.clone();
-        result.extend(&["src", "main", "resources"]);
+        result.extend(["src", "main", "resources"]);
         result
     }
 }

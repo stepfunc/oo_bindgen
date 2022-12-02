@@ -332,7 +332,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
                     f.writeln("if(!loaded)")?;
                     blocked(f, |f| {
-                        f.writeln("throw new Exception(\"Unable to load any of the included native library\");")
+                        f.writeln("throw new Exception(\"Unable to load any of the included native libraries\");")
                     })?;
 
                     f.newline()?;
@@ -345,10 +345,9 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     })
                 })
             })?;
-            f.writeln("catch(Exception e)")?;
+            f.writeln("catch(Exception ex)")?;
             blocked(f, |f| {
-                f.writeln("System.err.println(\"Native code library failed to load: \" + e);")?;
-                f.writeln("System.exit(1);")
+                f.writeln("throw new RuntimeException(\"Unable to load native library\", ex);")
             })
         })?;
 

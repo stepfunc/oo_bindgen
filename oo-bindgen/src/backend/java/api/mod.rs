@@ -36,7 +36,7 @@ pub(crate) struct JavaBindgenConfig {
 impl JavaBindgenConfig {
     fn java_source_dir(&self, lib: &Library) -> PathBuf {
         let mut result = self.java_output_dir.clone();
-        result.extend(&["src", "main", "java"]);
+        result.extend(["src", "main", "java"]);
         for dir in self.group_id.split('.') {
             result.push(dir);
         }
@@ -46,7 +46,7 @@ impl JavaBindgenConfig {
 
     fn java_resource_dir(&self) -> PathBuf {
         let mut result = self.java_output_dir.clone();
-        result.extend(&["src", "main", "resources"]);
+        result.extend(["src", "main", "resources"]);
         result
     }
 }
@@ -71,7 +71,7 @@ pub(crate) fn generate_java_bindings(
         let target_file = target_dir.join(p.platform.bin_filename(&ffi_name));
 
         logged::create_dir_all(&target_dir)?;
-        logged::copy(&source_file, &target_file)?;
+        logged::copy(source_file, target_file)?;
     }
 
     // Copy the extra files
@@ -87,7 +87,7 @@ pub(crate) fn generate_java_bindings(
     }
 
     // Create the source directory
-    logged::create_dir_all(&config.java_source_dir(lib))?;
+    logged::create_dir_all(config.java_source_dir(lib))?;
 
     // Create all the direct mappings
     generate_native_func_class(lib, config)?;
@@ -332,7 +332,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
                     f.writeln("if(!loaded)")?;
                     blocked(f, |f| {
-                        f.writeln("throw new Exception(\"Unable to load any of the included native library\");")
+                        f.writeln("throw new Exception(\"Unable to load any of the included native libraries\");")
                     })?;
 
                     f.newline()?;
@@ -345,10 +345,9 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     })
                 })
             })?;
-            f.writeln("catch(Exception e)")?;
+            f.writeln("catch(Exception ex)")?;
             blocked(f, |f| {
-                f.writeln("System.err.println(\"Native code library failed to load: \" + e);")?;
-                f.writeln("System.exit(1);")
+                f.writeln("throw new RuntimeException(\"Unable to load native library\", ex);")
             })
         })?;
 

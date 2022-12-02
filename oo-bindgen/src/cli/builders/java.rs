@@ -36,7 +36,7 @@ impl JavaBindingBuilder {
     fn maven(&self) -> Command {
         let mut command = if cfg!(windows) {
             let mut command = Command::new("cmd");
-            command.args(&["/c", "mvn.cmd"]);
+            command.args(["/c", "mvn.cmd"]);
             command
         } else {
             Command::new("mvn")

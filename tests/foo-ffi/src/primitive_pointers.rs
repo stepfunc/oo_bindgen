@@ -17,7 +17,7 @@ impl Default for PrimitivePointers {
 }
 
 pub(crate) fn primitive_pointers_create() -> *mut crate::PrimitivePointers {
-    Box::leak(Box::new(PrimitivePointers::default()))
+    Box::leak(Box::default())
 }
 
 pub(crate) unsafe fn primitive_pointers_destroy(instance: *mut crate::PrimitivePointers) {

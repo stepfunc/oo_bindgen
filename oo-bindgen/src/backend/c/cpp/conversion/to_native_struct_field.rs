@@ -27,7 +27,7 @@ where
     T: StructFieldType + ToNativeStructField,
 {
     fn to_native_struct_field(&self, expr: String) -> String {
-        format!("to_native({})", expr)
+        format!("to_native({expr})")
     }
 
     fn requires_move(&self) -> bool {
@@ -37,7 +37,7 @@ where
 
 impl ToNativeStructField for InterfaceHandle {
     fn to_native_struct_field(&self, expr: String) -> String {
-        format!("to_native(std::move({}))", expr)
+        format!("to_native(std::move({expr}))")
     }
 
     fn requires_move(&self) -> bool {
@@ -50,7 +50,7 @@ impl ToNativeStructField for InterfaceHandle {
 
 impl ToNativeStructField for ClassDeclarationHandle {
     fn to_native_struct_field(&self, expr: String) -> String {
-        format!("::convert::get({})", expr)
+        format!("::convert::get({expr})")
     }
 
     fn requires_move(&self) -> bool {
@@ -60,7 +60,7 @@ impl ToNativeStructField for ClassDeclarationHandle {
 
 impl ToNativeStructField for AbstractIteratorHandle {
     fn to_native_struct_field(&self, expr: String) -> String {
-        format!("::convert::to_native({})", expr)
+        format!("::convert::to_native({expr})")
     }
 
     fn requires_move(&self) -> bool {

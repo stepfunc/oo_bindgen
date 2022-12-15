@@ -21,21 +21,20 @@ pub(crate) fn generate_classes_cache(
     for class in lib.classes() {
         let class_name = class.name().camel_case();
         f.newline()?;
-        f.writeln(&format!("pub(crate) struct {} {{", class_name))?;
+        f.writeln(&format!("pub(crate) struct {class_name} {{"))?;
         indented(f, |f| f.writeln("info: ClassInfo"))?;
         f.writeln("}")?;
         f.newline()?;
-        f.writeln(&format!("impl {} {{", class_name))?;
+        f.writeln(&format!("impl {class_name} {{"))?;
         indented(f, |f| {
             f.writeln("fn init(env: &jni::JNIEnv) -> Self {")?;
             indented(f, |f| {
                 let class_name = class.name().camel_case();
                 f.writeln(&format!(
-                    "let class = env.find_class(\"L{}/{};\").expect(\"Unable to find class {}\");",
-                    lib_path, class_name, class_name
+                    "let class = env.find_class(\"L{lib_path}/{class_name};\").expect(\"Unable to find class {class_name}\");"
                 ))?;
-                f.writeln(&format!("let constructor = env.get_method_id(class, \"<init>\", \"(J)V\").map(|mid| mid.into_inner().into()).expect(\"Unable to find constructor of {}\");", class_name))?;
-                f.writeln(&format!("let self_field = env.get_field_id(class, \"self\", \"J\").map(|mid| mid.into_inner().into()).expect(\"Unable to find self field of {}\");", class_name))?;
+                f.writeln(&format!("let constructor = env.get_method_id(class, \"<init>\", \"(J)V\").map(|mid| mid.into_inner().into()).expect(\"Unable to find constructor of {class_name}\");"))?;
+                f.writeln(&format!("let self_field = env.get_field_id(class, \"self\", \"J\").map(|mid| mid.into_inner().into()).expect(\"Unable to find self field of {class_name}\");"))?;
                 f.writeln("Self {")?;
                 indented(f, |f| {
                     f.writeln("info: ClassInfo { class: env.new_global_ref(class).unwrap(), constructor, self_field }")

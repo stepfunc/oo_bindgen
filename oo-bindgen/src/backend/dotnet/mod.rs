@@ -66,7 +66,7 @@ pub(crate) enum TargetFramework {
 
 impl std::fmt::Display for TargetFramework {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -352,7 +352,7 @@ fn generate_constant_set(
 
     fn get_value_as_string(value: &ConstantValue) -> String {
         match value {
-            ConstantValue::U8(x, Representation::Hex) => format!("0x{:02X?}", x),
+            ConstantValue::U8(x, Representation::Hex) => format!("0x{x:02X?}"),
         }
     }
 
@@ -430,18 +430,17 @@ fn generate_exception(
         let error_name = err.inner.name.camel_case();
         let exception_name = err.exception_name.camel_case();
 
-        f.writeln(&format!("public class {}: Exception", exception_name))?;
+        f.writeln(&format!("public class {exception_name}: Exception"))?;
         blocked(f, |f| {
             documentation(f, |f| {
                 f.writeln("<summary>")?;
                 f.write("Error detail")?;
                 f.write("</summary>")
             })?;
-            f.writeln(&format!("public readonly {} error;", error_name))?;
+            f.writeln(&format!("public readonly {error_name} error;"))?;
             f.newline()?;
             f.writeln(&format!(
-                "internal {}({} error) : base(error.ToString())",
-                exception_name, error_name
+                "internal {exception_name}({error_name} error) : base(error.ToString())"
             ))?;
             blocked(f, |f| f.writeln("this.error = error;"))
         })
@@ -580,7 +579,7 @@ fn run_doxygen(cwd: &Path, config_lines: &[&str]) -> FormattingResult<()> {
         let stdin = command.stdin.as_mut().unwrap();
 
         for line in config_lines {
-            stdin.write_all(&format!("{}\n", line).into_bytes())?;
+            stdin.write_all(&format!("{line}\n").into_bytes())?;
         }
     }
 

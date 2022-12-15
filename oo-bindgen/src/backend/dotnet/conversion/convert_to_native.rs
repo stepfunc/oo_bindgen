@@ -11,8 +11,8 @@ pub(crate) trait ConvertToNative {
 impl ConvertToNative for DurationType {
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            Self::Milliseconds => Some(format!("(ulong){}.TotalMilliseconds", from)),
-            Self::Seconds => Some(format!("(ulong){}.TotalSeconds", from)),
+            Self::Milliseconds => Some(format!("(ulong){from}.TotalMilliseconds")),
+            Self::Seconds => Some(format!("(ulong){from}.TotalSeconds")),
         }
     }
 
@@ -24,7 +24,7 @@ impl ConvertToNative for DurationType {
 impl ConvertToNative for Primitive {
     fn convert_to_native(&self, from: &str) -> Option<String> {
         match self {
-            Self::Bool => Some(format!("Convert.ToByte({})", from)),
+            Self::Bool => Some(format!("Convert.ToByte({from})")),
             Self::U8 => None,
             Self::S8 => None,
             Self::U16 => None,
@@ -88,11 +88,11 @@ impl ConvertToNative for BasicType {
 
 impl ConvertToNative for StringType {
     fn convert_to_native(&self, from: &str) -> Option<String> {
-        Some(format!("Helpers.RustString.ToNative({})", from))
+        Some(format!("Helpers.RustString.ToNative({from})"))
     }
 
     fn cleanup_native(&self, from: &str) -> Option<String> {
-        Some(format!("Helpers.RustString.Destroy({});", from))
+        Some(format!("Helpers.RustString.Destroy({from});"))
     }
 }
 
@@ -106,7 +106,7 @@ where
             match self.mode {
                 InterfaceCategory::Synchronous | InterfaceCategory::Asynchronous => {
                     if cb.functional_transform.enabled() {
-                        format!("functional.{}.create({})", name, from)
+                        format!("functional.{name}.create({from})")
                     } else {
                         from.to_string()
                     }
@@ -119,7 +119,7 @@ where
         } else {
             from.to_string()
         };
-        Some(format!("new I{}NativeAdapter({})", name, inner_transform))
+        Some(format!("new I{name}NativeAdapter({inner_transform})"))
     }
 
     fn cleanup_native(&self, _from: &str) -> Option<String> {
@@ -129,7 +129,7 @@ where
 
 impl ConvertToNative for ClassDeclarationHandle {
     fn convert_to_native(&self, from: &str) -> Option<String> {
-        Some(format!("{}.self", from))
+        Some(format!("{from}.self"))
     }
 
     fn cleanup_native(&self, _: &str) -> Option<String> {
@@ -284,7 +284,7 @@ where
     }
 
     fn cleanup_native(&self, from: &str) -> Option<String> {
-        Some(format!("{}.Dispose();", from))
+        Some(format!("{from}.Dispose();"))
     }
 }
 

@@ -11,7 +11,7 @@ pub(crate) fn generate(
     documentation(f, |f| javadoc_print(f, &native_enum.doc))?;
 
     // Enum definition
-    f.writeln(&format!("public enum {}", enum_name))?;
+    f.writeln(&format!("public enum {enum_name}"))?;
     blocked(f, |f| {
         // Write the variants
         for variant in &native_enum.variants {
@@ -30,7 +30,7 @@ pub(crate) fn generate(
 
         f.newline()?;
 
-        f.writeln(&format!("private {}(int value)", enum_name))?;
+        f.writeln(&format!("private {enum_name}(int value)"))?;
         blocked(f, |f| f.writeln("this.value = value;"))
     })
 }

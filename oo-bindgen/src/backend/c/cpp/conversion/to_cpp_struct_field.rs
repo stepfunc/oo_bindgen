@@ -12,7 +12,7 @@ where
     T: StructFieldType + ToCppStructField,
 {
     fn to_cpp_struct_field(&self, expr: String) -> String {
-        format!("to_cpp({})", expr)
+        format!("to_cpp({expr})")
     }
 }
 
@@ -39,7 +39,7 @@ where
     D: DocReference,
 {
     fn to_cpp_struct_field(&self, expr: String) -> String {
-        format!("::convert::construct({})", expr)
+        format!("::convert::construct({expr})")
     }
 }
 

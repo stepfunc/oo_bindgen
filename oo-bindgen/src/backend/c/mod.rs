@@ -101,13 +101,13 @@ fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<
             &format!("INPUT = include/{}.h", lib.settings.name),
             "HTML_OUTPUT = doc/c",
             // Output customization
-            "GENERATE_LATEX = NO",                          // No LaTeX
-            "EXTRACT_STATIC = YES",                         // We want all functions
-            "TYPEDEF_HIDES_STRUCT = YES",                   // To avoid a large typedef table
-            "AUTOLINK_SUPPORT = NO",                        // Only link when we explicitly want to
-            "OPTIMIZE_OUTPUT_FOR_C = YES",                  // I guess this will help the output
-            "ALWAYS_DETAILED_SEC = YES",                    // Always print detailed section
-            &format!("STRIP_FROM_PATH = {}", include_path), // Remove include path
+            "GENERATE_LATEX = NO",                        // No LaTeX
+            "EXTRACT_STATIC = YES",                       // We want all functions
+            "TYPEDEF_HIDES_STRUCT = YES",                 // To avoid a large typedef table
+            "AUTOLINK_SUPPORT = NO",                      // Only link when we explicitly want to
+            "OPTIMIZE_OUTPUT_FOR_C = YES",                // I guess this will help the output
+            "ALWAYS_DETAILED_SEC = YES",                  // Always print detailed section
+            &format!("STRIP_FROM_PATH = {include_path}"), // Remove include path
             // Styling
             "HTML_EXTRA_STYLESHEET = doxygen-awesome.css",
             "GENERATE_TREEVIEW = YES",
@@ -128,10 +128,10 @@ fn generate_doxygen(lib: &Library, config: &CBindgenConfig) -> FormattingResult<
             &format!("INPUT = {}/{}.hpp", include_path, lib.settings.name),
             "HTML_OUTPUT = doc/cpp",
             // Output customization
-            "GENERATE_LATEX = NO",                          // No LaTeX
-            "EXTRACT_STATIC = YES",                         // We want all functions
-            "ALWAYS_DETAILED_SEC = YES",                    // Always print detailed section
-            &format!("STRIP_FROM_PATH = {}", include_path), // Remove include path
+            "GENERATE_LATEX = NO",                        // No LaTeX
+            "EXTRACT_STATIC = YES",                       // We want all functions
+            "ALWAYS_DETAILED_SEC = YES",                  // Always print detailed section
+            &format!("STRIP_FROM_PATH = {include_path}"), // Remove include path
             // Styling
             "HTML_EXTRA_STYLESHEET = doxygen-awesome.css",
             "GENERATE_TREEVIEW = YES",
@@ -156,7 +156,7 @@ fn run_doxygen(cwd: &Path, config_lines: &[&str]) -> FormattingResult<()> {
         let stdin = command.stdin.as_mut().unwrap();
 
         for line in config_lines {
-            stdin.write_all(&format!("{}\n", line).into_bytes())?;
+            stdin.write_all(&format!("{line}\n").into_bytes())?;
         }
     }
 
@@ -216,7 +216,7 @@ fn generate_cmake_config(
         .expect("there must be at least one target");
 
     // first check that the target triple is defined
-    f.writeln(&format!("if(NOT {})", rust_target_var))?;
+    f.writeln(&format!("if(NOT {rust_target_var})"))?;
     indented(&mut f, |f| {
         if others.is_empty() {
             f.writeln("# since there is only 1 target in this package we can assume this is what is wanted")?;
@@ -240,8 +240,7 @@ fn generate_cmake_config(
 
     f.newline()?;
     f.writeln(&format!(
-        "message(\"{} is: ${{{}}}\")",
-        rust_target_var, rust_target_var
+        "message(\"{rust_target_var} is: ${{{rust_target_var}}}\")"
     ))?;
     f.newline()?;
 
@@ -261,8 +260,7 @@ fn generate_cmake_config(
     f.writeln("else()")?;
     indented(&mut f, |f| {
         f.writeln(&format!(
-            "message(FATAL_ERROR \"unknown target triple: ${{{}}}\")",
-            rust_target_var
+            "message(FATAL_ERROR \"unknown target triple: ${{{rust_target_var}}}\")"
         ))
     })?;
     f.writeln("endif()")?;
@@ -279,12 +277,10 @@ fn generate_cmake_config(
     ))?;
     indented(&mut f, |f| {
         f.writeln(&format!(
-            "IMPORTED_LOCATION \"${{prefix}}/lib/${{{}}}/${{{}}}\"",
-            rust_target_var, imported_location_var
+            "IMPORTED_LOCATION \"${{prefix}}/lib/${{{rust_target_var}}}/${{{imported_location_var}}}\""
         ))?;
         f.writeln(&format!(
-            "IMPORTED_IMPLIB \"${{prefix}}/lib/${{{}}}/${{{}}}\"",
-            rust_target_var, imported_implib_var
+            "IMPORTED_IMPLIB \"${{prefix}}/lib/${{{rust_target_var}}}/${{{imported_implib_var}}}\""
         ))?;
         f.writeln("INTERFACE_INCLUDE_DIRECTORIES \"${prefix}/include\"")
     })?;

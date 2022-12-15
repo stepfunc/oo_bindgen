@@ -22,13 +22,13 @@ impl ToConstantValue for PrimitiveValue {
     fn get_constant_value(&self) -> String {
         match self {
             PrimitiveValue::Bool(x) => x.to_string(),
-            PrimitiveValue::U8(x) => format!("UByte.valueOf({})", x),
+            PrimitiveValue::U8(x) => format!("UByte.valueOf({x})"),
             PrimitiveValue::S8(x) => x.to_string(),
-            PrimitiveValue::U16(x) => format!("UShort.valueOf({})", x),
+            PrimitiveValue::U16(x) => format!("UShort.valueOf({x})"),
             PrimitiveValue::S16(x) => x.to_string(),
-            PrimitiveValue::U32(x) => format!("UInteger.valueOf({})", x),
+            PrimitiveValue::U32(x) => format!("UInteger.valueOf({x})"),
             PrimitiveValue::S32(x) => x.to_string(),
-            PrimitiveValue::U64(x) => format!("ULong.valueOf({})", x),
+            PrimitiveValue::U64(x) => format!("ULong.valueOf({x})"),
             PrimitiveValue::S64(x) => x.to_string(),
             PrimitiveValue::Float(x) => x.to_string(),
             PrimitiveValue::Double(x) => x.to_string(),
@@ -39,8 +39,8 @@ impl ToConstantValue for PrimitiveValue {
 impl ToConstantValue for DurationValue {
     fn get_constant_value(&self) -> String {
         match self {
-            DurationValue::Milliseconds(x) => format!("java.time.Duration.ofMillis({})", x),
-            DurationValue::Seconds(x) => format!("java.time.Duration.ofSeconds({})", x),
+            DurationValue::Milliseconds(x) => format!("java.time.Duration.ofMillis({x})"),
+            DurationValue::Seconds(x) => format!("java.time.Duration.ofSeconds({x})"),
         }
     }
 }
@@ -98,7 +98,7 @@ pub(crate) fn generate(
     if interface.is_functional() {
         f.writeln("@FunctionalInterface")?;
     }
-    f.writeln(&format!("public interface {}", interface_name))?;
+    f.writeln(&format!("public interface {interface_name}"))?;
     blocked(f, |f| {
         // Write each required method
         for func in interface.callbacks.iter() {
@@ -122,8 +122,7 @@ pub(crate) fn generate(
                         }
                         Some(value) => {
                             f.writeln(&format!(
-                                "<p>The default implementation of this method returns '{}'</p>",
-                                value
+                                "<p>The default implementation of this method returns '{value}'</p>"
                             ))?;
                         }
                     }
@@ -179,7 +178,7 @@ pub(crate) fn generate(
                 Some(None) => f.write(") {}")?,
                 Some(Some(v)) => {
                     f.write(")")?;
-                    blocked(f, |f| f.writeln(&format!("return {};", v)))?;
+                    blocked(f, |f| f.writeln(&format!("return {v};")))?;
                 }
             }
             f.newline()?;

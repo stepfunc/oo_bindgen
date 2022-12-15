@@ -42,7 +42,7 @@ pub(crate) fn generate_collection_helpers(
                         .item_type
                         .convert_to_native("el")
                         .unwrap_or_else(|| "el".to_string());
-                    f.writeln(&format!("var convertedEl = {};", conversion))?;
+                    f.writeln(&format!("var convertedEl = {conversion};"))?;
 
                     f.writeln(&format!(
                         "{}.{}(builder, convertedEl);",
@@ -96,7 +96,7 @@ pub(crate) fn generate_iterator_helpers(
             };
 
             // ToNative function
-            f.writeln(&format!("internal static System.Collections.Generic.ICollection<{}> FromNative(IntPtr value)", value_type))?;
+            f.writeln(&format!("internal static System.Collections.Generic.ICollection<{value_type}> FromNative(IntPtr value)"))?;
             blocked(f, |f| {
                 let next_call = format!(
                     "{}.{}(value)",
@@ -105,12 +105,10 @@ pub(crate) fn generate_iterator_helpers(
                 );
 
                 f.writeln(&format!(
-                    "var builder = ImmutableArray.CreateBuilder<{}>();",
-                    value_type
+                    "var builder = ImmutableArray.CreateBuilder<{value_type}>();"
                 ))?;
                 f.writeln(&format!(
-                    "for (var itRawValue = {}; itRawValue != IntPtr.Zero; itRawValue = {})",
-                    next_call, next_call
+                    "for (var itRawValue = {next_call}; itRawValue != IntPtr.Zero; itRawValue = {next_call})"
                 ))?;
                 blocked(f, |f| {
                     // convert the value
@@ -126,7 +124,7 @@ pub(crate) fn generate_iterator_helpers(
                                 .declaration()
                                 .convert_to_dotnet("itRawValue")
                                 .unwrap_or_else(|| "itRawValue".to_string());
-                            f.writeln(&format!("builder.Add({});", conversion))
+                            f.writeln(&format!("builder.Add({conversion});"))
                         }
                     }
                 })?;
@@ -195,7 +193,7 @@ pub(crate) fn call_native_function(
             let mut return_name = "_result";
             if let Some(conversion) = return_type.convert_to_dotnet("_result") {
                 if !is_constructor {
-                    f.writeln(&format!("var __result = {};", conversion))?;
+                    f.writeln(&format!("var __result = {conversion};"))?;
                     return_name = "__result";
                 }
             }
@@ -207,7 +205,7 @@ pub(crate) fn call_native_function(
 
         // Return (if required)
         if !method.return_type.is_none() {
-            f.writeln(&format!("{}{};", return_destination, return_name))?;
+            f.writeln(&format!("{return_destination}{return_name};"))?;
         }
 
         Ok(())
@@ -260,12 +258,12 @@ pub(crate) fn call_dotnet_function(
     let method_name = method.name.camel_case();
     if let Some(return_type) = &method.return_type.get_value() {
         if return_type.convert_to_native("_result").is_some() {
-            f.write(&format!("var _result = _impl.{}(", method_name))?;
+            f.write(&format!("var _result = _impl.{method_name}("))?;
         } else {
-            f.write(&format!("{}_impl.{}(", return_destination, method_name))?;
+            f.write(&format!("{return_destination}_impl.{method_name}("))?;
         }
     } else {
-        f.write(&format!("_impl.{}(", method_name))?;
+        f.write(&format!("_impl.{method_name}("))?;
     }
 
     f.write(
@@ -281,7 +279,7 @@ pub(crate) fn call_dotnet_function(
     // Convert the result (if required)
     if let Some(return_type) = &method.return_type.get_value() {
         if let Some(conversion) = return_type.convert_to_native("_result") {
-            f.writeln(&format!("{}{};", return_destination, conversion))?;
+            f.writeln(&format!("{return_destination}{conversion};"))?;
         }
     }
 

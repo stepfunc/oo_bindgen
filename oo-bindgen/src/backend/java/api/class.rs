@@ -11,7 +11,7 @@ pub(crate) fn generate(
     documentation(f, |f| javadoc_print(f, &class.doc))?;
 
     // Class definition
-    f.writeln(&format!("public final class {}", classname))?;
+    f.writeln(&format!("public final class {classname}"))?;
     if matches!(class.destruction_mode, DestructionMode::Dispose) {
         f.write(" implements AutoCloseable")?;
     }
@@ -24,7 +24,7 @@ pub(crate) fn generate(
 
         f.newline()?;
 
-        f.writeln(&format!("private {}(long self)", classname))?;
+        f.writeln(&format!("private {classname}(long self)"))?;
         blocked(f, |f| f.writeln("this.self = self;"))?;
 
         f.newline()?;
@@ -68,11 +68,11 @@ pub(crate) fn generate_static(
     documentation(f, |f| javadoc_print(f, &class.doc))?;
 
     // Class definition
-    f.writeln(&format!("public final class {}", classname))?;
+    f.writeln(&format!("public final class {classname}"))?;
 
     blocked(f, |f| {
         // Private constructor to make it static
-        f.writeln(&format!("private {}() {{ }}", classname))?;
+        f.writeln(&format!("private {classname}() {{ }}"))?;
         f.newline()?;
 
         for method in &class.static_methods {
@@ -112,7 +112,7 @@ fn generate_constructor(
         Ok(())
     })?;
 
-    f.writeln(&format!("public {}(", classname))?;
+    f.writeln(&format!("public {classname}("))?;
     f.write(
         &constructor
             .function
@@ -134,7 +134,7 @@ fn generate_constructor(
         call_native_function(
             f,
             &constructor.function,
-            &format!("{} object = ", classname),
+            &format!("{classname} object = "),
             false,
         )?;
         f.writeln("this.self = object.self;")?;
@@ -345,7 +345,7 @@ fn generate_async_method(
         .async_method_callback_parameter_name
         .mixed_case();
 
-    let future_type = format!("java.util.concurrent.CompletableFuture<{}>", value_type);
+    let future_type = format!("java.util.concurrent.CompletableFuture<{value_type}>");
 
     // Documentation
     documentation(f, |f| {
@@ -402,11 +402,10 @@ fn generate_async_method(
     }
 
     blocked(f, |f| {
-        f.writeln(&format!("{} _future = new {}();", future_type, future_type))?;
+        f.writeln(&format!("{future_type} _future = new {future_type}();"))?;
 
         f.writeln(&format!(
-            "{} {} = new {}() {{",
-            interface_name, callback_param_name, interface_name
+            "{interface_name} {callback_param_name} = new {interface_name}() {{"
         ))?;
         indented(f, |f| {
             f.writeln(&format!(

@@ -192,6 +192,6 @@ where
             FunctionArgument::ClassRef(x) => x.core_cpp_type(),
             FunctionArgument::Interface(x) => x.core_cpp_type(),
         };
-        format!("std::vector<{}>", inner)
+        format!("std::vector<{inner}>")
     }
 }

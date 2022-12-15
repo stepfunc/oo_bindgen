@@ -84,7 +84,7 @@ pub(crate) fn generate_c_header(lib: &Library, path: &Path) -> FormattingResult<
                 Statement::Constants(handle) => write_constants_definition(f, handle)?,
                 Statement::StructDeclaration(handle) => {
                     let c_type = handle.to_c_type();
-                    f.writeln(&format!("typedef struct {} {};", c_type, c_type))?;
+                    f.writeln(&format!("typedef struct {c_type} {c_type};"))?;
                 }
                 Statement::StructDefinition(st) => match st {
                     StructType::FunctionArg(x) => write_struct_definition(f, x)?,
@@ -111,7 +111,7 @@ fn write_constants_definition(
 ) -> FormattingResult<()> {
     fn get_constant_value(value: ConstantValue) -> String {
         match value {
-            ConstantValue::U8(value, Representation::Hex) => format!("0x{:02X?}", value),
+            ConstantValue::U8(value, Representation::Hex) => format!("0x{value:02X?}"),
         }
     }
 
@@ -193,7 +193,7 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
             NumberValue::S32(x) => x.to_string(),
             NumberValue::U64(x) => x.to_string(),
             NumberValue::S64(x) => x.to_string(),
-            NumberValue::Float(x) => format!("{}f", x),
+            NumberValue::Float(x) => format!("{x}f"),
             NumberValue::Double(x) => x.to_string(),
         },
         ValidatedDefaultValue::Duration(t, x) => t.get_value_string(*x),
@@ -205,7 +205,7 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
                 variant.capital_snake_case()
             )
         }
-        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::String(x) => format!("\"{x}\""),
         ValidatedDefaultValue::DefaultStruct(handle, _, name) => {
             format!(
                 "{}_{}_{}()",
@@ -219,7 +219,7 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
 
 fn get_default_value_doc(default: &ValidatedDefaultValue) -> String {
     match default {
-        ValidatedDefaultValue::Bool(x) => format!("@p {}", x),
+        ValidatedDefaultValue::Bool(x) => format!("@p {x}"),
         ValidatedDefaultValue::Number(x) => x.to_string(),
         ValidatedDefaultValue::Duration(DurationType::Milliseconds, x) => {
             format!("{}ms", x.as_millis())
@@ -233,7 +233,7 @@ fn get_default_value_doc(default: &ValidatedDefaultValue) -> String {
                 variant.capital_snake_case()
             )
         }
-        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::String(x) => format!("\"{x}\""),
         ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
             format!("Default @ref {}", handle.to_c_type())
         }
@@ -303,7 +303,7 @@ where
                     Some(x) => get_default_value(&x.value),
                     None => field.name.to_string(),
                 };
-                let value = if last { value } else { format!("{},", value) };
+                let value = if last { value } else { format!("{value},") };
                 f.writeln(&value)?;
             }
             Ok(())
@@ -523,7 +523,7 @@ fn write_interface(
     let ctx_variable_name = handle.settings.interface.context_variable_name.clone();
     let destroy_func_name = handle.settings.interface.destroy_func_name.clone();
 
-    f.writeln(&format!("typedef struct {}", struct_name))?;
+    f.writeln(&format!("typedef struct {struct_name}"))?;
     f.writeln("{")?;
     indented(f, |f| {
         for cb in &handle.callbacks {
@@ -540,7 +540,7 @@ fn write_interface(
                     docstring_print(f, &arg.doc)?;
                 }
 
-                f.writeln(&format!("@param {} ", ctx_variable_name))?;
+                f.writeln(&format!("@param {ctx_variable_name} "))?;
                 docstring_print(f, &text("Context data"))?;
 
                 // Print return documentation
@@ -568,14 +568,14 @@ fn write_interface(
             )?;
             f.writeln("@param arg Context data")
         })?;
-        f.writeln(&format!("void (*{})(void* arg);", destroy_func_name))?;
+        f.writeln(&format!("void (*{destroy_func_name})(void* arg);"))?;
 
         doxygen(f, |f| f.writeln("@brief Context data"))?;
-        f.writeln(&format!("void* {};", ctx_variable_name))?;
+        f.writeln(&format!("void* {ctx_variable_name};"))?;
 
         Ok(())
     })?;
-    f.writeln(&format!("}} {};", struct_name))?;
+    f.writeln(&format!("}} {struct_name};"))?;
 
     f.newline()?;
 
@@ -588,10 +588,9 @@ fn write_interface(
             docstring_print(f, &cb.doc.brief)?;
         }
         f.writeln(&format!(
-            "@param {} Callback when the underlying owner doesn't need the interface anymore",
-            destroy_func_name
+            "@param {destroy_func_name} Callback when the underlying owner doesn't need the interface anymore"
         ))?;
-        f.writeln(&format!("@param {} Context data", ctx_variable_name))?;
+        f.writeln(&format!("@param {ctx_variable_name} Context data"))?;
         Ok(())
     })?;
     f.writeln(&format!(
@@ -606,20 +605,20 @@ fn write_interface(
             f.write("),")?;
         }
 
-        f.writeln(&format!("void (*{})(void* arg),", destroy_func_name))?;
-        f.writeln(&format!("void* {}", ctx_variable_name))?;
+        f.writeln(&format!("void (*{destroy_func_name})(void* arg),"))?;
+        f.writeln(&format!("void* {ctx_variable_name}"))?;
 
         Ok(())
     })?;
     f.writeln(")")?;
 
     blocked(f, |f| {
-        f.writeln(&format!("{} _return_value = {{", struct_name))?;
+        f.writeln(&format!("{struct_name} _return_value = {{"))?;
         indented(f, |f| {
             for cb in &handle.callbacks {
                 f.writeln(&format!("{},", cb.name))?;
             }
-            f.writeln(&format!("{},", destroy_func_name))?;
+            f.writeln(&format!("{destroy_func_name},"))?;
             f.writeln(ctx_variable_name.as_ref())
         })?;
         f.writeln("};")?;

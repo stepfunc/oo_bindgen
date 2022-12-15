@@ -8,8 +8,8 @@ pub(crate) trait ToCpp {
 impl ToCpp for DurationType {
     fn to_cpp(&self, expr: String) -> String {
         match self {
-            DurationType::Milliseconds => format!("::convert::from_milli_sec_u64({})", expr),
-            DurationType::Seconds => format!("::convert::from_sec_u64({})", expr),
+            DurationType::Milliseconds => format!("::convert::from_milli_sec_u64({expr})"),
+            DurationType::Seconds => format!("::convert::from_sec_u64({expr})"),
         }
     }
 }
@@ -19,7 +19,7 @@ where
     D: DocReference,
 {
     fn to_cpp(&self, expr: String) -> String {
-        format!("::convert::to_cpp({})", expr)
+        format!("::convert::to_cpp({expr})")
     }
 }
 
@@ -53,12 +53,12 @@ impl ToCpp for BasicType {
 
 impl ToCpp for StringType {
     fn to_cpp(&self, expr: String) -> String {
-        format!("std::string({})", expr)
+        format!("std::string({expr})")
     }
 }
 
 impl ToCpp for ClassDeclarationHandle {
     fn to_cpp(&self, expr: String) -> String {
-        format!("::convert::to_cpp({})", expr)
+        format!("::convert::to_cpp({expr})")
     }
 }

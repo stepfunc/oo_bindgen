@@ -37,12 +37,12 @@ pub(crate) fn generate_native_functions_class(
     f.newline()?;
 
     namespaced(f, &lib.settings.name, |f| {
-        f.writeln(&format!("internal class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
+        f.writeln(&format!("internal class {NATIVE_FUNCTIONS_CLASSNAME}"))?;
         blocked(f, |f| {
             f.writeln(&format!("const string VERSION = \"{}\";", lib.version))?;
 
             // Static constructor used to verify the version
-            f.writeln(&format!("static {}()", NATIVE_FUNCTIONS_CLASSNAME))?;
+            f.writeln(&format!("static {NATIVE_FUNCTIONS_CLASSNAME}()"))?;
             blocked(f, |f| {
                 f.writeln("var loadedVersion = Helpers.RustString.FromNative(Version());")?;
                 f.writeln("if (loadedVersion != VERSION)")?;

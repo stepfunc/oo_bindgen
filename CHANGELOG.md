@@ -1,3 +1,6 @@
+### 0.6.2 ###
+* :wrench: Small tweaks to generate code that makes the newer versions of clippy happy.
+
 ### 0.6.1 ###
 * :wrench: Java: Throw exception instead of exiting when library cannot be loaded. See [#104](https://github.com/stepfunc/oo_bindgen/pull/104).
 

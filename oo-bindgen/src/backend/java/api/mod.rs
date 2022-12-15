@@ -243,11 +243,10 @@ fn write_null_checks(
     for arg in args.iter().filter(|a| a.arg_type.is_nullable()) {
         let arg_name = arg.name.mixed_case();
         f.writeln(&format!(
-            "java.util.Objects.requireNonNull({}, \"{} cannot be null\");",
-            arg_name, arg_name
+            "java.util.Objects.requireNonNull({arg_name}, \"{arg_name} cannot be null\");"
         ))?;
         if arg.arg_type.is_struct() {
-            f.writeln(&format!("{}._assertFieldsNotNull();", arg_name))?;
+            f.writeln(&format!("{arg_name}._assertFieldsNotNull();"))?;
         }
         if let FunctionArgument::Collection(x) = &arg.arg_type {
             f.writeln(&format!(
@@ -256,7 +255,7 @@ fn write_null_checks(
                 arg_name
             ))?;
             blocked(f, |f| {
-                f.writeln(&format!("java.util.Objects.requireNonNull(_item, \"List {} may not contain a null member\");", arg_name))
+                f.writeln(&format!("java.util.Objects.requireNonNull(_item, \"List {arg_name} may not contain a null member\");"))
             })?;
         }
     }
@@ -268,7 +267,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
     f.newline()?;
 
-    f.writeln(&format!("class {}", NATIVE_FUNCTIONS_CLASSNAME))?;
+    f.writeln(&format!("class {NATIVE_FUNCTIONS_CLASSNAME}"))?;
     blocked(&mut f, |f| {
         f.writeln(&format!(
             "static final String VERSION = \"{}\";",
@@ -287,8 +286,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                     lib.settings.name.capital_snake_case()
                 );
                 f.writeln(&format!(
-                    "String nativeLibLocation = System.getenv(\"{}\");",
-                    env_variable_name
+                    "String nativeLibLocation = System.getenv(\"{env_variable_name}\");"
                 ))?;
                 f.writeln("if(nativeLibLocation != null)")?;
                 blocked(f, |f| f.writeln("System.load(nativeLibLocation);"))?;
@@ -442,7 +440,7 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
                         .join(", ");
                     let invocation = format!("NativeFunctions.{}({});", handle.name, arg_names);
                     if handle.return_type.is_some() {
-                        f.writeln(&format!("return {}", invocation))
+                        f.writeln(&format!("return {invocation}"))
                     } else {
                         f.writeln(&invocation)
                     }

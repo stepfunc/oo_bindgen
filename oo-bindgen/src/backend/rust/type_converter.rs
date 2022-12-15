@@ -61,11 +61,11 @@ impl TypeConverter {
 
 impl TypeConversion for StringType {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}.as_ptr()", to, from))
+        f.writeln(&format!("{to}{from}.as_ptr()"))
     }
 
     fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}std::ffi::CStr::from_ptr({})", to, from))
+        f.writeln(&format!("{to}std::ffi::CStr::from_ptr({from})"))
     }
 
     fn is_unsafe(&self) -> bool {
@@ -78,42 +78,41 @@ where
     D: DocReference,
 {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}.into()", to, from))
+        f.writeln(&format!("{to}{from}.into()"))
     }
 
     fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}.into()", to, from))
+        f.writeln(&format!("{to}{from}.into()"))
     }
 }
 
 impl TypeConversion for StructDeclarationHandle {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         f.writeln(&format!(
-            "{}{}.map_or(std::ptr::null(), |val| val as *const _)",
-            to, from
+            "{to}{from}.map_or(std::ptr::null(), |val| val as *const _)"
         ))
     }
 
     fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
-        f.writeln(&format!("{}{}.as_ref()", to, from))
+        f.writeln(&format!("{to}{from}.as_ref()"))
     }
 }
 
 impl TypeConversion for DurationType {
     fn convert_to_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self {
-            DurationType::Milliseconds => f.writeln(&format!("{}{}.as_millis() as u64", to, from)),
-            DurationType::Seconds => f.writeln(&format!("{}{}.as_secs()", to, from)),
+            DurationType::Milliseconds => f.writeln(&format!("{to}{from}.as_millis() as u64")),
+            DurationType::Seconds => f.writeln(&format!("{to}{from}.as_secs()")),
         }
     }
 
     fn convert_from_c(&self, f: &mut dyn Printer, from: &str, to: &str) -> FormattingResult<()> {
         match self {
             DurationType::Milliseconds => {
-                f.writeln(&format!("{}std::time::Duration::from_millis({})", to, from))
+                f.writeln(&format!("{to}std::time::Duration::from_millis({from})"))
             }
             DurationType::Seconds => {
-                f.writeln(&format!("{}std::time::Duration::from_secs({})", to, from))
+                f.writeln(&format!("{to}std::time::Duration::from_secs({from})"))
             }
         }
     }

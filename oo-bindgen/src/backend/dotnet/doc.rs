@@ -70,8 +70,7 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
 
             let class_name = class.name().camel_case();
             f.write(&format!(
-                "<see cref=\"{}.{}({})\" />",
-                class_name, class_name, params
+                "<see cref=\"{class_name}.{class_name}({params})\" />"
             ))?;
         }
         Validated::ClassDestructor(class, _) => {

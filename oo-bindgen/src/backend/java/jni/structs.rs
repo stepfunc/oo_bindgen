@@ -100,15 +100,14 @@ where
 {
     let struct_name = structure.name().camel_case();
     let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
-    let guard_struct_name = format!("{}Guard", struct_name);
+    let guard_struct_name = format!("{struct_name}Guard");
 
     f.newline()?;
 
     f.writeln(&format!(
-        "/// Guard object ensures a {} struct is valid",
-        ffi_struct_name
+        "/// Guard object ensures a {ffi_struct_name} struct is valid"
     ))?;
-    f.writeln(&format!("pub(crate) struct {}<'a> {{", guard_struct_name))?;
+    f.writeln(&format!("pub(crate) struct {guard_struct_name}<'a> {{"))?;
     indented(f, |f| {
         if !structure
             .fields
@@ -131,9 +130,9 @@ where
     f.writeln("}")?;
 
     f.newline()?;
-    f.writeln(&format!("impl {}", struct_name))?;
+    f.writeln(&format!("impl {struct_name}"))?;
     blocked(f, |f| {
-        f.writeln(&format!("pub(crate) fn to_rust<'a>(&self, _cache: &'a crate::JCache, _env: &'a jni::JNIEnv, obj: jni::sys::jobject) -> ({}<'a>, {})", guard_struct_name, ffi_struct_name))?;
+        f.writeln(&format!("pub(crate) fn to_rust<'a>(&self, _cache: &'a crate::JCache, _env: &'a jni::JNIEnv, obj: jni::sys::jobject) -> ({guard_struct_name}<'a>, {ffi_struct_name})"))?;
         blocked(f, |f| {
             // retrieve the fields from the jobject
             for field in structure.fields() {
@@ -156,7 +155,7 @@ where
             }
 
             f.newline()?;
-            f.writeln(&format!("let _ffi_struct = {} {{", ffi_struct_name))?;
+            f.writeln(&format!("let _ffi_struct = {ffi_struct_name} {{"))?;
             indented(f, |f| {
                 for field in structure.fields() {
                     if let Some(converted) = field.field_type.call_site(&field.name) {
@@ -172,7 +171,7 @@ where
 
             f.newline()?;
 
-            f.writeln(&format!("let _guard = {} {{", guard_struct_name))?;
+            f.writeln(&format!("let _guard = {guard_struct_name} {{"))?;
             indented(f, |f| {
                 if structure
                     .fields
@@ -216,9 +215,9 @@ where
     let ffi_struct_name = format!("{}::ffi::{}", config.ffi_name, struct_name);
 
     f.newline()?;
-    f.writeln(&format!("impl {}", struct_name))?;
+    f.writeln(&format!("impl {struct_name}"))?;
     blocked(f, |f| {
-        f.writeln(&format!("pub(crate) fn to_jni(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{}) -> jni::sys::jobject", ffi_struct_name))?;
+        f.writeln(&format!("pub(crate) fn to_jni(&self, _cache: &crate::JCache, _env: &jni::JNIEnv, value: &{ffi_struct_name}) -> jni::sys::jobject"))?;
         blocked(f, |f| {
             f.writeln("// automatically free all local references except for the struct itself which is returned")?;
             f.writeln("// upper bound on the number of references in the local frame is the number of fields + 1 for struct itself")?;
@@ -257,7 +256,7 @@ where
     let struct_name = structure.name().camel_case();
 
     f.newline()?;
-    f.writeln(&format!("pub struct {}", struct_name))?;
+    f.writeln(&format!("pub struct {struct_name}"))?;
     blocked(f, |f| {
         f.writeln("_class: jni::objects::GlobalRef,")?;
         for field in structure.fields() {
@@ -277,16 +276,15 @@ where
 {
     let lib_path = config.java_signature_path(&structure.declaration.inner.settings.name);
     let struct_name = structure.name().camel_case();
-    let struct_sig = format!("\"L{}/{};\"", lib_path, struct_name);
+    let struct_sig = format!("\"L{lib_path}/{struct_name};\"");
 
     f.newline()?;
-    f.writeln(&format!("impl {}", struct_name))?;
+    f.writeln(&format!("impl {struct_name}"))?;
     blocked(f, |f| {
         f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
         blocked(f, |f| {
             f.writeln(&format!(
-                "let class = env.find_class({}).expect(\"Unable to find {}\");",
-                struct_sig, struct_name
+                "let class = env.find_class({struct_sig}).expect(\"Unable to find {struct_name}\");"
             ))?;
             for field in structure.fields() {
                 f.writeln(&format!("let {field_snake} = env.get_field_id(class, \"{field_mixed}\", \"{field_sig}\").map(|mid| mid.into_inner().into()).expect(\"Unable to find field {field_mixed}\");", field_snake=field.name, field_mixed=field.name.mixed_case(), field_sig=field.field_type.jni_type_id().as_string(&lib_path)))?;

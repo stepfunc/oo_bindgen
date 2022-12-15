@@ -68,10 +68,7 @@ fn reference_print(f: &mut dyn Printer, reference: &Validated) -> FormattingResu
                 .join(", ");
 
             let class_name = class.name().camel_case();
-            f.write(&format!(
-                "{{@link {}#{}({})}}",
-                class_name, class_name, params
-            ))?;
+            f.write(&format!("{{@link {class_name}#{class_name}({params})}}"))?;
         }
         Validated::ClassDestructor(class, _) => {
             let method_name = if let DestructionMode::Custom(name) = &class.destruction_mode {

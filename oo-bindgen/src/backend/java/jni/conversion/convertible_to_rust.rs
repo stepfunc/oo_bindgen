@@ -35,25 +35,25 @@ pub(crate) trait ConvertibleToRust {
 
 impl ConvertibleToRust for StringType {
     fn to_rust(&self, expr: &str) -> Option<String> {
-        Some(format!("_env.get_string({}.into()).unwrap()", expr))
+        Some(format!("_env.get_string({expr}.into()).unwrap()"))
     }
 
     fn call_site(&self, expr: &str) -> Option<String> {
-        Some(format!("{}.as_ptr()", expr))
+        Some(format!("{expr}.as_ptr()"))
     }
 }
 
 impl ConvertibleToRust for Primitive {
     fn to_rust(&self, expr: &str) -> Option<String> {
         match self {
-            Primitive::Bool => Some(format!("{} != 0", expr)),
-            Primitive::U8 => Some(format!("_cache.unsigned.byte.to_rust(&_env, {})", expr)),
+            Primitive::Bool => Some(format!("{expr} != 0")),
+            Primitive::U8 => Some(format!("_cache.unsigned.byte.to_rust(&_env, {expr})")),
             Primitive::S8 => None,
-            Primitive::U16 => Some(format!("_cache.unsigned.short.to_rust(&_env, {})", expr)),
+            Primitive::U16 => Some(format!("_cache.unsigned.short.to_rust(&_env, {expr})")),
             Primitive::S16 => None,
-            Primitive::U32 => Some(format!("_cache.unsigned.integer.to_rust(&_env, {})", expr)),
+            Primitive::U32 => Some(format!("_cache.unsigned.integer.to_rust(&_env, {expr})")),
             Primitive::S32 => None,
-            Primitive::U64 => Some(format!("_cache.unsigned.long.to_rust(&_env, {})", expr)),
+            Primitive::U64 => Some(format!("_cache.unsigned.long.to_rust(&_env, {expr})")),
             Primitive::S64 => None,
             Primitive::Float => None,
             Primitive::Double => None,
@@ -62,17 +62,17 @@ impl ConvertibleToRust for Primitive {
 
     fn to_rust_from_object(&self, expr: &str) -> Option<String> {
         match self {
-            Primitive::Bool => Some(format!("_cache.primitives.boolean.value(&_env, {})", expr)),
+            Primitive::Bool => Some(format!("_cache.primitives.boolean.value(&_env, {expr})")),
             Primitive::U8 => self.to_rust(expr),
-            Primitive::S8 => Some(format!("_cache.primitives.byte.value(&_env, {})", expr)),
+            Primitive::S8 => Some(format!("_cache.primitives.byte.value(&_env, {expr})")),
             Primitive::U16 => self.to_rust(expr),
-            Primitive::S16 => Some(format!("_cache.primitives.short.value(&_env, {})", expr)),
+            Primitive::S16 => Some(format!("_cache.primitives.short.value(&_env, {expr})")),
             Primitive::U32 => self.to_rust(expr),
-            Primitive::S32 => Some(format!("_cache.primitives.integer.value(&_env, {})", expr)),
+            Primitive::S32 => Some(format!("_cache.primitives.integer.value(&_env, {expr})")),
             Primitive::U64 => self.to_rust(expr),
-            Primitive::S64 => Some(format!("_cache.primitives.long.value(&_env, {})", expr)),
-            Primitive::Float => Some(format!("_cache.primitives.float.value(&_env, {})", expr)),
-            Primitive::Double => Some(format!("_cache.primitives.double.value(&_env, {})", expr)),
+            Primitive::S64 => Some(format!("_cache.primitives.long.value(&_env, {expr})")),
+            Primitive::Float => Some(format!("_cache.primitives.float.value(&_env, {expr})")),
+            Primitive::Double => Some(format!("_cache.primitives.double.value(&_env, {expr})")),
         }
     }
 
@@ -97,10 +97,10 @@ impl ConvertibleToRust for DurationType {
     fn to_rust(&self, expr: &str) -> Option<String> {
         Some(match self {
             DurationType::Milliseconds => {
-                format!("_cache.duration.to_rust_millis(&_env, {})", expr)
+                format!("_cache.duration.to_rust_millis(&_env, {expr})")
             }
             DurationType::Seconds => {
-                format!("_cache.duration.to_rust_seconds(&_env, {})", expr)
+                format!("_cache.duration.to_rust_seconds(&_env, {expr})")
             }
         })
     }
@@ -161,7 +161,7 @@ impl ConvertibleToRust for CollectionHandle {
 
     fn call_site(&self, expr: &str) -> Option<String> {
         // use the inner native collection type for the function call
-        Some(format!("*{}", expr))
+        Some(format!("*{expr}"))
     }
 }
 
@@ -198,7 +198,7 @@ impl ConvertibleToRust for FunctionArgStructDeclaration {
 
     fn call_site(&self, expr: &str) -> Option<String> {
         // borrow the converted struct, there is an implicit conversion to *mut
-        Some(format!("&{}.1", expr))
+        Some(format!("&{expr}.1"))
     }
 }
 
@@ -215,7 +215,7 @@ where
     }
 
     fn call_site(&self, expr: &str) -> Option<String> {
-        Some(format!("{}.1", expr))
+        Some(format!("{expr}.1"))
     }
 }
 

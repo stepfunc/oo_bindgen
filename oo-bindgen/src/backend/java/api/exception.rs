@@ -15,14 +15,13 @@ pub(crate) fn generate(f: &mut impl Printer, error: &ErrorType<Validated>) -> Fo
 
     // Enum definition
     f.writeln(&format!(
-        "public final class {} extends {}",
-        exception_name, exception_type
+        "public final class {exception_name} extends {exception_type}"
     ))?;
     blocked(f, |f| {
         documentation(f, |f| f.writeln("Error detail"))?;
-        f.writeln(&format!("public final {} error;", error_name))?;
+        f.writeln(&format!("public final {error_name} error;"))?;
         f.newline()?;
-        f.writeln(&format!("{}({} error)", exception_name, error_name))?;
+        f.writeln(&format!("{exception_name}({error_name} error)"))?;
         blocked(f, |f| {
             f.writeln("super(error.toString());")?;
             f.writeln("this.error = error;")

@@ -53,7 +53,7 @@ pub(crate) fn generate_interfaces_cache(
     for interface in lib.untyped_interfaces() {
         let interface_name = interface.name.camel_case();
 
-        f.writeln(&format!("pub struct {}", interface_name))?;
+        f.writeln(&format!("pub struct {interface_name}"))?;
         blocked(f, |f| {
             f.writeln("_class: jni::objects::GlobalRef,")?;
             for callback in &interface.callbacks {
@@ -68,7 +68,7 @@ pub(crate) fn generate_interfaces_cache(
 
         f.newline()?;
 
-        f.writeln(&format!("impl {}", interface_name))?;
+        f.writeln(&format!("impl {interface_name}"))?;
         blocked(f, |f| {
             write_interface_init(f, &interface_name, &lib_path, &interface.callbacks)?;
 
@@ -77,8 +77,7 @@ pub(crate) fn generate_interfaces_cache(
             let rust_struct_name =
                 format!("{}::ffi::{}", config.ffi_name, interface.name.camel_case());
             f.writeln(&format!(
-                "pub(crate) fn to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> {}",
-                rust_struct_name
+                "pub(crate) fn to_rust(&self, env: &jni::JNIEnv, obj: jni::sys::jobject) -> {rust_struct_name}"
             ))?;
             blocked(f, |f| {
                 f.writeln(&rust_struct_name)?;
@@ -96,8 +95,7 @@ pub(crate) fn generate_interfaces_cache(
                     ))?;
 
                     f.writeln(&format!(
-                        "{}: Box::into_raw(Box::new(env.new_global_ref(obj).unwrap())) as *mut _,",
-                        ctx_variable_name
+                        "{ctx_variable_name}: Box::into_raw(Box::new(env.new_global_ref(obj).unwrap())) as *mut _,"
                     ))?;
 
                     Ok(())
@@ -119,8 +117,7 @@ pub(crate) fn generate_interfaces_cache(
                     )
                 })
                 .chain(std::iter::once(format!(
-                    "{}: *mut std::ffi::c_void",
-                    ctx_variable_name
+                    "{ctx_variable_name}: *mut std::ffi::c_void"
                 )))
                 .collect::<Vec<_>>()
                 .join(", ");
@@ -148,9 +145,9 @@ pub(crate) fn generate_interfaces_cache(
 
                     if let Some(converted) = return_type.to_rust(&unwrapped) {
                         let ret = return_type.call_site(&converted).unwrap_or(converted);
-                        f.writeln(&format!("return {};", ret))?;
+                        f.writeln(&format!("return {ret};"))?;
                     } else {
-                        f.writeln(&format!("return {};", unwrapped))?;
+                        f.writeln(&format!("return {unwrapped};"))?;
                     }
                 }
 
@@ -182,8 +179,7 @@ fn write_interface_init(
     f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
     blocked(f, |f| {
         f.writeln(&format!(
-            "let class = env.find_class(\"L{}/{};\").expect(\"Unable to find {}\");",
-            lib_path, interface_name, interface_name
+            "let class = env.find_class(\"L{lib_path}/{interface_name};\").expect(\"Unable to find {interface_name}\");"
         ))?;
         for callback in callbacks {
             let method_sig = format!(
@@ -221,8 +217,7 @@ fn call_java_callback(
     f.writeln("let _cache = crate::get_cache();")?;
     f.writeln("let _env = _cache.vm.attach_current_thread_permanently().unwrap();")?;
     f.writeln(&format!(
-        "let _ctx = unsafe {{ &mut *({} as *mut jni::objects::GlobalRef) }};",
-        arg_name
+        "let _ctx = unsafe {{ &mut *({arg_name} as *mut jni::objects::GlobalRef) }};"
     ))?;
     f.writeln("// automatically free any local references that are created")?;
     f.writeln("// the upper bound on the number of references required is the number of arguments to the callback")?;
@@ -249,9 +244,9 @@ fn call_java_callback(
 
     f.writeln("// invoke the callback")?;
     if return_type.is_some() {
-        f.writeln(&format!("let _result = {};", invocation))?;
+        f.writeln(&format!("let _result = {invocation};"))?;
     } else {
-        f.writeln(&format!("{};", invocation))?;
+        f.writeln(&format!("{invocation};"))?;
     }
     Ok(())
 }

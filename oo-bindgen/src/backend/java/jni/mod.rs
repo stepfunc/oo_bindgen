@@ -43,7 +43,7 @@ where
     F: Fn(&mut dyn Printer) -> FormattingResult<()>,
 {
     f.newline()?;
-    f.writeln(&format!("pub(crate) mod {} {{", name))?;
+    f.writeln(&format!("pub(crate) mod {name} {{"))?;
     indented(f, |f| write(f))?;
     f.writeln("}")?;
     Ok(())
@@ -227,7 +227,7 @@ fn write_iterator_conversion(
                     let converted = x
                         .maybe_convert("*next")
                         .unwrap_or_else(|| "*next".to_string());
-                    f.writeln(&format!("let next = _env.auto_local({});", converted))?;
+                    f.writeln(&format!("let next = _env.auto_local({converted});"))?;
                 }
                 IteratorItemType::Struct(x) => {
                     f.writeln(&format!(
@@ -253,7 +253,7 @@ fn write_collection_guard(
     let c_ffi_prefix = col.collection_class.settings.c_ffi_prefix.clone();
 
     f.writeln("/// Guard that builds the C collection type from a Java list")?;
-    f.writeln(&format!("pub(crate) struct {} {{", collection_name))?;
+    f.writeln(&format!("pub(crate) struct {collection_name} {{"))?;
     indented(f, |f| {
         f.writeln(&format!(
             "inner: *mut {}::{}",
@@ -264,7 +264,7 @@ fn write_collection_guard(
 
     f.newline()?;
 
-    f.writeln(&format!("impl std::ops::Deref for {} {{", collection_name))?;
+    f.writeln(&format!("impl std::ops::Deref for {collection_name} {{"))?;
     indented(f, |f| {
         f.writeln(&format!(
             "type Target = *mut {}::{};",
@@ -279,7 +279,7 @@ fn write_collection_guard(
 
     f.newline()?;
 
-    f.writeln(&format!("impl {} {{", collection_name))?;
+    f.writeln(&format!("impl {collection_name} {{"))?;
     indented(f, |f| {
         f.writeln("pub(crate) fn new(_env: jni::JNIEnv, list: jni::sys::jobject) -> Result<Self, jni::errors::Error> {")?;
         indented(f, |f| {
@@ -307,7 +307,7 @@ fn write_collection_guard(
                     .to_rust_from_object("next.as_obj().into_inner()")
                 {
                     // perform  primary conversion that shadows the variable
-                    f.writeln(&format!("let next = {};", converted))?;
+                    f.writeln(&format!("let next = {converted};"))?;
                 }
                 let arg = col
                     .item_type
@@ -330,7 +330,7 @@ fn write_collection_guard(
     f.newline()?;
 
     f.writeln("/// Destroy the C collection on drop")?;
-    f.writeln(&format!("impl Drop for {} {{", collection_name))?;
+    f.writeln(&format!("impl Drop for {collection_name} {{"))?;
     indented(f, |f| {
         f.writeln("fn drop(&mut self) {")?;
         indented(f, |f| {
@@ -454,14 +454,14 @@ fn write_function(
         // Call the C FFI
         match handle.get_signature_type() {
             SignatureType::NoErrorNoReturn => {
-                f.writeln(&format!("{};", invocation))?;
+                f.writeln(&format!("{invocation};"))?;
             }
             SignatureType::NoErrorWithReturn(_, _) | SignatureType::ErrorNoReturn(_) => {
-                f.writeln(&format!("let _result = {};", invocation))?;
+                f.writeln(&format!("let _result = {invocation};"))?;
             }
             SignatureType::ErrorWithReturn(_, _, _) => {
                 f.writeln("let mut _out = std::mem::MaybeUninit::uninit();")?;
-                f.writeln(&format!("let _result = {};", invocation))?;
+                f.writeln(&format!("let _result = {invocation};"))?;
             }
         };
 
@@ -470,7 +470,7 @@ fn write_function(
             SignatureType::NoErrorNoReturn => (),
             SignatureType::NoErrorWithReturn(return_type, _) => {
                 if let Some(conversion) = return_type.maybe_convert("_result") {
-                    f.writeln(&format!("let _result = {};", conversion))?;
+                    f.writeln(&format!("let _result = {conversion};"))?;
                 }
             }
             SignatureType::ErrorNoReturn(error_type) => {

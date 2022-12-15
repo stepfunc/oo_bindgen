@@ -91,7 +91,7 @@ impl<'a> RustCodegen<'a> {
         // Write the C struct with private fields (if conversion required)
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;
-        f.writeln(&format!("pub struct {}{}", struct_name, c_lifetime))?;
+        f.writeln(&format!("pub struct {struct_name}{c_lifetime}"))?;
 
         blocked(f, |f| {
             for element in &handle.fields {
@@ -108,11 +108,7 @@ impl<'a> RustCodegen<'a> {
         f.newline()?;
 
         // Write accessors/mutators
-        f.writeln(&format!(
-            "impl{lifetime} {name}{lifetime}",
-            name = struct_name,
-            lifetime = c_lifetime
-        ))?;
+        f.writeln(&format!("impl{c_lifetime} {struct_name}{c_lifetime}"))?;
         blocked(f, |f| {
             for field in &handle.fields {
                 let field_lifetime = if field.field_type.rust_requires_lifetime() {
@@ -195,9 +191,9 @@ impl<'a> RustCodegen<'a> {
         })?;
 
         // Write the Rust version with all public fields
-        let rust_struct_name = format!("{}Fields", struct_name);
+        let rust_struct_name = format!("{struct_name}Fields");
         if handle.has_conversion() {
-            f.writeln(&format!("pub struct {}{}", rust_struct_name, rust_lifetime))?;
+            f.writeln(&format!("pub struct {rust_struct_name}{rust_lifetime}"))?;
             blocked(f, |f| {
                 for element in &handle.fields {
                     f.writeln(&format!(
@@ -211,14 +207,10 @@ impl<'a> RustCodegen<'a> {
 
             // Write the conversion to the C representation
             f.writeln(&format!(
-                "impl{rust_lifetime} From<{rust_struct_name}{rust_lifetime}> for {name}{c_lifetime}",
-                name = struct_name,
-                rust_struct_name = rust_struct_name,
-                rust_lifetime = rust_lifetime,
-                c_lifetime = c_lifetime,
+                "impl{rust_lifetime} From<{rust_struct_name}{rust_lifetime}> for {struct_name}{c_lifetime}",
             ))?;
             blocked(f, |f| {
-                f.writeln(&format!("fn from(from: {}) -> Self", rust_struct_name))?;
+                f.writeln(&format!("fn from(from: {rust_struct_name}) -> Self"))?;
                 blocked(f, |f| {
                     f.writeln("Self")?;
                     blocked(f, |f| {
@@ -240,10 +232,7 @@ impl<'a> RustCodegen<'a> {
             })
         } else {
             f.writeln(&format!(
-                "pub type {rust_struct_name}{lifetime} = {name}{lifetime};",
-                rust_struct_name = rust_struct_name,
-                name = struct_name,
-                lifetime = c_lifetime
+                "pub type {rust_struct_name}{c_lifetime} = {struct_name}{c_lifetime};"
             ))
         }
     }
@@ -256,7 +245,7 @@ impl<'a> RustCodegen<'a> {
         let enum_name = handle.name.to_camel_case();
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]")?;
-        f.writeln(&format!("pub enum {}", enum_name))?;
+        f.writeln(&format!("pub enum {enum_name}"))?;
         blocked(f, |f| {
             for variant in &handle.variants {
                 f.writeln(&format!(
@@ -269,9 +258,9 @@ impl<'a> RustCodegen<'a> {
         })?;
 
         // Conversion routines
-        f.writeln(&format!("impl From<{}> for std::os::raw::c_int", enum_name))?;
+        f.writeln(&format!("impl From<{enum_name}> for std::os::raw::c_int"))?;
         blocked(f, |f| {
-            f.writeln(&format!("fn from(value: {}) -> Self", enum_name))?;
+            f.writeln(&format!("fn from(value: {enum_name}) -> Self"))?;
             blocked(f, |f| {
                 f.writeln("match value")?;
                 blocked(f, |f| {
@@ -288,7 +277,7 @@ impl<'a> RustCodegen<'a> {
             })
         })?;
 
-        f.writeln(&format!("impl From<std::os::raw::c_int> for {}", enum_name))?;
+        f.writeln(&format!("impl From<std::os::raw::c_int> for {enum_name}"))?;
         blocked(f, |f| {
             f.writeln("fn from(value: std::os::raw::c_int) -> Self")?;
             blocked(f, |f| {
@@ -303,8 +292,7 @@ impl<'a> RustCodegen<'a> {
                         ))?;
                     }
                     f.writeln(&format!(
-                        "_ => panic!(\"{{value}} is not a variant of {}\"),",
-                        enum_name
+                        "_ => panic!(\"{{value}} is not a variant of {enum_name}\"),"
                     ))
                 })
             })
@@ -369,7 +357,7 @@ impl<'a> RustCodegen<'a> {
             }
 
             fn basic_invocation(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
-                f.writeln(&format!("crate::{}(", name))
+                f.writeln(&format!("crate::{name}("))
             }
 
             // invoke the inner function
@@ -458,7 +446,7 @@ impl<'a> RustCodegen<'a> {
         // C structure
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;
-        f.writeln(&format!("pub struct {}", interface_name))?;
+        f.writeln(&format!("pub struct {interface_name}"))?;
         blocked(f, |f| {
             for cb in &handle.callbacks {
                 let lifetime = if cb.c_requires_lifetime() {
@@ -514,7 +502,7 @@ impl<'a> RustCodegen<'a> {
         f.newline()?;
 
         // Drop
-        f.writeln(&format!("impl Drop for {}", interface_name))?;
+        f.writeln(&format!("impl Drop for {interface_name}"))?;
         blocked(f, |f| {
             f.writeln("fn drop(&mut self)")?;
             blocked(f, |f| {
@@ -548,14 +536,14 @@ impl<'a> RustCodegen<'a> {
 
         // Send/Sync trait
         if generate_send_and_sync {
-            f.writeln(&format!("unsafe impl Send for {} {{}}", name))?;
-            f.writeln(&format!("unsafe impl Sync for {} {{}}", name))?;
+            f.writeln(&format!("unsafe impl Send for {name} {{}}"))?;
+            f.writeln(&format!("unsafe impl Sync for {name} {{}}"))?;
         }
 
         f.newline()?;
 
         // Helper impl
-        f.writeln(&format!("impl {}", name))?;
+        f.writeln(&format!("impl {name}"))?;
         blocked(f, |f| {
             for callback in callbacks {
                 let lifetime = if callback.rust_requires_lifetime() {
@@ -608,13 +596,13 @@ impl<'a> RustCodegen<'a> {
                         )))
                         .collect::<Vec<_>>()
                         .join(", ");
-                    let call = format!("cb({})", params);
+                    let call = format!("cb({params})");
 
                     if let Some(v) = &callback.return_type.get_value() {
                         f.writeln(&format!("self.{}.map(|cb| ", callback.name))?;
                         blocked(f, |f| {
                             if let Some(conversion) = v.conversion() {
-                                f.writeln(&format!("let _result = {};", call))?;
+                                f.writeln(&format!("let _result = {call};"))?;
                                 conversion.convert_from_c(f, "_result", "")
                             } else {
                                 f.writeln(&call)

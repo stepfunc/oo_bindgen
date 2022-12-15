@@ -18,7 +18,7 @@ pub(crate) fn generate(
             xmldoc_print(f, &class.doc)
         })?;
 
-        f.writeln(&format!("public sealed class {}", classname))?;
+        f.writeln(&format!("public sealed class {classname}"))?;
         if matches!(class.destruction_mode, DestructionMode::Dispose) {
             f.write(": IDisposable")?;
         }
@@ -30,19 +30,18 @@ pub(crate) fn generate(
             }
             f.newline()?;
 
-            f.writeln(&format!("internal {}(IntPtr self)", classname))?;
+            f.writeln(&format!("internal {classname}(IntPtr self)"))?;
             blocked(f, |f| f.writeln("this.self = self;"))?;
             f.newline()?;
 
             f.writeln(&format!(
-                "internal static {} FromNative(IntPtr self)",
-                classname
+                "internal static {classname} FromNative(IntPtr self)"
             ))?;
             blocked(f, |f| {
-                f.writeln(&format!("{} result = null;", classname))?;
+                f.writeln(&format!("{classname} result = null;"))?;
                 f.writeln("if (self != IntPtr.Zero)")?;
                 blocked(f, |f| {
-                    f.writeln(&format!("result = new {}(self);", classname))
+                    f.writeln(&format!("result = new {classname}(self);"))
                 })?;
                 f.writeln("return result;")
             })?;
@@ -95,7 +94,7 @@ pub(crate) fn generate_static(
             xmldoc_print(f, &class.doc)
         })?;
 
-        f.writeln(&format!("public static class {}", classname))?;
+        f.writeln(&format!("public static class {classname}"))?;
 
         blocked(f, |f| {
             for method in &class.static_methods {
@@ -136,7 +135,7 @@ fn generate_constructor(
         Ok(())
     })?;
 
-    f.writeln(&format!("public {}(", classname))?;
+    f.writeln(&format!("public {classname}("))?;
     f.write(
         &constructor
             .function
@@ -175,7 +174,7 @@ fn generate_destructor(
             "Dispose".to_string()
         };
 
-        f.writeln(&format!("public void {}()", method_name))?;
+        f.writeln(&format!("public void {method_name}()"))?;
         blocked(f, |f| {
             f.writeln("Dispose(true);")?;
             f.writeln("GC.SuppressFinalize(this);")
@@ -190,7 +189,7 @@ fn generate_destructor(
         f.write("Finalizer")?;
         f.write("</summary>")
     })?;
-    f.writeln(&format!("~{}()", classname))?;
+    f.writeln(&format!("~{classname}()"))?;
     blocked(f, |f| f.writeln("Dispose(false);"))?;
 
     f.newline()?;
@@ -396,8 +395,7 @@ fn generate_async_method(
 
     blocked(f, |f| {
         f.writeln(&format!(
-            "var {} = new TaskCompletionSource<{}>();",
-            tcs_var_name, callback_success_type
+            "var {tcs_var_name} = new TaskCompletionSource<{callback_success_type}>();"
         ))?;
         f.writeln(&format!(
             "var callback = new {}({});",
@@ -411,6 +409,6 @@ fn generate_async_method(
             Some("this".to_string()),
             false,
         )?;
-        f.writeln(&format!("return {}.Task;", tcs_var_name))
+        f.writeln(&format!("return {tcs_var_name}.Task;"))
     })
 }

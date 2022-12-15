@@ -28,15 +28,15 @@ where
         Some(x) => match &x.value {
             ValidatedDefaultValue::Bool(x) => x.to_string(),
             ValidatedDefaultValue::Number(x) => match x {
-                NumberValue::U8(x) => format!("UByte.valueOf({})", x),
-                NumberValue::S8(x) => format!("(byte) {}", x),
-                NumberValue::U16(x) => format!("UShort.valueOf({})", x),
-                NumberValue::S16(x) => format!("(short) {}", x),
-                NumberValue::U32(x) => format!("UInteger.valueOf({}L)", x),
+                NumberValue::U8(x) => format!("UByte.valueOf({x})"),
+                NumberValue::S8(x) => format!("(byte) {x}"),
+                NumberValue::U16(x) => format!("UShort.valueOf({x})"),
+                NumberValue::S16(x) => format!("(short) {x}"),
+                NumberValue::U32(x) => format!("UInteger.valueOf({x}L)"),
                 NumberValue::S32(x) => x.to_string(),
-                NumberValue::U64(x) => format!("ULong.valueOf({}L)", x),
+                NumberValue::U64(x) => format!("ULong.valueOf({x}L)"),
                 NumberValue::S64(x) => x.to_string(),
-                NumberValue::Float(x) => format!("{}F", x),
+                NumberValue::Float(x) => format!("{x}F"),
                 NumberValue::Double(x) => x.to_string(),
             },
             ValidatedDefaultValue::Duration(t, x) => match t {
@@ -50,7 +50,7 @@ where
             ValidatedDefaultValue::Enum(x, variant) => {
                 format!("{}.{}", x.name.camel_case(), variant.capital_snake_case())
             }
-            ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+            ValidatedDefaultValue::String(x) => format!("\"{x}\""),
             ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
                 format!("new {}()", handle.name().camel_case(),)
             }
@@ -72,7 +72,7 @@ fn get_default_value_doc(x: &ValidatedDefaultValue) -> String {
             x.name.camel_case(),
             variant.capital_snake_case()
         ),
-        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::String(x) => format!("\"{x}\""),
         ValidatedDefaultValue::DefaultStruct(x, _, _) => {
             format!("Default {{@link {}}}", x.name().camel_case())
         }
@@ -228,11 +228,10 @@ where
             if field.field_type.is_nullable() {
                 let field_name = field.name.mixed_case();
                 f.writeln(&format!(
-                    "java.util.Objects.requireNonNull({}, \"{} cannot be null\");",
-                    field_name, field_name
+                    "java.util.Objects.requireNonNull({field_name}, \"{field_name} cannot be null\");"
                 ))?;
                 if field.field_type.is_struct() {
-                    f.writeln(&format!("{}._assertFieldsNotNull();", field_name))?;
+                    f.writeln(&format!("{field_name}._assertFieldsNotNull();"))?;
                 }
             }
         }
@@ -262,7 +261,7 @@ where
     documentation(f, |f| javadoc_print(f, &doc))?;
 
     // Structure definition
-    f.writeln(&format!("public final class {}", struct_name))?;
+    f.writeln(&format!("public final class {struct_name}"))?;
     blocked(f, |f| {
         // Write Java structure fields
         for field in st.fields() {

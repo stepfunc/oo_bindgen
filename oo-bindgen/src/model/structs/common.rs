@@ -96,34 +96,34 @@ impl std::fmt::Display for NumberValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::U8(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::S8(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::U16(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::S16(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::U32(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::S32(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::U64(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::S64(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::Float(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
             Self::Double(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
         }
     }
@@ -133,9 +133,9 @@ impl std::fmt::Display for ValidatedDefaultValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Bool(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
-            Self::Number(x) => write!(f, "{}", x),
+            Self::Number(x) => write!(f, "{x}"),
             Self::Duration(t, x) => match t {
                 DurationType::Milliseconds => write!(f, "{} milliseconds", x.as_millis()),
                 DurationType::Seconds => write!(f, "{} seconds", x.as_secs()),
@@ -144,7 +144,7 @@ impl std::fmt::Display for ValidatedDefaultValue {
                 write!(f, "{}::{}", handle.name, x)
             }
             Self::String(x) => {
-                write!(f, "'{}'", x)
+                write!(f, "'{x}'")
             }
             Self::DefaultStruct(x, _, _) => {
                 write!(f, "default constructed value for {}", x.name())

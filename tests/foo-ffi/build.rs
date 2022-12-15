@@ -3,7 +3,7 @@ fn main() {
 
     match foo_schema::build_lib() {
         Err(err) => {
-            eprintln!("{}", err);
+            eprintln!("{err}");
             std::process::exit(-1);
         }
         Ok(lib) => {

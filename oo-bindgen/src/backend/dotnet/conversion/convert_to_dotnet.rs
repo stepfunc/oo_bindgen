@@ -9,8 +9,8 @@ pub(crate) trait ConvertToDotNet {
 impl ConvertToDotNet for DurationType {
     fn convert_to_dotnet(&self, from: &str) -> Option<String> {
         match self {
-            Self::Milliseconds => Some(format!("TimeSpan.FromMilliseconds({})", from)),
-            Self::Seconds => Some(format!("TimeSpan.FromSeconds({})", from)),
+            Self::Milliseconds => Some(format!("TimeSpan.FromMilliseconds({from})")),
+            Self::Seconds => Some(format!("TimeSpan.FromSeconds({from})")),
         }
     }
 }
@@ -18,7 +18,7 @@ impl ConvertToDotNet for DurationType {
 impl ConvertToDotNet for Primitive {
     fn convert_to_dotnet(&self, from: &str) -> Option<String> {
         match self {
-            Self::Bool => Some(format!("Convert.ToBoolean({})", from)),
+            Self::Bool => Some(format!("Convert.ToBoolean({from})")),
             Self::U8 => None,
             Self::S8 => None,
             Self::U16 => None,
@@ -54,7 +54,7 @@ impl ConvertToDotNet for BasicType {
 
 impl ConvertToDotNet for StringType {
     fn convert_to_dotnet(&self, from: &str) -> Option<String> {
-        Some(format!("Helpers.RustString.FromNative({})", from))
+        Some(format!("Helpers.RustString.FromNative({from})"))
     }
 }
 
@@ -166,38 +166,23 @@ impl ConvertToDotNet for CallbackArgument {
 impl ConvertToDotNet for PrimitiveRef {
     fn convert_to_dotnet(&self, expr: &str) -> Option<String> {
         match self.inner {
-            Primitive::Bool => Some(format!("Helpers.PrimitivePointer.ReadBool({})", expr)),
+            Primitive::Bool => Some(format!("Helpers.PrimitivePointer.ReadBool({expr})")),
             Primitive::U8 => Some(format!(
-                "Helpers.PrimitivePointer.Unsigned.ReadByte({})",
-                expr
+                "Helpers.PrimitivePointer.Unsigned.ReadByte({expr})"
             )),
-            Primitive::S8 => Some(format!(
-                "Helpers.PrimitivePointer.Signed.ReadByte({})",
-                expr
-            )),
+            Primitive::S8 => Some(format!("Helpers.PrimitivePointer.Signed.ReadByte({expr})")),
             Primitive::U16 => Some(format!(
-                "Helpers.PrimitivePointer.Unsigned.ReadShort({})",
-                expr
+                "Helpers.PrimitivePointer.Unsigned.ReadShort({expr})"
             )),
-            Primitive::S16 => Some(format!(
-                "Helpers.PrimitivePointer.Signed.ReadShort({})",
-                expr
-            )),
-            Primitive::U32 => Some(format!(
-                "Helpers.PrimitivePointer.Unsigned.ReadInt({})",
-                expr
-            )),
-            Primitive::S32 => Some(format!("Helpers.PrimitivePointer.Signed.ReadInt({})", expr)),
+            Primitive::S16 => Some(format!("Helpers.PrimitivePointer.Signed.ReadShort({expr})")),
+            Primitive::U32 => Some(format!("Helpers.PrimitivePointer.Unsigned.ReadInt({expr})")),
+            Primitive::S32 => Some(format!("Helpers.PrimitivePointer.Signed.ReadInt({expr})")),
             Primitive::U64 => Some(format!(
-                "Helpers.PrimitivePointer.Unsigned.ReadLong({})",
-                expr
+                "Helpers.PrimitivePointer.Unsigned.ReadLong({expr})"
             )),
-            Primitive::S64 => Some(format!(
-                "Helpers.PrimitivePointer.Signed.ReadLong({})",
-                expr
-            )),
-            Primitive::Float => Some(format!("Helpers.PrimitivePointer.ReadFloat({})", expr)),
-            Primitive::Double => Some(format!("Helpers.PrimitivePointer.ReadDouble({})", expr)),
+            Primitive::S64 => Some(format!("Helpers.PrimitivePointer.Signed.ReadLong({expr})")),
+            Primitive::Float => Some(format!("Helpers.PrimitivePointer.ReadFloat({expr})")),
+            Primitive::Double => Some(format!("Helpers.PrimitivePointer.ReadDouble({expr})")),
         }
     }
 }

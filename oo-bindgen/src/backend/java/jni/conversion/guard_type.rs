@@ -44,7 +44,7 @@ where
     }
 
     fn guard_transform(&self, expr: &str) -> Option<String> {
-        Some(format!("{}.0", expr))
+        Some(format!("{expr}.0"))
     }
 }
 

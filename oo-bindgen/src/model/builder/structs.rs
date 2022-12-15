@@ -171,10 +171,7 @@ where
         self.begin_initializer(
             name,
             InitializerType::Normal,
-            format!(
-                "Fully construct {{struct:{}}} specifying the value of each field",
-                struct_name
-            ),
+            format!("Fully construct {{struct:{struct_name}}} specifying the value of each field"),
         )?
         .end_initializer()
     }

@@ -13,7 +13,7 @@ pub(crate) fn generate(
 
     fn get_value_as_string(value: &ConstantValue) -> String {
         match value {
-            ConstantValue::U8(x, Representation::Hex) => format!("UByte.valueOf(0x{:02X?})", x),
+            ConstantValue::U8(x, Representation::Hex) => format!("UByte.valueOf(0x{x:02X?})"),
         }
     }
 
@@ -23,10 +23,10 @@ pub(crate) fn generate(
     documentation(f, |f| javadoc_print(f, &set.doc))?;
 
     // class definition
-    f.writeln(&format!("public final class {}", set_name))?;
+    f.writeln(&format!("public final class {set_name}"))?;
     blocked(f, |f| {
         f.writeln("// not constructable")?;
-        f.writeln(&format!("private {}() {{}}", set_name))?;
+        f.writeln(&format!("private {set_name}() {{}}"))?;
 
         // Write the values
         for constant in &set.values {

@@ -33,6 +33,6 @@ pub(crate) fn namespaced<F, T>(f: &mut dyn Printer, namespace: &str, cb: F) -> F
 where
     F: FnOnce(&mut dyn Printer) -> FormattingResult<T>,
 {
-    f.writeln(&format!("namespace {}", namespace))?;
+    f.writeln(&format!("namespace {namespace}"))?;
     blocked(f, |f| cb(f))
 }

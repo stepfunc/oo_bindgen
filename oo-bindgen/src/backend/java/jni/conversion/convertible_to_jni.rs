@@ -28,7 +28,7 @@ impl ConvertibleToJni for DurationType {
             DurationType::Seconds => "to_jni_seconds",
         };
 
-        format!("_cache.duration.{}(&_env, {})", method, expr)
+        format!("_cache.duration.{method}(&_env, {expr})")
     }
 }
 
@@ -43,14 +43,14 @@ where
 
 impl ConvertibleToJni for StringType {
     fn convert(&self, expr: &str) -> String {
-        format!("_env.new_string(unsafe {{ std::ffi::CStr::from_ptr({}) }}.to_string_lossy()).unwrap().into_inner()", expr)
+        format!("_env.new_string(unsafe {{ std::ffi::CStr::from_ptr({expr}) }}.to_string_lossy()).unwrap().into_inner()")
     }
 }
 
 impl MaybeConvertibleToJni for Primitive {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         match self {
-            Self::Bool => Some(format!("u8::from({})", expr)),
+            Self::Bool => Some(format!("u8::from({expr})")),
             Self::U8 => Some(UnsignedConverter::U8.apply(expr)),
             Self::S8 => None,
             Self::U16 => Some(UnsignedConverter::U16.apply(expr)),
@@ -174,8 +174,7 @@ impl MaybeConvertibleToJni for CallbackArgument {
 impl MaybeConvertibleToJni for PrimitiveRef {
     fn maybe_convert(&self, expr: &str) -> Option<String> {
         Some(format!(
-            "crate::pointers::CreateObject::create_inner_object(&{}, &_env)",
-            expr
+            "crate::pointers::CreateObject::create_inner_object(&{expr}, &_env)"
         ))
     }
 }

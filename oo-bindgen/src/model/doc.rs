@@ -401,7 +401,7 @@ impl Unvalidated {
                 {
                     None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.{}()", class_name, method_name),
+                        ref_name: format!("{class_name}.{method_name}()"),
                     }
                     .into()),
                     Some((class, (name, function))) => {
@@ -416,7 +416,7 @@ impl Unvalidated {
                 {
                     None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.[constructor]", class_name,),
+                        ref_name: format!("{class_name}.[constructor]",),
                     }
                     .into()),
                     Some((class, constructor)) => {
@@ -431,7 +431,7 @@ impl Unvalidated {
                 {
                     None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.[destructor]", class_name),
+                        ref_name: format!("{class_name}.[destructor]"),
                     }
                     .into()),
                     Some((class, destructor)) => {
@@ -454,7 +454,7 @@ impl Unvalidated {
                 {
                     None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.{}", struct_name, field_name),
+                        ref_name: format!("{struct_name}.{field_name}"),
                     }
                     .into()),
                     Some((st, name)) => Ok(Validated::StructField(st.clone(), name)),
@@ -475,7 +475,7 @@ impl Unvalidated {
                 }) {
                     None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.{}", enum_name, variant_name),
+                        ref_name: format!("{enum_name}.{variant_name}"),
                     }
                     .into()),
                     Some((e, v)) => Ok(Validated::EnumVariant(e.clone(), v)),
@@ -496,7 +496,7 @@ impl Unvalidated {
                 {
                     None => Err(BindingErrorVariant::DocInvalidReference {
                         symbol_name: symbol_name.to_string(),
-                        ref_name: format!("{}.{}()", interface_name, method_name),
+                        ref_name: format!("{interface_name}.{method_name}()"),
                     }
                     .into()),
                     Some((i, m)) => Ok(Validated::InterfaceMethod(i.clone(), m.name.clone())),

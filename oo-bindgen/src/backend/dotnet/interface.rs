@@ -49,8 +49,8 @@ impl ConstantReturnValue for EnumValue {
 impl ConstantReturnValue for DurationValue {
     fn get_constant_return_value(&self) -> String {
         match self {
-            DurationValue::Milliseconds(x) => format!("TimeSpan.FromMilliseconds({})", x),
-            DurationValue::Seconds(x) => format!("TimeSpan.FromSeconds({})", x),
+            DurationValue::Milliseconds(x) => format!("TimeSpan.FromMilliseconds({x})"),
+            DurationValue::Seconds(x) => format!("TimeSpan.FromSeconds({x})"),
         }
     }
 }
@@ -116,7 +116,7 @@ pub(crate) fn generate(
             xmldoc_print(f, interface.doc())
         })?;
 
-        f.writeln(&format!("{} interface {}", visibility, interface_name))?;
+        f.writeln(&format!("{visibility} interface {interface_name}"))?;
         blocked(f, |f| {
             // Write each required method
             interface.untyped().callbacks.iter().try_for_each(|func| {
@@ -176,7 +176,7 @@ pub(crate) fn generate(
                                 Some(value) => {
                                     f.write(") {")?;
                                     indented(f, |f| {
-                                        f.writeln(&format!("return {};", value))
+                                        f.writeln(&format!("return {value};"))
                                     })?;
                                     f.writeln("}")
                                 }
@@ -211,25 +211,19 @@ pub(crate) fn generate(
                 .success_callback_method_name
                 .camel_case();
 
-            f.writeln(&format!(
-                "internal class {}: {}",
-                class_name, interface_name
-            ))?;
+            f.writeln(&format!("internal class {class_name}: {interface_name}"))?;
             blocked(f, |f| {
                 f.writeln(&format!(
-                    "private TaskCompletionSource<{}> tcs = new TaskCompletionSource<{}>();",
-                    value_type, value_type
+                    "private TaskCompletionSource<{value_type}> tcs = new TaskCompletionSource<{value_type}>();"
                 ))?;
                 f.newline()?;
                 f.writeln(&format!(
-                    "internal {}(TaskCompletionSource<{}> tcs)",
-                    class_name, value_type
+                    "internal {class_name}(TaskCompletionSource<{value_type}> tcs)"
                 ))?;
                 blocked(f, |f| f.writeln("this.tcs = tcs;"))?;
                 f.newline()?;
                 f.writeln(&format!(
-                    "void {}.{}({} value)",
-                    interface_name, success_method_name, value_type
+                    "void {interface_name}.{success_method_name}({value_type} value)"
                 ))?;
                 blocked(f, |f| f.writeln("Task.Run(() => tcs.SetResult(value));"))?;
                 f.newline()?;
@@ -262,7 +256,7 @@ pub(crate) fn generate(
 
         // Create the native adapter
         f.writeln("[StructLayout(LayoutKind.Sequential)]")?;
-        f.writeln(&format!("internal struct {}NativeAdapter", interface_name))?;
+        f.writeln(&format!("internal struct {interface_name}NativeAdapter"))?;
         blocked(f, |f| {
             // Define each delegate type
             for cb in &interface.untyped().callbacks {
@@ -298,13 +292,11 @@ pub(crate) fn generate(
 
             f.writeln("[UnmanagedFunctionPointer(CallingConvention.Cdecl)]")?; // C calling convetion
             f.writeln(&format!(
-                "private delegate void {}_delegate(IntPtr arg);",
-                destroy_func_name
+                "private delegate void {destroy_func_name}_delegate(IntPtr arg);"
             ))?;
 
             f.writeln(&format!(
-                "private static {}_delegate {}_static_delegate = {}NativeAdapter.{}_cb;",
-                destroy_func_name, destroy_func_name, interface_name, destroy_func_name
+                "private static {destroy_func_name}_delegate {destroy_func_name}_static_delegate = {interface_name}NativeAdapter.{destroy_func_name}_cb;"
             ))?;
 
             f.newline()?;
@@ -315,17 +307,15 @@ pub(crate) fn generate(
             }
 
             f.writeln(&format!(
-                "private {}_delegate {};",
-                destroy_func_name, destroy_func_name
+                "private {destroy_func_name}_delegate {destroy_func_name};"
             ))?;
-            f.writeln(&format!("public IntPtr {};", ctx_variable_name))?;
+            f.writeln(&format!("public IntPtr {ctx_variable_name};"))?;
 
             f.newline()?;
 
             // Define the constructor
             f.writeln(&format!(
-                "internal {}NativeAdapter({} impl)",
-                interface_name, interface_name
+                "internal {interface_name}NativeAdapter({interface_name} impl)"
             ))?;
             blocked(f, |f| {
                 f.writeln("var _handle = GCHandle.Alloc(impl);")?;
@@ -341,13 +331,11 @@ pub(crate) fn generate(
                 }
 
                 f.writeln(&format!(
-                    "this.{} = {}NativeAdapter.{}_static_delegate;",
-                    destroy_func_name, interface_name, destroy_func_name
+                    "this.{destroy_func_name} = {interface_name}NativeAdapter.{destroy_func_name}_static_delegate;"
                 ))?;
 
                 f.writeln(&format!(
-                    "this.{} = GCHandle.ToIntPtr(_handle);",
-                    ctx_variable_name
+                    "this.{ctx_variable_name} = GCHandle.ToIntPtr(_handle);"
                 ))?;
                 Ok(())
             })?;
@@ -369,7 +357,7 @@ pub(crate) fn generate(
                                 arg.name.mixed_case()
                             )
                         })
-                        .chain(std::iter::once(format!("IntPtr {}", ctx_variable_name)))
+                        .chain(std::iter::once(format!("IntPtr {ctx_variable_name}")))
                         .collect::<Vec<String>>()
                         .join(", "),
                 )?;
@@ -377,10 +365,9 @@ pub(crate) fn generate(
 
                 blocked(f, |f| {
                     f.writeln(&format!(
-                        "var _handle = GCHandle.FromIntPtr({});",
-                        ctx_variable_name
+                        "var _handle = GCHandle.FromIntPtr({ctx_variable_name});"
                     ))?;
-                    f.writeln(&format!("var _impl = ({})_handle.Target;", interface_name))?;
+                    f.writeln(&format!("var _impl = ({interface_name})_handle.Target;"))?;
                     call_dotnet_function(f, cb, "return ")
                 })?;
 
@@ -389,8 +376,7 @@ pub(crate) fn generate(
 
             // destroy delegate
             f.writeln(&format!(
-                "internal static void {}_cb(IntPtr arg)",
-                destroy_func_name
+                "internal static void {destroy_func_name}_cb(IntPtr arg)"
             ))?;
 
             blocked(f, |f| {
@@ -404,14 +390,13 @@ pub(crate) fn generate(
 
             // Write the conversion routine
             f.writeln(&format!(
-                "internal static {} FromNative(IntPtr self)",
-                interface_name
+                "internal static {interface_name} FromNative(IntPtr self)"
             ))?;
             blocked(f, |f| {
                 f.writeln("if (self != IntPtr.Zero)")?;
                 blocked(f, |f| {
                     f.writeln("var handle = GCHandle.FromIntPtr(self);")?;
-                    f.writeln(&format!("return handle.Target as {};", interface_name))
+                    f.writeln(&format!("return handle.Target as {interface_name};"))
                 })?;
                 f.writeln("else")?;
                 blocked(f, |f| f.writeln("return null;"))
@@ -432,11 +417,11 @@ pub(crate) fn generate_interface_implementation(
         interface.name.camel_case()
     ))?;
     blocked(f, |f| {
-        f.writeln(&format!("private readonly {} action;", functor_type))?;
+        f.writeln(&format!("private readonly {functor_type} action;"))?;
         f.newline()?;
 
         // constructor
-        f.writeln(&format!("internal Implementation({} action)", functor_type))?;
+        f.writeln(&format!("internal Implementation({functor_type} action)"))?;
         blocked(f, |f| f.writeln("this.action = action;"))?;
 
         f.newline()?;
@@ -474,7 +459,7 @@ pub(crate) fn generate_interface_implementation(
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            f.write(&format!("this.action.Invoke({});", params))
+            f.write(&format!("this.action.Invoke({params});"))
         })
     })
 }
@@ -497,12 +482,11 @@ pub(crate) fn generate_functional_helpers(
     documentation(f, |f| {
         f.writeln("<summary>")?;
         f.writeln(&format!(
-            "Provides a method to create an implementation of {} from a functor",
-            interface_name
+            "Provides a method to create an implementation of {interface_name} from a functor"
         ))?;
         f.writeln("</summary>")
     })?;
-    f.writeln(&format!("{} static class {}", visibility, class_name))?;
+    f.writeln(&format!("{visibility} static class {class_name}"))?;
     blocked(f, |f| {
         f.newline()?;
         // write the private implementation class
@@ -522,15 +506,13 @@ pub(crate) fn generate_functional_helpers(
             f.writeln("Callback to execute")?;
             f.writeln("</param>")?;
             f.writeln(&format!(
-                "<return>An implementation of {}</return>",
-                interface_name
+                "<return>An implementation of {interface_name}</return>"
             ))?;
             Ok(())
         })?;
         // write the factory function
         f.writeln(&format!(
-            "{} static {} create({} action)",
-            visibility, interface_name, functor_type
+            "{visibility} static {interface_name} create({functor_type} action)"
         ))?;
         blocked(f, |f| f.writeln("return new Implementation(action);"))?;
 

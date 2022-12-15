@@ -61,7 +61,7 @@ pub(crate) fn docstring_print_generic(
 
 fn print_c_reference(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
-        Validated::Argument(param_name) => f.write(&format!("@p {}", param_name))?,
+        Validated::Argument(param_name) => f.write(&format!("@p {param_name}"))?,
         Validated::Class(class) => {
             f.write(&format!("@ref {}", class.to_c_type()))?;
         }

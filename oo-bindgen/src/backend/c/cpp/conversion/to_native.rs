@@ -8,15 +8,15 @@ pub(crate) trait ToNative {
 impl ToNative for DurationType {
     fn to_native(&self, expr: String) -> String {
         match self {
-            DurationType::Milliseconds => format!("::convert::to_milli_sec_u64({})", expr),
-            DurationType::Seconds => format!("::convert::to_sec_u64({})", expr),
+            DurationType::Milliseconds => format!("::convert::to_milli_sec_u64({expr})"),
+            DurationType::Seconds => format!("::convert::to_sec_u64({expr})"),
         }
     }
 }
 
 impl ToNative for Handle<Enum<Unvalidated>> {
     fn to_native(&self, expr: String) -> String {
-        format!("::convert::to_native({})", expr)
+        format!("::convert::to_native({expr})")
     }
 }
 
@@ -50,6 +50,6 @@ impl ToNative for BasicType {
 
 impl ToNative for StringType {
     fn to_native(&self, expr: String) -> String {
-        format!("{}.c_str()", expr)
+        format!("{expr}.c_str()")
     }
 }

@@ -80,7 +80,7 @@ fn get_single_platform(args: &Args) -> (RunOptions, LanguagePlatforms) {
             platform
         }
         Some(tt) => match Platform::find(tt) {
-            None => panic!("Unable to determine Platform from target triple: {}", tt),
+            None => panic!("Unable to determine Platform from target triple: {tt}"),
             Some(x) => x,
         },
     };

@@ -46,9 +46,9 @@ pub(crate) fn generate_enums_cache(
     // Each enum implementation
     for enumeration in lib.enums() {
         let enum_name = enumeration.name.camel_case();
-        let enum_sig = format!("\"L{}/{};\"", lib_path, enum_name);
+        let enum_sig = format!("\"L{lib_path}/{enum_name};\"");
 
-        f.writeln(&format!("pub struct {}", enum_name))?;
+        f.writeln(&format!("pub struct {enum_name}"))?;
         blocked(f, |f| {
             f.writeln("_value_field: jni::objects::JFieldID<'static>,")?;
             for variant in &enumeration.variants {
@@ -60,17 +60,16 @@ pub(crate) fn generate_enums_cache(
 
         f.newline()?;
 
-        f.writeln(&format!("impl {}", enum_name))?;
+        f.writeln(&format!("impl {enum_name}"))?;
         blocked(f, |f| {
             f.writeln("pub fn init(env: &jni::JNIEnv) -> Self")?;
             blocked(f, |f| {
                 f.writeln(&format!(
-                    "let class = env.find_class({}).expect(\"Unable to find {}\");",
-                    enum_sig, enum_name
+                    "let class = env.find_class({enum_sig}).expect(\"Unable to find {enum_name}\");"
                 ))?;
                 f.writeln("Self")?;
                 blocked(f, |f| {
-                    f.writeln(&format!("_value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {}\"),", enum_name))?;
+                    f.writeln(&format!("_value_field: env.get_field_id(class, \"value\", \"I\").map(|mid| mid.into_inner().into()).expect(\"Unable to get value field of {enum_name}\"),"))?;
                     for variant in &enumeration.variants {
                         f.writeln(&format!("{}: env.new_global_ref(env.get_static_field(class, \"{}\", {}).expect(\"Unable to find variant {}\").l().unwrap()).unwrap(),", variant.name, variant.name.capital_snake_case(), enum_sig, variant.name.capital_snake_case()))?;
                     }
@@ -98,8 +97,7 @@ pub(crate) fn generate_enums_cache(
                         ))?;
                     }
                     f.writeln(&format!(
-                        "_ => panic!(\"Invalid {} value: {{}}\", value),",
-                        enum_name
+                        "_ => panic!(\"Invalid {enum_name} value: {{}}\", value),"
                     ))
                 })
             })

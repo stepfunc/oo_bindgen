@@ -25,23 +25,23 @@ impl ToNativeFunctionArgument for FunctionArgument {
                 format!("{}({})", x.collection_class.core_cpp_type(), expr)
             }
             FunctionArgument::Struct(_) => {
-                format!("::convert::to_native({})", expr)
+                format!("::convert::to_native({expr})")
             }
             FunctionArgument::StructRef(_) => {
-                format!("::convert::to_native({})", expr)
+                format!("::convert::to_native({expr})")
             }
             FunctionArgument::ClassRef(x) => {
                 format!("{}::get({})", x.friend_class(), expr)
             }
             FunctionArgument::Interface(x) => match x.mode {
                 InterfaceCategory::Synchronous => {
-                    format!("::convert::to_native({})", expr)
+                    format!("::convert::to_native({expr})")
                 }
                 InterfaceCategory::Asynchronous => {
-                    format!("::convert::to_native(std::move({}))", expr)
+                    format!("::convert::to_native(std::move({expr}))")
                 }
                 InterfaceCategory::Future => {
-                    format!("::convert::to_native(std::move({}))", expr)
+                    format!("::convert::to_native(std::move({expr}))")
                 }
             },
         }
@@ -53,10 +53,10 @@ impl ToNativeFunctionArgument for FunctionArgument {
             FunctionArgument::String(_) => None,
             FunctionArgument::Collection(x) => {
                 let friend_class = x.collection_class.friend_class();
-                Some(Box::new(move |e| format!("{}::get({})", friend_class, e)))
+                Some(Box::new(move |e| format!("{friend_class}::get({e})")))
             }
             FunctionArgument::Struct(_) => None,
-            FunctionArgument::StructRef(_) => Some(Box::new(|e| format!("&{}", e))),
+            FunctionArgument::StructRef(_) => Some(Box::new(|e| format!("&{e}"))),
             FunctionArgument::ClassRef(_) => None,
             FunctionArgument::Interface(_) => None,
         }

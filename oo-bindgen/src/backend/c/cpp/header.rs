@@ -131,8 +131,7 @@ fn write_functional_interface_helpers(
 
     doxygen(f, |f| {
         f.writeln(&format!(
-            "@brief class that implements @ref {} in terms of a lambda expression",
-            interface_name
+            "@brief class that implements @ref {interface_name} in terms of a lambda expression"
         ))?;
         f.writeln(&format!(
             "@note this class can only be constructed using @ref {}() helper function",
@@ -140,11 +139,10 @@ fn write_functional_interface_helpers(
         ))?;
         Ok(())
     })?;
-    let class_name = format!("{}Lambda", interface_name);
+    let class_name = format!("{interface_name}Lambda");
     f.writeln("template <class T>")?;
     f.writeln(&format!(
-        "class {} final : public {}",
-        class_name, interface_name
+        "class {class_name} final : public {interface_name}"
     ))?;
     f.writeln("{")?;
     indented(f, |f| {
@@ -161,8 +159,7 @@ fn write_functional_interface_helpers(
             Ok(())
         })?;
         f.writeln(&format!(
-            "{}(const T& lambda) : lambda(lambda) {{}}",
-            class_name
+            "{class_name}(const T& lambda) : lambda(lambda) {{}}"
         ))?;
         f.newline()?;
 
@@ -185,11 +182,11 @@ fn write_functional_interface_helpers(
             .map(|x| x.name.to_string())
             .collect::<Vec<String>>()
             .join(", ");
-        let invocation = &format!("lambda({});", args);
+        let invocation = &format!("lambda({args});");
         if callback.return_type.is_none() {
             blocked(f, |f| f.writeln(invocation))?;
         } else {
-            blocked(f, |f| f.writeln(&format!("return {}", invocation)))?;
+            blocked(f, |f| f.writeln(&format!("return {invocation}")))?;
         }
         Ok(())
     })?;
@@ -204,21 +201,20 @@ fn write_functional_interface_helpers(
     };
 
     let return_type = if is_synchronous {
-        format!("{}<T>", class_name)
+        format!("{class_name}<T>")
     } else {
-        format!("std::unique_ptr<{}>", interface_name)
+        format!("std::unique_ptr<{interface_name}>")
     };
 
     let return_expr = if is_synchronous {
-        format!("{}<T>(lambda)", class_name)
+        format!("{class_name}<T>(lambda)")
     } else {
-        format!("std::make_unique<{}<T>>(lambda); ", class_name)
+        format!("std::make_unique<{class_name}<T>>(lambda); ")
     };
 
     doxygen(f, |f| {
         f.writeln(&format!(
-            "@brief construct an implementation of @ref {} based on a lambda expression",
-            interface_name
+            "@brief construct an implementation of @ref {interface_name} based on a lambda expression"
         ))?;
         f.writeln("@note T must be copy-constructible to use this function")?;
         f.writeln("@param lambda functor value on which to base the interface implementation")?;
@@ -234,7 +230,7 @@ fn write_functional_interface_helpers(
         "{} {}(const T& lambda)",
         return_type, interface.name
     ))?;
-    blocked(f, |f| f.writeln(&format!("return {}; ", return_expr)))?;
+    blocked(f, |f| f.writeln(&format!("return {return_expr}; ")))?;
 
     f.newline()
 }
@@ -294,7 +290,7 @@ fn print_constants(
 ) -> FormattingResult<()> {
     fn get_value(v: ConstantValue) -> String {
         match v {
-            ConstantValue::U8(v, Representation::Hex) => format!("0x{:02X}", v),
+            ConstantValue::U8(v, Representation::Hex) => format!("0x{v:02X}"),
         }
     }
 
@@ -470,8 +466,8 @@ impl ToConstantCpp for PrimitiveValue {
 impl ToConstantCpp for DurationValue {
     fn to_constant_cpp(&self) -> String {
         match self {
-            DurationValue::Milliseconds(x) => format!("std::chrono::milliseconds({})", x),
-            DurationValue::Seconds(x) => format!("std::chrono::Duration::seconds({})", x),
+            DurationValue::Milliseconds(x) => format!("std::chrono::milliseconds({x})"),
+            DurationValue::Seconds(x) => format!("std::chrono::Duration::seconds({x})"),
         }
     }
 }
@@ -580,8 +576,7 @@ fn print_interface(
                         Some(value) => {
                             f.newline()?;
                             f.writeln(&format!(
-                                "@note This method has a default implementation that returns '{}'",
-                                value
+                                "@note This method has a default implementation that returns '{value}'"
                             ))?;
                         }
                     }
@@ -613,7 +608,7 @@ fn print_interface(
                         cb.core_cpp_type(),
                         args
                     ))?;
-                    indented(f, |f| f.writeln(&format!("return {};", value)))?;
+                    indented(f, |f| f.writeln(&format!("return {value};")))?;
                     f.writeln("}")?;
                 }
             }
@@ -627,14 +622,14 @@ fn print_interface(
 
 fn get_default_value_doc(default: &ValidatedDefaultValue) -> String {
     match default {
-        ValidatedDefaultValue::Bool(x) => format!("@p {}", x),
+        ValidatedDefaultValue::Bool(x) => format!("@p {x}"),
         ValidatedDefaultValue::Number(x) => x.to_string(),
         ValidatedDefaultValue::Duration(DurationType::Milliseconds, x) => {
             format!("{}ms", x.as_millis())
         }
         ValidatedDefaultValue::Duration(DurationType::Seconds, x) => format!("{}s", x.as_secs()),
         ValidatedDefaultValue::Enum(x, variant) => format!("{}::{}", x.core_cpp_type(), variant),
-        ValidatedDefaultValue::String(x) => format!("\"{}\"", x),
+        ValidatedDefaultValue::String(x) => format!("\"{x}\""),
         ValidatedDefaultValue::DefaultStruct(handle, _, _) => {
             format!("Default @ref {}", handle.core_cpp_type())
         }
@@ -704,7 +699,7 @@ fn print_class_definition(
     let class_name = handle.core_cpp_type();
 
     print_commented_cpp_doc(f, &handle.doc)?;
-    f.writeln(&format!("class {} {{", class_name))?;
+    f.writeln(&format!("class {class_name} {{"))?;
     indented(f, |f| {
         f.writeln(&format!("friend class {};", handle.friend_class()))?;
         f.writeln("// pointer to the underlying C type")?;
@@ -725,8 +720,7 @@ fn print_class_definition(
             f.writeln("@param other Class from which ownership will be transfer to this instance")
         })?;
         f.writeln(&format!(
-            "{}({}&& other) noexcept : self(other.self) {{ other.self = nullptr; }}",
-            class_name, class_name
+            "{class_name}({class_name}&& other) noexcept : self(other.self) {{ other.self = nullptr; }}"
         ))?;
 
         if let Some(x) = &handle.constructor {
@@ -734,12 +728,12 @@ fn print_class_definition(
 
             f.newline()?;
             print_cpp_constructor_docs(f, x)?;
-            f.writeln(&format!("{}({});", class_name, args))?;
+            f.writeln(&format!("{class_name}({args});"))?;
         };
         if let Some(x) = &handle.destructor {
             f.newline()?;
             print_commented_cpp_doc(f, &x.function.doc)?;
-            f.writeln(&format!("~{}();", class_name))?;
+            f.writeln(&format!("~{class_name}();"))?;
         };
 
         for method in &handle.methods {
@@ -838,11 +832,11 @@ fn print_static_class(
 
 fn print_deleted_class_functions(f: &mut dyn Printer, name: &str) -> FormattingResult<()> {
     f.writeln("// non-copyable")?;
-    f.writeln(&format!("{}(const {}&) = delete;", name, name))?;
-    f.writeln(&format!("{}& operator=(const {}&) = delete;", name, name))?;
+    f.writeln(&format!("{name}(const {name}&) = delete;"))?;
+    f.writeln(&format!("{name}& operator=(const {name}&) = delete;"))?;
 
     f.writeln("// no move assignment")?;
-    f.writeln(&format!("{}& operator=({}&& other) = delete;", name, name))
+    f.writeln(&format!("{name}& operator=({name}&& other) = delete;"))
 }
 
 fn cpp_arguments<'a, T>(iter: T) -> String

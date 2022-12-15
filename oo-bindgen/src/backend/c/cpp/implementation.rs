@@ -82,9 +82,9 @@ fn write_collection_class_implementation(
     let constructor = format!("fn::{}", col.create_func.name);
 
     let construct_self = if col.has_reserve {
-        format!("{}(static_cast<uint32_t>(values.size()))", constructor)
+        format!("{constructor}(static_cast<uint32_t>(values.size()))")
     } else {
-        format!("{}()", constructor)
+        format!("{constructor}()")
     };
 
     // write the constructor
@@ -104,7 +104,7 @@ fn write_collection_class_implementation(
     f.newline()?;
 
     // write the destructor
-    f.writeln(&format!("{}::~{}()", cpp_type, cpp_type))?;
+    f.writeln(&format!("{cpp_type}::~{cpp_type}()"))?;
     blocked(f, |f| {
         f.writeln(&format!("fn::{}(*this);", col.delete_func.name))
     })?;
@@ -117,14 +117,14 @@ fn write_collection_class_definition(
 ) -> FormattingResult<()> {
     let cpp_type = col.collection_class.core_cpp_type();
     let c_type = col.collection_class.to_c_type();
-    f.writeln(&format!("class {}", cpp_type))?;
+    f.writeln(&format!("class {cpp_type}"))?;
     f.writeln("{")?;
     indented(f, |f| {
         f.writeln(&format!(
             "friend class {};",
             col.collection_class.friend_class()
         ))?;
-        f.writeln(&format!("{}* self;", c_type))
+        f.writeln(&format!("{c_type}* self;"))
     })?;
     f.writeln("public:")?;
     indented(f, |f| {
@@ -133,7 +133,7 @@ fn write_collection_class_definition(
             cpp_type,
             const_ref(col.core_cpp_type())
         ))?;
-        f.writeln(&format!("~{}();", cpp_type))
+        f.writeln(&format!("~{cpp_type}();"))
     })?;
     f.writeln("};")?;
     f.newline()
@@ -243,7 +243,7 @@ fn write_iterator_methods(
     let cpp_value_type = it.item_type.core_cpp_type();
     let c_value_type = it.item_type.to_c_type();
 
-    f.writeln(&format!("bool {}::next()", cpp_class_type))?;
+    f.writeln(&format!("bool {cpp_class_type}::next()"))?;
     blocked(f, |f| {
         f.writeln("if(!this->iter)")?;
         blocked(f, |f| f.writeln("return false;"))?;
@@ -251,8 +251,7 @@ fn write_iterator_methods(
         f.newline()?;
 
         f.writeln(&format!(
-            "this->current = {}(reinterpret_cast<{}*>(this->iter));",
-            c_next, c_class_type
+            "this->current = {c_next}(reinterpret_cast<{c_class_type}*>(this->iter));"
         ))?;
         f.writeln("return this->current;")?;
 
@@ -261,7 +260,7 @@ fn write_iterator_methods(
 
     f.newline()?;
 
-    f.writeln(&format!("{} {}::get()", cpp_value_type, cpp_class_type))?;
+    f.writeln(&format!("{cpp_value_type} {cpp_class_type}::get()"))?;
     blocked(f, |f| {
         f.writeln("if(!this->current)")?;
         blocked(f, |f| {
@@ -272,12 +271,10 @@ fn write_iterator_methods(
 
         match it.item_type {
             IteratorItemType::Primitive(_) => f.writeln(&format!(
-                "return *reinterpret_cast<{}>(this->current);",
-                c_value_type
+                "return *reinterpret_cast<{c_value_type}>(this->current);"
             )),
             IteratorItemType::Struct(_) => f.writeln(&format!(
-                "return ::convert::to_cpp(*reinterpret_cast<{}*>(this->current));",
-                c_value_type
+                "return ::convert::to_cpp(*reinterpret_cast<{c_value_type}*>(this->current));"
             )),
         }
     })?;
@@ -325,7 +322,7 @@ fn write_static_class_method(
         );
 
         match &method.native_function.return_type.get_value() {
-            None => f.writeln(&format!("{};", invocation)),
+            None => f.writeln(&format!("{invocation};")),
             Some(t) => {
                 let transformed_return_value = if t.transform_in_wrapper() {
                     f.writeln("// return type already transformed in the wrapper")?;
@@ -335,7 +332,7 @@ fn write_static_class_method(
                     f.writeln("// transform the return value")?;
                     t.to_cpp_return_value(invocation)
                 };
-                f.writeln(&format!("return {};", transformed_return_value))
+                f.writeln(&format!("return {transformed_return_value};"))
             }
         }
     })
@@ -374,7 +371,7 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
             NumberValue::S32(x) => x.to_string(),
             NumberValue::U64(x) => x.to_string(),
             NumberValue::S64(x) => x.to_string(),
-            NumberValue::Float(x) => format!("{}f", x),
+            NumberValue::Float(x) => format!("{x}f"),
             NumberValue::Double(x) => x.to_string(),
         },
         ValidatedDefaultValue::Duration(_, x) => {
@@ -384,7 +381,7 @@ fn get_default_value(default: &ValidatedDefaultValue) -> String {
             format!("{}::{}", x.core_cpp_type(), variant)
         }
         ValidatedDefaultValue::String(x) => {
-            format!("\"{}\"", x)
+            format!("\"{x}\"")
         }
         ValidatedDefaultValue::DefaultStruct(st, ct, c_name) => match ct {
             InitializerType::Normal => format!("{}()", st.name().camel_case()),
@@ -410,7 +407,7 @@ where
 
     match con.initializer_type {
         InitializerType::Normal => {
-            f.writeln(&format!("{}::{}({}) : ", struct_name, struct_name, args))?;
+            f.writeln(&format!("{struct_name}::{struct_name}({args}) : "))?;
             indented(f, |f| {
                 for (field, last) in st.fields.iter().with_last() {
                     let value = match con.values.iter().find(|x| x.name == field.name) {
@@ -430,7 +427,7 @@ where
                     if last {
                         f.writeln(&value)?;
                     } else {
-                        f.writeln(&format!("{},", value))?;
+                        f.writeln(&format!("{value},"))?;
                     }
                 }
                 Ok(())
@@ -443,7 +440,7 @@ where
                 struct_name, struct_name, con.name, args
             ))?;
             blocked(f, |f| {
-                f.writeln(&format!("return {}(", struct_name))?;
+                f.writeln(&format!("return {struct_name}("))?;
                 indented(f, |f| {
                     for (field, last) in st.fields.iter().with_last() {
                         let value = match con.values.iter().find(|x| x.name == field.name) {
@@ -453,7 +450,7 @@ where
                         if last {
                             f.writeln(&value)?;
                         } else {
-                            f.writeln(&format!("{},", value))?;
+                            f.writeln(&format!("{value},"))?;
                         }
                     }
                     Ok(())
@@ -495,7 +492,7 @@ fn write_class_implementation(
 
     // write the destructor
     for destructor in &handle.destructor {
-        f.writeln(&format!("{}::~{}()", cpp_name, cpp_name))?;
+        f.writeln(&format!("{cpp_name}::~{cpp_name}()"))?;
         blocked(f, |f| {
             f.writeln("if(self)")?;
             blocked(f, |f| {
@@ -552,7 +549,7 @@ fn write_class_static_method_impl(
     ))?;
     blocked(f, |f| {
         match &method.native_function.return_type.get_value() {
-            None => f.writeln(&format!("{};", invocation)),
+            None => f.writeln(&format!("{invocation};")),
             Some(t) => {
                 let transformed_return_value = if t.transform_in_wrapper() {
                     f.writeln("// return type already transformed in the wrapper")?;
@@ -562,7 +559,7 @@ fn write_class_static_method_impl(
                     f.writeln("// transform the return value")?;
                     t.to_cpp_return_value(invocation)
                 };
-                f.writeln(&format!("return {};", transformed_return_value))
+                f.writeln(&format!("return {transformed_return_value};"))
             }
         }
     })?;
@@ -595,7 +592,7 @@ fn write_class_method_impl_generic(
     let args = &native_function.arguments[1..];
     let native_function_name = native_function.name.clone();
     let invocation = if args.is_empty() {
-        format!("fn::{}(*this)", native_function_name)
+        format!("fn::{native_function_name}(*this)")
     } else {
         format!(
             "fn::{}(*this, {})",
@@ -616,7 +613,7 @@ fn write_class_method_impl_generic(
         f.newline()?;
 
         match &native_function.return_type.get_value() {
-            None => f.writeln(&format!("{};", invocation)),
+            None => f.writeln(&format!("{invocation};")),
             Some(t) => {
                 let transformed_return_value = if t.transform_in_wrapper() {
                     f.writeln("// return type already transformed in the wrapper")?;
@@ -626,7 +623,7 @@ fn write_class_method_impl_generic(
                     f.writeln("// transform the return value")?;
                     t.to_cpp_return_value(invocation)
                 };
-                f.writeln(&format!("return {};", transformed_return_value))
+                f.writeln(&format!("return {transformed_return_value};"))
             }
         }
     })?;
@@ -689,7 +686,7 @@ fn write_function_wrapper(
                 .name
                 .capital_snake_case(),
         );
-        f.writeln(&format!("if(_error != {})", c_success_variant))?;
+        f.writeln(&format!("if(_error != {c_success_variant})"))?;
         blocked(f, |f| {
             f.writeln(&format!(
                 "throw {}({});",
@@ -731,11 +728,11 @@ fn write_function_wrapper(
             if last && !has_out_param {
                 f.writeln(&conversion)?;
             } else {
-                f.writeln(&format!("{},", conversion))?;
+                f.writeln(&format!("{conversion},"))?;
             }
         }
         if has_out_param {
-            f.writeln(&format!("&{}", RETURN_VALUE))?;
+            f.writeln(&format!("&{RETURN_VALUE}"))?;
         }
         Ok(())
     }
@@ -764,12 +761,12 @@ fn write_function_wrapper(
         match func.error_type.get() {
             None => match &func.return_type.get_value() {
                 None => {
-                    f.writeln(&format!("{}(", c_func_name))?;
+                    f.writeln(&format!("{c_func_name}("))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")
                 }
                 Some(t) => {
-                    f.writeln(&format!("const auto {} = {}(", RETURN_VALUE, c_func_name))?;
+                    f.writeln(&format!("const auto {RETURN_VALUE} = {c_func_name}("))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")?;
                     let return_value = if t.transform_in_wrapper() {
@@ -777,19 +774,19 @@ fn write_function_wrapper(
                     } else {
                         RETURN_VALUE.to_string()
                     };
-                    f.writeln(&format!("return {};", return_value))
+                    f.writeln(&format!("return {return_value};"))
                 }
             },
             Some(err) => match &func.return_type.get_value() {
                 None => {
-                    f.writeln(&format!("const auto _error = {}(", c_func_name))?;
+                    f.writeln(&format!("const auto _error = {c_func_name}("))?;
                     indented(f, |f| write_args(f, func, false))?;
                     f.writeln(");")?;
                     write_error_check(f, err)
                 }
                 Some(t) => {
                     f.writeln(&format!("{} {};", t.to_c_type(), RETURN_VALUE))?;
-                    f.writeln(&format!("const auto _error =  {}(", c_func_name))?;
+                    f.writeln(&format!("const auto _error =  {c_func_name}("))?;
                     indented(f, |f| write_args(f, func, true))?;
                     f.writeln(");")?;
                     write_error_check(f, err)?;
@@ -798,7 +795,7 @@ fn write_function_wrapper(
                     } else {
                         RETURN_VALUE.to_string()
                     };
-                    f.writeln(&format!("return {};", return_value))
+                    f.writeln(&format!("return {return_value};"))
                 }
             },
         }
@@ -921,9 +918,9 @@ where
     f.writeln("public:")?;
     indented(f, |f| {
         let cpp_type = handle.core_cpp_type();
-        f.writeln(&format!("static {} init({})", cpp_type, args))?;
+        f.writeln(&format!("static {cpp_type} init({args})"))?;
         blocked(f, |f| {
-            f.writeln(&format!("return {}(", cpp_type))?;
+            f.writeln(&format!("return {cpp_type}("))?;
             indented(f, |f| {
                 for (field, last) in handle.fields().with_last() {
                     let value = if field.field_type.is_move_type() {
@@ -987,10 +984,7 @@ fn write_iterator_friend_class(
             handle.core_cpp_type()
         ))?;
         blocked(f, |f| {
-            f.writeln(&format!(
-                "return reinterpret_cast<{}*>(value.iter);",
-                c_type
-            ))
+            f.writeln(&format!("return reinterpret_cast<{c_type}*>(value.iter);"))
         })
     })?;
     f.writeln("};")?;
@@ -1016,12 +1010,9 @@ where
     };
 
     let c_type = handle.to_c_type();
-    f.writeln(&format!(
-        "static {} to_native({} value)",
-        c_type, value_type
-    ))?;
+    f.writeln(&format!("static {c_type} to_native({value_type} value)"))?;
     blocked(f, |f| {
-        f.writeln(&format!("return {} {{", c_type))?;
+        f.writeln(&format!("return {c_type} {{"))?;
         indented(f, |f| {
             for field in &handle.fields {
                 let cpp_value = match handle.visibility {
@@ -1038,7 +1029,7 @@ where
                     }
                 };
                 let conversion = field.field_type.to_native_struct_field(cpp_value);
-                f.writeln(&format!("{},", conversion))?;
+                f.writeln(&format!("{conversion},"))?;
             }
             Ok(())
         })?;
@@ -1077,7 +1068,7 @@ where
                 if last {
                     f.writeln(&conversion)?;
                 } else {
-                    f.writeln(&format!("{},", conversion))?;
+                    f.writeln(&format!("{conversion},"))?;
                 }
             }
             Ok(())
@@ -1223,7 +1214,7 @@ fn write_callback_function(
             if last {
                 f.writeln(&conversion)?;
             } else {
-                f.writeln(&format!("{},", conversion))?;
+                f.writeln(&format!("{conversion},"))?;
             }
         }
         Ok(())
@@ -1256,12 +1247,12 @@ fn write_callback_function(
         let function = format!("reinterpret_cast<{}*>(ctx)->{}", cpp_type, cb.name);
         match &cb.return_type.get_value() {
             None => {
-                f.writeln(&format!("{}(", function))?;
+                f.writeln(&format!("{function}("))?;
                 indented(f, |f| write_invocation_lines(f, cb))?;
                 f.writeln(");")
             }
             Some(t) => {
-                f.writeln(&format!("auto _cpp_return = {}(", function))?;
+                f.writeln(&format!("auto _cpp_return = {function}("))?;
                 indented(f, |f| write_invocation_lines(f, cb))?;
                 f.writeln(");")?;
                 f.writeln(&format!(
@@ -1289,7 +1280,7 @@ fn write_cpp_interface_to_native_conversion(
         InterfaceCategory::Asynchronous => unique_ptr(cpp_type.clone()),
         InterfaceCategory::Future => unique_ptr(cpp_type.clone()),
     };
-    f.writeln(&format!("{} to_native({} value)", c_type, argument_type,))?;
+    f.writeln(&format!("{c_type} to_native({argument_type} value)",))?;
     blocked(f, |f| {
         f.writeln(&format!("return {} {{", handle.to_c_type()))?;
         indented(f, |f| {
@@ -1302,8 +1293,7 @@ fn write_cpp_interface_to_native_conversion(
                 }
                 InterfaceCategory::Asynchronous | InterfaceCategory::Future => {
                     f.writeln(&format!(
-                        "[](void* ctx) {{ delete reinterpret_cast<{}*>(ctx); }},",
-                        cpp_type
+                        "[](void* ctx) {{ delete reinterpret_cast<{cpp_type}*>(ctx); }},"
                     ))?;
                 }
             }

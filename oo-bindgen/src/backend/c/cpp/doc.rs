@@ -114,12 +114,12 @@ pub(crate) fn print_cpp_doc_string(
 }
 
 fn highlight(expr: String) -> String {
-    format!("<em>{}</em>", expr)
+    format!("<em>{expr}</em>")
 }
 
 fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> FormattingResult<()> {
     match reference {
-        Validated::Argument(param_name) => f.write(&format!("@p {}", param_name))?,
+        Validated::Argument(param_name) => f.write(&format!("@p {param_name}"))?,
         Validated::Class(class) => {
             f.write(&format!("@ref {}", class.core_cpp_type()))?;
         }
@@ -138,7 +138,7 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
                 .collect::<Vec<String>>()
                 .join(",");
 
-            f.write(&format!("@ref {}::{}({})", cpp_type, cpp_type, args))?;
+            f.write(&format!("@ref {cpp_type}::{cpp_type}({args})"))?;
         }
         Validated::ClassDestructor(class, _) => {
             let cpp_type = class.core_cpp_type();
@@ -147,7 +147,7 @@ fn print_cpp_reference(f: &mut dyn Printer, reference: &Validated) -> Formatting
                Explicit links to destructors are just plain broken in doxygen v1.9.2
                It generates correct links however without an explicit @ref or #!
             */
-            f.write(&format!("{}::~{}()", cpp_type, cpp_type))?;
+            f.write(&format!("{cpp_type}::~{cpp_type}()"))?;
         }
         Validated::Struct(st) => {
             // explicit links to structs don't always work :(

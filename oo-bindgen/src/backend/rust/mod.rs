@@ -303,7 +303,7 @@ impl<'a> RustCodegen<'a> {
                         ))?;
                     }
                     f.writeln(&format!(
-                        "_ => panic!(\"{{}} is not a variant of {}\", value),",
+                        "_ => panic!(\"{{value}} is not a variant of {}\"),",
                         enum_name
                     ))
                 })

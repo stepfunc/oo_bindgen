@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
-use heck::{CamelCase, KebabCase, MixedCase, ShoutySnakeCase};
+use heck::{ToKebabCase, ToLowerCamelCase, ToShoutySnakeCase, ToUpperCamelCase};
 use lazy_static::lazy_static;
 use thiserror::Error;
 
@@ -149,7 +149,7 @@ impl AsRef<str> for Name {
 impl Name {
     /// convert to CamelCase
     pub(crate) fn camel_case(&self) -> String {
-        self.validated.to_camel_case()
+        self.validated.to_upper_camel_case()
     }
 
     /// convert to CAPITAL_SNAKE_CASE
@@ -159,7 +159,7 @@ impl Name {
 
     /// convert to mixedCase
     pub(crate) fn mixed_case(&self) -> String {
-        self.validated.to_mixed_case()
+        self.validated.to_lower_camel_case()
     }
 
     /// convert to kebab-case

@@ -1,3 +1,6 @@
+### 0.6.3 ###
+* :wrench: Don't emit C interface initializers. See [#107](https://github.com/stepfunc/oo_bindgen/pull/107).
+
 ### 0.6.2 ###
 * :wrench: Small tweaks to generate code that makes the newer versions of clippy happy.
 

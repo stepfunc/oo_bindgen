@@ -18,5 +18,9 @@ void receive_range(foo_range_iterator_t* it, void* ctx)
 
 void primitive_iterator_tests()
 {
-    foo_invoke_range_callback(1, 3, foo_range_receiver_init(receive_range, NULL, NULL));    
+    foo_range_receiver_t receiver = {
+        .on_range = &receive_range
+    };
+
+    foo_invoke_range_callback(1, 3, receiver);
 }

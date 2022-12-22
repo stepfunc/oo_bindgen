@@ -46,12 +46,11 @@ void test_callback_with_iterator()
 {
     int invoked_count = 0;
 
-    foo_values_receiver_t receiver = foo_values_receiver_init(
-        on_values,
-        NULL,
-        &invoked_count
-    );
-   
+    foo_values_receiver_t receiver = {
+        .on_characters = on_values,
+        .ctx = &invoked_count,
+    };
+
     foo_invoke_callback("ABCDE", receiver);
    
     assert(invoked_count == 1);
@@ -60,11 +59,10 @@ void test_callback_with_iterator()
 void test_double_iterator_with_lifetime()
 {
     int invoked_count = 0;
-    foo_chunk_receiver_t receiver = foo_chunk_receiver_init(
-        on_chunks,
-        NULL,
-        &invoked_count
-    );
+    foo_chunk_receiver_t receiver = {
+        .on_chunk = on_chunks,
+        .ctx = &invoked_count,
+    };
 
     foo_iterate_string_by_chunks("hello world!", 3, receiver);
 

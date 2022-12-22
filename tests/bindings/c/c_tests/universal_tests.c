@@ -18,7 +18,9 @@ static void test_universal_interface()
     input.inner.value = 42;
     input.delay = 77;
 
-    foo_universal_interface_t increment = foo_universal_interface_init(increment_fields, NULL, NULL);
+    foo_universal_interface_t increment = {
+        .on_value = increment_fields
+    };
     foo_universal_outer_struct_t output = foo_invoke_universal_interface(input, increment);
     
     assert(output.inner.value == 43);

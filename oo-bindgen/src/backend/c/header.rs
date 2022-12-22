@@ -577,53 +577,5 @@ fn write_interface(
     })?;
     f.writeln(&format!("}} {struct_name};"))?;
 
-    f.newline()?;
-
-    // Write init helper
-    doxygen(f, |f| {
-        f.writeln("@brief ")?;
-        docstring_print(f, &text("Initialize an instance of the interface"))?;
-        for cb in &handle.callbacks {
-            f.writeln(&format!("@param {} ", cb.name))?;
-            docstring_print(f, &cb.doc.brief)?;
-        }
-        f.writeln(&format!(
-            "@param {destroy_func_name} Callback when the underlying owner doesn't need the interface anymore"
-        ))?;
-        f.writeln(&format!("@param {ctx_variable_name} Context data"))?;
-        Ok(())
-    })?;
-    f.writeln(&format!(
-        "static {} {}_{}_init(",
-        struct_name, &handle.settings.c_ffi_prefix, handle.name
-    ))?;
-    indented(f, |f| {
-        for cb in &handle.callbacks {
-            f.writeln(&format!("{} (*{})(", cb.return_type.to_c_type(), cb.name,))?;
-
-            f.write(&callback_parameters(cb))?;
-            f.write("),")?;
-        }
-
-        f.writeln(&format!("void (*{destroy_func_name})(void* arg),"))?;
-        f.writeln(&format!("void* {ctx_variable_name}"))?;
-
-        Ok(())
-    })?;
-    f.writeln(")")?;
-
-    blocked(f, |f| {
-        f.writeln(&format!("{struct_name} _return_value = {{"))?;
-        indented(f, |f| {
-            for cb in &handle.callbacks {
-                f.writeln(&format!("{},", cb.name))?;
-            }
-            f.writeln(&format!("{destroy_func_name},"))?;
-            f.writeln(ctx_variable_name.as_ref())
-        })?;
-        f.writeln("};")?;
-        f.writeln("return _return_value;")
-    })?;
-
     Ok(())
 }

@@ -41,7 +41,8 @@ static void check_struct(foo_structure_t* x)
 
 static void test_struct_init()
 {
-    foo_structure_t test = foo_structure_init(foo_inner_structure_init(foo_empty_interface_init(NULL, NULL)));
+    foo_empty_interface_t empty = { NULL };
+    foo_structure_t test = foo_structure_init(foo_inner_structure_init(empty));
     check_struct(&test);
 }
 

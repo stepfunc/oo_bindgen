@@ -39,12 +39,12 @@ static void simple_callback_test()
         .destroy_called = false,
     };
 
-    foo_callback_interface_t interface = foo_callback_interface_init(
-        &on_value,
-        &on_duration,
-        &on_destroy,
-        &data
-    );
+    foo_callback_interface_t interface = {
+        .on_value = &on_value,
+        .on_destroy = &on_destroy,
+        .on_duration = &on_duration,
+        .ctx = &data,
+    };
 
     foo_callback_source_set_interface(cb_source, interface);
 
@@ -67,7 +67,7 @@ static void optional_callback_test()
 {
     foo_callback_source_t* cb_source = foo_callback_source_create();
 
-    foo_callback_interface_t interface = foo_callback_interface_init(NULL, NULL, NULL, NULL);
+    foo_callback_interface_t interface = { NULL };
 
     foo_callback_source_set_interface(cb_source, interface);
 

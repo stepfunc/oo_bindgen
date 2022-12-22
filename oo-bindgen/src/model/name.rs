@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
-use heck::{ToUpperCamelCase, ToKebabCase, ToLowerCamelCase, ToShoutySnakeCase};
+use heck::{ToKebabCase, ToLowerCamelCase, ToShoutySnakeCase, ToUpperCamelCase};
 use lazy_static::lazy_static;
 use thiserror::Error;
 

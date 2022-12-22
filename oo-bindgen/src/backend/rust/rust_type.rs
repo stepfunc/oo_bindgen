@@ -388,7 +388,11 @@ where
         } else {
             ""
         };
-        format!("*mut crate::{}{}", self.name().to_upper_camel_case(), lifetime)
+        format!(
+            "*mut crate::{}{}",
+            self.name().to_upper_camel_case(),
+            lifetime
+        )
     }
 
     fn as_c_type(&self) -> String {

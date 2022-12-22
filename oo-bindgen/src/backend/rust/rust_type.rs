@@ -1,5 +1,5 @@
 use crate::backend::rust::type_converter::TypeConverter;
-use heck::CamelCase;
+use heck::ToUpperCamelCase;
 
 use crate::model::*;
 
@@ -72,7 +72,7 @@ impl RustType for BasicType {
         match self {
             Self::Primitive(x) => x.as_rust_type(),
             Self::Duration(_) => "std::time::Duration".to_string(),
-            Self::Enum(handle) => handle.name.to_camel_case(),
+            Self::Enum(handle) => handle.name.to_upper_camel_case(),
         }
     }
 
@@ -248,11 +248,11 @@ where
     D: DocReference,
 {
     fn as_rust_type(&self) -> String {
-        format!("*mut crate::{}", self.name().to_camel_case())
+        format!("*mut crate::{}", self.name().to_upper_camel_case())
     }
 
     fn as_c_type(&self) -> String {
-        format!("*mut crate::{}", self.name().to_camel_case())
+        format!("*mut crate::{}", self.name().to_upper_camel_case())
     }
 
     fn is_copyable(&self) -> bool {
@@ -304,11 +304,11 @@ where
     T: StructFieldType + LifetimeInfo,
 {
     fn as_rust_type(&self) -> String {
-        self.name().to_camel_case()
+        self.name().to_upper_camel_case()
     }
 
     fn as_c_type(&self) -> String {
-        self.name().to_camel_case()
+        self.name().to_upper_camel_case()
     }
 
     fn is_copyable(&self) -> bool {
@@ -322,11 +322,11 @@ where
 
 impl RustType for StructDeclarationHandle {
     fn as_rust_type(&self) -> String {
-        format!("Option<&{}>", self.name.to_camel_case())
+        format!("Option<&{}>", self.name.to_upper_camel_case())
     }
 
     fn as_c_type(&self) -> String {
-        format!("*const {}", self.name.to_camel_case())
+        format!("*const {}", self.name.to_upper_camel_case())
     }
 
     fn is_copyable(&self) -> bool {
@@ -340,11 +340,11 @@ impl RustType for StructDeclarationHandle {
 
 impl RustType for ClassDeclarationHandle {
     fn as_rust_type(&self) -> String {
-        format!("*mut crate::{}", self.name.to_camel_case())
+        format!("*mut crate::{}", self.name.to_upper_camel_case())
     }
 
     fn as_c_type(&self) -> String {
-        format!("*mut crate::{}", self.name.to_camel_case())
+        format!("*mut crate::{}", self.name.to_upper_camel_case())
     }
 
     fn is_copyable(&self) -> bool {
@@ -362,11 +362,11 @@ where
     D: DocReference,
 {
     fn as_rust_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.to_upper_camel_case()
     }
 
     fn as_c_type(&self) -> String {
-        self.name.to_camel_case()
+        self.name.to_upper_camel_case()
     }
 
     fn is_copyable(&self) -> bool {
@@ -388,7 +388,7 @@ where
         } else {
             ""
         };
-        format!("*mut crate::{}{}", self.name().to_camel_case(), lifetime)
+        format!("*mut crate::{}{}", self.name().to_upper_camel_case(), lifetime)
     }
 
     fn as_c_type(&self) -> String {

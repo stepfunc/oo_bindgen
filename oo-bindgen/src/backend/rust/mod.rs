@@ -2,7 +2,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-use heck::CamelCase;
+use heck::ToUpperCamelCase;
 
 use crate::backend::*;
 use crate::model::*;
@@ -75,7 +75,7 @@ impl<'a> RustCodegen<'a> {
     where
         T: StructFieldType + RustType,
     {
-        let struct_name = handle.name().to_camel_case();
+        let struct_name = handle.name().to_upper_camel_case();
         let c_lifetime = if handle.annotate_c_with_lifetime() {
             "<'a>"
         } else {
@@ -242,7 +242,7 @@ impl<'a> RustCodegen<'a> {
         f: &mut dyn Printer,
         handle: &Handle<Enum<Validated>>,
     ) -> FormattingResult<()> {
-        let enum_name = handle.name.to_camel_case();
+        let enum_name = handle.name.to_upper_camel_case();
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]")?;
         f.writeln(&format!("pub enum {enum_name}"))?;
@@ -250,7 +250,7 @@ impl<'a> RustCodegen<'a> {
             for variant in &handle.variants {
                 f.writeln(&format!(
                     "{} = {},",
-                    variant.name.to_camel_case(),
+                    variant.name.to_upper_camel_case(),
                     variant.value
                 ))?;
             }
@@ -268,7 +268,7 @@ impl<'a> RustCodegen<'a> {
                         f.writeln(&format!(
                             "{}::{} => {},",
                             enum_name,
-                            variant.name.to_camel_case(),
+                            variant.name.to_upper_camel_case(),
                             variant.value
                         ))?;
                     }
@@ -288,7 +288,7 @@ impl<'a> RustCodegen<'a> {
                             "{} => {}::{},",
                             variant.value,
                             enum_name,
-                            variant.name.to_camel_case(),
+                            variant.name.to_upper_camel_case(),
                         ))?;
                     }
                     f.writeln(&format!(
@@ -325,7 +325,7 @@ impl<'a> RustCodegen<'a> {
             _error: &ErrorType<Validated>,
         ) -> FormattingResult<()> {
             f.write(") -> std::os::raw::c_int")
-            //f.write(&format!(") -> {}", error.inner.name.to_camel_case()))
+            //f.write(&format!(") -> {}", error.inner.name.to_upper_camel_case()))
         }
 
         // write the return type
@@ -402,7 +402,7 @@ impl<'a> RustCodegen<'a> {
                         blocked(f, |f| {
                             converter.convert_to_c(
                                 f,
-                                &format!("{}::Ok", err.inner.name.to_camel_case()),
+                                &format!("{}::Ok", err.inner.name.to_upper_camel_case()),
                                 "",
                             )
                         })?;
@@ -422,7 +422,7 @@ impl<'a> RustCodegen<'a> {
                             f.writeln("out.write(x);")?;
                             converter.convert_to_c(
                                 f,
-                                &format!("{}::Ok", err.inner.name.to_camel_case()),
+                                &format!("{}::Ok", err.inner.name.to_upper_camel_case()),
                                 "",
                             )
                         })?;
@@ -442,7 +442,7 @@ impl<'a> RustCodegen<'a> {
         handle: &Interface<Validated>,
         mode: InterfaceCategory,
     ) -> FormattingResult<()> {
-        let interface_name = handle.name.to_camel_case();
+        let interface_name = handle.name.to_upper_camel_case();
         // C structure
         f.writeln("#[repr(C)]")?;
         f.writeln("#[derive(Clone)]")?;

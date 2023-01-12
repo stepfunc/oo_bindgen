@@ -43,6 +43,7 @@ impl<'a> RustCodegen<'a> {
 
     fn write_promise_module(f: &mut dyn Printer) -> FormattingResult<()> {
         let promise = include_str!("../../../static/rust/promise.rs");
+        f.writeln("#[allow(dead_code)]")?;
         f.writeln("pub(crate) mod promise {")?;
         indented(f, |f| {
             for line in promise.lines() {

@@ -1,3 +1,6 @@
+### 0.7.0 ###
+* :wrench: Wrap raw C future interface in a drop-safe Promise. See [#109](https://github.com/stepfunc/oo_bindgen/pull/109).
+
 ### 0.6.3 ###
 * :wrench: Don't emit C interface initializers. See [#107](https://github.com/stepfunc/oo_bindgen/pull/107).
 

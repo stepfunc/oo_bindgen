@@ -480,7 +480,7 @@ checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
 
 [[package]]
 name = "oo-bindgen"
-version = "0.6.3"
+version = "0.7.0"
 dependencies = [
  "backtrace",
  "clap",

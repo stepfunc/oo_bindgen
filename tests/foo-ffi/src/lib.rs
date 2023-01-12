@@ -1,5 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
+extern crate alloc;
+
 pub use callback::*;
 pub use class::*;
 pub use collection::*;

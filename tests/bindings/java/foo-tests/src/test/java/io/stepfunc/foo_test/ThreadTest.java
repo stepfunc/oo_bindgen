@@ -57,4 +57,25 @@ class ThreadTest {
             tc.shutdown();
         }
     }
+
+    @Test
+    void promiseStillCompletesIfDropped() throws Exception {
+
+        ThreadClass tc = new ThreadClass(uint(42), v -> {});
+        tc.dropNextAdd();
+
+        try {
+            tc.dropNextAdd();
+            UInteger result = tc.add(uint(4)).toCompletableFuture().get();
+            fail("Exception not thrown");
+        }
+        catch(ExecutionException ex) {
+            BrokenMathException cause = (BrokenMathException) ex.getCause();
+            assertThat(cause.error).isEqualTo(MathIsBroken.DROPPED);
+        }
+        finally {
+            // explicitly shutdown the thread so that we can test post conditions
+            tc.shutdown();
+        }
+    }
 }

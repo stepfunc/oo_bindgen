@@ -228,26 +228,24 @@ pub(crate) fn generate(
                 blocked(f, |f| f.writeln("Task.Run(() => tcs.SetResult(value));"))?;
                 f.newline()?;
 
-                if let Some(err) = fi.error_type.get() {
-                    let error_method_name = fi
-                        .interface
-                        .settings
-                        .future
-                        .failure_callback_method_name
-                        .camel_case();
+                let error_method_name = fi
+                    .interface
+                    .settings
+                    .future
+                    .failure_callback_method_name
+                    .camel_case();
+                f.writeln(&format!(
+                    "void {}.{}({} err)",
+                    interface_name,
+                    error_method_name,
+                    fi.error_type.inner.get_dotnet_type()
+                ))?;
+                blocked(f, |f| {
                     f.writeln(&format!(
-                        "void {}.{}({} err)",
-                        interface_name,
-                        error_method_name,
-                        err.inner.get_dotnet_type()
-                    ))?;
-                    blocked(f, |f| {
-                        f.writeln(&format!(
-                            "Task.Run(() => tcs.SetException(new {}(err)));",
-                            err.exception_name.camel_case()
-                        ))
-                    })?;
-                }
+                        "Task.Run(() => tcs.SetException(new {}(err)));",
+                        fi.error_type.exception_name.camel_case()
+                    ))
+                })?;
 
                 Ok(())
             })?;

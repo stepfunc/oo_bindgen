@@ -488,8 +488,10 @@ impl LibraryBuilder {
         interface_docs: D,
         value_type: V,
         value_type_docs: E,
-        error_type: Option<ErrorType<Unvalidated>>,
+        error_type: ErrorType<Unvalidated>,
+        drop_variant: &'static str,
     ) -> BindResult<FutureInterface<Unvalidated>> {
+        let drop_variant = error_type.inner.value(drop_variant)?;
         let value_type = value_type.into();
         let value_type_docs = value_type_docs.into();
         let name = name.into_name()?;
@@ -499,7 +501,7 @@ impl LibraryBuilder {
         let failure_parameter_name = self.settings.future.failure_single_parameter_name.clone();
 
         let builder = self
-            .define_interface(name.clone(), interface_docs)?
+            .define_interface(name, interface_docs)?
             .begin_callback(
                 success_callback_name,
                 "Invoked when the asynchronous operation completes successfully",
@@ -512,27 +514,27 @@ impl LibraryBuilder {
             .enable_functional_transform()
             .end_callback()?;
 
-        let mut error = OptionalErrorType::new();
-        let builder = if let Some(err) = error_type {
-            error.set(&name, &err)?;
-            builder
-                .begin_callback(
-                    failure_callback_name,
-                    "Invoked when the asynchronous operation fails",
-                )?
-                .param(
-                    failure_parameter_name,
-                    err.inner,
-                    "Enumeration indicating which error occurred",
-                )?
-                .enable_functional_transform()
-                .end_callback()?
-        } else {
-            builder
-        };
+        let builder = builder
+            .begin_callback(
+                failure_callback_name,
+                "Invoked when the asynchronous operation fails",
+            )?
+            .param(
+                failure_parameter_name,
+                CallbackArgument::Basic(BasicType::Enum(error_type.clone_enum())),
+                "Enumeration indicating which error occurred",
+            )?
+            .enable_functional_transform()
+            .end_callback()?;
 
         let (interface, lib) = builder.build(InterfaceCategory::Future);
-        let ret = FutureInterface::new(value_type, error, interface, value_type_docs);
+        let ret = FutureInterface::new(
+            value_type,
+            error_type,
+            interface,
+            value_type_docs,
+            drop_variant,
+        );
         lib.add_statement(Statement::InterfaceDefinition(InterfaceType::Future(
             ret.clone(),
         )))?;

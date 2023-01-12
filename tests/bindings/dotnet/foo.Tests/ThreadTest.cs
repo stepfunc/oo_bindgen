@@ -49,5 +49,29 @@ namespace foo.Tests
 
             Assert.Empty(values);
         }
+
+        [Fact]
+        public async void PromiseCanCompleteIfDropped()
+        {
+            var values = new List<uint>();
+            var tc = new foo.ThreadClass(42, item => values.Add(item));
+            tc.DropNextAdd();
+
+            try
+            {
+                var result = await tc.Add(43);
+                Assert.True(false);
+            }
+            catch (BrokenMathException ex)
+            {
+                Assert.Equal(MathIsBroken.Dropped, ex.error);
+            }
+            finally
+            {
+                tc.Shutdown();
+            }
+
+            Assert.Empty(values);
+        }
     }
 }

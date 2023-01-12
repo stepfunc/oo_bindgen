@@ -11,6 +11,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
             ExceptionType::CheckedException,
         )?
         .add_error("math_is_broke", "hey, sometime is happens")?
+        .add_error("dropped", "callback was dropped")?
         .doc("sometime math just doesn't work")?
         .build()?;
 
@@ -82,13 +83,20 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Next time {class:thread_class.add()} is called, fail it with this error")?
         .build()?;
 
+    let drop_next_add = lib
+        .define_method("drop_next_add", thread_class.clone())?
+        .doc("Next time {class:thread_class.add()} is called, the callback promise will just get dropped")?
+        .build()?;
+
     let add_handler = lib.define_future_interface(
         "add_handler",
         "receives a single value from an add operation",
         Primitive::U32,
         "result of the add operation",
-        Some(error_type),
+        error_type,
+        "dropped",
     )?;
+
     let add_async = lib
         .define_future_method("add", thread_class.clone(), add_handler)?
         .param(
@@ -106,6 +114,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .method(update)?
         .method(execute)?
         .method(queue_error)?
+        .method(drop_next_add)?
         .async_method(add_async)?
         .custom_destroy("shutdown")?
         .doc("A class that manipulations integers on a Rust thread")?

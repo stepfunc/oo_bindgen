@@ -374,7 +374,11 @@ where
     }
 
     fn conversion(&self) -> Option<TypeConverter> {
-        None
+        match self.mode {
+            InterfaceCategory::Synchronous => None,
+            InterfaceCategory::Asynchronous => None,
+            InterfaceCategory::Future => Some(TypeConverter::FutureInterface),
+        }
     }
 }
 

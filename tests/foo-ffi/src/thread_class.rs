@@ -1,4 +1,5 @@
-use crate::ffi::promise::Promise;
+use crate::ffi::promise::{DropError, Promise};
+use crate::ffi::MathIsBroken;
 use std::thread::JoinHandle;
 
 enum Message {
@@ -101,6 +102,10 @@ pub(crate) unsafe fn thread_class_update(instance: *mut ThreadClass, value: u32)
     if let Some(x) = instance.as_ref() {
         x.tx.send(Message::Update(value)).unwrap()
     }
+}
+
+impl DropError for MathIsBroken {
+    const ERROR_ON_DROP: Self = Self::Dropped;
 }
 
 pub(crate) unsafe fn thread_class_add(

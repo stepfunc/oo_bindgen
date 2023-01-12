@@ -94,7 +94,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         Primitive::U32,
         "result of the add operation",
         error_type,
-        "dropped",
     )?;
 
     let add_async = lib

@@ -489,9 +489,7 @@ impl LibraryBuilder {
         value_type: V,
         value_type_docs: E,
         error_type: ErrorType<Unvalidated>,
-        drop_variant: &'static str,
     ) -> BindResult<FutureInterface<Unvalidated>> {
-        let drop_variant = error_type.inner.value(drop_variant)?;
         let value_type = value_type.into();
         let value_type_docs = value_type_docs.into();
         let name = name.into_name()?;
@@ -528,13 +526,7 @@ impl LibraryBuilder {
             .end_callback()?;
 
         let (interface, lib) = builder.build(InterfaceCategory::Future);
-        let ret = FutureInterface::new(
-            value_type,
-            error_type,
-            interface,
-            value_type_docs,
-            drop_variant,
-        );
+        let ret = FutureInterface::new(value_type, error_type, interface, value_type_docs);
         lib.add_statement(Statement::InterfaceDefinition(InterfaceType::Future(
             ret.clone(),
         )))?;

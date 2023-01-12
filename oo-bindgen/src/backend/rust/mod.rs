@@ -557,11 +557,6 @@ impl<'a> RustCodegen<'a> {
                 "type Error = {};",
                 handle.error_type.inner.name.to_upper_camel_case()
             ))?;
-            f.writeln(&format!(
-                "const ERROR_ON_DROP: Self::Error = {}::{};",
-                handle.drop_variant.handle.name.to_upper_camel_case(),
-                handle.drop_variant.variant.name.to_upper_camel_case()
-            ))?;
 
             f.newline()?;
             f.writeln("fn success(&self, value: Self::Value) {")?;

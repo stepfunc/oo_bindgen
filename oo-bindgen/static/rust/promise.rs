@@ -1,8 +1,10 @@
+pub(crate) trait DropError {
+    const ERROR_ON_DROP: Self;
+}
+
 pub(crate) trait FutureInterface : Sized  + Send + 'static {
     type Value;
-    type Error;
-
-    const ERROR_ON_DROP : Self::Error;
+    type Error: DropError;
 
     fn success(&self, value: Self::Value);
     fn error(&self, err: Self::Error);
@@ -36,7 +38,7 @@ impl<T> Promise<Result<T::Value, T::Error>> for PromiseImpl<T> where T: FutureIn
 impl<T> Drop for PromiseImpl<T> where T: FutureInterface {
     fn drop(&mut self) {
         if let Some(x) = self.inner.take() {
-            x.error(T::ERROR_ON_DROP);
+            x.error(T::Error::ERROR_ON_DROP);
         }
     }
 }

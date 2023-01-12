@@ -446,7 +446,6 @@ where
     pub(crate) value_type_doc: DocString<D>,
     pub(crate) error_type: ErrorType<D>,
     pub(crate) interface: Handle<Interface<D>>,
-    pub(crate) drop_variant: EnumValue,
 }
 
 impl FutureInterface<Unvalidated> {
@@ -455,14 +454,12 @@ impl FutureInterface<Unvalidated> {
         error_type: ErrorType<Unvalidated>,
         interface: Handle<Interface<Unvalidated>>,
         value_type_doc: DocString<Unvalidated>,
-        drop_variant: EnumValue,
     ) -> Self {
         Self {
             value_type,
             error_type,
             value_type_doc,
             interface,
-            drop_variant,
         }
     }
 
@@ -472,7 +469,6 @@ impl FutureInterface<Unvalidated> {
             error_type: self.error_type.validate(lib)?,
             value_type_doc: self.value_type_doc.validate(&self.interface.name, lib)?,
             interface: self.interface.validate(lib)?,
-            drop_variant: self.drop_variant.clone(),
         })
     }
 }

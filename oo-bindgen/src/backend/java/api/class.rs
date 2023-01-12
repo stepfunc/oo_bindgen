@@ -415,20 +415,18 @@ fn generate_async_method(
             ))?;
             blocked(f, |f| f.writeln("_future.complete(value);"))?;
 
-            if let Some(err) = method.future.error_type.get() {
-                f.newline()?;
+            f.newline()?;
+            f.writeln(&format!(
+                "public void {}({} error)",
+                settings.future.failure_callback_method_name.mixed_case(),
+                method.future.error_type.inner.name.camel_case()
+            ))?;
+            blocked(f, |f| {
                 f.writeln(&format!(
-                    "public void {}({} error)",
-                    settings.future.failure_callback_method_name.mixed_case(),
-                    err.inner.name.camel_case()
-                ))?;
-                blocked(f, |f| {
-                    f.writeln(&format!(
-                        "_future.completeExceptionally(new {}(error));",
-                        err.exception_name.camel_case()
-                    ))
-                })?;
-            }
+                    "_future.completeExceptionally(new {}(error));",
+                    method.future.error_type.exception_name.camel_case()
+                ))
+            })?;
 
             Ok(())
         })?;

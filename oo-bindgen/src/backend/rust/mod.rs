@@ -9,9 +9,9 @@ use crate::model::*;
 
 use crate::backend::rust::rust_struct::RustStruct;
 use crate::backend::rust::rust_type::RustType;
-use crate::backend::rust::type_converter::TypeConverter;
 
 use crate::backend::rust::rust_type::LifetimeInfo;
+use crate::backend::rust::type_converter::TypeConverter;
 
 mod rust_struct;
 mod rust_type;
@@ -41,8 +41,24 @@ impl<'a> RustCodegen<'a> {
         }
     }
 
+    fn write_promise_module(f: &mut dyn Printer) -> FormattingResult<()> {
+        let promise = include_str!("../../../static/rust/promise.rs");
+        f.writeln("#[allow(dead_code)]")?;
+        f.writeln("pub(crate) mod promise {")?;
+        indented(f, |f| {
+            for line in promise.lines() {
+                f.writeln(line)?;
+            }
+            Ok(())
+        })?;
+        f.writeln("}")?;
+        Ok(())
+    }
+
     fn generate(self) -> FormattingResult<()> {
         let mut f = FilePrinter::new(&self.dest_path)?;
+
+        Self::write_promise_module(&mut f)?;
 
         for statement in self.library.statements() {
             match statement {
@@ -57,7 +73,10 @@ impl<'a> RustCodegen<'a> {
                     Self::write_function(&mut f, handle, &self.library.settings.c_ffi_prefix)?
                 }
                 Statement::InterfaceDefinition(t) => {
-                    self.write_interface(&mut f, t.untyped(), t.mode())?
+                    self.write_interface(&mut f, t.untyped(), t.mode())?;
+                    if let InterfaceType::Future(t) = t {
+                        self.write_future_helpers(&mut f, t)?;
+                    }
                 }
                 _ => (),
             }
@@ -325,7 +344,6 @@ impl<'a> RustCodegen<'a> {
             _error: &ErrorType<Validated>,
         ) -> FormattingResult<()> {
             f.write(") -> std::os::raw::c_int")
-            //f.write(&format!(") -> {}", error.inner.name.to_upper_camel_case()))
         }
 
         // write the return type
@@ -517,7 +535,42 @@ impl<'a> RustCodegen<'a> {
                     ))
                 })
             })
-        })
+        })?;
+
+        Ok(())
+    }
+
+    fn write_future_helpers(
+        &self,
+        f: &mut dyn Printer,
+        handle: &FutureInterface<Validated>,
+    ) -> FormattingResult<()> {
+        let name = handle.interface.name.to_upper_camel_case();
+        f.writeln(&format!(
+            "impl crate::ffi::promise::FutureInterface for {name}"
+        ))?;
+        blocked(f, |f| {
+            f.writeln(&format!(
+                "type Value = {};",
+                handle.value_type.as_rust_type()
+            ))?;
+            f.writeln(&format!(
+                "type Error = {};",
+                handle.error_type.inner.name.to_upper_camel_case()
+            ))?;
+
+            f.newline()?;
+            f.writeln("fn success(&self, value: Self::Value) {")?;
+            indented(f, |f| f.writeln("self.on_complete(value);"))?;
+            f.writeln("}")?;
+
+            f.newline()?;
+            f.writeln("fn error(&self, value: Self::Error) {")?;
+            indented(f, |f| f.writeln("self.on_failure(value);"))?;
+            f.writeln("}")?;
+            Ok(())
+        })?;
+        Ok(())
     }
 
     fn write_callback_helpers<'b, I: Iterator<Item = &'b CallbackFunction<Validated>>>(

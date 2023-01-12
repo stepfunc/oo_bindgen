@@ -444,14 +444,14 @@ where
 {
     pub(crate) value_type: CallbackArgument,
     pub(crate) value_type_doc: DocString<D>,
-    pub(crate) error_type: OptionalErrorType<D>,
+    pub(crate) error_type: ErrorType<D>,
     pub(crate) interface: Handle<Interface<D>>,
 }
 
 impl FutureInterface<Unvalidated> {
     pub(crate) fn new(
         value_type: CallbackArgument,
-        error_type: OptionalErrorType<Unvalidated>,
+        error_type: ErrorType<Unvalidated>,
         interface: Handle<Interface<Unvalidated>>,
         value_type_doc: DocString<Unvalidated>,
     ) -> Self {

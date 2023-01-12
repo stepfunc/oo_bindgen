@@ -32,24 +32,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Increment value")?
         .build()?;
 
-    let get_value_callback = lib.define_future_interface(
-        "get_value_callback",
-        "GetValue callback handler",
-        Primitive::U32,
-        "Result of the operation",
-        None,
-    )?;
-
-    let get_value_async = lib
-        .define_future_method("add_async", test_class.clone(), get_value_callback)?
-        .param(
-            "value",
-            Primitive::U32,
-            "value to add to the internal value",
-        )?
-        .doc("add a number to the class's internal value asynchronously")?
-        .build()?;
-
     let construction_counter = lib
         .define_function("construction_counter")?
         .returns(Primitive::U32, "Number of calls to the constructor")?
@@ -63,7 +45,6 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .destructor(destructor)?
         .method(get_value)?
         .method(increment_value)?
-        .async_method(get_value_async)?
         .static_method(construction_counter)?
         .custom_destroy("shutdown")?
         .doc("A test class")?

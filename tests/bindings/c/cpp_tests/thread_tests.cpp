@@ -74,6 +74,26 @@ static void test_async_callbacks()
             assert(result.is_error);
             assert(result.error == foo::MathIsBroken::math_is_broke);
         }
+
+        {
+            tc.queue_error(foo::MathIsBroken::math_is_broke);
+            auto promise = std::make_shared<std::promise<AddResult>>();
+            auto future = promise->get_future();
+            tc.add(3, std::make_unique<AddHandler>(promise));
+            auto result = future.get();
+            assert(result.is_error);
+            assert(result.error == foo::MathIsBroken::math_is_broke);
+        }
+
+        {
+            tc.drop_next_add();
+            auto promise = std::make_shared<std::promise<AddResult>>();
+            auto future = promise->get_future();
+            tc.add(3, std::make_unique<AddHandler>(promise));
+            auto result = future.get();
+            assert(result.is_error);
+            assert(result.error == foo::MathIsBroken::dropped);
+        }
         
         tc.execute(foo::functional::operation([](uint32_t value) { return 2 * value; }));
     }

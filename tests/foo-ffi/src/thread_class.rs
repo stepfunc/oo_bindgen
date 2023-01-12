@@ -1,9 +1,15 @@
+use crate::ffi::promise::{DropError, Promise};
+use crate::ffi::MathIsBroken;
 use std::thread::JoinHandle;
 
 enum Message {
     Update(u32),
-    Add(u32, crate::ffi::AddHandler),
+    Add(
+        u32,
+        Box<dyn Promise<Result<u32, crate::ffi::MathIsBroken>> + Send>,
+    ),
     QueueAddError(crate::ffi::MathIsBroken),
+    DropAdd,
     Operation(crate::ffi::Operation),
     Stop,
 }
@@ -11,6 +17,7 @@ enum Message {
 struct ThreadData {
     value: u32,
     error_queue: Vec<crate::ffi::MathIsBroken>,
+    drop_add: bool,
     receiver: crate::ffi::ValueChangeListener,
     rx: std::sync::mpsc::Receiver<Message>,
 }
@@ -41,13 +48,16 @@ fn run(mut data: ThreadData) {
                 data.value = x;
                 data.receiver.on_value_change(x);
             }
-            Message::Add(x, cb) => {
-                if let Some(err) = data.error_queue.pop() {
-                    cb.on_failure(err);
+            Message::Add(x, mut reply) => {
+                if data.drop_add {
+                    // we don't reply at all, we just let the promise drop
+                    data.drop_add = false;
+                } else if let Some(err) = data.error_queue.pop() {
+                    reply.complete(Err(err));
                 } else {
                     data.value += x;
                     data.receiver.on_value_change(data.value);
-                    cb.on_complete(data.value);
+                    reply.complete(Ok(data.value));
                 }
             }
             Message::Operation(op) => {
@@ -58,6 +68,9 @@ fn run(mut data: ThreadData) {
             }
             Message::Stop => return,
             Message::QueueAddError(err) => data.error_queue.push(err),
+            Message::DropAdd => {
+                data.drop_add = true;
+            }
         }
     }
 }
@@ -70,6 +83,7 @@ pub(crate) fn thread_class_create(
     let thread_data = ThreadData {
         value,
         error_queue: Default::default(),
+        drop_add: false,
         receiver,
         rx,
     };
@@ -90,13 +104,17 @@ pub(crate) unsafe fn thread_class_update(instance: *mut ThreadClass, value: u32)
     }
 }
 
+impl DropError for MathIsBroken {
+    const ERROR_ON_DROP: Self = Self::Dropped;
+}
+
 pub(crate) unsafe fn thread_class_add(
     instance: *mut ThreadClass,
     value: u32,
-    callback: crate::ffi::AddHandler,
+    callback: impl crate::ffi::promise::Promise<Result<u32, crate::ffi::MathIsBroken>>,
 ) {
     if let Some(x) = instance.as_ref() {
-        x.tx.send(Message::Add(value, callback)).unwrap()
+        x.tx.send(Message::Add(value, Box::new(callback))).unwrap()
     }
 }
 
@@ -115,5 +133,11 @@ pub(crate) unsafe fn thread_class_queue_error(
 ) {
     if let Some(x) = instance.as_ref() {
         x.tx.send(Message::QueueAddError(err)).unwrap()
+    }
+}
+
+pub(crate) unsafe fn thread_class_drop_next_add(instance: *mut crate::ThreadClass) {
+    if let Some(x) = instance.as_ref() {
+        x.tx.send(Message::DropAdd).unwrap()
     }
 }

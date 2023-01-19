@@ -1,3 +1,6 @@
+### 0.7.1 ###
+* :wrench: Future interface uses lifetime on value. See [#110](https://github.com/stepfunc/oo_bindgen/pull/110).
+
 ### 0.7.0 ###
 * :wrench: Wrap raw C future interface in a drop-safe Promise. See [#109](https://github.com/stepfunc/oo_bindgen/pull/109).
 

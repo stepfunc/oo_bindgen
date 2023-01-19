@@ -3,10 +3,10 @@ pub(crate) trait DropError {
 }
 
 pub(crate) trait FutureInterface : Sized  + Send + 'static {
-    type Value;
+    type Value<'a>;
     type Error: DropError;
 
-    fn success(&self, value: Self::Value);
+    fn success(&self, value: Self::Value<'_>);
     fn error(&self, err: Self::Error);
 }
 
@@ -14,7 +14,7 @@ pub(crate) trait Promise<T> : Send + 'static {
     fn complete(&mut self, value: T);
 }
 
-pub(crate) fn wrap<V, E>(interface: impl FutureInterface<Error=E, Value=V>) -> impl Promise<Result<V, E>> {
+pub(crate) fn wrap<'a, V, E>(interface: impl FutureInterface<Error=E, Value<'a>=V>) -> impl Promise<Result<V, E>> {
     PromiseImpl {
         inner: Some(interface),
     }
@@ -24,8 +24,8 @@ struct PromiseImpl<T>  where T: FutureInterface {
     inner: Option<T>,
 }
 
-impl<T> Promise<Result<T::Value, T::Error>> for PromiseImpl<T> where T: FutureInterface {
-    fn complete(&mut self, res: Result<T::Value, T::Error>) {
+impl<'a, T> Promise<Result<T::Value<'a>, T::Error>> for PromiseImpl<T> where T: FutureInterface {
+    fn complete(&mut self, res: Result<T::Value<'a>, T::Error>) {
         if let Some(x) = self.inner.take() {
             match res {
                 Ok(v) => x.success(v),

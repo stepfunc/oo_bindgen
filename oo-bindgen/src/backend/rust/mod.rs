@@ -551,7 +551,7 @@ impl<'a> RustCodegen<'a> {
         ))?;
         blocked(f, |f| {
             f.writeln(&format!(
-                "type Value = {};",
+                "type Value<'a> = {};",
                 handle.value_type.as_rust_type()
             ))?;
             f.writeln(&format!(
@@ -560,7 +560,7 @@ impl<'a> RustCodegen<'a> {
             ))?;
 
             f.newline()?;
-            f.writeln("fn success(&self, value: Self::Value) {")?;
+            f.writeln("fn success(&self, value: Self::Value<'_>) {")?;
             indented(f, |f| f.writeln("self.on_complete(value);"))?;
             f.writeln("}")?;
 

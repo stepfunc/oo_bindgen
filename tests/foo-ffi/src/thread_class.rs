@@ -1,4 +1,4 @@
-use crate::ffi::promise::FutureInterface;
+use crate::ffi::promise::FutureType;
 use crate::ffi::{AddHandler, MathIsBroken};
 use std::thread::JoinHandle;
 
@@ -104,12 +104,12 @@ pub(crate) unsafe fn thread_class_update(instance: *mut ThreadClass, value: u32)
     }
 }
 
-impl FutureInterface<u32, crate::ffi::MathIsBroken> for AddHandler {
-    fn dropped() -> MathIsBroken {
-        MathIsBroken::Dropped
+impl FutureType<Result<u32, crate::ffi::MathIsBroken>> for AddHandler {
+    fn on_drop() -> Result<u32, MathIsBroken> {
+        Err(MathIsBroken::Dropped)
     }
 
-    fn complete(&self, result: Result<u32, MathIsBroken>) {
+    fn complete(self, result: Result<u32, MathIsBroken>) {
         match result {
             Ok(x) => self.on_complete(x),
             Err(err) => self.on_failure(err),
@@ -117,15 +117,11 @@ impl FutureInterface<u32, crate::ffi::MathIsBroken> for AddHandler {
     }
 }
 
-pub(crate) unsafe fn thread_class_add(
-    instance: *mut ThreadClass,
-    value: u32,
-    handler: AddHandler,
-) {
-    let promise = crate::ffi::promise::make_promise(handler);
+pub(crate) unsafe fn thread_class_add(instance: *mut ThreadClass, value: u32, handler: AddHandler) {
+    let promise = crate::ffi::promise::Promise::new(handler);
 
     if let Some(x) = instance.as_ref() {
-        x.tx.send(Message::Add(value, Box::new(promise)))
+        x.tx.send(Message::Add(value, Box::new(|res| promise.complete(res))))
             .unwrap()
     }
 }

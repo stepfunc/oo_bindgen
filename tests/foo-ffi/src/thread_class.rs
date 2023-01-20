@@ -1,12 +1,12 @@
-use crate::ffi::promise::{DropError, Promise};
-use crate::ffi::MathIsBroken;
+use crate::ffi::promise::FutureInterface;
+use crate::ffi::{AddHandler, MathIsBroken};
 use std::thread::JoinHandle;
 
 enum Message {
     Update(u32),
     Add(
         u32,
-        Box<dyn Promise<Result<u32, crate::ffi::MathIsBroken>> + Send>,
+        Box<dyn FnOnce(Result<u32, crate::ffi::MathIsBroken>) + Send + Sync + 'static>,
     ),
     QueueAddError(crate::ffi::MathIsBroken),
     DropAdd,
@@ -48,16 +48,16 @@ fn run(mut data: ThreadData) {
                 data.value = x;
                 data.receiver.on_value_change(x);
             }
-            Message::Add(x, mut reply) => {
+            Message::Add(x, reply) => {
                 if data.drop_add {
                     // we don't reply at all, we just let the promise drop
                     data.drop_add = false;
                 } else if let Some(err) = data.error_queue.pop() {
-                    reply.complete(Err(err));
+                    reply(Err(err));
                 } else {
                     data.value += x;
                     data.receiver.on_value_change(data.value);
-                    reply.complete(Ok(data.value));
+                    reply(Ok(data.value));
                 }
             }
             Message::Operation(op) => {
@@ -104,17 +104,27 @@ pub(crate) unsafe fn thread_class_update(instance: *mut ThreadClass, value: u32)
     }
 }
 
-impl DropError for MathIsBroken {
-    const ERROR_ON_DROP: Self = Self::Dropped;
+impl FutureInterface<u32, crate::ffi::MathIsBroken> for AddHandler {
+    fn dropped() -> MathIsBroken {
+        MathIsBroken::Dropped
+    }
+
+    fn complete(&self, result: Result<u32, MathIsBroken>) {
+        match result {
+            Ok(x) => self.on_complete(x),
+            Err(err) => self.on_failure(err),
+        }
+    }
 }
 
 pub(crate) unsafe fn thread_class_add(
     instance: *mut ThreadClass,
     value: u32,
-    callback: impl crate::ffi::promise::Promise<Result<u32, crate::ffi::MathIsBroken>>,
+    promise: impl crate::ffi::promise::Promise<u32, crate::ffi::MathIsBroken>,
 ) {
     if let Some(x) = instance.as_ref() {
-        x.tx.send(Message::Add(value, Box::new(callback))).unwrap()
+        x.tx.send(Message::Add(value, Box::new(|res| promise.complete(res))))
+            .unwrap()
     }
 }
 

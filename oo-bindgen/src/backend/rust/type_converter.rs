@@ -48,7 +48,7 @@ impl TypeConverter {
             TypeConverter::Struct(x) => x.convert_from_c(f, from, to),
             TypeConverter::Duration(x) => x.convert_from_c(f, from, to),
             TypeConverter::FutureInterface => {
-                f.writeln(&format!("{to} crate::ffi::promise::wrap({from})"))
+                f.writeln(&format!("{to} crate::ffi::promise::make_promise({from})"))
             }
         }
     }

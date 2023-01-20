@@ -74,9 +74,6 @@ impl<'a> RustCodegen<'a> {
                 }
                 Statement::InterfaceDefinition(t) => {
                     self.write_interface(&mut f, t.untyped(), t.mode())?;
-                    if let InterfaceType::Future(t) = t {
-                        self.write_future_helpers(&mut f, t)?;
-                    }
                 }
                 _ => (),
             }
@@ -537,39 +534,6 @@ impl<'a> RustCodegen<'a> {
             })
         })?;
 
-        Ok(())
-    }
-
-    fn write_future_helpers(
-        &self,
-        f: &mut dyn Printer,
-        handle: &FutureInterface<Validated>,
-    ) -> FormattingResult<()> {
-        let name = handle.interface.name.to_upper_camel_case();
-        f.writeln(&format!(
-            "impl crate::ffi::promise::FutureInterface for {name}"
-        ))?;
-        blocked(f, |f| {
-            f.writeln(&format!(
-                "type Value<'a> = {};",
-                handle.value_type.as_rust_type()
-            ))?;
-            f.writeln(&format!(
-                "type Error = {};",
-                handle.error_type.inner.name.to_upper_camel_case()
-            ))?;
-
-            f.newline()?;
-            f.writeln("fn success(&self, value: Self::Value<'_>) {")?;
-            indented(f, |f| f.writeln("self.on_complete(value);"))?;
-            f.writeln("}")?;
-
-            f.newline()?;
-            f.writeln("fn error(&self, value: Self::Error) {")?;
-            indented(f, |f| f.writeln("self.on_failure(value);"))?;
-            f.writeln("}")?;
-            Ok(())
-        })?;
         Ok(())
     }
 

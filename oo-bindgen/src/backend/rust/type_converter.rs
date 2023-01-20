@@ -15,7 +15,6 @@ pub(crate) enum TypeConverter {
     UnvalidatedEnum(Handle<Enum<Unvalidated>>),
     Struct(StructDeclarationHandle),
     Duration(DurationType),
-    FutureInterface,
 }
 
 impl TypeConverter {
@@ -31,7 +30,6 @@ impl TypeConverter {
             TypeConverter::UnvalidatedEnum(x) => x.convert_to_c(f, from, to),
             TypeConverter::Struct(x) => x.convert_to_c(f, from, to),
             TypeConverter::Duration(x) => x.convert_to_c(f, from, to),
-            TypeConverter::FutureInterface => unimplemented!(),
         }
     }
 
@@ -47,9 +45,6 @@ impl TypeConverter {
             TypeConverter::UnvalidatedEnum(x) => x.convert_from_c(f, from, to),
             TypeConverter::Struct(x) => x.convert_from_c(f, from, to),
             TypeConverter::Duration(x) => x.convert_from_c(f, from, to),
-            TypeConverter::FutureInterface => {
-                f.writeln(&format!("{to} crate::ffi::promise::make_promise({from})"))
-            }
         }
     }
 
@@ -60,9 +55,6 @@ impl TypeConverter {
             TypeConverter::UnvalidatedEnum(x) => x.is_unsafe(),
             TypeConverter::Struct(x) => x.is_unsafe(),
             TypeConverter::Duration(x) => x.is_unsafe(),
-            TypeConverter::FutureInterface => {
-                todo!()
-            }
         }
     }
 }

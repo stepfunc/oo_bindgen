@@ -1,4 +1,3 @@
-use crate::ffi::promise::FutureType;
 use crate::ffi::{AddHandler, MathIsBroken};
 use std::thread::JoinHandle;
 
@@ -104,7 +103,7 @@ pub(crate) unsafe fn thread_class_update(instance: *mut ThreadClass, value: u32)
     }
 }
 
-impl FutureType<Result<u32, crate::ffi::MathIsBroken>> for AddHandler {
+impl sfio_promise::FutureType<Result<u32, crate::ffi::MathIsBroken>> for AddHandler {
     fn on_drop() -> Result<u32, MathIsBroken> {
         Err(MathIsBroken::Dropped)
     }
@@ -118,7 +117,7 @@ impl FutureType<Result<u32, crate::ffi::MathIsBroken>> for AddHandler {
 }
 
 pub(crate) unsafe fn thread_class_add(instance: *mut ThreadClass, value: u32, handler: AddHandler) {
-    let promise = crate::ffi::promise::Promise::new(handler);
+    let promise = sfio_promise::Promise::new(handler);
 
     if let Some(x) = instance.as_ref() {
         x.tx.send(Message::Add(value, Box::new(|res| promise.complete(res))))

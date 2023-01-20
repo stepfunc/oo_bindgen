@@ -41,24 +41,8 @@ impl<'a> RustCodegen<'a> {
         }
     }
 
-    fn write_promise_module(f: &mut dyn Printer) -> FormattingResult<()> {
-        let promise = include_str!("../../../static/rust/promise.rs");
-        f.writeln("#[allow(dead_code)]")?;
-        f.writeln("pub(crate) mod promise {")?;
-        indented(f, |f| {
-            for line in promise.lines() {
-                f.writeln(line)?;
-            }
-            Ok(())
-        })?;
-        f.writeln("}")?;
-        Ok(())
-    }
-
     fn generate(self) -> FormattingResult<()> {
         let mut f = FilePrinter::new(&self.dest_path)?;
-
-        Self::write_promise_module(&mut f)?;
 
         for statement in self.library.statements() {
             match statement {

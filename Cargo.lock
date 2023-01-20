@@ -263,6 +263,7 @@ version = "0.6.1"
 dependencies = [
  "foo-schema",
  "oo-bindgen",
+ "sfio-promise",
 ]
 
 [[package]]
@@ -659,6 +660,12 @@ dependencies = [
  "ryu",
  "serde",
 ]
+
+[[package]]
+name = "sfio-promise"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c7633b2c7b0c49ea920d4f49226dc90149e5eb7e93ede49bc7f482c0ff4c4f2"
 
 [[package]]
 name = "sharded-slab"

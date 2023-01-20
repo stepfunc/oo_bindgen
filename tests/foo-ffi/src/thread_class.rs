@@ -120,10 +120,10 @@ impl FutureInterface<u32, crate::ffi::MathIsBroken> for AddHandler {
 pub(crate) unsafe fn thread_class_add(
     instance: *mut ThreadClass,
     value: u32,
-    promise: impl crate::ffi::promise::Promise<u32, crate::ffi::MathIsBroken>,
+    promise: impl FnOnce(Result<u32, crate::ffi::MathIsBroken>) + Send + Sync + 'static,
 ) {
     if let Some(x) = instance.as_ref() {
-        x.tx.send(Message::Add(value, Box::new(|res| promise.complete(res))))
+        x.tx.send(Message::Add(value, Box::new(promise)))
             .unwrap()
     }
 }

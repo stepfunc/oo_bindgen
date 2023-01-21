@@ -8,6 +8,7 @@ edition = "2021"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
+sfio-promise = "0.2"
 
 [build-dependencies]
 foo-schema = { path = "../foo-schema" }

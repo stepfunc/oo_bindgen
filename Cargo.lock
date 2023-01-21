@@ -263,6 +263,7 @@ version = "0.6.1"
 dependencies = [
  "foo-schema",
  "oo-bindgen",
+ "sfio-promise",
 ]
 
 [[package]]
@@ -480,7 +481,7 @@ checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
 
 [[package]]
 name = "oo-bindgen"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "backtrace",
  "clap",
@@ -659,6 +660,12 @@ dependencies = [
  "ryu",
  "serde",
 ]
+
+[[package]]
+name = "sfio-promise"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91547be5cac1551a6401a7cfa571524bbcb4d9d818b2756cbe3012b48cc79aaf"
 
 [[package]]
 name = "sharded-slab"

@@ -1,3 +1,6 @@
+### 0.8.0 ###
+* :wrench: Remove future interface generation in favor of using a companion helper crate.
+
 ### 0.7.1 ###
 * :wrench: Future interface uses lifetime on value. See [#110](https://github.com/stepfunc/oo_bindgen/pull/110).
 

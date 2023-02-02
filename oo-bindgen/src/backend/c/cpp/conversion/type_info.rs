@@ -125,6 +125,7 @@ impl TypeInfo for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.pass_by(),
             CallbackArgStructField::Iterator(x) => x.pass_by(),
             CallbackArgStructField::Struct(x) => x.pass_by(),
+            CallbackArgStructField::String(x) => x.pass_by(),
         }
     }
 }

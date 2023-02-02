@@ -60,6 +60,7 @@ impl ToCppStructField for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.to_cpp(expr),
             CallbackArgStructField::Iterator(x) => x.to_cpp_struct_field(expr),
             CallbackArgStructField::Struct(x) => x.to_cpp_struct_field(expr),
+            CallbackArgStructField::String(x) => x.to_cpp(expr),
         }
     }
 }

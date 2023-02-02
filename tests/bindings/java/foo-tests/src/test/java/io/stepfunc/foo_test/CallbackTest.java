@@ -2,6 +2,7 @@ package io.stepfunc.foo_test;
 
 import io.stepfunc.foo.CallbackInterface;
 import io.stepfunc.foo.CallbackSource;
+import io.stepfunc.foo.Names;
 import org.assertj.core.data.Percentage;
 import org.joou.UInteger;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,9 @@ public class CallbackTest {
         public UInteger lastValue = uint(0);
         public Duration lastDuration = null;
 
+        public Names names = null;
+
+
         @Override
         public UInteger onValue(UInteger value) {
             this.lastValue = value;
@@ -27,6 +31,11 @@ public class CallbackTest {
         public Duration onDuration(Duration value) {
             this.lastDuration = value;
             return value;
+        }
+
+        @Override
+        public void onNames(Names names) {
+            this.names = names;
         }
     }
 
@@ -43,6 +52,11 @@ public class CallbackTest {
             assertThat(cb.lastDuration).isNull();
             assertThat(cbSource.setDuration(Duration.ofSeconds(76))).isEqualTo(Duration.ofSeconds(76));
             assertThat(cb.lastDuration).isEqualTo(Duration.ofSeconds(76));
+
+            assertThat(cb.names).isNull();
+            cbSource.invokeOnNames("John", "Smith");
+            assertThat(cb.names.firstName).isEqualTo("John");
+            assertThat(cb.names.lastName).isEqualTo("Smith");
         }
     }
 
@@ -57,6 +71,9 @@ public class CallbackTest {
         public Duration onDuration(Duration value) {
             return value;
         }
+
+        @Override
+        public void onNames(Names names) {}
 
         public CallbackFinalizerCounterImpl(Counters counters) {
             this.counters = counters;

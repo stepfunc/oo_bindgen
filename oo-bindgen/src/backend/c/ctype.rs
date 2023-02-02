@@ -221,6 +221,7 @@ impl CType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.to_c_type(),
             CallbackArgStructField::Iterator(x) => pointer(x).to_c_type(),
             CallbackArgStructField::Struct(x) => x.to_c_type(),
+            CallbackArgStructField::String(x) => x.to_c_type(),
         }
     }
 }

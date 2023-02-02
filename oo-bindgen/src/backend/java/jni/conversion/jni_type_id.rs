@@ -159,6 +159,7 @@ impl JniTypeId for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.jni_type_id(),
             CallbackArgStructField::Iterator(x) => x.jni_type_id(),
             CallbackArgStructField::Struct(x) => x.jni_type_id(),
+            CallbackArgStructField::String(x) => x.jni_type_id(),
         }
     }
 }

@@ -146,6 +146,7 @@ impl MaybeConvertibleToJni for CallbackArgStructField {
             Self::Basic(x) => x.maybe_convert(expr),
             Self::Iterator(x) => x.maybe_convert(expr),
             Self::Struct(x) => x.maybe_convert(expr),
+            Self::String(x) => x.maybe_convert(expr),
         }
     }
 }

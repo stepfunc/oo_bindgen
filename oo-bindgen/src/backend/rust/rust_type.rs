@@ -643,6 +643,7 @@ impl RustType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.as_rust_type(),
             CallbackArgStructField::Iterator(x) => x.as_rust_type(),
             CallbackArgStructField::Struct(x) => x.as_rust_type(),
+            CallbackArgStructField::String(x) => x.as_rust_type(),
         }
     }
 
@@ -651,6 +652,7 @@ impl RustType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.as_c_type(),
             CallbackArgStructField::Iterator(x) => x.as_c_type(),
             CallbackArgStructField::Struct(x) => x.as_c_type(),
+            CallbackArgStructField::String(x) => x.as_c_type(),
         }
     }
 
@@ -659,6 +661,7 @@ impl RustType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.is_copyable(),
             CallbackArgStructField::Iterator(x) => x.is_copyable(),
             CallbackArgStructField::Struct(x) => x.is_copyable(),
+            CallbackArgStructField::String(x) => x.is_copyable(),
         }
     }
 
@@ -667,6 +670,7 @@ impl RustType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.conversion(),
             CallbackArgStructField::Iterator(x) => x.conversion(),
             CallbackArgStructField::Struct(x) => x.conversion(),
+            CallbackArgStructField::String(x) => x.conversion(),
         }
     }
 }
@@ -897,6 +901,7 @@ impl LifetimeInfo for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.rust_requires_lifetime(),
             CallbackArgStructField::Iterator(x) => x.rust_requires_lifetime(),
             CallbackArgStructField::Struct(x) => x.rust_requires_lifetime(),
+            CallbackArgStructField::String(x) => x.rust_requires_lifetime(),
         }
     }
 
@@ -905,6 +910,7 @@ impl LifetimeInfo for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.c_requires_lifetime(),
             CallbackArgStructField::Iterator(x) => x.c_requires_lifetime(),
             CallbackArgStructField::Struct(x) => x.c_requires_lifetime(),
+            CallbackArgStructField::String(x) => x.c_requires_lifetime(),
         }
     }
 }

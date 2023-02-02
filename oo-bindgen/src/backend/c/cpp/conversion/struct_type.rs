@@ -47,6 +47,7 @@ impl CppStructType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.struct_member_type(),
             CallbackArgStructField::Iterator(x) => mut_ref(x.core_cpp_type()),
             CallbackArgStructField::Struct(x) => x.core_cpp_type(),
+            CallbackArgStructField::String(x) => x.core_cpp_type(),
         }
     }
 }

@@ -224,6 +224,7 @@ impl JavaType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.as_java_primitive(),
             CallbackArgStructField::Iterator(x) => x.as_java_primitive(),
             CallbackArgStructField::Struct(x) => x.as_java_primitive(),
+            CallbackArgStructField::String(x) => x.as_java_primitive(),
         }
     }
 
@@ -232,6 +233,7 @@ impl JavaType for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.as_java_object(),
             CallbackArgStructField::Iterator(x) => x.as_java_object(),
             CallbackArgStructField::Struct(x) => x.as_java_object(),
+            CallbackArgStructField::String(x) => x.as_java_object(),
         }
     }
 }

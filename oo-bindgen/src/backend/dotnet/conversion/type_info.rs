@@ -267,17 +267,19 @@ impl TypeInfo for FunctionReturnStructField {
 impl TypeInfo for CallbackArgStructField {
     fn get_dotnet_type(&self) -> String {
         match self {
-            CallbackArgStructField::Basic(x) => x.get_dotnet_type(),
-            CallbackArgStructField::Iterator(x) => x.get_dotnet_type(),
-            CallbackArgStructField::Struct(x) => x.get_dotnet_type(),
+            Self::Basic(x) => x.get_dotnet_type(),
+            Self::Iterator(x) => x.get_dotnet_type(),
+            Self::Struct(x) => x.get_dotnet_type(),
+            Self::String(x) => x.get_dotnet_type(),
         }
     }
 
     fn get_native_type(&self) -> String {
         match self {
-            CallbackArgStructField::Basic(x) => x.get_native_type(),
-            CallbackArgStructField::Iterator(x) => x.get_native_type(),
-            CallbackArgStructField::Struct(x) => x.get_native_type(),
+            Self::Basic(x) => x.get_native_type(),
+            Self::Iterator(x) => x.get_native_type(),
+            Self::Struct(x) => x.get_native_type(),
+            Self::String(x) => x.get_native_type(),
         }
     }
 }

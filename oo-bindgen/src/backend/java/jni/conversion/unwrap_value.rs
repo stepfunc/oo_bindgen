@@ -136,6 +136,7 @@ impl UnwrapValue for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.unwrap_value(),
             CallbackArgStructField::Iterator(x) => x.unwrap_value(),
             CallbackArgStructField::Struct(x) => x.unwrap_value(),
+            CallbackArgStructField::String(x) => x.unwrap_value(),
         }
     }
 }

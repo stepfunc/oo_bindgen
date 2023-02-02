@@ -1,3 +1,4 @@
+use std::ffi::CStr;
 use std::time::Duration;
 
 use crate::ffi;
@@ -66,4 +67,20 @@ pub unsafe fn callback_source_set_duration(
 ) -> Duration {
     let cb_source = cb_source.as_mut().unwrap();
     cb_source.set_duration(value)
+}
+
+pub unsafe fn callback_source_invoke_on_names(
+    cb_source: *mut crate::CallbackSource,
+    first: &CStr,
+    last: &CStr,
+) {
+    let cb_source = cb_source.as_mut().unwrap();
+
+    if let Some(cb) = &cb_source.callback {
+        let names = ffi::Names {
+            first_name: first.as_ptr(),
+            last_name: last.as_ptr(),
+        };
+        cb.on_names(names);
+    }
 }

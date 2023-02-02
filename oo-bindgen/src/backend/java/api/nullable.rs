@@ -79,6 +79,7 @@ impl Nullable for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.is_nullable(),
             CallbackArgStructField::Iterator(_) => true,
             CallbackArgStructField::Struct(_) => true,
+            CallbackArgStructField::String(_) => true,
         }
     }
 }
@@ -120,6 +121,7 @@ impl IsStruct for CallbackArgStructField {
             CallbackArgStructField::Basic(_) => false,
             CallbackArgStructField::Iterator(_) => false,
             CallbackArgStructField::Struct(_) => true,
+            CallbackArgStructField::String(_) => false,
         }
     }
 }

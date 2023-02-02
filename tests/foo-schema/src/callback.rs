@@ -1,6 +1,16 @@
 use oo_bindgen::model::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
+    let names = lib.declare_callback_argument_struct("names")?;
+
+    let names = lib
+        .define_callback_argument_struct(names)?
+        .doc("struct with strings!")?
+        .add("first_name", StringType, "somebody's first name")?
+        .add("last_name", StringType, "somebody's last name")?
+        .end_fields()?
+        .build()?;
+
     // Declare interface
     let interface = lib
         .define_interface("callback_interface", "Test interface")?
@@ -14,6 +24,9 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .begin_callback("on_duration", "On duration callback")?
         .param("value", DurationType::Milliseconds, "Value")?
         .returns(DurationType::Milliseconds, "Some value")?
+        .end_callback()?
+        .begin_callback("on_names", "Callback with a struct of names")?
+        .param("names", names, "Some names")?
         .end_callback()?
         .build_async()?;
 
@@ -48,6 +61,13 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .doc("Set the duration and call all the callbacks")?
         .build()?;
 
+    let set_names = lib
+        .define_method("invoke_on_names", callback_source.clone())?
+        .param("first", StringType, "First name")?
+        .param("last", StringType, "Last name")?
+        .doc("Invoke the on_names callback")?
+        .build()?;
+
     // Define the class
     lib.define_class(&callback_source)?
         .constructor(constructor)?
@@ -55,6 +75,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .method(set_interface)?
         .method(set_value)?
         .method(set_duration)?
+        .method(set_names)?
         .disposable_destroy()?
         .doc("Class that demonstrate the usage of an async interface")?
         .build()?;

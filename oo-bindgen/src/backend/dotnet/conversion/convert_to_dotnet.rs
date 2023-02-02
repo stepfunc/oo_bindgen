@@ -138,6 +138,7 @@ impl ConvertToDotNet for CallbackArgStructField {
             CallbackArgStructField::Basic(x) => x.convert_to_dotnet(from),
             CallbackArgStructField::Iterator(x) => x.convert_to_dotnet(from),
             CallbackArgStructField::Struct(x) => x.convert_to_dotnet(from),
+            CallbackArgStructField::String(x) => x.convert_to_dotnet(from),
         }
     }
 }

@@ -8,6 +8,7 @@ namespace foo.Tests
     {
         public uint lastValue = 0;
         public TimeSpan lastDuration = TimeSpan.MinValue;
+        public Names names = null;
 
         public uint OnValue(uint value)
         {
@@ -19,6 +20,11 @@ namespace foo.Tests
         {
             lastDuration = value;
             return value;
+        }
+
+        public void OnNames(Names names)
+        {
+            this.names = names;
         }
     }
 
@@ -40,6 +46,11 @@ namespace foo.Tests
         {
             this.counters = counters;
             this.counters.numConstructorsCalled++;
+        }
+
+        public void OnNames(Names names)
+        {
+            
         }
 
         ~CallbackFinalizerCounterImpl()
@@ -73,7 +84,11 @@ namespace foo.Tests
             var timeResult = cbSource.SetDuration(TimeSpan.FromSeconds(76));
             Assert.Equal(TimeSpan.FromSeconds(76), timeResult);
             Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
-            
+
+            Assert.Null(cb.names);
+            cbSource.InvokeOnNames("John", "Smith");
+            Assert.Equal("John", cb.names.FirstName);
+            Assert.Equal("Smith", cb.names.LastName);
         }
 
         private void SingleRun(Counters counters)

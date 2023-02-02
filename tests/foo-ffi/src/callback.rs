@@ -69,7 +69,11 @@ pub unsafe fn callback_source_set_duration(
     cb_source.set_duration(value)
 }
 
-pub unsafe fn callback_source_invoke_on_names(cb_source: *mut crate::CallbackSource, first: &CStr, last: &CStr) {
+pub unsafe fn callback_source_invoke_on_names(
+    cb_source: *mut crate::CallbackSource,
+    first: &CStr,
+    last: &CStr,
+) {
     let cb_source = cb_source.as_mut().unwrap();
 
     if let Some(cb) = &cb_source.callback {

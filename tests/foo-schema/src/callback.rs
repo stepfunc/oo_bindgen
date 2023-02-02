@@ -3,8 +3,8 @@ use oo_bindgen::model::*;
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
     let names = lib.declare_callback_argument_struct("names")?;
 
-    let names = lib.
-        define_callback_argument_struct(names)?
+    let names = lib
+        .define_callback_argument_struct(names)?
         .doc("struct with strings!")?
         .add("first_name", StringType, "somebody's first name")?
         .add("last_name", StringType, "somebody's last name")?

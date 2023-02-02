@@ -1,11 +1,13 @@
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "foo.h"
 
 typedef struct data {
     uint32_t last_value;
     uint64_t last_duration;
+    bool on_names_called;
     bool destroy_called;
 } data_t;
 
@@ -23,6 +25,14 @@ static uint64_t on_duration(uint64_t value, void* context)
     return value;
 }
 
+static void on_names(foo_names_t names, void* context)
+{
+    data_t* data = (data_t*)context;
+    assert(strcmp(names.first_name, "john") == 0);
+    assert(strcmp(names.last_name, "smith") == 0);
+    data->on_names_called = true;
+}
+
 static void on_destroy(void* context)
 {
     data_t* data = (data_t*)context;
@@ -37,12 +47,14 @@ static void simple_callback_test()
     {
         .last_value = 0,
         .destroy_called = false,
+        .on_names_called = false,
     };
 
     foo_callback_interface_t interface = {
         .on_value = &on_value,
         .on_destroy = &on_destroy,
         .on_duration = &on_duration,
+        .on_names = &on_names,
         .ctx = &data,
     };
 
@@ -57,6 +69,10 @@ static void simple_callback_test()
     uint64_t duration_result = foo_callback_source_set_duration(cb_source, 76);
     assert(76 == duration_result);
     assert(76 == data.last_duration);
+
+    assert(!data.on_names_called);
+    foo_callback_source_invoke_on_names(cb_source, "john", "smith");
+    assert(data.on_names_called);
 
     assert(!data.destroy_called);
     foo_callback_source_destroy(cb_source);

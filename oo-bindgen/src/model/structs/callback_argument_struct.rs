@@ -1,10 +1,11 @@
 use crate::model::*;
 
-/// Types that can be used as a callback argument
+/// Types that can be used as a callback argument struct
 #[non_exhaustive]
 #[derive(Clone, Debug)]
 pub enum CallbackArgStructField {
     Basic(BasicType),
+    String(StringType),
     Iterator(AbstractIteratorHandle),
     Struct(UniversalOr<CallbackArgStructField>),
 }
@@ -31,6 +32,7 @@ impl InitializerValidator for CallbackArgStructField {
                 UniversalOr::Specific(x) => x.validate_default_value(value),
                 UniversalOr::Universal(x) => x.validate_default_value(value),
             },
+            CallbackArgStructField::String(x) => x.validate_default_value(value),
         }
     }
 }
@@ -44,6 +46,12 @@ impl From<Primitive> for CallbackArgStructField {
 impl From<BasicType> for CallbackArgStructField {
     fn from(x: BasicType) -> Self {
         CallbackArgStructField::Basic(x)
+    }
+}
+
+impl From<StringType> for CallbackArgStructField {
+    fn from(x: StringType) -> Self {
+        Self::String(x)
     }
 }
 

@@ -98,6 +98,7 @@ impl CppFunctionArgType for CallbackArgStructField {
             Self::Basic(x) => x.get_cpp_function_arg_type(),
             Self::Iterator(x) => x.core_cpp_type(),
             Self::Struct(x) => const_ref(x.core_cpp_type()),
+            Self::String(x) => x.core_cpp_type(),
         }
     }
 }

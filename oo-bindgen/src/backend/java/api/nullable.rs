@@ -89,6 +89,7 @@ impl Nullable for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.is_nullable(),
             UniversalStructField::Struct(_) => true,
+            UniversalStructField::String(_) => false,
         }
     }
 }
@@ -131,6 +132,7 @@ impl IsStruct for UniversalStructField {
         match self {
             UniversalStructField::Basic(_) => false,
             UniversalStructField::Struct(_) => true,
+            UniversalStructField::String(_) => false,
         }
     }
 }

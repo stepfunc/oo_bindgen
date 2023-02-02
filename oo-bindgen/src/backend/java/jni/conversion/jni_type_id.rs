@@ -169,6 +169,7 @@ impl JniTypeId for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.jni_type_id(),
             UniversalStructField::Struct(x) => x.jni_type_id(),
+            UniversalStructField::String(x) => x.jni_type_id(),
         }
     }
 }

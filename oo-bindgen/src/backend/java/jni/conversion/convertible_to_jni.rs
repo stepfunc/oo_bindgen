@@ -156,6 +156,7 @@ impl MaybeConvertibleToJni for UniversalStructField {
         match self {
             Self::Basic(x) => x.maybe_convert(expr),
             Self::Struct(x) => x.maybe_convert(expr),
+            Self::String(x) => x.maybe_convert(expr),
         }
     }
 }

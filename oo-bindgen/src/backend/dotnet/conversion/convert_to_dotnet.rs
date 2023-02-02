@@ -148,6 +148,7 @@ impl ConvertToDotNet for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.convert_to_dotnet(from),
             UniversalStructField::Struct(x) => x.convert_to_dotnet(from),
+            UniversalStructField::String(x) => x.convert_to_dotnet(from),
         }
     }
 }

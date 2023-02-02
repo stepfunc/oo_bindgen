@@ -183,6 +183,7 @@ impl ConvertToNative for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.convert_to_native(from),
             UniversalStructField::Struct(x) => x.convert_to_native(from),
+            UniversalStructField::String(x) => x.convert_to_native(from),
         }
     }
 
@@ -190,6 +191,7 @@ impl ConvertToNative for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.cleanup_native(from),
             UniversalStructField::Struct(x) => x.cleanup_native(from),
+            UniversalStructField::String(x) => x.cleanup_native(from),
         }
     }
 }

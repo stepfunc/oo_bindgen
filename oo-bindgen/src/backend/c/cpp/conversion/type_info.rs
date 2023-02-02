@@ -89,6 +89,7 @@ impl TypeInfo for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.pass_by(),
             UniversalStructField::Struct(x) => x.pass_by(),
+            UniversalStructField::String(x) => x.pass_by(),
         }
     }
 }

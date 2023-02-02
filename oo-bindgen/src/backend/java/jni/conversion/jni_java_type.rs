@@ -97,6 +97,7 @@ impl JniJavaType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.jni_java_type(),
             UniversalStructField::Struct(x) => x.jni_java_type(),
+            UniversalStructField::String(x) => x.jni_java_type(),
         }
     }
 }

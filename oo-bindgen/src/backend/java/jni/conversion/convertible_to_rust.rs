@@ -350,6 +350,7 @@ impl ConvertibleToRust for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.to_rust(expr),
             UniversalStructField::Struct(x) => x.to_rust(expr),
+            UniversalStructField::String(x) => x.to_rust(expr),
         }
     }
 
@@ -357,6 +358,7 @@ impl ConvertibleToRust for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.to_rust_from_object(expr),
             UniversalStructField::Struct(x) => x.to_rust_from_object(expr),
+            UniversalStructField::String(x) => x.to_rust_from_object(expr),
         }
     }
 
@@ -364,6 +366,7 @@ impl ConvertibleToRust for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.call_site(expr),
             UniversalStructField::Struct(x) => x.call_site(expr),
+            UniversalStructField::String(x) => x.call_site(expr),
         }
     }
 }

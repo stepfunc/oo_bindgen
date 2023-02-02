@@ -5,6 +5,7 @@ use crate::model::*;
 #[derive(Clone, Debug)]
 pub enum UniversalStructField {
     Basic(BasicType),
+    String(StringType),
     Struct(UniversalStructHandle),
 }
 
@@ -26,6 +27,7 @@ impl InitializerValidator for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.validate_default_value(value),
             UniversalStructField::Struct(x) => x.validate_default_value(value),
+            UniversalStructField::String(x) => x.validate_default_value(value),
         }
     }
 }
@@ -57,5 +59,11 @@ impl From<Handle<Enum<Unvalidated>>> for UniversalStructField {
 impl From<UniversalStructHandle> for UniversalStructField {
     fn from(x: UniversalStructHandle) -> Self {
         UniversalStructField::Struct(x)
+    }
+}
+
+impl From<StringType> for UniversalStructField {
+    fn from(value: StringType) -> Self {
+        Self::String(value)
     }
 }

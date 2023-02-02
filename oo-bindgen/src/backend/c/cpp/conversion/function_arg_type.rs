@@ -108,6 +108,7 @@ impl CppFunctionArgType for UniversalStructField {
         match self {
             Self::Basic(x) => x.get_cpp_function_arg_type(),
             Self::Struct(x) => x.get_cpp_function_arg_type(),
+            Self::String(x) => x.get_cpp_function_arg_type(),
         }
     }
 }

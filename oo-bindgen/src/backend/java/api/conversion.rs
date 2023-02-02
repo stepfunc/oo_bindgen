@@ -243,6 +243,7 @@ impl JavaType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.as_java_primitive(),
             UniversalStructField::Struct(x) => x.as_java_primitive(),
+            UniversalStructField::String(x) => x.as_java_primitive(),
         }
     }
 
@@ -250,6 +251,7 @@ impl JavaType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.as_java_object(),
             UniversalStructField::Struct(x) => x.as_java_object(),
+            UniversalStructField::String(x) => x.as_java_object(),
         }
     }
 }

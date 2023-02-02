@@ -289,6 +289,7 @@ impl TypeInfo for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.get_dotnet_type(),
             UniversalStructField::Struct(x) => x.get_dotnet_type(),
+            UniversalStructField::String(x) => x.get_dotnet_type(),
         }
     }
 
@@ -296,6 +297,7 @@ impl TypeInfo for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.get_native_type(),
             UniversalStructField::Struct(x) => x.get_native_type(),
+            UniversalStructField::String(x) => x.get_native_type(),
         }
     }
 }

@@ -89,6 +89,7 @@ impl GuardType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.guard_type(),
             UniversalStructField::Struct(x) => x.guard_type(),
+            UniversalStructField::String(x) => x.guard_type(),
         }
     }
 
@@ -96,6 +97,7 @@ impl GuardType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.guard_transform(expr),
             UniversalStructField::Struct(x) => x.guard_transform(expr),
+            UniversalStructField::String(x) => x.guard_transform(expr),
         }
     }
 }

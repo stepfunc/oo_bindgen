@@ -5,8 +5,8 @@
 struct Data {
     uint32_t value = 0;
     std::chrono::steady_clock::duration duration = std::chrono::steady_clock::duration::zero();
-    size_t destructor_count = 0;
-    foo::Names names = foo::Names("", "");
+    size_t destructor_count = 0;    
+    std::vector<foo::Names> names;
 };
 
 
@@ -32,8 +32,14 @@ public:
     }
 
     void on_names(const foo::Names& names) override {
-        data->names.first_name = names.first_name;
-        data->names.last_name = names.last_name;
+        data->names.push_back(names);
+    }
+
+    void on_several_names(foo::NamesIter& iter) override {
+        while (iter.next()) {
+            auto names = iter.get();
+            data->names.push_back(names);
+        }
     }
 };
 
@@ -62,12 +68,22 @@ static void simple_callback_test()
         }    
 
         {
-            assert(data->names.first_name == "");
-            assert(data->names.last_name == "");
+            data->names.clear();
             foo::Names names("john", "smith");
             cb_source.invoke_on_names(names);
-            assert(data->names.first_name == "john");
-            assert(data->names.last_name == "smith");
+            assert(data->names.size() == 1);
+            assert(data->names[0].first_name == "john");
+            assert(data->names[0].last_name == "smith");
+        }       
+
+        {
+            data->names.clear();            
+            cb_source.invoke_on_several_names();
+            assert(data->names.size() == 2);
+            assert(data->names[0].first_name == "jane");
+            assert(data->names[0].last_name == "doe");
+            assert(data->names[1].first_name == "jake");
+            assert(data->names[1].last_name == "sully");
         }
 
         assert(data->destructor_count == 0);

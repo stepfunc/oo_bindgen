@@ -1,14 +1,15 @@
 use oo_bindgen::model::*;
 
 pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
-    let names = lib.declare_callback_argument_struct("names")?;
+    let names = lib.declare_universal_struct("names")?;
 
     let names = lib
-        .define_callback_argument_struct(names)?
+        .define_universal_struct(names)?
         .doc("struct with strings!")?
         .add("first_name", StringType, "somebody's first name")?
         .add("last_name", StringType, "somebody's last name")?
         .end_fields()?
+        .add_full_initializer("init")?
         .build()?;
 
     // Declare interface
@@ -26,7 +27,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
         .returns(DurationType::Milliseconds, "Some value")?
         .end_callback()?
         .begin_callback("on_names", "Callback with a struct of names")?
-        .param("names", names, "Some names")?
+        .param("names", names.clone(), "Some names")?
         .end_callback()?
         .build_async()?;
 
@@ -63,8 +64,7 @@ pub fn define(lib: &mut LibraryBuilder) -> BackTraced<()> {
 
     let set_names = lib
         .define_method("invoke_on_names", callback_source.clone())?
-        .param("first", StringType, "First name")?
-        .param("last", StringType, "Last name")?
+        .param("names", names, "First and last name")?
         .doc("Invoke the on_names callback")?
         .build()?;
 

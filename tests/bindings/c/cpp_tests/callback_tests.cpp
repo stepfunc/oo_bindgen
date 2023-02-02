@@ -6,8 +6,7 @@ struct Data {
     uint32_t value = 0;
     std::chrono::steady_clock::duration duration = std::chrono::steady_clock::duration::zero();
     size_t destructor_count = 0;
-    std::string first_name;
-    std::string last_name;
+    foo::Names names = foo::Names("", "");
 };
 
 
@@ -33,8 +32,8 @@ public:
     }
 
     void on_names(const foo::Names& names) override {
-        data->first_name = names.first_name;
-        data->last_name = names.last_name;
+        data->names.first_name = names.first_name;
+        data->names.last_name = names.last_name;
     }
 };
 
@@ -63,11 +62,12 @@ static void simple_callback_test()
         }    
 
         {
-            assert(data->first_name == "");
-            assert(data->last_name == "");            
-            cb_source.invoke_on_names("john", "smith");
-            assert(data->first_name == "john");
-            assert(data->last_name == "smith");
+            assert(data->names.first_name == "");
+            assert(data->names.last_name == "");
+            foo::Names names("john", "smith");
+            cb_source.invoke_on_names(names);
+            assert(data->names.first_name == "john");
+            assert(data->names.last_name == "smith");
         }
 
         assert(data->destructor_count == 0);

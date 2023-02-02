@@ -86,7 +86,7 @@ namespace foo.Tests
             Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
 
             Assert.Null(cb.names);
-            cbSource.InvokeOnNames("John", "Smith");
+            cbSource.InvokeOnNames(new Names("John", "Smith"));
             Assert.Equal("John", cb.names.FirstName);
             Assert.Equal("Smith", cb.names.LastName);
         }

@@ -54,7 +54,7 @@ public class CallbackTest {
             assertThat(cb.lastDuration).isEqualTo(Duration.ofSeconds(76));
 
             assertThat(cb.names).isNull();
-            cbSource.invokeOnNames("John", "Smith");
+            cbSource.invokeOnNames(new Names("John", "Smith"));
             assertThat(cb.names.firstName).isEqualTo("John");
             assertThat(cb.names.lastName).isEqualTo("Smith");
         }

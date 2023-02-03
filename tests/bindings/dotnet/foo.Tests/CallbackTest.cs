@@ -108,10 +108,10 @@ namespace foo.Tests
             Assert.Empty(cb.names);
             cbSource.InvokeOnSeveralNames();
             Assert.Equal(2, cb.names.Count);
-            Assert.Equal("Jane", cb.names[0].FirstName);
-            Assert.Equal("Doe", cb.names[0].LastName);
-            Assert.Equal("Jake", cb.names[1].FirstName);
-            Assert.Equal("Sully", cb.names[1].LastName);
+            Assert.Equal("jane", cb.names[0].FirstName);
+            Assert.Equal("doe", cb.names[0].LastName);
+            Assert.Equal("jake", cb.names[1].FirstName);
+            Assert.Equal("sully", cb.names[1].LastName);
         }
 
         private void SingleRun(Counters counters)

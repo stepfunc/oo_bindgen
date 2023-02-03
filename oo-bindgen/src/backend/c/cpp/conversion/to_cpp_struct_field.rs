@@ -70,6 +70,7 @@ impl ToCppStructField for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.to_cpp(expr),
             UniversalStructField::Struct(x) => x.to_cpp_struct_field(expr),
+            UniversalStructField::String(x) => x.to_cpp(expr),
         }
     }
 }

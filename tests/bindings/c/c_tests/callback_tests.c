@@ -71,7 +71,11 @@ static void simple_callback_test()
     assert(76 == data.last_duration);
 
     assert(!data.on_names_called);
-    foo_callback_source_invoke_on_names(cb_source, "john", "smith");
+    foo_names_t names = {
+        .first_name = "john",
+        .last_name = "smith",
+    };
+    foo_callback_source_invoke_on_names(cb_source, names);
     assert(data.on_names_called);
 
     assert(!data.destroy_called);

@@ -57,6 +57,7 @@ impl CppStructType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.struct_member_type(),
             UniversalStructField::Struct(x) => x.core_cpp_type(),
+            UniversalStructField::String(x) => x.struct_member_type(),
         }
     }
 }

@@ -231,6 +231,7 @@ impl CType for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.to_c_type(),
             UniversalStructField::Struct(x) => x.to_c_type(),
+            UniversalStructField::String(x) => x.to_c_type(),
         }
     }
 }

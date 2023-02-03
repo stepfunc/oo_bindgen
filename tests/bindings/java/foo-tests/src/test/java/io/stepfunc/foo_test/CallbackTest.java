@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 
 import java.time.Duration;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joou.Unsigned.uint;
@@ -18,7 +19,9 @@ public class CallbackTest {
         public UInteger lastValue = uint(0);
         public Duration lastDuration = null;
 
-        public Names names = null;
+        public Names name = null;
+
+        public java.util.List<Names> names = new ArrayList<>();
 
 
         @Override
@@ -35,7 +38,12 @@ public class CallbackTest {
 
         @Override
         public void onNames(Names names) {
-            this.names = names;
+            this.name = names;
+        }
+
+        @Override
+        public void onSeveralNames(java.util.List<Names> names) {
+            this.names.addAll(names);
         }
     }
 
@@ -53,10 +61,18 @@ public class CallbackTest {
             assertThat(cbSource.setDuration(Duration.ofSeconds(76))).isEqualTo(Duration.ofSeconds(76));
             assertThat(cb.lastDuration).isEqualTo(Duration.ofSeconds(76));
 
-            assertThat(cb.names).isNull();
-            cbSource.invokeOnNames("John", "Smith");
-            assertThat(cb.names.firstName).isEqualTo("John");
-            assertThat(cb.names.lastName).isEqualTo("Smith");
+            assertThat(cb.name).isNull();
+            cbSource.invokeOnNames(new Names("John", "Smith"));
+            assertThat(cb.name.firstName).isEqualTo("John");
+            assertThat(cb.name.lastName).isEqualTo("Smith");
+
+            assertThat(cb.names.isEmpty()).isTrue();
+            cbSource.invokeOnSeveralNames();
+            assertThat(cb.names.size()).isEqualTo(2);
+            assertThat(cb.names.get(0).firstName).isEqualTo("jane");
+            assertThat(cb.names.get(0).lastName).isEqualTo("doe");
+            assertThat(cb.names.get(1).firstName).isEqualTo("jake");
+            assertThat(cb.names.get(1).lastName).isEqualTo("sully");
         }
     }
 
@@ -74,6 +90,9 @@ public class CallbackTest {
 
         @Override
         public void onNames(Names names) {}
+
+        @Override
+        public void onSeveralNames(java.util.List<Names> names) {}
 
         public CallbackFinalizerCounterImpl(Counters counters) {
             this.counters = counters;

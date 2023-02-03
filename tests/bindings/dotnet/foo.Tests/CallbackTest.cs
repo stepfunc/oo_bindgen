@@ -1,6 +1,7 @@
 using System;
 using Xunit;
 using foo;
+using System.Collections.Generic;
 
 namespace foo.Tests
 {
@@ -8,7 +9,8 @@ namespace foo.Tests
     {
         public uint lastValue = 0;
         public TimeSpan lastDuration = TimeSpan.MinValue;
-        public Names names = null;
+        public Names name = null;
+        public System.Collections.Generic.IList<Names> names = new System.Collections.Generic.List<Names>();
 
         public uint OnValue(uint value)
         {
@@ -24,7 +26,15 @@ namespace foo.Tests
 
         public void OnNames(Names names)
         {
-            this.names = names;
+            this.name = names;
+        }
+
+        void ICallbackInterface.OnSeveralNames(ICollection<Names> names)
+        {
+            foreach(var name in names)
+            {
+                this.names.Add(name);
+            }
         }
     }
 
@@ -53,10 +63,15 @@ namespace foo.Tests
             
         }
 
+        void ICallbackInterface.OnSeveralNames(ICollection<Names> names)
+        {
+
+        }
+
         ~CallbackFinalizerCounterImpl()
         {
             this.counters.numFinalizersCalled++;
-        }
+        }        
     }
 
     class Counters
@@ -85,10 +100,18 @@ namespace foo.Tests
             Assert.Equal(TimeSpan.FromSeconds(76), timeResult);
             Assert.Equal(TimeSpan.FromSeconds(76), cb.lastDuration);
 
-            Assert.Null(cb.names);
-            cbSource.InvokeOnNames("John", "Smith");
-            Assert.Equal("John", cb.names.FirstName);
-            Assert.Equal("Smith", cb.names.LastName);
+            Assert.Null(cb.name);
+            cbSource.InvokeOnNames(new Names("John", "Smith"));
+            Assert.Equal("John", cb.name.FirstName);
+            Assert.Equal("Smith", cb.name.LastName);
+
+            Assert.Empty(cb.names);
+            cbSource.InvokeOnSeveralNames();
+            Assert.Equal(2, cb.names.Count);
+            Assert.Equal("jane", cb.names[0].FirstName);
+            Assert.Equal("doe", cb.names[0].LastName);
+            Assert.Equal("jake", cb.names[1].FirstName);
+            Assert.Equal("sully", cb.names[1].LastName);
         }
 
         private void SingleRun(Counters counters)

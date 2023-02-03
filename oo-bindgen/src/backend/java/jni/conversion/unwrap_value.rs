@@ -146,6 +146,7 @@ impl UnwrapValue for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.unwrap_value(),
             UniversalStructField::Struct(x) => x.unwrap_value(),
+            UniversalStructField::String(x) => x.unwrap_value(),
         }
     }
 }

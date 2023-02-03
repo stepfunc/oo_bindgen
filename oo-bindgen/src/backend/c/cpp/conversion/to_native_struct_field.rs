@@ -109,6 +109,7 @@ impl ToNativeStructField for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.to_native_struct_field(expr),
             UniversalStructField::Struct(x) => x.to_native_struct_field(expr),
+            UniversalStructField::String(x) => x.to_native_struct_field(expr),
         }
     }
 
@@ -116,6 +117,7 @@ impl ToNativeStructField for UniversalStructField {
         match self {
             UniversalStructField::Basic(x) => x.requires_move(),
             UniversalStructField::Struct(x) => x.requires_move(),
+            UniversalStructField::String(x) => x.requires_move(),
         }
     }
 }

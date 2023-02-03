@@ -1,3 +1,6 @@
+### 0.8.2 ###
+* :star: Allow strings in universal structs. See [#113](https://github.com/stepfunc/oo_bindgen/pull/113).
+
 ### 0.8.0 ###
 * :wrench: Remove future interface generation in favor of using a companion helper crate.
 

@@ -10,7 +10,7 @@ Object-oriented binding generator for Rust.
 ## License
 Licensed under the terms of the MIT or Apache v2 licenses at your choice.
 
-## How it works
+## Workflow
 
 - First, you write your Rust library without thinking about bindings.
 - Then, you write a C FFI to your Rust library, taking into account how object-

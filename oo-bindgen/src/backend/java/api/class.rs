@@ -1,5 +1,6 @@
 use super::doc::*;
 use super::*;
+use heck::ToUpperCamelCase;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -352,6 +353,19 @@ fn generate_async_method(
         // Print top-level documentation
         javadoc_print(f, &method.native_function.doc)?;
         f.newline()?;
+        f.writeln("<p>")?;
+        indented(f, |f| {
+            f.writeln(&format!(
+                "The returned stage may fail exceptionally with {{@link {}}}",
+                method
+                    .future
+                    .error_type
+                    .exception_name
+                    .to_upper_camel_case()
+            ))
+        })?;
+        f.writeln("</p>")?;
+        f.newline()?;
 
         // Print each parameter value
         for param in method.arguments_without_callback() {
@@ -360,7 +374,7 @@ fn generate_async_method(
         }
 
         // Print return value
-        f.writeln("@return ")?;
+        f.writeln("@return {@link java.util.concurrent.CompletionStage} containing: ")?;
         docstring_print(f, &method.future.value_type_doc)?;
 
         // Print exception

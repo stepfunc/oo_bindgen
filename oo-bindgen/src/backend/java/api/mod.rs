@@ -218,7 +218,7 @@ fn generate_pom(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<(
         f.writeln("    <plugin>")?;
         f.writeln("      <groupId>org.apache.maven.plugins</groupId>")?;
         f.writeln("      <artifactId>maven-javadoc-plugin</artifactId>")?;
-        f.writeln("      <version>2.9.1</version>")?;
+        f.writeln("      <version>3.5.0</version>")?;
         f.writeln("      <executions>")?;
         f.writeln("        <execution>")?;
         f.writeln("        <id>attach-javadocs</id>")?;

@@ -38,7 +38,7 @@ pub(crate) fn docstring_print(
         match el {
             DocStringElement::Text(text) => f.write(text)?,
             DocStringElement::Null => f.write("<c>null</c>")?,
-            DocStringElement::Iterator => f.write("collection")?,
+            DocStringElement::Iterator => f.write("<see cref=\"System.Collections.Generic.ICollection{T}\"/>")?,
             DocStringElement::Reference(reference) => reference_print(f, reference)?,
         }
     }

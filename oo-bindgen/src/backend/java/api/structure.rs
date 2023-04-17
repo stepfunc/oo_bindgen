@@ -103,7 +103,7 @@ where
                     get_default_value_doc(&value.value)
                 ))?;
             }
-            f.writeln("</ul><p>")?;
+            f.writeln("</ul>")?;
         }
 
         f.newline()?;
@@ -282,8 +282,13 @@ where
         if st.visibility == Visibility::Public && generate_builder_methods {
             for field in st.fields() {
                 documentation(f, |f| {
-                    f.writeln(&format!("@param value New value for the '{}' field", field.name.mixed_case()))?;
-                    f.writeln("@return Reference to this instance of the class with the modified value")?;
+                    f.writeln(&format!(
+                        "@param value New value for the '{}' field",
+                        field.name.mixed_case()
+                    ))?;
+                    f.writeln(
+                        "@return Reference to this instance of the class with the modified value",
+                    )?;
                     Ok(())
                 })?;
 

@@ -1,5 +1,6 @@
 use super::helpers::call_native_function;
 use super::*;
+use heck::ToUpperCamelCase;
 
 pub(crate) fn generate(
     f: &mut dyn Printer,
@@ -357,8 +358,23 @@ fn generate_async_method(
 
         // Print return value
         f.writeln("<returns>")?;
-        docstring_print(f, &method.future.value_type_doc)?;
-        f.write("</returns>")?;
+        indented(f, |f| {
+            f.writeln("<see cref=\"System.Threading.Tasks.Task\"/> containing: ")?;
+            docstring_print(f, &method.future.value_type_doc)?;
+            f.writeln("<para>")?;
+            indented(f, |f| {
+                f.writeln(&format!(
+                    "The returned Task may fail exceptionally with <see cref=\"{}\" />",
+                    method
+                        .future
+                        .error_type
+                        .exception_name
+                        .to_upper_camel_case()
+                ))
+            })?;
+            f.writeln("</para>")
+        })?;
+        f.writeln("</returns>")?;
 
         // Print exception
         if let Some(error) = &method.native_function.error_type.get() {

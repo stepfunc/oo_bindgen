@@ -22,13 +22,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
-      - name: Caching
-        uses: Swatinem/rust-cache@v2
       - name: Run Rust unit tests
         run: cargo test
   # Check formatting and run clippy lints
@@ -38,17 +34,14 @@ jobs:
       matrix:
         rust:
           - stable
-          #- beta
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
           components: rustfmt, clippy
       - name: Format
         run: cargo fmt --all --check
@@ -61,15 +54,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
       - name: Install doxygen 1.9.3
         run: wget -q https://www.doxygen.nl/files/doxygen-1.9.5.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
-      - name: Caching
-        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings
@@ -106,14 +93,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           target: ${{ matrix.target }}
-      - name: Caching
-        uses: Swatinem/rust-cache@v2
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release --target ${{ matrix.target }}
       - name: Copy the FFI and JNI libs
@@ -149,13 +131,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Caching
-        uses: Swatinem/rust-cache@v2
+          target: ${{ matrix.target }}
       - name: Build FFI and JNI
         run: cargo build -p foo-ffi -p foo-ffi-java --release
       - name: Copy the FFI and JNI libs
@@ -188,12 +166,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
           target: ${{ matrix.target }}
-          override: true
       - name: Install Rust Cross
         run: cargo install cross
       - name: Build FFI and JNI shared libraries
@@ -216,13 +191,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - name: Caching
-        uses: Swatinem/rust-cache@v2
+        uses: dtolnay/rust-toolchain@stable
       - name: Download compiled FFI
         uses: actions/download-artifact@v2
         with:

@@ -1,3 +1,7 @@
+### 0.8.3 ###
+* :book: Properly document async methods in C# and Java. See [#115](https://github.com/stepfunc/oo_bindgen/pull/115).
+* :book: Add javadoc to builder methods in Java. See [#117](https://github.com/stepfunc/oo_bindgen/pull/117).
+
 ### 0.8.2 ###
 * :star: Allow strings in universal structs. See [#113](https://github.com/stepfunc/oo_bindgen/pull/113).
 

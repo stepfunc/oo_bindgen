@@ -282,7 +282,8 @@ where
         if st.visibility == Visibility::Public && generate_builder_methods {
             for field in st.fields() {
                 documentation(f, |f| {
-                    javadoc_print(f, &field.doc)?;
+                    f.writeln(&format!("@param value New value for the '{}' field", field.name.mixed_case()))?;
+                    f.writeln("@return Reference to this instance of the class with the modified value")?;
                     Ok(())
                 })?;
 

@@ -86,7 +86,7 @@ jobs:
       matrix:
         include:
           - target: x86_64-pc-windows-msvc # 64-bit MSVC (Windows 7+)
-            test: true
+            test: false # can't run .NET 3.1 anymore
           - target: i686-pc-windows-msvc # 32-bit MSVC (Windows 7+)
             test: false
     steps:
@@ -146,8 +146,8 @@ jobs:
         with:
           name: ffi-modules
           path: ffi-modules
-      - name: .NET Bindings Tests
-        run: cargo run --bin foo-bindings -- --dotnet
+#      - name: .NET Bindings Tests
+#        run: cargo run --bin foo-bindings -- --dotnet
       - name: Java Bindings Tests
         run: cargo run --bin foo-bindings -- --java
   # Cross-compilation for ARM devices and produce C bindings

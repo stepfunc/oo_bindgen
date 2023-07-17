@@ -28,7 +28,7 @@ pub(crate) unsafe fn primitive_pointers_get_bool(
     instance: *mut crate::PrimitivePointers,
     value: bool,
 ) -> *const bool {
-    let mut instance = instance.as_mut().unwrap();
+    let instance = instance.as_mut().unwrap();
     instance.bool_value = value;
     &instance.bool_value
 }
@@ -37,7 +37,7 @@ pub(crate) unsafe fn primitive_pointers_get_u8(
     instance: *mut crate::PrimitivePointers,
     value: u8,
 ) -> *const u8 {
-    let mut instance = instance.as_mut().unwrap();
+    let instance = instance.as_mut().unwrap();
     instance.u8_value = value;
     &instance.u8_value
 }
@@ -46,7 +46,7 @@ pub(crate) unsafe fn primitive_pointers_get_float(
     instance: *mut crate::PrimitivePointers,
     value: f32,
 ) -> *const f32 {
-    let mut instance = instance.as_mut().unwrap();
+    let instance = instance.as_mut().unwrap();
     instance.float_value = value;
     &instance.float_value
 }
@@ -55,7 +55,7 @@ pub(crate) unsafe fn primitive_pointers_get_double(
     instance: *mut crate::PrimitivePointers,
     value: f64,
 ) -> *const f64 {
-    let mut instance = instance.as_mut().unwrap();
+    let instance = instance.as_mut().unwrap();
     instance.double_value = value;
     &instance.double_value
 }

@@ -163,7 +163,7 @@ pub(crate) fn generate_interfaces_cache(
             interface.name, destroy_func_name
         ))?;
         blocked(f, |f| {
-            f.writeln("unsafe { Box::from_raw(ctx as *mut jni::objects::GlobalRef) };")
+            f.writeln("unsafe { let _ = Box::from_raw(ctx as *mut jni::objects::GlobalRef); };")
         })?;
     }
 

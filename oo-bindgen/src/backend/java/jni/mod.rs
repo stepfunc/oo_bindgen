@@ -441,7 +441,7 @@ fn write_function(
                     .call_site(&param.name)
                     .unwrap_or_else(|| param.name.to_string())
             })
-            .chain(extra_param.into_iter())
+            .chain(extra_param)
             .collect::<Vec<String>>()
             .join(", ");
 

@@ -190,7 +190,7 @@ where
                         }
                     }
                 } else {
-                    f.writeln("_phantom: std::marker::PhantomData::default(),")?;
+                    f.writeln("_phantom: std::marker::PhantomData,")?;
                 }
                 Ok(())
             })?;

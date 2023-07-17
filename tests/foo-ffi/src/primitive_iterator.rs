@@ -15,7 +15,7 @@ impl RangeIterator {
 }
 
 pub(crate) fn range_iterator_next(it: *mut RangeIterator) -> *const u32 {
-    let mut it = unsafe { it.as_mut().unwrap() };
+    let it = unsafe { it.as_mut().unwrap() };
     if it.next > it.max {
         return std::ptr::null();
     }

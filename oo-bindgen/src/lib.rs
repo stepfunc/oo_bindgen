@@ -38,7 +38,6 @@ clippy::all
 #![forbid(
     unsafe_code,
     //intra_doc_link_resolution_failure, broken_intra_doc_links
-    unaligned_references,
     while_true,
     bare_trait_objects
 )]

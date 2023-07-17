@@ -1,3 +1,6 @@
+### 0.8.4 ###
+* :star: Fix lints. See [#120](https://github.com/stepfunc/oo_bindgen/pull/120).
+
 ### 0.8.3 ###
 * :book: Properly document async methods in C# and Java. See [#115](https://github.com/stepfunc/oo_bindgen/pull/115).
 * :book: Add javadoc to builder methods in Java. See [#117](https://github.com/stepfunc/oo_bindgen/pull/117).

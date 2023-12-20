@@ -499,7 +499,11 @@ const CSHARP_KEYWORDS: &[&str] = &[
 ///
 /// this allows backends to use temporary variables that can never
 /// conflict with a Name used in an API
-const OO_BINDGEN_RESERVED_PHRASES: &[&str] = &["oo_bindgen"];
+const OO_BINDGEN_RESERVED_PHRASES: &[&str] = &[
+    "oo_bindgen",
+    // reserved name for a helper class in the java backend
+    "backend_library_loader",
+];
 
 type KeyWordMap = HashMap<&'static str, (&'static str, &'static str)>;
 

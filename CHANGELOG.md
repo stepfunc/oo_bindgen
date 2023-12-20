@@ -1,3 +1,6 @@
+### 0.8.5 ###
+* :star: Improve Java native library loading. See [#124](https://github.com/stepfunc/oo_bindgen/pull/124).
+
 ### 0.8.4 ###
 * :star: Fix lints. See [#120](https://github.com/stepfunc/oo_bindgen/pull/120).
 

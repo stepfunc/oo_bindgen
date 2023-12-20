@@ -15,24 +15,20 @@ class BindingLibraryLoader {
         }
     }
 
-    void loadLibrary(Target[] targets) {
-
-    }
-
-    static void loadTargets(Target[] targets) throws Exception {
+    static void loadTargets(Target[] targets) {
         if (targets.length == 0) {
-            throw new Exception("No targets were specified");
+            throw new RuntimeException("No targets were specified");
         }
-        Exception lastException = null;
+        Throwable lastException = null;
         for (Target target : targets) {
             try {
                 loadTargetLibrary(target);
                 return;
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 lastException = ex;
             }
         }
-        throw lastException;
+        throw new RuntimeException("Unable to load a target shared library", lastException);
     }
 
     private static void loadTargetLibrary(Target target) throws Exception {

@@ -1,3 +1,5 @@
+Cargo.lock
+
 # Build files
 /target
 dependencies.json

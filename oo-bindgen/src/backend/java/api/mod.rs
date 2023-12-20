@@ -317,32 +317,25 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
         // Load the library
         f.writeln("static")?;
         blocked(f, |f| {
-            f.writeln("try")?;
-            blocked(f, |f| {
-                let env_variable_name = format!(
-                    "{}_NATIVE_LIB_LOCATION",
-                    lib.settings.name.capital_snake_case()
-                );
-                f.writeln(&format!(
-                    "String nativeLibLocation = System.getenv(\"{env_variable_name}\");"
-                ))?;
-                f.writeln("if(nativeLibLocation != null)")?;
-                blocked(f, |f| f.writeln("System.load(nativeLibLocation);"))?;
+            let env_variable_name = format!(
+                "{}_NATIVE_LIB_LOCATION",
+                lib.settings.name.capital_snake_case()
+            );
+            f.writeln(&format!(
+                "String nativeLibLocation = System.getenv(\"{env_variable_name}\");"
+            ))?;
+            f.writeln("if(nativeLibLocation != null)")?;
+            blocked(f, |f| f.writeln("System.load(nativeLibLocation);"))?;
 
-                f.writeln("else")?;
-                blocked(f, |f| {
-                    f.writeln("BindingLibraryLoader.loadTargets(targets);")?;
-                    f.writeln("String loadedVersion = version();")?;
-                    f.writeln("if (!loadedVersion.equals(VERSION))")?;
-                    blocked(f, |f| {
-                        f.writeln("throw new Exception(\"Module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);")
-                    })?;
-                    Ok(())
-                })
-            })?;
-            f.writeln("catch(Exception ex)")?;
+            f.writeln("else")?;
             blocked(f, |f| {
-                f.writeln("throw new RuntimeException(\"Unable to load native library\", ex);")
+                f.writeln("BindingLibraryLoader.loadTargets(targets);")?;
+                f.writeln("String loadedVersion = version();")?;
+                f.writeln("if (!loadedVersion.equals(VERSION))")?;
+                blocked(f, |f| {
+                    f.writeln("throw new RuntimeException(\"Module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);")
+                })?;
+                Ok(())
             })
         })?;
 

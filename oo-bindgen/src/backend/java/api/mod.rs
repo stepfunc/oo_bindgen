@@ -89,6 +89,8 @@ pub(crate) fn generate_java_bindings(
     // Create the source directory
     logged::create_dir_all(config.java_source_dir(lib))?;
 
+    emit_binding_library_loader(lib, config)?;
+
     // Create all the direct mappings
     generate_native_func_class(lib, config)?;
 
@@ -262,10 +264,28 @@ fn write_null_checks(
     Ok(())
 }
 
+fn emit_binding_library_loader(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
+    let file = include_str!("./copy/BindingLibraryLoader.java");
+    let mut f = create_file("BindingLibraryLoader", config, lib)?;
+    for line in file.lines() {
+        f.writeln(line)?;
+    }
+    Ok(())
+}
+
 fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> FormattingResult<()> {
     let mut f = create_file(NATIVE_FUNCTIONS_CLASSNAME, config, lib)?;
 
     f.newline()?;
+
+    fn lib_name_and_extension(os: OS, lib_name: &str) -> (String, &'static str) {
+        match os {
+            OS::Windows => (lib_name.to_string(), "dll"),
+            OS::Linux => (format!("lib{lib_name}"), "so"),
+            OS::MacOS => (format!("lib{lib_name}"), "dylib"),
+            _ => unimplemented!(),
+        }
+    }
 
     f.writeln(&format!("class {NATIVE_FUNCTIONS_CLASSNAME}"))?;
     blocked(&mut f, |f| {
@@ -273,6 +293,24 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
             "static final String VERSION = \"{}\";",
             lib.version
         ))?;
+
+        let lib_name = format!("{}_java", config.ffi_name);
+        f.writeln("static final BindingLibraryLoader.Target[] targets = new BindingLibraryLoader.Target[] {")?;
+        indented(f, |f| {
+            for (cnt, platform) in config.platforms.iter().enumerate() {
+                if cnt != 0 {
+                    f.write(",")?;
+                }
+                let (lib, extension) =
+                    lib_name_and_extension(platform.platform.target_os, &lib_name);
+                f.writeln(&format!(
+                    "new BindingLibraryLoader.Target(\"{}\", \"{lib}\", \"{extension}\")",
+                    platform.platform.target_triple
+                ))?;
+            }
+            Ok(())
+        })?;
+        f.writeln("};")?;
 
         f.newline()?;
 
@@ -293,78 +331,19 @@ fn generate_native_func_class(lib: &Library, config: &JavaBindgenConfig) -> Form
 
                 f.writeln("else")?;
                 blocked(f, |f| {
-                    f.writeln("boolean loaded = false;")?;
-                    let libname = format!("{}_java", config.ffi_name);
-                    for platform in config.platforms.iter() {
-                        match platform.platform.target_os {
-                            OS::Windows => {
-                                f.writeln("if(!loaded)")?;
-                                blocked(f, |f| {
-                                    f.writeln(&format!(
-                                        "loaded = loadLibrary(\"{}\", \"{}\", \"dll\");",
-                                        platform.platform.target_triple, libname
-                                    ))
-                                })?;
-                            }
-                            OS::Linux => {
-                                f.writeln("if(!loaded)")?;
-                                blocked(f, |f| {
-                                    f.writeln(&format!(
-                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"so\");",
-                                        platform.platform.target_triple, libname
-                                    ))
-                                })?;
-                            }
-                            OS::MacOS => {
-                                f.writeln("if(!loaded)")?;
-                                blocked(f, |f| {
-                                    f.writeln(&format!(
-                                        "loaded = loadLibrary(\"{}\", \"lib{}\", \"dylib\");",
-                                        platform.platform.target_triple, libname
-                                    ))
-                                })?;
-                            }
-                            _ => unimplemented!(),
-                        }
-                    }
-
-                    f.writeln("if(!loaded)")?;
-                    blocked(f, |f| {
-                        f.writeln("throw new Exception(\"Unable to load any of the included native libraries\");")
-                    })?;
-
-                    f.newline()?;
-
-                    // Check the loaded binary version
+                    f.writeln("BindingLibraryLoader.loadTargets(targets);")?;
                     f.writeln("String loadedVersion = version();")?;
                     f.writeln("if (!loadedVersion.equals(VERSION))")?;
                     blocked(f, |f| {
-                        f.writeln(&format!("throw new Exception(\"{} module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);", lib.settings.name))
-                    })
+                        f.writeln("throw new Exception(\"Module version mismatch. Expected \" + VERSION + \" but loaded \" + loadedVersion);")
+                    })?;
+                    Ok(())
                 })
             })?;
             f.writeln("catch(Exception ex)")?;
             blocked(f, |f| {
                 f.writeln("throw new RuntimeException(\"Unable to load native library\", ex);")
             })
-        })?;
-
-        f.newline()?;
-
-        // Load library helper function
-        f.writeln("private static boolean loadLibrary(String directory, String name, String extension) throws Exception")?;
-        blocked(f, |f| {
-            f.writeln("try")?;
-            blocked(f, |f| {
-                f.writeln("java.io.InputStream stream = NativeFunctions.class.getResourceAsStream(\"/\" + directory + \"/\" + name + \".\" + extension);")?;
-                f.writeln("java.nio.file.Path tempFilePath = java.nio.file.Files.createTempFile(name, \".\" + extension);")?;
-                f.writeln("tempFilePath.toFile().deleteOnExit();")?;
-                f.writeln("java.nio.file.Files.copy(stream, tempFilePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);")?;
-                f.writeln("System.load(tempFilePath.toString());")?;
-                f.writeln("return true;")
-            })?;
-            f.writeln("catch(Throwable e)")?;
-            blocked(f, |f| f.writeln("return false;"))
         })?;
 
         f.newline()?;

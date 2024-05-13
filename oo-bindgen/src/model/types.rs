@@ -341,13 +341,6 @@ pub(crate) trait TypeExtractor {
             _ => None,
         }
     }
-
-    fn get_enum_type(&self) -> Option<Handle<Enum<Unvalidated>>> {
-        match self.get_basic_type() {
-            Some(BasicType::Enum(x)) => Some(x.clone()),
-            _ => None,
-        }
-    }
 }
 
 impl TypeExtractor for FunctionArgStructField {

@@ -25,7 +25,7 @@ pub unsafe fn string_class_destroy(string_class: *mut StringClass) {
 
 pub unsafe fn string_class_echo(string_class: *mut StringClass, value: &CStr) -> &CStr {
     let string_class = string_class.as_mut().unwrap();
-    string_class.value = value.to_owned();
+    value.clone_into(&mut string_class.value);
     &string_class.value
 }
 

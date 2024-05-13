@@ -3,7 +3,6 @@ use platforms::Platform;
 use std::path::PathBuf;
 
 pub(crate) trait PlatformExt {
-    fn static_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn dyn_lib_filename<T: AsRef<str>>(&self, libname: T) -> String;
     fn bin_filename<T: AsRef<str>>(&self, libname: T) -> String;
 }
@@ -14,14 +13,6 @@ pub(crate) trait PlatformExt {
 // - https://github.com/rust-lang/rust/blob/1.58.1/library/std/src/sys/windows/env.rs
 // - https://github.com/rust-lang/rust/blob/1.58.1/src/tools/compiletest/src/runtest.rs
 impl PlatformExt for Platform {
-    fn static_lib_filename<T: AsRef<str>>(&self, libname: T) -> String {
-        if self.target_os == OS::Windows {
-            format!("{}.lib", libname.as_ref())
-        } else {
-            format!("lib{}.a", libname.as_ref())
-        }
-    }
-
     fn dyn_lib_filename<T: AsRef<str>>(&self, libname: T) -> String {
         if self.target_os == OS::Windows {
             format!("{}.dll.lib", libname.as_ref())

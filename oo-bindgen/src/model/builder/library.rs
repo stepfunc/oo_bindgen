@@ -582,7 +582,7 @@ impl LibraryBuilder {
             .returns(item_type.get_function_return_value(), "next value or NULL")?
             .build()?;
 
-        let iter = AbstractIteratorHandle::new(crate::model::iterator::AbstractIterator::new(
+        let iter = AbstractIteratorHandle::new(AbstractIterator::new(
             has_lifetime,
             class.inner,
             next_function,
@@ -648,7 +648,7 @@ impl LibraryBuilder {
             .param("value", value_type.clone(), "value to add to the instance")?
             .build()?;
 
-        let collection = Handle::new(crate::model::collection::Collection::new(
+        let collection = Handle::new(Collection::new(
             class_decl.inner,
             value_type,
             create_func,

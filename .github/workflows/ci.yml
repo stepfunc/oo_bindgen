@@ -127,7 +127,7 @@ jobs:
       matrix:
         include:
           - runner: macos-14
-            target: aarch64_64-apple-darwin
+            target: aarch64-apple-darwin
           - runner: macos-13
             target: x86_64-apple-darwin
     steps:

@@ -119,14 +119,17 @@ jobs:
       - name: Java Bindings Tests
         if: ${{ matrix.test }}
         run: cargo run --bin foo-bindings -- --java -r ${{ matrix.target }} -a ./target/${{ matrix.target }}/release
-  # Build bindings on MacOS [64-bit macOS (10.7+, Lion+) (x86_64-apple-darwin)]
+  # Build bindings on MacOS
   bindings-macos:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - x86_64-apple-darwin # 64-bit macOS (10.7+, Lion+)
+        include:
+          - target: aarch64_64-apple-darwin
+            runner: macos-14-arm
+          - target: x86_64-apple-darwin
+            runner: macos-13
     steps:
       - name: Checkout
         uses: actions/checkout@v3

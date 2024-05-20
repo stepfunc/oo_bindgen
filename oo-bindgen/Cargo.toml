@@ -1,6 +1,6 @@
 [package]
 name = "oo-bindgen"
-version = "0.8.6"
+version = "0.8.7"
 authors = ["Step Function I/O LLC <info@stepfunc.io>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"

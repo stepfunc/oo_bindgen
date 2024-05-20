@@ -403,7 +403,7 @@ where
     /// This type of interface can be converted to a Functor-type in many backend languages
     pub(crate) fn get_functional_callback(&self) -> Option<&CallbackFunction<D>> {
         match self.callbacks.len() {
-            1 => self.callbacks.get(0),
+            1 => self.callbacks.first(),
             _ => None,
         }
     }

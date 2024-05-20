@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 impl Args {
     pub(crate) fn get() -> Self {
-        let mut args = crate::cli::Args::parse();
+        let mut args = Args::parse();
         if !(args.build_c || args.build_dotnet || args.build_java) {
             args.build_c = true;
             args.build_dotnet = true;

@@ -1,3 +1,6 @@
+### 0.8.7 ###
+* :star: Sets assembly version information to match the schema in C# backend
+
 ### 0.8.6 ###
 * :star: Improve Java native library loading. See [#124](https://github.com/stepfunc/oo_bindgen/pull/124).
 

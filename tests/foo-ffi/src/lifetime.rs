@@ -39,10 +39,7 @@ pub unsafe fn chunk_iterator_next(it: *mut crate::ChunkIterator) -> Option<&crat
         None => None,
         Some(chunk) => {
             (*it.item.iter).values = chunk;
-            it.bytes = match it.bytes.get(it.chunk_size..) {
-                Some(x) => x,
-                None => &[],
-            };
+            it.bytes = it.bytes.get(it.chunk_size..).unwrap_or_default();
             Some(&it.item)
         }
     }

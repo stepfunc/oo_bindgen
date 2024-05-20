@@ -146,6 +146,7 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
         "    <TargetFramework>{}</TargetFramework>",
         config.target_framework.get_target_framework_str()
     ))?;
+
     f.writeln("    <GenerateDocumentationFile>true</GenerateDocumentationFile>")?;
     f.writeln("    <IncludeSymbols>true</IncludeSymbols>")?; // Include symbols
     f.writeln("    <SymbolPackageFormat>snupkg</SymbolPackageFormat>")?; // Use new file format
@@ -154,6 +155,18 @@ fn generate_csproj(lib: &Library, config: &DotnetBindgenConfig) -> FormattingRes
         "    <PackageVersion>{}</PackageVersion>",
         lib.version
     ))?;
+    f.writeln(&format!(
+        "<VersionPrefix>{}.{}.{}</VersionPrefix>",
+        lib.version.major, lib.version.minor, lib.version.patch
+    ))?;
+
+    if !lib.version.pre.is_empty() {
+        f.writeln(&format!(
+            "<VersionSuffix>{}</VersionSuffix>",
+            lib.version.pre
+        ))?;
+    }
+
     f.writeln(&format!(
         "    <Description>{}</Description>",
         lib.info.description

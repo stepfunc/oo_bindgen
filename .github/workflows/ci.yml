@@ -186,7 +186,7 @@ jobs:
       - name: Upload compiled FFI modules
         uses: actions/upload-artifact@v4
         with:
-          name: ffi-modules-${matrix-target}
+          name: ffi-modules-${{matrix-target}}
           path: ffi-modules
   # Package all the generated bindings
   packaging:

@@ -9,8 +9,6 @@ overflowing_literals,
 patterns_in_fns_without_body,
 pub_use_of_private_extern_crate,
 unknown_crate_types,
-order_dependent_trait_objects,
-
 improper_ctypes,
 late_bound_lifetime_arguments,
 non_camel_case_types,

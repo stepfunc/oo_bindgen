@@ -697,8 +697,7 @@ mod tests {
 
     #[test]
     fn parse_class_method() {
-        let doc: DocString<Unvalidated> = "This is a {class:MyClass.do_something()} method."
-            .into();
+        let doc: DocString<Unvalidated> = "This is a {class:MyClass.do_something()} method.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -729,8 +728,7 @@ mod tests {
 
     #[test]
     fn parse_struct_element() {
-        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct.foo} struct element."
-            .into();
+        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct.foo} struct element.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -761,8 +759,7 @@ mod tests {
 
     #[test]
     fn parse_enum_element() {
-        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum.foo} enum variant."
-            .into();
+        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum.foo} enum variant.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -779,8 +776,7 @@ mod tests {
 
     #[test]
     fn parse_interface() {
-        let doc: DocString<Unvalidated> = "This is a {interface:Interface} interface."
-            .into();
+        let doc: DocString<Unvalidated> = "This is a {interface:Interface} interface.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -794,8 +790,8 @@ mod tests {
 
     #[test]
     fn parse_interface_method() {
-        let doc: DocString<Unvalidated> = "This is a {interface:Interface.foo()} interface method."
-            .into();
+        let doc: DocString<Unvalidated> =
+            "This is a {interface:Interface.foo()} interface method.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),

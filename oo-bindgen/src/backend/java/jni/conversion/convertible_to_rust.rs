@@ -5,11 +5,11 @@ use crate::model::*;
 /// Conversion happens in two phases:
 ///
 /// 1) `to_rust` is called to do a primary conversion from the JNI type to the Rust type. If a
-/// conversion is required, it will frequently be used to shadow the variable.
+///    conversion is required, it will frequently be used to shadow the variable.
 ///
 /// 2) `call_site` is called to do a secondary conversion to extract the final type passed to
-/// the native function. This is generally used to get an inner type from some RAII type, e.g.
-/// JavaString.
+///    the native function. This is generally used to get an inner type from some RAII type, e.g.
+///    JavaString.
 ///
 /// Conversions assume that there are two variables in scope:
 ///

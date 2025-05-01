@@ -108,9 +108,9 @@ jobs:
           Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi.dll.lib -Destination ffi-modules/${{ matrix.target }}
           Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi_java.dll -Destination ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: ffi-modules
+          name: ffi-modules-${{ matrix.target }}
           path: ffi-modules
       - name: C Bindings Tests
         if: ${{ matrix.test }}
@@ -147,9 +147,9 @@ jobs:
           cp ./target/release/libfoo_ffi.dylib ./ffi-modules/${{ matrix.target }}
           cp ./target/release/libfoo_ffi_java.dylib ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: ffi-modules
+          name: ffi-modules-${{ matrix.target }}
           path: ffi-modules
       - name: .NET Bindings Tests
         run: cargo run --bin foo-bindings -- --dotnet
@@ -184,9 +184,9 @@ jobs:
           cp ./target/${{ matrix.target }}/release/libfoo_ffi.so ./ffi-modules/${{ matrix.target }}
           cp ./target/${{ matrix.target }}/release/libfoo_ffi_java.so ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: ffi-modules
+          name: ffi-modules-${matrix-target}
           path: ffi-modules
   # Package all the generated bindings
   packaging:

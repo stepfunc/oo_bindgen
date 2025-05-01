@@ -32,6 +32,7 @@ fn dotnet_platform_string(platform: &Platform) -> Option<&'static str> {
         // Windows targets
         platform::X86_64_PC_WINDOWS_MSVC => Some("win-x64"),
         platform::I686_PC_WINDOWS_MSVC => Some("win-x86"),
+        platform::AARCH64_PC_WINDOWS_MSVC => Some("win-arm64"),
         // OSX targets
         platform::X86_64_APPLE_DARWIN => Some("osx-x64"),
         platform::AARCH64_APPLE_DARWIN => Some("osx-arm64"),

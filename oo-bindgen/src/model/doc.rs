@@ -650,7 +650,6 @@ impl TryFrom<&str> for DocStringElement<Unvalidated> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
 
     use super::*;
 

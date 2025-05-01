@@ -49,14 +49,16 @@ jobs:
         run: cargo clippy -- -D warnings
   # Build documentation
   documentation:
+    env:
+      DoxygenVersion: 1.13.2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install doxygen 1.13.2
-        run: wget -q https://www.doxygen.nl/files/doxygen-1.13.2.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
+      - name: Install doxygen ${{ DoxygenVersion }}
+        run: wget -q https://www.doxygen.nl/files/doxygen-${{ DoxygenVersion }}.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-${{ DoxygenVersion }}
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings

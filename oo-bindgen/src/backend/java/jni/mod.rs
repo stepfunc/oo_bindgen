@@ -147,6 +147,10 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.newline()?;
 
     f.writeln("pub(crate) fn get_cache<'a>() -> &'a JCache {")?;
+    indented(f, |f| {
+        f.writeln("// safety: this is only called after initialization / JVM load")
+    })?;
+    indented(f, |f| f.writeln("#[allow(static_mut_refs)]"))?;
     indented(f, |f| f.writeln("unsafe { JCACHE.as_ref().unwrap() }"))?;
     f.writeln("}")?;
 
@@ -158,7 +162,8 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     blocked(f, |f| {
         f.writeln("let vm = unsafe { jni::JavaVM::from_raw(vm).unwrap() };")?;
         f.writeln("let jcache = JCache::init(vm);")?;
-        f.writeln("unsafe { JCACHE.replace(jcache) };")?;
+        f.writeln("// safety: this is only called during library loading")?;
+        f.writeln("unsafe { JCACHE = Some(jcache); };")?;
         f.writeln("jni::JNIVersion::V8.into()")
     })?;
 
@@ -168,7 +173,8 @@ fn generate_cache(f: &mut dyn Printer) -> FormattingResult<()> {
     f.writeln("#[no_mangle]")?;
     f.writeln("pub extern \"C\" fn JNI_OnUnload(_vm: *mut jni::sys::JavaVM, _: *mut std::ffi::c_void) -> jni::sys::jint")?;
     blocked(f, |f| {
-        f.writeln("unsafe { JCACHE.take().unwrap(); }")?;
+        f.writeln("// safety: this is only called during library unloading / JVM shutdown")?;
+        f.writeln("unsafe { JCACHE = None; }")?;
         f.writeln("return 0;")
     })
 }

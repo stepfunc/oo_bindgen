@@ -57,8 +57,8 @@ jobs:
         uses: actions/checkout@v3
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install doxygen ${{ DoxygenVersion }}
-        run: wget -q https://www.doxygen.nl/files/doxygen-${{ DoxygenVersion }}.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-${{ DoxygenVersion }}
+      - name: Install doxygen ${{ env.DoxygenVersion }}
+        run: wget -q https://www.doxygen.nl/files/doxygen-${{ env.DoxygenVersion }}.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-${{ env.DoxygenVersion }}
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings

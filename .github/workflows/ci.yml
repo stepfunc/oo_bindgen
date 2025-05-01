@@ -55,8 +55,8 @@ jobs:
         uses: actions/checkout@v3
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install doxygen 1.9.3
-        run: wget -q https://www.doxygen.nl/files/doxygen-1.9.5.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
+      - name: Install doxygen 1.13.2
+        run: wget -q https://www.doxygen.nl/files/doxygen-1.13.2.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings
@@ -74,7 +74,7 @@ jobs:
           cp -a tests/bindings/java/foo/target/apidocs ~/doc/java
           rm tests/bindings/c/generated/logo.png tests/bindings/c/generated/doxygen-awesome.css
       - name: Upload documentation
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: doc
           path: ~/doc

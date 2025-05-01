@@ -10,7 +10,7 @@ impl<'a> DocumentationPrinter<'a> {
     }
 }
 
-impl<'a> Printer for DocumentationPrinter<'a> {
+impl Printer for DocumentationPrinter<'_> {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
         self.inner.write(s)
     }

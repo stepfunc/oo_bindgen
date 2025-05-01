@@ -66,7 +66,7 @@ impl BindingBuilder for DotnetBindingBuilder {
 
     fn build(&mut self) {
         let result = Command::new("dotnet")
-            .current_dir(&self.output_dir())
+            .current_dir(self.output_dir())
             .arg("build")
             .arg("--configuration")
             .arg("Release")
@@ -78,7 +78,7 @@ impl BindingBuilder for DotnetBindingBuilder {
     fn test(&mut self) {
         // Run unit tests
         let result = Command::new("dotnet")
-            .current_dir(&self.output_dir())
+            .current_dir(self.output_dir())
             .arg("test")
             .arg("--configuration")
             .arg("Release")
@@ -90,7 +90,7 @@ impl BindingBuilder for DotnetBindingBuilder {
     fn package(&mut self) {
         // Produce a nupkg
         let result = Command::new("dotnet")
-            .current_dir(&self.output_dir())
+            .current_dir(self.output_dir())
             .arg("pack")
             .arg("--configuration")
             .arg("Release")

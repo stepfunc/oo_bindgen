@@ -20,7 +20,7 @@ pub struct JniBindgenConfig<'a> {
     pub ffi_name: &'a str,
 }
 
-impl<'a> JniBindgenConfig<'a> {
+impl JniBindgenConfig<'_> {
     fn java_signature_path(&self, libname: &str) -> String {
         let mut result = self.group_id.replace('.', "/");
         result.push('/');

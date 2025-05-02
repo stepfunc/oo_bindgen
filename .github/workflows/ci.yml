@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust ${{ matrix.rust }}
         uses: dtolnay/rust-toolchain@master
         with:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust ${{ matrix.rust }}
         uses: dtolnay/rust-toolchain@master
         with:
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Install doxygen ${{ env.DoxygenVersion }}
@@ -93,7 +93,7 @@ jobs:
             test: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -134,7 +134,7 @@ jobs:
             target: x86_64-apple-darwin
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -169,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -194,28 +194,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Download compiled FFI
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: ffi-modules
-          path: ffi-modules
+          path: ffi-modules-*
+          merge-multiple: true
       - name: Package all bindings
         run: cargo run --bin foo-bindings -- --package ./ffi-modules --options ./packaging.json
       - name: Upload C/C++ bindings
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: c-bindings
           path: tests/bindings/c/generated/*
       - name: Upload .NET bindings
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: dotnet-bindings
           path: tests/bindings/dotnet/nupkg/*
       - name: Upload Java bindings
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: java-bindings
           path: tests/bindings/java/foo/target/*.jar

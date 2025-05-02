@@ -200,8 +200,8 @@ jobs:
       - name: Download compiled FFI
         uses: actions/download-artifact@v4
         with:
-          name: ffi-modules
-          path: ffi-modules-*
+          path: ffi-modules
+          pattern: ffi-modules-*
           merge-multiple: true
       - name: Package all bindings
         run: cargo run --bin foo-bindings -- --package ./ffi-modules --options ./packaging.json

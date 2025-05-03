@@ -282,7 +282,7 @@ impl LibraryBuilder {
 
     /// Define a structure that can be used in any context.
     ///
-    /// Backends will generate bi-directional conversion routines
+    /// Backends will generate bidirectional conversion routines
     /// for this type of struct.
     pub fn define_universal_struct(
         &mut self,

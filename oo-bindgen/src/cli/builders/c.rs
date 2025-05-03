@@ -79,7 +79,7 @@ impl BindingBuilder for CBindingBuilder {
     fn test(&mut self) {
         // Run unit tests
         let result = Command::new("ctest")
-            .current_dir(&self.build_dir())
+            .current_dir(self.build_dir())
             .args([".", "-C", "Debug"])
             .status()
             .unwrap();

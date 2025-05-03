@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust ${{ matrix.rust }}
         uses: dtolnay/rust-toolchain@master
         with:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust ${{ matrix.rust }}
         uses: dtolnay/rust-toolchain@master
         with:
@@ -49,14 +49,16 @@ jobs:
         run: cargo clippy -- -D warnings
   # Build documentation
   documentation:
+    env:
+      DoxygenVersion: 1.13.2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install doxygen 1.9.3
-        run: wget -q https://www.doxygen.nl/files/doxygen-1.9.5.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-1.9.5
+      - name: Install doxygen ${{ env.DoxygenVersion }}
+        run: wget -q https://www.doxygen.nl/files/doxygen-${{ env.DoxygenVersion }}.linux.bin.tar.gz -O- | sudo tar --strip-components=1 -C /usr -xz doxygen-${{ env.DoxygenVersion }}
       - name: Build FFI and JNI shared libraries
         run: cargo build --release -p foo-ffi -p foo-ffi-java
       - name: C bindings
@@ -74,7 +76,7 @@ jobs:
           cp -a tests/bindings/java/foo/target/apidocs ~/doc/java
           rm tests/bindings/c/generated/logo.png tests/bindings/c/generated/doxygen-awesome.css
       - name: Upload documentation
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: doc
           path: ~/doc
@@ -91,7 +93,7 @@ jobs:
             test: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -106,9 +108,9 @@ jobs:
           Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi.dll.lib -Destination ffi-modules/${{ matrix.target }}
           Copy-Item -Path ./target/${{ matrix.target }}/release/foo_ffi_java.dll -Destination ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: ffi-modules
+          name: ffi-modules-${{ matrix.target }}
           path: ffi-modules
       - name: C Bindings Tests
         if: ${{ matrix.test }}
@@ -132,7 +134,7 @@ jobs:
             target: x86_64-apple-darwin
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -145,9 +147,9 @@ jobs:
           cp ./target/release/libfoo_ffi.dylib ./ffi-modules/${{ matrix.target }}
           cp ./target/release/libfoo_ffi_java.dylib ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: ffi-modules
+          name: ffi-modules-${{ matrix.target }}
           path: ffi-modules
       - name: .NET Bindings Tests
         run: cargo run --bin foo-bindings -- --dotnet
@@ -167,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -182,9 +184,9 @@ jobs:
           cp ./target/${{ matrix.target }}/release/libfoo_ffi.so ./ffi-modules/${{ matrix.target }}
           cp ./target/${{ matrix.target }}/release/libfoo_ffi_java.so ./ffi-modules/${{ matrix.target }}
       - name: Upload compiled FFI modules
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: ffi-modules
+          name: ffi-modules-${{matrix.target}}
           path: ffi-modules
   # Package all the generated bindings
   packaging:
@@ -192,28 +194,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Download compiled FFI
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
-          name: ffi-modules
           path: ffi-modules
+          pattern: ffi-modules-*
+          merge-multiple: true
       - name: Package all bindings
         run: cargo run --bin foo-bindings -- --package ./ffi-modules --options ./packaging.json
       - name: Upload C/C++ bindings
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: c-bindings
           path: tests/bindings/c/generated/*
       - name: Upload .NET bindings
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: dotnet-bindings
           path: tests/bindings/dotnet/nupkg/*
       - name: Upload Java bindings
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: java-bindings
           path: tests/bindings/java/foo/target/*.jar

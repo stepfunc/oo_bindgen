@@ -18,7 +18,7 @@ where
     Pointer { inner }
 }
 
-impl<'a, T> CType for Pointer<'a, T>
+impl<T> CType for Pointer<'_, T>
 where
     T: CType,
 {

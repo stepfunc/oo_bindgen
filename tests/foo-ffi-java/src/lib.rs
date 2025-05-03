@@ -5,6 +5,7 @@
     clippy::redundant_closure,
     clippy::needless_borrow,
     clippy::needless_return,
+    clippy::needless_lifetimes,
     clippy::not_unsafe_ptr_arg_deref,
     unused_variables,
     dead_code

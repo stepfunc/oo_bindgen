@@ -650,13 +650,12 @@ impl TryFrom<&str> for DocStringElement<Unvalidated> {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
 
     use super::*;
 
     #[test]
     fn parse_param_reference() {
-        let doc: DocString<Unvalidated> = "This is a {param:foo} test.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {param:foo} test.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -670,7 +669,7 @@ mod tests {
 
     #[test]
     fn parse_class_reference() {
-        let doc: DocString<Unvalidated> = "This is a {class:MyClass} test.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {class:MyClass} test.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -684,7 +683,7 @@ mod tests {
 
     #[test]
     fn parse_class_reference_at_the_end() {
-        let doc: DocString<Unvalidated> = "This is a test {class:MyClass2}".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a test {class:MyClass2}".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a test ".to_owned()),
@@ -697,9 +696,7 @@ mod tests {
 
     #[test]
     fn parse_class_method() {
-        let doc: DocString<Unvalidated> = "This is a {class:MyClass.do_something()} method."
-            .try_into()
-            .unwrap();
+        let doc: DocString<Unvalidated> = "This is a {class:MyClass.do_something()} method.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -716,7 +713,7 @@ mod tests {
 
     #[test]
     fn parse_struct() {
-        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct} struct.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct} struct.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -730,9 +727,7 @@ mod tests {
 
     #[test]
     fn parse_struct_element() {
-        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct.foo} struct element."
-            .try_into()
-            .unwrap();
+        let doc: DocString<Unvalidated> = "This is a {struct:MyStruct.foo} struct element.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -749,7 +744,7 @@ mod tests {
 
     #[test]
     fn parse_enum() {
-        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum} enum.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum} enum.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -763,9 +758,7 @@ mod tests {
 
     #[test]
     fn parse_enum_element() {
-        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum.foo} enum variant."
-            .try_into()
-            .unwrap();
+        let doc: DocString<Unvalidated> = "This is a {enum:MyEnum.foo} enum variant.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -782,9 +775,7 @@ mod tests {
 
     #[test]
     fn parse_interface() {
-        let doc: DocString<Unvalidated> = "This is a {interface:Interface} interface."
-            .try_into()
-            .unwrap();
+        let doc: DocString<Unvalidated> = "This is a {interface:Interface} interface.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -798,9 +789,8 @@ mod tests {
 
     #[test]
     fn parse_interface_method() {
-        let doc: DocString<Unvalidated> = "This is a {interface:Interface.foo()} interface method."
-            .try_into()
-            .unwrap();
+        let doc: DocString<Unvalidated> =
+            "This is a {interface:Interface.foo()} interface method.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -817,7 +807,7 @@ mod tests {
 
     #[test]
     fn parse_null() {
-        let doc: DocString<Unvalidated> = "This is a {null} null.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {null} null.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),
@@ -831,7 +821,7 @@ mod tests {
 
     #[test]
     fn parse_iterator() {
-        let doc: DocString<Unvalidated> = "This is a {iterator} iterator.".try_into().unwrap();
+        let doc: DocString<Unvalidated> = "This is a {iterator} iterator.".into();
         assert_eq!(
             [
                 DocStringElement::Text("This is a ".to_owned()),

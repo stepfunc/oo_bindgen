@@ -37,6 +37,7 @@ mod thread_class;
 mod universal;
 
 #[allow(clippy::extra_unused_lifetimes)]
+#[allow(clippy::needless_lifetimes)]
 pub mod ffi;
 
 static VERSION: &str = concat!("1.2.3", "\0");

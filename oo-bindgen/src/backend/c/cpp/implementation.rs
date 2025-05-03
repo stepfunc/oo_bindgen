@@ -477,7 +477,7 @@ fn write_class_implementation(
     let cpp_name = handle.core_cpp_type();
 
     // write constructor
-    for constructor in &handle.constructor {
+    if let Some(constructor) = &handle.constructor {
         f.writeln(&format!(
             "{}::{}({}) : self(fn::{}({}))",
             cpp_name,
@@ -491,7 +491,7 @@ fn write_class_implementation(
     }
 
     // write the destructor
-    for destructor in &handle.destructor {
+    if let Some(destructor) = &handle.destructor {
         f.writeln(&format!("{cpp_name}::~{cpp_name}()"))?;
         blocked(f, |f| {
             f.writeln("if(self)")?;

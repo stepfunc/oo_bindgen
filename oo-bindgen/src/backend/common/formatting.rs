@@ -70,7 +70,7 @@ impl<'a, 'b> PrefixPrinter<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Printer for PrefixPrinter<'a, 'b> {
+impl Printer for PrefixPrinter<'_, '_> {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
         self.inner.write(s)
     }
@@ -93,7 +93,7 @@ impl<'a> IndentedPrinter<'a> {
     }
 }
 
-impl<'a> Printer for IndentedPrinter<'a> {
+impl Printer for IndentedPrinter<'_> {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
         self.inner.write(s)
     }
@@ -115,7 +115,7 @@ impl<'a> CommentedPrinter<'a> {
     }
 }
 
-impl<'a> Printer for CommentedPrinter<'a> {
+impl Printer for CommentedPrinter<'_> {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
         self.inner.write(s)
     }
@@ -137,7 +137,7 @@ impl<'a> DoxygenPrinter<'a> {
     }
 }
 
-impl<'a> Printer for DoxygenPrinter<'a> {
+impl Printer for DoxygenPrinter<'_> {
     fn write(&mut self, s: &str) -> FormattingResult<()> {
         self.inner.write(s)
     }

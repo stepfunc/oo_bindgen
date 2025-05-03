@@ -9,7 +9,7 @@ impl<'a> LocalFrameGuard<'a> {
     }
 }
 
-impl<'a> Drop for LocalFrameGuard<'a> {
+impl Drop for LocalFrameGuard<'_> {
     fn drop(&mut self) {
         let _ = self.env.pop_local_frame(jni::objects::JObject::null());
     }

@@ -489,7 +489,7 @@ fn generate_interfaces(lib: &Library, config: &DotnetBindgenConfig) -> Formattin
     for interface in lib.interfaces() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("I{}", interface.name().camel_case()));
+        filename.push(format!("I{}", interface.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -503,7 +503,7 @@ fn generate_iterator_helpers(lib: &Library, config: &DotnetBindgenConfig) -> For
     for iter in lib.iterators() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("{}Helpers", iter.name().camel_case()));
+        filename.push(format!("{}Helpers", iter.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 
@@ -520,7 +520,7 @@ fn generate_collection_helpers(
     for coll in lib.collections() {
         // Open file
         let mut filename = config.output_dir.clone();
-        filename.push(&format!("{}Helpers", coll.name().camel_case()));
+        filename.push(format!("{}Helpers", coll.name().camel_case()));
         filename.set_extension("cs");
         let mut f = FilePrinter::new(filename)?;
 

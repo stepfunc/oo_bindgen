@@ -1,3 +1,7 @@
+### 0.8.8 ###
+* :star: Modernize lints and CI workflows. See [#129](https://github.com/stepfunc/oo_bindgen/pull/129).
+* :star: Add RID for aarch64-pc-windows-msvc in .NET backend
+
 ### 0.8.7 ###
 * :star: Sets assembly version information to match the schema in C# backend
 
